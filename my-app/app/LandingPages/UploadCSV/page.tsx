@@ -348,7 +348,7 @@ export default function BeforeQtimeHomePage(): JSX.Element {
   }
 
   const handleSkip = () => {
-    router.push('/LandingPages/QtimeHomePage')
+    router.push('/LandingPages/Home')
   }
 
   return (

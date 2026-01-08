@@ -53,29 +53,30 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     {
       icon: University,
       label: 'Rooms Management',
+      path: '/LandingPages/Rooms Management',
       hasSubmenu: true,
       submenu: [
         {
           label: '2D / 3D Map Viewer', 
-          path: '/LandingPages/MapViewer',
+          path: '/LandingPages/RoomsManagement/MapViewer',
           icon: School,
           exact: true
         },
         {
           label: 'Room List & Details',
-          path: '/LandingPages/SchoolCapacity',
+          path: '/LandingPages/RoomsManagement/RoomLists&Details',
           icon: School,
           exact: true
         },
         {
           label: 'Add / Edit Rooms',
-          path: '/LandingPages/SchoolCapacity',
+          path: '/LandingPages/RoomsManagement/Add-EditRooms',
           icon: School,
           exact: true
         },
         {
           label: 'Search / Filter Rooms',
-          path: '/LandingPages/SchoolSchedules',
+          path: '/LandingPages/RoomsManagement/Search-FilterRooms',
           icon: CalendarCheck2,
         },
       ]

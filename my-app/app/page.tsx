@@ -73,7 +73,7 @@ export default function Page(): JSX.Element {
 
         // Redirect to CSV upload page after successful login
         setTimeout(() => {
-          router.push('/LandingPages/BeforeQtimeHomePage')
+          router.push('/LandingPages/Home')
         }, 2000) // Extended for animation
       }
     } catch (err: any) {
