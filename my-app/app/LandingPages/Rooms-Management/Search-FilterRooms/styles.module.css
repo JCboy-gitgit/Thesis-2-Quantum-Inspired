@@ -1,0 +1,586 @@
+/* ==================== Search & Filter Rooms Page Styles ==================== */
+/* Uses CSS variables from globals.css for theming support */
+
+/* Layout */
+.pageContainer {
+  min-height: 100vh;
+  background: var(--background);
+  transition: background-color 0.3s ease;
+}
+
+.mainContent {
+  padding-top: 80px;
+  transition: margin-left 0.3s ease;
+}
+
+.mainContent.withSidebar {
+  margin-left: 280px;
+}
+
+.contentWrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Header Card */
+.headerCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.headerIcon {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px var(--glow-color);
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin: 0;
+}
+
+.headerSubtitle {
+  color: var(--text-light);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Search Section */
+.searchCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.searchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.searchInputWrapper {
+  flex: 1;
+  min-width: 300px;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--card-bg);
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.searchInput::placeholder {
+  color: var(--text-light);
+}
+
+.clearButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--submenu-bg);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+/* Quick Filters */
+.quickFilters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  padding: 14px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--card-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.filtersButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--submenu-bg);
+  color: var(--text-light);
+}
+
+.filtersButton:hover {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.filtersButtonActive {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.filterBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+/* Advanced Filters */
+.advancedFilters {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--card-border);
+}
+
+.filtersGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--content-text);
+}
+
+.capacityRange {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.capacityInput {
+  width: 100px;
+  padding: 10px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--card-bg);
+}
+
+.capacityInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.capacitySeparator {
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* Feature Buttons */
+.featuresRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.featureButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--submenu-bg);
+  color: var(--text-light);
+}
+
+.featureButton:hover {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.featureButtonActive {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.clearFiltersRow {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clearFiltersButton {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.clearFiltersButton:hover {
+  color: var(--primary);
+}
+
+/* Results Count */
+.resultsCount {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.resultsNumber {
+  font-weight: 600;
+  color: var(--content-text);
+}
+
+/* Results Grid */
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Loading Skeleton */
+.skeletonCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+  animation: pulse 1.5s infinite;
+}
+
+.skeletonLine {
+  height: 20px;
+  background: var(--submenu-bg);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.skeletonLine:nth-child(1) {
+  width: 40%;
+}
+
+.skeletonLine:nth-child(2) {
+  width: 70%;
+}
+
+.skeletonLine:nth-child(3) {
+  width: 50%;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Empty State */
+.emptyState {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 64px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  color: var(--text-light);
+  opacity: 0.3;
+  margin: 0 auto 16px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--content-text);
+  margin: 0 0 8px;
+}
+
+.emptyText {
+  color: var(--text-light);
+  margin: 0 0 24px;
+}
+
+.emptyButton {
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emptyButton:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+/* Room Card */
+.roomCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.roomCard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.roomCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.roomCode {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin: 0;
+}
+
+.roomName {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.roomTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.typeLecture {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.typeLaboratory {
+  background: rgba(168, 85, 247, 0.1);
+  color: #9333ea;
+}
+
+.typeComputerLab {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.typeAuditorium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+/* Room Details */
+.roomDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.roomDetailRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.roomDetailIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-light);
+}
+
+/* Room Features */
+.roomFeatures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.featureIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featureAc {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.featureProjector {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.featureComputer {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.featureAccessible {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.featureLab {
+  background: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+}
+
+/* Dark mode */
+:global(.dark) .headerIcon {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+:global(.dark) .roomCard:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .resultsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContent.withSidebar {
+    margin-left: 0;
+  }
+  
+  .searchInputWrapper {
+    min-width: 100%;
+  }
+  
+  .quickFilters {
+    width: 100%;
+  }
+  
+  .filterSelect {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .filtersGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .resultsGrid {
+    grid-template-columns: 1fr;
+  }
+}

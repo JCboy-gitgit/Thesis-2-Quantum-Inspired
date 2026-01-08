@@ -27,7 +27,7 @@
 }
 
 .backButton {
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
   border: 2px solid var(--border-color);
   padding: 12px 24px;
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  background: white;
+  background: var(--bg-white);
   padding: 30px;
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
@@ -136,7 +136,7 @@
 }
 
 .btnSecondary {
-  background: white;
+  background: var(--bg-white);
   color: var(--primary-medium);
   border: 2px solid var(--primary-medium);
 }
@@ -192,7 +192,7 @@
 }
 
 .statCard {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 26px;
   display: flex;
@@ -260,7 +260,7 @@
 
 /* ==================== Table Section ==================== */
 .tableSection {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -321,7 +321,7 @@
 
 /* ==================== Table Cells Styling ==================== */
 .participantsTable tbody tr {
-  background: white;
+  background: var(--bg-white);
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s ease;
 }
@@ -539,7 +539,7 @@
 .emptyState {
   text-align: center;
   padding: 60px 40px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -936,7 +936,7 @@
 .scheduleEmptyState {
   text-align: center;
   padding: 60px 40px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);

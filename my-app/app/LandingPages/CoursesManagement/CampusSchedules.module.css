@@ -206,7 +206,7 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--primary-medium);
-  background: #e6f2ff;
+  background: var(--bg-gray-100, #e6f2ff);
   padding: 8px 16px;
   border-radius: 20px;
 }
@@ -220,16 +220,16 @@
 }
 
 .roomCard {
-  background: white;
+  background: var(--bg-white, white);
   border-radius: 14px;
   padding: 18px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 12px rgba(26,54,93,0.08);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s, transform 0.2s;
   cursor: pointer;
   position: relative;
   color: var(--text-dark);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #e2e8f0);
 }
 
 .roomCard:hover {
@@ -377,7 +377,7 @@
 }
 
 .batchCard {
-  background: #f7fafc;
+  background: var(--bg-gray-50, #f7fafc);
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
@@ -386,9 +386,9 @@
 }
 
 .batchCard:hover {
-  background: #edf2f7;
+  background: var(--bg-gray-100, #edf2f7);
   transform: translateX(10px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .batchHeader {
@@ -406,7 +406,7 @@
 
 .pwdBadge {
   padding: 5px 12px;
-  background: #48bb78;
+  background: var(--success-green, #48bb78);
   color: white;
   border-radius: 12px;
   font-size: 12px;
@@ -447,7 +447,7 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-dark, #2d3748);
 }
 
 .batchStat svg {
@@ -462,7 +462,7 @@
 .progressBar {
   width: 100%;
   height: 8px;
-  background: #e2e8f0;
+  background: var(--border-color, #e2e8f0);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -478,7 +478,7 @@
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   backdrop-filter: blur(10px);
 }
 
@@ -488,7 +488,7 @@
   padding: 30px;
   margin-bottom: 30px;
   color: white;
-  box-shadow: 0 5px 20px rgba(26, 54, 93, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 /* ==================== Campus Grouped View ==================== */
@@ -498,10 +498,10 @@
 
 .campusSection {
   margin-bottom: 30px;
-  background: #f8fafc;
+  background: var(--bg-gray-50, #f8fafc);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .campusSection:last-child {
@@ -512,25 +512,25 @@
   display: flex;
   align-items: center;
   padding: 15px 20px;
-  background: white;
+  background: var(--bg-white, white);
   border-radius: 10px;
   margin-bottom: 15px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-sm);
   color: var(--text-dark);
   gap: 10px;
 }
 
 .campusHeaderRow:hover {
-  background: #f8fafc;
+  background: var(--bg-gray-50, #f8fafc);
 }
 
 .buildingHeaderRow {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: white;
+  background: var(--bg-white, white);
   border-radius: 8px;
   margin-bottom: 12px;
   cursor: pointer;
@@ -540,7 +540,7 @@
 }
 
 .buildingHeaderRow:hover {
-  background: #f8fafc;
+  background: var(--bg-gray-50, #f8fafc);
 }
 
 .toggleCampusBtn {
@@ -557,12 +557,12 @@
 
 /* ==================== Building Section ==================== */
 .buildingSection {
-  background: #fff;
+  background: var(--bg-white, #fff);
   border-radius: 14px;
   margin: 18px 0 0 0;
   padding: 18px 24px;
-  box-shadow: 0 2px 12px rgba(26,54,93,0.06);
-  border: 1px solid #f0f4fa;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color, #f0f4fa);
 }
 
 .buildingHeaderRow {
@@ -810,7 +810,7 @@
   font-size: 16px;
   font-weight: 500;
   transition: all 0.3s ease;
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
 }
 

@@ -1,0 +1,615 @@
+/* ==================== Add/Edit Rooms Page Styles ==================== */
+/* Uses CSS variables from globals.css for theming support */
+
+/* Local text muted variable for fallback */
+.pageContainer {
+  --text-muted: #64748b;
+}
+
+[data-theme="dark"] .pageContainer {
+  --text-muted: #a0aec0;
+}
+
+/* Layout */
+.pageContainer {
+  min-height: 100vh;
+  background: var(--background);
+  transition: background-color 0.3s ease;
+}
+
+.mainContent {
+  padding-top: 80px;
+  transition: margin-left 0.3s ease;
+}
+
+.mainContent.withSidebar {
+  margin-left: 280px;
+}
+
+.contentWrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Header Card */
+.headerCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerIcon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.headerSubtitle {
+  color: var(--text-light);
+  font-size: 14px;
+  margin: 0;
+  padding-left: 60px;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.addButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+/* Messages */
+.successMessage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: #16a34a;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: #dc2626;
+}
+
+/* Table Card */
+.tableCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.loadingState {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-light);
+}
+
+.emptyState {
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  color: var(--text-light);
+  opacity: 0.3;
+  margin: 0 auto 16px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+
+.emptyText {
+  color: var(--text-light);
+  margin: 0 0 24px;
+}
+
+/* Table */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  background: var(--submenu-bg);
+}
+
+.tableHeaderCell {
+  padding: 16px 24px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.tableHeaderCell:last-child {
+  text-align: right;
+}
+
+.tableBody {
+  
+}
+
+.tableRow {
+  transition: background-color 0.2s ease;
+}
+
+.tableRow:hover {
+  background: var(--submenu-bg);
+}
+
+.tableCell {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--card-border);
+  vertical-align: middle;
+}
+
+.tableCell:last-child {
+  text-align: right;
+}
+
+/* Room Info */
+.roomCode {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 15px;
+}
+
+.roomName {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Building Info */
+.buildingInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buildingIcon {
+  color: var(--text-light);
+}
+
+.buildingName {
+  color: var(--content-text);
+}
+
+.floorNumber {
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+/* Room Type Badge */
+.roomTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.typeLecture {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.typeLaboratory {
+  background: rgba(168, 85, 247, 0.1);
+  color: #9333ea;
+}
+
+.typeComputerLab {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.typeAuditorium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+/* Capacity */
+.capacityInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.capacityIcon {
+  color: var(--text-light);
+}
+
+.capacityValue {
+  color: var(--content-text);
+  font-weight: 500;
+}
+
+/* Features */
+.featuresRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.featureIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featureAc {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.featureProjector {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.featureComputer {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.featureAccessible {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Actions */
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.actionButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.editButton {
+  color: #3b82f6;
+}
+
+.editButton:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.deleteButton {
+  color: #ef4444;
+}
+
+.deleteButton:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: var(--card-bg);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--card-border);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin: 0;
+}
+
+.modalCloseButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: var(--submenu-bg);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modalCloseButton:hover {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.formGrid2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.formGrid3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--content-text);
+}
+
+.formInput,
+.formSelect,
+.formTextarea {
+  padding: 12px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--card-bg);
+  transition: all 0.2s ease;
+}
+
+.formInput:focus,
+.formSelect:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+/* Features Checkboxes */
+.featuresLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--content-text);
+  margin-bottom: 8px;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.featureCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--submenu-bg);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--content-text);
+}
+
+.featureCheckbox:hover {
+  background: var(--primary-alpha);
+}
+
+.featureCheckboxInput {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.featureCheckboxLabel {
+  font-size: 13px;
+  color: var(--content-text);
+}
+
+/* Modal Footer */
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px;
+  border-top: 1px solid var(--card-border);
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-light);
+  background: var(--submenu-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background: var(--primary-alpha);
+  color: var(--content-text);
+}
+
+.saveButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: var(--primary-gradient);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px var(--glow-color);
+}
+
+.saveButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--glow-color);
+}
+
+/* Dark mode adjustments */
+:global(.dark) .headerIcon {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+:global(.dark) .successMessage {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+:global(.dark) .errorMessage {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mainContent.withSidebar {
+    margin-left: 0;
+  }
+  
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .headerSubtitle {
+    padding-left: 0;
+  }
+  
+  .formGrid2,
+  .formGrid3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .featuresGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

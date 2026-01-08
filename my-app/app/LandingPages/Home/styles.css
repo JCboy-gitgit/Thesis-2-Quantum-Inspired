@@ -1,36 +1,17 @@
-/* ==================== CSS Variables ==================== */
-:root {
-  --primary-dark: #1a365d;
-  --primary-medium: #2c5282;
-  --primary-light: #4a90e2;
-  --primary-gradient: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-  --success-green: #10b981;
-  --warning-orange: #ed8936;
-  --danger-red: #ef4444;
-  --info-blue: #3b82f6;
-  --accent-teal: #319795;
-  --bg-white: #ffffff;
-  --bg-gray-50: #f8fafc;
-  --bg-gray-100: #f1f5f9;
-  --text-dark: #1e293b;
-  --text-medium: #475569;
-  --text-light: #64748b;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+/* ==================== CSS Variables - Now using global theme ==================== */
 
 /* ==================== Layout ==================== */
 .qtime-layout {
   min-height: 100vh;
   background: var(--bg-gray-50);
+  transition: background 0.3s ease;
 }
 
 .qtime-main {
   margin-top: 80px;
   margin-left: 280px;
   padding: 30px;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.3s ease, background 0.3s ease;
   min-height: calc(100vh - 80px);
 }
 
@@ -50,11 +31,12 @@
 /* ==================== Welcome Section ==================== */
 .welcome-section {
   margin-bottom: 40px;
-  background: white;
+  background: var(--bg-white);
   padding: 30px;
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .page-title {
@@ -63,6 +45,7 @@
   color: var(--text-dark);
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
+  transition: color 0.3s ease;
 }
 
 .page-subtitle {
@@ -70,6 +53,7 @@
   color: var(--text-medium);
   margin: 0;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 /* ==================== Loading State ==================== */
@@ -79,26 +63,28 @@
   color: var(--text-light);
   font-size: 18px;
   font-weight: 500;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 /* ==================== Empty State ==================== */
 .empty-state {
   text-align: center;
   padding: 80px 40px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .empty-icon {
   font-size: 80px;
   margin-bottom: 24px;
-  color: var(--primary-medium);
+  color: var(--primary);
 }
 
 .empty-state h2 {
@@ -106,6 +92,7 @@
   font-weight: 700;
   color: var(--text-dark);
   margin: 0 0 12px 0;
+  transition: color 0.3s ease;
 }
 
 .empty-state p {
@@ -113,6 +100,7 @@
   color: var(--text-light);
   margin: 0 0 32px 0;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 .primary-button {
@@ -125,7 +113,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -133,7 +121,7 @@
 
 .primary-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(26, 54, 93, 0.4);
+  box-shadow: 0 6px 20px var(--glow-color);
 }
 
 /* ==================== Files Grid ==================== */
@@ -144,7 +132,7 @@
 }
 
 .file-section {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 30px;
   box-shadow: var(--shadow-sm);
@@ -174,7 +162,7 @@
 }
 
 .file-card {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, var(--bg-gray-50) 0%, var(--bg-gray-100) 100%);
   border: 2px solid var(--border-color);
   border-radius: 14px;
   padding: 24px;
@@ -195,8 +183,8 @@
 
 .file-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 24px rgba(26, 54, 93, 0.2);
-  border-color: var(--primary-medium);
+  box-shadow: 0 12px 24px var(--glow-color);
+  border-color: var(--primary);
 }
 
 .file-card-header {
@@ -208,10 +196,10 @@
 
 .file-icon {
   font-size: 32px;
-  color: var(--primary-medium);
+  color: var(--primary);
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  background: linear-gradient(135deg, var(--primary-alpha), rgba(255, 255, 255, 0.5));
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -226,7 +214,7 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 8px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 2px 8px var(--glow-color);
 }
 
 .file-name {
@@ -271,7 +259,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -280,7 +268,7 @@
 
 .view-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.4);
+  box-shadow: 0 6px 16px var(--glow-color);
 }
 
 /* ==================== Action Section ==================== */
@@ -288,8 +276,9 @@
   margin-top: 40px;
   text-align: center;
   padding: 50px 40px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
+  transition: background 0.3s ease, border-color 0.3s ease;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   position: relative;

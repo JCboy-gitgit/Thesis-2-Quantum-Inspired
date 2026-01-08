@@ -1,26 +1,5 @@
-/* ==================== CSS Variables ==================== */
-:root {
-  --primary-dark: #1a365d;
-  --primary-medium: #2c5282;
-  --primary-light: #4a90e2;
-  --primary-gradient: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-  --success-green: #10b981;
-  --warning-orange: #ed8936;
-  --danger-red: #ef4444;
-  --info-blue: #3b82f6;
-  --accent-teal: #319795;
-  --bg-white: #ffffff;
-  --bg-gray-50: #f8fafc;
-  --bg-gray-100: #f1f5f9;
-  --text-dark: #1e293b;
-  --text-medium: #475569;
-  --text-light: #64748b;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
 /* ==================== Layout ==================== */
+/* Theme variables are inherited from globals.css */
 .participants-layout {
   display: flex;
   min-height: 100vh;
@@ -51,7 +30,7 @@
 }
 
 .back-button {
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   padding: 12px 24px;
   border-radius: 10px;
@@ -78,7 +57,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  background: white;
+  background: var(--bg-white);
   padding: 30px;
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
@@ -126,7 +105,7 @@
 .loading-state {
   text-align: center;
   padding: 60px 20px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -155,7 +134,7 @@
 
 /* ==================== Selection Section ==================== */
 .selection-section {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 30px;
   margin-bottom: 24px;
@@ -208,7 +187,7 @@
   font-size: 15px;
   min-width: 300px;
   transition: all 0.3s ease;
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
   font-weight: 500;
 }
@@ -232,7 +211,7 @@
 
 .batch-select-card {
   position: relative;
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   border-radius: 14px;
   padding: 24px;
@@ -351,7 +330,7 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 26px;
   display: flex;
@@ -404,7 +383,7 @@
 
 /* ==================== Data Section ==================== */
 .data-section {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 30px;
   box-shadow: var(--shadow-sm);
@@ -474,7 +453,7 @@
   width: 100%;
   min-width: 600px; /* Prevent table from shrinking too much */
   border-collapse: collapse;
-  background: white;
+  background: var(--bg-white);
 }
 
 .participants-table thead {
@@ -540,7 +519,7 @@
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-dark);
-  background: white;
+  background: var(--bg-white);
   font-family: inherit;
   font-weight: 500;
   transition: all 0.3s ease;
@@ -578,7 +557,7 @@
   width: 36px;
   height: 36px;
   border: 2px solid var(--border-color);
-  background: white;
+  background: var(--bg-white);
   cursor: pointer;
   border-radius: 8px;
   font-size: 18px;
@@ -601,7 +580,7 @@
   top: 100%;
   right: 0;
   margin-top: 8px;
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -614,7 +593,7 @@
   width: 100%;
   padding: 12px 16px;
   border: none;
-  background: white;
+  background: var(--bg-white);
   text-align: left;
   cursor: pointer;
   font-size: 14px;
@@ -661,7 +640,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   width: 90%;
   max-width: 550px;
@@ -698,7 +677,7 @@
 }
 
 .modal-close {
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   font-size: 24px;
   cursor: pointer;
@@ -777,7 +756,7 @@
   font-size: 15px;
   transition: all 0.3s ease;
   color: var(--text-dark);
-  background: white;
+  background: var(--bg-white);
   font-family: inherit;
   font-weight: 500;
 }
@@ -817,7 +796,7 @@
 }
 
 .modal-btn-cancel {
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
   border: 2px solid var(--border-color);
 }
@@ -1116,7 +1095,7 @@
 }
 
 .pagination-button {
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   padding: 10px 16px;
   border-radius: 8px;
@@ -1146,7 +1125,7 @@
 }
 
 .pagination-page-number {
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   color: var(--text-dark);
   font-weight: 600;
@@ -1179,7 +1158,7 @@
 }
 
 .pagination-btn {
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   color: var(--text-dark);
   font-weight: 600;

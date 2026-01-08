@@ -4,11 +4,12 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  background: #f9fafb;
+  background: var(--bg-gray-50, #f9fafb);
+  transition: background 0.3s ease;
 }
 
 .page-header {
-  background: #2563eb;
+  background: var(--primary, #00a651);
   color: #fff;
   padding: 32px 20px;
   text-align: center;
@@ -16,15 +17,17 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: background 0.3s ease;
 }
 
 .page-header-content {
   margin-top: 64px;
   background: transparent;
-  color: #000000;
+  color: var(--text-dark, #000000);
   padding: 32px 20px;
   text-align: center;
-  box-shadow: 0 40px 80px rgba(0, 0, 0,5);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.05);
+  transition: color 0.3s ease;
 }
 
 .page-header h1,
@@ -44,13 +47,14 @@
 
 .upload-container {
   width: 100%;
-  background: #f3f3f3;
+  background: var(--bg-gray-100, #f3f3f3);
   padding: 40px 20px 60px 20px;
   display: flex;
   justify-content: center;
   flex: 1;
   overflow-y: auto;  /* Enable scrolling here too if needed */
   padding: 20px;
+  transition: background 0.3s ease;
 }
 
 .upload-wrapper {
@@ -60,40 +64,46 @@
 
 .upload-card {
   width: 100%;
-  background: #fff;
+  background: var(--bg-white, #fff);
   border-radius: 8px;
   padding: 32px;
-  box-shadow: 0 10px 18px rgba(30, 41, 59, 0.06);
+  box-shadow: var(--shadow-sm, 0 10px 18px rgba(30, 41, 59, 0.06));
   margin-bottom: 24px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .section-title {
   margin: 0 0 20px 0;
   font-size: 20px;
   font-weight: 600;
-  color: #000;
+  color: var(--text-dark, #000);
+  transition: color 0.3s ease;
 }
 
 .format-info {
   margin-bottom: 20px;
   padding: 12px;
-  background: #eff6ff;
-  border-left: 4px solid #2563eb;
+  background: var(--primary-alpha, rgba(0, 166, 81, 0.1));
+  border-left: 4px solid var(--primary, #00a651);
   border-radius: 4px;
+  transition: background 0.3s ease;
 }
 
 .format-info h3 {
   margin: 0 0 8px 0;
   font-size: 14px;
-  color: #1e40af;
+  color: var(--primary-dark, #005826);
+  transition: color 0.3s ease;
 }
 
 .format-info p {
   margin: 0;
   font-size: 13px;
-  color: #333436;
+  color: var(--text-medium, #333436);
   font-family: monospace;
   background: fixed;
+  transition: color 0.3s ease;
 }
 
 .form-group {
@@ -105,39 +115,54 @@
   flex-direction: column;
   font-size: 14px;
   gap: 6px;
-  color: #000;
+  color: var(--text-dark, #000);
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 .input {
   padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color, #d1d5db);
   font-size: 14px;
-  color: #000;
-  background: #fff;
+  color: var(--text-dark, #000);
+  background: var(--bg-white, #fff);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary, #00a651);
+  box-shadow: 0 0 0 3px var(--primary-alpha, rgba(0, 166, 81, 0.2));
 }
 
 .file-input {
   padding: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color, #d1d5db);
   border-radius: 6px;
   font-size: 14px;
-  color: #000;
-  background: #fff;
+  color: var(--text-dark, #000);
+  background: var(--bg-white, #fff);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .upload-button {
   width: 100%;
   margin-top: 20px;
   padding: 12px;
-  background: #2563eb;
+  background: var(--primary-gradient, linear-gradient(135deg, #005826, #00a651));
   color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 15px;
   font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--glow-color, rgba(0, 166, 81, 0.4));
 }
 
 .upload-button:disabled {
@@ -174,8 +199,8 @@
 .skip-button {
   padding: 10px 24px;
   background: transparent;
-  color: #2563eb;
-  border: 2px solid #2563eb;
+  color: var(--primary, #00a651);
+  border: 2px solid var(--primary, #00a651);
   border-radius: 6px;
   cursor: pointer;
   font-size: 15px;
@@ -184,7 +209,7 @@
 }
 
 .skip-button:hover {
-  background: #2563eb;
+  background: var(--primary, #00a651);
   color: #fff;
 }
 
@@ -193,4 +218,14 @@
   content: '📦';
   margin-right: 8px;
   font-size: 16px;
+}
+
+/* Spinner animation for OCR loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

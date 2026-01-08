@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle } from 'lucide-react'
+import SettingsModal from './SettingsModal'
 import './MenuBar.css'
 
 interface MenuBarProps {
@@ -15,6 +16,7 @@ interface MenuBarProps {
 export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, showAccountIcon = true }: MenuBarProps) {
   const router = useRouter()
   const [showAccountMenu, setShowAccountMenu] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
@@ -88,7 +90,13 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                   <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Profile
                 </div>
-                <div className="account-menu-item">
+                <div 
+                  className="account-menu-item"
+                  onClick={() => {
+                    setShowAccountMenu(false)
+                    setShowSettings(true)
+                  }}
+                >
                   <SettingsIcon size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Settings
                 </div>
@@ -102,6 +110,11 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
           </div>
         )}
       </div>
+
+      <SettingsModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+      />
     </header>
   )
 }

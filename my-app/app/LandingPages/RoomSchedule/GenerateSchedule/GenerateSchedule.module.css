@@ -27,7 +27,7 @@
 }
 
 .backButton {
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
   border: 2px solid var(--border-color);
   padding: 12px 24px;
@@ -59,7 +59,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  background: white;
+  background: var(--bg-white);
   padding: 30px;
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
@@ -111,7 +111,7 @@
 }
 
 .formCard {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 30px;
   box-shadow: var(--shadow-sm);
@@ -161,7 +161,7 @@
   border-radius: 10px;
   font-size: 15px;
   transition: all 0.3s ease;
-  background: white;
+  background: var(--bg-white);
   color: var(--text-dark);
   font-weight: 500;
 }
@@ -192,7 +192,7 @@
 
 .selectionCard {
   position: relative;
-  background: white;
+  background: var(--bg-white);
   border: 2px solid var(--border-color);
   border-radius: 14px;
   padding: 24px;
@@ -209,8 +209,8 @@
 
 .selectionCard.selected {
   border-color: var(--primary-medium);
-  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
-  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.3);
+  background: var(--bg-gray-50);
+  box-shadow: 0 6px 16px var(--glow-color);
 }
 
 .selectionIcon {
@@ -284,7 +284,7 @@
 }
 
 .checkboxLabel:hover {
-  background: #f1f5f9;
+  background: var(--bg-gray-100);
   border-color: var(--border-color);
 }
 
@@ -353,7 +353,7 @@
 }
 
 .resultsBanner {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 30px;
   display: flex;
@@ -398,7 +398,7 @@
 }
 
 .statCard {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 26px;
   display: flex;
@@ -499,7 +499,7 @@
 }
 
 .btnSecondary {
-  background: white;
+  background: var(--bg-white);
   color: var(--primary-medium);
   border: 2px solid var(--primary-medium);
 }
@@ -582,7 +582,7 @@
 
 /* ==================== Loading States ==================== */
 .loadingState {
-  background: white;
+  background: var(--bg-white);
   border-radius: 16px;
   padding: 60px;
   text-align: center;
@@ -688,7 +688,7 @@
 .capacityBreakdown {
   margin-top: 16px;
   padding: 16px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 10px;
   border: 1px solid var(--border-color);
 }

@@ -2,7 +2,7 @@
 .qtimeLayout {
   display: flex;
   min-height: 100vh;
-  background: #fff;
+  background: var(--bg-white, #fff);
   position: relative;
 }
 
@@ -12,7 +12,7 @@
   padding: 30px;
   transition: margin-left 0.3s ease;
   min-height: calc(100vh - 80px);
-  background: #ffffff; /* ✅ Changed back to white */
+  background: var(--bg-white, #ffffff);
 }
 
 .qtimeMain.fullWidth {
@@ -300,7 +300,7 @@
   align-items: center;
   gap: 12px;
   padding: 18px 22px;
-  background: white;
+  background: var(--bg-white);
   border-radius: 14px;
   border: 2px solid transparent;
   transition: all 0.2s ease;

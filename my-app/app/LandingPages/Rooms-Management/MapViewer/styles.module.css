@@ -1,0 +1,253 @@
+/* ==================== Map Viewer Page Styles ==================== */
+/* Uses CSS variables from globals.css for theming support */
+
+/* Layout */
+.pageContainer {
+  min-height: 100vh;
+  background: var(--background);
+  transition: background-color 0.3s ease;
+}
+
+.mainContent {
+  padding-top: 80px;
+  transition: margin-left 0.3s ease;
+}
+
+.mainContent.withSidebar {
+  margin-left: 280px;
+}
+
+.contentWrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Header Card */
+.headerCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.headerIcon {
+  width: 48px;
+  height: 48px;
+  background: var(--primary-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 12px var(--glow-color);
+}
+
+.headerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin: 0;
+}
+
+.headerSubtitle {
+  color: var(--text-light);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Coming Soon Card */
+.comingSoonCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.comingSoonContent {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+/* Construction Icon */
+.constructionIcon {
+  width: 120px;
+  height: 120px;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 32px;
+  color: white;
+  box-shadow: 0 10px 40px var(--glow-color);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.comingSoonTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin: 0 0 16px;
+}
+
+.comingSoonText {
+  font-size: 16px;
+  color: var(--text-light);
+  max-width: 480px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+
+/* Feature Preview Grid */
+.featurePreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.featurePreviewCard {
+  background: var(--submenu-bg);
+  border-radius: 16px;
+  padding: 24px 16px;
+  transition: all 0.3s ease;
+}
+
+.featurePreviewCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.featurePreviewIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.blue {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.purple {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.green {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.featurePreviewTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--content-text);
+  margin: 0 0 8px;
+}
+
+.featurePreviewText {
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Info Note */
+.infoNote {
+  max-width: 520px;
+  margin: 40px auto 0;
+  padding: 16px 20px;
+  background: var(--primary-alpha);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+}
+
+.infoIcon {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.infoText {
+  font-size: 14px;
+  color: var(--content-text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.infoText strong {
+  font-weight: 600;
+}
+
+/* Dark mode */
+:global(.dark) .headerIcon {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+:global(.dark) .constructionIcon {
+  box-shadow: 0 10px 40px rgba(59, 130, 246, 0.2);
+}
+
+:global(.dark) .featurePreviewCard {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.dark) .featurePreviewCard:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global(.dark) .infoNote {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mainContent.withSidebar {
+    margin-left: 0;
+  }
+  
+  .featurePreviewGrid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+  }
+  
+  .comingSoonTitle {
+    font-size: 24px;
+  }
+  
+  .constructionIcon {
+    width: 96px;
+    height: 96px;
+  }
+}

@@ -131,15 +131,15 @@ export default function SchoolCapacityPage() {
   const fetchCampusFiles = async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('campuses')
+      const { data, error } = await (supabase
+        .from('campuses') as any)
         .select('upload_group_id, school_name, file_name, created_at')
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      const grouped = data?.reduce((acc: any[], curr) => {
-        const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
+      const grouped = (data as any[])?.reduce((acc: any[], curr: any) => {
+        const existing = acc.find((item: any) => item.upload_group_id === curr.upload_group_id)
         if (existing) {
           existing.row_count++
         } else {
@@ -274,8 +274,8 @@ export default function SchoolCapacityPage() {
   const fetchRoomUsage = async (campusGroupId: number): Promise<Map<string, RoomUsage>> => {
     try {
       // Get all schedule summaries for this campus group
-      const { data: summaries, error: summaryError } = await supabase
-        .from('schedule_summary')
+      const { data: summaries, error: summaryError } = await (supabase
+        .from('schedule_summary') as any)
         .select('id')
         .eq('campus_group_id', campusGroupId)
         .eq('status', 'completed')
@@ -283,19 +283,19 @@ export default function SchoolCapacityPage() {
       if (summaryError) throw summaryError
       if (!summaries || summaries.length === 0) return new Map()
 
-      const summaryIds = summaries.map(s => s.id)
+      const summaryIds = (summaries as any[]).map((s: any) => s.id)
 
       // Get all batches from schedule_batches
-      const { data: batches, error: batchError } = await supabase
-        .from('schedule_batches')
+      const { data: batches, error: batchError } = await (supabase
+        .from('schedule_batches') as any)
         .select('room, participant_count, schedule_summary_id')
         .in('schedule_summary_id', summaryIds)
 
       if (batchError) throw batchError
 
       // Get room capacities from campuses table
-      const { data: rooms, error: roomError } = await supabase
-        .from('campuses')
+      const { data: rooms, error: roomError } = await (supabase
+        .from('campuses') as any)
         .select('room, capacity')
         .eq('upload_group_id', campusGroupId)
 
@@ -303,14 +303,14 @@ export default function SchoolCapacityPage() {
 
       // Create a map of room capacities
       const capacityMap = new Map<string, number>()
-      rooms?.forEach(room => {
+      ;(rooms as any[])?.forEach((room: any) => {
         capacityMap.set(room.room, room.capacity)
       })
 
       // Calculate usage per room
       const usageMap = new Map<string, RoomUsage>()
       
-      batches?.forEach(batch => {
+      ;(batches as any[])?.forEach((batch: any) => {
         const roomKey = batch.room
         const capacity = capacityMap.get(roomKey) || 0
         
@@ -404,8 +404,8 @@ export default function SchoolCapacityPage() {
 
   const handleEditSave = async (roomId: number) => {
     try {
-      const { error } = await supabase
-        .from('campuses')
+      const { error } = await (supabase
+        .from('campuses') as any)
         .update({
           campus: editForm.campus,
           building: editForm.building,
@@ -462,8 +462,8 @@ export default function SchoolCapacityPage() {
     try {
       const selectedFile = campusFiles.find(f => f.upload_group_id === selectedCampus)
       
-      const { data, error } = await supabase
-        .from('campuses')
+      const { data, error } = await (supabase
+        .from('campuses') as any)
         .insert([{
           upload_group_id: selectedCampus,
           campus: addForm.campus,
