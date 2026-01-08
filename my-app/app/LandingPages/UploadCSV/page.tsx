@@ -359,7 +359,7 @@ export default function BeforeQtimeHomePage(): JSX.Element {
         <h1>
           Welcome to Qtime Scheduler
         </h1>
-        <h2>Kindly Upload the CSV files for the Campus and Participant Data</h2>
+        <h2>Kindly Upload the CSV files for the Class Schedule and Teachers Schedule Data</h2>
       </div>
 
       <main className={styles['upload-container']}>
@@ -368,7 +368,7 @@ export default function BeforeQtimeHomePage(): JSX.Element {
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <Building2 size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Campus/Building Capacity
+              Class Schedules (Per College)
             </h2>
             
             <div className={styles['format-info']}>
@@ -376,10 +376,13 @@ export default function BeforeQtimeHomePage(): JSX.Element {
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
-              <p>Campus, Building, Room, Capacity</p>
+              <p>Class Section | Course Code | Course Name | LEC Unit | LAB Unit | Credit Unit | LEC Hr | LAB Hr | Section | Schedule(Day) | Schedule(Time)</p>
               <small style={{ color: '#64748b', marginTop: '8px', display: 'block' }}>
                 <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: Main Campus, Building A, Room 101, 30
+              Example:
+              <p>BSM CS 4A | CS101 | Introduction to Computer Science | 3 | 0 | 3 | 3 | 0 | 3 | Monday | 9:00AM - 10:30AM
+              </p><p>BSM CS 4A | CS101 | Introduction to Computer Science | 3 | 0 | 3 | 3 | 0 | 3 | Friday | 2:00PM - 03:30PM
+              </p>
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '4px', fontSize: '12px' }}>
                 <AlertTriangle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
@@ -390,18 +393,18 @@ export default function BeforeQtimeHomePage(): JSX.Element {
             <div className={styles['form-group']}>
               <label className={styles['label']}>
                 <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                School Name (e.g., State University)
+                Class Schedule Batch (e.g., 2025-2026 First Semester)
                 <input
                   type="text"
                   value={campusSchoolName}
                   onChange={(e) => setCampusSchoolName(e.target.value)}
                   className={styles['input']}
-                  placeholder="e.g., State University"
+                  placeholder="2025-2026 First Semester"
                   required
                 />
               </label>
               <small style={{ color: '#64748b', fontSize: '12px', marginTop: '4px' }}>
-                This name will be used to identify your institution
+                This name will be used to identify your Class Schedule upload
               </small>
             </div>
 
@@ -449,11 +452,11 @@ export default function BeforeQtimeHomePage(): JSX.Element {
             )}
           </div>
 
-          {/* Participant CSV Section */}
+          {/* Teacher Schedule CSV Section */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <Users size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Participants
+              Teachers Schedule (Per College)
             </h2>
             
             <div className={styles['format-info']}>
@@ -461,10 +464,11 @@ export default function BeforeQtimeHomePage(): JSX.Element {
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
-              <p>Participant Number, Name, PWD, Email, Province, City, Country</p>
+              <p>Teacher's ID | Name | Schedule(Day) | Schedule(Time)</p>
               <small style={{ color: '#64748b', marginTop: '8px', display: 'block' }}>
                 <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: 2024001, John Doe, No, john@email.com, Metro Manila, Manila, Philippines
+                Example: 
+                <p>2022409001 | Juan Dela Cruz | Monday | 9:00AM - 10:30AM</p>
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: '#dbeafe', borderRadius: '4px', fontSize: '12px' }}>
                 <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
@@ -479,18 +483,18 @@ export default function BeforeQtimeHomePage(): JSX.Element {
             <div className={styles['form-group']}>
               <label className={styles['label']}>
                 <Users size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Batch Name (e.g., Batch 2024-A, First Year Students)
+                College Name (e.g., College of Science)
                 <input
                   type="text"
                   value={participantBatchName}
                   onChange={(e) => setParticipantBatchName(e.target.value)}
                   className={styles['input']}
-                  placeholder="e.g., Batch 2024-A"
+                  placeholder="e.g., College of Science"
                   required
                 />
               </label>
               <small style={{ color: '#64748b', fontSize: '12px', marginTop: '4px' }}>
-                This name will help you identify this group of participants
+                This name will help you identify this group of teachers
               </small>
             </div>
 

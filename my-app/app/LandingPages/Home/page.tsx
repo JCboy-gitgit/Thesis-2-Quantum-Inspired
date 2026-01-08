@@ -167,7 +167,7 @@ export default function QtimeHomePage() {
               <Calendar size={36} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
               Welcome to Qtime Scheduler
             </h1>
-            <p className="page-subtitle">Manage your schedules, campuses, and participants efficiently</p>
+            <p className="page-subtitle">Manage your class schedules efficiently</p>
           </div>
 
           {loading ? (
@@ -204,7 +204,7 @@ export default function QtimeHomePage() {
                     <div className="file-section">
                       <h2 className="section-title">
                         <Building2 size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                        Campus Capacity Files
+                        Class Schedules Files
                       </h2>
                       <div className="file-cards">
                         {campusFiles.map((file) => (
@@ -246,7 +246,7 @@ export default function QtimeHomePage() {
                     <div className="file-section">
                       <h2 className="section-title">
                         <Users size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                        Participant Files
+                        Teachers Schedule Files
                       </h2>
                       <div className="file-cards">
                         {participantFiles.map((file) => (

@@ -50,20 +50,31 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   const menuItems = [
     { icon: Home, label: 'Home', path: '/LandingPages/QtimeHomePage' },
-    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/BeforeQtimeHomePage' },
     {
       icon: University,
-      label: 'School Management',
+      label: 'Rooms Management',
       hasSubmenu: true,
       submenu: [
         {
-          label: 'School Capacity',
+          label: '2D / 3D Map Viewer', 
+          path: '/LandingPages/MapViewer',
+          icon: School,
+          exact: true
+        },
+        {
+          label: 'Room List & Details',
           path: '/LandingPages/SchoolCapacity',
           icon: School,
           exact: true
         },
         {
-          label: 'School Schedules',
+          label: 'Add / Edit Rooms',
+          path: '/LandingPages/SchoolCapacity',
+          icon: School,
+          exact: true
+        },
+        {
+          label: 'Search / Filter Rooms',
           path: '/LandingPages/SchoolSchedules',
           icon: CalendarCheck2,
         },
@@ -71,25 +82,44 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     },
     {
       icon: Users,
-      label: 'Participants Management',
+      label: 'Faculty Management',
       hasSubmenu: true,
       submenu: [
         {
-          label: 'Participant Overview',
+          label: 'Faculty Lists',
           path: '/LandingPages/QtimeParticipantsPage',
           icon: Users,
           exact: true
         },
         {
-          label: 'Participant Schedules',
+          label: 'Faculty Profiles',
+          path: '/LandingPages/QtimeParticipantsPage',
+          icon: Users,
+          exact: true
+        },
+        {
+          label: 'Faculty Departments',
           path: '/LandingPages/ParticipantSchedules',
           icon: CalendarCheck2,
         },
       ]
     },
     {
+      icon: Users,
+      label: 'Courses Management',
+      hasSubmenu: true,
+      submenu: [
+        {
+          label: 'Courses Schedules',
+          path: '/LandingPages/CoursesManagement',
+          icon: CalendarCheck2,
+          exact: true
+        },
+      ]
+    },
+    {
       icon: Calendar,
-      label: 'Schedule',
+      label: 'Room Schedule',
       hasSubmenu: true,
       submenu: [
         {
@@ -99,12 +129,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           exact: true
         },
         {
-          label: 'View Schedules',
+          label: 'Room Schedules View',
           path: '/LandingPages/GenerateSchedule/ViewSchedule',
           icon: Eye
         },
       ]
     },
+    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/UploadCSV' },
   ]
 
   const handleNavigation = (path: string) => {
