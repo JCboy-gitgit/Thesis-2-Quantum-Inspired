@@ -1,0 +1,56 @@
+{
+  "status": "SUCCESS",
+  "solve_time_seconds": 0.045,
+  "schedule": [
+    {
+      "course_id": "CS101",
+      "course_name": "Intro to Programming",
+      "room_id": "R101",
+      "room_name": "Room 101",
+      "building": "Main Building",
+      "time_slot_id": 0,
+      "day": "Monday",
+      "start_time": "08:00",
+      "end_time": "09:00",
+      "faculty_id": "F001",
+      "student_count": 35,
+      "room_capacity": 40
+    },
+    {
+      "course_id": "MATH101",
+      "course_name": "Calculus I",
+      "room_id": "R102",
+      "room_name": "Room 102",
+      "building": "Main Building",
+      "time_slot_id": 1,
+      "day": "Monday",
+      "start_time": "09:00",
+      "end_time": "10:00",
+      "faculty_id": "F002",
+      "student_count": 45,
+      "room_capacity": 60
+    },
+    {
+      "course_id": "PHY101",
+      "course_name": "Physics I",
+      "room_id": "R101",
+      "room_name": "Room 101",
+      "building": "Main Building",
+      "time_slot_id": 1,
+      "day": "Monday",
+      "start_time": "09:00",
+      "end_time": "10:00",
+      "faculty_id": "F003",
+      "student_count": 30,
+      "room_capacity": 40
+    }
+  ],
+  "statistics": {
+    "courses": 3,
+    "rooms": 2,
+    "time_slots": 3,
+    "qubits": 15,
+    "qaoa_layers": 1,
+    "objective_value": -57.0
+  }
+}

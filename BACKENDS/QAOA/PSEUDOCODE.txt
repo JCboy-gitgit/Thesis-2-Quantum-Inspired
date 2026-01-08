@@ -1,0 +1,170 @@
+================================================================================
+QAOA (Quantum Approximate Optimization Algorithm) PSEUDOCODE
+================================================================================
+Type: Quantum / Hybrid
+Library: Qiskit
+
+================================================================================
+ALGORITHM OVERVIEW
+================================================================================
+
+INPUT:
+  - courses[]     : List of courses
+  - rooms[]       : List of rooms  
+  - time_slots[]  : List of time slots
+  - p             : Number of QAOA layers (depth)
+  - shots         : Number of measurements
+
+OUTPUT:
+  - schedule[]    : Best assignment found
+  - solve_time    : Time taken
+
+================================================================================
+PSEUDOCODE
+================================================================================
+
+FUNCTION solve_with_qaoa(courses, rooms, time_slots, p, shots):
+    
+    start_time = GET_CURRENT_TIME()
+    
+    // ========== STEP 1: BUILD QUBO MATRIX ==========
+    // Convert problem to: minimize x^T * Q * x
+    
+    n = COUNT_VALID_ASSIGNMENTS(courses, rooms, time_slots)
+    Q = MATRIX(n × n)  // Initialize to zeros
+    
+    // Add objective (minimize waste)
+    FOR i = 0 TO n-1:
+        (course, room, time) = GET_ASSIGNMENT(i)
+        Q[i][i] += (room.capacity - course.students) * 0.1
+    
+    // Add penalty: each course exactly once
+    PENALTY = 10.0
+    FOR each course c:
+        vars_for_c = GET_VARIABLES_FOR_COURSE(c)
+        FOR each i IN vars_for_c:
+            Q[i][i] += -2 * PENALTY      // Linear term
+        FOR each pair (i, j) IN vars_for_c where i < j:
+            Q[i][j] += 2 * PENALTY       // Quadratic term
+    
+    // Add penalty: no room conflicts
+    FOR each room r:
+        FOR each time t:
+            vars_for_rt = GET_VARIABLES_FOR_ROOM_TIME(r, t)
+            FOR each pair (i, j) IN vars_for_rt where i < j:
+                Q[i][j] += 2 * PENALTY
+    
+    
+    // ========== STEP 2: CREATE QAOA CIRCUIT ==========
+    
+    qubits = n  // One qubit per variable
+    
+    FUNCTION create_circuit(gamma[], beta[]):
+        circuit = QUANTUM_CIRCUIT(qubits)
+        
+        // Initial state: equal superposition
+        FOR each qubit q:
+            circuit.H(q)  // Hadamard gate
+        
+        // Repeat p layers
+        FOR layer = 1 TO p:
+            
+            // Cost layer: e^{-i * gamma * H_cost}
+            FOR each (i, j) where Q[i][j] != 0:
+                circuit.RZZ(gamma[layer] * Q[i][j], qubit_i, qubit_j)
+            FOR each i:
+                circuit.RZ(gamma[layer] * Q[i][i], qubit_i)
+            
+            // Mixer layer: e^{-i * beta * H_mixer}
+            FOR each qubit q:
+                circuit.RX(2 * beta[layer], q)
+        
+        RETURN circuit
+    
+    
+    // ========== STEP 3: OPTIMIZE PARAMETERS ==========
+    
+    gamma = RANDOM_INITIAL(p)  // p gamma parameters
+    beta = RANDOM_INITIAL(p)   // p beta parameters
+    
+    FUNCTION evaluate(gamma, beta):
+        circuit = create_circuit(gamma, beta)
+        measurements = RUN_CIRCUIT(circuit, shots)
+        
+        // Calculate expected cost
+        expected_cost = 0
+        FOR each bitstring b IN measurements:
+            count = measurements[b]
+            cost = CALCULATE_QUBO_COST(b, Q)
+            expected_cost += count * cost
+        
+        RETURN expected_cost / shots
+    
+    // Classical optimization loop
+    FOR iteration = 1 TO max_iterations:
+        cost = evaluate(gamma, beta)
+        (gamma, beta) = OPTIMIZER.UPDATE(gamma, beta, cost)
+        
+        IF CONVERGED:
+            BREAK
+    
+    
+    // ========== STEP 4: MEASURE FINAL STATE ==========
+    
+    final_circuit = create_circuit(gamma, beta)
+    measurements = RUN_CIRCUIT(final_circuit, shots)
+    
+    best_bitstring = GET_MOST_FREQUENT(measurements)
+    // OR: best_bitstring = GET_LOWEST_COST(measurements, Q)
+    
+    
+    // ========== STEP 5: EXTRACT SOLUTION ==========
+    
+    solve_time = GET_CURRENT_TIME() - start_time
+    
+    schedule = []
+    FOR i = 0 TO n-1:
+        IF best_bitstring[i] == 1:
+            (course, room, time) = GET_ASSIGNMENT(i)
+            schedule.ADD(course, room, time)
+    
+    RETURN {
+        status: "SUCCESS",
+        schedule: schedule,
+        solve_time: solve_time,
+        qubits: n
+    }
+
+================================================================================
+KEY CONCEPTS
+================================================================================
+
+1. QUBO (Quadratic Unconstrained Binary Optimization)
+   - minimize: x^T * Q * x
+   - x ∈ {0, 1}^n (binary vector)
+   - Q = matrix encoding costs and penalties
+
+2. QUANTUM GATES
+   - H (Hadamard): Creates superposition |0⟩ → (|0⟩+|1⟩)/√2
+   - RZ(θ): Phase rotation around Z-axis
+   - RX(θ): Rotation around X-axis
+   - RZZ(θ): Two-qubit entangling gate
+
+3. QAOA CIRCUIT STRUCTURE
+   |0⟩ ── H ──[Cost(γ)]──[Mixer(β)]── ... ──[Cost(γ)]──[Mixer(β)]── Measure
+
+4. HYBRID LOOP
+   Quantum: Execute circuit, measure
+   Classical: Update γ, β to minimize cost
+
+================================================================================
+COMPLEXITY
+================================================================================
+
+Qubits: O(C × R × T)
+Circuit Depth: O(p × n²) 
+Classical Optimization: O(iterations × shots)
+
+NOTE: Simulation is O(2^n), limiting practical size to ~20 qubits
+
+================================================================================

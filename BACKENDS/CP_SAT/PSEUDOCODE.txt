@@ -1,0 +1,124 @@
+================================================================================
+CP-SAT (Constraint Programming - SAT) PSEUDOCODE
+================================================================================
+Type: Classical Exact Solver
+Library: Google OR-Tools
+
+================================================================================
+ALGORITHM OVERVIEW
+================================================================================
+
+INPUT:
+  - courses[]     : List of courses (id, name, faculty, students)
+  - rooms[]       : List of rooms (id, name, capacity)
+  - time_slots[]  : List of time slots (id, day, start, end)
+
+OUTPUT:
+  - schedule[]    : List of (course, room, time) assignments
+  - solve_time    : Time taken to solve
+
+================================================================================
+PSEUDOCODE
+================================================================================
+
+FUNCTION solve_room_allocation(courses, rooms, time_slots):
+    
+    start_time = GET_CURRENT_TIME()
+    
+    // ========== STEP 1: CREATE VARIABLES ==========
+    // Binary variable x[c][r][t] = 1 if course c is in room r at time t
+    
+    FOR each course c IN courses:
+        FOR each room r IN rooms:
+            FOR each time t IN time_slots:
+                x[c][r][t] = CREATE_BINARY_VARIABLE()
+    
+    
+    // ========== STEP 2: ADD CONSTRAINTS ==========
+    
+    // Constraint 1: Each course scheduled exactly once
+    FOR each course c IN courses:
+        SUM(x[c][r][t] for all r, t) == 1
+    
+    // Constraint 2: No room double-booking
+    FOR each room r IN rooms:
+        FOR each time t IN time_slots:
+            SUM(x[c][r][t] for all c) <= 1
+    
+    // Constraint 3: Room capacity must fit course
+    FOR each course c IN courses:
+        FOR each room r IN rooms:
+            IF room.capacity < course.students:
+                x[c][r][t] = 0  // Forbid this assignment
+    
+    // Constraint 4: No faculty conflicts
+    FOR each time t IN time_slots:
+        FOR each faculty f:
+            courses_by_f = GET_COURSES_BY_FACULTY(f)
+            SUM(x[c][r][t] for c in courses_by_f, all r) <= 1
+    
+    
+    // ========== STEP 3: SET OBJECTIVE ==========
+    // Minimize wasted room capacity
+    
+    objective = 0
+    FOR each assignment (c, r, t):
+        waste = room.capacity - course.students
+        objective += waste * x[c][r][t]
+    
+    MINIMIZE(objective)
+    
+    
+    // ========== STEP 4: SOLVE ==========
+    
+    status = SOLVER.SOLVE()
+    
+    solve_time = GET_CURRENT_TIME() - start_time
+    
+    
+    // ========== STEP 5: EXTRACT SOLUTION ==========
+    
+    schedule = []
+    
+    IF status == OPTIMAL or status == FEASIBLE:
+        FOR each course c:
+            FOR each room r:
+                FOR each time t:
+                    IF x[c][r][t] == 1:
+                        schedule.ADD(course=c, room=r, time=t)
+    
+    RETURN {
+        status: status,
+        schedule: schedule,
+        solve_time: solve_time
+    }
+
+================================================================================
+KEY CONCEPTS
+================================================================================
+
+1. BINARY VARIABLES
+   - x[c][r][t] ∈ {0, 1}
+   - 1 = assignment selected, 0 = not selected
+
+2. CONSTRAINTS (must be satisfied)
+   - Equality: SUM(...) == value
+   - Inequality: SUM(...) <= value
+
+3. OBJECTIVE (to optimize)
+   - MINIMIZE or MAXIMIZE a function
+
+4. SOLVER explores solution space using:
+   - SAT solving (Boolean satisfiability)
+   - Constraint propagation
+   - Branch and bound
+
+================================================================================
+COMPLEXITY
+================================================================================
+
+Variables: O(C × R × T)  where C=courses, R=rooms, T=time_slots
+Time: Polynomial for most cases, exponential worst-case
+Space: O(C × R × T)
+
+================================================================================

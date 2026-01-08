@@ -1,0 +1,227 @@
+================================================================================
+QUBO (Quadratic Unconstrained Binary Optimization) PSEUDOCODE
+================================================================================
+Type: Mathematical Framework + Classical Solver
+Library: NumPy (can export to D-Wave)
+
+================================================================================
+ALGORITHM OVERVIEW
+================================================================================
+
+INPUT:
+  - courses[]     : List of courses
+  - rooms[]       : List of rooms
+  - time_slots[]  : List of time slots
+  - penalty       : Weight for constraint violations
+
+OUTPUT:
+  - schedule[]    : Best assignment found
+  - solve_time    : Time taken
+  - Q_matrix      : QUBO matrix (can export for D-Wave)
+
+================================================================================
+PSEUDOCODE
+================================================================================
+
+FUNCTION solve_with_qubo(courses, rooms, time_slots, penalty):
+    
+    start_time = GET_CURRENT_TIME()
+    
+    
+    // ========== STEP 1: BUILD QUBO MATRIX ==========
+    // QUBO form: minimize f(x) = x^T * Q * x
+    
+    n = COUNT_VALID_ASSIGNMENTS(courses, rooms, time_slots)
+    Q = MATRIX(n × n) initialized to 0
+    
+    
+    // ----- Objective: Minimize room waste -----
+    FOR i = 0 TO n-1:
+        (course, room, time) = GET_ASSIGNMENT(i)
+        waste = room.capacity - course.students
+        Q[i][i] += waste * 0.1    // Diagonal = linear terms
+    
+    
+    // ----- Constraint 1: Each course exactly once -----
+    // Penalty: P * (Σx - 1)² = P * (Σx² + 2Σxᵢxⱼ - 2Σx + 1)
+    // Since x²=x for binary: P * (-Σx + 2Σxᵢxⱼ + 1)
+    
+    FOR each course c:
+        vars = GET_VARIABLES_FOR_COURSE(c)
+        
+        // Linear: -2P for each variable
+        FOR i IN vars:
+            Q[i][i] += -2 * penalty
+        
+        // Quadratic: +2P for each pair
+        FOR each pair (i, j) IN vars where i < j:
+            Q[i][j] += 2 * penalty
+    
+    
+    // ----- Constraint 2: No room double-booking -----
+    // For each (room, time): at most one course
+    
+    FOR each room r:
+        FOR each time t:
+            vars = GET_VARIABLES_FOR_ROOM_TIME(r, t)
+            
+            // Quadratic penalty for pairs
+            FOR each pair (i, j) IN vars where i < j:
+                Q[i][j] += 2 * penalty
+    
+    
+    // ----- Constraint 3: No faculty conflicts -----
+    
+    FOR each time t:
+        FOR each faculty f:
+            vars = GET_VARIABLES_FOR_FACULTY_TIME(f, t)
+            
+            FOR each pair (i, j) IN vars where i < j:
+                Q[i][j] += 2 * penalty
+    
+    
+    // ========== STEP 2: SOLVE WITH SIMULATED ANNEALING ==========
+    
+    x = RANDOM_BINARY_VECTOR(n)
+    current_energy = CALCULATE_ENERGY(x, Q)
+    
+    best_x = COPY(x)
+    best_energy = current_energy
+    
+    temperature = initial_temp  // e.g., 100.0
+    
+    WHILE temperature > final_temp:  // e.g., 0.01
+        
+        // Pick random variable to flip
+        i = RANDOM(0, n-1)
+        
+        // Calculate energy change (efficient method)
+        delta_E = Q[i][i] * (1 - 2*x[i])
+        FOR j = 0 TO n-1:
+            IF j != i:
+                delta_E += Q[min(i,j)][max(i,j)] * x[j] * (1 - 2*x[i])
+        
+        // Metropolis criterion
+        IF delta_E < 0 OR RANDOM() < exp(-delta_E / temperature):
+            x[i] = 1 - x[i]  // Flip bit
+            current_energy += delta_E
+            
+            IF current_energy < best_energy:
+                best_energy = current_energy
+                best_x = COPY(x)
+        
+        // Cool down
+        temperature = temperature * cooling_rate  // e.g., 0.995
+    
+    
+    // ========== STEP 3: EXTRACT SCHEDULE ==========
+    
+    solve_time = GET_CURRENT_TIME() - start_time
+    
+    schedule = []
+    FOR i = 0 TO n-1:
+        IF best_x[i] == 1:
+            (course, room, time) = GET_ASSIGNMENT(i)
+            schedule.ADD(course, room, time)
+    
+    RETURN {
+        status: "SUCCESS",
+        schedule: schedule,
+        solve_time: solve_time,
+        energy: best_energy,
+        Q_matrix: Q
+    }
+
+
+// ========== HELPER FUNCTION ==========
+
+FUNCTION CALCULATE_ENERGY(x, Q):
+    // Energy = x^T * Q * x = Σᵢ Qᵢᵢxᵢ + Σᵢ<ⱼ Qᵢⱼxᵢxⱼ
+    
+    energy = 0
+    FOR i = 0 TO n-1:
+        IF x[i] == 1:
+            energy += Q[i][i]
+            FOR j = i+1 TO n-1:
+                IF x[j] == 1:
+                    energy += Q[i][j]
+    
+    RETURN energy
+
+
+// ========== ALTERNATIVE: TABU SEARCH ==========
+
+FUNCTION solve_tabu(Q, n, tabu_tenure, max_iter):
+    
+    x = RANDOM_BINARY_VECTOR(n)
+    best_x = COPY(x)
+    best_energy = CALCULATE_ENERGY(x, Q)
+    
+    tabu_list = ARRAY(n) filled with -tabu_tenure
+    
+    FOR iteration = 1 TO max_iter:
+        
+        best_move = NULL
+        best_move_energy = INFINITY
+        
+        // Evaluate all possible moves
+        FOR i = 0 TO n-1:
+            is_tabu = (iteration - tabu_list[i]) < tabu_tenure
+            
+            new_energy = energy after flipping x[i]
+            
+            // Accept if not tabu OR aspiration criterion
+            IF (NOT is_tabu) OR (new_energy < best_energy):
+                IF new_energy < best_move_energy:
+                    best_move = i
+                    best_move_energy = new_energy
+        
+        // Make best move
+        x[best_move] = 1 - x[best_move]
+        tabu_list[best_move] = iteration
+        
+        IF best_move_energy < best_energy:
+            best_energy = best_move_energy
+            best_x = COPY(x)
+    
+    RETURN best_x, best_energy
+
+================================================================================
+KEY CONCEPTS
+================================================================================
+
+1. QUBO FORMULATION
+   minimize: f(x) = x^T Q x = Σᵢ Qᵢᵢxᵢ + Σᵢ<ⱼ 2Qᵢⱼxᵢxⱼ
+   
+   - x ∈ {0, 1}^n (binary vector)
+   - Q = upper triangular matrix
+   - Diagonal Qᵢᵢ = linear costs
+   - Off-diagonal Qᵢⱼ = interaction costs
+
+2. CONSTRAINT → PENALTY CONVERSION
+   Equality (Σxᵢ = 1):
+   Penalty = P × (Σxᵢ - 1)²
+           = P × (Σxᵢ² - 2Σxᵢ + 1 + 2Σᵢ<ⱼxᵢxⱼ)
+   
+   For binary (xᵢ² = xᵢ):
+   Linear terms: Qᵢᵢ += -2P
+   Quadratic terms: Qᵢⱼ += 2P
+
+3. SIMULATED ANNEALING
+   - Start with high temperature (accept bad moves)
+   - Gradually cool down (accept only good moves)
+   - Metropolis criterion: accept if ΔE<0 or random<exp(-ΔE/T)
+
+4. D-WAVE EXPORT FORMAT
+   {(i, j): Q[i][j], ...} for non-zero entries
+
+================================================================================
+COMPLEXITY
+================================================================================
+
+Variables: O(C × R × T)
+Matrix Size: O(n²)
+Simulated Annealing: O(iterations × n)
+Tabu Search: O(iterations × n)
+
+================================================================================

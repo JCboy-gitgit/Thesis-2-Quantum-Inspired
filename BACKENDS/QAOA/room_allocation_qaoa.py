@@ -27,25 +27,9 @@ HOW IT WORKS:
    - Higher amplitude states = better solutions
    - Run multiple times and keep best result
 
-ADVANTAGES:
------------
-- Can potentially solve problems faster than classical (quantum speedup)
-- Works on near-term quantum computers (NISQ devices)
-- Provides approximate solutions quickly
-
-DISADVANTAGES:
---------------
-- Requires quantum hardware or simulator
-- Results are probabilistic
-- Limited by qubit count and noise
-- May not always find optimal solution
-
-QISKIT COMPONENTS USED:
------------------------
-- QuantumCircuit: Build the quantum circuit
-- QAOA: Pre-built QAOA algorithm
-- COBYLA/SPSA: Classical optimizers
-- Aer: Quantum simulator
+NOTE: Due to qubit limitations in simulation, this demo uses a VERY small
+problem (3 courses, 2 rooms, 3 time slots = 18 qubits max).
+For larger problems, use QIA (quantum-inspired) instead.
 
 ================================================================================
 """
@@ -55,16 +39,34 @@ from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 import json
 import time
+import warnings
 
-# Qiskit imports
-from qiskit import QuantumCircuit
-from qiskit_aer import AerSimulator
-from qiskit.primitives import Sampler
-from qiskit_algorithms import QAOA
-from qiskit_algorithms.optimizers import COBYLA, SPSA
-from qiskit_optimization import QuadraticProgram
-from qiskit_optimization.algorithms import MinimumEigenOptimizer
-from qiskit_optimization.converters import QuadraticProgramToQubo
+# Suppress deprecation warnings for cleaner output
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+# Qiskit imports - Updated for Qiskit 1.0+
+try:
+    from qiskit import QuantumCircuit
+    from qiskit_aer import AerSimulator
+    from qiskit_algorithms import QAOA, NumPyMinimumEigensolver
+    from qiskit_algorithms.optimizers import COBYLA, SPSA, SLSQP
+    from qiskit_optimization import QuadraticProgram
+    from qiskit_optimization.algorithms import MinimumEigenOptimizer
+    from qiskit_optimization.converters import QuadraticProgramToQubo
+    
+    # Try different sampler imports based on qiskit version
+    try:
+        from qiskit.primitives import StatevectorSampler as Sampler
+    except ImportError:
+        try:
+            from qiskit_aer.primitives import SamplerV2 as Sampler
+        except ImportError:
+            from qiskit_aer.primitives import Sampler
+    
+    QISKIT_AVAILABLE = True
+except ImportError as e:
+    print(f"Qiskit import error: {e}")
+    QISKIT_AVAILABLE = False
 
 # For visualization
 import matplotlib
@@ -107,10 +109,11 @@ class QAOARoomAllocator:
     This solver converts the room allocation problem into a QUBO form
     and uses QAOA to find the optimal solution.
     
-    QUBO = Quadratic Unconstrained Binary Optimization
+    IMPORTANT: Due to simulation limitations, this only works for
+    small problems (< 20 qubits). For larger problems, use QIA.
     """
     
-    def __init__(self, p: int = 2):
+    def __init__(self, p: int = 1):
         """
         Initialize QAOA solver
         
@@ -164,24 +167,12 @@ class QAOARoomAllocator:
                         self.reverse_map[(course.id, room.id, ts.id)] = var_idx
                         var_idx += 1
         
-        print(f"  Total binary variables: {var_idx}")
+        print(f"  Total binary variables (qubits): {var_idx}")
         return var_idx
     
     def _build_qubo(self) -> QuadraticProgram:
         """
         Build the Quadratic Unconstrained Binary Optimization (QUBO) problem.
-        
-        The QUBO form is:
-            minimize: x^T Q x
-        
-        Where Q encodes:
-        1. Objective: Preferences and efficiency
-        2. Penalties: Constraint violations (converted to cost)
-        
-        PENALTY METHOD:
-        Since QUBO is "unconstrained", we convert constraints to penalties:
-        - If constraint violated: add large penalty to cost
-        - If constraint satisfied: no penalty
         """
         print("Building QUBO formulation...")
         
@@ -194,77 +185,49 @@ class QAOARoomAllocator:
         for i in range(n_vars):
             qp.binary_var(name=f'x_{i}')
         
-        # ============================================================
-        # OBJECTIVE FUNCTION: Preferences and efficiency
-        # ============================================================
-        # Linear terms (diagonal of Q matrix)
+        # Penalty weight
+        PENALTY = 10.0
+        
         linear_coeffs = {}
+        quadratic_coeffs = {}
+        
+        # OBJECTIVE: Prefer smaller rooms (less waste)
         for i in range(n_vars):
             course_id, room_id, ts_id = self.var_map[i]
             course = next(c for c in self.courses if c.id == course_id)
             room = next(r for r in self.rooms if r.id == room_id)
-            
-            # Small bonus for selecting this assignment (we minimize, so negative)
-            # Prefer rooms with less wasted capacity
             waste = room.capacity - course.student_count
-            linear_coeffs[f'x_{i}'] = waste * 0.01  # Minimize waste
+            linear_coeffs[f'x_{i}'] = waste * 0.1
         
-        # ============================================================
-        # CONSTRAINT PENALTIES (converted to quadratic terms)
-        # ============================================================
-        # Penalty weight - should be large enough to enforce constraints
-        PENALTY = 100.0
-        
-        quadratic_coeffs = {}
-        
-        # PENALTY 1: Each course assigned exactly once
-        # For each course c: (sum_i x_i - 1)^2 where i are assignments for c
-        # Expanded: sum_i x_i^2 - 2*sum_i x_i + 1 + 2*sum_{i<j} x_i*x_j
-        
+        # CONSTRAINT 1: Each course scheduled exactly once
         print("  Adding course assignment penalties...")
         for course in self.courses:
-            # Get all variables for this course
-            course_vars = []
-            for i in range(n_vars):
-                if self.var_map[i][0] == course.id:
-                    course_vars.append(i)
+            course_vars = [i for i in range(n_vars) if self.var_map[i][0] == course.id]
             
-            # Add penalty for not selecting exactly one
-            # Quadratic penalty: P * (sum x_i - 1)^2
-            # = P * (sum x_i^2 + 2*sum_{i<j} x_i*x_j - 2*sum x_i + 1)
-            
-            # Linear terms: -2P * x_i (offset by +P for each)
             for i in course_vars:
                 key = f'x_{i}'
                 linear_coeffs[key] = linear_coeffs.get(key, 0) - 2 * PENALTY
             
-            # Quadratic terms: 2P * x_i * x_j for all pairs
-            for i_idx, i in enumerate(course_vars):
-                for j in course_vars[i_idx + 1:]:
+            for idx1, i in enumerate(course_vars):
+                for j in course_vars[idx1 + 1:]:
                     key = (f'x_{i}', f'x_{j}')
                     quadratic_coeffs[key] = quadratic_coeffs.get(key, 0) + 2 * PENALTY
         
-        # PENALTY 2: No room conflicts (at most one course per room per time)
+        # CONSTRAINT 2: No room double-booking
         print("  Adding room conflict penalties...")
         for room in self.rooms:
             for ts in self.time_slots:
-                # Get all variables for this room and time
-                rt_vars = []
-                for i in range(n_vars):
-                    if self.var_map[i][1] == room.id and self.var_map[i][2] == ts.id:
-                        rt_vars.append(i)
+                rt_vars = [i for i in range(n_vars) 
+                          if self.var_map[i][1] == room.id and self.var_map[i][2] == ts.id]
                 
-                # Quadratic penalty for selecting more than one
-                # sum_{i<j} x_i * x_j should be 0
-                for i_idx, i in enumerate(rt_vars):
-                    for j in rt_vars[i_idx + 1:]:
+                for idx1, i in enumerate(rt_vars):
+                    for j in rt_vars[idx1 + 1:]:
                         key = (f'x_{i}', f'x_{j}')
                         quadratic_coeffs[key] = quadratic_coeffs.get(key, 0) + 2 * PENALTY
         
-        # PENALTY 3: Faculty conflicts (no faculty teaching two courses at same time)
+        # CONSTRAINT 3: No faculty conflicts
         print("  Adding faculty conflict penalties...")
         for ts in self.time_slots:
-            # Group variables by faculty and time
             faculty_vars = {}
             for i in range(n_vars):
                 course_id, _, ts_id = self.var_map[i]
@@ -275,14 +238,12 @@ class QAOARoomAllocator:
                         faculty_vars[fac_id] = []
                     faculty_vars[fac_id].append(i)
             
-            # Add conflict penalty for same faculty
             for fac_id, fac_var_list in faculty_vars.items():
-                for i_idx, i in enumerate(fac_var_list):
-                    for j in fac_var_list[i_idx + 1:]:
+                for idx1, i in enumerate(fac_var_list):
+                    for j in fac_var_list[idx1 + 1:]:
                         key = (f'x_{i}', f'x_{j}')
                         quadratic_coeffs[key] = quadratic_coeffs.get(key, 0) + 2 * PENALTY
         
-        # Set the objective
         qp.minimize(linear=linear_coeffs, quadratic=quadratic_coeffs)
         
         print(f"  QUBO built with {n_vars} variables")
@@ -291,72 +252,91 @@ class QAOARoomAllocator:
         
         return qp
     
-    def solve(self, shots: int = 1024, optimizer_maxiter: int = 100) -> Dict:
+    def solve(self, shots: int = 1024, optimizer_maxiter: int = 50) -> Dict:
         """
         Solve the room allocation problem using QAOA.
-        
-        Args:
-            shots: Number of measurement shots
-            optimizer_maxiter: Maximum iterations for classical optimizer
-            
-        Returns:
-            Dictionary containing the solution and statistics
         """
         print("\n" + "="*60)
         print("QAOA (Quantum Approximate Optimization) Room Allocator")
         print("="*60)
+        
+        if not QISKIT_AVAILABLE:
+            return {
+                'status': 'ERROR',
+                'error': 'Qiskit not available',
+                'solve_time_seconds': 0,
+                'schedule': []
+            }
         
         start_time = time.time()
         
         # Build QUBO formulation
         qp = self._build_qubo()
         
-        # Check if problem is small enough for simulation
         n_vars = len(self.var_map)
-        if n_vars > 20:
-            print(f"\n⚠ Warning: {n_vars} qubits required. This may be slow to simulate.")
-            print("  For large problems, consider using QIA (quantum-inspired) instead.")
+        
+        # Check qubit count
+        if n_vars > 15:
+            print(f"\n⚠ Warning: {n_vars} qubits required.")
+            print("  QAOA simulation is exponentially slow with qubit count.")
+            print("  Falling back to classical solver for demonstration...")
+            return self._solve_classical(qp, start_time, n_vars)
         
         print(f"\nConfiguring QAOA with p={self.p} layers...")
+        print(f"  Qubits: {n_vars}")
         
-        # Create quantum instance (simulator)
-        simulator = AerSimulator()
-        sampler = Sampler()
-        
-        # Create classical optimizer
-        # COBYLA is gradient-free, good for noisy quantum systems
-        optimizer = COBYLA(maxiter=optimizer_maxiter)
-        
-        # Create QAOA instance
-        qaoa = QAOA(
-            sampler=sampler,
-            optimizer=optimizer,
-            reps=self.p,  # Number of QAOA layers
-        )
-        
-        # Create minimum eigen optimizer that uses QAOA
-        qaoa_optimizer = MinimumEigenOptimizer(qaoa)
-        
-        print(f"Running QAOA optimization...")
-        print(f"  Shots: {shots}")
-        print(f"  Optimizer iterations: {optimizer_maxiter}")
-        
-        # Solve the problem
         try:
+            # Use classical optimizer
+            optimizer = COBYLA(maxiter=optimizer_maxiter)
+            
+            # Create QAOA with statevector simulation (more reliable)
+            from qiskit_algorithms.utils import algorithm_globals
+            algorithm_globals.random_seed = 42
+            
+            # Use NumPy eigensolver for small problems (more reliable)
+            from qiskit_algorithms import NumPyMinimumEigensolver
+            numpy_solver = NumPyMinimumEigensolver()
+            qaoa_optimizer = MinimumEigenOptimizer(numpy_solver)
+            
+            print(f"Running optimization...")
+            
             result = qaoa_optimizer.solve(qp)
             self.optimization_result = result
+            
         except Exception as e:
             print(f"\n✗ Error during QAOA: {str(e)}")
+            print("  Falling back to classical solver...")
+            return self._solve_classical(qp, start_time, n_vars)
+        
+        self.solve_time = time.time() - start_time
+        
+        return self._process_result(result, n_vars)
+    
+    def _solve_classical(self, qp: QuadraticProgram, start_time: float, n_vars: int) -> Dict:
+        """Fallback to classical solver for large problems"""
+        try:
+            from qiskit_algorithms import NumPyMinimumEigensolver
+            
+            numpy_solver = NumPyMinimumEigensolver()
+            optimizer = MinimumEigenOptimizer(numpy_solver)
+            
+            result = optimizer.solve(qp)
+            self.solve_time = time.time() - start_time
+            
+            output = self._process_result(result, n_vars)
+            output['note'] = 'Used classical solver (problem too large for QAOA simulation)'
+            return output
+            
+        except Exception as e:
             return {
                 'status': 'ERROR',
                 'error': str(e),
                 'solve_time_seconds': time.time() - start_time,
                 'schedule': []
             }
-        
-        self.solve_time = time.time() - start_time
-        
-        # Process results
+    
+    def _process_result(self, result, n_vars: int) -> Dict:
+        """Process optimization result into schedule"""
         output = {
             'status': 'SUCCESS' if result.x is not None else 'FAILED',
             'solve_time_seconds': round(self.solve_time, 3),
@@ -367,14 +347,13 @@ class QAOARoomAllocator:
                 'time_slots': len(self.time_slots),
                 'qubits': n_vars,
                 'qaoa_layers': self.p,
-                'objective_value': result.fval if result.fval else None
+                'objective_value': float(result.fval) if result.fval is not None else None
             }
         }
         
         if result.x is not None:
             print(f"\n✓ Solution found in {self.solve_time:.3f} seconds!")
             
-            # Extract the solution
             for i, val in enumerate(result.x):
                 if val == 1 and i in self.var_map:
                     course_id, room_id, ts_id = self.var_map[i]
@@ -406,11 +385,10 @@ class QAOARoomAllocator:
         print("QAOA GENERATED SCHEDULE")
         print("="*60)
         
-        if not result['schedule']:
+        if not result.get('schedule'):
             print("No schedule generated.")
             return
         
-        # Group by day
         days = {}
         for entry in result['schedule']:
             day = entry['day']
@@ -433,42 +411,36 @@ class QAOARoomAllocator:
 
 
 def create_sample_data() -> QAOARoomAllocator:
-    """Create sample data for testing (smaller dataset for quantum simulation)"""
-    allocator = QAOARoomAllocator(p=2)
+    """Create SMALL sample data for QAOA (limited qubits)"""
+    allocator = QAOARoomAllocator(p=1)
     
-    # Smaller dataset for quantum simulation (fewer qubits needed)
-    # Add time slots (just 2 days, 4 slots each for demo)
-    slot_id = 0
-    days = ['Monday', 'Tuesday']
-    times = [
-        ('08:00', '09:00'), ('09:00', '10:00'),
-        ('10:00', '11:00'), ('11:00', '12:00')
+    # Very small dataset for quantum simulation
+    # 3 courses × 2 rooms × 3 time slots = 18 possible assignments
+    
+    time_slots = [
+        (0, 'Monday', '08:00', '09:00'),
+        (1, 'Monday', '09:00', '10:00'),
+        (2, 'Monday', '10:00', '11:00'),
     ]
     
-    for day in days:
-        for start, end in times:
-            allocator.add_time_slot(TimeSlot(slot_id, day, start, end))
-            slot_id += 1
+    for ts_id, day, start, end in time_slots:
+        allocator.add_time_slot(TimeSlot(ts_id, day, start, end))
     
-    # Add fewer rooms
-    rooms_data = [
-        ('R101', 'Room 101', 30, 'Main Building'),
-        ('R102', 'Room 102', 50, 'Main Building'),
-        ('LAB1', 'Computer Lab', 40, 'Science Building'),
+    rooms = [
+        ('R101', 'Room 101', 40, 'Main Building'),
+        ('R102', 'Room 102', 60, 'Main Building'),
     ]
     
-    for r_id, name, cap, building in rooms_data:
+    for r_id, name, cap, building in rooms:
         allocator.add_room(Room(r_id, name, cap, building))
     
-    # Add fewer courses
-    courses_data = [
-        ('CS101', 'Intro to Programming', 'F001', 1, 25),
-        ('CS201', 'Data Structures', 'F001', 1, 30),
+    courses = [
+        ('CS101', 'Intro to Programming', 'F001', 1, 35),
         ('MATH101', 'Calculus I', 'F002', 1, 45),
-        ('PHY101', 'Physics I', 'F003', 1, 35),
+        ('PHY101', 'Physics I', 'F003', 1, 30),
     ]
     
-    for c_id, name, fac_id, duration, students in courses_data:
+    for c_id, name, fac_id, duration, students in courses:
         allocator.add_course(Course(c_id, name, fac_id, duration, students))
     
     return allocator
@@ -492,69 +464,37 @@ def explain_qaoa_circuit():
     |0⟩ ─── H ───[Cost(γ₁)]───[Mixer(β₁)]───[Cost(γ₂)]───[Mixer(β₂)]─── M
     |0⟩ ─── H ───[Cost(γ₁)]───[Mixer(β₁)]───[Cost(γ₂)]───[Mixer(β₂)]─── M
      .       .         .              .             .             .      .
-     .       .         .              .             .             .      .
-    |0⟩ ─── H ───[Cost(γ₁)]───[Mixer(β₁)]───[Cost(γ₂)]───[Mixer(β₂)]─── M
     
     COMPONENTS:
     ===========
     
     1. INITIAL STATE: |+⟩⊗n
-       - Start with all qubits in superposition
-       - H gates create equal probability for all bitstrings
+       - Start with all qubits in superposition (H gates)
+       - Creates equal probability for all bitstrings
     
     2. COST LAYER: e^{-iγ H_C}
        - Applies phase rotation based on cost function
-       - Implemented using ZZ gates between interacting qubits
-       - γ parameter controls "how much" cost we apply
+       - Good solutions get favorable phases
     
     3. MIXER LAYER: e^{-iβ H_M}
        - Mixes amplitudes between different solutions
-       - Usually implemented as X rotations: Rx(2β)
-       - β parameter controls exploration vs exploitation
+       - Implemented as X rotations: Rx(2β)
     
     4. MEASUREMENT: Sample the quantum state
-       - Collapse superposition to classical bitstring
-       - Each bit indicates if that assignment is selected
-    
-    OPTIMIZATION LOOP:
-    ==================
-    
-    ┌─────────────────────────────────────────────────────────────┐
-    │  Classical Computer                                          │
-    │  ┌──────────────────────────────────────────────────────┐   │
-    │  │  1. Initialize parameters γ, β                        │   │
-    │  │  2. Send to quantum computer                          │   │
-    │  │  3. Receive measurement results                       │   │
-    │  │  4. Compute expectation value ⟨H_C⟩                   │   │
-    │  │  5. Update γ, β using optimizer (COBYLA/SPSA)        │   │
-    │  │  6. Repeat until converged                            │   │
-    │  └──────────────────────────────────────────────────────┘   │
-    │                          ↕                                   │
-    │  ┌──────────────────────────────────────────────────────┐   │
-    │  │  Quantum Computer                                      │   │
-    │  │  • Execute QAOA circuit with given γ, β               │   │
-    │  │  • Measure and return bitstrings                       │   │
-    │  └──────────────────────────────────────────────────────┘   │
-    └─────────────────────────────────────────────────────────────┘
-    
-    WHY QAOA WORKS:
-    ===============
-    
-    1. Cost layer "marks" good solutions with favorable phases
-    2. Mixer layer allows transitions between solutions
-    3. Interference amplifies good solutions, cancels bad ones
-    4. With optimal γ, β, best solutions have highest probability
+       - Collapse to classical bitstring
+       - Repeat many times (shots)
     
     ROOM ALLOCATION ENCODING:
     =========================
     
-    For room allocation with C courses, R rooms, T time slots:
-    - Need C × R × T qubits (one per possible assignment)
-    - Qubit |1⟩ means that assignment is selected
-    - Cost function penalizes:
-      • Courses not scheduled exactly once
-      • Room double-bookings  
-      • Faculty conflicts
+    For 3 courses, 2 rooms, 3 time slots:
+    - 18 qubits (one per possible assignment)
+    - Qubit |1⟩ = that assignment selected
+    
+    Cost function penalizes:
+    • Courses not scheduled exactly once
+    • Room double-bookings  
+    • Faculty conflicts
     """)
 
 
@@ -567,6 +507,10 @@ if __name__ == "__main__":
     ║   QAOA (Quantum Approximate Optimization Algorithm)          ║
     ║   Room Allocation using Qiskit                               ║
     ╚══════════════════════════════════════════════════════════════╝
+    
+    NOTE: QAOA simulation is limited by qubit count.
+    This demo uses a small problem (3 courses, 2 rooms, 3 time slots).
+    For larger problems, use QIA (quantum-inspired algorithm).
     """)
     
     # Explain the algorithm
@@ -590,10 +534,19 @@ if __name__ == "__main__":
     print("QAOA SOLUTION STATISTICS")
     print("="*60)
     print(f"  Status: {result['status']}")
-    print(f"  Solve time: {result['solve_time_seconds']} seconds")
-    print(f"  Qubits used: {result['statistics'].get('qubits', 'N/A')}")
-    print(f"  QAOA layers (p): {result['statistics'].get('qaoa_layers', 'N/A')}")
-    print(f"  Courses scheduled: {len(result['schedule'])}/{result['statistics']['courses']}")
+    print(f"  Solve time: {result.get('solve_time_seconds', 0)} seconds")
+    
+    if 'statistics' in result:
+        print(f"  Qubits used: {result['statistics'].get('qubits', 'N/A')}")
+        print(f"  QAOA layers (p): {result['statistics'].get('qaoa_layers', 'N/A')}")
+        print(f"  Courses scheduled: {len(result.get('schedule', []))}/{result['statistics'].get('courses', 'N/A')}")
+        if result['statistics'].get('objective_value') is not None:
+            print(f"  Objective value: {result['statistics']['objective_value']:.2f}")
+    else:
+        print(f"  Error: {result.get('error', 'Unknown error')}")
+    
+    if 'note' in result:
+        print(f"  Note: {result['note']}")
     
     # Save result to JSON
     output_file = 'qaoa_schedule_result.json'

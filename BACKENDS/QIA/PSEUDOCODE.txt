@@ -1,0 +1,230 @@
+================================================================================
+QIA (Quantum-Inspired Algorithm) PSEUDOCODE
+================================================================================
+Type: Classical (simulating quantum behavior)
+Library: NumPy only
+
+================================================================================
+ALGORITHM OVERVIEW
+================================================================================
+
+INPUT:
+  - courses[]       : List of courses
+  - rooms[]         : List of rooms
+  - time_slots[]    : List of time slots
+  - population_size : Number of candidate solutions
+  - max_generations : Maximum iterations
+
+OUTPUT:
+  - schedule[]      : Best assignment found
+  - solve_time      : Time taken
+
+================================================================================
+PSEUDOCODE
+================================================================================
+
+FUNCTION solve_with_qia(courses, rooms, time_slots, pop_size, max_gen):
+    
+    start_time = GET_CURRENT_TIME()
+    
+    n = COUNT_VALID_ASSIGNMENTS(courses, rooms, time_slots)
+    
+    
+    // ========== STEP 1: INITIALIZE POPULATION ==========
+    // Each individual has quantum-like probability amplitudes
+    
+    population = []
+    FOR i = 1 TO pop_size:
+        individual = {
+            alpha: ARRAY(n) filled with 1/√2,  // P(x=0) amplitude
+            beta:  ARRAY(n) filled with 1/√2,  // P(x=1) amplitude
+            solution: ARRAY(n) of 0s,
+            fitness: 0
+        }
+        population.ADD(individual)
+    
+    best_solution = NULL
+    best_fitness = -INFINITY
+    
+    
+    // ========== STEP 2: MAIN EVOLUTION LOOP ==========
+    
+    FOR generation = 1 TO max_gen:
+        
+        // Calculate annealing parameters (decrease over time)
+        progress = generation / max_gen
+        rotation_angle = 0.1π * (1 - progress) + 0.01π * progress
+        mutation_rate = 0.3 * (1 - progress) + 0.05 * progress
+        
+        
+        FOR each individual IN population:
+            
+            // ----- STEP 2a: QUANTUM ROTATION (Q-Gate) -----
+            // Rotate amplitudes towards best solution
+            
+            FOR i = 0 TO n-1:
+                IF best_solution[i] == 1 AND individual.solution[i] == 0:
+                    // Increase probability of 1
+                    delta = +rotation_angle
+                ELSE IF best_solution[i] == 0 AND individual.solution[i] == 1:
+                    // Decrease probability of 1
+                    delta = -rotation_angle
+                ELSE:
+                    delta = small random value
+                
+                // Apply rotation matrix
+                // [cos(δ)  -sin(δ)] [α]   [α']
+                // [sin(δ)   cos(δ)] [β] = [β']
+                
+                new_alpha = cos(delta) * alpha[i] - sin(delta) * beta[i]
+                new_beta  = sin(delta) * alpha[i] + cos(delta) * beta[i]
+                
+                // Normalize
+                norm = sqrt(new_alpha² + new_beta²)
+                alpha[i] = new_alpha / norm
+                beta[i] = new_beta / norm
+            
+            
+            // ----- STEP 2b: QUANTUM MUTATION (Tunneling) -----
+            // Random rotations to escape local minima
+            
+            FOR i = 0 TO n-1:
+                IF RANDOM() < mutation_rate:
+                    random_angle = RANDOM(-π/4, +π/4)
+                    // Apply same rotation as above with random_angle
+                    ...
+            
+            
+            // ----- STEP 2c: OBSERVATION (Measurement) -----
+            // Collapse superposition to binary solution
+            
+            FOR i = 0 TO n-1:
+                probability_of_1 = beta[i]²
+                IF RANDOM() < probability_of_1:
+                    solution[i] = 1
+                ELSE:
+                    solution[i] = 0
+            
+            
+            // ----- STEP 2d: REPAIR SOLUTION -----
+            // Fix constraint violations
+            
+            solution = REPAIR(solution)
+            
+            
+            // ----- STEP 2e: EVALUATE FITNESS -----
+            
+            fitness = CALCULATE_FITNESS(solution)
+            
+            // Update global best
+            IF fitness > best_fitness:
+                best_fitness = fitness
+                best_solution = COPY(solution)
+    
+    
+    // ========== STEP 3: EXTRACT SCHEDULE ==========
+    
+    solve_time = GET_CURRENT_TIME() - start_time
+    
+    schedule = []
+    FOR i = 0 TO n-1:
+        IF best_solution[i] == 1:
+            (course, room, time) = GET_ASSIGNMENT(i)
+            schedule.ADD(course, room, time)
+    
+    RETURN {
+        status: "SUCCESS",
+        schedule: schedule,
+        solve_time: solve_time,
+        fitness: best_fitness
+    }
+
+
+// ========== HELPER FUNCTIONS ==========
+
+FUNCTION CALCULATE_FITNESS(solution):
+    fitness = 0
+    
+    // Reward: Each scheduled course
+    FOR each selected assignment:
+        fitness += 100
+        // Bonus for efficient room usage
+        waste_ratio = (room.capacity - course.students) / room.capacity
+        fitness += 10 * (1 - waste_ratio)
+    
+    // Penalty: Unscheduled courses
+    FOR each course:
+        IF course not scheduled:
+            fitness -= 1000
+        IF course scheduled multiple times:
+            fitness -= 500
+    
+    // Penalty: Room conflicts
+    FOR each (room, time) with multiple courses:
+        fitness -= 500
+    
+    // Penalty: Faculty conflicts
+    FOR each (faculty, time) with multiple courses:
+        fitness -= 500
+    
+    RETURN fitness
+
+
+FUNCTION REPAIR(solution):
+    // Ensure each course scheduled exactly once
+    
+    FOR each course c:
+        assignments = GET_ASSIGNMENTS_FOR_COURSE(c, solution)
+        
+        IF COUNT(assignments) == 0:
+            // Find best available slot
+            best = FIND_AVAILABLE_SLOT(c)
+            solution[best] = 1
+            
+        ELSE IF COUNT(assignments) > 1:
+            // Keep only best, remove others
+            best = GET_BEST_ASSIGNMENT(assignments)
+            FOR each a IN assignments:
+                IF a != best:
+                    solution[a] = 0
+    
+    RETURN solution
+
+================================================================================
+KEY CONCEPTS
+================================================================================
+
+1. QUANTUM SUPERPOSITION (simulated)
+   - Each variable has amplitudes (α, β)
+   - |α|² + |β|² = 1
+   - |α|² = P(x=0), |β|² = P(x=1)
+
+2. Q-GATE ROTATION
+   - Rotates amplitudes towards better solutions
+   - Similar to Grover's amplitude amplification
+   - Rotation matrix: [cos θ, -sin θ; sin θ, cos θ]
+
+3. QUANTUM TUNNELING (simulated)
+   - Random rotations allow escaping local minima
+   - Probability decreases over time (annealing)
+
+4. MEASUREMENT
+   - Collapse probabilities to binary values
+   - Sample based on |β|²
+
+5. ANNEALING
+   - Parameters decrease over generations
+   - Early: High exploration (large rotations)
+   - Late: High exploitation (small rotations)
+
+================================================================================
+COMPLEXITY
+================================================================================
+
+Variables: O(C × R × T)
+Time: O(generations × population × n)
+Space: O(population × n)
+
+Scales well to large problems (unlike QAOA)
+
+================================================================================
