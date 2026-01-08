@@ -5,17 +5,21 @@ import { useRouter, usePathname } from 'next/navigation'
 import {
   Home,
   Upload,
-  Building2,
   Users,
   Calendar,
   ChevronDown,
   ChevronRight,
   CalendarPlus,
   Eye,
-  ClipboardList,
-  University,
-  School,
-  CalendarCheck2
+  Building2,
+  Map,
+  List,
+  PenSquare,
+  Search,
+  UserCircle,
+  Building,
+  GraduationCap,
+  BookOpen
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -34,13 +38,16 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     // Only expand the relevant submenu, not all at once
     const newOpen: { [key: number]: boolean } = {}
     menuItems.forEach((item, idx) => {
-      if (item.hasSubmenu && item.label === 'Schedule' && pathname.includes('/GenerateSchedule')) {
+      if (item.hasSubmenu && item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
         newOpen[idx] = true
       }
-      if (item.hasSubmenu && item.label === 'School Management' && (pathname.includes('/SchoolCapacity') || pathname.includes('/SchoolSchedules'))) {
+      if (item.hasSubmenu && item.label === 'Room Management' && pathname.includes('/Rooms-Management')) {
         newOpen[idx] = true
       }
-      if (item.hasSubmenu && item.label === 'Participants Management' && (pathname.includes('/QtimeParticipantsPage') || pathname.includes('/ParticipantSchedules'))) {
+      if (item.hasSubmenu && item.label === 'Faculty Management' && pathname.includes('/FacultyManagement')) {
+        newOpen[idx] = true
+      }
+      if (item.hasSubmenu && item.label === 'Courses Management' && pathname.includes('/CoursesManagement')) {
         newOpen[idx] = true
       }
     })
@@ -49,71 +56,72 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   }, [pathname])
 
   const menuItems = [
-    { icon: Home, label: 'Home', path: '/LandingPages/QtimeHomePage' },
+    { icon: Home, label: 'Home', path: '/LandingPages/Home' },
     {
-      icon: University,
+      icon: Building2,
       label: 'Rooms Management',
-      path: '/LandingPages/Rooms Management',
+      path: '/LandingPages/Rooms-Management',
       hasSubmenu: true,
       submenu: [
         {
           label: '2D / 3D Map Viewer', 
-          path: '/LandingPages/RoomsManagement/MapViewer',
-          icon: School,
+          path: '/LandingPages/Rooms-Management/MapViewer',
+          icon: Map,
           exact: true
         },
         {
           label: 'Room List & Details',
-          path: '/LandingPages/RoomsManagement/RoomLists&Details',
-          icon: School,
+          path: '/LandingPages/Rooms-Management/RoomLists&Details',
+          icon: List,
           exact: true
         },
         {
           label: 'Add / Edit Rooms',
-          path: '/LandingPages/RoomsManagement/Add-EditRooms',
-          icon: School,
+          path: '/LandingPages/Rooms-Management/Add-EditRooms',
+          icon: PenSquare,
           exact: true
         },
         {
           label: 'Search / Filter Rooms',
-          path: '/LandingPages/RoomsManagement/Search-FilterRooms',
-          icon: CalendarCheck2,
+          path: '/LandingPages/Rooms-Management/Search-FilterRooms',
+          icon: Search,
         },
       ]
     },
     {
       icon: Users,
       label: 'Faculty Management',
+       path: '/LandingPages/FacultyManagement',
       hasSubmenu: true,
       submenu: [
         {
           label: 'Faculty Lists',
-          path: '/LandingPages/QtimeParticipantsPage',
-          icon: Users,
+          path: '/LandingPages/FacultyManagement/FacultyLists',
+          icon: List,
           exact: true
         },
         {
           label: 'Faculty Profiles',
-          path: '/LandingPages/QtimeParticipantsPage',
-          icon: Users,
+          path: '/LandingPages/FacultyManagement/FacultyProfiles',
+          icon: UserCircle,
           exact: true
         },
         {
           label: 'Faculty Departments',
-          path: '/LandingPages/ParticipantSchedules',
-          icon: CalendarCheck2,
+          path: '/LandingPages/FacultyManagement/FacultyDepartments',
+          icon: Building,
         },
       ]
     },
     {
-      icon: Users,
+      icon: GraduationCap,
       label: 'Courses Management',
       hasSubmenu: true,
       submenu: [
         {
           label: 'Courses Schedules',
           path: '/LandingPages/CoursesManagement',
-          icon: CalendarCheck2,
+          icon: BookOpen,
           exact: true
         },
       ]
@@ -121,17 +129,18 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     {
       icon: Calendar,
       label: 'Room Schedule',
+       path: '/LandingPages/RoomSchedule',
       hasSubmenu: true,
       submenu: [
         {
           label: 'Generate Schedule',
-          path: '/LandingPages/GenerateSchedule',
+          path: '/LandingPages/RoomSchedule/GenerateSchedule',
           icon: CalendarPlus,
           exact: true
         },
         {
           label: 'Room Schedules View',
-          path: '/LandingPages/GenerateSchedule/ViewSchedule',
+          path: '/LandingPages/RoomSchedule/ViewSchedule',
           icon: Eye
         },
       ]

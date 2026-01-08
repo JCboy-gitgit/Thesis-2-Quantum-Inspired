@@ -122,7 +122,7 @@ body {
 .logo-text {
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #00d4ff, #ffd700);
+  background: linear-gradient(135deg, #ffee01, #4cff96);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -852,7 +852,7 @@ body {
 @media (prefers-color-scheme: dark) {
   :root {
     --dark-bg: #0a0e27;
-    --card-bg: rgba(20, 26, 50, 0.98);
+    --card-bg: rgba(0, 88, 38);
   }
 }
 

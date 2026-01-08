@@ -1,59 +1,32 @@
-'use client';
+'use client'
 
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
-import MenuBar from '@/app/components/MenuBar';
-import Sidebar from '@/app/components/Sidebar';
-import { 
-  Users, 
-  ArrowLeft, 
-  Search, 
-  FolderOpen, 
-  Calendar,
-  UserPlus,
-  Edit2,
-  Trash2,
-  Settings,
-  Check,
-  X,
-  BarChart3,
-  Accessibility,
-  Mail,
-  MapPin,
-  AlertTriangle
-} from 'lucide-react';
-import './styles.css';
+import { Suspense, useEffect, useState, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import MenuBar from '@/app/components/MenuBar'
+import Sidebar from '@/app/components/Sidebar'
+import { supabase } from '@/lib/supabaseClient'
+import styles from './ParticipantSchedules.module.css'
 
-interface ParticipantFile {
-  upload_group_id: number
-  batch_name: string
-  file_name: string
-  created_at: string
-  row_count: number
-}
-
-interface Participant {
-  id?: number
+interface ScheduleRow {
+  id: number
   participant_number: string
   name: string
-  is_pwd: boolean
   email: string
-  province: string
-  city: string
-  country: string
-  upload_group_id?: number
-  file_name?: string
+  is_pwd: boolean
+  batch_name: string
+  room: string
+  time_slot: string
+  campus: string
+  building: string
+  is_first_floor: boolean
+  seat_no: number
+  batch_date: string | null
+  start_time: string | null
+  end_time: string | null
 }
 
-interface ParticipantStats {
-  totalParticipants: number
-  totalPWD: number
-  percentagePWD: number
-}
-
-// Helper function to fetch ALL rows (bypass 1000 limit) - FIXED for tables without created_at
-async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 'id') {
+// Helper function to fetch ALL rows (bypass 1000 limit)
+async function fetchAllRows(table: string, filters: any = {}) {
   const PAGE_SIZE = 1000
   let allData: any[] = []
   let page = 0
@@ -71,9 +44,8 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
       .from(table)
       .select('*')
       .range(from, to)
-      .order(orderBy, { ascending: true })
+      .order('id', { ascending: true })
 
-    // Apply filters
     for (const [key, value] of Object.entries(filters)) {
       query = query.eq(key, value)
     }
@@ -106,1099 +78,741 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
   return allData
 }
 
-// Helper function to delete in batches (bypass 1000 limit)
-async function deleteInBatches(table: string, ids: number[], batchSize: number = 1000) {
-  console.log(`🗑️ Deleting ${ids.length} rows from ${table} in batches of ${batchSize}`)
-  
-  let deletedCount = 0
-  
-  for (let i = 0; i < ids.length; i += batchSize) {
-    const batch = ids.slice(i, i + batchSize)
-    console.log(`   🗑️ Deleting batch ${Math.floor(i / batchSize) + 1}: ${batch.length} rows`)
+// ✅ Format full date & time
+function formatDateTime(dateString: string | null, timeString: string): string {
+  if (!dateString || !timeString) return 'N/A'
+  try {
+    const date = new Date(dateString)
+    const dateFormatted = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
     
-    const { error } = await supabase
-      .from(table)
-      .delete()
-      .in('id', batch)
+    // Format time to 12-hour with AM/PM
+    const [hours, minutes] = timeString.split(':').map(Number)
+    const period = hours >= 12 ? 'PM' : 'AM'
+    const hours12 = hours % 12 || 12
+    const timeFormatted = `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
     
-    if (error) {
-      console.error(`❌ Error deleting batch:`, error)
-      throw error
-    }
-    
-    deletedCount += batch.length
-    console.log(`   ✅ Deleted ${deletedCount}/${ids.length} rows`)
+    return `${dateFormatted}, ${timeFormatted}`
+  } catch {
+    return `${dateString} ${timeString}`
   }
-  
-  console.log(`✅ Successfully deleted all ${deletedCount} rows from ${table}`)
-  return deletedCount
 }
 
-function QtimeParticipantsPageContent() {
+// ✅ Parse time slot with fallback
+function parseTimeSlot(timeSlot: string, startTime?: string | null, endTime?: string | null): { start: string; end: string } {
+  // Prefer individual start/end times from database
+  if (startTime && endTime) {
+    return { start: startTime, end: endTime }
+  }
+  
+  // Fallback to parsing time_slot string
+  try {
+    const [start, end] = timeSlot.split(' - ').map(t => t.trim())
+    return { start: start || 'N/A', end: end || 'N/A' }
+  } catch {
+    return { start: timeSlot, end: timeSlot }
+  }
+}
+
+// ✅ Helper function to determine floor level from room number
+function getFloorLevel(room: string): { level: number; label: string } {
+  if (!room || room === 'N/A') {
+    return { level: 0, label: 'Unknown' }
+  }
+
+  const roomLower = String(room).toLowerCase().trim()
+  const digits = roomLower.replace(/\D/g, '')
+
+  if (digits.length === 0) {
+    return { level: 0, label: 'Unknown' }
+  }
+
+  const firstDigit = parseInt(digits[0])
+  
+  if (firstDigit === 1) return { level: 1, label: '1st Floor' }
+  if (firstDigit === 2) return { level: 2, label: '2nd Floor' }
+  if (firstDigit === 3) return { level: 3, label: '3rd Floor' }
+  if (firstDigit === 4) return { level: 4, label: '4th Floor' }
+  if (firstDigit === 5) return { level: 5, label: '5th Floor' }
+  if (firstDigit === 6) return { level: 6, label: '6th Floor' }
+  
+  return { level: firstDigit, label: `${firstDigit}${firstDigit === 1 ? 'st' : firstDigit === 2 ? 'nd' : firstDigit === 3 ? 'rd' : 'th'} Floor` }
+}
+
+// ✅ Helper function to get CSS class for floor badge
+function getFloorBadgeClass(styles: any, room: string): string {
+  const { level } = getFloorLevel(room)
+  
+  if (level === 1) return styles.firstFloorBadge
+  if (level === 2) return styles.secondFloorBadge
+  if (level === 3) return styles.thirdFloorBadge
+  
+  return styles.upperFloorBadge
+}
+
+// ✅ SVG Component for Wheelchair Icon (PWD)
+function WheelchairIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm3.5-9c.83 0 1.5-.67 1.5-1.5S14.33 4 13.5 4 12 4.67 12 5.5s.67 1.5 1.5 1.5z"/>
+      <path d="M10 18c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+    </svg>
+  )
+}
+
+// ✅ SVG Component for Building Icon (Campus)
+function BuildingIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M19 13h-6V3h6v10zm-6-10h-6v6H7v4H3v6h18v-6h-4v-4h-6V3z"/>
+    </svg>
+  )
+}
+
+// ✅ SVG Component for Floor Icon
+function FloorIcon({ level }: { level: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ width: '16px', height: '16px' }}
+    >
+      {level === 1 && (
+        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+      )}
+      {level === 2 && (
+        <>
+          <path d="M12 4L4 8v6h16V8l-8-4z" opacity="0.3"/>
+          <path d="M12 10L4 14v6h16v-6l-8-4z"/>
+        </>
+      )}
+      {level === 3 && (
+        <>
+          <path d="M12 2L4 5v4h16V5l-8-3z" opacity="0.3"/>
+          <path d="M12 8L4 11v4h16v-4l-8-3z" opacity="0.6"/>
+          <path d="M12 14L4 17v4h16v-4l-8-3z"/>
+        </>
+      )}
+      {level > 3 && (
+        <>
+          <path d="M12 2L4 5v3h16V5l-8-3z" opacity="0.2"/>
+          <path d="M12 7L4 10v3h16v-3l-8-3z" opacity="0.5"/>
+          <path d="M12 12L4 15v3h16v-3l-8-3z" opacity="0.8"/>
+          <path d="M12 17L4 20v2h16v-2l-8-3z"/>
+        </>
+      )}
+    </svg>
+  )
+}
+
+function ParticipantSchedulesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const groupIdFromUrl = searchParams.get('id')
-  const campus = searchParams.get('campus') || '';
+  const scheduleId = searchParams.get('scheduleId')
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [participantFiles, setParticipantFiles] = useState<ParticipantFile[]>([])
-  const [selectedBatch, setSelectedBatch] = useState<number | null>(null)
-  const [participantData, setParticipantData] = useState<Participant[]>([])
-  const [filteredData, setFilteredData] = useState<Participant[]>([])
-  const [stats, setStats] = useState<ParticipantStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadingData, setLoadingData] = useState(false)
+  const [scheduleData, setScheduleData] = useState<ScheduleRow[]>([])
+  const [filteredData, setFilteredData] = useState<ScheduleRow[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [dataSearchTerm, setDataSearchTerm] = useState('')
-  
-  // CRUD states
-  const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
-  const [editingParticipant, setEditingParticipant] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState<Participant>({
-    participant_number: '',
-    name: '',
-    is_pwd: false,
-    email: '',
-    province: '',
-    city: '',
-    country: 'Philippines'
-  })
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [addForm, setAddForm] = useState<Participant>({
-    participant_number: '',
-    name: '',
-    is_pwd: false,
-    email: '',
-    province: '',
-    city: '',
-    country: 'Philippines'
-  })
-  const [deletingParticipant, setDeletingParticipant] = useState<number | null>(null)
-  const [successMessage, setSuccessMessage] = useState('')
-  
-  // Delete batch states
-  const [showDeleteBatchModal, setShowDeleteBatchModal] = useState(false)
-  const [batchToDelete, setBatchToDelete] = useState<ParticipantFile | null>(null)
-  const [deletingBatch, setDeletingBatch] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [sendingEmails, setSendingEmails] = useState(false)
+  const [emailMessage, setEmailMessage] = useState('')
+  const [scheduleSummary, setScheduleSummary] = useState<any>(null)
+  const [scheduleSummaries, setScheduleSummaries] = useState<any[]>([]);
+  const [selectedSummaryId, setSelectedSummaryId] = useState<string | null>(scheduleId);
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 100
+
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const bottomScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetchParticipantFiles()
-  }, [])
+    if (!scheduleId) {
+      setLoading(false)
+      return
+    }
+    fetchScheduleData()
+  }, [scheduleId])
 
   useEffect(() => {
-    // Auto-select batch if ID is provided in URL
-    if (groupIdFromUrl && participantFiles.length > 0) {
-      const groupId = parseInt(groupIdFromUrl)
-      const fileExists = participantFiles.find(f => f.upload_group_id === groupId)
-      if (fileExists && selectedBatch !== groupId) {
-        handleSelectBatch(groupId)
+    // Filter participants by name, participant number, email, batch, room, campus, building
+    if (!searchTerm) {
+      setFilteredData(scheduleData)
+    } else {
+      const term = searchTerm.toLowerCase()
+      setFilteredData(
+        scheduleData.filter(row =>
+          row.name.toLowerCase().includes(term) ||
+          row.participant_number.toLowerCase().includes(term) ||
+          row.email.toLowerCase().includes(term) ||
+          row.batch_name.toLowerCase().includes(term) ||
+          row.room.toLowerCase().includes(term) ||
+          row.campus.toLowerCase().includes(term) ||
+          row.building.toLowerCase().includes(term)
+        )
+      )
+    }
+  }, [searchTerm, scheduleData])
+
+  useEffect(() => {
+    async function fetchSummary() {
+      if (!scheduleId) return;
+      const { data, error } = await supabase
+        .from('schedule_summary')
+        .select('*')
+        .eq('id', scheduleId)
+        .single();
+      if (!error && data) {
+        console.log('✅ Schedule Summary fetched:', data);
+        setScheduleSummary(data);
+      } else {
+        console.error('❌ Error fetching schedule summary:', error);
       }
     }
-  }, [groupIdFromUrl, participantFiles])
+    fetchSummary();
+  }, [scheduleId])
 
   useEffect(() => {
-    if (dataSearchTerm) {
-      const filtered = participantData.filter(p => 
-        p.participant_number.toLowerCase().includes(dataSearchTerm.toLowerCase()) ||
-        p.name.toLowerCase().includes(dataSearchTerm.toLowerCase()) ||
-        p.email.toLowerCase().includes(dataSearchTerm.toLowerCase())
-      )
-      setFilteredData(filtered)
-    } else {
-      setFilteredData(participantData)
+    async function fetchSummaries() {
+      const { data, error } = await supabase
+        .from('schedule_summary')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) setScheduleSummaries(data);
     }
-  }, [dataSearchTerm, participantData])
+    fetchSummaries();
+  }, []);
 
-  const fetchParticipantFiles = async () => {
+  const fetchScheduleData = async () => {
+    if (!scheduleId) return
+
     setLoading(true)
     try {
-      console.log('📂 Fetching participant files...')
+      console.log(`📥 Fetching schedule data for ID: ${scheduleId}`)
+
+      const assignments = await fetchAllRows('schedule_assignments', {
+        schedule_summary_id: scheduleId
+      })
+
+      console.log(`✅ Loaded ${assignments.length} assignments`)
+
+      if (assignments.length === 0) {
+        setScheduleData([])
+        setFilteredData([])
+        setLoading(false)
+        return
+      }
+
+      const participantIds = [...new Set(assignments.map((a: any) => a.participant_id))]
       
-      const allData = await fetchAllRows('participants', {}, 'created_at')
+      console.log(`📥 Fetching ${participantIds.length} participants...`)
+      let participants: any[] = []
+      
+      const CHUNK_SIZE = 1000
+      for (let i = 0; i < participantIds.length; i += CHUNK_SIZE) {
+        const chunk = participantIds.slice(i, i + CHUNK_SIZE)
+        const { data, error } = await supabase
+          .from('participants')
+          .select('*')
+          .in('id', chunk)
+        
+        if (error) throw error
+        if (data) participants = [...participants, ...data]
+      }
 
-      console.log('✅ Participant data fetched:', allData.length, 'rows')
+      console.log(`✅ Fetched ${participants.length} participants`)
 
-      const grouped = allData.reduce((acc: any[], curr) => {
-        const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
-        if (existing) {
-          existing.row_count++
-        } else {
-          acc.push({
-            upload_group_id: curr.upload_group_id,
-            batch_name: curr.batch_name,
-            file_name: curr.file_name,
-            created_at: curr.created_at,
-            row_count: 1
-          })
+      const batches = await fetchAllRows('schedule_batches', {
+        schedule_summary_id: scheduleId
+      })
+
+      console.log(`✅ Fetched ${batches.length} batches`)
+
+      const participantMap = new Map(participants.map(p => [p.id, p]))
+      const batchMap = new Map(batches.map(b => [b.id, b]))
+
+      const combinedData: ScheduleRow[] = assignments.map((assignment: any) => {
+        const participant = participantMap.get(assignment.participant_id)
+        const batch = batchMap.get(assignment.schedule_batch_id)
+
+        // Always prefer assignment data over batch data
+        return {
+          id: assignment.id,
+          participant_number: participant?.participant_number || 'N/A',
+          name: participant?.name || 'N/A',
+          email: participant?.email || 'N/A',
+          is_pwd: assignment.is_pwd || false,
+          batch_name: batch?.batch_name || 'N/A',
+          room: assignment.room || 'N/A', // Prefer assignment room
+          time_slot: batch?.time_slot || 'N/A',
+          campus: assignment.campus || 'N/A', // Remove Main Campus fallback
+          building: assignment.building || 'N/A', // Remove fallback
+          is_first_floor: assignment.is_first_floor ?? false,
+          seat_no: assignment.seat_no || 0,
+          batch_date: assignment.batch_date || batch?.batch_date || null,
+          start_time: assignment.start_time || batch?.start_time || null,
+          end_time: assignment.end_time || batch?.end_time || null
         }
-        return acc
-      }, [])
+      })
 
-      grouped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      // Add after the combinedData mapping
+      console.log('Sample assignments data:', assignments.slice(0, 5).map(a => ({
+        campus: a.campus,
+        building: a.building,
+        room: a.room
+      })))
 
-      setParticipantFiles(grouped || [])
+      console.log('Sample combined data:', combinedData.slice(0, 5).map(d => ({
+        campus: d.campus,
+        building: d.building,
+        room: d.room
+      })))
+
+      console.log(`✅ Combined ${combinedData.length} schedule entries`)
+
+      setScheduleData(combinedData)
+      setFilteredData(combinedData)
     } catch (error) {
-      console.error('❌ Error fetching participant files:', error)
+      console.error('❌ Error fetching schedule data:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSelectBatch = async (groupId: number) => {
-    if (selectedBatch === groupId) {
-      setSelectedBatch(null)
-      setParticipantData([])
-      setFilteredData([])
-      setStats(null)
-      setDataSearchTerm('')
+  async function handleSendEmails() {
+    if (!scheduleId) {
+      setEmailMessage('❌ No schedule ID found')
       return
     }
 
-    setSelectedBatch(groupId)
-    setLoadingData(true)
-    setDataSearchTerm('')
-    
+    setSendingEmails(true)
+    setEmailMessage('📧 Sending emails to all participants...')
+
     try {
-      console.log(`📥 Fetching ALL participants for group ${groupId}...`)
-      
-      const allData = await fetchAllRows('participants', { upload_group_id: groupId }, 'id')
-      
-      allData.sort((a, b) => {
-        const numA = parseInt(a.participant_number) || 0
-        const numB = parseInt(b.participant_number) || 0
-        return numA - numB
+      console.log(`\n${'='.repeat(80)}`)
+      console.log(`🚀 Sending emails for schedule ID: ${scheduleId}`)
+      console.log(`${'='.repeat(80)}`)
+
+      const res = await fetch('/api/schedule/send-batch-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule_id: Number(scheduleId) }),
       })
 
-      console.log(`✅ Loaded ${allData.length} participants for group ${groupId}`)
+      const data = await res.json()
 
-      setParticipantData(allData)
-      setFilteredData(allData)
-      calculateStats(allData)
-    } catch (error) {
-      console.error('❌ Error fetching participant data:', error)
+      console.log(`\n📥 API Response:`, data)
+
+      if (res.ok) {
+        setEmailMessage(
+          `✅ ${data.message}${
+            data.failedList?.length > 0
+              ? ` | Failed: ${data.failedList.map((f: any) => f.email).join(', ')}`
+              : ''
+          }`
+        )
+      } else {
+        setEmailMessage(`❌ ${data.error || 'Unknown error'}`)
+      }
+    } catch (e: any) {
+      console.error('❌ Error:', e)
+      setEmailMessage(`❌ ${e.message}`)
     } finally {
-      setLoadingData(false)
+      setSendingEmails(false)
     }
   }
 
-  const calculateStats = (data: Participant[]) => {
-    const totalParticipants = data.length
-    const totalPWD = data.filter(p => p.is_pwd).length
-    const percentagePWD = totalParticipants > 0 ? Math.round((totalPWD / totalParticipants) * 100) : 0
+  async function handleExportCSV() {
+    if (scheduleData.length === 0) {
+      alert('No data to export')
+      return
+    }
 
-    setStats({
-      totalParticipants,
-      totalPWD,
-      percentagePWD
+    const headers = [
+      'Participant #', 
+      'Name', 
+      'Email', 
+      'PWD', 
+      'Batch', 
+      'Starting Date & Time', 
+      'Ending Date & Time',
+      'Campus',
+      'Building',
+      'Floor',
+      'Room', 
+      'Seat No'
+    ]
+    
+    const rows = scheduleData.map(row => {
+      const { start, end } = parseTimeSlot(row.time_slot, row.start_time, row.end_time)
+      const floor = getFloorLevel(row.room)
+      return [
+        row.participant_number,
+        row.name,
+        row.email,
+        row.is_pwd ? 'Yes' : 'No',
+        row.batch_name,
+        formatDateTime(row.batch_date, start),
+        formatDateTime(row.batch_date, end),
+        row.campus,
+        row.building,
+        floor.label,
+        row.room,
+        row.seat_no.toString()
+      ]
     })
+
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `schedule_${scheduleId}_detailed.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
-  // Delete Batch Function - WITH CASCADE DELETE IN BATCHES (FIXED)
-  const handleDeleteBatchClick = (e: React.MouseEvent, batch: ParticipantFile) => {
-    e.stopPropagation()
-    setBatchToDelete(batch)
-    setShowDeleteBatchModal(true)
-  }
+  // Pagination logic
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE)
+  const paginatedData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
-  const handleDeleteBatch = async () => {
-    if (!batchToDelete) return
-
-    setDeletingBatch(true)
-    try {
-      console.log(`🗑️ Deleting batch ${batchToDelete.upload_group_id}...`)
-
-      // Step 1: Fetch all participants with this upload_group_id to get their IDs
-      console.log(`📥 Fetching all participants for batch ${batchToDelete.upload_group_id}...`)
-      const participantsToDelete = await fetchAllRows('participants', { upload_group_id: batchToDelete.upload_group_id }, 'id')
-
-      if (!participantsToDelete || participantsToDelete.length === 0) {
-        console.log('⚠️ No participants found for this batch')
-        setSuccessMessage('⚠️ No participants found in this batch')
-        setTimeout(() => setSuccessMessage(''), 3000)
-        setShowDeleteBatchModal(false)
-        setBatchToDelete(null)
-        setDeletingBatch(false)
-        return
-      }
-
-      console.log(`📊 Found ${participantsToDelete.length} participants to delete`)
-      const participantIds = participantsToDelete.map(p => p.id)
-
-      // Step 2: Delete related schedule_assignments in batches (CASCADE)
-      console.log(`🗑️ Deleting related schedule assignments...`)
-      try {
-        // Fetch all schedule assignments for these participants - use 'id' for ordering
-        const assignmentsToDelete = await fetchAllRows('schedule_assignments', {}, 'id')
-        const relevantAssignments = assignmentsToDelete.filter(a => participantIds.includes(a.participant_id))
-        
-        if (relevantAssignments.length > 0) {
-          const assignmentIds = relevantAssignments.map(a => a.id)
-          await deleteInBatches('schedule_assignments', assignmentIds)
-          console.log(`✅ Deleted ${assignmentIds.length} schedule assignments`)
-        } else {
-          console.log(`ℹ️ No schedule assignments found for these participants`)
-        }
-      } catch (error: any) {
-        console.error('❌ Error deleting schedule assignments:', error)
-        throw new Error(`Failed to delete schedule assignments: ${error.message}`)
-      }
-
-      // Step 3: Delete related schedules in batches (if any exist in the schedules table)
-      console.log(`🗑️ Deleting related schedules...`)
-      try {
-        // Fetch all schedules for these participants - use 'created_at' for ordering
-        const schedulesToDelete = await fetchAllRows('schedules', {}, 'created_at')
-        const relevantSchedules = schedulesToDelete.filter(s => s.participant_id && participantIds.includes(s.participant_id))
-        
-        if (relevantSchedules.length > 0) {
-          const scheduleIds = relevantSchedules.map(s => s.id)
-          await deleteInBatches('schedules', scheduleIds)
-          console.log(`✅ Deleted ${scheduleIds.length} schedules`)
-        } else {
-          console.log(`ℹ️ No schedules found for these participants`)
-        }
-      } catch (error: any) {
-        console.error('❌ Error deleting schedules:', error)
-        throw new Error(`Failed to delete schedules: ${error.message}`)
-      }
-
-      // Step 4: Now delete the participants in batches
-      console.log(`🗑️ Deleting ${participantIds.length} participants...`)
-      await deleteInBatches('participants', participantIds)
-      console.log(`✅ Successfully deleted ${participantIds.length} participants and their related data`)
-
-      // If the deleted batch was selected, clear selection
-      if (selectedBatch === batchToDelete.upload_group_id) {
-        setSelectedBatch(null)
-        setParticipantData([])
-        setFilteredData([])
-        setStats(null)
-      }
-
-      // Refresh the batch list
-      await fetchParticipantFiles()
-
-      setSuccessMessage(`✅ Batch "${batchToDelete.batch_name}" with ${participantIds.length} participants deleted successfully!`)
-      setTimeout(() => setSuccessMessage(''), 3000)
-      
-      setShowDeleteBatchModal(false)
-      setBatchToDelete(null)
-    } catch (error: any) {
-      console.error('❌ Error deleting batch:', error)
-      const errorMessage = error?.message || 'Unknown error occurred'
-      setSuccessMessage(`❌ Failed to delete batch: ${errorMessage}`)
-      setTimeout(() => setSuccessMessage(''), 5000)
-    } finally {
-      setDeletingBatch(false)
-    }
-  }
-
-  // Single Participant Delete - WITH CASCADE
-  const handleDelete = async (participantId: number) => {
-    if (!confirm('Are you sure you want to delete this participant? This will also delete all their schedule assignments.')) return
-
-    setDeletingParticipant(participantId)
-    setShowActionsFor(null)
-    try {
-      console.log(`🗑️ Deleting participant ${participantId}...`)
-
-      // Step 1: Delete related schedule_assignments
-      const { error: assignmentError } = await supabase
-        .from('schedule_assignments')
-        .delete()
-        .eq('participant_id', participantId)
-
-      if (assignmentError) {
-        console.error('❌ Error deleting schedule assignments:', assignmentError)
-        throw new Error(`Failed to delete schedule assignments: ${assignmentError.message}`)
-      }
-
-      // Step 2: Delete related schedules
-      const { error: schedulesError } = await supabase
-        .from('schedules')
-        .delete()
-        .eq('participant_id', participantId)
-
-      if (schedulesError) {
-        console.error('❌ Error deleting schedules:', schedulesError)
-        throw new Error(`Failed to delete schedules: ${schedulesError.message}`)
-      }
-
-      // Step 3: Delete the participant
-      const { error } = await supabase
-        .from('participants')
-        .delete()
-        .eq('id', participantId)
-
-      if (error) throw error
-
-      const updatedData = participantData.filter(p => p.id !== participantId)
-      setParticipantData(updatedData)
-      calculateStats(updatedData)
-      setSuccessMessage('✅ Participant deleted successfully!')
-      setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (error: any) {
-      console.error('❌ Error deleting participant:', error)
-      const errorMessage = error?.message || 'Unknown error occurred'
-      setSuccessMessage(`❌ Failed to delete participant: ${errorMessage}`)
-      setTimeout(() => setSuccessMessage(''), 5000)
-    } finally {
-      setDeletingParticipant(null)
-    }
-  }
-
-  const getFilteredFiles = () => {
-    if (!searchTerm) return participantFiles
-    return participantFiles.filter(file => 
-      file.batch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.file_name.toLowerCase().includes(searchTerm.toLowerCase())
+  if (loading) {
+    return (
+      <div className={styles.scheduleLayout}>
+        <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
+        <Sidebar isOpen={sidebarOpen} />
+        <main className={`${styles.scheduleMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner}></div>
+            <p>Loading schedule data...</p>
+          </div>
+        </main>
+      </div>
     )
   }
 
-  const toggleActionsMenu = (participantId: number) => {
-    setShowActionsFor(showActionsFor === participantId ? null : participantId)
-  }
-
-  const handleAddParticipant = async () => {
-    if (!addForm.participant_number || !addForm.name || !addForm.email) {
-      setSuccessMessage('❌ Please fill in all required fields')
-      setTimeout(() => setSuccessMessage(''), 3000)
-      return
-    }
-
-    try {
-      const selectedFile = participantFiles.find(f => f.upload_group_id === selectedBatch)
-      
-      const { data, error } = await supabase
-        .from('participants')
-        .insert({
-          participant_number: addForm.participant_number,
-          name: addForm.name,
-          is_pwd: addForm.is_pwd,
-          email: addForm.email,
-          province: addForm.province,
-          city: addForm.city,
-          country: addForm.country,
-          upload_group_id: selectedBatch,
-          batch_name: selectedFile?.batch_name || '',
-          file_name: selectedFile?.file_name || ''
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      const updatedData = [...participantData, data]
-      setParticipantData(updatedData)
-      calculateStats(updatedData)
-      setShowAddModal(false)
-      setAddForm({
-        participant_number: '',
-        name: '',
-        is_pwd: false,
-        email: '',
-        province: '',
-        city: '',
-        country: 'Philippines'
-      })
-      setSuccessMessage('✅ Participant added successfully!')
-      setTimeout(() => setSuccessMessage(''), 3000)
-      
-      await fetchParticipantFiles()
-    } catch (error: any) {
-      console.error('❌ Error adding participant:', error)
-      setSuccessMessage(`❌ Failed to add participant: ${error?.message || 'Unknown error'}`)
-      setTimeout(() => setSuccessMessage(''), 5000)
-    }
-  }
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 50;
-
-  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
-  const paginatedData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
   return (
-    <div className="participants-layout">
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        showSidebarToggle={true}
-        showAccountIcon={true}
-      />
+    <div className={styles.scheduleLayout}>
+      <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
       
-      <main className={`participants-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
-        <div className="data-section">
-          {/* Success Message */}
-          {successMessage && (
-            <div className={`success-message ${successMessage.includes('❌') || successMessage.includes('⚠️') ? 'error' : 'success'}`}>
-              {successMessage}
+      <main className={`${styles.scheduleMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
+        <div className={styles.scheduleContainer}>
+          <div className={styles.scheduleHeaderRow}>
+            <div className={styles.headerLeft}>
+              <button className={styles.backButton} onClick={() => router.back()}>
+                <span className={styles.iconBack}>←</span>
+                Back
+              </button>
             </div>
-          )}
-
-          <div className="participants-header">
-            <button 
-              className="back-button"
-              onClick={() => router.push('/LandingPages/QtimeHomePage')}
+            <div className={styles.headerRight}>
+              <button
+                onClick={handleSendEmails}
+                disabled={sendingEmails || scheduleData.length === 0}
+                className={styles.btnPrimary}
               >
-              <ArrowLeft size={18} />
-              Back to Home
-            </button>
-            <div className="header-title-section">
-              <div className="header-icon-wrapper">
-                <Users className="header-large-icon" size={48} />
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+                {sendingEmails ? 'Sending...' : 'Send Emails'}
+              </button>
+              <button
+                onClick={handleExportCSV}
+                disabled={scheduleData.length === 0}
+                className={styles.btnSecondary}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+                Export CSV
+              </button>
+            </div>
+          </div>
+          <div className={styles.scheduleHeader}>
+            <div className={styles.headerTitleSection}>
+              <div className={styles.headerIconWrapper}>
+                <svg className={styles.headerLargeIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                </svg>
               </div>
-              <div className="header-text">
-                <h1 className="participants-title">Participants Overview</h1>
-                <p className="participants-subtitle">Select a batch to view and manage participant information</p>
+              <div className={styles.headerText}>
+                <h1 className={styles.scheduleTitle}>Participant Schedules</h1>
+                <p className={styles.scheduleSubtitle}>{filteredData.length} participants scheduled</p>
               </div>
+            </div>
+            
+          </div>
+          <div className={styles.selectionPanel}>
+  <h2 className={styles.selectionTitle}>
+    <svg className={styles.selectionTitleIcon} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="4" fill="#2563eb"/>
+      <path d="M7 9h10M7 13h6" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+    Select a Schedule
+  </h2>
+  <div className={styles.selectionList}>
+    {scheduleSummaries.length === 0 ? (
+      <div className={styles.selectionEmpty}>No schedules found.</div>
+    ) : (
+      scheduleSummaries.map(summary => (
+        <button
+          key={summary.id}
+          className={`${styles.selectionItem} ${String(summary.id) === String(scheduleId) ? styles.selected : ''}`}
+          onClick={() => {
+            setSelectedSummaryId(String(summary.id));
+            router.replace(`?scheduleId=${summary.id}`);
+          }}
+        >
+          <div className={styles.selectionCardIcon}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="6" width="16" height="12" rx="3" fill="#2563eb"/>
+              <path d="M8 10h8M8 14h5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className={styles.selectionCardContent}>
+            <div className={styles.selectionCardHeader}>
+              <span className={styles.selectionName}>ID: {summary.id}</span>
+              <span className={styles.selectionStatus + ' ' + (summary.status === 'completed' ? styles.statusCompleted : styles.statusPending)}>
+                {summary.status === 'completed' ? 'Completed' : 'Pending'}
+              </span>
+            </div>
+            <div className={styles.selectionCardTitle}>{summary.event_name}</div>
+            <div className={styles.selectionCardDetails}>
+              <span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{verticalAlign: 'middle', marginRight: 4}}>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/>
+                  <rect x="3" y="11" width="18" height="8" rx="4" fill="#e0e7ff"/>
+                </svg>
+                {summary.schedule_date} {summary.start_time} - {summary.end_time}
+              </span>
+              <span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{verticalAlign: 'middle', marginRight: 4}}>
+                  <circle cx="12" cy="12" r="10" fill="#e0e7ff"/>
+                  <path d="M12 8v4l3 3" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                {summary.scheduled_count} scheduled
+              </span>
+            </div>
+          </div>
+        </button>
+      ))
+    )}
+  </div>
+</div>
+          <div className={styles.searchSection}>
+            <div className={styles.searchBox}>
+              <input
+                type="text"
+                placeholder="Search by name, participant #, email, batch, room, campus, building..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className={styles.searchInput}
+              />
             </div>
           </div>
 
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading participant data...</p>
+          {emailMessage && (
+            <div className={`${styles.message} ${emailMessage.includes('✅') ? styles.success : styles.error}`}>
+              {emailMessage}
             </div>
-          ) : (
-            <>
-              <div className="selection-section">
-                <div className="search-header">
-                  <h2>
-                    <FolderOpen size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                    Select Batch
-                  </h2>
-                  <div className="search-box">
-                    <Search className="search-icon" size={18} />
-                    <input
-                      type="text"
-                      placeholder="Search batch..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="search-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="batch-cards-grid">
-                  {getFilteredFiles().map(file => (
-                    <div 
-                      key={file.upload_group_id}
-                      className={`batch-select-card ${selectedBatch === file.upload_group_id ? 'selected' : ''}`}
-                      onClick={() => handleSelectBatch(file.upload_group_id)}
-                    >
-                      <div className="batch-card-icon">
-                        <FolderOpen size={36} />
-                      </div>
-                      <div className="batch-card-content">
-                        <h3 className="batch-card-name">{file.batch_name}</h3>
-                        <p className="batch-card-meta">
-                          <Users size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                          {file.row_count} participants
-                        </p>
-                        <p className="batch-card-date">
-                          <Calendar size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                          Uploaded: {new Date(file.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      {selectedBatch === file.upload_group_id && (
-                        <div className="selected-indicator">
-                          <Check size={20} />
-                        </div>
-                      )}
-                      <button
-                        className="delete-batch-btn"
-                        onClick={(e) => handleDeleteBatchClick(e, file)}
-                        title="Delete entire batch"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {getFilteredFiles().length === 0 && (
-                  <div className="empty-results">
-                    <p>No batches found matching "{searchTerm}"</p>
-                  </div>
-                )}
-              </div>
-
-              {selectedBatch && (
-                <>
-                  {loadingData ? (
-                    <div className="loading-state">
-                      <div className="spinner"></div>
-                      <p>Loading participant data...</p>
-                    </div>
-                  ) : (
-                    <>
-                      {stats && (
-                        <div className="stats-grid">
-                          <div className="stat-card">
-                            <div className="stat-icon">
-                              <Users size={28} />
-                            </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Participants</p>
-                              <h3 className="stat-value">{stats.totalParticipants}</h3>
-                            </div>
-                          </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
-                              <Accessibility size={28} />
-                            </div>
-                            <div className="stat-content">
-                              <p className="stat-label">PWD Participants</p>
-                              <h3 className="stat-value">{stats.totalPWD}</h3>
-                            </div>
-                          </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
-                              <BarChart3 size={28} />
-                            </div>
-                            <div className="stat-content">
-                              <p className="stat-label">PWD Percentage</p>
-                              <h3 className="stat-value">{stats.percentagePWD}%</h3>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="data-section">
-                        <div className="section-header-actions">
-                          <h2 className="section-heading">
-                            <Users size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                            Participants List
-                          </h2>
-                          <div className="header-actions">
-                            <div className="search-box">
-                              <Search className="search-icon" size={18} />
-                              <input
-                                type="text"
-                                placeholder="Search by name, number, or email..."
-                                value={dataSearchTerm}
-                                onChange={(e) => setDataSearchTerm(e.target.value)}
-                                className="search-input"
-                              />
-                            </div>
-                            <button 
-                              className="add-participant-button"
-                              onClick={() => setShowAddModal(true)}
-                            >
-                              <UserPlus size={20} />
-                              Add Participant
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="participants-table-wrapper">
-                          <table className="participants-table">
-                            <thead>
-                              <tr>
-                                <th>Participant #</th>
-                                <th>Name</th>
-                                <th>PWD</th>
-                                <th>Email</th>
-                                <th>Province</th>
-                                <th>City</th>
-                                <th>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {paginatedData.map((participant) => {
-                                const isEditing = editingParticipant === participant.id
-                                const showActions = showActionsFor === participant.id
-                                
-                                const handleEditSave = async (participantId: number) => {
-                                  try {
-                                    const { error } = await supabase
-                                      .from('participants')
-                                      .update({
-                                        participant_number: editForm.participant_number,
-                                        name: editForm.name,
-                                        is_pwd: editForm.is_pwd,
-                                        email: editForm.email,
-                                        province: editForm.province,
-                                        city: editForm.city,
-                                        country: editForm.country
-                                      })
-                                      .eq('id', participantId)
-
-                                    if (error) throw error
-
-                                    const updatedData = participantData.map(p => 
-                                      p.id === participantId ? { ...p, ...editForm } : p
-                                    )
-                                    setParticipantData(updatedData)
-                                    calculateStats(updatedData)
-                                    setEditingParticipant(null)
-                                    setSuccessMessage('✅ Participant updated successfully!')
-                                    setTimeout(() => setSuccessMessage(''), 3000)
-                                  } catch (error: any) {
-                                    console.error('❌ Error updating participant:', error)
-                                    setSuccessMessage(`❌ Failed to update participant: ${error?.message || 'Unknown error'}`)
-                                    setTimeout(() => setSuccessMessage(''), 5000)
-                                  }
-                                }
-
-                                const handleEditCancel = () => {
-                                  setEditingParticipant(null)
-                                  setEditForm({
-                                    participant_number: '',
-                                    name: '',
-                                    is_pwd: false,
-                                    email: '',
-                                    province: '',
-                                    city: '',
-                                    country: 'Philippines'
-                                  })
-                                }
-
-                                const handleEditClick = (participant: Participant) => {
-                                  setEditingParticipant(participant.id!)
-                                  setEditForm({
-                                    participant_number: participant.participant_number,
-                                    name: participant.name,
-                                    is_pwd: participant.is_pwd,
-                                    email: participant.email,
-                                    province: participant.province,
-                                    city: participant.city,
-                                    country: participant.country
-                                  })
-                                  setShowActionsFor(null)
-                                }
-
-                                const handleAddParticipant = async () => {
-                                  if (!addForm.participant_number || !addForm.name || !addForm.email) {
-                                    setSuccessMessage('❌ Please fill in all required fields')
-                                    setTimeout(() => setSuccessMessage(''), 3000)
-                                    return
-                                  }
-
-                                  try {
-                                    const selectedFile = participantFiles.find(f => f.upload_group_id === selectedBatch)
-                                    
-                                    const { data, error } = await supabase
-                                      .from('participants')
-                                      .insert({
-                                        participant_number: addForm.participant_number,
-                                        name: addForm.name,
-                                        is_pwd: addForm.is_pwd,
-                                        email: addForm.email,
-                                        province: addForm.province,
-                                        city: addForm.city,
-                                        country: addForm.country,
-                                        upload_group_id: selectedBatch,
-                                        batch_name: selectedFile?.batch_name || '',
-                                        file_name: selectedFile?.file_name || ''
-                                      })
-                                      .select()
-                                      .single()
-
-                                    if (error) throw error
-
-                                    const updatedData = [...participantData, data]
-                                    setParticipantData(updatedData)
-                                    calculateStats(updatedData)
-                                    setShowAddModal(false)
-                                    setAddForm({
-                                      participant_number: '',
-                                      name: '',
-                                      is_pwd: false,
-                                      email: '',
-                                      province: '',
-                                      city: '',
-                                      country: 'Philippines'
-                                    })
-                                    setSuccessMessage('✅ Participant added successfully!')
-                                    setTimeout(() => setSuccessMessage(''), 3000)
-                                    
-                                    await fetchParticipantFiles()
-                                  } catch (error: any) {
-                                    console.error('❌ Error adding participant:', error)
-                                    setSuccessMessage(`❌ Failed to add participant: ${error?.message || 'Unknown error'}`)
-                                    setTimeout(() => setSuccessMessage(''), 5000)
-                                  }
-                                }
-
-                                return (
-                                  <tr key={participant.id} className={isEditing ? 'editing-row' : ''}>
-                                    {isEditing ? (
-                                      <>
-                                        <td>
-                                          <input
-                                            type="text"
-                                            value={editForm.participant_number}
-                                            onChange={(e) => setEditForm({...editForm, participant_number: e.target.value})}
-                                            className="table-input"
-                                          />
-                                        </td>
-                                        <td>
-                                          <input
-                                            type="text"
-                                            value={editForm.name}
-                                            onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                                            className="table-input"
-                                          />
-                                        </td>
-                                        <td>
-                                          <label className="pwd-checkbox">
-                                            <input
-                                              type="checkbox"
-                                              checked={editForm.is_pwd}
-                                              onChange={(e) => setEditForm({...editForm, is_pwd: e.target.checked})}
-                                            />
-                                            <span>{editForm.is_pwd ? 'Yes' : 'No'}</span>
-                                          </label>
-                                        </td>
-                                        <td>
-                                          <input
-                                            type="email"
-                                            value={editForm.email}
-                                            onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                                            className="table-input"
-                                          />
-                                        </td>
-                                        <td>
-                                          <input
-                                            type="text"
-                                            value={editForm.province}
-                                            onChange={(e) => setEditForm({...editForm, province: e.target.value})}
-                                            className="table-input"
-                                          />
-                                        </td>
-                                        <td>
-                                          <input
-                                            type="text"
-                                            value={editForm.city}
-                                            onChange={(e) => setEditForm({...editForm, city: e.target.value})}
-                                            className="table-input"
-                                          />
-                                        </td>
-                                        <td>
-                                          <div className="table-actions">
-                                            <button 
-                                              className="save-btn-inline"
-                                              onClick={() => handleEditSave(participant.id!)}
-                                              title="Save changes"
-                                            >
-                                              <Check size={16} />
-                                            </button>
-                                            <button 
-                                              className="cancel-btn-inline"
-                                              onClick={handleEditCancel}
-                                              title="Cancel editing"
-                                            >
-                                              <X size={16} />
-                                            </button>
-                                          </div>
-                                        </td>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <td>{participant.participant_number}</td>
-                                        <td>{participant.name}</td>
-                                        <td>
-                                          <span className={`pwd-badge ${participant.is_pwd ? 'pwd-yes' : 'pwd-no'}`}>
-                                            {participant.is_pwd ? (
-                                              <>
-                                                <Accessibility size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                                                Yes
-                                              </>
-                                            ) : 'No'}
-                                          </span>
-                                        </td>
-                                        <td>{participant.email}</td>
-                                        <td>{participant.province}</td>
-                                        <td>{participant.city}</td>
-                                        <td>
-                                          <div className="table-options">
-                                            <button 
-                                              className="options-trigger-table"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                toggleActionsMenu(participant.id!)
-                                              }}
-                                              title="More options"
-                                            >
-                                              <Settings size={18} />
-                                            </button>
-                                            
-                                            {showActions && (
-                                              <div className="actions-popup-table">
-                                                <button 
-                                                  className="action-option edit-option"
-                                                  onClick={() => handleEditClick(participant)}
-                                                >
-                                                  <Edit2 size={16} />
-                                                  Edit
-                                                </button>
-                                                <button 
-                                                  className="action-option delete-option"
-                                                  onClick={() => handleDelete(participant.id!)}
-                                                  disabled={deletingParticipant === participant.id}
-                                                >
-                                                  <Trash2 size={16} />
-                                                  {deletingParticipant === participant.id ? 'Deleting...' : 'Delete'}
-                                                </button>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </td>
-                                      </>
-                                    )}
-                                  </tr>
-                                )
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                        {/* Pagination Controls should be here */}
-                        {totalPages > 1 && (
-                          <div className="pagination-wrapper">
-                            <button
-                              className="pagination-btn"
-                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                              disabled={currentPage === 1}
-                            >
-                              &lt; Prev
-                            </button>
-                            {totalPages <= 10
-                              ? Array.from({ length: totalPages }, (_, i) => (
-                                  <button
-                                    key={i + 1}
-                                    className={`pagination-btn${currentPage === i + 1 ? ' active-page' : ''}`}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                  >
-                                    {i + 1}
-                                  </button>
-                                ))
-                              : (() => {
-                                  const pages = [];
-                                  if (currentPage > 3) {
-                                    pages.push(
-                                      <button key={1} className={`pagination-btn${currentPage === 1 ? ' active-page' : ''}`} onClick={() => setCurrentPage(1)}>1</button>
-                                    );
-                                    if (currentPage > 4) pages.push(<span key="start-ellipsis" className="pagination-ellipsis">...</span>);
-                                  }
-                                  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-                                    pages.push(
-                                      <button key={i} className={`pagination-btn${currentPage === i ? ' active-page' : ''}`} onClick={() => setCurrentPage(i)}>{i}</button>
-                                    );
-                                  }
-                                  if (currentPage < totalPages - 2) {
-                                    if (currentPage < totalPages - 3) pages.push(<span key="end-ellipsis" className="pagination-ellipsis">...</span>);
-                                    pages.push(
-                                      <button key={totalPages} className={`pagination-btn${currentPage === totalPages ? ' active-page' : ''}`} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
-                                    );
-                                  }
-                                  return pages;
-                                })()
-                            }
-                            <button
-                              className="pagination-btn"
-                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                              disabled={currentPage === totalPages}
-                            >
-                              Next &gt;
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-
-              {!selectedBatch && !loading && participantFiles.length > 0 && (
-                <div className="empty-selection">
-                  <div className="empty-icon">
-                    <Users size={80} />
-                  </div>
-                  <p>Please select a batch above to view participant details</p>
-                </div>
-              )}
-            </>
           )}
+
+          <div className={styles.tableSection}>
+            {/* Top scrollbar (syncs with bottom) */}
+<div
+  className={styles.tableScrollTopBar}
+  style={{ width: '100%', overflowX: 'auto' }}
+  ref={topScrollRef}
+  onScroll={e => {
+    if (bottomScrollRef.current) {
+      bottomScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }}
+>
+  <div style={{ width: '1600px', height: '8px' }}></div>
+</div>
+<div
+  className={styles.tableScrollWrapper}
+  ref={bottomScrollRef}
+  onScroll={e => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = e.currentTarget.scrollLeft
+    }
+  }}
+>
+  <div className={styles.tableContainer}>
+    <table className={styles.participantsTable}>
+      <thead>
+        <tr>
+          <th className={styles.stickyCol}>Participant #</th>
+          <th className={styles.stickyCol2}>Name</th>
+          <th>Email</th>
+          <th>PWD</th>
+          <th>Batch</th>
+          <th>Starting Date & Time</th>
+          <th>Ending Date & Time</th>
+          <th>Campus</th>
+          <th>Building</th>
+          <th>Floor</th>
+          <th>Room</th>
+          <th>Seat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {paginatedData.map((row, idx) => {
+          const { start, end } = parseTimeSlot(row.time_slot, row.start_time, row.end_time)
+          const floor = getFloorLevel(row.room)
+          return (
+            <tr key={row.id || idx} id={`participant-row-${row.id}`}>
+              <td className={`${styles.fontSemibold} ${styles.stickyCol}`}>{row.participant_number}</td>
+              <td className={styles.stickyCol2}>{row.name}</td>
+              <td className={styles.emailCell}>{row.email}</td>
+              <td>
+                <span className={`${styles.pwdBadge} ${row.is_pwd ? styles.yes : styles.no}`}>
+                  {row.is_pwd && (
+                    <WheelchairIcon className={styles.badgeIcon} />
+                  )}
+                  <span>{row.is_pwd ? 'Yes' : 'No'}</span>
+                </span>
+              </td>
+              <td>
+                <span className={styles.batchBadge}>{row.batch_name}</span>
+              </td>
+              <td className={styles.dateTimeCell}>
+                {formatDateTime(row.batch_date, start)}
+              </td>
+              <td className={styles.dateTimeCell}>
+                {formatDateTime(row.batch_date, end)}
+              </td>
+              <td className={styles.locationCell}>{row.campus}</td>
+              <td className={styles.locationCell}>{row.building}</td>
+              <td className={styles.floorCell}>
+                {(() => {
+                  const badgeClass = getFloorBadgeClass(styles, row.room)
+                  
+                  return (
+                    <span className={badgeClass}>
+                      <FloorIcon level={floor.level} />
+                      {floor.label}
+                    </span>
+                  )
+                })()}
+              </td>
+              <td className={styles.roomCell}>{row.room}</td>
+              <td className={styles.seatCell}>{row.seat_no}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  </div>
+</div>
+{/* Pagination Controls */}
+<div className={styles.paginationWrapper}>
+  <button
+    className={styles.paginationBtn}
+    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+    disabled={currentPage === 1}
+  >
+    &lt; Prev
+  </button>
+  {/* Smart pagination: show first, last, current, +/-2, with ellipsis */}
+  {totalPages <= 10
+    ? Array.from({ length: totalPages }, (_, i) => (
+        <button
+          key={i + 1}
+          className={`${styles.paginationBtn} ${currentPage === i + 1 ? styles.activePage : ''}`}
+          onClick={() => setCurrentPage(i + 1)}
+        >
+          {i + 1}
+        </button>
+      ))
+    : (() => {
+        const pages = []
+        if (currentPage > 3) {
+          pages.push(
+            <button
+              key={1}
+              className={`${styles.paginationBtn} ${currentPage === 1 ? styles.activePage : ''}`}
+              onClick={() => setCurrentPage(1)}
+            >
+              1
+            </button>
+          )
+          if (currentPage > 4) {
+            pages.push(<span key="start-ellipsis" className={styles.paginationEllipsis}>...</span>)
+          }
+        }
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+          pages.push(
+            <button
+              key={i}
+              className={`${styles.paginationBtn} ${currentPage === i ? styles.activePage : ''}`}
+              onClick={() => setCurrentPage(i)}
+            >
+              {i}
+            </button>
+          )
+        }
+        if (currentPage < totalPages - 2) {
+          if (currentPage < totalPages - 3) {
+            pages.push(<span key="end-ellipsis" className={styles.paginationEllipsis}>...</span>)
+          }
+          pages.push(
+            <button
+              key={totalPages}
+              className={`${styles.paginationBtn} ${currentPage === totalPages ? styles.activePage : ''}`}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              {totalPages}
+            </button>
+          )
+        }
+        return pages
+      })()
+  }
+  <button
+    className={styles.paginationBtn}
+    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+    disabled={currentPage === totalPages}
+  >
+    Next &gt;
+  </button>
+</div>
+          </div>
         </div>
       </main>
-
-      {/* Add Participant Modal */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                <UserPlus size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                Add New Participant
-              </h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowAddModal(false)}
-                title="Close modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Participant Number * <span className="required-indicator">(Required)</span></label>
-                <input
-                  type="text"
-                  value={addForm.participant_number}
-                  onChange={(e) => setAddForm({...addForm, participant_number: e.target.value})}
-                  placeholder="e.g., 2024001"
-                  className="modal-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Full Name * <span className="required-indicator">(Required)</span></label>
-                <input
-                  type="text"
-                  value={addForm.name}
-                  onChange={(e) => setAddForm({...addForm, name: e.target.value})}
-                  placeholder="e.g., John Doe"
-                  className="modal-input"
-                />
-              </div>
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={addForm.is_pwd}
-                    onChange={(e) => setAddForm({...addForm, is_pwd: e.target.checked})}
-                  />
-                  <Accessibility size={20} style={{ marginLeft: '4px', marginRight: '4px' }} />
-                  <span>Person with Disability (PWD)</span>
-                </label>
-              </div>
-              <div className="form-group">
-                <label>
-                  <Mail size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  Email * <span className="required-indicator">(Required)</span>
-                </label>
-                <input
-                  type="email"
-                  value={addForm.email}
-                  onChange={(e) => setAddForm({...addForm, email: e.target.value})}
-                  placeholder="e.g., john@email.com"
-                  className="modal-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>
-                  <MapPin size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  Province
-                </label>
-                <input
-                  type="text"
-                  value={addForm.province}
-                  onChange={(e) => setAddForm({...addForm, province: e.target.value})}
-                  placeholder="e.g., Metro Manila"
-                  className="modal-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>
-                  <MapPin size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  City
-                </label>
-                <input
-                  type="text"
-                  value={addForm.city}
-                  onChange={(e) => setAddForm({...addForm, city: e.target.value})}
-                  placeholder="e.g., Manila"
-                  className="modal-input"
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="modal-btn-cancel"
-                onClick={() => setShowAddModal(false)}
-              >
-                <X size={18} />
-                Cancel
-              </button>
-              <button 
-                className="modal-btn-save"
-                onClick={handleAddParticipant}
-              >
-                <Check size={18} />
-                Add Participant
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Batch Confirmation Modal */}
-      {showDeleteBatchModal && batchToDelete && (
-        <div className="modal-overlay" onClick={() => !deletingBatch && setShowDeleteBatchModal(false)}>
-          <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header delete-header">
-              <h3>
-                <AlertTriangle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
-                Delete Batch
-              </h3>
-              <button 
-                className="modal-close"
-                onClick={() => setShowDeleteBatchModal(false)}
-                disabled={deletingBatch}
-                title="Close modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="delete-warning">
-                <div className="warning-icon-wrapper">
-                  <AlertTriangle size={64} className="warning-icon" />
-                </div>
-                <h4>Are you absolutely sure?</h4>
-                <p>
-                  You are about to permanently delete the batch:
-                </p>
-                <div className="delete-batch-info">
-                  <strong>{batchToDelete.batch_name}</strong>
-                  <span>{batchToDelete.row_count} participants</span>
-                </div>
-                <p className="warning-text">
-                  This action <strong>CANNOT BE UNDONE</strong>. All {batchToDelete.row_count} participants in this batch will be permanently removed from the database.
-                </p>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="modal-btn-cancel"
-                onClick={() => setShowDeleteBatchModal(false)}
-                disabled={deletingBatch}
-              >
-                <X size={18} />
-                Cancel
-              </button>
-              <button 
-                className="modal-btn-delete"
-                onClick={handleDeleteBatch}
-                disabled={deletingBatch}
-              >
-                <Trash2 size={18} />
-                {deletingBatch ? 'Deleting...' : 'Delete Batch'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
+  )
 }
 
-// ✅ Wrap with Suspense and export
-export default function QtimeParticipantsPage() {
+// Loading fallback
+function LoadingFallback() {
+  return <div>Loading participant schedules...</div>
+}
+
+// Main export wrapped in Suspense
+export default function ParticipantSchedulesPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <QtimeParticipantsPageContent />
+    <Suspense fallback={<LoadingFallback />}>
+      <ParticipantSchedulesContent />
     </Suspense>
-  );
+  )
 }
