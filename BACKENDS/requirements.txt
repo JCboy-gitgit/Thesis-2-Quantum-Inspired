@@ -1,0 +1,28 @@
+# Requirements for Quantum-Inspired Room Allocation Algorithms
+# =============================================================
+# Install with: pip install -r requirements.txt
+
+# ================== CORE DEPENDENCIES ==================
+
+# NumPy - Numerical computing (required by all algorithms)
+numpy>=1.21.0
+
+# ================== CP-SAT SOLVER ==================
+# Google OR-Tools - Constraint Programming solver
+ortools>=9.6.0
+
+# ================== QUANTUM (QAOA) ==================
+# Qiskit - IBM's quantum computing framework
+qiskit>=1.0.0
+qiskit-aer>=0.13.0
+qiskit-algorithms>=0.3.0
+qiskit-optimization>=0.6.0
+
+# ================== VISUALIZATION ==================
+# Matplotlib - For plotting convergence curves
+matplotlib>=3.5.0
+
+# ================== OPTIONAL ==================
+# For D-Wave quantum annealing (if you have access)
+# dwave-system>=1.0.0
+# dwave-ocean-sdk>=6.0.0
