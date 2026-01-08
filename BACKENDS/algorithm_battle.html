@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚔️ Real Algorithm Battle Arena</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0f1a3e 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #ff0080, #00ffff, #ff0080);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .real-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #000;
+            margin-left: 10px;
+        }
+
+        /* Server Status */
+        .server-status {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.connected { background: #4CAF50; }
+        .status-dot.disconnected { background: #f44336; }
+        .status-dot.checking { background: #FFC107; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Battle Config */
+        .config-panel {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-panel h2 {
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .config-item {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .config-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .config-item input, .config-item select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+        }
+
+        .config-item input:focus, .config-item select:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Algorithm Toggles */
+        .algo-toggles {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .algo-toggle {
+            padding: 10px 20px;
+            border: 2px solid;
+            border-radius: 25px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+        }
+
+        .algo-toggle.cpsat { border-color: #4CAF50; }
+        .algo-toggle.qaoa { border-color: #9C27B0; }
+        .algo-toggle.qia { border-color: #2196F3; }
+        .algo-toggle.qubo { border-color: #FF9800; }
+
+        .algo-toggle.active {
+            color: #000;
+        }
+
+        .algo-toggle.cpsat.active { background: #4CAF50; }
+        .algo-toggle.qaoa.active { background: #9C27B0; color: white; }
+        .algo-toggle.qia.active { background: #2196F3; }
+        .algo-toggle.qubo.active { background: #FF9800; }
+
+        /* Advanced Settings */
+        .advanced-toggle {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .advanced-toggle button {
+            background: transparent;
+            border: 1px solid #888;
+            color: #888;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .advanced-toggle button:hover {
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+
+        .advanced-settings {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .advanced-settings.show {
+            display: block;
+        }
+
+        /* Battle Button */
+        .battle-btn {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 25px auto;
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+            background: linear-gradient(45deg, #ff0080, #ff4444);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .battle-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 0, 128, 0.6);
+        }
+
+        .battle-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* Battle Arena */
+        .battle-arena {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #ff0080;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .arena-title {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        /* Fighter Cards Grid */
+        .fighters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .fighter-card {
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(20,20,40,0.9) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .fighter-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .fighter-card.cpsat { border: 2px solid #4CAF50; }
+        .fighter-card.cpsat::before { background: #4CAF50; }
+        .fighter-card.qaoa { border: 2px solid #9C27B0; }
+        .fighter-card.qaoa::before { background: #9C27B0; }
+        .fighter-card.qia { border: 2px solid #2196F3; }
+        .fighter-card.qia::before { background: #2196F3; }
+        .fighter-card.qubo { border: 2px solid #FF9800; }
+        .fighter-card.qubo::before { background: #FF9800; }
+
+        .fighter-avatar {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        .fighter-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .fighter-type {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .fighter-status {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .fighter-status.waiting { background: rgba(100,100,100,0.5); color: #888; }
+        .fighter-status.running { background: rgba(255,0,128,0.3); color: #ff0080; animation: statusPulse 0.5s infinite; }
+        .fighter-status.completed { background: rgba(76,175,80,0.3); color: #4CAF50; }
+        .fighter-status.winner { background: linear-gradient(45deg, #ffd700, #ffaa00); color: #000; }
+        .fighter-status.error { background: rgba(244,67,54,0.3); color: #f44336; }
+
+        @keyframes statusPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Stats Display */
+        .fighter-stats {
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #888;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+        }
+
+        .stat-value.time {
+            color: #00ffff;
+            font-size: 1.2rem;
+        }
+
+        /* Winner Card */
+        .fighter-card.winner-highlight {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Results Panel */
+        .results-panel {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 25px;
+            display: none;
+        }
+
+        .results-panel.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-panel h2 {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .winner-banner {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(45deg, rgba(255,215,0,0.2), rgba(255,170,0,0.2));
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .winner-banner h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: #ffd700;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th, .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .results-table th {
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Problem Info */
+        .problem-info {
+            background: rgba(0,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .problem-info span {
+            margin: 0 15px;
+            color: #00ffff;
+        }
+
+        /* Schedule Visualization */
+        .schedule-viz {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        .schedule-viz h3 {
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .viz-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .viz-tab {
+            padding: 10px 25px;
+            border: 2px solid;
+            border-radius: 25px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .viz-tab.cpsat { border-color: #4CAF50; }
+        .viz-tab.qaoa { border-color: #9C27B0; }
+        .viz-tab.qia { border-color: #2196F3; }
+        .viz-tab.qubo { border-color: #FF9800; }
+
+        .viz-tab.active, .viz-tab:hover {
+            color: #000;
+        }
+        .viz-tab.cpsat.active, .viz-tab.cpsat:hover { background: #4CAF50; }
+        .viz-tab.qaoa.active, .viz-tab.qaoa:hover { background: #9C27B0; color: white; }
+        .viz-tab.qia.active, .viz-tab.qia:hover { background: #2196F3; }
+        .viz-tab.qubo.active, .viz-tab.qubo:hover { background: #FF9800; }
+
+        .schedule-container {
+            display: none;
+        }
+
+        .schedule-container.active {
+            display: block;
+        }
+
+        /* Schedule Grid */
+        .schedule-grid {
+            display: grid;
+            gap: 2px;
+            background: rgba(0,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            min-width: 800px;
+        }
+
+        .schedule-header {
+            background: linear-gradient(180deg, #1a1a3e, #0a0a2e);
+            padding: 10px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #00ffff;
+            border-radius: 5px;
+        }
+
+        .room-label {
+            background: linear-gradient(90deg, #1a1a3e, #0a0a2e);
+            padding: 10px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: #ffd700;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .room-capacity {
+            font-size: 0.6rem;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .schedule-cell {
+            background: rgba(0,0,0,0.5);
+            min-height: 60px;
+            border-radius: 5px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .schedule-cell:hover {
+            background: rgba(0,255,255,0.1);
+        }
+
+        .course-block {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 5px;
+            padding: 5px;
+            font-size: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: coursePlace 0.5s ease;
+            overflow: hidden;
+        }
+
+        @keyframes coursePlace {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .course-block .course-id {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .course-block .course-info {
+            font-size: 0.6rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .course-block .student-count {
+            font-size: 0.55rem;
+            opacity: 0.7;
+        }
+
+        /* Course colors */
+        .course-block.c1 { background: linear-gradient(135deg, #e91e63, #c2185b); }
+        .course-block.c2 { background: linear-gradient(135deg, #9c27b0, #7b1fa2); }
+        .course-block.c3 { background: linear-gradient(135deg, #673ab7, #512da8); }
+        .course-block.c4 { background: linear-gradient(135deg, #3f51b5, #303f9f); }
+        .course-block.c5 { background: linear-gradient(135deg, #2196f3, #1976d2); }
+        .course-block.c6 { background: linear-gradient(135deg, #00bcd4, #0097a7); }
+        .course-block.c7 { background: linear-gradient(135deg, #009688, #00796b); }
+        .course-block.c8 { background: linear-gradient(135deg, #4caf50, #388e3c); }
+        .course-block.c9 { background: linear-gradient(135deg, #8bc34a, #689f38); }
+        .course-block.c10 { background: linear-gradient(135deg, #cddc39, #afb42b); color: #000; }
+        .course-block.c11 { background: linear-gradient(135deg, #ffeb3b, #fbc02d); color: #000; }
+        .course-block.c12 { background: linear-gradient(135deg, #ffc107, #ffa000); color: #000; }
+        .course-block.c13 { background: linear-gradient(135deg, #ff9800, #f57c00); }
+        .course-block.c14 { background: linear-gradient(135deg, #ff5722, #e64a19); }
+        .course-block.c15 { background: linear-gradient(135deg, #795548, #5d4037); }
+        .course-block.c16 { background: linear-gradient(135deg, #607d8b, #455a64); }
+        .course-block.c17 { background: linear-gradient(135deg, #f44336, #d32f2f); }
+        .course-block.c18 { background: linear-gradient(135deg, #e040fb, #aa00ff); }
+        .course-block.c19 { background: linear-gradient(135deg, #536dfe, #304ffe); }
+        .course-block.c20 { background: linear-gradient(135deg, #00e676, #00c853); color: #000; }
+
+        /* Stats Summary */
+        .viz-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .viz-stat {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .viz-stat .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: #00ffff;
+        }
+
+        .viz-stat .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* Course Legend */
+        .course-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        /* Conflict highlight */
+        .schedule-cell.conflict {
+            animation: conflictPulse 1s infinite;
+        }
+
+        @keyframes conflictPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,0,0,0.5); }
+            50% { box-shadow: 0 0 20px rgba(255,0,0,0.8); }
+        }
+
+        /* No schedule message */
+        .no-schedule {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-style: italic;
+        }
+
+        /* Algorithm Explanation */
+        .algo-explain {
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .algo-explain h3 {
+            color: #00ffff;
+            margin-bottom: 15px;
+        }
+
+        .strength-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .strength-card {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .strength-card.cpsat { border-color: #4CAF50; }
+        .strength-card.qaoa { border-color: #9C27B0; }
+        .strength-card.qia { border-color: #2196F3; }
+        .strength-card.qubo { border-color: #FF9800; }
+
+        .strength-card h4 { margin-bottom: 10px; }
+        .strength-card .strengths { color: #4CAF50; font-size: 0.9rem; margin-bottom: 5px; }
+        .strength-card .weaknesses { color: #f44336; font-size: 0.9rem; }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0,255,255,0.3);
+            border-top-color: #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .fighters-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ REAL ALGORITHM BATTLE <span class="real-badge">LIVE EXECUTION</span></h1>
+        <p class="subtitle">Watch actual Python algorithms compete in real-time!</p>
+
+        <!-- Server Status -->
+        <div class="server-status">
+            <span class="status-dot checking" id="statusDot"></span>
+            <span id="serverStatus">Checking server connection...</span>
+        </div>
+
+        <!-- Configuration -->
+        <div class="config-panel">
+            <h2>⚙️ BATTLE CONFIGURATION</h2>
+            
+            <div class="config-grid">
+                <div class="config-item">
+                    <label>📚 Number of Courses</label>
+                    <input type="number" id="courses" value="8" min="2" max="20">
+                    <small style="color:#888">More courses = harder problem</small>
+                </div>
+                <div class="config-item">
+                    <label>🏫 Number of Rooms</label>
+                    <input type="number" id="rooms" value="5" min="2" max="15">
+                    <small style="color:#888">Fewer rooms = tighter constraints</small>
+                </div>
+                <div class="config-item">
+                    <label>⏰ Time Slots</label>
+                    <input type="number" id="timeslots" value="20" min="5" max="50">
+                    <small style="color:#888">Fewer slots = more competition</small>
+                </div>
+            </div>
+
+            <p style="text-align:center; margin-top:15px; color:#00ffff;">
+                Problem Size: <strong id="problemSize">800</strong> binary variables
+            </p>
+
+            <!-- Algorithm Selection -->
+            <h3 style="text-align:center; margin-top:20px; color:#888;">Select Fighters:</h3>
+            <div class="algo-toggles">
+                <button class="algo-toggle cpsat active" onclick="toggleAlgo('cpsat')">🤖 CP-SAT</button>
+                <button class="algo-toggle qaoa active" onclick="toggleAlgo('qaoa')">⚛️ QAOA</button>
+                <button class="algo-toggle qia active" onclick="toggleAlgo('qia')">🌀 QIA</button>
+                <button class="algo-toggle qubo active" onclick="toggleAlgo('qubo')">🔥 QUBO</button>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="advanced-toggle">
+                <button onclick="toggleAdvanced()">⚙️ Advanced Settings</button>
+            </div>
+
+            <div class="advanced-settings" id="advancedSettings">
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>🌀 QIA Generations</label>
+                        <input type="number" id="qiaGenerations" value="50" min="10" max="200">
+                    </div>
+                    <div class="config-item">
+                        <label>🌀 QIA Population</label>
+                        <input type="number" id="qiaPopulation" value="20" min="5" max="50">
+                    </div>
+                    <div class="config-item">
+                        <label>🔥 QUBO Iterations</label>
+                        <input type="number" id="quboIterations" value="5000" min="1000" max="50000">
+                    </div>
+                    <div class="config-item">
+                        <label>🔥 QUBO Initial Temp</label>
+                        <input type="number" id="quboTemp" value="100" min="10" max="1000">
+                    </div>
+                    <div class="config-item">
+                        <label>🤖 CP-SAT Time Limit (s)</label>
+                        <input type="number" id="cpsatTimeLimit" value="30" min="5" max="120">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Battle Button -->
+        <button class="battle-btn" id="battleBtn" onclick="startBattle()" disabled>
+            ⚔️ START REAL BATTLE!
+        </button>
+
+        <!-- Battle Arena -->
+        <div class="battle-arena">
+            <h2 class="arena-title">🔥 BATTLE ARENA 🔥</h2>
+
+            <div class="problem-info" id="problemInfo" style="display:none;">
+                <strong>Problem:</strong>
+                <span id="infoText"></span>
+            </div>
+
+            <div class="fighters-grid" id="fightersGrid">
+                <!-- Fighter cards will be generated here -->
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-panel" id="resultsPanel">
+            <h2>🏆 BATTLE RESULTS 🏆</h2>
+            <div class="winner-banner">
+                <p>👑</p>
+                <h3>CHAMPION: <span id="winnerName">-</span></h3>
+                <p id="winnerStats">-</p>
+            </div>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Algorithm</th>
+                        <th>Solve Time</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Schedule Visualization -->
+        <div class="schedule-viz" id="scheduleViz" style="display:none;">
+            <h3>📅 ROOM ALLOCATION VISUALIZATION</h3>
+            <p style="text-align:center; color:#888; margin-bottom:15px;">See how each algorithm allocated courses to rooms and time slots</p>
+            
+            <div class="viz-tabs" id="vizTabs">
+                <!-- Tabs generated dynamically -->
+            </div>
+
+            <div id="vizContainers">
+                <!-- Schedule grids generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Algorithm Strengths -->
+        <div class="algo-explain">
+            <h3>💪 Algorithm Strengths & Weaknesses</h3>
+            <div class="strength-grid">
+                <div class="strength-card cpsat">
+                    <h4>🤖 CP-SAT</h4>
+                    <div class="strengths">✓ Exact optimal solution<br>✓ Fast for small-medium problems<br>✓ Handles many constraints well</div>
+                    <div class="weaknesses">✗ Can be slow on very large problems<br>✗ May timeout on hard instances</div>
+                </div>
+                <div class="strength-card qaoa">
+                    <h4>⚛️ QAOA</h4>
+                    <div class="strengths">✓ True quantum algorithm<br>✓ Parallel exploration via superposition<br>✓ Can find good solutions fast</div>
+                    <div class="weaknesses">✗ Limited by qubit count<br>✗ Simulation is exponentially slow<br>✗ Only handles tiny problems in simulation</div>
+                </div>
+                <div class="strength-card qia">
+                    <h4>🌀 QIA</h4>
+                    <div class="strengths">✓ Quantum speedup without quantum hardware<br>✓ Escapes local minima (tunneling)<br>✓ Good balance of speed & quality</div>
+                    <div class="weaknesses">✗ Not guaranteed optimal<br>✗ Needs tuning (generations, population)</div>
+                </div>
+                <div class="strength-card qubo">
+                    <h4>🔥 QUBO</h4>
+                    <div class="strengths">✓ Scales to large problems<br>✓ D-Wave quantum annealer compatible<br>✓ Simple energy formulation</div>
+                    <div class="weaknesses">✗ Solution quality varies<br>✗ Depends on cooling schedule<br>✗ May get stuck in local minima</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p style="font-size:1.5rem; color:#00ffff;">⚔️ ALGORITHMS FIGHTING...</p>
+            <p id="loadingStatus">Running real Python algorithms...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let selectedAlgorithms = ['cpsat', 'qaoa', 'qia', 'qubo'];
+        let serverConnected = false;
+
+        const fighterInfo = {
+            cpsat: { name: 'CP-SAT', avatar: '🤖', type: 'Classical Exact Solver', color: '#4CAF50' },
+            qaoa: { name: 'QAOA', avatar: '⚛️', type: 'Quantum Algorithm', color: '#9C27B0' },
+            qia: { name: 'QIA', avatar: '🌀', type: 'Quantum-Inspired', color: '#2196F3' },
+            qubo: { name: 'QUBO', avatar: '🔥', type: 'Simulated Annealing', color: '#FF9800' }
+        };
+
+        // Check server connection
+        async function checkServer() {
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                
+                document.getElementById('statusDot').className = 'status-dot connected';
+                document.getElementById('serverStatus').innerHTML = 
+                    `✓ Server connected! Available: ${data.available_algorithms.join(', ')}`;
+                document.getElementById('battleBtn').disabled = false;
+                serverConnected = true;
+            } catch (error) {
+                document.getElementById('statusDot').className = 'status-dot disconnected';
+                document.getElementById('serverStatus').innerHTML = 
+                    '✗ Server not connected. Run: <code>python battle_server.py</code>';
+                document.getElementById('battleBtn').disabled = true;
+                serverConnected = false;
+            }
+        }
+
+        // Update problem size display
+        function updateProblemSize() {
+            const c = parseInt(document.getElementById('courses').value) || 8;
+            const r = parseInt(document.getElementById('rooms').value) || 5;
+            const t = parseInt(document.getElementById('timeslots').value) || 20;
+            document.getElementById('problemSize').textContent = (c * r * t).toLocaleString();
+        }
+
+        // Toggle algorithm selection
+        function toggleAlgo(algo) {
+            const btn = document.querySelector(`.algo-toggle.${algo}`);
+            if (selectedAlgorithms.includes(algo)) {
+                if (selectedAlgorithms.length > 1) {
+                    selectedAlgorithms = selectedAlgorithms.filter(a => a !== algo);
+                    btn.classList.remove('active');
+                }
+            } else {
+                selectedAlgorithms.push(algo);
+                btn.classList.add('active');
+            }
+        }
+
+        // Toggle advanced settings
+        function toggleAdvanced() {
+            document.getElementById('advancedSettings').classList.toggle('show');
+        }
+
+        // Create fighter cards
+        function createFighterCards() {
+            const grid = document.getElementById('fightersGrid');
+            grid.innerHTML = '';
+            
+            for (const algo of selectedAlgorithms) {
+                const info = fighterInfo[algo];
+                const card = document.createElement('div');
+                card.className = `fighter-card ${algo}`;
+                card.id = `fighter-${algo}`;
+                card.innerHTML = `
+                    <div class="fighter-avatar">${info.avatar}</div>
+                    <div class="fighter-name">${info.name}</div>
+                    <div class="fighter-type">${info.type}</div>
+                    <span class="fighter-status waiting" id="status-${algo}">READY</span>
+                    <div class="fighter-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Solve Time:</span>
+                            <span class="stat-value time" id="time-${algo}">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Scheduled:</span>
+                            <span class="stat-value" id="scheduled-${algo}">-</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Status:</span>
+                            <span class="stat-value" id="result-${algo}">Waiting...</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        // Start the battle!
+        async function startBattle() {
+            if (!serverConnected) {
+                alert('Server not connected! Run: python battle_server.py');
+                return;
+            }
+
+            // Get settings
+            const settings = {
+                courses: parseInt(document.getElementById('courses').value),
+                rooms: parseInt(document.getElementById('rooms').value),
+                timeslots: parseInt(document.getElementById('timeslots').value),
+                algorithms: selectedAlgorithms,
+                settings: {
+                    qia_generations: parseInt(document.getElementById('qiaGenerations').value),
+                    qia_population: parseInt(document.getElementById('qiaPopulation').value),
+                    qubo_iterations: parseInt(document.getElementById('quboIterations').value),
+                    qubo_temp: parseFloat(document.getElementById('quboTemp').value),
+                    cpsat_time_limit: parseInt(document.getElementById('cpsatTimeLimit').value)
+                }
+            };
+
+            // Setup UI
+            createFighterCards();
+            document.getElementById('resultsPanel').classList.remove('show');
+            document.getElementById('loadingOverlay').classList.add('show');
+            document.getElementById('battleBtn').disabled = true;
+
+            // Set all to running
+            for (const algo of selectedAlgorithms) {
+                document.getElementById(`status-${algo}`).textContent = 'FIGHTING...';
+                document.getElementById(`status-${algo}`).className = 'fighter-status running';
+            }
+
+            try {
+                // Call the real API
+                const response = await fetch(`${API_URL}/api/battle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+                
+                // Hide loading
+                document.getElementById('loadingOverlay').classList.remove('show');
+
+                // Show problem info
+                document.getElementById('problemInfo').style.display = 'block';
+                document.getElementById('infoText').innerHTML = 
+                    `${data.problem.courses} courses | ${data.problem.rooms} rooms | ` +
+                    `${data.problem.time_slots} slots | ${data.problem.binary_variables.toLocaleString()} variables`;
+
+                // Update each fighter card
+                for (const result of data.results) {
+                    const algo = result.algorithm.toLowerCase().replace('-', '');
+                    const algoKey = algo === 'cpsat' ? 'cpsat' : algo;
+                    
+                    // Find matching key
+                    let matchedKey = null;
+                    for (const key of selectedAlgorithms) {
+                        if (result.algorithm.toLowerCase().includes(key) || 
+                            key.includes(result.algorithm.toLowerCase().replace('-',''))) {
+                            matchedKey = key;
+                            break;
+                        }
+                    }
+                    
+                    if (!matchedKey) {
+                        // Try direct match
+                        if (result.algorithm === 'CP-SAT') matchedKey = 'cpsat';
+                        else if (result.algorithm === 'QIA') matchedKey = 'qia';
+                        else if (result.algorithm === 'QUBO') matchedKey = 'qubo';
+                        else if (result.algorithm === 'QAOA') matchedKey = 'qaoa';
+                    }
+                    
+                    if (matchedKey) {
+                        document.getElementById(`time-${matchedKey}`).textContent = 
+                            result.solve_time.toFixed(4) + 's';
+                        document.getElementById(`scheduled-${matchedKey}`).textContent = 
+                            `${result.scheduled}/${result.total_courses}`;
+                        document.getElementById(`result-${matchedKey}`).textContent = 
+                            result.status;
+                        
+                        // Update status badge
+                        if (result.rank === 1) {
+                            document.getElementById(`status-${matchedKey}`).textContent = '👑 WINNER!';
+                            document.getElementById(`status-${matchedKey}`).className = 'fighter-status winner';
+                            document.getElementById(`fighter-${matchedKey}`).classList.add('winner-highlight');
+                        } else {
+                            document.getElementById(`status-${matchedKey}`).textContent = `#${result.rank}`;
+                            document.getElementById(`status-${matchedKey}`).className = 'fighter-status completed';
+                        }
+                    }
+                }
+
+                // Show results panel
+                if (data.winner) {
+                    document.getElementById('winnerName').textContent = data.winner.algorithm;
+                    const winnerEff = data.winner.total_courses > 0 
+                        ? ((data.winner.scheduled / data.winner.total_courses) * 100).toFixed(1)
+                        : 0;
+                    document.getElementById('winnerStats').textContent = 
+                        `⚡ ${data.winner.solve_time.toFixed(4)}s | 📚 ${data.winner.scheduled}/${data.winner.total_courses} courses (${winnerEff}% efficiency)`;
+                }
+
+                // Fill results table
+                const tbody = document.getElementById('resultsBody');
+                tbody.innerHTML = '';
+                const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+                
+                data.results.forEach((result, idx) => {
+                    const row = document.createElement('tr');
+                    const eff = result.total_courses > 0 
+                        ? ((result.scheduled / result.total_courses) * 100).toFixed(1)
+                        : 0;
+                    const algoKey = result.algorithm.toLowerCase().replace('-','');
+                    const effColor = eff >= 100 ? '#4CAF50' : eff >= 80 ? '#FFC107' : '#f44336';
+                    const statusColor = ['OPTIMAL', 'FEASIBLE', 'SUCCESS'].includes(result.status) ? '#4CAF50' : '#f44336';
+                    
+                    row.innerHTML = `
+                        <td><span style="font-size:1.5rem">${medals[idx] || ''}</span></td>
+                        <td><strong style="color:${fighterInfo[algoKey === 'cpsat' ? 'cpsat' : algoKey]?.color || '#fff'}">${result.algorithm}</strong></td>
+                        <td style="font-family:'Orbitron',monospace; color:${idx===0?'#ffd700':'#fff'}">${result.solve_time.toFixed(4)}s</td>
+                        <td>${result.scheduled}/${result.total_courses} <span style="color:${effColor}">(${eff}%)</span></td>
+                        <td style="color:${statusColor}">${result.status}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('resultsPanel').classList.add('show');
+
+                // Generate schedule visualization
+                generateScheduleViz(data);
+
+            } catch (error) {
+                console.error('Battle error:', error);
+                document.getElementById('loadingOverlay').classList.remove('show');
+                alert('Battle failed! Check if server is running.\n\nError: ' + error.message);
+            }
+
+            document.getElementById('battleBtn').disabled = false;
+        }
+
+        // Initialize
+        document.getElementById('courses').addEventListener('input', updateProblemSize);
+        document.getElementById('rooms').addEventListener('input', updateProblemSize);
+        document.getElementById('timeslots').addEventListener('input', updateProblemSize);
+        
+        updateProblemSize();
+        createFighterCards();
+        checkServer();
+        
+        // Re-check server every 5 seconds
+        setInterval(checkServer, 5000);
+
+        // Store battle data for visualization
+        let lastBattleData = null;
+
+        // Generate schedule visualization
+        function generateScheduleViz(data) {
+            if (!data || !data.results) return;
+            
+            lastBattleData = data;
+            const vizSection = document.getElementById('scheduleViz');
+            const tabsContainer = document.getElementById('vizTabs');
+            const vizContainers = document.getElementById('vizContainers');
+            
+            vizSection.style.display = 'block';
+            tabsContainer.innerHTML = '';
+            vizContainers.innerHTML = '';
+
+            // Create tabs and containers for each algorithm
+            data.results.forEach((result, idx) => {
+                const algoKey = result.algorithm.toLowerCase().replace('-', '');
+                const isWinner = idx === 0;
+                
+                // Create tab
+                const tab = document.createElement('button');
+                tab.className = `viz-tab ${algoKey} ${idx === 0 ? 'active' : ''}`;
+                tab.textContent = `${isWinner ? '👑 ' : ''}${result.algorithm}`;
+                tab.onclick = () => switchVizTab(algoKey);
+                tabsContainer.appendChild(tab);
+
+                // Create container
+                const container = document.createElement('div');
+                container.className = `schedule-container ${idx === 0 ? 'active' : ''}`;
+                container.id = `viz-${algoKey}`;
+                container.innerHTML = generateScheduleGrid(result, data.problem);
+                vizContainers.appendChild(container);
+            });
+        }
+
+        function switchVizTab(algoKey) {
+            // Update tabs
+            document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.viz-tab.${algoKey}`).classList.add('active');
+            
+            // Update containers
+            document.querySelectorAll('.schedule-container').forEach(c => c.classList.remove('active'));
+            document.getElementById(`viz-${algoKey}`).classList.add('active');
+        }
+
+        function generateScheduleGrid(result, problem) {
+            const schedule = result.schedule || [];
+            const numRooms = problem.rooms;
+            const numSlots = Math.min(problem.time_slots, 10); // Show max 10 slots for readability
+            
+            if (schedule.length === 0) {
+                return `
+                    <div class="no-schedule">
+                        <p>⚠️ No schedule data available</p>
+                        <p style="font-size:0.8rem">Algorithm: ${result.algorithm} | Status: ${result.status}</p>
+                    </div>
+                `;
+            }
+
+            // Create grid HTML
+            // Calculate efficiency percentage
+            const efficiency = result.total_courses > 0 
+                ? ((result.scheduled / result.total_courses) * 100).toFixed(1) 
+                : 0;
+            
+            let gridHTML = `
+                <div class="viz-stats">
+                    <div class="viz-stat">
+                        <div class="stat-number">${result.solve_time.toFixed(4)}s</div>
+                        <div class="stat-label">⏱️ Solve Time</div>
+                    </div>
+                    <div class="viz-stat">
+                        <div class="stat-number">${result.scheduled}/${result.total_courses}</div>
+                        <div class="stat-label">📚 Scheduled</div>
+                    </div>
+                    <div class="viz-stat">
+                        <div class="stat-number" style="color:${efficiency >= 100 ? '#4CAF50' : efficiency >= 80 ? '#FFC107' : '#f44336'}">${efficiency}%</div>
+                        <div class="stat-label">📊 Efficiency</div>
+                    </div>
+                    <div class="viz-stat">
+                        <div class="stat-number" style="color:${result.status==='OPTIMAL'||result.status==='SUCCESS'||result.status==='FEASIBLE'?'#4CAF50':'#FFC107'}">${result.status}</div>
+                        <div class="stat-label">🎯 Status</div>
+                    </div>
+                    <div class="viz-stat">
+                        <div class="stat-number" style="font-size:0.9rem">${result.details?.solver || 'N/A'}</div>
+                        <div class="stat-label">🔧 Solver</div>
+                    </div>
+                </div>
+            `;
+
+            // Extract unique rooms from the actual schedule data
+            const roomsInSchedule = [...new Set(schedule.map(s => s.room_id))].sort();
+            const displayRooms = roomsInSchedule.length > 0 ? roomsInSchedule.slice(0, 8) : 
+                Array.from({length: Math.min(numRooms, 8)}, (_, i) => `R${String(i+1).padStart(3, '0')}`);
+            
+            // Extract room capacities from schedule data
+            const roomCapacities = {};
+            schedule.forEach(s => {
+                if (s.room_id && s.room_capacity) {
+                    roomCapacities[s.room_id] = s.room_capacity;
+                }
+            });
+
+            // Build schedule grid
+            const cols = numSlots + 1; // +1 for room labels
+            gridHTML += `<div class="schedule-grid" style="grid-template-columns: 100px repeat(${numSlots}, 1fr);">`;
+            
+            // Header row - Time slots
+            gridHTML += `<div class="schedule-header">Room</div>`;
+            for (let t = 0; t < numSlots; t++) {
+                const hour = 8 + (t % 10); // Wrap hours for display
+                gridHTML += `<div class="schedule-header">Slot ${t}<br>${hour}:00</div>`;
+            }
+
+            // Room rows - use actual rooms from schedule
+            for (const roomId of displayRooms) {
+                const capacity = roomCapacities[roomId] || '?';
+                
+                gridHTML += `
+                    <div class="room-label">
+                        ${roomId}
+                        <span class="room-capacity">Cap: ${capacity}</span>
+                    </div>
+                `;
+                
+                for (let t = 0; t < numSlots; t++) {
+                    // Find if there's a course in this slot - improved matching
+                    const course = schedule.find(s => {
+                        const sRoom = s.room_id || s.room || '';
+                        const sSlot = s.time_slot_id ?? s.timeslot ?? s.time_slot ?? -1;
+                        // Match by room ID and time slot ID
+                        return sRoom === roomId && parseInt(sSlot) === t;
+                    });
+                    
+                    if (course) {
+                        const courseNum = parseInt((course.course_id || course.course || 'C001').replace(/\D/g, '')) || 1;
+                        const colorClass = `c${((courseNum - 1) % 20) + 1}`;
+                        gridHTML += `
+                            <div class="schedule-cell">
+                                <div class="course-block ${colorClass}">
+                                    <span class="course-id">${course.course_id || course.course}</span>
+                                    <span class="course-info">${course.course_name || 'Course ' + courseNum}</span>
+                                    <span class="student-count">👥 ${course.students || '~30'}</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        gridHTML += `<div class="schedule-cell"></div>`;
+                    }
+                }
+            }
+            
+            gridHTML += `</div>`;
+
+            // Course Legend
+            gridHTML += `<div class="course-legend"><strong style="margin-right:10px;">📚 Courses:</strong>`;
+            const uniqueCourses = [...new Set(schedule.map(s => s.course_id || s.course))];
+            uniqueCourses.slice(0, 10).forEach((cid, idx) => {
+                const courseNum = parseInt(cid.replace(/\D/g, '')) || (idx + 1);
+                const colorClass = `c${((courseNum - 1) % 20) + 1}`;
+                gridHTML += `
+                    <div class="legend-item">
+                        <div class="legend-color course-block ${colorClass}"></div>
+                        <span>${cid}</span>
+                    </div>
+                `;
+            });
+            if (uniqueCourses.length > 10) {
+                gridHTML += `<span style="color:#888">... +${uniqueCourses.length - 10} more</span>`;
+            }
+            gridHTML += `</div>`;
+
+            // Algorithm details
+            if (result.details) {
+                gridHTML += `
+                    <div style="margin-top:15px; padding:15px; background:rgba(0,0,0,0.3); border-radius:10px;">
+                        <h4 style="color:#00ffff; margin-bottom:10px;">🔧 Algorithm Details</h4>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:0.85rem;">
+                            ${Object.entries(result.details).map(([k, v]) => `
+                                <div><span style="color:#888">${k.replace(/_/g, ' ')}:</span> <strong>${v}</strong></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return gridHTML;
+        }
+    </script>
+</body>
+</html>

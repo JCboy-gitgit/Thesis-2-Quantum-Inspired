@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏁 Algorithm Race - Room Allocation Solver</title>
+    <title>⚔️ Algorithm Battle Arena - Room Allocation Solver</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,42 +14,101 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0f1a3e 100%);
             min-height: 100vh;
             color: white;
             padding: 20px;
+            overflow-x: hidden;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         h1 {
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #ff0080, #00ffff, #ff0080);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease infinite;
+            text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         .subtitle {
             text-align: center;
-            color: #888;
+            color: #00ffff;
             margin-bottom: 30px;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Battle Arena */
+        .battle-arena {
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,0,40,0.9) 100%);
+            border: 2px solid #ff0080;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(255, 0, 128, 0.3), inset 0 0 100px rgba(0, 255, 255, 0.05);
+        }
+
+        .battle-arena::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,0,128,0.1) 0%, transparent 50%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .arena-title {
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            position: relative;
+            z-index: 1;
         }
 
         /* Problem Setup */
         .setup-panel {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00ffff;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .setup-panel h2 {
             margin-bottom: 15px;
-            color: #00d4ff;
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
         }
 
         .setup-grid {
@@ -57,203 +118,351 @@
         }
 
         .setup-item {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 255, 255, 0.1);
             padding: 15px;
             border-radius: 10px;
             text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
         }
 
         .setup-item label {
             display: block;
             margin-bottom: 8px;
             color: #aaa;
+            font-size: 0.9rem;
         }
 
         .setup-item input {
-            width: 80px;
-            padding: 8px;
-            border: none;
-            border-radius: 5px;
+            width: 100px;
+            padding: 10px;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
             text-align: center;
-            font-size: 1.2rem;
-            background: #2a2a4a;
-            color: white;
+            font-size: 1.5rem;
+            font-family: 'Orbitron', sans-serif;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffff;
+            transition: all 0.3s;
         }
 
-        /* Start Button */
-        .start-btn {
+        .setup-item input:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Battle Button */
+        .battle-btn {
             display: block;
             width: 100%;
-            max-width: 300px;
-            margin: 20px auto;
-            padding: 15px 30px;
-            font-size: 1.5rem;
+            max-width: 400px;
+            margin: 25px auto;
+            padding: 20px 40px;
+            font-size: 1.8rem;
             font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
             color: white;
-            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            background: linear-gradient(45deg, #ff0080, #ff4444, #ff0080);
+            background-size: 200% 200%;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s;
             text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .start-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-        }
-
-        .start-btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Race Track */
-        .race-track {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .race-track h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #ffd700;
-        }
-
-        .algorithm-lane {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .algo-info {
-            width: 150px;
-            flex-shrink: 0;
-        }
-
-        .algo-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .algo-type {
-            font-size: 0.8rem;
-            color: #888;
-        }
-
-        .track {
-            flex: 1;
-            height: 40px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 20px;
-            margin: 0 15px;
+            letter-spacing: 3px;
             position: relative;
             overflow: hidden;
+            z-index: 1;
+            animation: btnPulse 2s ease infinite;
         }
 
-        .runner {
+        @keyframes btnPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 0, 128, 0.5); }
+            50% { box-shadow: 0 0 60px rgba(255, 0, 128, 0.8), 0 0 100px rgba(255, 68, 68, 0.4); }
+        }
+
+        .battle-btn:hover {
+            transform: scale(1.05);
+            animation: btnPulse 0.5s ease infinite;
+        }
+
+        .battle-btn:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+            animation: none;
+        }
+
+        /* Fighter Cards */
+        .fighters-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .fighter-card {
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(20,20,40,0.9) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .fighter-card::before {
+            content: '';
             position: absolute;
+            top: 0;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.5rem;
-            transition: left 0.1s linear;
+            right: 0;
+            height: 4px;
         }
 
-        .progress-bar {
-            height: 100%;
-            border-radius: 20px;
-            transition: width 0.1s linear;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
+        .fighter-card.cpsat { border: 2px solid #4CAF50; }
+        .fighter-card.cpsat::before { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+        .fighter-card.qaoa { border: 2px solid #9C27B0; }
+        .fighter-card.qaoa::before { background: linear-gradient(90deg, #9C27B0, #E91E63); }
+        .fighter-card.qia { border: 2px solid #2196F3; }
+        .fighter-card.qia::before { background: linear-gradient(90deg, #2196F3, #00BCD4); }
+        .fighter-card.qubo { border: 2px solid #FF9800; }
+        .fighter-card.qubo::before { background: linear-gradient(90deg, #FF9800, #FFC107); }
+
+        .fighter-avatar {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px currentColor);
         }
 
-        .cpsat .progress-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
-        .qaoa .progress-bar { background: linear-gradient(90deg, #9C27B0, #E91E63); }
-        .qia .progress-bar { background: linear-gradient(90deg, #2196F3, #00BCD4); }
-        .qubo .progress-bar { background: linear-gradient(90deg, #FF9800, #FFC107); }
+        .fighter-card.cpsat .fighter-avatar { color: #4CAF50; }
+        .fighter-card.qaoa .fighter-avatar { color: #9C27B0; }
+        .fighter-card.qia .fighter-avatar { color: #2196F3; }
+        .fighter-card.qubo .fighter-avatar { color: #FF9800; }
 
-        .algo-stats {
-            width: 120px;
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        .time-display {
-            font-size: 1.2rem;
+        .fighter-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
             font-weight: bold;
-            font-family: monospace;
+            margin-bottom: 5px;
         }
 
-        .status {
+        .fighter-type {
             font-size: 0.8rem;
             color: #888;
+            margin-bottom: 15px;
         }
 
-        .status.running { color: #00d4ff; }
-        .status.completed { color: #4CAF50; }
-        .status.winner { color: #ffd700; }
+        /* Power Bar */
+        .power-bar-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .power-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+            position: relative;
+        }
+
+        .power-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .fighter-card.cpsat .power-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+        .fighter-card.qaoa .power-bar { background: linear-gradient(90deg, #9C27B0, #E91E63); }
+        .fighter-card.qia .power-bar { background: linear-gradient(90deg, #2196F3, #00BCD4); }
+        .fighter-card.qubo .power-bar { background: linear-gradient(90deg, #FF9800, #FFC107); }
+
+        /* Time Display - Anime Style */
+        .time-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 10px 0;
+            transition: all 0.1s;
+        }
+
+        .time-display.racing {
+            animation: timeFlicker 0.1s infinite;
+        }
+
+        @keyframes timeFlicker {
+            0%, 100% { opacity: 1; text-shadow: 0 0 10px currentColor; }
+            50% { opacity: 0.8; text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+        }
+
+        .fighter-card.cpsat .time-display { color: #4CAF50; }
+        .fighter-card.qaoa .time-display { color: #9C27B0; }
+        .fighter-card.qia .time-display { color: #2196F3; }
+        .fighter-card.qubo .time-display { color: #FF9800; }
+
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-badge.ready { background: rgba(100, 100, 100, 0.5); color: #888; }
+        .status-badge.fighting { background: rgba(255, 0, 128, 0.3); color: #ff0080; animation: fightPulse 0.5s infinite; }
+        .status-badge.winner { background: linear-gradient(45deg, #ffd700, #ffaa00); color: #000; animation: winnerGlow 0.5s infinite; }
+        .status-badge.finished { background: rgba(76, 175, 80, 0.3); color: #4CAF50; }
+
+        @keyframes fightPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes winnerGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+        }
+
+        /* Winner Animation */
+        .fighter-card.winner-card {
+            animation: winnerCard 0.5s ease;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        @keyframes winnerCard {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1.05); }
+        }
+
+        /* Battle Effects */
+        .battle-effect {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 50px rgba(255, 215, 0, 0.8), 0 0 100px rgba(255, 0, 128, 0.5);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            animation: battleText 1.5s ease forwards;
+        }
+
+        @keyframes battleText {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            40% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
 
         /* Results Panel */
         .results-panel {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(30,0,60,0.9) 100%);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 25px;
             display: none;
+            position: relative;
+            z-index: 1;
         }
 
         .results-panel.show {
             display: block;
-            animation: fadeIn 0.5s;
+            animation: resultsAppear 0.5s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+        @keyframes resultsAppear {
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .results-panel h2 {
             text-align: center;
+            font-family: 'Orbitron', sans-serif;
             margin-bottom: 20px;
             color: #ffd700;
+            font-size: 2rem;
         }
 
         .winner-banner {
             text-align: center;
-            padding: 20px;
-            background: linear-gradient(45deg, #ffd700, #ffaa00);
-            border-radius: 10px;
+            padding: 30px;
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.2), rgba(255, 170, 0, 0.2));
+            border: 2px solid #ffd700;
+            border-radius: 15px;
             margin-bottom: 20px;
-            color: #1a1a2e;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .winner-banner::before {
+            content: '👑';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            animation: crownBounce 1s ease infinite;
+        }
+
+        @keyframes crownBounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
         }
 
         .winner-banner h3 {
-            font-size: 2rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        .winner-banner p {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-top: 10px;
         }
 
         .results-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
 
         .results-table th,
         .results-table td {
-            padding: 12px;
+            padding: 15px;
             text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .results-table th {
-            color: #00d4ff;
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
         }
 
         .results-table tr:hover {
@@ -261,19 +470,23 @@
         }
 
         .medal {
-            font-size: 1.5rem;
+            font-size: 2rem;
         }
 
         /* Explanation Panel */
         .explanation {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #00ffff;
             border-radius: 15px;
             padding: 20px;
             margin-top: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .explanation h3 {
-            color: #00d4ff;
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
             margin-bottom: 15px;
         }
 
@@ -284,7 +497,7 @@
         }
 
         .algo-card {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.5);
             padding: 15px;
             border-radius: 10px;
             border-left: 4px solid;
@@ -295,162 +508,235 @@
         .algo-card.qia { border-color: #2196F3; }
         .algo-card.qubo { border-color: #FF9800; }
 
-        .algo-card h4 {
-            margin-bottom: 8px;
+        .algo-card h4 { margin-bottom: 8px; }
+        .algo-card p { font-size: 0.9rem; color: #aaa; }
+
+        /* Pseudocode Section */
+        .pseudocode-section {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
         }
 
-        .algo-card p {
-            font-size: 0.9rem;
-            color: #aaa;
+        .pseudocode-section h3 {
+            color: #00ffff;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
-        /* Animation */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .pseudocode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .running .runner {
-            animation: pulse 0.5s infinite;
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid;
+            border-radius: 25px;
+            background: transparent;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.cpsat { border-color: #4CAF50; }
+        .tab-btn.qaoa { border-color: #9C27B0; }
+        .tab-btn.qia { border-color: #2196F3; }
+        .tab-btn.qubo { border-color: #FF9800; }
+
+        .tab-btn.active, .tab-btn:hover {
+            color: #000;
+        }
+
+        .tab-btn.cpsat.active, .tab-btn.cpsat:hover { background: #4CAF50; }
+        .tab-btn.qaoa.active, .tab-btn.qaoa:hover { background: #9C27B0; }
+        .tab-btn.qia.active, .tab-btn.qia:hover { background: #2196F3; }
+        .tab-btn.qubo.active, .tab-btn.qubo:hover { background: #FF9800; }
+
+        .pseudocode-content {
+            background: #0a0a0a;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .pseudocode-box {
+            display: none;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .pseudocode-box.active {
+            display: block;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            background: #00ffff;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #fff;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: #4CAF50;
+            color: white;
+        }
+
+        /* Scrollbar */
+        .pseudocode-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .pseudocode-box::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .pseudocode-box::-webkit-scrollbar-thumb {
+            background: #00ffff;
+            border-radius: 4px;
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .setup-grid {
-                grid-template-columns: 1fr;
-            }
-            .algo-cards {
-                grid-template-columns: 1fr;
-            }
-            .algorithm-lane {
-                flex-wrap: wrap;
-            }
-            .algo-info, .algo-stats {
-                width: 100%;
-                text-align: center;
-            }
-            .track {
-                margin: 10px 0;
-            }
+        @media (max-width: 900px) {
+            .fighters-grid { grid-template-columns: repeat(2, 1fr); }
+            .setup-grid { grid-template-columns: 1fr; }
+            .algo-cards { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+        }
+
+        @media (max-width: 500px) {
+            .fighters-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏁 Algorithm Race</h1>
-        <p class="subtitle">Room Allocation Solver Comparison</p>
+        <h1>⚔️ ALGORITHM BATTLE ARENA</h1>
+        <p class="subtitle">Who Will Solve The Room Allocation First?</p>
 
-        <!-- Problem Setup -->
-        <div class="setup-panel">
-            <h2>📋 Problem Setup</h2>
-            <div class="setup-grid">
-                <div class="setup-item">
-                    <label>📚 Courses</label>
-                    <input type="number" id="courses" value="8" min="1" max="20">
-                </div>
-                <div class="setup-item">
-                    <label>🏫 Rooms</label>
-                    <input type="number" id="rooms" value="6" min="1" max="15">
-                </div>
-                <div class="setup-item">
-                    <label>⏰ Time Slots</label>
-                    <input type="number" id="timeslots" value="40" min="1" max="80">
-                </div>
-            </div>
-            <p style="text-align: center; margin-top: 15px; color: #888;">
-                Total Variables: <span id="totalVars">1920</span> binary decisions
-            </p>
-        </div>
+        <!-- Battle Arena -->
+        <div class="battle-arena">
+            <h2 class="arena-title">🔥 BATTLE STAGE 🔥</h2>
 
-        <!-- Start Button -->
-        <button class="start-btn" id="startBtn" onclick="startRace()">
-            🚀 Start Race!
-        </button>
-
-        <!-- Race Track -->
-        <div class="race-track">
-            <h2>🏎️ Algorithm Race Track</h2>
-
-            <div class="algorithm-lane cpsat" id="lane-cpsat">
-                <div class="algo-info">
-                    <div class="algo-name">CP-SAT</div>
-                    <div class="algo-type">Classical Exact</div>
-                </div>
-                <div class="track">
-                    <div class="progress-bar" style="width: 0%">
-                        <span class="runner">🟢</span>
+            <!-- Problem Setup -->
+            <div class="setup-panel">
+                <h2>⚙️ BATTLE CONDITIONS</h2>
+                <div class="setup-grid">
+                    <div class="setup-item">
+                        <label>📚 Courses to Schedule</label>
+                        <input type="number" id="courses" value="8" min="1" max="20">
+                    </div>
+                    <div class="setup-item">
+                        <label>🏫 Available Rooms</label>
+                        <input type="number" id="rooms" value="6" min="1" max="15">
+                    </div>
+                    <div class="setup-item">
+                        <label>⏰ Time Slots</label>
+                        <input type="number" id="timeslots" value="40" min="1" max="80">
                     </div>
                 </div>
-                <div class="algo-stats">
+                <p style="text-align: center; margin-top: 15px; color: #00ffff; font-family: 'Orbitron', sans-serif;">
+                    ⚡ Problem Complexity: <span id="totalVars">1,920</span> binary decisions ⚡
+                </p>
+            </div>
+
+            <!-- Battle Button -->
+            <button class="battle-btn" id="startBtn" onclick="startBattle()">
+                ⚔️ START BATTLE!
+            </button>
+
+            <!-- Fighter Cards -->
+            <div class="fighters-grid">
+                <div class="fighter-card cpsat" id="fighter-cpsat">
+                    <div class="fighter-avatar">🤖</div>
+                    <div class="fighter-name">CP-SAT</div>
+                    <div class="fighter-type">Classical Exact Solver</div>
+                    <div class="power-bar-container">
+                        <div class="power-bar" id="power-cpsat"></div>
+                    </div>
                     <div class="time-display" id="time-cpsat">0.000s</div>
-                    <div class="status" id="status-cpsat">Ready</div>
+                    <span class="status-badge ready" id="status-cpsat">READY</span>
                 </div>
-            </div>
 
-            <div class="algorithm-lane qaoa" id="lane-qaoa">
-                <div class="algo-info">
-                    <div class="algo-name">QAOA</div>
-                    <div class="algo-type">Quantum</div>
-                </div>
-                <div class="track">
-                    <div class="progress-bar" style="width: 0%">
-                        <span class="runner">🟣</span>
+                <div class="fighter-card qaoa" id="fighter-qaoa">
+                    <div class="fighter-avatar">⚛️</div>
+                    <div class="fighter-name">QAOA</div>
+                    <div class="fighter-type">Quantum Algorithm</div>
+                    <div class="power-bar-container">
+                        <div class="power-bar" id="power-qaoa"></div>
                     </div>
-                </div>
-                <div class="algo-stats">
                     <div class="time-display" id="time-qaoa">0.000s</div>
-                    <div class="status" id="status-qaoa">Ready</div>
+                    <span class="status-badge ready" id="status-qaoa">READY</span>
                 </div>
-            </div>
 
-            <div class="algorithm-lane qia" id="lane-qia">
-                <div class="algo-info">
-                    <div class="algo-name">QIA</div>
-                    <div class="algo-type">Quantum-Inspired</div>
-                </div>
-                <div class="track">
-                    <div class="progress-bar" style="width: 0%">
-                        <span class="runner">🔵</span>
+                <div class="fighter-card qia" id="fighter-qia">
+                    <div class="fighter-avatar">🌀</div>
+                    <div class="fighter-name">QIA</div>
+                    <div class="fighter-type">Quantum-Inspired</div>
+                    <div class="power-bar-container">
+                        <div class="power-bar" id="power-qia"></div>
                     </div>
-                </div>
-                <div class="algo-stats">
                     <div class="time-display" id="time-qia">0.000s</div>
-                    <div class="status" id="status-qia">Ready</div>
+                    <span class="status-badge ready" id="status-qia">READY</span>
                 </div>
-            </div>
 
-            <div class="algorithm-lane qubo" id="lane-qubo">
-                <div class="algo-info">
-                    <div class="algo-name">QUBO</div>
-                    <div class="algo-type">Sim. Annealing</div>
-                </div>
-                <div class="track">
-                    <div class="progress-bar" style="width: 0%">
-                        <span class="runner">🟠</span>
+                <div class="fighter-card qubo" id="fighter-qubo">
+                    <div class="fighter-avatar">🔥</div>
+                    <div class="fighter-name">QUBO</div>
+                    <div class="fighter-type">Simulated Annealing</div>
+                    <div class="power-bar-container">
+                        <div class="power-bar" id="power-qubo"></div>
                     </div>
-                </div>
-                <div class="algo-stats">
                     <div class="time-display" id="time-qubo">0.000s</div>
-                    <div class="status" id="status-qubo">Ready</div>
+                    <span class="status-badge ready" id="status-qubo">READY</span>
                 </div>
             </div>
         </div>
 
         <!-- Results -->
         <div class="results-panel" id="resultsPanel">
-            <h2>🏆 Race Results</h2>
+            <h2>🏆 BATTLE RESULTS 🏆</h2>
             <div class="winner-banner" id="winnerBanner">
-                <h3>🥇 Winner: <span id="winnerName">-</span></h3>
-                <p id="winnerTime">Time: -</p>
+                <h3>🥇 CHAMPION: <span id="winnerName">-</span></h3>
+                <p id="winnerTime">Solve Time: - | Courses Scheduled: -</p>
             </div>
             <table class="results-table">
                 <thead>
                     <tr>
                         <th>Rank</th>
-                        <th>Algorithm</th>
-                        <th>Time</th>
+                        <th>Fighter</th>
+                        <th>Solve Time</th>
                         <th>Courses Scheduled</th>
-                        <th>Status</th>
+                        <th>Result</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
@@ -460,71 +746,414 @@
 
         <!-- Explanation -->
         <div class="explanation">
-            <h3>📖 How Each Algorithm Works</h3>
+            <h3>📖 Fighter Abilities</h3>
             <div class="algo-cards">
                 <div class="algo-card cpsat">
-                    <h4>🟢 CP-SAT (Constraint Programming)</h4>
+                    <h4>🤖 CP-SAT (Constraint Programming)</h4>
                     <p>Uses mathematical constraints to find the <strong>exact optimal</strong> solution. 
-                    Like solving a puzzle by checking all rules systematically.</p>
+                    Like a master strategist checking every possible move.</p>
                 </div>
                 <div class="algo-card qaoa">
-                    <h4>🟣 QAOA (Quantum Algorithm)</h4>
-                    <p>Uses <strong>quantum superposition</strong> to explore many solutions at once. 
-                    Limited by qubit count in simulation.</p>
+                    <h4>⚛️ QAOA (Quantum Algorithm)</h4>
+                    <p>Uses <strong>quantum superposition</strong> to explore many solutions simultaneously. 
+                    Limited by qubit count in simulation mode.</p>
                 </div>
                 <div class="algo-card qia">
-                    <h4>🔵 QIA (Quantum-Inspired)</h4>
+                    <h4>🌀 QIA (Quantum-Inspired)</h4>
                     <p>Simulates quantum behavior <strong>classically</strong>. Uses probability amplitudes 
-                    and "quantum tunneling" to escape local minima.</p>
+                    and "quantum tunneling" to escape local traps.</p>
                 </div>
                 <div class="algo-card qubo">
-                    <h4>🟠 QUBO (Simulated Annealing)</h4>
-                    <p>Like cooling hot metal slowly. Starts with <strong>random exploration</strong>, 
-                    gradually focuses on better solutions.</p>
+                    <h4>🔥 QUBO (Simulated Annealing)</h4>
+                    <p>Like forging a sword - starts with <strong>chaotic exploration</strong>, 
+                    slowly cooling down to find the best solution.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- Pseudocode Section -->
+        <div class="pseudocode-section">
+            <h3>📜 ALGORITHM PSEUDOCODE</h3>
+            <p style="text-align: center; color: #888; margin-bottom: 15px;">Click to view each algorithm's logic - Copy and translate to any language!</p>
+            
+            <div class="pseudocode-tabs">
+                <button class="tab-btn cpsat active" onclick="showPseudocode('cpsat')">🤖 CP-SAT</button>
+                <button class="tab-btn qaoa" onclick="showPseudocode('qaoa')">⚛️ QAOA</button>
+                <button class="tab-btn qia" onclick="showPseudocode('qia')">🌀 QIA</button>
+                <button class="tab-btn qubo" onclick="showPseudocode('qubo')">🔥 QUBO</button>
+            </div>
+
+            <div class="pseudocode-content">
+                <button class="copy-btn" onclick="copyPseudocode()">📋 Copy</button>
+                
+                <div class="pseudocode-box active" id="pseudo-cpsat">
+================================================================================
+                    CP-SAT ROOM ALLOCATION PSEUDOCODE
+================================================================================
+
+ALGORITHM: Constraint Programming with SAT Solver
+COMPLEXITY: O(n^k) worst case, but pruning makes it fast in practice
+
+--------------------------------------------------------------------------------
+STEP 1: CREATE DECISION VARIABLES
+--------------------------------------------------------------------------------
+FOR each course c in COURSES:
+    FOR each room r in ROOMS:
+        FOR each timeslot t in TIMESLOTS:
+            CREATE binary variable X[c,r,t]  // 1 if course c in room r at time t
+
+--------------------------------------------------------------------------------
+STEP 2: ADD CONSTRAINTS
+--------------------------------------------------------------------------------
+// Constraint 1: Each course assigned exactly once
+FOR each course c:
+    SUM(X[c,r,t] for all r,t) == 1
+
+// Constraint 2: No room double-booking
+FOR each room r:
+    FOR each timeslot t:
+        SUM(X[c,r,t] for all c) <= 1
+
+// Constraint 3: Room capacity >= students
+FOR each course c:
+    FOR each room r:
+        IF room_capacity[r] < students[c]:
+            X[c,r,t] = 0 for all t
+
+// Constraint 4: Faculty no double-booking
+FOR each faculty f:
+    FOR each timeslot t:
+        SUM(X[c,r,t] for c taught by f) <= 1
+
+--------------------------------------------------------------------------------
+STEP 3: SOLVE
+--------------------------------------------------------------------------------
+START timer
+result = SOLVER.solve(model, time_limit)
+STOP timer
+solve_time = elapsed_time
+
+--------------------------------------------------------------------------------
+STEP 4: EXTRACT SOLUTION
+--------------------------------------------------------------------------------
+schedule = []
+FOR each variable X[c,r,t]:
+    IF X[c,r,t] == 1:
+        schedule.ADD(course=c, room=r, timeslot=t)
+
+RETURN {schedule, solve_time, status}
+</div>
+
+                <div class="pseudocode-box" id="pseudo-qaoa">
+================================================================================
+                    QAOA ROOM ALLOCATION PSEUDOCODE
+================================================================================
+
+ALGORITHM: Quantum Approximate Optimization Algorithm
+COMPLEXITY: O(p * shots * 2^n) for simulation, O(p * shots) on quantum hardware
+
+--------------------------------------------------------------------------------
+STEP 1: BUILD QUBO MATRIX
+--------------------------------------------------------------------------------
+// Convert constraints to penalties
+n = num_courses * num_rooms * num_timeslots
+Q = zero_matrix(n, n)
+
+// Add constraint penalties to Q matrix
+FOR each constraint violation:
+    ADD large_penalty to Q[i,j]
+
+--------------------------------------------------------------------------------
+STEP 2: CREATE QUANTUM CIRCUIT
+--------------------------------------------------------------------------------
+FUNCTION create_qaoa_circuit(gamma, beta):
+    // Initialize all qubits in superposition
+    circuit = QuantumCircuit(n_qubits)
+    FOR each qubit q:
+        circuit.H(q)  // Hadamard gate: |0⟩ → (|0⟩+|1⟩)/√2
+    
+    // Apply p layers of QAOA
+    FOR layer in 1 to p:
+        // Cost layer (problem encoding)
+        FOR each (i,j) with Q[i,j] != 0:
+            circuit.RZZ(gamma[layer] * Q[i,j], qubit_i, qubit_j)
+        
+        // Mixer layer (solution exploration)
+        FOR each qubit q:
+            circuit.RX(2 * beta[layer], q)
+    
+    RETURN circuit
+
+--------------------------------------------------------------------------------
+STEP 3: OPTIMIZE PARAMETERS
+--------------------------------------------------------------------------------
+START timer
+
+initial_params = random(2*p)  // p gammas + p betas
+
+FUNCTION cost_function(params):
+    circuit = create_qaoa_circuit(params)
+    result = run_circuit(circuit, shots=1024)
+    energy = compute_expectation(result, Q)
+    RETURN energy
+
+optimal_params = MINIMIZE(cost_function, initial_params)
+
+--------------------------------------------------------------------------------
+STEP 4: MEASURE FINAL RESULT
+--------------------------------------------------------------------------------
+final_circuit = create_qaoa_circuit(optimal_params)
+measurements = run_circuit(final_circuit, shots=1024)
+best_bitstring = most_frequent(measurements)
+
+STOP timer
+solve_time = elapsed_time
+
+--------------------------------------------------------------------------------
+STEP 5: DECODE SOLUTION
+--------------------------------------------------------------------------------
+schedule = []
+FOR i in 0 to n-1:
+    IF best_bitstring[i] == '1':
+        course, room, timeslot = decode_index(i)
+        schedule.ADD(course, room, timeslot)
+
+RETURN {schedule, solve_time, energy}
+</div>
+
+                <div class="pseudocode-box" id="pseudo-qia">
+================================================================================
+                    QIA ROOM ALLOCATION PSEUDOCODE
+================================================================================
+
+ALGORITHM: Quantum-Inspired Evolutionary Algorithm
+COMPLEXITY: O(generations * population_size * n)
+
+--------------------------------------------------------------------------------
+STEP 1: INITIALIZE QUANTUM POPULATION
+--------------------------------------------------------------------------------
+START timer
+
+FOR i in 1 to POPULATION_SIZE:
+    FOR j in 1 to n:  // n = courses * rooms * timeslots
+        // Initialize quantum amplitudes (superposition)
+        alpha[i][j] = 1/√2  // Probability amplitude for |0⟩
+        beta[i][j] = 1/√2   // Probability amplitude for |1⟩
+        // Note: |alpha|² + |beta|² = 1
+
+--------------------------------------------------------------------------------
+STEP 2: MAIN EVOLUTION LOOP
+--------------------------------------------------------------------------------
+FOR generation in 1 to MAX_GENERATIONS:
+    
+    // Step 2a: OBSERVE (collapse quantum state to classical)
+    FOR each individual i:
+        FOR each gene j:
+            random_value = RANDOM(0, 1)
+            IF random_value < |beta[i][j]|²:
+                solution[i][j] = 1
+            ELSE:
+                solution[i][j] = 0
+    
+    // Step 2b: REPAIR (fix constraint violations)
+    FOR each individual i:
+        // Ensure each course assigned exactly once
+        FOR each course c:
+            assignments = find_all_assignments(solution[i], c)
+            IF count(assignments) > 1:
+                KEEP only best assignment (largest room)
+            ELSE IF count(assignments) == 0:
+                ASSIGN to random valid (room, timeslot)
+    
+    // Step 2c: EVALUATE FITNESS
+    FOR each individual i:
+        fitness[i] = calculate_fitness(solution[i])
+        // fitness = scheduled_courses - penalty * violations
+    
+    // Step 2d: UPDATE BEST
+    IF best_fitness(this_generation) > global_best_fitness:
+        global_best = best_solution(this_generation)
+        global_best_fitness = best_fitness(this_generation)
+    
+    // Step 2e: Q-GATE ROTATION (quantum update)
+    FOR each individual i:
+        FOR each gene j:
+            // Rotate toward better solution
+            delta_theta = compute_rotation_angle(
+                solution[i][j],
+                global_best[j],
+                fitness[i],
+                global_best_fitness
+            )
+            // Apply rotation matrix
+            new_alpha = alpha[i][j] * cos(delta_theta) - beta[i][j] * sin(delta_theta)
+            new_beta = alpha[i][j] * sin(delta_theta) + beta[i][j] * cos(delta_theta)
+            alpha[i][j] = new_alpha
+            beta[i][j] = new_beta
+    
+    // Step 2f: QUANTUM MUTATION (tunneling)
+    FOR each individual i:
+        IF RANDOM() < mutation_rate:
+            j = random_gene()
+            // Swap amplitudes (quantum NOT)
+            SWAP(alpha[i][j], beta[i][j])
+
+STOP timer
+solve_time = elapsed_time
+
+--------------------------------------------------------------------------------
+STEP 3: RETURN BEST SOLUTION
+--------------------------------------------------------------------------------
+RETURN {global_best, solve_time, global_best_fitness}
+</div>
+
+                <div class="pseudocode-box" id="pseudo-qubo">
+================================================================================
+                    QUBO ROOM ALLOCATION PSEUDOCODE
+================================================================================
+
+ALGORITHM: QUBO with Simulated Annealing Solver
+COMPLEXITY: O(iterations * n²) for annealing
+
+--------------------------------------------------------------------------------
+STEP 1: BUILD QUBO MATRIX
+--------------------------------------------------------------------------------
+n = num_courses * num_rooms * num_timeslots
+Q = zero_matrix(n, n)
+
+// Penalty weights
+P1 = 1000  // Course assignment penalty
+P2 = 1000  // Room conflict penalty
+P3 = 500   // Capacity penalty
+P4 = 1000  // Faculty conflict penalty
+
+// Constraint: Each course exactly once
+FOR each course c:
+    indices = get_all_indices(c)  // All (room,time) combos for c
+    // Diagonal: encourage assignment
+    FOR i in indices:
+        Q[i,i] -= P1
+    // Off-diagonal: penalize multiple assignments
+    FOR i,j in indices where i < j:
+        Q[i,j] += 2 * P1
+
+// Constraint: No room double-booking
+FOR each room r, timeslot t:
+    indices = get_indices(r, t)  // All courses at (r,t)
+    FOR i,j in indices where i < j:
+        Q[i,j] += P2
+
+// Constraint: Capacity (add to diagonal)
+FOR each course c, room r:
+    IF capacity[r] < students[c]:
+        i = get_index(c, r, *)
+        Q[i,i] += P3
+
+--------------------------------------------------------------------------------
+STEP 2: SIMULATED ANNEALING SOLVER
+--------------------------------------------------------------------------------
+START timer
+
+// Initialize
+x = random_binary_vector(n)
+current_energy = x^T * Q * x
+best_x = x
+best_energy = current_energy
+temperature = INITIAL_TEMP  // e.g., 100.0
+
+FOR iteration in 1 to MAX_ITERATIONS:
+    // Pick random bit to flip
+    flip_index = RANDOM(0, n-1)
+    
+    // Calculate energy change (efficient: only affected terms)
+    delta_E = Q[flip_index, flip_index]
+    FOR j in 0 to n-1:
+        IF x[j] == 1 AND j != flip_index:
+            delta_E += Q[flip_index, j] + Q[j, flip_index]
+    IF x[flip_index] == 1:
+        delta_E = -delta_E
+    
+    // Accept or reject
+    IF delta_E < 0:
+        // Always accept improvements
+        x[flip_index] = 1 - x[flip_index]
+        current_energy += delta_E
+    ELSE:
+        // Accept worse with probability e^(-ΔE/T)
+        IF RANDOM() < exp(-delta_E / temperature):
+            x[flip_index] = 1 - x[flip_index]
+            current_energy += delta_E
+    
+    // Update best
+    IF current_energy < best_energy:
+        best_x = x.copy()
+        best_energy = current_energy
+    
+    // Cool down
+    temperature = temperature * COOLING_RATE  // e.g., 0.995
+
+STOP timer
+solve_time = elapsed_time
+
+--------------------------------------------------------------------------------
+STEP 3: DECODE SOLUTION
+--------------------------------------------------------------------------------
+schedule = []
+FOR i in 0 to n-1:
+    IF best_x[i] == 1:
+        course, room, timeslot = decode_index(i)
+        schedule.ADD(course, room, timeslot)
+
+RETURN {schedule, solve_time, best_energy}
+</div>
             </div>
         </div>
     </div>
 
     <script>
-        // Algorithm simulation data
-        const algorithms = {
+        // Algorithm battle data
+        // Balanced so each algorithm has strengths in different scenarios!
+        const fighters = {
             cpsat: {
                 name: 'CP-SAT',
                 type: 'Classical Exact',
-                baseSpeed: 0.8,      // Fast for small problems
-                complexity: 1.5,     // Slower as problem grows
-                scheduled: 8,
+                baseTime: 0.12,      // Fast but has overhead
+                scaleFactor: 0.00015, // Slows down for complex problems
+                randomness: 0.3,     // Less consistent
+                scheduled: 100,      // Always schedules all
                 color: '#4CAF50'
             },
             qaoa: {
                 name: 'QAOA',
                 type: 'Quantum',
-                baseSpeed: 0.3,      // Slower (simulation overhead)
-                complexity: 3.0,     // Very slow for large problems
-                scheduled: 4,        // Limited by qubits
+                baseTime: 0.5,       // Slower (quantum simulation overhead)
+                scaleFactor: 0.0003,
+                randomness: 0.4,     // Most variable (quantum nature)
+                scheduled: 50,       // Limited by qubits
                 color: '#9C27B0'
             },
             qia: {
                 name: 'QIA',
                 type: 'Quantum-Inspired',
-                baseSpeed: 0.6,      // Good speed
-                complexity: 1.2,     // Scales well
-                scheduled: 8,
+                baseTime: 0.08,      // FAST! Quantum-inspired is efficient
+                scaleFactor: 0.00008, // Scales well
+                randomness: 0.25,    // Fairly consistent
+                scheduled: 100,
                 color: '#2196F3'
             },
             qubo: {
                 name: 'QUBO',
                 type: 'Simulated Annealing',
-                baseSpeed: 0.5,      // Medium speed
-                complexity: 1.3,     // Scales reasonably
-                scheduled: 8,
+                baseTime: 0.15,      // Good speed
+                scaleFactor: 0.0001,
+                randomness: 0.35,    // Depends on cooling schedule
+                scheduled: 100,
                 color: '#FF9800'
             }
         };
 
-        let isRacing = false;
-        let raceInterval = null;
+        let isBattling = false;
+        let battleInterval = null;
         let results = [];
 
         // Update total variables display
@@ -540,145 +1169,207 @@
         document.getElementById('rooms').addEventListener('input', updateTotalVars);
         document.getElementById('timeslots').addEventListener('input', updateTotalVars);
 
-        function startRace() {
-            if (isRacing) return;
+        // Show battle effect text
+        function showBattleEffect(text) {
+            const effect = document.createElement('div');
+            effect.className = 'battle-effect';
+            effect.textContent = text;
+            document.body.appendChild(effect);
+            setTimeout(() => effect.remove(), 1500);
+        }
+
+        function startBattle() {
+            if (isBattling) return;
             
-            isRacing = true;
+            isBattling = true;
             results = [];
             document.getElementById('startBtn').disabled = true;
-            document.getElementById('startBtn').textContent = '🏃 Racing...';
+            document.getElementById('startBtn').textContent = '⚔️ FIGHTING...';
             document.getElementById('resultsPanel').classList.remove('show');
+
+            // Show battle start effect
+            showBattleEffect('FIGHT!');
 
             const courses = parseInt(document.getElementById('courses').value) || 8;
             const rooms = parseInt(document.getElementById('rooms').value) || 6;
             const timeslots = parseInt(document.getElementById('timeslots').value) || 40;
             const problemSize = courses * rooms * timeslots;
 
-            // Calculate simulated times based on problem size
-            const simulatedTimes = {};
-            for (const [id, algo] of Object.entries(algorithms)) {
-                // Simulate realistic timing
-                const baseTime = (1 / algo.baseSpeed) * 0.5;
-                const scaleFactor = Math.pow(problemSize / 1000, algo.complexity - 1);
-                simulatedTimes[id] = baseTime * scaleFactor * (0.8 + Math.random() * 0.4);
-                
-                // QAOA is extra slow for large problems
-                if (id === 'qaoa' && problemSize > 500) {
-                    simulatedTimes[id] *= 2;
+            // Calculate ACTUAL simulated solve times (lower = faster = winner)
+            const solveTimes = {};
+            for (const [id, fighter] of Object.entries(fighters)) {
+                // Realistic time calculation
+                let time = fighter.baseTime + (problemSize * fighter.scaleFactor);
+                // Add randomness based on algorithm's consistency
+                const randomFactor = 1 - fighter.randomness + (Math.random() * fighter.randomness * 2);
+                time *= randomFactor;
+                // QAOA gets much slower for large problems (qubit limitation)
+                if (id === 'qaoa' && problemSize > 1000) {
+                    time *= 1 + (problemSize / 2000);
                 }
+                // CP-SAT can sometimes hit hard constraints (occasional spike)
+                if (id === 'cpsat' && Math.random() < 0.2) {
+                    time *= 1.5; // 20% chance of taking longer
+                }
+                solveTimes[id] = Math.max(0.05, time); // Minimum 50ms
             }
 
-            // Normalize to race duration (3-8 seconds)
-            const maxTime = Math.max(...Object.values(simulatedTimes));
-            const raceDuration = Math.min(8000, Math.max(3000, maxTime * 1000));
-            
-            // Initialize race state
-            const raceState = {};
-            for (const id of Object.keys(algorithms)) {
-                raceState[id] = {
+            // Animation duration (scale with problem, 3-10 seconds)
+            const maxSolveTime = Math.max(...Object.values(solveTimes));
+            const animationDuration = Math.min(10000, Math.max(3000, maxSolveTime * 3000));
+
+            // Initialize battle state
+            const battleState = {};
+            for (const id of Object.keys(fighters)) {
+                battleState[id] = {
                     progress: 0,
-                    time: 0,
+                    currentTime: 0,
                     finished: false,
-                    targetTime: simulatedTimes[id] / maxTime * raceDuration
+                    solveTime: solveTimes[id],
+                    // Progress speed based on solve time (faster solver = faster progress)
+                    progressSpeed: 100 / (solveTimes[id] * 1000 / 16) // 16ms tick
                 };
                 
                 // Reset UI
-                document.getElementById(`lane-${id}`).classList.remove('running');
-                document.getElementById(`lane-${id}`).querySelector('.progress-bar').style.width = '0%';
+                document.getElementById(`fighter-${id}`).classList.remove('winner-card');
+                document.getElementById(`power-${id}`).style.width = '0%';
                 document.getElementById(`time-${id}`).textContent = '0.000s';
-                document.getElementById(`status-${id}`).textContent = 'Starting...';
-                document.getElementById(`status-${id}`).className = 'status';
+                document.getElementById(`time-${id}`).classList.remove('racing');
+                document.getElementById(`status-${id}`).textContent = 'FIGHTING';
+                document.getElementById(`status-${id}`).className = 'status-badge fighting';
             }
 
-            const startTime = Date.now();
-            let finishOrder = 0;
+            const startTime = performance.now();
+            let finishedCount = 0;
 
-            // Race animation loop
-            raceInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
+            // Battle animation loop
+            battleInterval = setInterval(() => {
+                const elapsed = performance.now() - startTime;
                 let allFinished = true;
 
-                for (const [id, state] of Object.entries(raceState)) {
+                for (const [id, state] of Object.entries(battleState)) {
                     if (state.finished) continue;
                     
                     allFinished = false;
-                    document.getElementById(`lane-${id}`).classList.add('running');
-                    document.getElementById(`status-${id}`).textContent = 'Solving...';
-                    document.getElementById(`status-${id}`).className = 'status running';
+                    document.getElementById(`time-${id}`).classList.add('racing');
 
-                    // Update progress
-                    state.progress = Math.min(100, (elapsed / state.targetTime) * 100);
-                    state.time = elapsed / 1000;
+                    // Update progress based on solve time
+                    // Faster solvers reach 100% quicker
+                    state.progress = Math.min(100, (elapsed / 1000) / state.solveTime * 100);
+                    state.currentTime = elapsed / 1000;
 
                     // Update UI
-                    document.getElementById(`lane-${id}`).querySelector('.progress-bar').style.width = state.progress + '%';
-                    document.getElementById(`time-${id}`).textContent = state.time.toFixed(3) + 's';
+                    document.getElementById(`power-${id}`).style.width = state.progress + '%';
+                    
+                    // Show milliseconds flickering (anime style)
+                    const displayTime = Math.min(state.currentTime, state.solveTime);
+                    document.getElementById(`time-${id}`).textContent = displayTime.toFixed(3) + 's';
 
-                    // Check if finished
+                    // Check if finished (reached 100% progress)
                     if (state.progress >= 100) {
                         state.finished = true;
-                        state.time = state.targetTime / 1000;
-                        finishOrder++;
+                        finishedCount++;
                         
-                        document.getElementById(`lane-${id}`).classList.remove('running');
-                        document.getElementById(`time-${id}`).textContent = state.time.toFixed(3) + 's';
+                        document.getElementById(`time-${id}`).classList.remove('racing');
+                        document.getElementById(`time-${id}`).textContent = state.solveTime.toFixed(3) + 's';
                         
-                        if (finishOrder === 1) {
-                            document.getElementById(`status-${id}`).textContent = '🥇 Winner!';
-                            document.getElementById(`status-${id}`).className = 'status winner';
-                        } else {
-                            document.getElementById(`status-${id}`).textContent = '✓ Finished';
-                            document.getElementById(`status-${id}`).className = 'status completed';
-                        }
+                        // Calculate scheduled courses
+                        const scheduledPct = fighters[id].scheduled;
+                        const scheduled = id === 'qaoa' ? 
+                            Math.min(4, courses) : // QAOA limited by qubits
+                            courses;
 
                         results.push({
                             id: id,
-                            name: algorithms[id].name,
-                            time: state.time,
-                            scheduled: id === 'qaoa' ? Math.min(4, courses) : courses,
-                            rank: finishOrder
+                            name: fighters[id].name,
+                            time: state.solveTime,
+                            scheduled: scheduled,
+                            totalCourses: courses
                         });
+                        
+                        if (finishedCount === 1) {
+                            // WINNER! (lowest time = first to 100%)
+                            document.getElementById(`status-${id}`).textContent = '👑 WINNER!';
+                            document.getElementById(`status-${id}`).className = 'status-badge winner';
+                            document.getElementById(`fighter-${id}`).classList.add('winner-card');
+                            showBattleEffect('K.O.!');
+                        } else {
+                            document.getElementById(`status-${id}`).textContent = '✓ DONE';
+                            document.getElementById(`status-${id}`).className = 'status-badge finished';
+                        }
                     }
                 }
 
                 // All finished
-                if (allFinished || elapsed > raceDuration + 1000) {
-                    clearInterval(raceInterval);
-                    isRacing = false;
+                if (allFinished) {
+                    clearInterval(battleInterval);
+                    isBattling = false;
                     document.getElementById('startBtn').disabled = false;
-                    document.getElementById('startBtn').textContent = '🚀 Race Again!';
-                    showResults(courses);
+                    document.getElementById('startBtn').textContent = '⚔️ BATTLE AGAIN!';
+                    showResults();
                 }
-            }, 50);
+            }, 16); // ~60fps
         }
 
-        function showResults(totalCourses) {
-            results.sort((a, b) => a.rank - b.rank);
+        function showResults() {
+            // Sort by TIME (lowest first = winner)
+            results.sort((a, b) => a.time - b.time);
             
             const winner = results[0];
             document.getElementById('winnerName').textContent = winner.name;
-            document.getElementById('winnerTime').textContent = `Time: ${winner.time.toFixed(3)}s | Courses: ${winner.scheduled}/${totalCourses}`;
+            document.getElementById('winnerTime').textContent = 
+                `⚡ Solve Time: ${winner.time.toFixed(3)}s | 📚 Courses: ${winner.scheduled}/${winner.totalCourses}`;
 
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
 
             const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+            const rankLabels = ['👑 CHAMPION', '🥈 2nd Place', '🥉 3rd Place', '4th Place'];
             
             results.forEach((result, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td><span class="medal">${medals[index] || ''}</span></td>
-                    <td><strong>${result.name}</strong></td>
-                    <td>${result.time.toFixed(3)}s</td>
-                    <td>${result.scheduled}/${totalCourses}</td>
+                    <td><strong style="color: ${fighters[result.id].color}">${result.name}</strong></td>
+                    <td style="font-family: 'Orbitron', monospace; color: ${index === 0 ? '#ffd700' : '#fff'}">
+                        ${result.time.toFixed(3)}s
+                    </td>
+                    <td>${result.scheduled}/${result.totalCourses}</td>
                     <td style="color: ${index === 0 ? '#ffd700' : '#4CAF50'}">
-                        ${index === 0 ? '🏆 Winner' : '✓ Complete'}
+                        ${rankLabels[index]}
                     </td>
                 `;
                 tbody.appendChild(row);
             });
 
             document.getElementById('resultsPanel').classList.add('show');
+        }
+
+        // Pseudocode tabs
+        function showPseudocode(algo) {
+            // Update tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-btn.${algo}`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.pseudocode-box').forEach(box => box.classList.remove('active'));
+            document.getElementById(`pseudo-${algo}`).classList.add('active');
+        }
+
+        // Copy pseudocode
+        function copyPseudocode() {
+            const activeBox = document.querySelector('.pseudocode-box.active');
+            const text = activeBox.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
         }
 
         // Initialize

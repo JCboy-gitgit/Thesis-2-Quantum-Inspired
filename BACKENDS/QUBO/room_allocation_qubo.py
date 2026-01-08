@@ -306,7 +306,8 @@ class QUBORoomAllocator:
         print("="*60)
         
         if self.Q is None:
-            self.build_qubo()
+            # Use higher penalty (500) to enforce constraints more strictly
+            self.build_qubo(penalty=500.0)
         
         start_time = time.time()
         
