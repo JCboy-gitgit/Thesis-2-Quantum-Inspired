@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏁 Algorithm Race - Room Allocation Solver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* Problem Setup */
+        .setup-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .setup-panel h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .setup-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .setup-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        .setup-item input {
+            width: 80px;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.2rem;
+            background: #2a2a4a;
+            color: white;
+        }
+
+        /* Start Button */
+        .start-btn {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .start-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Race Track */
+        .race-track {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .race-track h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .algorithm-lane {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .algo-info {
+            width: 150px;
+            flex-shrink: 0;
+        }
+
+        .algo-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .algo-type {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .track {
+            flex: 1;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            margin: 0 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .runner {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            transition: left 0.1s linear;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.1s linear;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+        }
+
+        .cpsat .progress-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+        .qaoa .progress-bar { background: linear-gradient(90deg, #9C27B0, #E91E63); }
+        .qia .progress-bar { background: linear-gradient(90deg, #2196F3, #00BCD4); }
+        .qubo .progress-bar { background: linear-gradient(90deg, #FF9800, #FFC107); }
+
+        .algo-stats {
+            width: 120px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .time-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .status.running { color: #00d4ff; }
+        .status.completed { color: #4CAF50; }
+        .status.winner { color: #ffd700; }
+
+        /* Results Panel */
+        .results-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+        }
+
+        .results-panel.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-panel h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        .winner-banner {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(45deg, #ffd700, #ffaa00);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #1a1a2e;
+        }
+
+        .winner-banner h3 {
+            font-size: 2rem;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .results-table th {
+            color: #00d4ff;
+        }
+
+        .results-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .medal {
+            font-size: 1.5rem;
+        }
+
+        /* Explanation Panel */
+        .explanation {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .explanation h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .algo-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .algo-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .algo-card.cpsat { border-color: #4CAF50; }
+        .algo-card.qaoa { border-color: #9C27B0; }
+        .algo-card.qia { border-color: #2196F3; }
+        .algo-card.qubo { border-color: #FF9800; }
+
+        .algo-card h4 {
+            margin-bottom: 8px;
+        }
+
+        .algo-card p {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .running .runner {
+            animation: pulse 0.5s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .setup-grid {
+                grid-template-columns: 1fr;
+            }
+            .algo-cards {
+                grid-template-columns: 1fr;
+            }
+            .algorithm-lane {
+                flex-wrap: wrap;
+            }
+            .algo-info, .algo-stats {
+                width: 100%;
+                text-align: center;
+            }
+            .track {
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏁 Algorithm Race</h1>
+        <p class="subtitle">Room Allocation Solver Comparison</p>
+
+        <!-- Problem Setup -->
+        <div class="setup-panel">
+            <h2>📋 Problem Setup</h2>
+            <div class="setup-grid">
+                <div class="setup-item">
+                    <label>📚 Courses</label>
+                    <input type="number" id="courses" value="8" min="1" max="20">
+                </div>
+                <div class="setup-item">
+                    <label>🏫 Rooms</label>
+                    <input type="number" id="rooms" value="6" min="1" max="15">
+                </div>
+                <div class="setup-item">
+                    <label>⏰ Time Slots</label>
+                    <input type="number" id="timeslots" value="40" min="1" max="80">
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 15px; color: #888;">
+                Total Variables: <span id="totalVars">1920</span> binary decisions
+            </p>
+        </div>
+
+        <!-- Start Button -->
+        <button class="start-btn" id="startBtn" onclick="startRace()">
+            🚀 Start Race!
+        </button>
+
+        <!-- Race Track -->
+        <div class="race-track">
+            <h2>🏎️ Algorithm Race Track</h2>
+
+            <div class="algorithm-lane cpsat" id="lane-cpsat">
+                <div class="algo-info">
+                    <div class="algo-name">CP-SAT</div>
+                    <div class="algo-type">Classical Exact</div>
+                </div>
+                <div class="track">
+                    <div class="progress-bar" style="width: 0%">
+                        <span class="runner">🟢</span>
+                    </div>
+                </div>
+                <div class="algo-stats">
+                    <div class="time-display" id="time-cpsat">0.000s</div>
+                    <div class="status" id="status-cpsat">Ready</div>
+                </div>
+            </div>
+
+            <div class="algorithm-lane qaoa" id="lane-qaoa">
+                <div class="algo-info">
+                    <div class="algo-name">QAOA</div>
+                    <div class="algo-type">Quantum</div>
+                </div>
+                <div class="track">
+                    <div class="progress-bar" style="width: 0%">
+                        <span class="runner">🟣</span>
+                    </div>
+                </div>
+                <div class="algo-stats">
+                    <div class="time-display" id="time-qaoa">0.000s</div>
+                    <div class="status" id="status-qaoa">Ready</div>
+                </div>
+            </div>
+
+            <div class="algorithm-lane qia" id="lane-qia">
+                <div class="algo-info">
+                    <div class="algo-name">QIA</div>
+                    <div class="algo-type">Quantum-Inspired</div>
+                </div>
+                <div class="track">
+                    <div class="progress-bar" style="width: 0%">
+                        <span class="runner">🔵</span>
+                    </div>
+                </div>
+                <div class="algo-stats">
+                    <div class="time-display" id="time-qia">0.000s</div>
+                    <div class="status" id="status-qia">Ready</div>
+                </div>
+            </div>
+
+            <div class="algorithm-lane qubo" id="lane-qubo">
+                <div class="algo-info">
+                    <div class="algo-name">QUBO</div>
+                    <div class="algo-type">Sim. Annealing</div>
+                </div>
+                <div class="track">
+                    <div class="progress-bar" style="width: 0%">
+                        <span class="runner">🟠</span>
+                    </div>
+                </div>
+                <div class="algo-stats">
+                    <div class="time-display" id="time-qubo">0.000s</div>
+                    <div class="status" id="status-qubo">Ready</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-panel" id="resultsPanel">
+            <h2>🏆 Race Results</h2>
+            <div class="winner-banner" id="winnerBanner">
+                <h3>🥇 Winner: <span id="winnerName">-</span></h3>
+                <p id="winnerTime">Time: -</p>
+            </div>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Algorithm</th>
+                        <th>Time</th>
+                        <th>Courses Scheduled</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Explanation -->
+        <div class="explanation">
+            <h3>📖 How Each Algorithm Works</h3>
+            <div class="algo-cards">
+                <div class="algo-card cpsat">
+                    <h4>🟢 CP-SAT (Constraint Programming)</h4>
+                    <p>Uses mathematical constraints to find the <strong>exact optimal</strong> solution. 
+                    Like solving a puzzle by checking all rules systematically.</p>
+                </div>
+                <div class="algo-card qaoa">
+                    <h4>🟣 QAOA (Quantum Algorithm)</h4>
+                    <p>Uses <strong>quantum superposition</strong> to explore many solutions at once. 
+                    Limited by qubit count in simulation.</p>
+                </div>
+                <div class="algo-card qia">
+                    <h4>🔵 QIA (Quantum-Inspired)</h4>
+                    <p>Simulates quantum behavior <strong>classically</strong>. Uses probability amplitudes 
+                    and "quantum tunneling" to escape local minima.</p>
+                </div>
+                <div class="algo-card qubo">
+                    <h4>🟠 QUBO (Simulated Annealing)</h4>
+                    <p>Like cooling hot metal slowly. Starts with <strong>random exploration</strong>, 
+                    gradually focuses on better solutions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Algorithm simulation data
+        const algorithms = {
+            cpsat: {
+                name: 'CP-SAT',
+                type: 'Classical Exact',
+                baseSpeed: 0.8,      // Fast for small problems
+                complexity: 1.5,     // Slower as problem grows
+                scheduled: 8,
+                color: '#4CAF50'
+            },
+            qaoa: {
+                name: 'QAOA',
+                type: 'Quantum',
+                baseSpeed: 0.3,      // Slower (simulation overhead)
+                complexity: 3.0,     // Very slow for large problems
+                scheduled: 4,        // Limited by qubits
+                color: '#9C27B0'
+            },
+            qia: {
+                name: 'QIA',
+                type: 'Quantum-Inspired',
+                baseSpeed: 0.6,      // Good speed
+                complexity: 1.2,     // Scales well
+                scheduled: 8,
+                color: '#2196F3'
+            },
+            qubo: {
+                name: 'QUBO',
+                type: 'Simulated Annealing',
+                baseSpeed: 0.5,      // Medium speed
+                complexity: 1.3,     // Scales reasonably
+                scheduled: 8,
+                color: '#FF9800'
+            }
+        };
+
+        let isRacing = false;
+        let raceInterval = null;
+        let results = [];
+
+        // Update total variables display
+        function updateTotalVars() {
+            const courses = parseInt(document.getElementById('courses').value) || 8;
+            const rooms = parseInt(document.getElementById('rooms').value) || 6;
+            const timeslots = parseInt(document.getElementById('timeslots').value) || 40;
+            const total = courses * rooms * timeslots;
+            document.getElementById('totalVars').textContent = total.toLocaleString();
+        }
+
+        document.getElementById('courses').addEventListener('input', updateTotalVars);
+        document.getElementById('rooms').addEventListener('input', updateTotalVars);
+        document.getElementById('timeslots').addEventListener('input', updateTotalVars);
+
+        function startRace() {
+            if (isRacing) return;
+            
+            isRacing = true;
+            results = [];
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '🏃 Racing...';
+            document.getElementById('resultsPanel').classList.remove('show');
+
+            const courses = parseInt(document.getElementById('courses').value) || 8;
+            const rooms = parseInt(document.getElementById('rooms').value) || 6;
+            const timeslots = parseInt(document.getElementById('timeslots').value) || 40;
+            const problemSize = courses * rooms * timeslots;
+
+            // Calculate simulated times based on problem size
+            const simulatedTimes = {};
+            for (const [id, algo] of Object.entries(algorithms)) {
+                // Simulate realistic timing
+                const baseTime = (1 / algo.baseSpeed) * 0.5;
+                const scaleFactor = Math.pow(problemSize / 1000, algo.complexity - 1);
+                simulatedTimes[id] = baseTime * scaleFactor * (0.8 + Math.random() * 0.4);
+                
+                // QAOA is extra slow for large problems
+                if (id === 'qaoa' && problemSize > 500) {
+                    simulatedTimes[id] *= 2;
+                }
+            }
+
+            // Normalize to race duration (3-8 seconds)
+            const maxTime = Math.max(...Object.values(simulatedTimes));
+            const raceDuration = Math.min(8000, Math.max(3000, maxTime * 1000));
+            
+            // Initialize race state
+            const raceState = {};
+            for (const id of Object.keys(algorithms)) {
+                raceState[id] = {
+                    progress: 0,
+                    time: 0,
+                    finished: false,
+                    targetTime: simulatedTimes[id] / maxTime * raceDuration
+                };
+                
+                // Reset UI
+                document.getElementById(`lane-${id}`).classList.remove('running');
+                document.getElementById(`lane-${id}`).querySelector('.progress-bar').style.width = '0%';
+                document.getElementById(`time-${id}`).textContent = '0.000s';
+                document.getElementById(`status-${id}`).textContent = 'Starting...';
+                document.getElementById(`status-${id}`).className = 'status';
+            }
+
+            const startTime = Date.now();
+            let finishOrder = 0;
+
+            // Race animation loop
+            raceInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                let allFinished = true;
+
+                for (const [id, state] of Object.entries(raceState)) {
+                    if (state.finished) continue;
+                    
+                    allFinished = false;
+                    document.getElementById(`lane-${id}`).classList.add('running');
+                    document.getElementById(`status-${id}`).textContent = 'Solving...';
+                    document.getElementById(`status-${id}`).className = 'status running';
+
+                    // Update progress
+                    state.progress = Math.min(100, (elapsed / state.targetTime) * 100);
+                    state.time = elapsed / 1000;
+
+                    // Update UI
+                    document.getElementById(`lane-${id}`).querySelector('.progress-bar').style.width = state.progress + '%';
+                    document.getElementById(`time-${id}`).textContent = state.time.toFixed(3) + 's';
+
+                    // Check if finished
+                    if (state.progress >= 100) {
+                        state.finished = true;
+                        state.time = state.targetTime / 1000;
+                        finishOrder++;
+                        
+                        document.getElementById(`lane-${id}`).classList.remove('running');
+                        document.getElementById(`time-${id}`).textContent = state.time.toFixed(3) + 's';
+                        
+                        if (finishOrder === 1) {
+                            document.getElementById(`status-${id}`).textContent = '🥇 Winner!';
+                            document.getElementById(`status-${id}`).className = 'status winner';
+                        } else {
+                            document.getElementById(`status-${id}`).textContent = '✓ Finished';
+                            document.getElementById(`status-${id}`).className = 'status completed';
+                        }
+
+                        results.push({
+                            id: id,
+                            name: algorithms[id].name,
+                            time: state.time,
+                            scheduled: id === 'qaoa' ? Math.min(4, courses) : courses,
+                            rank: finishOrder
+                        });
+                    }
+                }
+
+                // All finished
+                if (allFinished || elapsed > raceDuration + 1000) {
+                    clearInterval(raceInterval);
+                    isRacing = false;
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('startBtn').textContent = '🚀 Race Again!';
+                    showResults(courses);
+                }
+            }, 50);
+        }
+
+        function showResults(totalCourses) {
+            results.sort((a, b) => a.rank - b.rank);
+            
+            const winner = results[0];
+            document.getElementById('winnerName').textContent = winner.name;
+            document.getElementById('winnerTime').textContent = `Time: ${winner.time.toFixed(3)}s | Courses: ${winner.scheduled}/${totalCourses}`;
+
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+            
+            results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="medal">${medals[index] || ''}</span></td>
+                    <td><strong>${result.name}</strong></td>
+                    <td>${result.time.toFixed(3)}s</td>
+                    <td>${result.scheduled}/${totalCourses}</td>
+                    <td style="color: ${index === 0 ? '#ffd700' : '#4CAF50'}">
+                        ${index === 0 ? '🏆 Winner' : '✓ Complete'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('resultsPanel').classList.add('show');
+        }
+
+        // Initialize
+        updateTotalVars();
+    </script>
+</body>
+</html>
