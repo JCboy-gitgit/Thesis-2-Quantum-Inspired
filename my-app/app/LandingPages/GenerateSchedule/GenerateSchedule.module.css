@@ -1,0 +1,902 @@
+/* ==================== Layout ==================== */
+.scheduleLayout {
+  min-height: 100vh;
+  background: var(--bg-white);
+}
+
+.scheduleMain {
+  margin-left: 280px;
+  margin-top: 70px;
+  padding: 30px;
+  transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 80px);
+}
+
+.scheduleMain.fullWidth {
+  margin-left: 0;
+}
+
+.scheduleContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ==================== Header ==================== */
+.scheduleHeader {
+  margin-bottom: 30px;
+}
+
+.backButton {
+  background: white;
+  color: var(--text-dark);
+  border: 2px solid var(--border-color);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backButton:hover {
+  background: var(--bg-gray-50);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-medium);
+}
+
+.iconBack {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.headerTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.headerIconWrapper {
+  width: 80px;
+  height: 80px;
+  background: var(--primary-gradient);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+  flex-shrink: 0;
+}
+
+.headerLargeIcon {
+  width: 48px;
+  height: 48px;
+  color: white;
+}
+
+.headerText {
+  flex: 1;
+}
+
+.scheduleTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.scheduleSubtitle {
+  font-size: 16px;
+  color: var(--text-medium);
+  margin: 8px 0 0 0;
+  font-weight: 500;
+}
+
+/* ==================== Form Section ==================== */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formCard {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.formCard:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.formSectionTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.formSectionTitle svg {
+  width: 24px;
+  height: 24px;
+  color: var(--primary-medium);
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-medium);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  background: white;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: var(--primary-medium);
+  box-shadow: 0 0 0 4px rgba(26, 54, 93, 0.1);
+}
+
+.formInput::placeholder {
+  color: var(--text-light);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ==================== Selection Grid ==================== */
+.selectionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.selectionCard {
+  position: relative;
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.selectionCard:hover {
+  border-color: var(--primary-medium);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(26, 54, 93, 0.2);
+}
+
+.selectionCard.selected {
+  border-color: var(--primary-medium);
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.3);
+}
+
+.selectionIcon {
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+}
+
+.selectionIcon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--primary-medium);
+  margin: 0 auto;
+  display: block;
+}
+
+.selectionCard h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 8px 0;
+}
+
+.selectionCard p {
+  font-size: 14px;
+  color: var(--text-light);
+  margin: 0;
+  font-weight: 500;
+}
+
+.selectedBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: var(--primary-gradient);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(26, 54, 93, 0.3);
+}
+
+.selectedBadge svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ==================== Form Options ==================== */
+.formOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-gray-50);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.checkboxLabel:hover {
+  background: #f1f5f9;
+  border-color: var(--border-color);
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: var(--primary-medium);
+}
+
+.checkboxLabel span {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.checkboxLabel svg {
+  flex-shrink: 0;
+  color: var(--primary-medium);
+}
+
+/* ==================== Form Actions ==================== */
+.formActions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.btnGenerate {
+  background: var(--primary-gradient);
+  color: white;
+  border: none;
+  padding: 18px 48px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.4);
+}
+
+.btnGenerate:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(26, 54, 93, 0.5);
+}
+
+.btnGenerate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btnGenerate svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ==================== Results Section ==================== */
+.resultsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.resultsBanner {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.resultsBanner.success {
+  border-left: 6px solid var(--success-green);
+}
+
+.resultsBanner.error {
+  border-left: 6px solid var(--danger-red);
+}
+
+.resultsIcon svg {
+  width: 64px;
+  height: 64px;
+}
+
+.resultsInfo h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 8px 0;
+}
+
+.resultsInfo p {
+  font-size: 16px;
+  color: var(--text-light);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ==================== Stats Grid ==================== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.statCard {
+  background: white;
+  border-radius: 16px;
+  padding: 26px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.statCard.success {
+  border-left: 6px solid var(--success-green);
+}
+
+.statCard.warning {
+  border-left: 6px solid var(--warning-orange);
+}
+
+.statCard.info {
+  border-left: 6px solid var(--info-blue);
+}
+
+.statIcon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statIcon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--primary-medium);
+}
+
+.statContent {
+  flex: 1;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 0 0 6px 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin: 0;
+  line-height: 1;
+}
+
+/* ==================== Results Actions ==================== */
+.resultsActions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btnPrimary,
+.btnSecondary,
+.btnView {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnPrimary {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.4);
+}
+
+.btnSecondary {
+  background: white;
+  color: var(--primary-medium);
+  border: 2px solid var(--primary-medium);
+}
+
+.btnSecondary:hover {
+  background: #f0f4ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
+}
+
+.btnView {
+  background: linear-gradient(135deg, var(--accent-teal) 0%, #2c7a7b 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(49, 151, 149, 0.3);
+}
+
+.btnView:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(49, 151, 149, 0.4);
+}
+
+.btnPrimary svg,
+.btnSecondary svg,
+.btnView svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ==================== Warning Box ==================== */
+.warningBox {
+  background: #fffbeb;
+  border: 2px solid var(--warning-orange);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  gap: 18px;
+  box-shadow: 0 2px 8px rgba(237, 137, 54, 0.2);
+}
+
+.warningIcon svg {
+  width: 36px;
+  height: 36px;
+  color: var(--warning-orange);
+  flex-shrink: 0;
+}
+
+.warningContent {
+  flex: 1;
+}
+
+.warningContent h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 8px 0;
+}
+
+.warningContent p {
+  font-size: 14px;
+  color: #78350f;
+  margin: 0 0 12px 0;
+  font-weight: 500;
+}
+
+.btnLink {
+  background: none;
+  border: none;
+  color: var(--primary-medium);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.btnLink:hover {
+  color: var(--primary-light);
+}
+
+/* ==================== Loading States ==================== */
+.loadingState {
+  background: white;
+  border-radius: 16px;
+  padding: 60px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid var(--border-color);
+  border-top-color: var(--primary-dark);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.spinnerSmall {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingState p {
+  font-size: 16px;
+  color: var(--text-light);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ==================== NEW: Duration Info Display ==================== */
+.durationInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-left: 4px solid var(--success-green);
+  border-radius: 10px;
+  margin: 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.durationInfo svg {
+  color: var(--success-green);
+  flex-shrink: 0;
+}
+
+/* ==================== NEW: Duration Helper ==================== */
+.durationHelper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-left: 4px solid var(--info-blue);
+  border-radius: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1565c0;
+}
+
+.durationHelper svg {
+  color: var(--info-blue);
+  flex-shrink: 0;
+}
+
+.durationHelper strong {
+  font-weight: 700;
+  color: #0d47a1;
+}
+
+/* ==================== NEW: Input Error State ==================== */
+.inputError {
+  border-color: var(--danger-red) !important;
+  background: #fff5f5 !important;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+}
+
+.errorText {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--danger-red);
+  font-weight: 600;
+}
+
+/* ==================== NEW: Capacity Breakdown ==================== */
+.capacityBreakdown {
+  margin-top: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.capacityRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.capacityRow:last-child {
+  border-bottom: none;
+}
+
+.capacityRow.capacityTotal {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 2px solid var(--border-color);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.capacityLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.capacityValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.capacityValue.success {
+  color: var(--success-green);
+}
+
+.capacityValue.error {
+  color: var(--danger-red);
+}
+
+.capacitySuggestions {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fffbeb;
+  border-left: 4px solid var(--warning-orange);
+  border-radius: 10px;
+}
+
+.capacitySuggestions h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 10px 0;
+}
+
+.capacitySuggestions ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #78350f;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.capacitySuggestions li {
+  margin-bottom: 6px;
+}
+
+/* ==================== NEW: Phase styling ==================== */
+.capacityPhase {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--border-color);
+  background: #f8fafc;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.capacityPhase .capacityLabel {
+  font-size: 15px;
+  color: var(--primary-dark);
+}
+
+/* ==================== NEW: Timer Box ==================== */
+.timerBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 10px;
+  padding: 12px 24px;
+  box-shadow: 0 2px 8px rgba(49, 151, 149, 0.08);
+}
+
+.timerIcon {
+  animation: timerPulse 1.2s infinite;
+  font-size: 22px;
+}
+
+@keyframes timerPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.entertainingLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 40px 0;
+}
+
+.entertainingLoading .spinner {
+  margin-bottom: 18px;
+}
+
+.entertainingLoading .loadingText {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-medium);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.entertainingLoading .animatedDots {
+  display: inline-block;
+  font-size: 28px;
+  color: var(--primary-dark);
+  margin-left: 6px;
+  letter-spacing: 2px;
+  animation: dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: ""; }
+  40% { content: "."; }
+  60% { content: ".."; }
+  80%, 100% { content: "..."; }
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 1024px) {
+  .scheduleMain {
+    margin-left: 0;
+    margin-top: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scheduleMain {
+    padding: 20px 15px;
+  }
+
+  .headerTitleSection {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .selectionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resultsActions {
+    flex-direction: column;
+  }
+
+  .btnPrimary,
+  .btnSecondary,
+  .btnView {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .scheduleTitle {
+    font-size: 24px;
+  }
+
+  .headerIconWrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .headerLargeIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .formCard {
+    padding: 20px;
+  }
+}

@@ -1,0 +1,791 @@
+/* Root Variables */
+:root {
+  --primary: #00d4ff;
+  --primary-dark: #0099cc;
+  --secondary: #ffd700;
+  --dark-bg: #0a0e27;
+  --card-bg: rgba(20, 26, 50, 0.95);
+  --card-border: rgba(0, 212, 255, 0.2);
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --success: #10b981;
+  --error: #ef4444;
+}
+
+/* ==================== Global Styles ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--dark-bg);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* ==================== Page Container ==================== */
+.login-page {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ==================== Background ==================== */
+.background-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+}
+
+/* Quantum Qtime Logo Background */
+.quantum-logo {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.08;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+/* Animated Stars */
+.stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.stars::before,
+.stars::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 60px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 50px 50px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 130px 80px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 10px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  animation: twinkle 5s infinite;
+  opacity: 0.5;
+}
+
+.glow-effect {
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 30% 40%,
+    rgba(0, 212, 255, 0.1) 0%,
+    rgba(255, 215, 0, 0.05) 25%,
+    transparent 100%
+  );
+  animation: rotate 20s linear infinite;
+}
+
+/* ==================== Container & Card ==================== */
+.container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 212, 255, 0.1),
+    inset 0 0 30px rgba(0, 212, 255, 0.05);
+  animation: slide-up 0.6s ease-out, bounceIn 0.8s ease-out;
+}
+
+/* Card Header */
+.card-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #00d4ff, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: glow-text 2s ease-in-out infinite;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ==================== Form ==================== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.label-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Input Fields */
+.input {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(0, 212, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  transform: scale(1.02);
+}
+
+/* Password Input Wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+/* ==================== Button ==================== */
+.button {
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.5);
+  background: linear-gradient(135deg, #00e5ff, #00aadd);
+}
+
+.button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button.loading {
+  pointer-events: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ==================== Mode Switch ==================== */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.switch-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.link-button:hover {
+  color: var(--secondary);
+  text-decoration-thickness: 2px;
+}
+
+/* ==================== Messages ==================== */
+.message {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideInBounce 0.4s ease-out;
+}
+
+.message.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* ==================== Footer ==================== */
+.card-footer {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--card-border);
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ==================== Animations ==================== */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 60px rgba(0, 212, 255, 0.3), 0 0 100px rgba(255, 215, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 100px rgba(0, 212, 255, 0.5), 0 0 150px rgba(255, 215, 0, 0.2);
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInBounce {
+  0% {
+    transform: translateX(-100%) scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(10%) scale(1.02);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes glow-text {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==================== Rocket and Sparkle Animations ==================== */
+
+/* Animation Overlays */
+.animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOut 2.5s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Rocket Animation for Login Success */
+.rocket-overlay {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.8) 0%, rgba(0, 212, 255, 0.1) 100%);
+}
+
+.animated-rocket {
+  position: relative;
+  font-size: 5rem;
+  animation: realisticRocketFlight 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform-origin: 50% 80%; /* Tip as pivot for rotation */
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.8));
+}
+
+@keyframes realisticRocketFlight {
+  0% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1.2);
+    opacity: 1;
+  }
+  5% {
+    transform: translateX(20px) translateY(-10px) rotate(5deg) scale(1.3);
+  }
+  10% {
+    transform: translateX(50px) translateY(-30px) rotate(15deg) scale(1.4);
+  }
+  15% {
+    transform: translateX(80px) translateY(-50px) rotate(25deg) scale(1.5);
+  }
+  20% {
+    transform: translateX(120px) translateY(-80px) rotate(45deg) scale(1.6);
+  }
+  25% {
+    transform: translateX(160px) translateY(-110px) rotate(65deg) scale(1.7);
+  }
+  30% {
+    transform: translateX(200px) translateY(-120px) rotate(90deg) scale(1.8);
+  }
+  35% {
+    transform: translateX(240px) translateY(-130px) rotate(115deg) scale(1.9);
+  }
+  40% {
+    transform: translateX(250px) translateY(-150px) rotate(135deg) scale(2);
+  }
+  45% {
+    transform: translateX(240px) translateY(-170px) rotate(155deg) scale(2.1);
+  }
+  50% {
+    transform: translateX(200px) translateY(-180px) rotate(180deg) scale(2.2);
+  }
+  55% {
+    transform: translateX(160px) translateY(-190px) rotate(205deg) scale(2.3);
+  }
+  60% {
+    transform: translateX(100px) translateY(-200px) rotate(225deg) scale(2.4);
+  }
+  65% {
+    transform: translateX(40px) translateY(-210px) rotate(245deg) scale(2.5);
+  }
+  70% {
+    transform: translateX(-50px) translateY(-180px) rotate(270deg) scale(2.6);
+  }
+  75% {
+    transform: translateX(-120px) translateY(-150px) rotate(295deg) scale(2.7);
+  }
+  80% {
+    transform: translateX(-150px) translateY(-120px) rotate(315deg) scale(2.8);
+  }
+  85% {
+    transform: translateX(-180px) translateY(-90px) rotate(335deg) scale(2.9);
+  }
+  90% {
+    transform: translateX(-200px) translateY(-50px) rotate(345deg) scale(3);
+    opacity: 0.8;
+  }
+  95% {
+    transform: translateX(-100px) translateY(-20px) rotate(355deg) scale(3.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(360deg) scale(3.5);
+    opacity: 0;
+  }
+}
+
+/* ==================== Sparkle Animation for Register Success ==================== */
+
+/* Sparkle Animation Overlay */
+.sparkle-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(138, 43, 226, 0.3), rgba(0, 212, 255, 0.2));
+  overflow: hidden;
+}
+
+.starry-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 10% 20%, #c0c0c0, transparent),
+    radial-gradient(1px 1px at 30% 40%, #8a2be2, transparent),
+    radial-gradient(1px 1px at 50% 60%, #00d4ff, transparent),
+    radial-gradient(1px 1px at 70% 80%, #c0c0c0, transparent),
+    radial-gradient(1px 1px at 90% 10%, #8a2be2, transparent);
+  background-size: 200px 200px;
+  animation: twinkle-stars 4s infinite;
+}
+
+.sparkle-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #00d4ff 0%, #c0c0c0 50%, transparent 100%);
+  border-radius: 50%;
+  animation: quantumSparkleShower 3s ease-out forwards, twinkle-particle 0.8s infinite alternate;
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.8);
+}
+
+.sparkle-particle:nth-child(odd) {
+  width: 6px;
+  height: 6px;
+  animation-duration: 2.5s;
+}
+
+.sparkle-particle:nth-child(3n) {
+  width: 8px;
+  height: 8px;
+  animation-duration: 3.5s;
+}
+
+.sparkle-particle:nth-child(5n) {
+  width: 5px;
+  height: 5px;
+  animation-duration: 4s;
+}
+
+@keyframes quantumSparkleShower {
+  0% {
+    transform: translateY(-120vh) translateX(0) rotate(0deg) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-100vh) translateX(10px) rotate(36deg) scale(0.5);
+  }
+  20% {
+    transform: translateY(-80vh) translateX(-10px) rotate(72deg) scale(1);
+  }
+  30% {
+    transform: translateY(-60vh) translateX(20px) rotate(108deg) scale(1.2);
+  }
+  40% {
+    transform: translateY(-40vh) translateX(-20px) rotate(144deg) scale(1.4);
+  }
+  50% {
+    transform: translateY(-20vh) translateX(30px) rotate(180deg) scale(1.6);
+  }
+  60% {
+    transform: translateY(0vh) translateX(-30px) rotate(216deg) scale(1.8);
+  }
+  70% {
+    transform: translateY(20vh) translateX(40px) rotate(252deg) scale(2);
+  }
+  80% {
+    transform: translateY(40vh) translateX(-40px) rotate(288deg) scale(2.2);
+    opacity: 0.8;
+  }
+  90% {
+    transform: translateY(60vh) translateX(50px) rotate(324deg) scale(2.4);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(100vh) translateX(0) rotate(360deg) scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes twinkle-particle {
+  0% { opacity: 0.5; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Quantum Portal for Transition Back to Login */
+.quantum-portal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  animation: portalExpand 3s ease-out forwards;
+}
+
+.portal-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 4px solid transparent;
+  border-top: 4px solid #00d4ff;
+  border-right: 4px solid #8a2be2;
+  border-radius: 50%;
+  animation: portalSpin 2s linear infinite, portalGlow 3s ease-out forwards;
+}
+
+.portal-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.8) 0%, rgba(138, 43, 226, 0.6) 50%, transparent 100%);
+  border-radius: 50%;
+  animation: portalPulse 1.5s ease-in-out infinite, portalShrink 3s ease-out forwards;
+  box-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 80px rgba(138, 43, 226, 0.6);
+}
+
+@keyframes portalExpand {
+  0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(1.5) rotate(180deg); }
+  100% { transform: translate(-50%, -50%) scale(2) rotate(360deg); opacity: 0; }
+}
+
+@keyframes portalSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes portalGlow {
+  0% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+  50% { box-shadow: 0 0 60px rgba(0, 212, 255, 1), 0 0 100px rgba(138, 43, 226, 0.8); }
+  100% { box-shadow: 0 0 100px rgba(0, 212, 255, 1.5), 0 0 150px rgba(138, 43, 226, 1); }
+}
+
+@keyframes portalPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+@keyframes portalShrink {
+  0% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --dark-bg: #0a0e27;
+    --card-bg: rgba(20, 26, 50, 0.98);
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 600px) {
+  .card {
+    margin: 20px;
+    padding: 30px 20px;
+    max-width: none;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .button {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  .form {
+    gap: 16px;
+  }
+
+  .quantum-logo {
+    width: 400px;
+    height: 400px;
+    opacity: 0.05;
+  }
+
+  .input {
+    padding: 11px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+@media (max-width: 400px) {
+  .card {
+    padding: 24px 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .label-text {
+    font-size: 12px;
+  }
+
+  .input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .switch-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
