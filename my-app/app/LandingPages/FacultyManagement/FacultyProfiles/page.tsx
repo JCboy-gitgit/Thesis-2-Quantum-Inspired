@@ -23,7 +23,7 @@ import {
   MapPin,
   AlertTriangle
 } from 'lucide-react';
-import './styles.css';
+import styles from './styles.module.css';
 
 interface ParticipantFile {
   upload_group_id: number
@@ -71,11 +71,11 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
       .from(table)
       .select('*')
       .range(from, to)
-      .order(orderBy, { ascending: true })
+      .order(orderBy, { ascending: true }) as any
 
     // Apply filters
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value)
+      query = query.eq(key, value as any)
     }
 
     const { data, error } = await query
@@ -469,7 +469,7 @@ function QtimeParticipantsPageContent() {
     try {
       const selectedFile = participantFiles.find(f => f.upload_group_id === selectedBatch)
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('participants')
         .insert({
           participant_number: addForm.participant_number,
@@ -482,9 +482,9 @@ function QtimeParticipantsPageContent() {
           upload_group_id: selectedBatch,
           batch_name: selectedFile?.batch_name || '',
           file_name: selectedFile?.file_name || ''
-        })
+        } as any)
         .select()
-        .single()
+        .single() as any)
 
       if (error) throw error
 
@@ -519,7 +519,7 @@ function QtimeParticipantsPageContent() {
   const paginatedData = filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div className="participants-layout">
+    <div className={styles['participants-layout']}>
       <MenuBar 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         showSidebarToggle={true}
@@ -527,87 +527,87 @@ function QtimeParticipantsPageContent() {
       />
       <Sidebar isOpen={sidebarOpen} />
       
-      <main className={`participants-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
-        <div className="data-section">
+      <main className={`${styles['participants-main']} ${sidebarOpen ? styles['with-sidebar'] : styles['full-width']}`}>
+        <div className={styles['data-section']}>
           {/* Success Message */}
           {successMessage && (
-            <div className={`success-message ${successMessage.includes('❌') || successMessage.includes('⚠️') ? 'error' : 'success'}`}>
+            <div className={`${styles['success-message']} ${successMessage.includes('❌') || successMessage.includes('⚠️') ? styles.error : styles.success}`}>
               {successMessage}
             </div>
           )}
 
-          <div className="participants-header">
+          <div className={styles['participants-header']}>
             <button 
-              className="back-button"
+              className={styles['back-button']}
               onClick={() => router.push('/LandingPages/QtimeHomePage')}
               >
               <ArrowLeft size={18} />
               Back to Home
             </button>
-            <div className="header-title-section">
-              <div className="header-icon-wrapper">
-                <Users className="header-large-icon" size={48} />
+            <div className={styles['header-title-section']}>
+              <div className={styles['header-icon-wrapper']}>
+                <Users className={styles['header-large-icon']} size={48} />
               </div>
-              <div className="header-text">
-                <h1 className="participants-title">Participants Overview</h1>
-                <p className="participants-subtitle">Select a batch to view and manage participant information</p>
+              <div className={styles['header-text']}>
+                <h1 className={styles['participants-title']}>Participants Overview</h1>
+                <p className={styles['participants-subtitle']}>Select a batch to view and manage participant information</p>
               </div>
             </div>
           </div>
 
           {loading ? (
-            <div className="loading-state">
-              <div className="spinner"></div>
+            <div className={styles['loading-state']}>
+              <div className={styles.spinner}></div>
               <p>Loading participant data...</p>
             </div>
           ) : (
             <>
-              <div className="selection-section">
-                <div className="search-header">
+              <div className={styles['selection-section']}>
+                <div className={styles['search-header']}>
                   <h2>
                     <FolderOpen size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                     Select Batch
                   </h2>
-                  <div className="search-box">
-                    <Search className="search-icon" size={18} />
+                  <div className={styles['search-box']}>
+                    <Search className={styles['search-icon']} size={18} />
                     <input
                       type="text"
                       placeholder="Search batch..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="search-input"
+                      className={styles['search-input']}
                     />
                   </div>
                 </div>
 
-                <div className="batch-cards-grid">
+                <div className={styles['batch-cards-grid']}>
                   {getFilteredFiles().map(file => (
                     <div 
                       key={file.upload_group_id}
-                      className={`batch-select-card ${selectedBatch === file.upload_group_id ? 'selected' : ''}`}
+                      className={`${styles['batch-select-card']} ${selectedBatch === file.upload_group_id ? styles.selected : ''}`}
                       onClick={() => handleSelectBatch(file.upload_group_id)}
                     >
-                      <div className="batch-card-icon">
+                      <div className={styles['batch-card-icon']}>
                         <FolderOpen size={36} />
                       </div>
-                      <div className="batch-card-content">
-                        <h3 className="batch-card-name">{file.batch_name}</h3>
-                        <p className="batch-card-meta">
+                      <div className={styles['batch-card-content']}>
+                        <h3 className={styles['batch-card-name']}>{file.batch_name}</h3>
+                        <p className={styles['batch-card-meta']}>
                           <Users size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                           {file.row_count} participants
                         </p>
-                        <p className="batch-card-date">
+                        <p className={styles['batch-card-date']}>
                           <Calendar size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                           Uploaded: {new Date(file.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       {selectedBatch === file.upload_group_id && (
-                        <div className="selected-indicator">
+                        <div className={styles['selected-indicator']}>
                           <Check size={20} />
                         </div>
                       )}
                       <button
-                        className="delete-batch-btn"
+                        className={styles['delete-batch-btn']}
                         onClick={(e) => handleDeleteBatchClick(e, file)}
                         title="Delete entire batch"
                       >
@@ -618,7 +618,7 @@ function QtimeParticipantsPageContent() {
                 </div>
 
                 {getFilteredFiles().length === 0 && (
-                  <div className="empty-results">
+                  <div className={styles['empty-results']}>
                     <p>No batches found matching "{searchTerm}"</p>
                   </div>
                 )}
@@ -627,63 +627,63 @@ function QtimeParticipantsPageContent() {
               {selectedBatch && (
                 <>
                   {loadingData ? (
-                    <div className="loading-state">
-                      <div className="spinner"></div>
+                    <div className={styles['loading-state']}>
+                      <div className={styles.spinner}></div>
                       <p>Loading participant data...</p>
                     </div>
                   ) : (
                     <>
                       {stats && (
-                        <div className="stats-grid">
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                        <div className={styles['stats-grid']}>
+                          <div className={styles['stat-card']}>
+                            <div className={styles['stat-icon']}>
                               <Users size={28} />
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Participants</p>
-                              <h3 className="stat-value">{stats.totalParticipants}</h3>
+                            <div className={styles['stat-content']}>
+                              <p className={styles['stat-label']}>Total Participants</p>
+                              <h3 className={styles['stat-value']}>{stats.totalParticipants}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles['stat-card']}>
+                            <div className={styles['stat-icon']}>
                               <Accessibility size={28} />
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">PWD Participants</p>
-                              <h3 className="stat-value">{stats.totalPWD}</h3>
+                            <div className={styles['stat-content']}>
+                              <p className={styles['stat-label']}>PWD Participants</p>
+                              <h3 className={styles['stat-value']}>{stats.totalPWD}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles['stat-card']}>
+                            <div className={styles['stat-icon']}>
                               <BarChart3 size={28} />
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">PWD Percentage</p>
-                              <h3 className="stat-value">{stats.percentagePWD}%</h3>
+                            <div className={styles['stat-content']}>
+                              <p className={styles['stat-label']}>PWD Percentage</p>
+                              <h3 className={styles['stat-value']}>{stats.percentagePWD}%</h3>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      <div className="data-section">
-                        <div className="section-header-actions">
-                          <h2 className="section-heading">
+                      <div className={styles['data-section']}>
+                        <div className={styles['section-header-actions']}>
+                          <h2 className={styles['section-heading']}>
                             <Users size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                             Participants List
                           </h2>
-                          <div className="header-actions">
-                            <div className="search-box">
-                              <Search className="search-icon" size={18} />
+                          <div className={styles['header-actions']}>
+                            <div className={styles['search-box']}>
+                              <Search className={styles['search-icon']} size={18} />
                               <input
                                 type="text"
                                 placeholder="Search by name, number, or email..."
                                 value={dataSearchTerm}
                                 onChange={(e) => setDataSearchTerm(e.target.value)}
-                                className="search-input"
+                                className={styles['search-input']}
                               />
                             </div>
                             <button 
-                              className="add-participant-button"
+                              className={styles['add-participant-button']}
                               onClick={() => setShowAddModal(true)}
                             >
                               <UserPlus size={20} />
@@ -692,8 +692,8 @@ function QtimeParticipantsPageContent() {
                           </div>
                         </div>
                         
-                        <div className="participants-table-wrapper">
-                          <table className="participants-table">
+                        <div className={styles['participants-table-wrapper']}>
+                          <table className={styles['participants-table']}>
                             <thead>
                               <tr>
                                 <th>Participant #</th>
@@ -712,17 +712,18 @@ function QtimeParticipantsPageContent() {
                                 
                                 const handleEditSave = async (participantId: number) => {
                                   try {
-                                    const { error } = await supabase
-                                      .from('participants')
-                                      .update({
-                                        participant_number: editForm.participant_number,
-                                        name: editForm.name,
-                                        is_pwd: editForm.is_pwd,
-                                        email: editForm.email,
-                                        province: editForm.province,
-                                        city: editForm.city,
-                                        country: editForm.country
-                                      })
+                                    const updateData = {
+                                      participant_number: editForm.participant_number,
+                                      name: editForm.name,
+                                      is_pwd: editForm.is_pwd,
+                                      email: editForm.email,
+                                      province: editForm.province,
+                                      city: editForm.city,
+                                      country: editForm.country
+                                    }
+                                    const { error } = await (supabase
+                                      .from('participants') as any)
+                                      .update(updateData)
                                       .eq('id', participantId)
 
                                     if (error) throw error
@@ -779,7 +780,7 @@ function QtimeParticipantsPageContent() {
                                   try {
                                     const selectedFile = participantFiles.find(f => f.upload_group_id === selectedBatch)
                                     
-                                    const { data, error } = await supabase
+                                    const { data, error } = await (supabase
                                       .from('participants')
                                       .insert({
                                         participant_number: addForm.participant_number,
@@ -792,9 +793,9 @@ function QtimeParticipantsPageContent() {
                                         upload_group_id: selectedBatch,
                                         batch_name: selectedFile?.batch_name || '',
                                         file_name: selectedFile?.file_name || ''
-                                      })
+                                      } as any)
                                       .select()
-                                      .single()
+                                      .single() as any)
 
                                     if (error) throw error
 
@@ -823,7 +824,7 @@ function QtimeParticipantsPageContent() {
                                 }
 
                                 return (
-                                  <tr key={participant.id} className={isEditing ? 'editing-row' : ''}>
+                                  <tr key={participant.id} className={isEditing ? styles['editing-row'] : ''}>
                                     {isEditing ? (
                                       <>
                                         <td>
@@ -831,7 +832,7 @@ function QtimeParticipantsPageContent() {
                                             type="text"
                                             value={editForm.participant_number}
                                             onChange={(e) => setEditForm({...editForm, participant_number: e.target.value})}
-                                            className="table-input"
+                                            className={styles['table-input']}
                                           />
                                         </td>
                                         <td>
@@ -839,11 +840,11 @@ function QtimeParticipantsPageContent() {
                                             type="text"
                                             value={editForm.name}
                                             onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                                            className="table-input"
+                                            className={styles['table-input']}
                                           />
                                         </td>
                                         <td>
-                                          <label className="pwd-checkbox">
+                                          <label className={styles['pwd-checkbox']}>
                                             <input
                                               type="checkbox"
                                               checked={editForm.is_pwd}
@@ -857,7 +858,7 @@ function QtimeParticipantsPageContent() {
                                             type="email"
                                             value={editForm.email}
                                             onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                                            className="table-input"
+                                            className={styles['table-input']}
                                           />
                                         </td>
                                         <td>
@@ -865,7 +866,7 @@ function QtimeParticipantsPageContent() {
                                             type="text"
                                             value={editForm.province}
                                             onChange={(e) => setEditForm({...editForm, province: e.target.value})}
-                                            className="table-input"
+                                            className={styles['table-input']}
                                           />
                                         </td>
                                         <td>
@@ -873,20 +874,20 @@ function QtimeParticipantsPageContent() {
                                             type="text"
                                             value={editForm.city}
                                             onChange={(e) => setEditForm({...editForm, city: e.target.value})}
-                                            className="table-input"
+                                            className={styles['table-input']}
                                           />
                                         </td>
                                         <td>
-                                          <div className="table-actions">
+                                          <div className={styles['table-actions']}>
                                             <button 
-                                              className="save-btn-inline"
+                                              className={styles['save-btn-inline']}
                                               onClick={() => handleEditSave(participant.id!)}
                                               title="Save changes"
                                             >
                                               <Check size={16} />
                                             </button>
                                             <button 
-                                              className="cancel-btn-inline"
+                                              className={styles['cancel-btn-inline']}
                                               onClick={handleEditCancel}
                                               title="Cancel editing"
                                             >
@@ -900,7 +901,7 @@ function QtimeParticipantsPageContent() {
                                         <td>{participant.participant_number}</td>
                                         <td>{participant.name}</td>
                                         <td>
-                                          <span className={`pwd-badge ${participant.is_pwd ? 'pwd-yes' : 'pwd-no'}`}>
+                                          <span className={`${styles['pwd-badge']} ${participant.is_pwd ? styles['pwd-yes'] : styles['pwd-no']}`}>
                                             {participant.is_pwd ? (
                                               <>
                                                 <Accessibility size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
@@ -913,9 +914,9 @@ function QtimeParticipantsPageContent() {
                                         <td>{participant.province}</td>
                                         <td>{participant.city}</td>
                                         <td>
-                                          <div className="table-options">
+                                          <div className={styles['table-options']}>
                                             <button 
-                                              className="options-trigger-table"
+                                              className={styles['options-trigger-table']}
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 toggleActionsMenu(participant.id!)
@@ -926,16 +927,16 @@ function QtimeParticipantsPageContent() {
                                             </button>
                                             
                                             {showActions && (
-                                              <div className="actions-popup-table">
+                                              <div className={styles['actions-popup-table']}>
                                                 <button 
-                                                  className="action-option edit-option"
+                                                  className={`${styles['action-option']} ${styles['edit-option']}`}
                                                   onClick={() => handleEditClick(participant)}
                                                 >
                                                   <Edit2 size={16} />
                                                   Edit
                                                 </button>
                                                 <button 
-                                                  className="action-option delete-option"
+                                                  className={`${styles['action-option']} ${styles['delete-option']}`}
                                                   onClick={() => handleDelete(participant.id!)}
                                                   disabled={deletingParticipant === participant.id}
                                                 >
@@ -956,9 +957,9 @@ function QtimeParticipantsPageContent() {
                         </div>
                         {/* Pagination Controls should be here */}
                         {totalPages > 1 && (
-                          <div className="pagination-wrapper">
+                          <div className={styles['pagination-wrapper']}>
                             <button
-                              className="pagination-btn"
+                              className={styles['pagination-btn']}
                               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                               disabled={currentPage === 1}
                             >
@@ -968,7 +969,7 @@ function QtimeParticipantsPageContent() {
                               ? Array.from({ length: totalPages }, (_, i) => (
                                   <button
                                     key={i + 1}
-                                    className={`pagination-btn${currentPage === i + 1 ? ' active-page' : ''}`}
+                                    className={`${styles['pagination-btn']}${currentPage === i + 1 ? ` ${styles['active-page']}` : ''}`}
                                     onClick={() => setCurrentPage(i + 1)}
                                   >
                                     {i + 1}
@@ -978,26 +979,26 @@ function QtimeParticipantsPageContent() {
                                   const pages = [];
                                   if (currentPage > 3) {
                                     pages.push(
-                                      <button key={1} className={`pagination-btn${currentPage === 1 ? ' active-page' : ''}`} onClick={() => setCurrentPage(1)}>1</button>
+                                      <button key={1} className={`${styles['pagination-btn']}${currentPage === 1 ? ` ${styles['active-page']}` : ''}`} onClick={() => setCurrentPage(1)}>1</button>
                                     );
-                                    if (currentPage > 4) pages.push(<span key="start-ellipsis" className="pagination-ellipsis">...</span>);
+                                    if (currentPage > 4) pages.push(<span key="start-ellipsis" className={styles['pagination-ellipsis']}>...</span>);
                                   }
                                   for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
                                     pages.push(
-                                      <button key={i} className={`pagination-btn${currentPage === i ? ' active-page' : ''}`} onClick={() => setCurrentPage(i)}>{i}</button>
+                                      <button key={i} className={`${styles['pagination-btn']}${currentPage === i ? ` ${styles['active-page']}` : ''}`} onClick={() => setCurrentPage(i)}>{i}</button>
                                     );
                                   }
                                   if (currentPage < totalPages - 2) {
-                                    if (currentPage < totalPages - 3) pages.push(<span key="end-ellipsis" className="pagination-ellipsis">...</span>);
+                                    if (currentPage < totalPages - 3) pages.push(<span key="end-ellipsis" className={styles['pagination-ellipsis']}>...</span>);
                                     pages.push(
-                                      <button key={totalPages} className={`pagination-btn${currentPage === totalPages ? ' active-page' : ''}`} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
+                                      <button key={totalPages} className={`${styles['pagination-btn']}${currentPage === totalPages ? ` ${styles['active-page']}` : ''}`} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
                                     );
                                   }
                                   return pages;
                                 })()
                             }
                             <button
-                              className="pagination-btn"
+                              className={styles['pagination-btn']}
                               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                               disabled={currentPage === totalPages}
                             >
@@ -1012,8 +1013,8 @@ function QtimeParticipantsPageContent() {
               )}
 
               {!selectedBatch && !loading && participantFiles.length > 0 && (
-                <div className="empty-selection">
-                  <div className="empty-icon">
+                <div className={styles['empty-selection']}>
+                  <div className={styles['empty-icon']}>
                     <Users size={80} />
                   </div>
                   <p>Please select a batch above to view participant details</p>
@@ -1026,44 +1027,44 @@ function QtimeParticipantsPageContent() {
 
       {/* Add Participant Modal */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={styles['modal-overlay']} onClick={() => setShowAddModal(false)}>
+          <div className={styles['modal-content']} onClick={(e) => e.stopPropagation()}>
+            <div className={styles['modal-header']}>
               <h3>
                 <UserPlus size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 Add New Participant
               </h3>
               <button 
-                className="modal-close"
+                className={styles['modal-close']}
                 onClick={() => setShowAddModal(false)}
                 title="Close modal"
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Participant Number * <span className="required-indicator">(Required)</span></label>
+            <div className={styles['modal-body']}>
+              <div className={styles['form-group']}>
+                <label>Participant Number * <span className={styles['required-indicator']}>(Required)</span></label>
                 <input
                   type="text"
                   value={addForm.participant_number}
                   onChange={(e) => setAddForm({...addForm, participant_number: e.target.value})}
                   placeholder="e.g., 2024001"
-                  className="modal-input"
+                  className={styles['modal-input']}
                 />
               </div>
-              <div className="form-group">
-                <label>Full Name * <span className="required-indicator">(Required)</span></label>
+              <div className={styles['form-group']}>
+                <label>Full Name * <span className={styles['required-indicator']}>(Required)</span></label>
                 <input
                   type="text"
                   value={addForm.name}
                   onChange={(e) => setAddForm({...addForm, name: e.target.value})}
                   placeholder="e.g., John Doe"
-                  className="modal-input"
+                  className={styles['modal-input']}
                 />
               </div>
-              <div className="form-group">
-                <label className="checkbox-label">
+              <div className={styles['form-group']}>
+                <label className={styles['checkbox-label']}>
                   <input
                     type="checkbox"
                     checked={addForm.is_pwd}
@@ -1073,20 +1074,20 @@ function QtimeParticipantsPageContent() {
                   <span>Person with Disability (PWD)</span>
                 </label>
               </div>
-              <div className="form-group">
+              <div className={styles['form-group']}>
                 <label>
                   <Mail size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  Email * <span className="required-indicator">(Required)</span>
+                  Email * <span className={styles['required-indicator']}>(Required)</span>
                 </label>
                 <input
                   type="email"
                   value={addForm.email}
                   onChange={(e) => setAddForm({...addForm, email: e.target.value})}
                   placeholder="e.g., john@email.com"
-                  className="modal-input"
+                  className={styles['modal-input']}
                 />
               </div>
-              <div className="form-group">
+              <div className={styles['form-group']}>
                 <label>
                   <MapPin size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Province
@@ -1096,10 +1097,10 @@ function QtimeParticipantsPageContent() {
                   value={addForm.province}
                   onChange={(e) => setAddForm({...addForm, province: e.target.value})}
                   placeholder="e.g., Metro Manila"
-                  className="modal-input"
+                  className={styles['modal-input']}
                 />
               </div>
-              <div className="form-group">
+              <div className={styles['form-group']}>
                 <label>
                   <MapPin size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   City
@@ -1109,20 +1110,20 @@ function QtimeParticipantsPageContent() {
                   value={addForm.city}
                   onChange={(e) => setAddForm({...addForm, city: e.target.value})}
                   placeholder="e.g., Manila"
-                  className="modal-input"
+                  className={styles['modal-input']}
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className={styles['modal-footer']}>
               <button 
-                className="modal-btn-cancel"
+                className={styles['modal-btn-cancel']}
                 onClick={() => setShowAddModal(false)}
               >
                 <X size={18} />
                 Cancel
               </button>
               <button 
-                className="modal-btn-save"
+                className={styles['modal-btn-save']}
                 onClick={handleAddParticipant}
               >
                 <Check size={18} />
@@ -1135,15 +1136,15 @@ function QtimeParticipantsPageContent() {
 
       {/* Delete Batch Confirmation Modal */}
       {showDeleteBatchModal && batchToDelete && (
-        <div className="modal-overlay" onClick={() => !deletingBatch && setShowDeleteBatchModal(false)}>
-          <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header delete-header">
+        <div className={styles['modal-overlay']} onClick={() => !deletingBatch && setShowDeleteBatchModal(false)}>
+          <div className={`${styles['modal-content']} ${styles['delete-modal']}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`${styles['modal-header']} ${styles['delete-header']}`}>
               <h3>
                 <AlertTriangle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
                 Delete Batch
               </h3>
               <button 
-                className="modal-close"
+                className={styles['modal-close']}
                 onClick={() => setShowDeleteBatchModal(false)}
                 disabled={deletingBatch}
                 title="Close modal"
@@ -1151,27 +1152,27 @@ function QtimeParticipantsPageContent() {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="delete-warning">
-                <div className="warning-icon-wrapper">
-                  <AlertTriangle size={64} className="warning-icon" />
+            <div className={styles['modal-body']}>
+              <div className={styles['delete-warning']}>
+                <div className={styles['warning-icon-wrapper']}>
+                  <AlertTriangle size={64} className={styles['warning-icon']} />
                 </div>
                 <h4>Are you absolutely sure?</h4>
                 <p>
                   You are about to permanently delete the batch:
                 </p>
-                <div className="delete-batch-info">
+                <div className={styles['delete-batch-info']}>
                   <strong>{batchToDelete.batch_name}</strong>
                   <span>{batchToDelete.row_count} participants</span>
                 </div>
-                <p className="warning-text">
+                <p className={styles['warning-text']}>
                   This action <strong>CANNOT BE UNDONE</strong>. All {batchToDelete.row_count} participants in this batch will be permanently removed from the database.
                 </p>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className={styles['modal-footer']}>
               <button 
-                className="modal-btn-cancel"
+                className={styles['modal-btn-cancel']}
                 onClick={() => setShowDeleteBatchModal(false)}
                 disabled={deletingBatch}
               >
@@ -1179,7 +1180,7 @@ function QtimeParticipantsPageContent() {
                 Cancel
               </button>
               <button 
-                className="modal-btn-delete"
+                className={styles['modal-btn-delete']}
                 onClick={handleDeleteBatch}
                 disabled={deletingBatch}
               >

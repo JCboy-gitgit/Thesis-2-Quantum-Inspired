@@ -229,8 +229,8 @@
 
 .batch-select-card.selected {
   border-color: var(--primary-medium);
-  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
-  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.3);
+  background: var(--primary-alpha);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .batch-card-icon {
@@ -240,10 +240,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  background: var(--primary-alpha);
   border-radius: 14px;
   flex-shrink: 0;
-  color: var(--primary-medium);
+  color: var(--primary);
 }
 
 .batch-card-content {
@@ -350,14 +350,14 @@
 .stat-icon {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  background: var(--primary-alpha);
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-size: 28px;
-  color: var(--primary-medium);
+  color: var(--primary);
 }
 
 .stat-content {
@@ -457,7 +457,7 @@
 }
 
 .participants-table thead {
-  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+  background: var(--bg-gray-50);
   border-bottom: 3px solid var(--border-color);
 }
 
@@ -481,7 +481,7 @@
 }
 
 .participants-table tbody tr.editing-row {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e8eeff 100%);
+  background: var(--primary-alpha);
 }
 
 .participants-table td {
@@ -501,8 +501,8 @@
 }
 
 .pwd-badge.pwd-yes {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: var(--primary-dark);
+  background: var(--primary-alpha);
+  color: var(--primary);
   border: 2px solid var(--primary-medium);
 }
 
@@ -528,7 +528,7 @@
 .table-input:focus {
   outline: none;
   border-color: var(--primary-medium);
-  box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
 }
 
 .pwd-checkbox {
@@ -610,8 +610,8 @@
 }
 
 .edit-option:hover {
-  background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
-  color: var(--primary-medium);
+  background: var(--primary-alpha);
+  color: var(--primary);
 }
 
 .delete-option:hover {
@@ -666,7 +666,7 @@
   align-items: center;
   padding: 24px;
   border-bottom: 2px solid var(--border-color);
-  background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+  background: var(--bg-gray-50);
 }
 
 .modal-header h3 {
@@ -809,12 +809,12 @@
 .modal-btn-save {
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .modal-btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.4);
+  box-shadow: 0 6px 16px var(--glow-color);
 }
 
 .modal-btn-save:active {
@@ -827,8 +827,8 @@
   margin-bottom: 20px;
   border-radius: 10px;
   border-left: 6px solid var(--success-green);
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success-green);
   font-weight: 600;
   animation: slideDown 0.3s ease-out;
   display: flex;
@@ -839,8 +839,8 @@
 
 .success-message.error {
   border-left-color: var(--danger-red);
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-red);
 }
 
 @keyframes slideDown {
@@ -1012,7 +1012,7 @@
 }
 
 .delete-batch-info {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--bg-gray-50);
   padding: 16px 20px;
   border-radius: 10px;
   margin: 16px 0;
@@ -1024,7 +1024,7 @@
 
 .delete-batch-info strong {
   font-size: 18px;
-  color: var(--primary-dark);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -1035,13 +1035,13 @@
 }
 
 .warning-text {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  background: rgba(239, 68, 68, 0.1);
   padding: 14px 18px;
   border-radius: 10px;
   border-left: 4px solid var(--danger-red);
   margin: 16px 0;
   font-size: 14px !important;
-  color: #991b1b !important;
+  color: var(--danger-red) !important;
   font-weight: 600;
 }
 
@@ -1205,4 +1205,83 @@
   font-weight: 700;
   user-select: none;
   pointer-events: none;
+}
+
+/* ==================== Dark Mode Overrides ==================== */
+:global([data-theme="dark"]) .batch-card-icon {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.25));
+  color: var(--primary);
+}
+
+:global([data-theme="dark"]) .stat-icon {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 212, 255, 0.25));
+  color: var(--primary);
+}
+
+:global([data-theme="dark"]) .batch-select-card.selected {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+  border-color: var(--primary);
+}
+
+:global([data-theme="dark"]) .participants-table thead {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+}
+
+:global([data-theme="dark"]) .participants-table tbody tr.editing-row {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+}
+
+:global([data-theme="dark"]) .modal-header {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 212, 255, 0.05) 100%);
+}
+
+:global([data-theme="dark"]) .edit-option:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 212, 255, 0.1) 100%);
+  color: var(--primary);
+}
+
+:global([data-theme="dark"]) .pwd-badge.pwd-yes {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(0, 212, 255, 0.1) 100%);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+:global([data-theme="dark"]) .delete-batch-btn {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+:global([data-theme="dark"]) .checkbox-label:hover {
+  background: var(--bg-gray-100);
+}
+
+:global([data-theme="dark"]) .delete-batch-info {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(0, 212, 255, 0.04) 100%);
+  border-color: var(--border-color);
+}
+
+:global([data-theme="dark"]) .add-participant-button {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="dark"]) .modal-btn-save {
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+:global([data-theme="dark"]) .selected-indicator {
+  box-shadow: 0 4px 8px rgba(0, 212, 255, 0.3);
+}
+
+:global([data-theme="dark"]) .header-icon-wrapper {
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+:global([data-theme="dark"]) .success-message {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+  color: #6ee7b7;
+}
+
+:global([data-theme="dark"]) .success-message.error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+  color: #fca5a5;
 }

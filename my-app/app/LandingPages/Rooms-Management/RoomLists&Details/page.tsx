@@ -30,8 +30,8 @@ import {
   Hotel,
   University
 } from 'lucide-react'
-import './styles.css'
 import { RiBuilding3Fill } from 'react-icons/ri'
+import styles from './styles.module.css'
 
 interface CampusFile {
   upload_group_id: number
