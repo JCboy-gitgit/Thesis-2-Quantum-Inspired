@@ -669,7 +669,7 @@ export default function SchoolCapacityPage() {
   }
 
   return (
-    <div className="campus-layout">
+    <div className={styles.pageContainer}>
       <MenuBar 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         showSidebarToggle={true}
@@ -677,86 +677,86 @@ export default function SchoolCapacityPage() {
       />
       <Sidebar isOpen={sidebarOpen} />
       
-      <main className={`campus-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
-        <div className="campus-container">
+      <main className={`${styles.mainContent} ${sidebarOpen ? '' : styles.fullWidth}`}>
+        <div className={styles.contentWrapper}>
           {/* Success Message */}
           {successMessage && (
-            <div className={`success-message ${successMessage.includes('❌') ? 'error' : 'success'}`}>
+            <div className={`${styles.successMessage} ${successMessage.includes('❌') ? styles.error : ''}`}>
               {successMessage}
             </div>
           )}
             <button 
-              className="back-button"
+              className={styles.backButton}
               onClick={() => router.push('/LandingPages/QtimeHomePage')}
             >
               <ArrowLeft size={18} />
               Back to Home
             </button>
-          <div className="campus-header">
-            <div className="header-title-section">
-              <div className="header-icon-wrapper">
-                <University className="header-large-icon" size={48} />
+          <div className={styles.headerCard}>
+            <div className={styles.headerTitleSection}>
+              <div className={styles.headerIconWrapper}>
+                <University className={styles.headerLargeIcon} size={48} />
               </div>
-              <div className="header-text">
-                <h1 className="campus-title">School Capacity Overview</h1>
-                <p className="campus-subtitle">Select a school to view and manage room information</p>
+              <div className={styles.headerText}>
+                <h1 className={styles.headerTitle}>School Capacity Overview</h1>
+                <p className={styles.headerSubtitle}>Select a school to view and manage room information</p>
               </div>
             </div>
           </div>
 
           {loading ? (
-            <div className="loading-screen">
-              <div className="spinner"></div>
+            <div className={styles.loadingState}>
+              <div className={styles.spinner}></div>
               <p>Loading your data...</p>
             </div>
           ) : (
             <>
-              <div className="selection-section">
-                <div className="search-header">
+              <div className={styles.selectionSection}>
+                <div className={styles.searchHeader}>
                   <h2>
                     <University size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                     Select School
                   </h2>
-                  <div className="search-box">
-                    <Search className="search-icon" size={18} />
+                  <div className={styles.searchBox}>
+                    <Search className={styles.searchIcon} size={18} />
                     <input
                       type="text"
                       placeholder="Search school..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="search-input"
+                      className={styles.searchInput}
                     />
                   </div>
                 </div>
 
-                <div className="campus-cards-grid">
+                <div className={styles.campusCardsGrid}>
                   {getFilteredFiles().map(file => (
                     <div 
                       key={file.upload_group_id}
-                      className={`campus-select-card ${selectedCampus === file.upload_group_id ? 'selected' : ''}`}
+                      className={`${styles.campusSelectCard} ${selectedCampus === file.upload_group_id ? styles.selected : ''}`}
                       onClick={() => handleSelectSchool(file.upload_group_id)}
                     >
-                      <div className="campus-card-icon school-icon">
+                      <div className={`${styles.campusCardIcon} ${styles.schoolIcon}`}>
                         <University size={36} />
                       </div>
-                      <div className="campus-card-content">
-                        <h3 className="campus-card-name">{file.school_name}</h3>
-                        <p className="campus-card-meta">
+                      <div className={styles.campusCardContent}>
+                        <h3 className={styles.campusCardName}>{file.school_name}</h3>
+                        <p className={styles.campusCardMeta}>
                           <DoorOpen size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                           {file.row_count} rooms available
                         </p>
-                        <p className="campus-card-date">
+                        <p className={styles.campusCardDate}>
                           <Calendar size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                           Uploaded: {new Date(file.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       {selectedCampus === file.upload_group_id && (
-                        <div className="selected-indicator">
+                        <div className={styles.selectedIndicator}>
                           <Check size={20} />
                         </div>
                       )}
                       <button
-                        className="delete-campus-btn"
+                        className={styles.deleteCampusBtn}
                         onClick={(e) => handleDeleteCampusClick(e, file)}
                         title="Delete entire campus"
                       >
@@ -767,7 +767,7 @@ export default function SchoolCapacityPage() {
                 </div>
 
                 {getFilteredFiles().length === 0 && (
-                  <div className="empty-results">
+                  <div className={styles.emptyResults}>
                     <p>No schools found matching "{searchTerm}"</p>
                   </div>
                 )}
@@ -776,79 +776,79 @@ export default function SchoolCapacityPage() {
               {selectedCampus && (
                 <>
                   {loadingData ? (
-                    <div className="loading-state">
-                      <div className="spinner"></div>
+                    <div className={styles.loadingState}>
+                      <div className={styles.spinner}></div>
                       <p>Loading campus data...</p>
                     </div>
                   ) : (
                     <>
                       {/* Stats Grid */}
                       {stats && (
-                        <div className="stats-grid">
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                        <div className={styles.statsGrid}>
+                          <div className={styles.statCard}>
+                            <div className={styles.statIcon}>
                               <Landmark size={28} /> {/* Campus icon */}
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Campuses</p>
-                              <h3 className="stat-value">{getFileStats().totalCampuses}</h3>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Total Campuses</p>
+                              <h3 className={styles.statValue}>{getFileStats().totalCampuses}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles.statCard}>
+                            <div className={styles.statIcon}>
                               <Hotel size={28} /> {/* Building icon */}
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Buildings</p>
-                              <h3 className="stat-value">{getFileStats().totalBuildings}</h3>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Total Buildings</p>
+                              <h3 className={styles.statValue}>{getFileStats().totalBuildings}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles.statCard}>
+                            <div className={styles.statIcon}>
                               <DoorOpen size={28} /> {/* Room icon */}
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Rooms</p>
-                              <h3 className="stat-value">{getFileStats().totalRooms}</h3>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Total Rooms</p>
+                              <h3 className={styles.statValue}>{getFileStats().totalRooms}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles.statCard}>
+                            <div className={styles.statIcon}>
                               <Users size={28} /> {/* Capacity icon */}
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Total Capacity</p>
-                              <h3 className="stat-value">{getFileStats().totalCapacity}</h3>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Total Capacity</p>
+                              <h3 className={styles.statValue}>{getFileStats().totalCapacity}</h3>
                             </div>
                           </div>
-                          <div className="stat-card">
-                            <div className="stat-icon">
+                          <div className={styles.statCard}>
+                            <div className={styles.statIcon}>
                               <BarChart3 size={28} /> {/* Avg Capacity icon */}
                             </div>
-                            <div className="stat-content">
-                              <p className="stat-label">Avg Capacity</p>
-                              <h3 className="stat-value">{getFileStats().avgCapacity}</h3>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Avg Capacity</p>
+                              <h3 className={styles.statValue}>{getFileStats().avgCapacity}</h3>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      <div className="data-section">
-                        <div className="section-header-actions">
-                          <h2 className="section-heading">
+                      <div className={styles.dataSection}>
+                        <div className={styles.sectionHeaderActions}>
+                          <h2 className={styles.sectionHeading}>
                             <Landmark size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                             Campuses & Buildings
                           </h2>
                           <div style={{ display: 'flex', gap: 10 }}>
                             <button
-                              className="toggle-campuses-btn"
+                              className={styles.toggleCampusesBtn}
                               onClick={() => setCampusesExpanded((prev) => !prev)}
                             >
                               {campusesExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                               {campusesExpanded ? 'Hide Campuses' : 'Show Campuses'}
                             </button>
                             <button 
-                              className="add-room-button"
+                              className={styles.addRoomButton}
                               onClick={() => setShowAddModal(true)}
                             >
                               <Plus size={20} />
@@ -872,15 +872,15 @@ export default function SchoolCapacityPage() {
                             }
 
                             return (
-                              <div key={campusName} className="campus-section" style={{ marginBottom: 28 }}>
-                                <div className="campus-header" style={{ fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
+                              <div key={campusName} className={styles.campusSection} style={{ marginBottom: 28 }}>
+                                <div className={styles.campusHeader} style={{ fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
                                 <Landmark size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                                   {campusName}
                                   <span style={{ marginLeft: 14, color: '#888', fontSize: 15 }}>
                                     {buildings.size} buildings
                                   </span>
                                   <button
-                                    className="toggle-campus-btn"
+                                    className={styles.toggleCampusBtn}
                                     style={{ marginLeft: 'auto', marginRight: 0 }}
                                     onClick={() => toggleCampus(campusName)}
                                   >
@@ -897,41 +897,41 @@ export default function SchoolCapacityPage() {
                                     const floorGroups = groupRoomsByFloor(buildingRooms)
                                     const buildingCapacity = buildingRooms.reduce((sum, room) => sum + room.capacity, 0)
                                     return (
-                                      <div key={buildingKey} className="building-section" style={{ marginLeft: 24 }}>
+                                      <div key={buildingKey} className={styles.buildingSection} style={{ marginLeft: 24 }}>
                                         <div 
-                                          className="building-header clickable"
+                                          className={`${styles.buildingHeader} ${styles.clickable}`}
                                           onClick={() => toggleBuilding(buildingKey)}
                                         >
-                                          <h3 className="building-name">
-                                            <span className="expand-icon">
+                                          <h3 className={styles.buildingName}>
+                                            <span className={styles.expandIcon}>
                                               {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                                             </span>
                                             <Hotel size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px', marginRight: '8px' }} />
                                             {buildingName}
                                           </h3>
-                                          <span className="room-badge">{buildingRooms.length} rooms</span>
-                                          <span className="capacity-badge-small">Total: {buildingCapacity}</span>
-                                          <button className="expand-button">
+                                          <span className={styles.roomBadge}>{buildingRooms.length} rooms</span>
+                                          <span className={styles.capacityBadgeSmall}>Total: {buildingCapacity}</span>
+                                          <button className={styles.expandButton}>
                                             {isExpanded ? 'Hide' : 'Show'} Rooms
                                           </button>
                                         </div>
                                         {isExpanded && (
-                                          <div className="building-content">
+                                          <div className={styles.buildingContent}>
                                             {Array.from(floorGroups.entries()).map(([floor, floorRooms]) => {
                                               const floorName = floor === 1 ? '1st' : floor === 2 ? '2nd' : floor === 3 ? '3rd' : `${floor}th`
                                               const floorCapacity = floorRooms.reduce((sum, room) => sum + room.capacity, 0)
                                               return (
-                                                <div key={floor} className="floor-section">
-                                                  <div className="floor-header">
-                                                    <h4 className="floor-name">
+                                                <div key={floor} className={styles.floorSection}>
+                                                  <div className={styles.floorHeader}>
+                                                    <h4 className={styles.floorName}>
                                                       <MapPin size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                                                       {floorName} Floor
                                                     </h4>
-                                                    <span className="floor-info">
+                                                    <span className={styles.floorInfo}>
                                                       {floorRooms.length} rooms · Capacity: {floorCapacity}
                                                     </span>
                                                   </div>
-                                                  <div className="rooms-grid">
+                                                  <div className={styles.roomsGrid}>
                                                     {floorRooms.map((room) => {
                                                       const parsed = parseRoomNumber(room.room)
                                                       const isEditing = editingRoom === room.id
@@ -940,52 +940,52 @@ export default function SchoolCapacityPage() {
                                                       return (
                                                         <div
                                                           key={room.id}
-                                                          className={`room-card ${isEditing ? 'editing' : ''}`}
+                                                          className={`${styles.roomCard} ${isEditing ? styles.editing : ''}`}
                                                           onMouseLeave={() => {
                                                             // Only close if the popup is open for this room
                                                             if (showActionsFor === room.id) setShowActionsFor(null)
                                                           }}
                                                         >
                                                           {isEditing ? (
-                                                            <div className="room-edit-form">
+                                                            <div className={styles.roomEditForm}>
                                                               <input
                                                                 type="text"
                                                                 value={editForm.campus}
                                                                 onChange={(e) => setEditForm({...editForm, campus: e.target.value})}
                                                                 placeholder="Campus"
-                                                                className="edit-input-small"
+                                                                className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="text"
                                                                 value={editForm.building}
                                                                 onChange={(e) => setEditForm({...editForm, building: e.target.value})}
                                                                 placeholder="Building"
-                                                                className="edit-input-small"
+                                                                className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="text"
                                                                 value={editForm.room}
                                                                 onChange={(e) => setEditForm({...editForm, room: e.target.value})}
                                                                 placeholder="Room"
-                                                                className="edit-input-small"
+                                                                className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="number"
                                                                 value={editForm.capacity}
                                                                 onChange={(e) => setEditForm({...editForm, capacity: parseInt(e.target.value) || 0})}
                                                                 placeholder="Capacity"
-                                                                className="edit-input-small"
+                                                                className={styles.editInputSmall}
                                                               />
-                                                              <div className="edit-actions">
+                                                              <div className={styles.editActions}>
                                                                 <button 
-                                                                  className="save-btn-small"
+                                                                  className={styles.saveBtnSmall}
                                                                   onClick={() => handleEditSave(room.id!)}
                                                                 >
                                                                   <Check size={16} />
                                                                   Save
                                                                 </button>
                                                                 <button 
-                                                                  className="cancel-btn-small"
+                                                                  className={styles.cancelBtnSmall}
                                                                   onClick={handleEditCancel}
                                                                 >
                                                                   <X size={16} />
@@ -995,28 +995,28 @@ export default function SchoolCapacityPage() {
                                                             </div>
                                                           ) : (
                                                             <>
-                                                              <div className="room-icon">
+                                                              <div className={styles.roomIcon}>
                                                                 <DoorOpen size={24} />
                                                               </div>
-                                                              <div className="room-info">
-                                                                <h4 className="room-name">{room.room}</h4>
-                                                                <p className="room-parsed">{parsed.displayName}</p>
-                                                                <p className="room-campus">
+                                                              <div className={styles.roomInfo}>
+                                                                <h4 className={styles.roomName}>{room.room}</h4>
+                                                                <p className={styles.roomParsed}>{parsed.displayName}</p>
+                                                                <p className={styles.roomCampus}>
                                                                   <Building2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                                                                   {room.campus}
                                                                 </p>
-                                                                <p className="room-seats">
+                                                                <p className={styles.roomSeats}>
                                                                   <Users size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                                                                   Seats: {room.capacity}
                                                                 </p>
                                                               </div>
-                                                              <div className="room-capacity-badge">
+                                                              <div className={styles.roomCapacityBadge}>
                                                                 {room.capacity}
                                                               </div>
                                                               
-                                                              <div className="room-options">
+                                                              <div className={styles.roomOptions}>
                                                                 <button 
-                                                                  className="options-trigger"
+                                                                  className={styles.optionsTrigger}
                                                                   onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     toggleActionsMenu(room.id!)
@@ -1026,16 +1026,16 @@ export default function SchoolCapacityPage() {
                                                                   <Settings size={18} />
                                                                 </button>
                                                                 {showActions && (
-                                                                  <div className="actions-popup">
+                                                                  <div className={styles.actionsPopup}>
                                                                     <button 
-                                                                      className="action-option edit-option"
+                                                                      className={`${styles.actionOption} ${styles.editOption}`}
                                                                       onClick={() => handleEditClick(room)}
                                                                     >
                                                                       <Edit2 size={16} />
                                                                       Edit Room
                                                                     </button>
                                                                     <button 
-                                                                      className="action-option delete-option"
+                                                                      className={`${styles.actionOption} ${styles.deleteOption}`}
                                                                       onClick={() => handleDelete(room.id!)}
                                                                       disabled={deletingRoom === room.id}
                                                                     >
@@ -1070,8 +1070,8 @@ export default function SchoolCapacityPage() {
               )}
 
               {!selectedCampus && !loading && campusFiles.length > 0 && (
-                <div className="empty-selection">
-                  <div className="empty-icon">
+                <div className={styles.emptySelection}>
+                  <div className={styles.emptyIcon}>
                     <Building2 size={80} />
                   </div>
                   <p>Please select a school above to view room details</p>
@@ -1084,22 +1084,22 @@ export default function SchoolCapacityPage() {
 
       {/* Add Room Modal */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
               <h3>
                 <Plus size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 Add New Room
               </h3>
               <button 
-                className="modal-close"
+                className={styles.modalClose}
                 onClick={() => setShowAddModal(false)}
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
+            <div className={styles.modalBody}>
+              <div className={styles.formGroup}>
                 <label>
                   <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Campus
@@ -1109,10 +1109,10 @@ export default function SchoolCapacityPage() {
                   value={addForm.campus}
                   onChange={(e) => setAddForm({...addForm, campus: e.target.value})}
                   placeholder="e.g., Main Campus"
-                  className="modal-input"
+                  className={styles.modalInput}
                 />
               </div>
-              <div className="form-group">
+              <div className={styles.formGroup}>
                 <label>
                   <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Building
@@ -1122,10 +1122,10 @@ export default function SchoolCapacityPage() {
                   value={addForm.building}
                   onChange={(e) => setAddForm({...addForm, building: e.target.value})}
                   placeholder="e.g., Building A"
-                  className="modal-input"
+                  className={styles.modalInput}
                 />
               </div>
-              <div className="form-group">
+              <div className={styles.formGroup}>
                 <label>
                   <DoorOpen size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Room
@@ -1135,10 +1135,10 @@ export default function SchoolCapacityPage() {
                   value={addForm.room}
                   onChange={(e) => setAddForm({...addForm, room: e.target.value})}
                   placeholder="e.g., 101"
-                  className="modal-input"
+                  className={styles.modalInput}
                 />
               </div>
-              <div className="form-group">
+              <div className={styles.formGroup}>
                 <label>
                   <Users size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Capacity
@@ -1148,20 +1148,20 @@ export default function SchoolCapacityPage() {
                   value={addForm.capacity || ''}
                   onChange={(e) => setAddForm({...addForm, capacity: parseInt(e.target.value) || 0})}
                   placeholder="e.g., 30"
-                  className="modal-input"
+                  className={styles.modalInput}
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className={styles.modalFooter}>
               <button 
-                className="modal-btn-cancel"
+                className={styles.modalBtnCancel}
                 onClick={() => setShowAddModal(false)}
               >
                 <X size={18} />
                 Cancel
               </button>
               <button 
-                className="modal-btn-save"
+                className={styles.modalBtnSave}
                 onClick={handleAddRoom}
               >
                 <Check size={18} />
@@ -1174,15 +1174,15 @@ export default function SchoolCapacityPage() {
 
       {/* Delete Campus Confirmation Modal */}
       {showDeleteCampusModal && campusToDelete && (
-        <div className="modal-overlay" onClick={() => !deletingCampus && setShowDeleteCampusModal(false)}>
-          <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header delete-header">
+        <div className={styles.modalOverlay} onClick={() => !deletingCampus && setShowDeleteCampusModal(false)}>
+          <div className={`${styles.modalContent} ${styles.deleteModal}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`${styles.modalHeader} ${styles.deleteHeader}`}>
               <h3>
                 <AlertTriangle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
                 Delete Campus
               </h3>
               <button 
-                className="modal-close"
+                className={styles.modalClose}
                 onClick={() => setShowDeleteCampusModal(false)}
                 disabled={deletingCampus}
                 title="Close modal"
@@ -1190,27 +1190,27 @@ export default function SchoolCapacityPage() {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="delete-warning">
-                <div className="warning-icon-wrapper">
-                  <AlertTriangle size={64} className="warning-icon" />
+            <div className={styles.modalBody}>
+              <div className={styles.deleteWarning}>
+                <div className={styles.warningIconWrapper}>
+                  <AlertTriangle size={64} className={styles.warningIcon} />
                 </div>
                 <h4>Are you absolutely sure?</h4>
                 <p>
                   You are about to permanently delete the campus:
                 </p>
-                <div className="delete-batch-info">
+                <div className={styles.deleteBatchInfo}>
                   <strong>{campusToDelete.school_name}</strong>
                   <span>{campusToDelete.row_count} rooms</span>
                 </div>
-                <p className="warning-text">
+                <p className={styles.warningText}>
                   This action <strong>CANNOT BE UNDONE</strong>. All {campusToDelete.row_count} rooms in this campus will be permanently removed from the database.
                 </p>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className={styles.modalFooter}>
               <button 
-                className="modal-btn-cancel"
+                className={styles.modalBtnCancel}
                 onClick={() => setShowDeleteCampusModal(false)}
                 disabled={deletingCampus}
               >
@@ -1218,7 +1218,7 @@ export default function SchoolCapacityPage() {
                 Cancel
               </button>
               <button 
-                className="modal-btn-delete"
+                className={styles.modalBtnDelete}
                 onClick={handleDeleteCampus}
                 disabled={deletingCampus}
               >
