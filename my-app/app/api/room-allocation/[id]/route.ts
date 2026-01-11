@@ -39,23 +39,21 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const scheduleId = params.id;
-    
+    const { id } = await context.params;
+    const scheduleId = id;
     const response = await fetch(`${BACKEND_URL}/api/schedules/${scheduleId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    
     if (!response.ok) {
       throw new Error(`Backend error: ${response.status}`);
     }
-    
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
