@@ -139,7 +139,7 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
       .order(orderBy, { ascending: true })
 
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value)
+      query = query.eq(key, value as string | number | boolean)
     }
 
     const { data, error } = await query

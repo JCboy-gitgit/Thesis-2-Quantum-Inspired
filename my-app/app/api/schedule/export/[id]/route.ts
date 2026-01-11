@@ -24,7 +24,7 @@ async function fetchAllRows(table: string, filters: any = {}) {
 
     // Apply filters
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value)
+      query = query.eq(key, value as string | number | boolean)
     }
 
     const { data, error } = await query

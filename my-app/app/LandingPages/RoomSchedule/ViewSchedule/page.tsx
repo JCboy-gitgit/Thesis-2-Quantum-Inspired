@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import MenuBar from '@/app/components/MenuBar'
@@ -116,7 +116,7 @@ interface TimetableCell {
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-export default function ViewSchedulePage() {
+function ViewSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const scheduleIdParam = searchParams.get('id')
@@ -1016,5 +1016,13 @@ export default function ViewSchedulePage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function ViewSchedulePageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ViewSchedulePage />
+    </Suspense>
   )
 }

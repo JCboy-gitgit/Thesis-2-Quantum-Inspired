@@ -44,7 +44,7 @@ export async function fetchAllRows<T>(
 
     // Apply filters
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value)
+      query = query.eq(key, value as string | number | boolean)
     }
 
     const { data, error } = await query
@@ -105,7 +105,7 @@ export async function getNextUploadGroupId(
     return 1
   }
   
-  return data && data.length > 0 ? (data[0].upload_group_id || 0) + 1 : 1
+  return data && data.length > 0 ? ((data[0] as any).upload_group_id || 0) + 1 : 1
 }
 
 /**
@@ -124,7 +124,7 @@ export async function insertInBatches<T extends Record<string, any>>(
     
     const { error } = await supabase
       .from(table)
-      .insert(batch)
+      .insert(batch as any)
     
     if (error) {
       errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`)

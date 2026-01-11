@@ -74,7 +74,7 @@ async function fetchAllRows(table: string, filters: Record<string, any> = {}, or
       .order(orderColumn, { ascending: false })
 
     Object.entries(filters).forEach(([key, value]) => {
-      query = query.eq(key, value)
+      query = query.eq(key, value as string | number | boolean)
     })
 
     const { data, error } = await query
@@ -163,10 +163,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const scheduleDate = summary.schedule_date
-    const endDate = summary.end_date || summary.schedule_date
-    const eventName = summary.event_name || 'Your Event'
-    const eventType = summary.event_type || 'Event'
+    const scheduleDate = (summary as any).schedule_date
+    const endDate = (summary as any).end_date || (summary as any).schedule_date
+    const eventName = (summary as any).event_name || 'Your Event'
+    const eventType = (summary as any).event_type || 'Event'
 
     console.log(`✅ Event: ${eventName} (${eventType})`)
     console.log(`📅 Date Range: ${scheduleDate} to ${endDate}`)
