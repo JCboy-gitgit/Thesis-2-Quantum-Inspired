@@ -230,10 +230,12 @@ export default function QtimeHomePage() {
                             </p>
                             <button 
                               className="view-button"
+                              title="View campus file details and room list"
                               onClick={() => handleGenerateCampusUI(file.upload_group_id)}
                             >
-                              <Eye size={20} />
-                              View Details
+                              <Eye size={20} style={{ marginRight: 6 }} />
+                              <span>View Details</span>
+                              <span className="view-subtitle">See rooms and schedule info</span>
                             </button>
                           </div>
                         ))}
@@ -272,10 +274,12 @@ export default function QtimeHomePage() {
                             </p>
                             <button 
                               className="view-button"
+                              title="View teacher file details and participant list"
                               onClick={() => handleGenerateParticipantUI(file.upload_group_id)}
                             >
-                              <Eye size={20} />
-                              View Details
+                              <Eye size={20} style={{ marginRight: 6 }} />
+                              <span>View Details</span>
+                              <span className="view-subtitle">See teachers and schedule info</span>
                             </button>
                           </div>
                         ))}

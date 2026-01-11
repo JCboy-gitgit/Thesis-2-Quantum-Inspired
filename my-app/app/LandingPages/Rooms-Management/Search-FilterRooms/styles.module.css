@@ -542,6 +542,210 @@
   color: #ec4899;
 }
 
+.featureWhiteboard {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+/* Back Button */
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+}
+
+.backButton:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary);
+}
+
+/* Section Header */
+.sectionHeader {
+  margin: 24px 0 16px;
+}
+
+.sectionHeader h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+}
+
+/* Campus Grid */
+.campusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.campusCard {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.campusCard:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.campusCard.selected {
+  border-color: var(--primary);
+  background: var(--primary-alpha);
+}
+
+.campusCardIcon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.campusCardContent h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+
+.campusCardMeta,
+.campusCardFile,
+.campusCardDate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 4px 0;
+}
+
+.selectedBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--primary);
+}
+
+/* Search Card Header */
+.searchCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.searchCardHeader h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.roomCountBadge {
+  background: var(--primary-alpha);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Capacity Badge */
+.capacityBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Filter Label with Icons */
+.filterLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* No Selection Prompt */
+.noSelectionPrompt {
+  background: var(--card-bg);
+  border: 2px dashed var(--card-border);
+  border-radius: 16px;
+  padding: 64px 24px;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.noSelectionPrompt svg {
+  color: var(--text-light);
+  opacity: 0.4;
+  margin-bottom: 16px;
+}
+
+.noSelectionPrompt h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+
+.noSelectionPrompt p {
+  color: var(--text-light);
+  margin: 0;
+}
+
+/* Loading State */
+.loadingState {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-light);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--card-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Dark mode */
 :global(.dark) .headerIcon {
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);

@@ -1,92 +1,114 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import styles from './CampusSchedules.module.css'
+import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { 
-  FaBuilding, 
-  FaDoorOpen, 
-  FaBox, 
-  FaUsers, 
-  FaWheelchair, 
-  FaChartBar,
-  FaClock,
-  FaChair,
   FaCalendar,
-  FaCheck
+  FaSearch,
+  FaGraduationCap,
+  FaBuilding,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaTimes,
+  FaSave,
+  FaClock
 } from 'react-icons/fa'
-import { Accessibility, ChevronDown, ChevronRight } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2 } from 'lucide-react'
 
-interface Campus {
-  name: string
-  buildings: Building[]
-}
-
-interface Building {
-  name: string
-  campus: string
-  rooms: Room[]
-}
-
-interface Room {
+// ==================== Interfaces ====================
+interface ClassSchedule {
   id: number
-  room: string
-  capacity: number
-  building: string
-  campus: string
-  is_first_floor: boolean // ✅ NEW
-  batches: Batch[]
-  totalParticipants: number
-  utilizationRate: number
+  upload_group_id: number
+  course_code: string
+  course_name: string
+  section: string
+  lec_units: number
+  lab_units: number
+  credit_units: number
+  lec_hours: number
+  lab_hours: number
+  schedule_day: string
+  schedule_time: string
+  start_time: string | null
+  end_time: string | null
+  semester: string
+  academic_year: string
+  department: string
+  college: string
+  status: string
+  file_name: string
+  created_at: string
 }
 
-interface Batch {
-  id: number
-  batch_name: string
-  time_slot: string
-  start_time: string // ✅ NEW
-  end_time: string   // ✅ NEW
-  batch_date: string // ✅ NEW
-  participant_count: number
-  has_pwd: boolean
-  campus: string // ✅ NEW
-  building: string // ✅ NEW
-  room: string // ✅ NEW
-  is_first_floor: boolean // ✅ NEW
-  participants: Participant[]
-  capacity?: number
+interface UploadGroup {
+  upload_group_id: number
+  file_name: string
+  college: string
+  department: string
+  semester: string
+  academic_year: string
+  total_classes: number
+  created_at: string
 }
 
-interface Participant {
-  id: number
-  participant_number: string
-  name: string
-  email: string
-  is_pwd: boolean
-  seat_no: number
+interface Stats {
+  totalClasses: number
+  totalDepartments: number
+  totalSections: number
+  totalLecUnits: number
+  totalLabUnits: number
+  totalCreditUnits: number
 }
 
-interface ScheduleSummary {
-  id: number
-  event_name: string
-  event_type: string
-  schedule_date: string
-  start_time: string
-  end_time: string
-  scheduled_count: number
-  unscheduled_count: number
-  campus_group_id: number
-  participant_group_id: number
-  school_name?: string
+// Form data for creating/editing
+interface ClassFormData {
+  course_code: string
+  course_name: string
+  section: string
+  lec_units: number
+  lab_units: number
+  credit_units: number
+  lec_hours: number
+  lab_hours: number
+  schedule_day: string
+  schedule_time: string
+  semester: string
+  academic_year: string
+  department: string
+  college: string
+  status: string
 }
 
-// Helper function to fetch ALL rows
-async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 'id') {
+const emptyFormData: ClassFormData = {
+  course_code: '',
+  course_name: '',
+  section: '',
+  lec_units: 0,
+  lab_units: 0,
+  credit_units: 0,
+  lec_hours: 0,
+  lab_hours: 0,
+  schedule_day: 'Monday',
+  schedule_time: '',
+  semester: '1st Semester',
+  academic_year: '2025-2026',
+  department: '',
+  college: '',
+  status: 'active'
+}
+
+// ==================== Helper Functions ====================
+async function fetchAllRows<T = Record<string, unknown>>(
+  table: string, 
+  filters: Record<string, string | number | boolean> = {}, 
+  orderBy: string = 'id'
+): Promise<T[]> {
   const PAGE_SIZE = 1000
-  let allData: any[] = []
+  let allData: T[] = []
   let page = 0
   let hasMore = true
 
@@ -94,14 +116,15 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
 
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query = (supabase as any)
       .from(table)
       .select('*')
       .range(from, to)
       .order(orderBy, { ascending: true })
 
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value)
+      query = query.eq(key, value as string | number | boolean)
     }
 
     const { data, error } = await query
@@ -112,7 +135,7 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
       break
     }
 
-    allData = [...allData, ...data]
+    allData = [...allData, ...(data as T[])]
     if (data.length < PAGE_SIZE) hasMore = false
     page++
   }
@@ -120,505 +143,384 @@ async function fetchAllRows(table: string, filters: any = {}, orderBy: string = 
   return allData
 }
 
-// ✅ NEW: Format date and time
-function formatDateTime(dateString: string, timeString: string): string {
-  try {
-    const date = new Date(dateString)
-    const dateFormatted = date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-    
-    const [hours, minutes] = timeString.split(':').map(Number)
-    const period = hours >= 12 ? 'PM' : 'AM'
-    const hours12 = hours % 12 || 12
-    const timeFormatted = `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`
-    
-    return `${dateFormatted}, ${timeFormatted}`
-  } catch {
-    return `${dateString} ${timeString}`
-  }
-}
-
-// Add this helper function after formatDateTime and before SchoolSchedulesContent
-async function getRoomCapacities(campusGroupId: number) {
-  try {
-    const campusRooms = await fetchAllRows('campuses', {
-      upload_group_id: campusGroupId
-    })
-    
-    // Create a lookup map: "campus|building|room" -> capacity
-    const capacityMap = new Map<string, number>()
-    campusRooms.forEach(room => {
-      const key = `${room.campus}|${room.building}|${room.room}`
-      capacityMap.set(key, room.capacity)
-    })
-    
-    return capacityMap
-  } catch (error) {
-    console.error('Error fetching room capacities:', error)
-    return new Map<string, number>()
-  }
-}
-
-function SchoolSchedulesContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const scheduleIdFromUrl = searchParams.get('scheduleId')
-
+// ==================== Main Component ====================
+function ClassSchedulesContent() {
+  // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [loadingSchedule, setLoadingSchedule] = useState(false)
-  const [loadingScheduleId, setLoadingScheduleId] = useState<number | null>(null) // ✅ NEW: Track which card is loading
-  const [schedulesList, setSchedulesList] = useState<ScheduleSummary[]>([])
-  const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null)
-  const [buildings, setBuildings] = useState<Building[]>([])
-  const [scheduleSummary, setScheduleSummary] = useState<ScheduleSummary | null>(null)
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
-  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null)
-  const [viewMode, setViewMode] = useState<'selection' | 'campus' | 'room' | 'batch'>('selection')
+  const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([])
+  const [filteredSchedules, setFilteredSchedules] = useState<ClassSchedule[]>([])
+  const [viewMode, setViewMode] = useState<'selection' | 'list'>('selection')
   const [searchTerm, setSearchTerm] = useState('')
-  const [stats, setStats] = useState({
-    totalBuildings: 0,
-    totalRooms: 0,
-    totalBatches: 0,
-    totalParticipants: 0,
-    avgUtilization: 0,
-    pwdCount: 0,
-    firstFloorRooms: 0
+  const [filterDay, setFilterDay] = useState<string>('all')
+  const [filterDepartment, setFilterDepartment] = useState<string>('all')
+  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set())
+  const [stats, setStats] = useState<Stats>({
+    totalClasses: 0,
+    totalDepartments: 0,
+    totalSections: 0,
+    totalLecUnits: 0,
+    totalLabUnits: 0,
+    totalCreditUnits: 0
   })
 
-  const [expandedCampuses, setExpandedCampuses] = useState<Set<string>>(new Set())
-  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set())
-  const [campuses, setCampuses] = useState<Campus[]>([])
+  // CRUD Modal States
+  const [showModal, setShowModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
+  const [formData, setFormData] = useState<ClassFormData>(emptyFormData)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+  const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<number | null>(null)
 
+  // Days of the week
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const timeSlots = [
+    '7:00-8:30', '8:30-10:00', '10:00-11:30', '11:30-13:00',
+    '13:00-14:30', '14:30-16:00', '16:00-17:30', '17:30-19:00', '19:00-20:30'
+  ]
+  const statuses = ['active', 'pending', 'cancelled', 'completed']
+  const semesters = ['1st Semester', '2nd Semester', 'Summer']
+
+  // Effects
   useEffect(() => {
-    fetchSchedulesList()
+    fetchUploadGroups()
   }, [])
 
   useEffect(() => {
-    if (scheduleIdFromUrl) {
-      const scheduleId = parseInt(scheduleIdFromUrl)
-      setSelectedScheduleId(scheduleId)
-      fetchCampusSchedule(scheduleId)
-    }
-  }, [scheduleIdFromUrl])
+    filterSchedules()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filterDay, filterDepartment, classSchedules])
 
-  // Group buildings by campus
-  useEffect(() => {
-    if (buildings.length > 0) {
-      const groups = new Map<string, Building[]>()
-      buildings.forEach(building => {
-        const campusName = building.rooms[0]?.campus || 'Unknown Campus'
-        if (!groups.has(campusName)) groups.set(campusName, [])
-        groups.get(campusName)!.push(building)
-      })
-      const campusesArray: Campus[] = Array.from(groups.entries()).map(([campusName, buildings]) => ({
-        name: campusName,
-        buildings
-      }));
-      setCampuses(campusesArray)
-
-      // Hide all campuses by default when a schedule is selected
-      const collapsedMap = new Set<string>()
-      groups.forEach((_, campusName) => {
-        collapsedMap.add(campusName) // false = collapsed
-      })
-      setExpandedCampuses(collapsedMap)
-    }
-  }, [buildings])
-
-  // Helper: Get overall stats
-  const getFileStats = () => {
-    const totalCampuses = campuses.length
-    let totalBuildings = 0
-    let totalRooms = 0
-    let totalCapacity = 0
-
-    campuses.forEach((campus: Campus) => {
-          totalBuildings += campus.buildings.length
-          campus.buildings.forEach((building: Building) => {
-            totalRooms += building.rooms.length
-            totalCapacity += building.rooms.reduce((sum: number, room: Room) => sum + room.capacity, 0)
-          })
-    })
-
-    const avgCapacity = totalRooms > 0 ? Math.round(totalCapacity / totalRooms) : 0
-
-    return { totalCampuses, totalBuildings, totalRooms, totalCapacity, avgCapacity }
-  }
-
-  // Toggle individual campus expanded/collapsed
-  const toggleCampus = (campusName: string) => {
-    setExpandedCampuses(prev => {
-      const next = new Set(prev)
-      if (next.has(campusName)) {
-        next.delete(campusName)
-      } else {
-        next.add(campusName)
-      }
-      return next
-    })
-  }
-
-  const toggleBuilding = (buildingKey: string) => {
-    setExpandedBuildings(prev => {
-      const next = new Set(prev)
-      if (next.has(buildingKey)) {
-        next.delete(buildingKey)
-      } else {
-        next.add(buildingKey)
-      }
-      return next
-    })
-  }
-
-  const fetchSchedulesList = async () => {
+  // Fetch upload groups
+  const fetchUploadGroups = async () => {
     setLoading(true)
     try {
-      console.log('📥 Fetching all schedules...')
+      const schedules = await fetchAllRows<ClassSchedule>('class_schedules', {}, 'created_at')
+      
+      // Group by upload_group_id
+      const groupMap = new Map<number, UploadGroup>()
+      
+      schedules.forEach(schedule => {
+        if (!groupMap.has(schedule.upload_group_id)) {
+          groupMap.set(schedule.upload_group_id, {
+            upload_group_id: schedule.upload_group_id,
+            file_name: schedule.file_name || '',
+            college: schedule.college || '', // Shows exact name from UploadCSV batch name input
+            department: schedule.department || '',
+            semester: schedule.semester || '',
+            academic_year: schedule.academic_year || '',
+            total_classes: 0,
+            created_at: schedule.created_at
+          })
+        }
+        const group = groupMap.get(schedule.upload_group_id)!
+        group.total_classes++
+      })
 
-      const summaries = await fetchAllRows('schedule_summary', {}, 'created_at')
-      console.log(`✅ Found ${summaries.length} schedules`)
-
-      const schedulesWithNames = await Promise.all(
-        summaries.map(async (summary) => {
-          try {
-            const { data: campusData } = await supabase
-              .from('campuses')
-              .select('school_name')
-              .eq('upload_group_id', summary.campus_group_id)
-              .limit(1)
-              .single()
-
-            return {
-              ...summary,
-              school_name: campusData?.school_name || 'Unknown Campus'
-            }
-          } catch (error) {
-            return {
-              ...summary,
-              school_name: 'Unknown Campus'
-            }
-          }
-        })
-      )
-
-      schedulesWithNames.sort((a, b) => 
+      const groups = Array.from(groupMap.values()).sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
 
-      setSchedulesList(schedulesWithNames)
+      setUploadGroups(groups)
     } catch (error) {
-      console.error('❌ Error fetching schedules list:', error)
+      console.error('Error fetching upload groups:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchCampusSchedule = async (scheduleId: number) => {
-    setLoadingSchedule(true)
-    setLoadingScheduleId(scheduleId) // ✅ NEW: Set the loading schedule ID
+  // Fetch class schedules for a group
+  const fetchClassSchedules = async (groupId: number) => {
+    setLoading(true)
     try {
-      console.log(`📥 Fetching campus schedule for ID: ${scheduleId}`)
+      const schedules = await fetchAllRows<ClassSchedule>('class_schedules', {
+        upload_group_id: groupId
+      }, 'course_code')
 
-      // Fetch schedule summary
-      const { data: summaryData, error: summaryError } = await supabase
-        .from('schedule_summary')
-        .select('*')
-        .eq('id', scheduleId)
-        .single()
-
-      if (summaryError) throw summaryError
-
-      const { data: campusData } = await supabase
-        .from('campuses')
-        .select('school_name')
-        .eq('upload_group_id', summaryData.campus_group_id)
-        .limit(1)
-        .single()
-
-      const summaryWithName = {
-        ...summaryData,
-        school_name: campusData?.school_name || 'Unknown Campus'
-      }
-
-      setScheduleSummary(summaryWithName)
-
-      // ✅ Fetch actual room capacities from campuses table
-      const roomCapacityMap = await getRoomCapacities(summaryData.campus_group_id)
-
-      // Fetch assignments
-      const assignments = await fetchAllRows('schedule_assignments', {
-        schedule_summary_id: scheduleId
-      })
-
-      console.log(`✅ Fetched ${assignments.length} assignments`)
-
-      // Fetch participants
-      const participantIds = [...new Set(assignments.map(a => a.participant_id))]
-      const CHUNK_SIZE = 1000
-      let allParticipants: any[] = []
-      
-      for (let i = 0; i < participantIds.length; i += CHUNK_SIZE) {
-        const chunk = participantIds.slice(i, i + CHUNK_SIZE)
-        const { data } = await supabase
-          .from('participants')
-          .select('*')
-          .in('id', chunk)
-        
-        if (data) allParticipants = [...allParticipants, ...data]
-      }
-
-      const participantMap = new Map(allParticipants.map(p => [p.id, p]))
-
-      // Fetch batches
-      const batches = await fetchAllRows('schedule_batches', {
-        schedule_summary_id: scheduleId
-      }, 'batch_number')
-
-      console.log(`✅ Fetched ${batches.length} batches`)
-
-      // Group assignments by batch
-      const assignmentsByBatch = new Map()
-      assignments.forEach(assignment => {
-        if (!assignmentsByBatch.has(assignment.schedule_batch_id)) {
-          assignmentsByBatch.set(assignment.schedule_batch_id, [])
-        }
-        const participant = participantMap.get(assignment.participant_id)
-        if (participant) {
-          assignmentsByBatch.get(assignment.schedule_batch_id).push({
-            id: participant.id,
-            participant_number: participant.participant_number,
-            name: participant.name,
-            email: participant.email,
-            is_pwd: assignment.is_pwd,
-            seat_no: assignment.seat_no
-          })
-        }
-      })
-
-      // ✅ FIXED: Build structure correctly - one room can have multiple batches
-      const campusMap = new Map<string, Map<string, Map<string, Room>>>()
-
-      // Process each batch
-      batches.forEach(batch => {
-        const campus = batch.campus
-        const building = batch.building
-        const room = batch.room
-
-        // Initialize nested structure
-        if (!campusMap.has(campus)) {
-          campusMap.set(campus, new Map())
-        }
-        if (!campusMap.get(campus)?.has(building)) {
-          campusMap.get(campus)?.set(building, new Map())
-        }
-        
-        const buildingMap = campusMap.get(campus)!.get(building)!
-        
-        // Get actual capacity from campuses table
-        const roomKey = `${campus}|${building}|${room}`
-        const actualCapacity = roomCapacityMap.get(roomKey) || 0
-
-        // ✅ FIXED: Get or create room (rooms can have multiple batches)
-        if (!buildingMap.has(room)) {
-          buildingMap.set(room, {
-            id: batch.id,
-            room: room,
-            capacity: actualCapacity,  // ✅ This is the ROOM capacity, not building
-            building: building,
-            campus: campus,
-            is_first_floor: batch.is_first_floor,
-            batches: [],
-            totalParticipants: 0,
-            utilizationRate: 0
-          })
-        }
-
-        const roomObj = buildingMap.get(room)!
-
-        // Add batch with participants
-        const batchParticipants = assignmentsByBatch.get(batch.id) || []
-        roomObj.batches.push({
-          ...batch,
-          participants: batchParticipants.sort((a: any, b: any) => a.seat_no - b.seat_no),
-          capacity: actualCapacity  // ✅ ROOM capacity per batch
-        })
-      })
-
-      // ✅ FIXED: Calculate utilization correctly
-      campusMap.forEach((buildingMap) => {
-        buildingMap.forEach((roomMap) => {
-          roomMap.forEach((room) => {
-            // Total participants across all batches in this room
-            room.totalParticipants = room.batches.reduce(
-              (sum, b) => sum + (b.participants?.length || 0),
-              0
-            )
-            
-            // ✅ FIXED: Max capacity = room capacity × number of batches
-            const maxCapacity = room.capacity * room.batches.length
-            
-            room.utilizationRate = maxCapacity > 0
-              ? Math.round((room.totalParticipants / maxCapacity) * 100)
-              : 0
-            
-            console.log(
-              `📊 ${room.campus} | ${room.building} | Room ${room.room}: ` +
-              `${room.totalParticipants}/${maxCapacity} = ${room.utilizationRate}% ` +
-              `(${room.batches.length} batches × ${room.capacity} capacity)`
-            )
-          })
-        })
-      })
-
-      // Convert to array structure
-      const campusesArray = Array.from(campusMap.entries()).map(([campusName, buildingMap]) => ({
-        name: campusName,
-        buildings: Array.from(buildingMap.entries()).map(([buildingName, roomMap]) => ({
-          name: buildingName,
-          campus: campusName,
-          rooms: Array.from(roomMap.values())
-        }))
-      }))
-
-      console.log('📊 Final campus structure:', campusesArray)
-      setCampuses(campusesArray)
-
-      // Calculate stats
-      const allRooms = campusesArray
-        .flatMap((campus: Campus) => campus.buildings)
-        .flatMap((building: Building) => building.rooms)
-
-      const totalRooms = allRooms.length
-      const totalBatches = batches.length
-      const totalParticipants = assignments.length
-      const pwdCount = assignments.filter((a: any) => a.is_pwd).length
-      const firstFloorRooms = allRooms.filter((room: Room) => room.is_first_floor).length
-      const avgUtilization = totalRooms > 0
-        ? Math.round(allRooms.reduce((sum: number, room: Room) => sum + room.utilizationRate, 0) / totalRooms)
-        : 0
-
-      setStats({
-        totalBuildings: campusesArray.reduce((sum, campus) => sum + campus.buildings.length, 0),
-        totalRooms,
-        totalBatches,
-        totalParticipants,
-        avgUtilization,
-        pwdCount,
-        firstFloorRooms
-      })
-
-      setViewMode('campus')
-      console.log(`✅ Built campus structure with ${campusesArray.length} campuses`)
-
+      setClassSchedules(schedules)
+      setFilteredSchedules(schedules)
+      calculateStats(schedules)
+      setViewMode('list')
     } catch (error) {
-      console.error('❌ Error fetching campus schedule:', error)
+      console.error('Error fetching class schedules:', error)
     } finally {
-      setLoadingSchedule(false)
-      setLoadingScheduleId(null) // ✅ NEW: Clear loading state
+      setLoading(false)
     }
   }
 
-  const handleScheduleSelect = (scheduleId: number) => {
-    setSelectedScheduleId(scheduleId)
-    fetchCampusSchedule(scheduleId)
+  // Calculate stats
+  const calculateStats = (schedules: ClassSchedule[]) => {
+    const departments = new Set(schedules.map(s => s.department).filter(Boolean))
+    const sections = new Set(schedules.map(s => `${s.course_code}-${s.section}`))
+    const totalLecUnits = schedules.reduce((sum, s) => sum + (s.lec_units || 0), 0)
+    const totalLabUnits = schedules.reduce((sum, s) => sum + (s.lab_units || 0), 0)
+    const totalCreditUnits = schedules.reduce((sum, s) => sum + (s.credit_units || 0), 0)
+
+    setStats({
+      totalClasses: schedules.length,
+      totalDepartments: departments.size,
+      totalSections: sections.size,
+      totalLecUnits,
+      totalLabUnits,
+      totalCreditUnits
+    })
+
+    // Expand all departments by default
+    setExpandedDepartments(departments)
   }
 
-  const handleRoomClick = (room: Room) => {
-    setSelectedRoom(room)
-    setViewMode('room')
+  // Filter schedules
+  const filterSchedules = () => {
+    let filtered = [...classSchedules]
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(s =>
+        s.course_code?.toLowerCase().includes(term) ||
+        s.course_name?.toLowerCase().includes(term) ||
+        s.section?.toLowerCase().includes(term) ||
+        s.department?.toLowerCase().includes(term)
+      )
+    }
+
+    if (filterDay !== 'all') {
+      filtered = filtered.filter(s => 
+        s.schedule_day?.toLowerCase().includes(filterDay.toLowerCase())
+      )
+    }
+
+    if (filterDepartment !== 'all') {
+      filtered = filtered.filter(s => s.department === filterDepartment)
+    }
+
+    setFilteredSchedules(filtered)
   }
 
-  const handleBatchClick = (batch: Batch) => {
-    setSelectedBatch(batch)
-    setViewMode('batch')
+  // Toggle department expansion
+  const toggleDepartment = (dept: string) => {
+    setExpandedDepartments(prev => {
+      const next = new Set(prev)
+      if (next.has(dept)) {
+        next.delete(dept)
+      } else {
+        next.add(dept)
+      }
+      return next
+    })
   }
 
+  // Get unique departments
+  const getDepartments = () => {
+    return [...new Set(classSchedules.map(s => s.department).filter(Boolean))]
+  }
+
+  // Group schedules by department
+  const getSchedulesByDepartment = () => {
+    const grouped = new Map<string, ClassSchedule[]>()
+    
+    filteredSchedules.forEach(schedule => {
+      const dept = schedule.department || 'Unassigned'
+      if (!grouped.has(dept)) {
+        grouped.set(dept, [])
+      }
+      grouped.get(dept)!.push(schedule)
+    })
+
+    return grouped
+  }
+
+  // Handle back to selection
   const handleBackToSelection = () => {
     setViewMode('selection')
-    setSelectedScheduleId(null)
-    setScheduleSummary(null)
-    setBuildings([])
-    setSelectedRoom(null)
-    setSelectedBatch(null)
+    setSelectedGroupId(null)
+    setClassSchedules([])
+    setFilteredSchedules([])
+    setSearchTerm('')
+    setFilterDay('all')
+    setFilterDepartment('all')
+    fetchUploadGroups() // Refresh groups
   }
 
-  const handleBackToCampus = () => {
-    setViewMode('campus')
-    setSelectedRoom(null)
-    setSelectedBatch(null)
+  // Handle group select
+  const handleGroupSelect = (groupId: number) => {
+    setSelectedGroupId(groupId)
+    fetchClassSchedules(groupId)
   }
 
-  const handleBackToRoom = () => {
-    setViewMode('room')
-    setSelectedBatch(null)
-  }
-
-  const getFilteredSchedules = () => {
-    if (!searchTerm) return schedulesList
-    return schedulesList.filter(schedule => 
-      schedule.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.school_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }
-
-  // Given start/end + lunch + duration, derive slot count used in utilization if needed
-  function computeSlotsForDay(start: string, end: string, durationMin: number, excludeLunch: boolean, lunchStart?: string, lunchEnd?: string) {
-    const toMin = (t: string) => {
-      const [h,m] = t.split(':').map(Number)
-      return h*60 + m
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active': return '#38a169'
+      case 'pending': return '#dd6b20'
+      case 'cancelled': return '#e53e3e'
+      case 'completed': return '#3182ce'
+      default: return '#718096'
     }
-    const windows: Array<[number, number]> = []
-    const st = toMin(start), et = toMin(end)
-    if (excludeLunch && lunchStart && lunchEnd) {
-      const ls = toMin(lunchStart), le = toMin(lunchEnd)
-      if (st < ls) windows.push([st, ls])
-      if (le < et) windows.push([le, et])
-    } else {
-      windows.push([st, et])
-    }
-    let slots = 0
-    for (const [ws, we] of windows) {
-      const len = we - ws
-      if (len >= durationMin) slots += Math.floor(len / durationMin)
-    }
-    return slots
   }
 
-  // When computing room.utilizationRate, use the actual number of slots in the day
-  // Example usage inside your processing (after you know summary start/end + duration):
-  const slotCount = computeSlotsForDay(
-    scheduleSummary?.start_time || '09:00',
-    scheduleSummary?.end_time || '16:00',
-    /* durationMin */ 180,
-    /* excludeLunch */ true,
-    '12:00',
-    '13:00'
-  )
-  // total capacity per room for the day:
-  // 'room' is not available in this scope; provide a helper to compute utilization for any room when you have it.
-  function computeRoomUtilization(room: Room, slotCount: number) {
-    const dayCapacityPerRoom = (room.capacity || 0) * slotCount
-    return dayCapacityPerRoom > 0
-      ? Math.round((room.totalParticipants / dayCapacityPerRoom) * 100)
-      : 0
-  }
-  // Example usage (call this when iterating rooms):
-  // room.utilizationRate = computeRoomUtilization(room, slotCount)
+  // ==================== CRUD Operations ====================
 
-  if (loading) {
+  // Open create modal
+  const openCreateModal = () => {
+    const selectedGroup = uploadGroups.find(g => g.upload_group_id === selectedGroupId)
+    setFormData({
+      ...emptyFormData,
+      college: selectedGroup?.college || '',
+      department: selectedGroup?.department || '',
+      semester: selectedGroup?.semester || '1st Semester',
+      academic_year: selectedGroup?.academic_year || '2025-2026'
+    })
+    setModalMode('create')
+    setEditingId(null)
+    setShowModal(true)
+  }
+
+  // Open edit modal
+  const openEditModal = (schedule: ClassSchedule) => {
+    setFormData({
+      course_code: schedule.course_code || '',
+      course_name: schedule.course_name || '',
+      section: schedule.section || '',
+      lec_units: schedule.lec_units || 0,
+      lab_units: schedule.lab_units || 0,
+      credit_units: schedule.credit_units || 0,
+      lec_hours: schedule.lec_hours || 0,
+      lab_hours: schedule.lab_hours || 0,
+      schedule_day: schedule.schedule_day || 'Monday',
+      schedule_time: schedule.schedule_time || '',
+      semester: schedule.semester || '1st Semester',
+      academic_year: schedule.academic_year || '2025-2026',
+      department: schedule.department || '',
+      college: schedule.college || '',
+      status: schedule.status || 'active'
+    })
+    setModalMode('edit')
+    setEditingId(schedule.id)
+    setShowModal(true)
+  }
+
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false)
+    setFormData(emptyFormData)
+    setEditingId(null)
+  }
+
+  // Handle form input change
+  const handleInputChange = (field: keyof ClassFormData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Save (Create or Update)
+  const handleSave = async () => {
+    if (!formData.course_code || !formData.course_name) {
+      alert('Please fill in Course Code and Course Name')
+      return
+    }
+
+    setSaving(true)
+    try {
+      if (modalMode === 'create') {
+        // Create new class schedule
+        const newData = {
+          upload_group_id: selectedGroupId,
+          ...formData,
+          file_name: 'Manual Entry'
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('class_schedules')
+          .insert([newData])
+
+        if (error) throw error
+
+        // Refresh data
+        if (selectedGroupId) {
+          await fetchClassSchedules(selectedGroupId)
+        }
+      } else {
+        // Update existing class schedule
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
+          .from('class_schedules')
+          .update(formData)
+          .eq('id', editingId)
+
+        if (error) throw error
+
+        // Update local state
+        setClassSchedules(prev => 
+          prev.map(s => s.id === editingId ? { ...s, ...formData } : s)
+        )
+      }
+
+      closeModal()
+    } catch (error) {
+      console.error('Error saving class schedule:', error)
+      alert('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Delete single class schedule
+  const handleDelete = async (id: number) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('class_schedules')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Update local state
+      const updated = classSchedules.filter(s => s.id !== id)
+      setClassSchedules(updated)
+      calculateStats(updated)
+      setDeleteConfirm(null)
+    } catch (error) {
+      console.error('Error deleting class schedule:', error)
+      alert('Failed to delete. Please try again.')
+    }
+  }
+
+  // Delete entire upload group
+  const handleDeleteGroup = async (groupId: number) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('class_schedules')
+        .delete()
+        .eq('upload_group_id', groupId)
+
+      if (error) throw error
+
+      // Refresh upload groups
+      await fetchUploadGroups()
+      setDeleteGroupConfirm(null)
+    } catch (error) {
+      console.error('Error deleting upload group:', error)
+      alert('Failed to delete group. Please try again.')
+    }
+  }
+
+  // ==================== Render ====================
+
+  // Loading state
+  if (loading && viewMode === 'selection') {
     return (
-      <div className={styles.qtimeLayout}>
+      <div className={styles.pageLayout}>
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
         <Sidebar isOpen={sidebarOpen} />
-        <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
+        <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
-            <p>Loading schedules...</p>
+            <p>Loading class schedules...</p>
           </div>
         </main>
       </div>
@@ -626,33 +528,29 @@ function SchoolSchedulesContent() {
   }
 
   return (
-    <div className={styles.qtimeLayout}>
+    <div className={styles.pageLayout}>
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
       
-      <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
-        <div className={styles.campusContainer}>
-          {/* Schedule Selection View */}
+      <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
+        <div className={styles.pageContainer}>
+          
+          {/* ==================== Upload Group Selection View ==================== */}
           {viewMode === 'selection' && (
             <>
-              <div className={styles.campusHeader}>
-                <div className={styles.headerLeft}>
-                  <div className={styles.headerInfo}>
-                    <h1 className={styles.campusTitle}>
-                      <FaCalendar /> Select Schools Scheduled
-                    </h1>
-                    <p className={styles.campusSubtitle}>
-                      Choose a scheduled school to view school layout and seating arrangements
-                    </p>
-                  </div>
-                </div>
+              <div className={styles.welcomeSection}>
+                <h1 className={styles.welcomeTitle}>📚 Class Schedules Management</h1>
+                <p className={styles.welcomeSubtitle}>
+                  View, edit, and manage uploaded class schedules from CSV files
+                </p>
               </div>
 
               <div className={styles.searchSection}>
                 <div className={styles.searchBox}>
+                  <FaSearch className={styles.searchIcon} />
                   <input
                     type="text"
-                    placeholder="Search by event name or school..."
+                    placeholder="Search by college, department, or file name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={styles.searchInput}
@@ -661,484 +559,994 @@ function SchoolSchedulesContent() {
               </div>
 
               <div className={styles.schedulesGrid}>
-                {getFilteredSchedules().map((schedule) => (
-                  <div
-                    key={schedule.id}
-                    className={`${styles.scheduleCard} ${loadingScheduleId === schedule.id ? styles.loadingCard : ''}`}
-                    onClick={() => !loadingScheduleId && handleScheduleSelect(schedule.id)}
-                    style={{ 
-                      cursor: loadingScheduleId ? 'wait' : 'pointer',
-                      opacity: loadingScheduleId && loadingScheduleId !== schedule.id ? 0.5 : 1,
-                      pointerEvents: loadingScheduleId ? 'none' : 'auto'
-                    }}
+                {uploadGroups
+                  .filter(group => 
+                    !searchTerm || 
+                    group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    group.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    group.file_name?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((group) => (
+                  <div 
+                    key={group.upload_group_id} 
+                    className={styles.scheduleCard}
                   >
                     <div className={styles.scheduleCardHeader}>
                       <h3 className={styles.scheduleEventName}>
-                        <FaCalendar /> {schedule.event_name}
+                        <FileSpreadsheet size={20} />
+                        {group.college || `Upload Group #${group.upload_group_id}`}
                       </h3>
-                      <span className={styles.scheduleType}>{schedule.event_type}</span>
+                      <span className={styles.scheduleType}>
+                        {group.total_classes} Classes
+                      </span>
                     </div>
-                    <div className={styles.scheduleCardBody}>
-                      <div className={styles.scheduleInfo}>
-                        <FaBuilding />
-                        <span>{schedule.school_name}</span>
-                      </div>
-                      <div className={styles.scheduleInfo}>
-                        <FaClock />
-                        <span>{new Date(schedule.schedule_date).toLocaleDateString()}</span>
-                      </div>
-                      <div className={styles.scheduleInfo}>
-                        <FaClock />
-                        <span>{schedule.start_time} - {schedule.end_time}</span>
-                      </div>
-                      <div className={styles.scheduleInfo}>
-                        <FaUsers />
-                        <span>{schedule.scheduled_count} scheduled</span>
-                      </div>
-                      {schedule.unscheduled_count > 0 && (
-                        <div className={`${styles.scheduleInfo} ${styles.warning}`}>
-                          <FaUsers />
-                          <span>{schedule.unscheduled_count} unscheduled</span>
+                    <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
+                      {group.department && (
+                        <div className={styles.scheduleInfo}>
+                          <FaGraduationCap />
+                          <span>{group.department}</span>
                         </div>
                       )}
+                      {(group.semester || group.academic_year) && (
+                        <div className={styles.scheduleInfo}>
+                          <FaCalendar />
+                          <span>{[group.semester, group.academic_year].filter(Boolean).join(' - ')}</span>
+                        </div>
+                      )}
+                      <div className={styles.scheduleInfo}>
+                        <FileSpreadsheet size={16} />
+                        <span style={{ fontSize: '12px', opacity: 0.8 }}>File: {group.file_name || 'N/A'}</span>
+                      </div>
                     </div>
                     <div className={styles.scheduleCardFooter}>
-                      {/* ✅ UPDATED: Button with loading state */}
-                      <button 
-                        className={`${styles.viewButton} ${loadingScheduleId === schedule.id ? styles.loading : ''}`}
-                        disabled={!!loadingScheduleId}
-                      >
-                        {loadingScheduleId === schedule.id ? (
-                          <>
-                            <div className={styles.buttonSpinner}></div>
-                            Loading...
-                          </>
-                        ) : (
-                          <>
-                            View School Layout →
-                          </>
-                        )}
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className={styles.viewButton}
+                          onClick={() => handleGroupSelect(group.upload_group_id)}
+                          style={{ flex: 1 }}
+                        >
+                          <BookOpen size={16} />
+                          View & Manage
+                        </button>
+                        <button 
+                          onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
+                          style={{
+                            padding: '12px 16px',
+                            background: '#fed7d7',
+                            color: '#c53030',
+                            border: 'none',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: 600,
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Delete entire group"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      
+                      {/* Delete Group Confirmation */}
+                      {deleteGroupConfirm === group.upload_group_id && (
+                        <div style={{
+                          marginTop: '12px',
+                          padding: '12px',
+                          background: '#fff5f5',
+                          borderRadius: '8px',
+                          border: '1px solid #fed7d7'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <AlertTriangle size={16} color="#c53030" />
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
+                              Delete all {group.total_classes} classes?
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => handleDeleteGroup(group.upload_group_id)}
+                              style={{
+                                flex: 1,
+                                padding: '8px',
+                                background: '#c53030',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: '12px'
+                              }}
+                            >
+                              Yes, Delete All
+                            </button>
+                            <button
+                              onClick={() => setDeleteGroupConfirm(null)}
+                              style={{
+                                flex: 1,
+                                padding: '8px',
+                                background: '#e2e8f0',
+                                color: '#4a5568',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: '12px'
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {getFilteredSchedules().length === 0 && (
+              {uploadGroups.length === 0 && (
                 <div className={styles.emptyState}>
-                  <FaCalendar size={64} />
-                  <h3>No schedules found</h3>
-                  <p>
-                    {searchTerm 
-                      ? `No schedules match "${searchTerm}"`
-                      : 'No campus schedules have been created yet'
-                    }
-                  </p>
+                  <FileSpreadsheet size={64} />
+                  <h3>No Class Schedules Found</h3>
+                  <p>Upload class schedule CSV files from the Upload CSV page to see them here.</p>
                 </div>
               )}
             </>
           )}
 
-          {/* Loading Schedule */}
-          {loadingSchedule && viewMode !== 'selection' && (
-            <div className={styles.loadingState}>
-              <div className={styles.spinner}></div>
-              <p>Loading school layout...</p>
-            </div>
-          )}
-
-          {/* School View - Only show when not loading */}
-          {!loadingSchedule && viewMode !== 'selection' && (
+          {/* ==================== Class Schedules List View ==================== */}
+          {viewMode === 'list' && (
             <>
               {/* Header */}
-              <div className={styles.campusHeader}>
+              <div className={styles.pageHeader}>
                 <div className={styles.headerLeft}>
-                  <button className={styles.backButton} onClick={
-                    viewMode === 'campus' ? handleBackToSelection :
-                    viewMode === 'room' ? handleBackToCampus : handleBackToRoom
-                  }>
-                    ← Back
+                  <button 
+                    className={styles.backButton}
+                    onClick={handleBackToSelection}
+                  >
+                    ← Back to Groups
                   </button>
                   <div className={styles.headerInfo}>
-                    <h1 className={styles.campusTitle}>
-                      {viewMode === 'campus' && <><FaBuilding /> School Layout</>}
-                      {viewMode === 'room' && (
-                        <>
-                          <FaDoorOpen /> 
-                          {selectedRoom?.building} - Room {selectedRoom?.room}
-                          {/* ✅ NEW: Show first floor indicator */}
-                          {selectedRoom?.is_first_floor && <span style={{marginLeft: '10px', fontSize: '18px'}}><Accessibility /> 1st Floor</span>}
-                        </>
-                      )}
-                      {viewMode === 'batch' && <><FaBox /> {selectedBatch?.batch_name}</>}
+                    <h1 className={styles.pageTitle}>
+                      <BookOpen size={28} />
+                      {uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.college || 'Class Schedules'}
                     </h1>
-                    {scheduleSummary && (
-                      <p className={styles.campusSubtitle}>
-                        {scheduleSummary.event_name} • {scheduleSummary.school_name} • {new Date(scheduleSummary.schedule_date).toLocaleDateString()}
-                      </p>
-                    )}
+                    <p className={styles.pageSubtitle}>
+                      {[
+                        uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.semester,
+                        uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.academic_year
+                      ].filter(Boolean).join(' - ')}{stats.totalClasses > 0 ? ` • ${stats.totalClasses} Classes` : ''}
+                    </p>
                   </div>
                 </div>
+                <button
+                  onClick={openCreateModal}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <FaPlus />
+                  Add New Class
+                </button>
               </div>
 
-              {/* ✅ UPDATED: Stats with first floor count */}
+              {/* Stats Grid */}
               <div className={styles.statsGrid}>
                 <div className={`${styles.statCard} ${styles.blue}`}>
-                  <FaBuilding className={styles.statIcon} />
+                  <span className={styles.statIcon}>📚</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Buildings</div>
-                    <div className={styles.statValue}>{stats.totalBuildings}</div>
+                    <span className={styles.statLabel}>Total Classes</span>
+                    <span className={styles.statValue}>{stats.totalClasses}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.green}`}>
-                  <FaDoorOpen className={styles.statIcon} />
+                  <span className={styles.statIcon}>🏢</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Rooms</div>
-                    <div className={styles.statValue}>{stats.totalRooms}</div>
+                    <span className={styles.statLabel}>Departments</span>
+                    <span className={styles.statValue}>{stats.totalDepartments}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.purple}`}>
-                  <FaBox className={styles.statIcon} />
+                  <span className={styles.statIcon}>📖</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Batches</div>
-                    <div className={styles.statValue}>{stats.totalBatches}</div>
+                    <span className={styles.statLabel}>Sections</span>
+                    <span className={styles.statValue}>{stats.totalSections}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.orange}`}>
-                  <FaUsers className={styles.statIcon} />
+                  <span className={styles.statIcon}>📝</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Participants</div>
-                    <div className={styles.statValue}>{stats.totalParticipants}</div>
+                    <span className={styles.statLabel}>Lecture Units</span>
+                    <span className={styles.statValue}>{stats.totalLecUnits}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.teal}`}>
-                  <FaWheelchair className={styles.statIcon} />
+                  <span className={styles.statIcon}>🔬</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>PWD</div>
-                    <div className={styles.statValue}>{stats.pwdCount}</div>
+                    <span className={styles.statLabel}>Lab Units</span>
+                    <span className={styles.statValue}>{stats.totalLabUnits}</span>
                   </div>
                 </div>
-                {/* ✅ NEW: First floor rooms stat */}
-                <div className={`${styles.statCard} ${styles.green}`}>
-                    <Accessibility width={50} height={40}  className={styles.statIcon} />
-                    <div className={styles.statContent}>
-                    <div className={styles.statLabel}>1st Floor Rooms</div>
-                    <div className={styles.statValue}>{stats.firstFloorRooms}</div>
-                  </div>
-                </div>
-                {/* Campus stat */}
-                <div className={`${styles.statCard} ${styles.blue}`}>
-                  <FaChartBar className={styles.statIcon} />
+                <div className={`${styles.statCard} ${styles.red}`}>
+                  <span className={styles.statIcon}>⭐</span>
                   <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Campuses</div>
-                    <div className={styles.statValue}>{getFileStats().totalCampuses}</div>
-                  </div>
-                </div>
-                <div className={`${styles.statCard} ${styles.teal}`}>
-                  <FaChartBar className={styles.statIcon} />
-                  <div className={styles.statContent}>
-                    <div className={styles.statLabel}>Avg Capacity</div>
-                    <div className={styles.statValue}>{getFileStats().avgCapacity}</div>
+                    <span className={styles.statLabel}>Credit Units</span>
+                    <span className={styles.statValue}>{stats.totalCreditUnits}</span>
                   </div>
                 </div>
               </div>
 
-              {viewMode === 'campus' && (
+              {/* Filters */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '16px', 
+                marginBottom: '24px',
+                flexWrap: 'wrap',
+                alignItems: 'center'
+              }}>
+                <div className={styles.searchBox} style={{ flex: '1', minWidth: '250px' }}>
+                  <FaSearch className={styles.searchIcon} />
+                  <input
+                    type="text"
+                    placeholder="Search by course code, name, or section..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
+                
+                <select
+                  value={filterDay}
+                  onChange={(e) => setFilterDay(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--bg-white, #fff)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    minWidth: '150px'
+                  }}
+                >
+                  <option value="all">All Days</option>
+                  {daysOfWeek.map(day => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--bg-white, #fff)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    minWidth: '180px'
+                  }}
+                >
+                  <option value="all">All Departments</option>
+                  {getDepartments().map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Loading */}
+              {loading && (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}></div>
+                  <p>Loading class schedules...</p>
+                </div>
+              )}
+
+              {/* Schedules by Department */}
+              {!loading && (
                 <div className={styles.campusView}>
-                  {campuses.map((campus, campusIdx) => (
-                    <div key={campusIdx} className={styles.campusSection}>
+                  {Array.from(getSchedulesByDepartment().entries()).map(([department, schedules]) => (
+                    <div key={department} className={styles.campusSection}>
                       <div 
                         className={styles.campusHeaderRow}
-                        onClick={() => toggleCampus(campus.name)}
+                        onClick={() => toggleDepartment(department)}
                       >
-                        <FaBuilding /> 
-                        {campus.name}
-                        <button className={styles.toggleCampusBtn}>
-                          {expandedCampuses.has(campus.name) ? 
-                            <ChevronDown size={20} /> : 
+                        <FaGraduationCap />
+                        <span>{department}</span>
+                        <span className={styles.roomCount}>{schedules.length} classes</span>
+                        <button className={styles.toggleBtn}>
+                          {expandedDepartments.has(department) ? (
+                            <ChevronDown size={20} />
+                          ) : (
                             <ChevronRight size={20} />
-                          }
+                          )}
                         </button>
                       </div>
-                      
-                      {expandedCampuses.has(campus.name) && (
-                        <>
-                          {campus.buildings.map((building, buildingIdx) => {
-                            const buildingKey = `${campus.name}-${building.name}`
-                            return (
-                              <div key={buildingIdx} className={styles.buildingCard}>
-                                <div 
-                                  className={styles.buildingHeaderRow}
-                                  onClick={() => toggleBuilding(buildingKey)}
-                                >
-                                  <div className={styles.buildingName}>
-                                    <FaBuilding /> {building.name}
-                                  </div>
-                                  <span className={styles.roomCount}>
-                                    {building.rooms.length} rooms
-                                  </span>
-                                  <button className={styles.toggleCampusBtn}>
-                                    {expandedBuildings.has(buildingKey) ? 
-                                      <ChevronDown size={16} /> : 
-                                      <ChevronRight size={16} />
-                                    }
-                                  </button>
-                                </div>
 
-                                {expandedBuildings.has(buildingKey) && (
-                                  <div className={styles.roomsGrid}>
-                                    {building.rooms.map((room) => (
-                                      <div
-                                        key={`${room.campus}-${room.building}-${room.room}`}
-                                        className={styles.roomCard}
-                                        onClick={() => handleRoomClick(room)}
-                                      >
-                                        <div className={styles.roomHeader}>
-                                          <span className={styles.roomNumber}>
-                                            Room {room.room}
-                                            {room.is_first_floor && 
-                                              <span style={{marginLeft: '8px'}}>
-                                                <Accessibility />
-                                              </span>
-                                            }
-                                          </span>
-                                          <span className={`${styles.utilizationBadge} ${
-                                            room.utilizationRate >= 80 ? styles.high : 
-                                            room.utilizationRate >= 50 ? styles.medium : styles.low
-                                          }`}>
-                                            {room.utilizationRate}%
-                                          </span>
-                                        </div>
-                                        <div className={styles.roomBody}>
-                                          <div className={styles.roomStat}>
-                                            <FaUsers />
-                                            {/* ✅ FIXED: Show correct capacity calculation */}
-                                            <span>
-                                              {room.totalParticipants} / {room.capacity * room.batches.length}
-                                            </span>
-                                          </div>
-                                          <div className={styles.roomStat}>
-                                            <FaBox />
-                                            <span>{room.batches.length} batch{room.batches.length !== 1 ? 'es' : ''}</span>
-                                          </div>
-                                          <div className={styles.roomStat}>
-                                            <FaDoorOpen />
-                                            <span>{room.capacity} per batch</span>
-                                          </div>
-                                          {room.batches.some(b => b.has_pwd) && (
-                                            <div className={styles.pwdIndicator}>
-                                              <FaWheelchair />
-                                              <span>PWD Priority</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
+                      {expandedDepartments.has(department) && (
+                        <div style={{ marginTop: '16px' }}>
+                          {/* Table Header */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '100px 1fr 70px 90px 70px 110px 80px 100px',
+                            gap: '10px',
+                            padding: '12px 16px',
+                            background: 'var(--bg-gray-100, #edf2f7)',
+                            borderRadius: '10px',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            color: 'var(--text-medium, #718096)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            marginBottom: '8px'
+                          }}>
+                            <span>Code</span>
+                            <span>Course Name</span>
+                            <span>Section</span>
+                            <span>Units</span>
+                            <span>Hours</span>
+                            <span>Schedule</span>
+                            <span>Status</span>
+                            <span style={{ textAlign: 'center' }}>Actions</span>
+                          </div>
+
+                          {/* Schedule Rows */}
+                          {schedules.map((schedule) => (
+                            <div 
+                              key={schedule.id}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '100px 1fr 70px 90px 70px 110px 80px 100px',
+                                gap: '10px',
+                                padding: '14px 16px',
+                                background: 'var(--bg-white, #fff)',
+                                borderRadius: '10px',
+                                marginBottom: '8px',
+                                border: '1px solid var(--border-color, #e2e8f0)',
+                                alignItems: 'center',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              <span style={{ 
+                                fontWeight: 700, 
+                                color: 'var(--primary-medium, #2c5282)',
+                                fontSize: '13px'
+                              }}>
+                                {schedule.course_code}
+                              </span>
+                              <span style={{ 
+                                fontWeight: 500,
+                                color: 'var(--text-dark, #1a202c)',
+                                fontSize: '13px',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}>
+                                {schedule.course_name || 'N/A'}
+                              </span>
+                              <span style={{
+                                background: 'rgba(44, 82, 130, 0.1)',
+                                color: 'var(--primary-medium, #2c5282)',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                textAlign: 'center'
+                              }}>
+                                {schedule.section}
+                              </span>
+                              <span style={{ 
+                                fontSize: '12px',
+                                color: 'var(--text-medium, #718096)'
+                              }}>
+                                L:{schedule.lec_units || 0} / Lab:{schedule.lab_units || 0}
+                              </span>
+                              <span style={{ 
+                                fontSize: '12px',
+                                color: 'var(--text-medium, #718096)'
+                              }}>
+                                {(schedule.lec_hours || 0) + (schedule.lab_hours || 0)}h
+                              </span>
+                              <span style={{ 
+                                fontSize: '11px',
+                                color: 'var(--text-dark, #1a202c)',
+                                fontWeight: 500
+                              }}>
+                                {schedule.schedule_day ? (
+                                  <>
+                                    {schedule.schedule_day.substring(0, 3)}
+                                    {schedule.schedule_time && (
+                                      <span style={{ 
+                                        display: 'block', 
+                                        fontSize: '10px',
+                                        color: 'var(--text-medium, #718096)'
+                                      }}>
+                                        {schedule.schedule_time}
+                                      </span>
+                                    )}
+                                  </>
+                                ) : 'TBA'}
+                              </span>
+                              <span style={{
+                                background: `${getStatusColor(schedule.status)}20`,
+                                color: getStatusColor(schedule.status),
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                textTransform: 'capitalize'
+                              }}>
+                                {schedule.status || 'pending'}
+                              </span>
+                              
+                              {/* Action Buttons */}
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => openEditModal(schedule)}
+                                  style={{
+                                    padding: '6px 10px',
+                                    background: '#edf2f7',
+                                    color: '#4a5568',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  title="Edit"
+                                >
+                                  <FaEdit size={12} />
+                                </button>
+                                
+                                {deleteConfirm === schedule.id ? (
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button
+                                      onClick={() => handleDelete(schedule.id)}
+                                      style={{
+                                        padding: '6px 8px',
+                                        background: '#c53030',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '10px',
+                                        fontWeight: 600
+                                      }}
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirm(null)}
+                                      style={{
+                                        padding: '6px 8px',
+                                        background: '#e2e8f0',
+                                        color: '#4a5568',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '10px',
+                                        fontWeight: 600
+                                      }}
+                                    >
+                                      No
+                                    </button>
                                   </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setDeleteConfirm(schedule.id)}
+                                    style={{
+                                      padding: '6px 10px',
+                                      background: '#fed7d7',
+                                      color: '#c53030',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title="Delete"
+                                  >
+                                    <FaTrash size={12} />
+                                  </button>
                                 )}
                               </div>
-                            )
-                          })}
-                        </>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
               )}
 
-              {viewMode === 'room' && selectedRoom && (
-                <div className={styles.roomView}>
-                  <div className={styles.roomInfoCard}>
-                    <div className={styles.infoRow}>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Campus</span>
-                        <span className={styles.infoValue} style={{fontSize: '20px'}}>{selectedRoom.campus}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Building</span>
-                        <span className={styles.infoValue} style={{fontSize: '20px'}}>{selectedRoom.building}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Floor</span>
-                        <span className={styles.infoValue} style={{fontSize: '20px'}}>
-                          {selectedRoom.is_first_floor ? <>1st Floor <Accessibility size={20} /></> : 'Upper Floor'}
-                        </span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Capacity</span>
-                        <span className={styles.infoValue}>{selectedRoom.capacity}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Batches</span>
-                        <span className={styles.infoValue}>{selectedRoom.batches.length}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Participants</span>
-                        <span className={styles.infoValue}>{selectedRoom.totalParticipants}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Utilization</span>
-                        <span className={styles.infoValue}>{selectedRoom.utilizationRate}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h3 className={styles.sectionTitle}>
-                    <FaBox /> Batches Schedule
-                  </h3>
-                  <div className={styles.batchesTimeline}>
-                    {selectedRoom.batches.map((batch) => (
-                      <div
-                        key={batch.id}
-                        className={styles.batchCard}
-                        onClick={() => handleBatchClick(batch)} // <-- This makes the batch clickable
-                      >
-                        <div className={styles.batchHeader}>
-                          <span className={styles.batchName}>{batch.batch_name}</span>
-                          {batch.has_pwd && (
-                            <span className={styles.pwdBadge}>
-                              <FaWheelchair /> PWD
-                            </span>
-                          )}
-                        </div>
-                        <div className={styles.batchTime}>
-                          <FaClock />
-                          {batch.batch_date && batch.start_time
-                            ? `${formatDateTime(batch.batch_date, batch.start_time)} - ${batch.end_time}`
-                            : batch.time_slot}
-                        </div>
-                        <div className={styles.batchStats}>
-                          <div className={styles.batchStat}>
-                            <FaUsers />
-                            <span>
-                              {batch.participants?.length || 0} / {batch.capacity || selectedRoom.capacity || 0}
-                            </span>
-                          </div>
-                          <div className={styles.batchUtilization}>
-                            <div className={styles.progressBar}>
-                              <div
-                                className={styles.progressFill}
-                                style={{
-                                  width: `${Math.min(
-                                    ((batch.participants?.length || 0) / (batch.capacity || selectedRoom.capacity || 1)) * 100, 
-                                    100
-                                  )}%`
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Batch View */}
-{viewMode === 'batch' && selectedBatch && selectedRoom && (
-  <div className={styles.batchView}>
-    <div className={styles.batchInfoCard}>
-      <div className={styles.infoRow}>
-        {/* ✅ UPDATED: Show detailed time information */}
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Date</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>
-            {selectedBatch.batch_date ? 
-              new Date(selectedBatch.batch_date).toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              }) : 'N/A'
-            }
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Time</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>
-            {selectedBatch.start_time} - {selectedBatch.end_time}
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Campus</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>{selectedBatch.campus}</span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Building</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>{selectedBatch.building}</span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Room Number</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>
-            {selectedBatch.room || selectedRoom.room}
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Floor</span>
-          <span className={styles.infoValue} style={{fontSize: '18px'}}>
-            {selectedBatch.is_first_floor ? <>1st Floor <Accessibility /></> : 'Upper Floor'}
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Participants</span>
-          <span className={styles.infoValue}>
-            {selectedBatch.participants?.length || 0} / {selectedBatch.capacity || selectedRoom.capacity || 0}
-          </span>
-        </div>
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Occupancy</span>
-          <span className={styles.infoValue}>
-            {Math.round(
-              ((selectedBatch.participants?.length || 0) / 
-              (selectedBatch.capacity || selectedRoom.capacity || 1)) * 100
-            )}%
-          </span>
-        </div>
-      </div>
-    </div>
-
-                  <h3 className={styles.sectionTitle}>
-                    <FaChair /> Seating Arrangement
-                  </h3>
-                  <div className={styles.seatingGrid}>
-                    {selectedBatch.participants
-                      .sort((a, b) => a.seat_no - b.seat_no)
-                      .map((participant) => (
-                        <div
-                          key={participant.id}
-                          className={`${styles.seatCard} ${participant.is_pwd ? styles.pwdSeat : ''}`}
-                        >
-                          <div className={styles.seatNumber}>Seat {participant.seat_no}</div>
-                          <div className={styles.seatInfo}>
-                            <div className={styles.participantName}>{participant.name}</div>
-                            <div className={styles.participantNumber}>{participant.participant_number}</div>
-                          </div>
-                          {participant.is_pwd && (
-                            <FaWheelchair className={styles.seatPwdBadge} />
-                          )}
-                        </div>
-                      ))}
-                  </div>
+              {/* Empty State */}
+              {!loading && filteredSchedules.length === 0 && (
+                <div className={styles.emptyState}>
+                  <BookOpen size={64} />
+                  <h3>No Classes Found</h3>
+                  <p>Try adjusting your search or filter criteria, or add a new class.</p>
                 </div>
               )}
             </>
           )}
         </div>
       </main>
+
+      {/* ==================== Create/Edit Modal ==================== */}
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '700px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 100%)',
+              color: 'white',
+              borderRadius: '16px 16px 0 0'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {modalMode === 'create' ? <FaPlus /> : <FaEdit />}
+                {modalMode === 'create' ? 'Add New Class Schedule' : 'Edit Class Schedule'}
+              </h2>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '24px' }}>
+              {/* Course Info Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Course Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.course_code}
+                    onChange={(e) => handleInputChange('course_code', e.target.value)}
+                    placeholder="e.g., CS101"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      transition: 'border-color 0.2s'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Course Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.course_name}
+                    onChange={(e) => handleInputChange('course_name', e.target.value)}
+                    placeholder="e.g., Introduction to Programming"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Section & Units Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Section
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.section}
+                    onChange={(e) => handleInputChange('section', e.target.value)}
+                    placeholder="e.g., A"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Lec Units
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lec_units}
+                    onChange={(e) => handleInputChange('lec_units', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Lab Units
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lab_units}
+                    onChange={(e) => handleInputChange('lab_units', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Credit Units
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.credit_units}
+                    onChange={(e) => handleInputChange('credit_units', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Hours Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    <FaClock style={{ marginRight: '6px' }} />
+                    Lecture Hours
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lec_hours}
+                    onChange={(e) => handleInputChange('lec_hours', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    <FaClock style={{ marginRight: '6px' }} />
+                    Lab Hours
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lab_hours}
+                    onChange={(e) => handleInputChange('lab_hours', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Schedule Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    <FaCalendar style={{ marginRight: '6px' }} />
+                    Schedule Day
+                  </label>
+                  <select
+                    value={formData.schedule_day}
+                    onChange={(e) => handleInputChange('schedule_day', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      background: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {daysOfWeek.map(day => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Schedule Time
+                  </label>
+                  <select
+                    value={formData.schedule_time}
+                    onChange={(e) => handleInputChange('schedule_time', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      background: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Select Time</option>
+                    {timeSlots.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Semester & Year Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Semester
+                  </label>
+                  <select
+                    value={formData.semester}
+                    onChange={(e) => handleInputChange('semester', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      background: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {semesters.map(sem => (
+                      <option key={sem} value={sem}>{sem}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    Academic Year
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.academic_year}
+                    onChange={(e) => handleInputChange('academic_year', e.target.value)}
+                    placeholder="e.g., 2025-2026"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Department & College Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    <FaGraduationCap style={{ marginRight: '6px' }} />
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.department}
+                    onChange={(e) => handleInputChange('department', e.target.value)}
+                    placeholder="e.g., Computer Science"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                    <FaBuilding style={{ marginRight: '6px' }} />
+                    College
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.college}
+                    onChange={(e) => handleInputChange('college', e.target.value)}
+                    placeholder="e.g., College of Engineering"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Status Row */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    background: 'white',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={closeModal}
+                  style={{
+                    padding: '12px 24px',
+                    background: '#e2e8f0',
+                    color: '#4a5568',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    padding: '12px 24px',
+                    background: saving ? '#a0aec0' : 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)'
+                  }}
+                >
+                  <FaSave />
+                  {saving ? 'Saving...' : (modalMode === 'create' ? 'Create Class' : 'Save Changes')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-// Loading fallback
+// Loading fallback component
 function LoadingFallback() {
-  return <div>Loading campus schedules...</div>
+  return (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      gap: '16px'
+    }}>
+      <div style={{
+        width: '48px',
+        height: '48px',
+        border: '4px solid rgba(44, 82, 130, 0.1)',
+        borderTopColor: '#2c5282',
+        borderRadius: '50%',
+        animation: 'spin 0.8s linear infinite'
+      }}></div>
+      <p style={{ color: '#718096', fontWeight: 500 }}>Loading Class Schedules...</p>
+    </div>
+  )
 }
 
 // Main export wrapped in Suspense
-export default function CampusSchedulesPage() {
+export default function ClassSchedulesPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <SchoolSchedulesContent />
+      <ClassSchedulesContent />
     </Suspense>
   )
 }

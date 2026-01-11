@@ -16,7 +16,6 @@ const rocketSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" x
 
 export default function Page(): JSX.Element {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -25,8 +24,11 @@ export default function Page(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [loginSuccess, setLoginSuccess] = useState(false)
   const [registerSuccess, setRegisterSuccess] = useState(false)
+
+  // Only allow admin login (example: admin@university.edu)
+  const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
+  const [isAdminLogin, setIsAdminLogin] = useState(false)
 
   const validate = (): boolean => {
     setError(null)
@@ -38,7 +40,7 @@ export default function Page(): JSX.Element {
       setError('Password must be at least 6 characters.')
       return false
     }
-    if (mode === 'register' && password !== confirmPassword) {
+    if (!isAdminLogin && password !== confirmPassword) {
       setError('Passwords do not match.')
       return false
     }
@@ -53,28 +55,31 @@ export default function Page(): JSX.Element {
     setError(null)
 
     try {
-      if (mode === 'register') {
+      if (isAdminLogin) {
+        // Only admin can login
+        if (email !== ADMIN_EMAIL) {
+          setError('❌ Only admin can login.')
+          setLoading(false)
+          return
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+        setMessage('✅ Login successful. Redirecting...')
+        setTimeout(() => {
+          router.push('/LandingPages/Home')
+        }, 1500)
+      } else {
+        // Faculty registration only
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        setMessage('✅ Registration successful. Check your email for confirmation.')
+        setMessage('✅ Registration successful. Await admin approval.')
         setRegisterSuccess(true)
         setTimeout(() => {
           setEmail('')
           setPassword('')
           setConfirmPassword('')
-          setMode('login')
           setRegisterSuccess(false)
-        }, 3000) // Extended for longer animation
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
-        setMessage('✅ Login successful. Redirecting...')
-        setLoginSuccess(true)
-
-        // Redirect to CSV upload page after successful login
-        setTimeout(() => {
-          router.push('/LandingPages/Home')
-        }, 2000) // Extended for animation
+        }, 4000)
       }
     } catch (err: any) {
       setError('❌ ' + (err?.message ?? String(err)))
@@ -91,13 +96,6 @@ export default function Page(): JSX.Element {
         <div className="stars"></div>
         <div className="glow-effect"></div>
       </div>
-
-      {/* Rocket Animation Overlay for Login Success */}
-      {loginSuccess && (
-        <div className="animation-overlay rocket-overlay">
-          <span className="animated-rocket">🚀</span>
-        </div>
-      )}
 
       {/* Sparkle Animation Overlay for Register Success */}
       {registerSuccess && (
@@ -127,12 +125,12 @@ export default function Page(): JSX.Element {
         <div className="card">
           <div className="card-header">
             <h1 className="title">
-              {mode === 'login' ? 'Login' : 'Register'}
+              {isAdminLogin ? 'Admin Login' : 'Faculty Registration'}
             </h1>
             <p className="subtitle">
-              {mode === 'login' 
-                ? 'Welcome back to Quantum Qtime' 
-                : 'Join Quantum Qtime'}
+              {isAdminLogin
+                ? 'Admin access only'
+                : 'Register as faculty. You will be approved by admin.'}
             </p>
           </div>
 
@@ -176,8 +174,8 @@ export default function Page(): JSX.Element {
               </label>
             </div>
 
-            {/* Confirm Password Field (Register Only) */}
-            {mode === 'register' && (
+            {/* Confirm Password Field (Faculty Registration Only) */}
+            {!isAdminLogin && (
               <div className="form-group">
                 <label className="label">
                   <span className="label-text"> Confirm Password</span>
@@ -203,25 +201,21 @@ export default function Page(): JSX.Element {
             )}
 
             {/* Submit Button */}
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className={`button ${loading ? 'loading' : ''}`}
             >
               {loading ? (
                 <>
                   <span className="spinner"></span>
-                  {mode === 'login' ? 'Logging in...' : 'Registering...'}
+                  {isAdminLogin ? 'Logging in...' : 'Registering...'}
                 </>
               ) : (
-                mode === 'login' ? (
-                  <>
-                    Login
-                  </>
+                isAdminLogin ? (
+                  <>Login</>
                 ) : (
-                  <>
-                    Create Account
-                  </>
+                  <>Create Account</>
                 )
               )}
             </button>
@@ -229,23 +223,24 @@ export default function Page(): JSX.Element {
             {/* Mode Switch */}
             <div className="switch-row">
               <span className="switch-text">
-                {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}
+                {isAdminLogin
+                  ? 'Faculty? Register below.'
+                  : 'Admin? Login here.'}
               </span>
               <button
                 type="button"
                 onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login')
+                  setIsAdminLogin(!isAdminLogin)
                   setError(null)
                   setMessage(null)
                   setEmail('')
                   setPassword('')
                   setConfirmPassword('')
-                  setLoginSuccess(false)
                   setRegisterSuccess(false)
                 }}
                 className="link-button"
               >
-                {mode === 'login' ? 'Create one' : 'Sign in'}
+                {isAdminLogin ? 'Faculty Registration' : 'Admin Login'}
               </button>
             </div>
 

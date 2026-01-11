@@ -171,6 +171,67 @@ CREATE INDEX IF NOT EXISTS idx_teacher_schedules_teacher_id ON teacher_schedules
 CREATE INDEX IF NOT EXISTS idx_teacher_schedules_schedule_day ON teacher_schedules(schedule_day);
 
 -- ============================================================================
+-- SECTION 4.5: QIA GENERATED SCHEDULES & ROOM ALLOCATIONS
+-- ============================================================================
+
+-- Generated schedules table - stores QIA algorithm generated schedules
+CREATE TABLE IF NOT EXISTS generated_schedules (
+    id SERIAL PRIMARY KEY,
+    schedule_name VARCHAR(255) NOT NULL,
+    semester VARCHAR(50),
+    academic_year VARCHAR(20),
+    campus_group_id INTEGER NOT NULL,
+    class_group_id INTEGER NOT NULL,
+    teacher_group_id INTEGER,
+    total_classes INTEGER DEFAULT 0,
+    scheduled_classes INTEGER DEFAULT 0,
+    unscheduled_classes INTEGER DEFAULT 0,
+    optimization_stats JSONB,
+    status VARCHAR(50) DEFAULT 'active',
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for generated_schedules
+CREATE INDEX IF NOT EXISTS idx_generated_schedules_name ON generated_schedules(schedule_name);
+CREATE INDEX IF NOT EXISTS idx_generated_schedules_campus_group ON generated_schedules(campus_group_id);
+CREATE INDEX IF NOT EXISTS idx_generated_schedules_class_group ON generated_schedules(class_group_id);
+CREATE INDEX IF NOT EXISTS idx_generated_schedules_created_at ON generated_schedules(created_at);
+
+-- Room allocations table - stores individual class-room assignments from QIA
+CREATE TABLE IF NOT EXISTS room_allocations (
+    id SERIAL PRIMARY KEY,
+    schedule_id INTEGER NOT NULL REFERENCES generated_schedules(id) ON DELETE CASCADE,
+    class_id INTEGER,
+    room_id INTEGER,
+    course_code VARCHAR(50),
+    course_name VARCHAR(255),
+    section VARCHAR(100),
+    schedule_day VARCHAR(100),
+    schedule_time VARCHAR(100),
+    campus VARCHAR(255),
+    building VARCHAR(255),
+    room VARCHAR(100),
+    capacity INTEGER,
+    teacher_name VARCHAR(255),
+    department VARCHAR(255),
+    lec_hours INTEGER DEFAULT 0,
+    lab_hours INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'scheduled',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for room_allocations
+CREATE INDEX IF NOT EXISTS idx_room_allocations_schedule ON room_allocations(schedule_id);
+CREATE INDEX IF NOT EXISTS idx_room_allocations_class ON room_allocations(class_id);
+CREATE INDEX IF NOT EXISTS idx_room_allocations_room ON room_allocations(room_id);
+CREATE INDEX IF NOT EXISTS idx_room_allocations_day ON room_allocations(schedule_day);
+CREATE INDEX IF NOT EXISTS idx_room_allocations_time ON room_allocations(schedule_time);
+CREATE INDEX IF NOT EXISTS idx_room_allocations_building ON room_allocations(building);
+
+-- ============================================================================
 -- SECTION 5: SCHEDULE GENERATION & MANAGEMENT
 -- ============================================================================
 

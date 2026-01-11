@@ -1,18 +1,23 @@
+/* ==================== ViewSchedule Page Styles ==================== */
+/* Uses global theme variables from globals.css */
+/* Supports: green, dark, and light themes */
+
 /* ==================== Layout ==================== */
 .qtimeLayout {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-white, #fff);
+  background: var(--background);
   position: relative;
+  transition: background 0.3s ease;
 }
 
 .qtimeMain {
   margin-left: 240px;
   margin-top: 70px;
-  padding: 30px;
-  transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 80px);
-  background: var(--bg-white, #ffffff);
+  padding: 32px;
+  transition: margin-left 0.3s ease, background 0.3s ease;
+  min-height: calc(100vh - 70px);
+  background: var(--background);
 }
 
 .qtimeMain.fullWidth {
@@ -29,53 +34,64 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 24px;
+  background: var(--card-bg);
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .backButton,
 .refreshButton {
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 2px 4px var(--glow-color);
 }
 
 .backButton:hover,
 .refreshButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(26, 54, 93, 0.4);
-  background: linear-gradient(135deg, #2c5282 0%, #4a5568 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 /* ==================== Welcome Section ==================== */
 .welcomeSection {
   text-align: center;
-  margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 32px;
+  background: var(--card-bg);
+  padding: 48px 32px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.welcomeSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
 }
 
 .pageTitle {
-  font-size: 42px;
+  font-size: 36px;
   font-weight: 800;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
@@ -86,9 +102,9 @@
 }
 
 .pageSubtitle {
-  color: var(--text-medium);
+  color: var(--content-text-secondary);
   font-size: 16px;
-  margin-top: 10px;
+  margin-top: 12px;
   font-weight: 500;
 }
 
@@ -96,19 +112,19 @@
 .loadingState,
 .emptyState {
   text-align: center;
-  padding: 60px 40px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 64px 40px;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  transition: background 0.3s ease;
 }
 
 .spinner {
-  width: 60px;
-  height: 60px;
-  border: 6px solid rgba(26, 54, 93, 0.1);
-  border-top-color: var(--primary-dark);
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -119,213 +135,221 @@
 }
 
 .emptyIcon {
-  font-size: 64px;
+  font-size: 56px;
   margin-bottom: 20px;
-  color: var(--primary-medium);
+  color: var(--primary);
+  opacity: 0.8;
 }
 
 .emptyState h2 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 15px;
+  color: var(--content-text);
+  margin-bottom: 12px;
 }
 
 .emptyState p {
-  color: var(--text-medium);
-  font-size: 16px;
-  margin-bottom: 30px;
+  color: var(--content-text-secondary);
+  font-size: 15px;
+  margin-bottom: 28px;
 }
 
 .primaryButton {
-  padding: 14px 32px;
+  padding: 12px 28px;
   background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 16px;
-  box-shadow: 0 4px 15px rgba(26, 54, 93, 0.3);
+  transition: all 0.2s ease;
+  font-size: 15px;
+  box-shadow: 0 2px 8px var(--glow-color);
 }
 
 .primaryButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(26, 54, 93, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--glow-color);
 }
 
 /* ==================== Schedule Cards Grid ==================== */
 .schedulesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
 }
 
 /* ==================== Schedule Card ==================== */
 .scheduleCard {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  transition: all 0.25s ease, background 0.3s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
-  backdrop-filter: blur(10px);
 }
 
 .scheduleCard:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: var(--primary-light);
 }
 
 /* ==================== Delete Icon Button ==================== */
 .deleteIconButton {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 255, 255, 0.95);
+  top: 16px;
+  right: 16px;
+  background: var(--bg-white);
   color: var(--text-light);
-  border: 2px solid rgba(226, 232, 240, 0.8);
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   z-index: 10;
-  font-size: 16px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
 }
 
 .deleteIconButton:hover {
-  background: #fee2e2;
+  background: #fef2f2;
   color: var(--danger-red);
   border-color: #fecaca;
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 8px 20px rgba(245, 101, 101, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
 }
 
 .deleteIconButton:active {
-  transform: translateY(0) scale(0.98);
+  transform: scale(0.98);
 }
 
 /* ==================== Card Header ==================== */
 .scheduleCardHeader {
-  padding: 30px;
+  padding: 28px 24px;
   background: var(--primary-gradient);
   color: white;
-  text-align: center;
+  text-align: left;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  gap: 10px;
   position: relative;
+  min-height: 100px;
 }
 
 .scheduleTitle {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0;
   line-height: 1.3;
-  text-align: right;
   color: #ffffff;
+  padding-right: 50px;
 }
 
 .statusBadge {
   display: inline-block;
-  padding: 8px 18px;
-  font-size: 13px;
-  border-radius: 25px;
-  background: rgba(255, 255, 255, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  backdrop-filter: blur(8px);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  width: fit-content;
 }
 
 /* ==================== Info Grid ==================== */
 .scheduleInfoGrid {
-  padding: 30px;
+  padding: 24px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  border-bottom: 2px solid var(--border-color);
-  flex-grow: 0;
-  flex-shrink: 0;
-  background: #ffffff;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
+  transition: background 0.3s ease;
 }
 
 .infoItem {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.infoIcon {
+  color: var(--primary);
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .infoLabel {
   color: var(--text-light);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .infoValue {
-  color: var(--text-dark);
-  font-size: 16px;
-  font-weight: 700;
+  color: var(--content-text);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 /* ==================== Stats Container ==================== */
 .statsContainer {
-  padding: 25px 30px;
+  padding: 20px 24px;
   display: flex;
-  background: #f8fafc;
+  background: var(--bg-gray-50);
   flex-wrap: wrap;
-  flex-grow: 1;
-  justify-content: space-between;
-  align-content: flex-start;
+  gap: 12px;
+  justify-content: flex-start;
+  transition: background 0.3s ease;
 }
 
 .statBadge {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 18px 22px;
-  background: var(--bg-white);
-  border-radius: 14px;
-  border: 2px solid transparent;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
-  width: fit-content;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  flex: 1;
+  min-width: 140px;
 }
 
 .statBadge.success {
   border-color: var(--success-green);
-  background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
 }
 
 .statBadge.warning {
   border-color: var(--warning-orange);
-  background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
+  background: linear-gradient(135deg, rgba(237, 137, 54, 0.1) 0%, rgba(237, 137, 54, 0.2) 100%);
 }
 
 .statIcon {
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
-  padding: 12px;
+  padding: 10px;
   flex-shrink: 0;
-  border-radius: 12px;
-  width: 52px;
-  height: 52px;
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -334,102 +358,81 @@
 .statIcon.success {
   color: #ffffff;
   background: var(--success-green);
-  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
 }
 
 .statIcon.warning {
   color: #ffffff;
   background: var(--warning-orange);
-  box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
 }
 
 .statBadge > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .statLabel {
   font-size: 11px;
-  color: var(--text-medium);
-  font-weight: 700;
+  color: var(--content-text-secondary);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  white-space: nowrap;
+  letter-spacing: 0.4px;
 }
 
 .statValue {
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1;
-  white-space: nowrap;
 }
 
 .statBadge.success .statValue {
-  color: #2f855a;
+  color: var(--success-green);
 }
 
 .statBadge.warning .statValue {
-  color: #c05621;
+  color: var(--warning-orange);
 }
 
 /* ==================== Actions ==================== */
 .scheduleActions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border-color);
   margin-top: auto;
+  transition: background 0.3s ease;
 }
 
-.detailsButton {
-  flex: 1;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
-}
-
-.detailsButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-}
-
-.detailsButton:active {
-  transform: translateY(0);
-}
-
+.detailsButton,
 .viewButton {
   flex: 1;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px var(--primary-alpha);
 }
 
+.detailsButton:hover,
 .viewButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--primary-alpha);
+  filter: brightness(1.1);
 }
 
+.detailsButton:active,
 .viewButton:active {
   transform: translateY(0);
 }
@@ -437,9 +440,406 @@
 /* Add duration info style */
 .infoDuration {
   font-size: 11px;
-  color: #9ca3af;
-  margin: 2px 0 0 0;
+  color: var(--text-light);
+  margin: 4px 0 0 0;
   font-weight: 500;
+}
+
+/* Card date */
+.cardDate {
+  padding: 12px 24px;
+  font-size: 12px;
+  color: var(--text-light);
+  background: var(--bg-gray-50);
+  text-align: center;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==================== Header Actions ==================== */
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-white);
+  color: var(--content-text-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-alpha);
+}
+
+/* ==================== Timetable Section ==================== */
+.timetableSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.scheduleInfoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card-bg);
+  padding: 28px 32px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.scheduleInfoMain h2 {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--content-text);
+  margin: 0 0 8px 0;
+}
+
+.scheduleInfoMain p {
+  font-size: 15px;
+  color: var(--content-text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.semesterInfo {
+  display: inline-block;
+  margin-top: 8px !important;
+  padding: 4px 12px;
+  background: var(--primary-alpha);
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.scheduleStats {
+  display: flex;
+  gap: 32px;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statNumber {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--content-text);
+  line-height: 1;
+}
+
+.statNumber.success {
+  color: var(--success-green);
+}
+
+.statNumber.warning {
+  color: var(--warning-orange);
+}
+
+.statText {
+  font-size: 12px;
+  color: var(--content-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* ==================== Filters Bar ==================== */
+.filtersBar {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.filterGroup label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--content-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--content-text);
+  background: var(--bg-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.searchGroup {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 40px 10px 42px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--content-text);
+  background: var(--bg-white);
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.searchInput::placeholder {
+  color: var(--text-light);
+}
+
+.clearSearch {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.clearSearch:hover {
+  background: var(--bg-gray-100);
+  color: var(--content-text);
+}
+
+/* ==================== Timetable Grid ==================== */
+.timetableWrapper {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.timetableContainer {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.timetable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.timetable th,
+.timetable td {
+  border: 1px solid var(--border-color);
+  padding: 0;
+  vertical-align: top;
+}
+
+.timeHeader {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 16px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  min-width: 120px;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+.timeHeader svg {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.dayHeader {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 16px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  min-width: 140px;
+}
+
+.timeCell {
+  background: var(--bg-gray-50);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--content-text);
+  text-align: center;
+  white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  border-right: 2px solid var(--border-color);
+}
+
+.dataCell {
+  padding: 8px;
+  min-height: 100px;
+  vertical-align: top;
+  background: var(--card-bg);
+  transition: background 0.2s ease;
+}
+
+.dataCell:hover {
+  background: var(--bg-gray-50);
+}
+
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.allocationCard {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border-left: 4px solid var(--primary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.allocationCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.courseCode {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--content-text);
+  margin-bottom: 4px;
+}
+
+.courseName {
+  font-size: 12px;
+  color: var(--content-text-secondary);
+  font-weight: 500;
+  margin-bottom: 4px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sectionInfo {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.roomInfo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-medium);
+  font-weight: 600;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color);
+}
+
+.roomInfo svg {
+  flex-shrink: 0;
+}
+
+.emptyCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+/* ==================== Legend ==================== */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  flex-wrap: wrap;
+}
+
+.legendTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--content-text-secondary);
+}
+
+.legendItem {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--content-text);
 }
 
 /* ==================== Responsive Design ==================== */
@@ -450,45 +850,293 @@
   }
 
   .schedulesGrid {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  
+  .scheduleInfoHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .scheduleStats {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filtersBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filterGroup {
+    min-width: unset;
+  }
+  
+  .searchGroup {
+    min-width: unset;
   }
 }
 
 @media (max-width: 768px) {
   .qtimeMain {
-    padding: 20px 15px;
+    padding: 20px 16px;
   }
 
   .schedulesGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .pageTitle {
-    font-size: 32px;
+    font-size: 28px;
   }
 
   .scheduleInfoGrid {
     grid-template-columns: 1fr;
     padding: 20px;
+    gap: 12px;
   }
 
   .statsContainer {
-    padding: 20px;
+    padding: 16px 20px;
+    flex-direction: column;
+  }
+
+  .statBadge {
+    width: 100%;
   }
 
   .scheduleActions {
-    padding: 20px;
+    padding: 16px 20px;
+    flex-direction: column;
   }
 
   .pageHeader {
-    padding: 15px 20px;
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
   }
+
+  .welcomeSection {
+    padding: 32px 20px;
+  }
+  
+  .headerActions {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .scheduleStats {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .statItem {
+    flex: 1;
+    min-width: 80px;
+  }
+  
+  .statNumber {
+    font-size: 24px;
+  }
+  
+  .timetableContainer {
+    padding: 0;
+  }
+  
+  .dayHeader {
+    min-width: 100px;
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+  
+  .timeHeader {
+    min-width: 90px;
+    padding: 12px;
+    font-size: 12px;
+  }
+  
+  .timeCell {
+    padding: 10px 8px;
+    font-size: 11px;
+  }
+  
+  .allocationCard {
+    padding: 8px 10px;
+  }
+  
+  .courseCode {
+    font-size: 12px;
+  }
+  
+  .courseName {
+    font-size: 11px;
+  }
+  
+  .legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ==================== History Controls ==================== */
+.historyControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  background: var(--card-bg);
+  padding: 20px 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+.historySearchGroup {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.historySearchGroup .searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+.historySearchInput {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--bg-white);
+  color: var(--content-text);
+  transition: all 0.2s ease;
+}
+
+.historySearchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.historySortGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.historySortGroup label {
+  font-size: 14px;
+  color: var(--text-medium);
+  font-weight: 500;
+}
+
+.sortSelect {
+  padding: 10px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--bg-white);
+  color: var(--content-text);
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.sortOrderButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-white);
+  color: var(--content-text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sortOrderButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-alpha);
+}
+
+.historyStats {
+  margin-left: auto;
+}
+
+.historyCount {
+  font-size: 14px;
+  color: var(--text-medium);
+  font-weight: 500;
+  background: var(--bg-gray-50);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+/* ==================== Optimization Info ==================== */
+.optimizationInfo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--bg-gray-50);
+  border-top: 1px solid var(--border-color);
+}
+
+.optStatItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optStatLabel {
+  font-size: 10px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.optStatValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Total Stat Badge */
+.statBadge.total {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary-alpha) 0%, rgba(34, 197, 94, 0.15) 100%);
+}
+
+.statIcon.total {
+  color: #ffffff;
+  background: var(--primary);
+  box-shadow: 0 2px 8px var(--primary-alpha);
+}
+
+.statBadge.total .statValue {
+  color: var(--primary);
 }
 
 @media (max-width: 480px) {
   .pageHeader {
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     align-items: stretch;
   }
 
@@ -497,29 +1145,66 @@
     width: 100%;
     justify-content: center;
   }
-
-  .welcomeSection {
-    padding: 30px 20px;
+  
+  .actionButton {
+    flex: 1;
+    justify-content: center;
   }
 
   .pageTitle {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .scheduleCardHeader {
-    padding: 25px 20px;
+    padding: 20px;
   }
 
   .scheduleTitle {
-    font-size: 20px;
-    padding-right: 45px;
+    font-size: 18px;
+    padding-right: 40px;
   }
 
   .deleteIconButton {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
     top: 12px;
     right: 12px;
+  }
+  
+  .scheduleInfoHeader {
+    padding: 20px;
+  }
+  
+  .scheduleInfoMain h2 {
+    font-size: 20px;
+  }
+  
+  .filtersBar {
+    padding: 16px;
+  }
+  
+  .filterSelect,
+  .searchInput {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .historyControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .historySearchGroup {
+    min-width: unset;
+  }
+  
+  .historySortGroup {
+    flex-wrap: wrap;
+  }
+  
+  .historyStats {
+    margin-left: 0;
+    text-align: center;
   }
 }

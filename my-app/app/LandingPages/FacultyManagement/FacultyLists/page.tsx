@@ -17,12 +17,22 @@ interface Faculty {
   phone?: string
   department: string
   position: string
-  status: 'active' | 'inactive' | 'on_leave'
+  status: 'active' | 'inactive' | 'on_leave' | 'not_registered'
   hire_date?: string
   office_location?: string
   profile_image?: string
   courses_count?: number
   created_at?: string
+  upload_group_id?: number // for file association
+}
+// TeacherFile interface for file selection
+interface TeacherFile {
+  upload_group_id: number
+  file_name: string
+  batch_name: string
+  department: string
+  created_at: string
+  teacher_count: number
 }
 
 interface FacultyStats {
@@ -87,6 +97,7 @@ function getStatusClass(status: string): string {
     case 'active': return styles.statusActive
     case 'inactive': return styles.statusInactive
     case 'on_leave': return styles.statusOnLeave
+    case 'not_registered': return styles.statusNotRegistered
     default: return styles.statusActive
   }
 }
@@ -97,6 +108,7 @@ function formatStatus(status: string): string {
     case 'active': return 'Active'
     case 'inactive': return 'Inactive'
     case 'on_leave': return 'On Leave'
+    case 'not_registered': return 'Not Registered'
     default: return status
   }
 }
@@ -150,12 +162,24 @@ function PlusIcon({ className }: { className?: string }) {
   )
 }
 
+async function fetchAllTeacherFiles() {
+  const { data, error } = await supabase
+    .from('teacher_files')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as TeacherFile[]
+}
+
 function FacultyListsContent() {
   const router = useRouter()
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [facultyData, setFacultyData] = useState<Faculty[]>([])
   const [filteredData, setFilteredData] = useState<Faculty[]>([])
+  const [teacherFiles, setTeacherFiles] = useState<TeacherFile[]>([])
+  const [selectedFile, setSelectedFile] = useState<TeacherFile | null>(null)
+  const [fileSearchTerm, setFileSearchTerm] = useState('')
   const [stats, setStats] = useState<FacultyStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -184,12 +208,21 @@ function FacultyListsContent() {
   const PAGE_SIZE = 12
 
   useEffect(() => {
-    fetchFacultyData()
+    // Fetch files first
+    fetchAllTeacherFiles().then(files => {
+      setTeacherFiles(files)
+      if (files.length > 0) setSelectedFile(files[0])
+    }).catch(() => setTeacherFiles([]))
   }, [])
 
   useEffect(() => {
-    let filtered = facultyData
+    if (selectedFile) {
+      fetchFacultyData(selectedFile.upload_group_id)
+    }
+  }, [selectedFile])
 
+  useEffect(() => {
+    let filtered = facultyData
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
@@ -202,54 +235,79 @@ function FacultyListsContent() {
         f.position.toLowerCase().includes(term)
       )
     }
-
     // Filter by status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(f => f.status === filterStatus)
     }
-
     // Filter by department
     if (filterDepartment !== 'all') {
       filtered = filtered.filter(f => f.department === filterDepartment)
     }
-
     setFilteredData(filtered)
     setCurrentPage(1)
   }, [searchTerm, filterStatus, filterDepartment, facultyData])
 
-  const fetchFacultyData = async () => {
+  // Fetch faculty for selected file, and mark not registered if not in DB
+  const fetchFacultyData = async (upload_group_id: number) => {
     setLoading(true)
     try {
-      // Try to fetch from faculty table, fallback to mock data if table doesn't exist
-      let data: Faculty[] = []
-      
+      // Fetch teachers from the selected file
+      const { data: teachers, error: teacherError } = await supabase
+        .from('teacher_schedules')
+        .select('*')
+        .eq('upload_group_id', upload_group_id)
+      if (teacherError) throw teacherError
+
+      // Fetch faculty from DB
+      let faculty: Faculty[] = []
       try {
-        data = await fetchAllRows('faculty')
-      } catch (error) {
-        console.log('Faculty table not found, using mock data')
-        // Mock data for demonstration
-        data = generateMockFacultyData()
+        faculty = await fetchAllRows('faculty')
+      } catch {
+        faculty = []
       }
 
-      if (data.length === 0) {
-        data = generateMockFacultyData()
-      }
+      // Map teachers to faculty, mark as not_registered if not in DB
+      const facultyByEmail = new Map(faculty.map(f => [f.email.toLowerCase(), f]))
+      const merged: Faculty[] = (teachers || []).map((t: any, i: number) => {
+        const match = facultyByEmail.get((t.email || '').toLowerCase())
+        if (match) {
+          return { ...match, upload_group_id }
+        } else {
+          // Not registered in DB
+          return {
+            id: 100000 + i,
+            employee_id: t.teacher_id || '-',
+            first_name: t.name?.split(' ')[0] || '-',
+            last_name: t.name?.split(' ').slice(1).join(' ') || '-',
+            email: t.email || '-',
+            phone: '',
+            department: t.department || '-',
+            position: '-',
+            status: 'not_registered',
+            hire_date: '',
+            office_location: '',
+            profile_image: '',
+            courses_count: 0,
+            created_at: '',
+            upload_group_id
+          }
+        }
+      })
 
-      setFacultyData(data)
-      setFilteredData(data)
-      
-      // Calculate stats
-      const uniqueDepts = [...new Set(data.map(f => f.department))]
+      setFacultyData(merged)
+      setFilteredData(merged)
+      const uniqueDepts = [...new Set(merged.map(f => f.department))]
       setDepartments(uniqueDepts)
-      
       setStats({
-        totalFaculty: data.length,
-        activeFaculty: data.filter(f => f.status === 'active').length,
+        totalFaculty: merged.length,
+        activeFaculty: merged.filter(f => f.status === 'active').length,
         departments: uniqueDepts.length,
-        onLeave: data.filter(f => f.status === 'on_leave').length
+        onLeave: merged.filter(f => f.status === 'on_leave').length
       })
     } catch (error) {
-      console.error('Error fetching faculty data:', error)
+      setFacultyData([])
+      setFilteredData([])
+      setStats(null)
     } finally {
       setLoading(false)
     }
@@ -338,13 +396,53 @@ function FacultyListsContent() {
     )
   }
 
+  // File selection UI
+  if (!selectedFile) {
+    return (
+      <div className={styles.facultyLayout}>
+        <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
+        <Sidebar isOpen={sidebarOpen} />
+        <main className={styles.facultyMain}>
+          <div className={styles.fileSelectSection}>
+            <h2>Select a Faculty CSV File</h2>
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={fileSearchTerm}
+              onChange={e => setFileSearchTerm(e.target.value)}
+              className={styles.fileSearchInput}
+            />
+            <div className={styles.fileGrid}>
+              {teacherFiles.filter(f => f.file_name.toLowerCase().includes(fileSearchTerm.toLowerCase())).map(file => (
+                <div
+                  key={file.upload_group_id}
+                  className={styles.fileCard}
+                  onClick={() => setSelectedFile(file)}
+                >
+                  <div className={styles.fileName}>{file.file_name}</div>
+                  <div className={styles.fileMeta}>{file.department} | {file.teacher_count} teachers</div>
+                  <div className={styles.fileDate}>{new Date(file.created_at).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+            {teacherFiles.length === 0 && <div>No files found.</div>}
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.facultyLayout}>
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
-      
       <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.facultyContainer}>
+          {/* File selection bar */}
+          <div className={styles.selectedFileBar}>
+            <span>File: <b>{selectedFile.file_name}</b> ({selectedFile.department}, {selectedFile.teacher_count} teachers)</span>
+            <button className={styles.changeFileBtn} onClick={() => setSelectedFile(null)}>Change File</button>
+          </div>
           {/* Header */}
           <div className={styles.facultyHeader}>
             <button className={styles.backButton} onClick={() => router.back()}>

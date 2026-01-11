@@ -18,71 +18,154 @@ import {
   Edit2,
   AlertTriangle,
   CheckCircle,
-  Computer,
-  Beaker,
-  Projector,
-  Wind,
-  Accessibility
+  University,
+  Hotel,
+  FileSpreadsheet,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Landmark,
+  MapPin,
+  Snowflake,
+  MonitorPlay,
+  Accessibility,
+  ArrowLeft,
+  Search
 } from 'lucide-react'
-import type { Room, RoomType } from '@/lib/database.types'
+
+// Campus room from CSV uploads
+interface CampusRoom {
+  id: number
+  upload_group_id: number
+  school_name: string
+  campus: string
+  building: string
+  room: string
+  capacity: number
+  is_first_floor: boolean
+  floor_number: number
+  room_type: string
+  has_ac: boolean
+  has_projector: boolean
+  has_whiteboard: boolean
+  is_pwd_accessible: boolean
+  status: string
+  notes: string | null
+  file_name: string
+  created_at: string
+}
+
+interface CampusGroup {
+  upload_group_id: number
+  school_name: string
+  file_name: string
+  created_at: string
+  room_count: number
+}
 
 export default function AddEditRoomsPage() {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [rooms, setRooms] = useState<Room[]>([])
+  const [campusGroups, setCampusGroups] = useState<CampusGroup[]>([])
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null)
+  const [rooms, setRooms] = useState<CampusRoom[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingRoom, setEditingRoom] = useState<Room | null>(null)
+  const [loadingRooms, setLoadingRooms] = useState(false)
+  const [editingRoom, setEditingRoom] = useState<CampusRoom | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set())
   
   const [formData, setFormData] = useState({
-    room_code: '',
-    room_name: '',
+    campus: '',
     building: '',
+    room: '',
+    capacity: 30,
     floor_number: 1,
-    capacity: 40,
-    room_type: 'lecture' as RoomType,
+    room_type: 'Classroom',
     has_ac: false,
     has_projector: false,
     has_whiteboard: true,
-    has_computers: 0,
-    has_lab_equipment: false,
-    is_accessible: false,
+    is_pwd_accessible: false,
     notes: ''
   })
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
 
   useEffect(() => {
-    fetchRooms()
+    fetchCampusGroups()
   }, [])
 
-  const fetchRooms = async () => {
+  // Fetch all upload groups from campuses table
+  const fetchCampusGroups = async () => {
     setLoading(true)
     try {
-      const { data, error } = await (supabase
-        .from('rooms') as any)
-        .select('*')
-        .order('building', { ascending: true })
-        .order('room_code', { ascending: true })
+      const { data, error } = await supabase
+        .from('campuses')
+        .select('upload_group_id, school_name, file_name, created_at')
+        .order('created_at', { ascending: false })
 
-      if (error) {
-        // Check if table doesn't exist
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
-          console.warn('Rooms table does not exist yet. Please run the database schema.')
-          setErrorMessage('The rooms table has not been created yet. Please run the database schema in Supabase.')
+      if (error) throw error
+
+      // Group by upload_group_id
+      const grouped = (data || []).reduce((acc: CampusGroup[], curr: any) => {
+        const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
+        if (existing) {
+          existing.room_count++
         } else {
-          throw error
+          acc.push({
+            upload_group_id: curr.upload_group_id,
+            school_name: curr.school_name,
+            file_name: curr.file_name,
+            created_at: curr.created_at,
+            room_count: 1
+          })
         }
-      } else {
-        setRooms(data || [])
-      }
+        return acc
+      }, [])
+
+      setCampusGroups(grouped)
     } catch (error: any) {
-      console.error('Error fetching rooms:', error)
-      setErrorMessage(error?.message || 'Failed to fetch rooms. Please check your database connection.')
+      console.error('Error fetching campus groups:', error)
+      setErrorMessage(error?.message || 'Failed to fetch campus data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Fetch rooms for a specific upload group
+  const fetchRooms = async (groupId: number) => {
+    setLoadingRooms(true)
+    try {
+      const { data, error } = await supabase
+        .from('campuses')
+        .select('*')
+        .eq('upload_group_id', groupId)
+        .order('campus', { ascending: true })
+        .order('building', { ascending: true })
+        .order('room', { ascending: true })
+
+      if (error) throw error
+      setRooms(data || [])
+    } catch (error: any) {
+      console.error('Error fetching rooms:', error)
+      setErrorMessage(error?.message || 'Failed to fetch rooms')
+    } finally {
+      setLoadingRooms(false)
+    }
+  }
+
+  const handleSelectGroup = (groupId: number) => {
+    if (selectedGroup === groupId) {
+      setSelectedGroup(null)
+      setRooms([])
+      setExpandedBuildings(new Set())
+    } else {
+      setSelectedGroup(groupId)
+      fetchRooms(groupId)
+      setExpandedBuildings(new Set())
     }
   }
 
@@ -90,24 +173,30 @@ export default function AddEditRoomsPage() {
     e.preventDefault()
     setErrorMessage('')
     
+    if (!selectedGroup) {
+      setErrorMessage('Please select a campus group first')
+      return
+    }
+
     try {
+      const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
+      
       if (editingRoom) {
         // Update existing room
         const { error } = await (supabase
-          .from('rooms') as any)
+          .from('campuses') as any)
           .update({
-            room_code: formData.room_code,
-            room_name: formData.room_name || null,
+            campus: formData.campus,
             building: formData.building,
-            floor_number: formData.floor_number,
+            room: formData.room,
             capacity: formData.capacity,
+            floor_number: formData.floor_number,
+            is_first_floor: formData.floor_number === 1,
             room_type: formData.room_type,
             has_ac: formData.has_ac,
             has_projector: formData.has_projector,
             has_whiteboard: formData.has_whiteboard,
-            has_computers: formData.has_computers,
-            has_lab_equipment: formData.has_lab_equipment,
-            is_accessible: formData.is_accessible,
+            is_pwd_accessible: formData.is_pwd_accessible,
             notes: formData.notes || null
           })
           .eq('id', editingRoom.id)
@@ -117,21 +206,24 @@ export default function AddEditRoomsPage() {
       } else {
         // Add new room
         const { error } = await (supabase
-          .from('rooms') as any)
+          .from('campuses') as any)
           .insert({
-            room_code: formData.room_code,
-            room_name: formData.room_name || null,
+            upload_group_id: selectedGroup,
+            school_name: selectedGroupData?.school_name || 'Unknown School',
+            campus: formData.campus,
             building: formData.building,
-            floor_number: formData.floor_number,
+            room: formData.room,
             capacity: formData.capacity,
+            floor_number: formData.floor_number,
+            is_first_floor: formData.floor_number === 1,
             room_type: formData.room_type,
             has_ac: formData.has_ac,
             has_projector: formData.has_projector,
             has_whiteboard: formData.has_whiteboard,
-            has_computers: formData.has_computers,
-            has_lab_equipment: formData.has_lab_equipment,
-            is_accessible: formData.is_accessible,
-            notes: formData.notes || null
+            is_pwd_accessible: formData.is_pwd_accessible,
+            notes: formData.notes || null,
+            file_name: 'Manual Entry',
+            status: 'active'
           })
         
         if (error) throw error
@@ -139,7 +231,8 @@ export default function AddEditRoomsPage() {
       }
       
       resetForm()
-      fetchRooms()
+      fetchRooms(selectedGroup)
+      fetchCampusGroups() // Refresh counts
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error saving room:', error)
@@ -147,21 +240,19 @@ export default function AddEditRoomsPage() {
     }
   }
 
-  const handleEdit = (room: Room) => {
+  const handleEdit = (room: CampusRoom) => {
     setEditingRoom(room)
     setFormData({
-      room_code: room.room_code,
-      room_name: room.room_name || '',
-      building: room.building,
-      floor_number: room.floor_number,
-      capacity: room.capacity,
-      room_type: room.room_type,
-      has_ac: room.has_ac,
-      has_projector: room.has_projector,
-      has_whiteboard: room.has_whiteboard,
-      has_computers: room.has_computers,
-      has_lab_equipment: room.has_lab_equipment,
-      is_accessible: room.is_accessible,
+      campus: room.campus || '',
+      building: room.building || '',
+      room: room.room || '',
+      capacity: room.capacity || 30,
+      floor_number: room.floor_number || 1,
+      room_type: room.room_type || 'Classroom',
+      has_ac: room.has_ac || false,
+      has_projector: room.has_projector || false,
+      has_whiteboard: room.has_whiteboard ?? true,
+      is_pwd_accessible: room.is_pwd_accessible || false,
       notes: room.notes || ''
     })
     setShowAddModal(true)
@@ -171,14 +262,17 @@ export default function AddEditRoomsPage() {
     if (!confirm('Are you sure you want to delete this room?')) return
     
     try {
-      const { error } = await supabase
-        .from('rooms')
+      const { error } = await (supabase
+        .from('campuses') as any)
         .delete()
         .eq('id', id)
       
       if (error) throw error
       setSuccessMessage('Room deleted successfully!')
-      fetchRooms()
+      if (selectedGroup) {
+        fetchRooms(selectedGroup)
+        fetchCampusGroups()
+      }
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error deleting room:', error)
@@ -190,38 +284,49 @@ export default function AddEditRoomsPage() {
     setEditingRoom(null)
     setShowAddModal(false)
     setFormData({
-      room_code: '',
-      room_name: '',
+      campus: '',
       building: '',
+      room: '',
+      capacity: 30,
       floor_number: 1,
-      capacity: 40,
-      room_type: 'lecture',
+      room_type: 'Classroom',
       has_ac: false,
       has_projector: false,
       has_whiteboard: true,
-      has_computers: 0,
-      has_lab_equipment: false,
-      is_accessible: false,
+      is_pwd_accessible: false,
       notes: ''
     })
   }
 
-  const getRoomTypeIcon = (type: RoomType) => {
-    switch (type) {
-      case 'laboratory': return <Beaker className="w-4 h-4" />
-      case 'computer_lab': return <Computer className="w-4 h-4" />
-      default: return <DoorOpen className="w-4 h-4" />
-    }
+  // Group rooms by building
+  const getBuildingGroups = () => {
+    const groups = new Map<string, CampusRoom[]>()
+    const filteredRooms = rooms.filter(room => 
+      !searchTerm || 
+      room.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      room.building.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      room.campus.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    
+    filteredRooms.forEach(room => {
+      const key = `${room.campus}|||${room.building}`
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(room)
+    })
+    return groups
   }
 
-  const getRoomTypeClass = (type: RoomType) => {
-    switch (type) {
-      case 'laboratory': return styles.typeLaboratory
-      case 'computer_lab': return styles.typeComputerLab
-      case 'auditorium': return styles.typeAuditorium
-      default: return styles.typeLecture
+  const toggleBuilding = (key: string) => {
+    const newExpanded = new Set(expandedBuildings)
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key)
+    } else {
+      newExpanded.add(key)
     }
+    setExpandedBuildings(newExpanded)
   }
+
+  const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
 
   return (
     <div className={styles.pageContainer}>
@@ -234,172 +339,352 @@ export default function AddEditRoomsPage() {
       
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.contentWrapper}>
+          {/* Back Button */}
+          <button 
+            className={styles.backButton}
+            onClick={() => router.push('/LandingPages/Home')}
+          >
+            <ArrowLeft size={18} />
+            Back to Home
+          </button>
+
           {/* Header */}
           <div className={styles.headerCard}>
             <div className={styles.headerContent}>
               <div className={styles.headerInfo}>
                 <div className={styles.headerTitleRow}>
                   <div className={styles.headerIcon}>
-                    <PenSquare className="w-6 h-6" />
+                    <PenSquare size={24} />
                   </div>
                   <h1 className={styles.headerTitle}>Add / Edit Rooms</h1>
                 </div>
-                <p className={styles.headerSubtitle}>Manage classroom and laboratory information</p>
+                <p className={styles.headerSubtitle}>Manage room information from uploaded Campus/Building CSV files</p>
               </div>
-              <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
-                <Plus className="w-5 h-5" />
-                Add Room
-              </button>
             </div>
           </div>
 
           {/* Messages */}
           {successMessage && (
             <div className={styles.successMessage}>
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle size={20} />
               <span>{successMessage}</span>
             </div>
           )}
           
           {errorMessage && (
             <div className={styles.errorMessage}>
-              <AlertTriangle className="w-5 h-5" />
+              <AlertTriangle size={20} />
               <span>{errorMessage}</span>
+              <button onClick={() => setErrorMessage('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={16} />
+              </button>
             </div>
           )}
 
-          {/* Rooms Table */}
-          <div className={styles.tableCard}>
-            {loading ? (
-              <div className={styles.loadingState}>Loading rooms...</div>
-            ) : rooms.length === 0 ? (
-              <div className={styles.emptyState}>
-                <DoorOpen className={styles.emptyIcon} />
-                <h3 className={styles.emptyTitle}>No Rooms Added</h3>
-                <p className={styles.emptyText}>Start by adding your first room</p>
-                <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
-                  Add Room
-                </button>
+          {/* Campus Group Selection */}
+          {loading ? (
+            <div className={styles.loadingState}>
+              <div className={styles.spinner}></div>
+              <p>Loading campus data...</p>
+            </div>
+          ) : campusGroups.length === 0 ? (
+            <div className={styles.emptyState}>
+              <FileSpreadsheet size={64} />
+              <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
+              <p className={styles.emptyText}>Upload a Campus/Building CSV file first to manage rooms</p>
+              <button 
+                onClick={() => router.push('/LandingPages/UploadCSV')} 
+                className={styles.addButton}
+              >
+                <Plus size={20} />
+                Upload CSV
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Campus Group Cards */}
+              <div className={styles.sectionHeader}>
+                <h2>
+                  <University size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                  Select School/Campus File
+                </h2>
               </div>
-            ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.table}>
-                  <thead className={styles.tableHeader}>
-                    <tr>
-                      <th className={styles.tableHeaderCell}>Room</th>
-                      <th className={styles.tableHeaderCell}>Building</th>
-                      <th className={styles.tableHeaderCell}>Type</th>
-                      <th className={styles.tableHeaderCell}>Capacity</th>
-                      <th className={styles.tableHeaderCell}>Features</th>
-                      <th className={styles.tableHeaderCell}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className={styles.tableBody}>
-                    {rooms.map(room => (
-                      <tr key={room.id} className={styles.tableRow}>
-                        <td className={styles.tableCell}>
-                          <div className={styles.roomCode}>{room.room_code}</div>
-                          {room.room_name && <div className={styles.roomName}>{room.room_name}</div>}
-                        </td>
-                        <td className={styles.tableCell}>
-                          <div className={styles.buildingInfo}>
-                            <Building2 className={`w-4 h-4 ${styles.buildingIcon}`} />
-                            <span className={styles.buildingName}>{room.building}</span>
-                          </div>
-                          <div className={styles.floorNumber}>Floor {room.floor_number}</div>
-                        </td>
-                        <td className={styles.tableCell}>
-                          <span className={`${styles.roomTypeBadge} ${getRoomTypeClass(room.room_type)}`}>
-                            {getRoomTypeIcon(room.room_type)}
-                            {room.room_type.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className={styles.tableCell}>
-                          <div className={styles.capacityInfo}>
-                            <Users className={`w-4 h-4 ${styles.capacityIcon}`} />
-                            <span className={styles.capacityValue}>{room.capacity}</span>
-                          </div>
-                        </td>
-                        <td className={styles.tableCell}>
-                          <div className={styles.featuresRow}>
-                            {room.has_ac && <span className={`${styles.featureIcon} ${styles.featureAc}`} title="Air Conditioned"><Wind className="w-4 h-4" /></span>}
-                            {room.has_projector && <span className={`${styles.featureIcon} ${styles.featureProjector}`} title="Projector"><Projector className="w-4 h-4" /></span>}
-                            {room.has_computers > 0 && <span className={`${styles.featureIcon} ${styles.featureComputer}`} title={`${room.has_computers} Computers`}><Computer className="w-4 h-4" /></span>}
-                            {room.is_accessible && <span className={`${styles.featureIcon} ${styles.featureAccessible}`} title="Accessible"><Accessibility className="w-4 h-4" /></span>}
-                          </div>
-                        </td>
-                        <td className={styles.tableCell}>
-                          <div className={styles.actionsRow}>
-                            <button onClick={() => handleEdit(room)} className={`${styles.actionButton} ${styles.editButton}`}>
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDelete(room.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              
+              <div className={styles.campusGrid}>
+                {campusGroups.map(group => (
+                  <div 
+                    key={group.upload_group_id}
+                    className={`${styles.campusCard} ${selectedGroup === group.upload_group_id ? styles.selected : ''}`}
+                    onClick={() => handleSelectGroup(group.upload_group_id)}
+                  >
+                    <div className={styles.campusCardIcon}>
+                      <University size={32} />
+                    </div>
+                    <div className={styles.campusCardContent}>
+                      <h3>{group.school_name}</h3>
+                      <p className={styles.campusCardMeta}>
+                        <DoorOpen size={14} /> {group.room_count} rooms
+                      </p>
+                      <p className={styles.campusCardFile}>
+                        <FileSpreadsheet size={14} /> {group.file_name}
+                      </p>
+                      <p className={styles.campusCardDate}>
+                        <Calendar size={14} /> {new Date(group.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {selectedGroup === group.upload_group_id && (
+                      <div className={styles.selectedBadge}>
+                        <CheckCircle size={20} />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+
+              {/* Rooms Management Section */}
+              {selectedGroup && (
+                <div className={styles.roomsSection}>
+                  <div className={styles.roomsSectionHeader}>
+                    <div>
+                      <h2>
+                        <Building2 size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                        Rooms in {selectedGroupData?.school_name}
+                      </h2>
+                      <p className={styles.roomsSectionSubtitle}>
+                        {rooms.length} rooms total
+                      </p>
+                    </div>
+                    <div className={styles.roomsActions}>
+                      <div className={styles.searchWrapper}>
+                        <Search size={18} className={styles.searchIcon} />
+                        <input
+                          type="text"
+                          placeholder="Search rooms..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className={styles.searchInput}
+                        />
+                      </div>
+                      <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
+                        <Plus size={20} />
+                        Add Room
+                      </button>
+                    </div>
+                  </div>
+
+                  {loadingRooms ? (
+                    <div className={styles.loadingState}>
+                      <div className={styles.spinner}></div>
+                      <p>Loading rooms...</p>
+                    </div>
+                  ) : rooms.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <DoorOpen size={48} />
+                      <h3>No Rooms Found</h3>
+                      <p>Add rooms to this campus group</p>
+                    </div>
+                  ) : (
+                    <div className={styles.buildingsContainer}>
+                      {Array.from(getBuildingGroups().entries()).map(([key, buildingRooms]) => {
+                        const [campus, building] = key.split('|||')
+                        const isExpanded = expandedBuildings.has(key)
+                        const totalCapacity = buildingRooms.reduce((sum, r) => sum + r.capacity, 0)
+                        
+                        return (
+                          <div key={key} className={styles.buildingGroup}>
+                            <div 
+                              className={styles.buildingHeader}
+                              onClick={() => toggleBuilding(key)}
+                            >
+                              <div className={styles.buildingHeaderLeft}>
+                                {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                                <Hotel size={20} />
+                                <div>
+                                  <h3>{building}</h3>
+                                  <span className={styles.buildingCampus}>
+                                    <Landmark size={14} /> {campus}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={styles.buildingHeaderRight}>
+                                <span className={styles.roomBadge}>{buildingRooms.length} rooms</span>
+                                <span className={styles.capacityBadge}>
+                                  <Users size={14} /> {totalCapacity} seats
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className={styles.roomsTable}>
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th>Room</th>
+                                      <th>Floor</th>
+                                      <th>Capacity</th>
+                                      <th>Type</th>
+                                      <th>Features</th>
+                                      <th>Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {buildingRooms.map(room => (
+                                      <tr key={room.id}>
+                                        <td>
+                                          <div className={styles.roomCell}>
+                                            <DoorOpen size={16} />
+                                            <span>{room.room}</span>
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div className={styles.floorCell}>
+                                            <MapPin size={14} />
+                                            Floor {room.floor_number}
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div className={styles.capacityCell}>
+                                            <Users size={14} />
+                                            {room.capacity}
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <span className={styles.roomTypeBadge}>
+                                            {room.room_type || 'Classroom'}
+                                          </span>
+                                        </td>
+                                        <td>
+                                          <div className={styles.featuresCell}>
+                                            {room.has_ac && (
+                                              <span className={styles.featureIcon} title="Air Conditioned">
+                                                <Snowflake size={14} />
+                                              </span>
+                                            )}
+                                            {room.has_projector && (
+                                              <span className={styles.featureIcon} title="Projector">
+                                                <MonitorPlay size={14} />
+                                              </span>
+                                            )}
+                                            {room.is_pwd_accessible && (
+                                              <span className={styles.featureIcon} title="PWD Accessible">
+                                                <Accessibility size={14} />
+                                              </span>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td>
+                                          <div className={styles.actionsCell}>
+                                            <button 
+                                              onClick={() => handleEdit(room)}
+                                              className={styles.editBtn}
+                                              title="Edit Room"
+                                            >
+                                              <Edit2 size={16} />
+                                            </button>
+                                            <button 
+                                              onClick={() => handleDelete(room.id)}
+                                              className={styles.deleteBtn}
+                                              title="Delete Room"
+                                            >
+                                              <Trash2 size={16} />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
+        <div className={styles.modalOverlay} onClick={() => resetForm()}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 {editingRoom ? 'Edit Room' : 'Add New Room'}
               </h2>
               <button onClick={resetForm} className={styles.modalCloseButton}>
-                <X className="w-5 h-5" />
+                <X size={20} />
               </button>
             </div>
             
             <form onSubmit={handleSubmit} className={styles.modalBody}>
-              <div className={`${styles.formGrid} ${styles.formGrid2}`}>
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Room Code *</label>
+                  <label className={styles.formLabel}>
+                    <Landmark size={16} /> Campus *
+                  </label>
                   <input
                     type="text"
-                    value={formData.room_code}
-                    onChange={e => setFormData(prev => ({ ...prev, room_code: e.target.value }))}
+                    value={formData.campus}
+                    onChange={e => setFormData(prev => ({ ...prev, campus: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., FH-201"
+                    placeholder="e.g., Main Campus"
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Room Name</label>
-                  <input
-                    type="text"
-                    value={formData.room_name}
-                    onChange={e => setFormData(prev => ({ ...prev, room_name: e.target.value }))}
-                    className={styles.formInput}
-                    placeholder="e.g., Computer Lab 1"
-                  />
-                </div>
-              </div>
-
-              <div className={`${styles.formGrid} ${styles.formGrid3}`}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Building *</label>
+                  <label className={styles.formLabel}>
+                    <Hotel size={16} /> Building *
+                  </label>
                   <input
                     type="text"
                     value={formData.building}
                     onChange={e => setFormData(prev => ({ ...prev, building: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., Fleming Hall"
+                    placeholder="e.g., Engineering Building"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    <DoorOpen size={16} /> Room *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.room}
+                    onChange={e => setFormData(prev => ({ ...prev, room: e.target.value }))}
+                    required
+                    className={styles.formInput}
+                    placeholder="e.g., 101 or Lab-A"
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Floor</label>
+                  <label className={styles.formLabel}>
+                    <Users size={16} /> Capacity *
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.capacity}
+                    onChange={e => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 30 }))}
+                    required
+                    min="1"
+                    className={styles.formInput}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    <MapPin size={16} /> Floor Number
+                  </label>
                   <input
                     type="number"
                     value={formData.floor_number}
@@ -409,68 +694,62 @@ export default function AddEditRoomsPage() {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Capacity *</label>
-                  <input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={e => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                    required
-                    min="1"
-                    className={styles.formInput}
-                  />
-                </div>
-              </div>
-
-              <div className={`${styles.formGrid} ${styles.formGrid2}`}>
-                <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Room Type</label>
                   <select
                     value={formData.room_type}
-                    onChange={e => setFormData(prev => ({ ...prev, room_type: e.target.value as RoomType }))}
+                    onChange={e => setFormData(prev => ({ ...prev, room_type: e.target.value }))}
                     className={styles.formSelect}
                   >
-                    <option value="lecture">Lecture Room</option>
-                    <option value="laboratory">Laboratory</option>
-                    <option value="computer_lab">Computer Lab</option>
-                    <option value="drawing_room">Drawing Room</option>
-                    <option value="auditorium">Auditorium</option>
-                    <option value="conference">Conference Room</option>
-                    <option value="other">Other</option>
+                    <option value="Classroom">Classroom</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Computer Lab">Computer Lab</option>
+                    <option value="Lecture Hall">Lecture Hall</option>
+                    <option value="Conference Room">Conference Room</option>
+                    <option value="Auditorium">Auditorium</option>
+                    <option value="Other">Other</option>
                   </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Number of Computers</label>
-                  <input
-                    type="number"
-                    value={formData.has_computers}
-                    onChange={e => setFormData(prev => ({ ...prev, has_computers: parseInt(e.target.value) || 0 }))}
-                    min="0"
-                    className={styles.formInput}
-                  />
                 </div>
               </div>
 
               <div className={styles.formGroup}>
                 <label className={styles.featuresLabel}>Room Features</label>
                 <div className={styles.featuresGrid}>
-                  {[
-                    { key: 'has_ac', label: 'Air Conditioned', icon: Wind },
-                    { key: 'has_projector', label: 'Projector', icon: Projector },
-                    { key: 'has_whiteboard', label: 'Whiteboard', icon: PenSquare },
-                    { key: 'has_lab_equipment', label: 'Lab Equipment', icon: Beaker },
-                    { key: 'is_accessible', label: 'Accessible', icon: Accessibility },
-                  ].map(({ key, label, icon: Icon }) => (
-                    <label key={key} className={styles.featureCheckbox}>
-                      <input
-                        type="checkbox"
-                        checked={formData[key as keyof typeof formData] as boolean}
-                        onChange={e => setFormData(prev => ({ ...prev, [key]: e.target.checked }))}
-                        className={styles.featureCheckboxInput}
-                      />
-                      <Icon className="w-4 h-4" />
-                      <span className={styles.featureCheckboxLabel}>{label}</span>
-                    </label>
-                  ))}
+                  <label className={styles.featureCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.has_ac}
+                      onChange={e => setFormData(prev => ({ ...prev, has_ac: e.target.checked }))}
+                    />
+                    <Snowflake size={16} />
+                    <span>Air Conditioned</span>
+                  </label>
+                  <label className={styles.featureCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.has_projector}
+                      onChange={e => setFormData(prev => ({ ...prev, has_projector: e.target.checked }))}
+                    />
+                    <MonitorPlay size={16} />
+                    <span>Projector</span>
+                  </label>
+                  <label className={styles.featureCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.has_whiteboard}
+                      onChange={e => setFormData(prev => ({ ...prev, has_whiteboard: e.target.checked }))}
+                    />
+                    <PenSquare size={16} />
+                    <span>Whiteboard</span>
+                  </label>
+                  <label className={styles.featureCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.is_pwd_accessible}
+                      onChange={e => setFormData(prev => ({ ...prev, is_pwd_accessible: e.target.checked }))}
+                    />
+                    <Accessibility size={16} />
+                    <span>PWD Accessible</span>
+                  </label>
                 </div>
               </div>
 
@@ -490,7 +769,7 @@ export default function AddEditRoomsPage() {
                   Cancel
                 </button>
                 <button type="submit" className={styles.saveButton}>
-                  <Save className="w-4 h-4" />
+                  <Save size={18} />
                   {editingRoom ? 'Update Room' : 'Add Room'}
                 </button>
               </div>

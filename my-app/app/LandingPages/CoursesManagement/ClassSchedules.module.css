@@ -1,0 +1,919 @@
+/* ==================== Layout ==================== */
+.pageLayout {
+  min-height: 100vh;
+  background: var(--bg-white, #ffffff);
+}
+
+.pageMain {
+  margin-left: 240px;
+  margin-top: 70px;
+  padding: 30px;
+  transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 70px);
+  background: var(--bg-white, #ffffff);
+}
+
+.pageMain.fullWidth {
+  margin-left: 0;
+}
+
+.pageContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ==================== Header Section ==================== */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: var(--bg-white, #ffffff);
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.backButton {
+  padding: 10px 20px;
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.25);
+}
+
+.backButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(26, 54, 93, 0.35);
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pageTitle svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: var(--text-medium, #718096);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ==================== Welcome Section ==================== */
+.welcomeSection {
+  text-align: center;
+  margin-bottom: 30px;
+  background: var(--bg-white, #ffffff);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.welcomeTitle {
+  font-size: 36px;
+  font-weight: 800;
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.welcomeSubtitle {
+  color: var(--text-medium, #718096);
+  font-size: 16px;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ==================== Search Section ==================== */
+.searchSection {
+  margin-bottom: 24px;
+}
+
+.searchBox {
+  position: relative;
+  max-width: 500px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 14px 20px;
+  padding-left: 48px;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  background: var(--bg-white, #ffffff);
+  color: var(--text-dark, #1a202c);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-medium, #2c5282);
+  box-shadow: 0 0 0 4px rgba(44, 82, 130, 0.1);
+}
+
+.searchInput::placeholder {
+  color: var(--text-light, #a0aec0);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light, #a0aec0);
+  font-size: 18px;
+}
+
+/* ==================== Stats Grid ==================== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statCard {
+  background: var(--bg-white, #ffffff);
+  padding: 20px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border-left: 4px solid;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.statCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.statCard.blue { border-left: 4px solid #3182ce; }
+.statCard.green { border-left: 4px solid #38a169; }
+.statCard.purple { border-left: 4px solid #805ad5; }
+.statCard.orange { border-left: 4px solid #dd6b20; }
+.statCard.teal { border-left: 4px solid #319795; }
+.statCard.red { border-left: 4px solid #e53e3e; }
+
+.statIcon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.statCard.blue .statIcon { color: #3182ce; }
+.statCard.green .statIcon { color: #38a169; }
+.statCard.purple .statIcon { color: #805ad5; }
+.statCard.orange .statIcon { color: #dd6b20; }
+.statCard.teal .statIcon { color: #319795; }
+.statCard.red .statIcon { color: #e53e3e; }
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-medium, #718096);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  line-height: 1;
+}
+
+/* ==================== Schedules Grid ==================== */
+.schedulesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.scheduleCard {
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.scheduleCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.scheduleCard.loadingCard {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.scheduleCardHeader {
+  padding: 20px 24px;
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  color: white;
+}
+
+.scheduleEventName {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scheduleType {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.scheduleCardBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.scheduleInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-dark, #1a202c);
+  font-weight: 500;
+}
+
+.scheduleInfo svg {
+  color: var(--primary-medium, #2c5282);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.scheduleInfo.warning {
+  color: #c05621;
+}
+
+.scheduleInfo.warning svg {
+  color: #dd6b20;
+}
+
+.scheduleCardFooter {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-gray-50, #f7fafc);
+}
+
+.viewButton {
+  width: 100%;
+  padding: 12px 20px;
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.viewButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+}
+
+.viewButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.buttonSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ==================== Campus View ==================== */
+.campusView {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.campusSection {
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.campusHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-gray-50, #f7fafc);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+}
+
+.campusHeaderRow:hover {
+  background: var(--bg-gray-100, #edf2f7);
+}
+
+.campusHeaderRow svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+.toggleBtn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-medium, #718096);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== Building Section ==================== */
+.buildingCard {
+  background: var(--bg-white, #ffffff);
+  border-radius: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.buildingHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-gray-50, #f7fafc);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark, #1a202c);
+}
+
+.buildingHeaderRow:hover {
+  background: var(--bg-gray-100, #edf2f7);
+}
+
+.buildingName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buildingName svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+.roomCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-medium, #2c5282);
+  background: rgba(44, 82, 130, 0.1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-left: auto;
+}
+
+/* ==================== Rooms Grid ==================== */
+.roomsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.roomCard {
+  background: var(--bg-white, #ffffff);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.roomCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-medium, #2c5282);
+}
+
+.roomHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.roomNumber {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.utilizationBadge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.utilizationBadge.high {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.utilizationBadge.medium {
+  background: #feebc8;
+  color: #c05621;
+}
+
+.utilizationBadge.low {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.roomBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.roomStat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-medium, #718096);
+}
+
+.roomStat svg {
+  color: var(--primary-medium, #2c5282);
+  font-size: 14px;
+}
+
+.pwdIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #c6f6d5;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #276749;
+}
+
+/* ==================== Room Detail View ==================== */
+.roomView {
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.roomInfoCard {
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.infoRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.infoLabel {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoValue {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  margin: 24px 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionTitle svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+/* ==================== Batches Timeline ==================== */
+.batchesTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.batchCard {
+  background: var(--bg-gray-50, #f7fafc);
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--primary-medium, #2c5282);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.batchCard:hover {
+  background: var(--bg-gray-100, #edf2f7);
+  transform: translateX(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.batchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.batchName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+}
+
+.pwdBadge {
+  padding: 4px 10px;
+  background: #38a169;
+  color: white;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.batchTime {
+  font-size: 13px;
+  color: var(--text-medium, #718096);
+  margin-bottom: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.batchTime svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+.batchStats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.batchStat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #1a202c);
+}
+
+.batchStat svg {
+  color: var(--primary-medium, #2c5282);
+}
+
+.batchUtilization {
+  flex: 1;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  transition: width 0.3s ease;
+}
+
+/* ==================== Batch Detail View ==================== */
+.batchView {
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.batchInfoCard {
+  background: var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%));
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+/* ==================== Seating Grid ==================== */
+.seatingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.seatCard {
+  background: var(--bg-gray-50, #f7fafc);
+  border-radius: 10px;
+  padding: 14px;
+  border: 2px solid var(--border-color, #e2e8f0);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.seatCard:hover {
+  border-color: var(--primary-medium, #2c5282);
+  transform: translateY(-2px);
+}
+
+.seatCard.pwdSeat {
+  background: #c6f6d5;
+  border-color: #38a169;
+}
+
+.seatNumber {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-medium, #2c5282);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.seatCard.pwdSeat .seatNumber {
+  color: #276749;
+}
+
+.seatInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.participantName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark, #1a202c);
+}
+
+.participantNumber {
+  font-size: 12px;
+  color: var(--text-medium, #718096);
+}
+
+.seatPwdBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #38a169;
+  font-size: 16px;
+}
+
+/* ==================== Loading & Empty States ==================== */
+.loadingState {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(44, 82, 130, 0.1);
+  border-top-color: var(--primary-medium, #2c5282);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingState p {
+  color: var(--text-medium, #718096);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.emptyState svg {
+  color: var(--text-light, #a0aec0);
+  margin-bottom: 16px;
+}
+
+.emptyState h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  margin: 0 0 8px 0;
+}
+
+.emptyState p {
+  color: var(--text-medium, #718096);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 1024px) {
+  .pageMain {
+    margin-left: 0;
+    padding: 20px;
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .schedulesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .headerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .pageTitle {
+    font-size: 22px;
+  }
+  
+  .welcomeSection {
+    padding: 24px;
+  }
+  
+  .welcomeTitle {
+    font-size: 28px;
+  }
+  
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .roomsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .infoRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .seatingGrid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .pageMain {
+    padding: 16px;
+  }
+  
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .statCard {
+    padding: 14px;
+  }
+  
+  .statValue {
+    font-size: 22px;
+  }
+  
+  .infoRow {
+    grid-template-columns: 1fr;
+  }
+}
