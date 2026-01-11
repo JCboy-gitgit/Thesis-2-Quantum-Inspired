@@ -363,7 +363,9 @@ function FacultyListsContent() {
         status: 'active',
         office_location: ''
       })
-      fetchFacultyData()
+      if (selectedFile) {
+        fetchFacultyData(selectedFile.upload_group_id)
+      }
       
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
