@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.FASTAPI_BACKEND_URL || 'http://localhost:8000';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+
   try {
-    const scheduleId = params.id;
+    const scheduleId = id;
     
     const response = await fetch(`${BACKEND_URL}/api/schedules/${scheduleId}`, {
       headers: {
