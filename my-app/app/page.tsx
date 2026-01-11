@@ -26,7 +26,7 @@ export default function Page(): JSX.Element {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [registerSuccess, setRegisterSuccess] = useState(false)
 
-  // Only allow admin login (example: admin@university.edu)
+  // Only allow admin login 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
   const [isAdminLogin, setIsAdminLogin] = useState(false)
 
