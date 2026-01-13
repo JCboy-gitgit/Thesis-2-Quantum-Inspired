@@ -187,3 +187,41 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background 0.3s ease, color 0.3s ease;
 }
+/* ==================== Scrollbar Styling ==================== */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-alpha) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--primary-alpha);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-medium);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* Ensure scrollbar is always visible */
+*::-webkit-scrollbar-thumb:vertical,
+*::-webkit-scrollbar-thumb:horizontal {
+  min-height: 40px;
+  min-width: 40px;
+}

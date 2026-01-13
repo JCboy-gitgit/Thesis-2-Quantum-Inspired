@@ -317,6 +317,32 @@ function ClassSchedulesContent() {
     return [...new Set(classSchedules.map(s => s.department).filter(Boolean))]
   }
 
+  // Format time from 24-hour to 12-hour AM/PM format
+  const formatTimeToAMPM = (time24: string): string => {
+    if (!time24) return time24
+    
+    // Handle time ranges like "10:00-11:30" or "13:00-14:30"
+    if (time24.includes('-')) {
+      const [start, end] = time24.split('-')
+      return `${convertTo12Hour(start.trim())} - ${convertTo12Hour(end.trim())}`
+    }
+    
+    return convertTo12Hour(time24)
+  }
+
+  const convertTo12Hour = (time: string): string => {
+    const [hourStr, minuteStr] = time.split(':')
+    let hour = parseInt(hourStr)
+    const minute = minuteStr || '00'
+    
+    if (isNaN(hour)) return time
+    
+    const period = hour >= 12 ? 'PM' : 'AM'
+    hour = hour % 12 || 12 // Convert 0 to 12 for midnight, keep 12 for noon
+    
+    return `${hour}:${minute} ${period}`
+  }
+
   // Group schedules by department
   const getSchedulesByDepartment = () => {
     const grouped = new Map<string, ClassSchedule[]>()
@@ -975,7 +1001,7 @@ function ClassSchedulesContent() {
                                         fontSize: '10px',
                                         color: 'var(--text-medium, #718096)'
                                       }}>
-                                        {schedule.schedule_time}
+                                        {formatTimeToAMPM(schedule.schedule_time)}
                                       </span>
                                     )}
                                   </>
