@@ -5,59 +5,65 @@
 /* Green Theme (Default - College of Science) */
 :root,
 [data-theme="green"] {
-  /* Primary Colors - More vibrant */
-  --primary: #00d96f;
-  --primary-dark: #00a651;
-  --primary-light: #5dffa7;
-  --primary-alpha: rgba(0, 217, 111, 0.18);
-  --primary-medium: #00bf5f;
-  --primary-gradient: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  /* Primary Colors - Vibrant green */
+  --primary: #22c55e;
+  --primary-dark: #16a34a;
+  --primary-light: #4ade80;
+  --primary-alpha: rgba(34, 197, 94, 0.15);
+  --primary-medium: #22c55e;
+  --primary-gradient: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
   
-  /* Background Colors - Rich and deep */
-  --background: #001a0f;
-  --foreground: #ffffff;
-  --dark-bg: #001a0f;
-  --card-bg: rgba(0, 77, 38, 0.95);
-  --card-border: rgba(0, 217, 111, 0.35);
-  --bg-white: #ffffff;
-  --bg-gray-50: #f8fafc;
-  --bg-gray-100: #f1f5f9;
+  /* Background Colors - Consistent dark green */
+  --background: #00331a;
+  --foreground: #d1fae5;
+  --dark-bg: #00331a;
+  --card-bg: rgba(0, 77, 38, 0.8);
+  --card-border: rgba(34, 197, 94, 0.3);
+  --bg-white: #004d26;
+  --bg-gray-50: #00331a;
+  --bg-gray-100: #004d26;
   
-  /* Text Colors - High contrast */
-  --text-primary: #ffffff;
-  --text-secondary: #b3ffdb;
-  --text-dark: #1e293b;
-  --text-medium: #475569;
-  --text-light: #64748b;
+  /* Text Colors - Light and readable */
+  --text-primary: #d1fae5;
+  --text-secondary: #a7f3d0;
+  --text-dark: #d1fae5;
+  --text-medium: #a7f3d0;
+  --text-light: #86efac;
   /* Content text for cards */
-  --content-text: #1e293b;
-  --content-text-secondary: #475569;
+  --content-text: #d1fae5;
+  --content-text-secondary: #a7f3d0;
   
-  /* Accent Colors - Vibrant */
-  --secondary: #ffd700;
-  --success: #10b981;
-  --error: #ff4d6d;
-  --warning-orange: #ffa500;
-  --warning-bg: #fff8e1;
-  --danger-red: #ff4d6d;
-  --info-blue: #00bfff;
-  --info-bg: #e0f7ff;
-  --accent-teal: #00e5cc;
-  --success-green: #10b981;
+  /* Form Inputs */
+  --input-bg: #ffffff;
+  --input-text: #1a202c;
+  --input-border: #e2e8f0;
+  --label-color: #718096;
+  
+  /* Accent Colors - Vibrant and visible */
+  --secondary: #fbbf24;
+  --success: #22c55e;
+  --error: #f87171;
+  --warning-orange: #fb923c;
+  --warning-bg: rgba(251, 191, 36, 0.15);
+  --danger-red: #f87171;
+  --info-blue: #60a5fa;
+  --info-bg: rgba(96, 165, 250, 0.15);
+  --accent-teal: #5eead4;
+  --success-green: #22c55e;
   
   /* Sidebar */
-  --submenu-bg: rgba(0, 0, 0, 0.2);
-  --sidebar-text: #b3ffdb;
+  --submenu-bg: rgba(0, 0, 0, 0.3);
+  --sidebar-text: #a7f3d0;
   
-  /* Effects - Enhanced glow */
-  --glow-color: rgba(0, 217, 111, 0.6);
-  --accent-gradient: linear-gradient(135deg, #ffd700, #00d96f, #5dffa7);
+  /* Effects */
+  --glow-color: rgba(34, 197, 94, 0.5);
+  --accent-gradient: linear-gradient(135deg, #22c55e, #4ade80);
   --gradient-start: #001a0f;
   --gradient-mid: #004d26;
   --gradient-end: #00331a;
-  --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --border-color: rgba(34, 197, 94, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Dark Theme (Quantum Inspired) */
@@ -89,6 +95,12 @@
   /* Content text for cards - always readable on card backgrounds */
   --content-text: #ffffff;
   --content-text-secondary: #a0aec0;
+  
+  /* Form Inputs */
+  --input-bg: #1a1f3a;
+  --input-text: #ffffff;
+  --input-border: rgba(0, 212, 255, 0.2);
+  --label-color: #a0aec0;
   
   /* Accent Colors */
   --secondary: #ffd700;
@@ -147,6 +159,12 @@
   --content-text: #1e293b;
   --content-text-secondary: #475569;
   
+  /* Form Inputs */
+  --input-bg: #ffffff;
+  --input-text: #1a202c;
+  --input-border: #e2e8f0;
+  --label-color: #4a5568;
+  
   /* Accent Colors */
   --secondary: #f59e0b;
   --success: #10b981;
@@ -181,47 +199,99 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ==================== Base Styles ==================== */
+html {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  height: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   transition: background 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
+
 /* ==================== Scrollbar Styling ==================== */
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--primary-alpha) transparent;
+  scrollbar-color: rgba(99, 102, 241, 0.4) rgba(99, 102, 241, 0.1);
+}
+
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.4) rgba(99, 102, 241, 0.1);
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
 *::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
 }
 
 *::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 10px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: rgba(99, 102, 241, 0.05);
   border-radius: 10px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--primary-alpha);
+  background: rgba(99, 102, 241, 0.4);
   border-radius: 10px;
   border: 3px solid transparent;
-  background-clip: content-box;
+  background-clip: padding-box;
+  min-height: 50px;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  min-height: 50px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-medium);
-  background-clip: content-box;
+  background: rgba(99, 102, 241, 0.7);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+  background-clip: padding-box;
   border: 2px solid transparent;
 }
 
 /* Ensure scrollbar is always visible */
 *::-webkit-scrollbar-thumb:vertical,
 *::-webkit-scrollbar-thumb:horizontal {
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 50px;
+  min-width: 50px;
+}
+
+/* Force scrollbar to always show on main scrollable elements */
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  display: block !important;
 }

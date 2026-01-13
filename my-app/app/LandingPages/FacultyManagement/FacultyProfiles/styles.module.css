@@ -1,62 +1,31 @@
-/* ==================== Green Theme Enhancements ==================== */
-[data-theme="green"] .profileLayout {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+/* ==================== Green Theme Overrides ==================== */
+[data-theme="green"] .pyramidCard {
+  background: rgba(0, 77, 38, 0.6);
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
-[data-theme="green"] .profileCard,
-[data-theme="green"] .infoCard {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+[data-theme="green"] .pyramidCard:hover {
+  background: rgba(0, 77, 38, 0.8);
+  border-color: rgba(34, 197, 94, 0.5);
 }
 
-[data-theme="green"] .detailsCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+[data-theme="green"] .pyramidCard.selected {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: var(--primary);
 }
 
-[data-theme="green"] .detailsCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+[data-theme="green"] .quickNavItem {
+  background: rgba(0, 77, 38, 0.5);
 }
 
-[data-theme="green"] .editButton,
-[data-theme="green"] .saveButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+[data-theme="green"] .quickNavItem:hover {
+  background: rgba(0, 77, 38, 0.7);
 }
 
-[data-theme="green"] .editButton:hover,
-[data-theme="green"] .saveButton:hover {
-  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
-  transform: translateY(-2px);
+[data-theme="green"] .quickNavItem.activeNav {
+  background: rgba(34, 197, 94, 0.2);
 }
 
-[data-theme="green"] .profileCard,
-[data-theme="green"] .infoCard,
-[data-theme="green"] .detailsCard,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .name {
-  color: #ffffff;
-}
-
-[data-theme="green"] .bio,
-[data-theme="green"] .contact,
-[data-theme="green"] .details {
-  color: #b3ffdb !important;
-}
-
-[data-theme="green"] .icon {
-  color: #5dffa7;
-}
-
-[data-theme="green"] .label,
-[data-theme="green"] .input {
-  color: #ffffff;
-}
 /* ==================== Faculty Profiles Page Styles ==================== */
 
 /* ==================== Layout ==================== */

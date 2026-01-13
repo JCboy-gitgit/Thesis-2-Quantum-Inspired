@@ -1,5 +1,5 @@
-/* Root Variables */
-:root {
+/* Root Variables - Login Page Specific (Not affected by global themes) */
+.login-page {
   --primary: #00d4ff;
   --primary-dark: #0099cc;
   --secondary: #ffd700;

@@ -343,6 +343,20 @@ function ClassSchedulesContent() {
     return `${hour}:${minute} ${period}`
   }
 
+  // Format hours to "Xh Ymins" format
+  const formatHours = (totalHours: number): string => {
+    if (!totalHours || totalHours === 0) return '0h'
+    
+    const hours = Math.floor(totalHours)
+    const minutes = Math.round((totalHours - hours) * 60)
+    
+    if (minutes === 0) {
+      return `${hours}h`
+    }
+    
+    return `${hours}h ${minutes}mins`
+  }
+
   // Group schedules by department
   const getSchedulesByDepartment = () => {
     const grouped = new Map<string, ClassSchedule[]>()
@@ -985,7 +999,7 @@ function ClassSchedulesContent() {
                                 fontSize: '12px',
                                 color: 'var(--text-medium, #718096)'
                               }}>
-                                {(schedule.lec_hours || 0) + (schedule.lab_hours || 0)}h
+                                {formatHours((schedule.lec_hours || 0) + (schedule.lab_hours || 0))}
                               </span>
                               <span style={{ 
                                 fontSize: '11px',
@@ -1001,7 +1015,7 @@ function ClassSchedulesContent() {
                                         fontSize: '10px',
                                         color: 'var(--text-medium, #718096)'
                                       }}>
-                                        {formatTimeToAMPM(schedule.schedule_time)}
+                                        {schedule.schedule_time}
                                       </span>
                                     )}
                                   </>
@@ -1136,22 +1150,22 @@ function ClassSchedulesContent() {
           padding: '20px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--card-bg)',
             borderRadius: '16px',
             width: '100%',
             maxWidth: '700px',
             maxHeight: '90vh',
             overflow: 'auto',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+            boxShadow: 'var(--shadow-md)'
           }}>
             {/* Modal Header */}
             <div style={{
               padding: '20px 24px',
-              borderBottom: '1px solid #e2e8f0',
+              borderBottom: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 100%)',
+              background: 'var(--primary-gradient)',
               color: 'white',
               borderRadius: '16px 16px 0 0'
             }}>
@@ -1181,7 +1195,7 @@ function ClassSchedulesContent() {
               {/* Course Info Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Course Code *
                   </label>
                   <input
@@ -1192,15 +1206,17 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
                       fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)',
                       transition: 'border-color 0.2s'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Course Name *
                   </label>
                   <input
@@ -1211,9 +1227,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
@@ -1222,7 +1240,7 @@ function ClassSchedulesContent() {
               {/* Section & Units Row */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Section
                   </label>
                   <input
@@ -1233,14 +1251,16 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Lec Units
                   </label>
                   <input
@@ -1251,14 +1271,16 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Lab Units
                   </label>
                   <input
@@ -1269,14 +1291,16 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Credit Units
                   </label>
                   <input
@@ -1287,9 +1311,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
@@ -1298,40 +1324,48 @@ function ClassSchedulesContent() {
               {/* Hours Row */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     <FaClock style={{ marginRight: '6px' }} />
                     Lecture Hours
                   </label>
                   <input
                     type="number"
                     value={formData.lec_hours}
-                    onChange={(e) => handleInputChange('lec_hours', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('lec_hours', parseFloat(e.target.value) || 0)}
                     min="0"
+                    step="0.25"
+                    placeholder="e.g., 1.5 (1h 30mins)"
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     <FaClock style={{ marginRight: '6px' }} />
                     Lab Hours
                   </label>
                   <input
                     type="number"
                     value={formData.lab_hours}
-                    onChange={(e) => handleInputChange('lab_hours', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('lab_hours', parseFloat(e.target.value) || 0)}
                     min="0"
+                    step="0.25"
+                    placeholder="e.g., 2.5 (2h 30mins)"
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
@@ -1340,7 +1374,7 @@ function ClassSchedulesContent() {
               {/* Schedule Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     <FaCalendar style={{ marginRight: '6px' }} />
                     Schedule Day
                   </label>
@@ -1350,10 +1384,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
                       fontSize: '14px',
-                      background: 'white',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)',
                       cursor: 'pointer'
                     }}
                   >
@@ -1363,7 +1398,7 @@ function ClassSchedulesContent() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Schedule Time
                   </label>
                   <select
@@ -1372,10 +1407,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
                       fontSize: '14px',
-                      background: 'white',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)',
                       cursor: 'pointer'
                     }}
                   >
@@ -1390,7 +1426,7 @@ function ClassSchedulesContent() {
               {/* Semester & Year Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Semester
                   </label>
                   <select
@@ -1399,10 +1435,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
                       fontSize: '14px',
-                      background: 'white',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)',
                       cursor: 'pointer'
                     }}
                   >
@@ -1412,7 +1449,7 @@ function ClassSchedulesContent() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Academic Year
                   </label>
                   <input
@@ -1423,9 +1460,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
@@ -1434,7 +1473,7 @@ function ClassSchedulesContent() {
               {/* Department & College Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     <FaGraduationCap style={{ marginRight: '6px' }} />
                     Department
                   </label>
@@ -1446,14 +1485,16 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     <FaBuilding style={{ marginRight: '6px' }} />
                     College
                   </label>
@@ -1465,9 +1506,11 @@ function ClassSchedulesContent() {
                     style={{
                       width: '100%',
                       padding: '12px 14px',
-                      border: '2px solid #e2e8f0',
+                      border: '2px solid var(--input-border)',
                       borderRadius: '10px',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
                     }}
                   />
                 </div>
@@ -1475,7 +1518,7 @@ function ClassSchedulesContent() {
 
               {/* Status Row */}
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: '#4a5568' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                   Status
                 </label>
                 <select
@@ -1484,10 +1527,11 @@ function ClassSchedulesContent() {
                   style={{
                     width: '100%',
                     padding: '12px 14px',
-                    border: '2px solid #e2e8f0',
+                    border: '2px solid var(--input-border)',
                     borderRadius: '10px',
                     fontSize: '14px',
-                    background: 'white',
+                    color: 'var(--input-text)',
+                    background: 'var(--input-bg)',
                     cursor: 'pointer'
                   }}
                 >
@@ -1503,8 +1547,8 @@ function ClassSchedulesContent() {
                   onClick={closeModal}
                   style={{
                     padding: '12px 24px',
-                    background: '#e2e8f0',
-                    color: '#4a5568',
+                    background: 'var(--bg-gray-100)',
+                    color: 'var(--text-secondary)',
                     border: 'none',
                     borderRadius: '10px',
                     fontWeight: 600,
@@ -1519,7 +1563,7 @@ function ClassSchedulesContent() {
                   disabled={saving}
                   style={{
                     padding: '12px 24px',
-                    background: saving ? '#a0aec0' : 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                    background: saving ? 'var(--bg-gray-100)' : 'var(--primary-gradient)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '10px',
@@ -1529,7 +1573,7 @@ function ClassSchedulesContent() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)'
+                    boxShadow: saving ? 'none' : 'var(--shadow-sm)'
                   }}
                 >
                   <FaSave />
