@@ -438,6 +438,16 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
+                        <label>Min Students per Section</label>
+                        <input type="number" id="minStudents" value="20" min="5" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Students per Section</label>
+                        <input type="number" id="maxStudents" value="50" min="10" max="200">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
                         <label>Semester</label>
                         <select id="semester">
                             <option value="1st Semester">1st Semester</option>
@@ -475,6 +485,8 @@
                                     <th>College</th>
                                     <th>Course/Program</th>
                                     <th>Section</th>
+                                    <th>Year</th>
+                                    <th>Students</th>
                                     <th>Schedule</th>
                                 </tr>
                             </thead>
@@ -563,7 +575,7 @@
                 <strong>📋 CSV Format (Comma-separated):</strong><br><br>
                 <strong>Rooms:</strong> campus, building, room, capacity, is_first_floor, floor_number, room_type, has_ac, has_projector, has_whiteboard, is_pwd_accessible, status<br>
                 <em style="color: var(--text-secondary); font-size: 0.85rem;">💡 Campus is locked to "Main Campus"</em><br><br>
-                <strong>Classes:</strong> course_code, course_name, section, lec_units, lab_units, credit_units, lec_hours, lab_hours, schedule_day, schedule_time, semester, academic_year, department, college, status<br>
+                <strong>Classes:</strong> course_code, course_name, section, year_level, student_count, lec_units, lab_units, credit_units, lec_hours, lab_hours, schedule_day, schedule_time, semester, academic_year, department, college, status<br>
                 <em style="color: var(--text-secondary); font-size: 0.85rem;">💡 "Department" field contains the specific Program Name (e.g. BS Civil Engineering)</em><br><br>
                 <strong>Teachers:</strong> teacher_id, teacher_name, schedule_day, schedule_time, department, email, college
             </div>
@@ -780,7 +792,7 @@
         const firstNames = ['Juan', 'Maria', 'Jose', 'Ana', 'Miguel', 'Sofia', 'Carlos', 'Isabella', 'Antonio', 'Gabriela', 'Luis', 'Carmen', 'Francisco', 'Patricia', 'Rafael', 'Elena', 'Diego', 'Rosa', 'Manuel', 'Teresa', 'Pedro', 'Laura', 'Fernando', 'Lucia', 'Ricardo', 'Angela', 'Alberto', 'Beatriz', 'Eduardo', 'Clara'];
         const lastNames = ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Torres', 'Ramos', 'Flores', 'Rivera', 'Martinez', 'Lopez', 'Gonzales', 'Hernandez', 'Perez', 'Sanchez', 'Ramirez', 'Diaz', 'Morales', 'Jimenez', 'Ruiz', 'Vargas', 'Castillo', 'Mendoza', 'Romero', 'Aquino', 'Dela Cruz', 'Villanueva', 'Bautista', 'Navarro', 'Fernandez', 'Castro'];
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const timeSlots = ['7:00-8:30', '8:30-10:00', '10:00-11:30', '11:30-13:00', '13:00-14:30', '14:30-16:00', '16:00-17:30', '17:30-19:00', '19:00-20:30'];
+        const timeSlots = ['7:00-10:00', '10:00-13:00', '13:00-16:00', '16:00-19:00'];
         
         // ==================== Utility Functions ====================
         function random(min, max) {
@@ -890,6 +902,8 @@
         function generateClassSchedules() {
             const numClasses = parseInt(document.getElementById('numClasses').value);
             const sectionsPerCourse = parseInt(document.getElementById('sectionsPerCourse').value);
+            const minStudents = parseInt(document.getElementById('minStudents').value) || 20;
+            const maxStudents = parseInt(document.getElementById('maxStudents').value) || 50;
             const semester = document.getElementById('semester').value;
             const academicYear = document.getElementById('academicYear').value;
             const focus = document.getElementById('departmentFocus').value;
@@ -921,9 +935,9 @@
                 const subjectNum = random(1, 99);
                 const courseCode = `${prefix}${yearLevel}${String(subjectNum).padStart(2, '0')}`;
                 
-                // Units
-                const lec = random(2, 3);
-                const lab = Math.random() > 0.6 ? 1 : 0; // 40% chance of lab
+                // Units - Major courses have 3 units lec, some have additional 3hr lab
+                const lec = 3; // Always 3 units for lecture
+                const lab = Math.random() > 0.5 ? 1 : 0; // 50% chance of lab for major courses
 
                 // Generate multiple sections for this course
                 for (let s = 0; s < sectionsPerCourse; s++) {
@@ -932,15 +946,20 @@
                     const day = randomElement(days);
                     const time = randomElement(timeSlots);
 
+                    // Generate realistic student count based on user inputs
+                    const studentCount = random(minStudents, maxStudents);
+                    
                     generatedData.classes.push({
                         course_code: courseCode,
                         course_name: generateSubjectName(prefix, yearLevel),
                         section: `${yearLevel}${sectionLetters[s]}`,
+                        year_level: yearLevel,
+                        student_count: studentCount,
                         lec_units: lec,
                         lab_units: lab,
                         credit_units: lec + lab,
-                        lec_hours: lec,
-                        lab_hours: lab * 3,
+                        lec_hours: 3, // Always 3 hours lecture
+                        lab_hours: lab * 3, // 3 hours lab if has lab component
                         schedule_day: day,
                         schedule_time: time,
                         semester: semester,
@@ -972,6 +991,8 @@
                     <td><small>${c.college.substring(0, 20)}...</small></td>
                     <td>${c.department.substring(0, 25)}...</td>
                     <td><span class="badge badge-info">${c.section}</span></td>
+                    <td><span class="badge badge-warning">Year ${c.year_level}</span></td>
+                    <td><span class="badge badge-success">${c.student_count}</span></td>
                     <td>${c.schedule_day} ${c.schedule_time}</td>
                 </tr>
             `).join('');
@@ -1054,7 +1075,7 @@
 
             const headers = {
                 rooms: ['campus', 'building', 'room', 'capacity', 'is_first_floor', 'floor_number', 'room_type', 'has_ac', 'has_projector', 'has_whiteboard', 'is_pwd_accessible', 'status'],
-                classes: ['course_code', 'course_name', 'section', 'lec_units', 'lab_units', 'credit_units', 'lec_hours', 'lab_hours', 'schedule_day', 'schedule_time', 'semester', 'academic_year', 'department', 'college', 'status'],
+                classes: ['course_code', 'course_name', 'section', 'year_level', 'student_count', 'lec_units', 'lab_units', 'credit_units', 'lec_hours', 'lab_hours', 'schedule_day', 'schedule_time', 'semester', 'academic_year', 'department', 'college', 'status'],
                 teachers: ['teacher_id', 'teacher_name', 'schedule_day', 'schedule_time', 'department', 'email', 'college']
             };
 

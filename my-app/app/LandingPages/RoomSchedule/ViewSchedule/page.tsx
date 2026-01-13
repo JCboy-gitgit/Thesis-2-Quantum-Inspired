@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import MenuBar from '@/app/components/MenuBar'
@@ -29,7 +29,8 @@ import {
   FaChevronRight,
   FaTable,
   FaList,
-  FaTh
+  FaTh,
+  FaImage
 } from 'react-icons/fa'
 import { 
   Calendar, 
@@ -51,7 +52,8 @@ import {
   Plus,
   Search,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Image as ImageIcon
 } from 'lucide-react'
 
 const supabase = createClient(
@@ -60,6 +62,8 @@ const supabase = createClient(
 )
 
 // ==================== Types ====================
+type TimetableViewMode = 'all' | 'room' | 'section' | 'teacher' | 'course'
+
 interface OptimizationStats {
   initial_cost?: number
   final_cost?: number
@@ -96,6 +100,7 @@ interface RoomAllocation {
   course_code: string
   course_name: string
   section: string
+  year_level?: number
   schedule_day: string
   schedule_time: string
   campus: string
@@ -137,6 +142,16 @@ function ViewSchedulePage() {
   // View mode
   const [viewMode, setViewMode] = useState<'list' | 'timetable'>('list')
   
+  // Timetable view mode: all, room, section, teacher, course
+  const [timetableViewMode, setTimetableViewMode] = useState<TimetableViewMode>('all')
+  const [selectedRoom, setSelectedRoom] = useState<string>('all')
+  const [selectedSection, setSelectedSection] = useState<string>('all')
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
+  const [selectedCourse, setSelectedCourse] = useState<string>('all')
+  
+  // Timetable ref for export
+  const timetableRef = useRef<HTMLDivElement>(null)
+  
   // Filters
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterRoom, setFilterRoom] = useState<string>('all')
@@ -151,6 +166,13 @@ function ViewSchedulePage() {
   // Unique values for filters
   const [buildings, setBuildings] = useState<string[]>([])
   const [rooms, setRooms] = useState<string[]>([])
+  const [sections, setSections] = useState<string[]>([])
+  const [teachers, setTeachers] = useState<string[]>([])
+  const [courses, setCourses] = useState<string[]>([])
+  
+  // Building-Room mapping for connected filters
+  const [buildingRoomMap, setBuildingRoomMap] = useState<Map<string, string[]>>(new Map())
+  const [filteredRooms, setFilteredRooms] = useState<string[]>([])
 
   useEffect(() => {
     fetchSchedules()
@@ -205,7 +227,22 @@ function ViewSchedulePage() {
     if (allocations.length > 0) {
       buildTimetableData()
     }
-  }, [allocations, filterBuilding, filterRoom, filterDay, searchQuery])
+  }, [allocations, filterBuilding, filterRoom, filterDay, searchQuery, timetableViewMode, selectedRoom, selectedSection, selectedTeacher, selectedCourse])
+
+  // Update filtered rooms when building filter changes
+  useEffect(() => {
+    if (filterBuilding === 'all') {
+      setFilteredRooms(rooms)
+      setFilterRoom('all')
+    } else {
+      const roomsInBuilding = buildingRoomMap.get(filterBuilding) || []
+      setFilteredRooms(roomsInBuilding)
+      // Reset room filter if current selection is not in the new building
+      if (!roomsInBuilding.includes(filterRoom)) {
+        setFilterRoom('all')
+      }
+    }
+  }, [filterBuilding, buildingRoomMap, rooms])
 
   const fetchSchedules = async () => {
     setLoading(true)
@@ -291,11 +328,15 @@ function ViewSchedulePage() {
       if (!allocationError && allocationData && allocationData.length > 0) {
         setAllocations(allocationData)
         
-        // Extract unique buildings and rooms
+        // Extract unique buildings, rooms, sections and teachers
         const uniqueBuildings = [...new Set(allocationData.map(a => a.building).filter(Boolean))]
         const uniqueRooms = [...new Set(allocationData.map(a => a.room).filter(Boolean))]
+        const uniqueSections = [...new Set(allocationData.map(a => a.section).filter(Boolean))]
+        const uniqueTeachers = [...new Set(allocationData.map(a => a.teacher_name).filter(Boolean))]
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
+        setSections(uniqueSections)
+        setTeachers(uniqueTeachers)
       } else {
         // Try to build allocations from class_schedules and campuses
         await buildAllocationsFromSource(schedule)
@@ -333,6 +374,7 @@ function ViewSchedulePage() {
             course_code: cls.course_code || '',
             course_name: cls.course_name || '',
             section: cls.section || '',
+            year_level: cls.year_level || parseInt(cls.section?.charAt(0)) || 1,
             schedule_day: cls.schedule_day || '',
             schedule_time: cls.schedule_time || '',
             campus: room?.campus || '',
@@ -350,8 +392,30 @@ function ViewSchedulePage() {
         
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter(Boolean))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter(Boolean))]
+        const uniqueSections = [...new Set(mockAllocations.map(a => a.section).filter(Boolean))]
+        const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter(Boolean))]
+        const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter(Boolean))]
+        
+        // Build building-room mapping
+        const brMap = new Map<string, string[]>()
+        mockAllocations.forEach(a => {
+          if (a.building && a.room) {
+            if (!brMap.has(a.building)) {
+              brMap.set(a.building, [])
+            }
+            if (!brMap.get(a.building)!.includes(a.room)) {
+              brMap.get(a.building)!.push(a.room)
+            }
+          }
+        })
+        
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
+        setFilteredRooms(uniqueRooms) // Initially show all rooms
+        setSections(uniqueSections)
+        setTeachers(uniqueTeachers)
+        setCourses(uniqueCourses)
+        setBuildingRoomMap(brMap)
       }
     } catch (error) {
       console.error('Error building allocations:', error)
@@ -359,9 +423,21 @@ function ViewSchedulePage() {
   }
 
   const buildTimetableData = () => {
-    // Filter allocations
+    // Filter allocations based on view mode
     let filtered = allocations
 
+    // Apply view mode filter first
+    if (timetableViewMode === 'room' && selectedRoom !== 'all') {
+      filtered = filtered.filter(a => a.room === selectedRoom)
+    } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
+      filtered = filtered.filter(a => a.section === selectedSection)
+    } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
+      filtered = filtered.filter(a => a.teacher_name === selectedTeacher)
+    } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
+      filtered = filtered.filter(a => a.course_code === selectedCourse)
+    }
+
+    // Apply additional filters
     if (filterBuilding !== 'all') {
       filtered = filtered.filter(a => a.building === filterBuilding)
     }
@@ -377,7 +453,8 @@ function ViewSchedulePage() {
         a.course_code?.toLowerCase().includes(query) ||
         a.course_name?.toLowerCase().includes(query) ||
         a.section?.toLowerCase().includes(query) ||
-        a.room?.toLowerCase().includes(query)
+        a.room?.toLowerCase().includes(query) ||
+        a.teacher_name?.toLowerCase().includes(query)
       )
     }
 
@@ -586,6 +663,38 @@ function ViewSchedulePage() {
     window.print()
   }
 
+  const handleExportImage = async () => {
+    if (!timetableRef.current) {
+      alert('Timetable not loaded')
+      return
+    }
+
+    try {
+      // Dynamically import html2canvas
+      const html2canvas = (await import('html2canvas')).default
+      
+      const canvas = await html2canvas(timetableRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false
+      })
+      
+      const link = document.createElement('a')
+      const viewLabel = timetableViewMode === 'room' ? `Room_${selectedRoom}` :
+                       timetableViewMode === 'section' ? `Section_${selectedSection}` :
+                       timetableViewMode === 'teacher' ? `Teacher_${selectedTeacher}` :
+                       'All'
+      
+      link.download = `timetable_${selectedSchedule?.schedule_name || 'schedule'}_${viewLabel}_${new Date().toISOString().split('T')[0]}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } catch (error) {
+      console.error('Error exporting image:', error)
+      alert('Failed to export image. Please make sure html2canvas is installed.')
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -635,6 +744,9 @@ function ViewSchedulePage() {
             
             {selectedSchedule && (
               <div className={styles.headerActions}>
+                <button className={styles.actionButton} onClick={handleExportImage}>
+                  <FaImage /> Export Image
+                </button>
                 <button className={styles.actionButton} onClick={handleExport}>
                   <Download size={18} /> Export CSV
                 </button>
@@ -880,6 +992,105 @@ function ViewSchedulePage() {
                 </div>
               </div>
 
+              {/* View Mode Selector */}
+              <div className={styles.viewModeSection}>
+                <div className={styles.viewModeLabel}>View Timetable By:</div>
+                <div className={styles.viewModeButtons}>
+                  <button 
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
+                    onClick={() => { setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
+                  >
+                    <Grid3X3 size={16} /> All
+                  </button>
+                  <button 
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'room' ? styles.active : ''}`}
+                    onClick={() => setTimetableViewMode('room')}
+                  >
+                    <DoorOpen size={16} /> By Room
+                  </button>
+                  <button 
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'section' ? styles.active : ''}`}
+                    onClick={() => setTimetableViewMode('section')}
+                  >
+                    <Users size={16} /> By Section
+                  </button>
+                  <button 
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'teacher' ? styles.active : ''}`}
+                    onClick={() => setTimetableViewMode('teacher')}
+                  >
+                    <FaChalkboardTeacher /> By Teacher
+                  </button>
+                  <button 
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'course' ? styles.active : ''}`}
+                    onClick={() => setTimetableViewMode('course')}
+                  >
+                    <BookOpen size={16} /> By Course
+                  </button>
+                </div>
+                
+                {/* View Mode Specific Selector */}
+                {timetableViewMode === 'room' && (
+                  <div className={styles.viewModeSelector}>
+                    <label>Select Room:</label>
+                    <select 
+                      value={selectedRoom} 
+                      onChange={(e) => setSelectedRoom(e.target.value)}
+                      className={styles.viewModeSelect}
+                    >
+                      <option value="all">All Rooms</option>
+                      {rooms.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {timetableViewMode === 'section' && (
+                  <div className={styles.viewModeSelector}>
+                    <label>Select Section:</label>
+                    <select 
+                      value={selectedSection} 
+                      onChange={(e) => setSelectedSection(e.target.value)}
+                      className={styles.viewModeSelect}
+                    >
+                      <option value="all">All Sections</option>
+                      {sections.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {timetableViewMode === 'teacher' && (
+                  <div className={styles.viewModeSelector}>
+                    <label>Select Teacher:</label>
+                    <select 
+                      value={selectedTeacher} 
+                      onChange={(e) => setSelectedTeacher(e.target.value)}
+                      className={styles.viewModeSelect}
+                    >
+                      <option value="all">All Teachers</option>
+                      {teachers.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {timetableViewMode === 'course' && (
+                  <div className={styles.viewModeSelector}>
+                    <label>Select Course:</label>
+                    <select 
+                      value={selectedCourse} 
+                      onChange={(e) => setSelectedCourse(e.target.value)}
+                      className={styles.viewModeSelect}
+                    >
+                      <option value="all">All Courses</option>
+                      {courses.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
               {/* Filters */}
               <div className={styles.filtersBar}>
                 <div className={styles.filterGroup}>
@@ -902,8 +1113,8 @@ function ViewSchedulePage() {
                     onChange={(e) => setFilterRoom(e.target.value)}
                     className={styles.filterSelect}
                   >
-                    <option value="all">All Rooms</option>
-                    {rooms.map(r => (
+                    <option value="all">All Rooms{filterBuilding !== 'all' ? ` in ${filterBuilding}` : ''}</option>
+                    {filteredRooms.map(r => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
@@ -955,7 +1166,22 @@ function ViewSchedulePage() {
                 </div>
               ) : (
                 /* Timetable Grid */
-                <div className={styles.timetableWrapper}>
+                <div className={styles.timetableWrapper} ref={timetableRef}>
+                  {/* Timetable Title for Export */}
+                  <div className={styles.timetableTitle}>
+                    <h3>
+                      {timetableViewMode === 'all' && 'All Classes Timetable'}
+                      {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
+                      {timetableViewMode === 'room' && selectedRoom === 'all' && 'Please select a room to view'}
+                      {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
+                      {timetableViewMode === 'section' && selectedSection === 'all' && 'Please select a section to view'}
+                      {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
+                      {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'Please select a teacher to view'}
+                    </h3>
+                    <p className={styles.timetableSubtitle}>
+                      {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name}
+                    </p>
+                  </div>
                   <div className={styles.timetableContainer}>
                     <table className={styles.timetable}>
                       <thead>

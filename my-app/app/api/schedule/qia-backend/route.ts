@@ -29,6 +29,8 @@ interface ClassData {
   course_code: string
   course_name: string
   section: string
+  year_level?: number
+  student_count?: number
   schedule_day: string
   schedule_time: string
   lec_hours: number
@@ -96,9 +98,10 @@ function convertClassesToSections(classes: ClassData[]): any[] {
     section_code: cls.section,
     course_code: cls.course_code,
     course_name: cls.course_name,
-    teacher_id: 1, // Default teacher ID - will be mapped if teachers provided
+    teacher_id: 0, // Default - no teacher constraint (will be mapped if teachers provided)
     teacher_name: 'TBD',
-    student_count: 30, // Estimated - can be enhanced later
+    year_level: cls.year_level || parseInt(cls.section?.charAt(0)) || 1,
+    student_count: cls.student_count || 30, // Use actual student count from class data
     required_room_type: cls.lab_hours > 0 ? 'Laboratory' : 'Lecture',
     weekly_hours: (cls.lec_hours + cls.lab_hours) * 60, // Convert to minutes
     requires_lab: cls.lab_hours > 0,
@@ -137,6 +140,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
       course_code: classData?.course_code || 'N/A',
       course_name: classData?.course_name || 'N/A',
       section: classData?.section || 'N/A',
+      year_level: classData?.year_level || parseInt(classData?.section?.charAt(0) || '1') || 1,
       schedule_day: entry.day_of_week,
       schedule_time: entry.time_slot_name || entry.start_time,
       campus: roomData?.campus || 'N/A',
@@ -157,6 +161,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
     total_classes: backendResult.total_sections,
     scheduled_classes: backendResult.scheduled_sections,
     unscheduled_classes: backendResult.unscheduled_sections,
+    unscheduled_list: backendResult.unscheduled_list || [],
     conflicts: backendResult.conflicts || [],
     optimization_stats: {
       initial_cost: backendResult.optimization_stats?.initial_cost || 0,

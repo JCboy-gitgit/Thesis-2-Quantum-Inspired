@@ -8,11 +8,14 @@ from typing import List, Dict, Any, Optional
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL") or os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY")
+# Use service role key for backend operations (bypasses RLS)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Missing Supabase environment variables")
+    raise ValueError("Missing Supabase environment variables. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env")
+
+print(f"🔑 Connected to Supabase: {SUPABASE_URL}")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -175,29 +178,29 @@ async def create_default_time_slots() -> List[Dict]:
 # ==================== Schedule Operations ====================
 async def save_schedule_summary(summary_data: Dict) -> Dict:
     """Save schedule summary"""
-    response = supabase.table("class_schedule_summary").insert(summary_data).execute()
+    response = supabase.table("schedule_summary").insert(summary_data).execute()
     return response.data[0] if response.data else {}
 
 
 async def save_schedule_entries(entries: List[Dict]) -> List[Dict]:
-    """Save schedule entries"""
+    """Save schedule entries/batches"""
     if not entries:
         return []
-    response = supabase.table("class_schedule_entries").insert(entries).execute()
+    response = supabase.table("schedule_batches").insert(entries).execute()
     return response.data or []
 
 
 async def get_schedule_entries(schedule_id: int) -> List[Dict]:
     """Get all entries for a schedule"""
-    response = supabase.table("class_schedule_entries").select(
-        "*, rooms(*), sections(*), teachers(*)"
-    ).eq("schedule_summary_id", schedule_id).execute()
+    response = supabase.table("schedule_batches").select("*").eq(
+        "schedule_summary_id", schedule_id
+    ).execute()
     return response.data or []
 
 
 async def get_all_schedules() -> List[Dict]:
     """Get all schedule summaries"""
-    response = supabase.table("class_schedule_summary").select("*").order(
+    response = supabase.table("schedule_summary").select("*").order(
         "created_at", desc=True
     ).execute()
     return response.data or []
@@ -205,7 +208,7 @@ async def get_all_schedules() -> List[Dict]:
 
 async def get_schedule_by_id(schedule_id: int) -> Optional[Dict]:
     """Get a specific schedule by ID"""
-    response = supabase.table("class_schedule_summary").select("*").eq(
+    response = supabase.table("schedule_summary").select("*").eq(
         "id", schedule_id
     ).execute()
     return response.data[0] if response.data else None
@@ -213,7 +216,7 @@ async def get_schedule_by_id(schedule_id: int) -> Optional[Dict]:
 
 async def create_schedule_record(schedule_data: Dict) -> Dict:
     """Create a new schedule summary record"""
-    response = supabase.table("class_schedule_summary").insert(schedule_data).execute()
+    response = supabase.table("schedule_summary").insert(schedule_data).execute()
     return response.data[0] if response.data else {}
 
 
@@ -221,8 +224,8 @@ async def update_schedule_status(schedule_id: int, status: str, message: str = "
     """Update the status of a schedule"""
     update_data = {"status": status}
     if message:
-        update_data["message"] = message
-    response = supabase.table("class_schedule_summary").update(update_data).eq(
+        update_data["notes"] = message
+    response = supabase.table("schedule_summary").update(update_data).eq(
         "id", schedule_id
     ).execute()
     return response.data[0] if response.data else {}
@@ -230,10 +233,10 @@ async def update_schedule_status(schedule_id: int, status: str, message: str = "
 
 async def delete_schedule(schedule_id: int) -> bool:
     """Delete a schedule and its entries"""
-    # Delete entries first
-    supabase.table("class_schedule_entries").delete().eq("schedule_summary_id", schedule_id).execute()
+    # Delete batches first
+    supabase.table("schedule_batches").delete().eq("schedule_summary_id", schedule_id).execute()
     # Delete summary
-    supabase.table("class_schedule_summary").delete().eq("id", schedule_id).execute()
+    supabase.table("schedule_summary").delete().eq("id", schedule_id).execute()
     return True
 
 
@@ -245,9 +248,9 @@ async def check_room_conflicts(
     schedule_id: int
 ) -> List[Dict]:
     """Check if room is already booked at this time"""
-    response = supabase.table("class_schedule_entries").select("*").eq(
-        "room_id", room_id
-    ).eq("day_of_week", day_of_week).eq("time_slot_id", time_slot_id).eq(
+    response = supabase.table("schedule_batches").select("*").eq(
+        "room", room_id
+    ).eq("batch_date", day_of_week).eq(
         "schedule_summary_id", schedule_id
     ).execute()
     return response.data or []
@@ -260,11 +263,9 @@ async def check_teacher_conflicts(
     schedule_id: int
 ) -> List[Dict]:
     """Check if teacher is already scheduled at this time"""
-    response = supabase.table("class_schedule_entries").select("*").eq(
-        "teacher_id", teacher_id
-    ).eq("day_of_week", day_of_week).eq("time_slot_id", time_slot_id).eq(
+    response = supabase.table("schedule_batches").select("*").eq(
         "schedule_summary_id", schedule_id
-    ).execute()
+    ).eq("batch_date", day_of_week).execute()
     return response.data or []
 
 
@@ -313,3 +314,69 @@ async def get_teacher_workload(schedule_id: int) -> List[Dict]:
         })
     
     return workload
+
+
+# ==================== Generated Schedules & Room Allocations ====================
+
+async def create_generated_schedule(schedule_data: Dict) -> Dict:
+    """Create a new generated schedule record"""
+    response = supabase.table("generated_schedules").insert(schedule_data).execute()
+    return response.data[0] if response.data else {}
+
+
+async def update_generated_schedule(schedule_id: int, update_data: Dict) -> Dict:
+    """Update a generated schedule record"""
+    response = supabase.table("generated_schedules").update(update_data).eq(
+        "id", schedule_id
+    ).execute()
+    return response.data[0] if response.data else {}
+
+
+async def save_room_allocations(allocations: List[Dict]) -> List[Dict]:
+    """Save room allocation entries for a schedule"""
+    if not allocations:
+        return []
+    response = supabase.table("room_allocations").insert(allocations).execute()
+    return response.data or []
+
+
+async def get_generated_schedules() -> List[Dict]:
+    """Get all generated schedules"""
+    response = supabase.table("generated_schedules").select("*").order(
+        "created_at", desc=True
+    ).execute()
+    return response.data or []
+
+
+async def get_generated_schedule_by_id(schedule_id: int) -> Optional[Dict]:
+    """Get a specific generated schedule by ID with its allocations"""
+    schedule_response = supabase.table("generated_schedules").select("*").eq(
+        "id", schedule_id
+    ).execute()
+    
+    if not schedule_response.data:
+        return None
+    
+    schedule = schedule_response.data[0]
+    
+    # Get room allocations for this schedule
+    allocations_response = supabase.table("room_allocations").select("*").eq(
+        "schedule_id", schedule_id
+    ).execute()
+    
+    schedule["allocations"] = allocations_response.data or []
+    return schedule
+
+
+async def delete_generated_schedule(schedule_id: int) -> bool:
+    """Delete a generated schedule and its allocations (cascade delete handles allocations)"""
+    supabase.table("generated_schedules").delete().eq("id", schedule_id).execute()
+    return True
+
+
+async def get_room_allocations_by_schedule(schedule_id: int) -> List[Dict]:
+    """Get all room allocations for a schedule"""
+    response = supabase.table("room_allocations").select("*").eq(
+        "schedule_id", schedule_id
+    ).execute()
+    return response.data or []

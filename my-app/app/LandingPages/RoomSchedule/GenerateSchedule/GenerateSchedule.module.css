@@ -2129,6 +2129,203 @@
   color: #f59e0b;
   font-weight: 600;
 }
+
+/* ==================== Dark Theme Timetable Styles ==================== */
+[data-theme="dark"] .timetableSection {
+  background: #1e1e2e;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .timetableContainer {
+  background: #252535;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .timetable th {
+  background: #3a3a5a;
+  color: #ffffff;
+  border-color: #4a4a6a;
+}
+
+[data-theme="dark"] .timeCell {
+  background: #2a2a3a;
+  color: #e0e0e0;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .scheduleCell {
+  background: #1e1e2e;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .allocationCard {
+  background: #2a2a4a;
+  border-left-color: #6366f1;
+}
+
+[data-theme="dark"] .allocationCourse {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .allocationRoom {
+  color: #818cf8;
+}
+
+[data-theme="dark"] .allocationSection {
+  color: #a0a0b0;
+}
+
+[data-theme="dark"] .allocationSummary {
+  background: #2a2a3a;
+}
+
+[data-theme="dark"] .allocationSummary p {
+  color: #d0d0e0;
+}
+
+/* ==================== Light Theme Timetable Styles ==================== */
+[data-theme="light"] .timetableSection {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .timetableContainer {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .timetable th {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+[data-theme="light"] .timeCell {
+  background: #f9fafb;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .scheduleCell {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .allocationCard {
+  background: #f0f9ff;
+  border-left-color: #4f46e5;
+}
+
+[data-theme="light"] .allocationCourse {
+  color: #1f2937;
+}
+
+[data-theme="light"] .allocationRoom {
+  color: #4f46e5;
+}
+
+[data-theme="light"] .allocationSection {
+  color: #6b7280;
+}
+
+/* ==================== Unscheduled Classes Styles ==================== */
+.unscheduledList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.unscheduledItem {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--bg-gray-50);
+  border-left: 4px solid #f59e0b;
+  transition: background 0.2s ease;
+}
+
+.unscheduledItem:hover {
+  background: var(--bg-gray-100);
+}
+
+.unscheduledHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.unscheduledCourse {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.unscheduledSlots {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.unscheduledName {
+  font-size: 13px;
+  color: var(--text-medium);
+  margin-bottom: 4px;
+}
+
+.unscheduledTeacher {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.unscheduledReason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.unscheduledReason svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Dark theme for unscheduled list */
+[data-theme="dark"] .unscheduledItem {
+  background: #2a2a3a;
+  border-left-color: #f59e0b;
+}
+
+[data-theme="dark"] .unscheduledItem:hover {
+  background: #3a3a4a;
+}
+
+[data-theme="dark"] .unscheduledCourse {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .unscheduledName {
+  color: #d0d0e0;
+}
+
+[data-theme="dark"] .unscheduledTeacher {
+  color: #a0a0b0;
+}
+
+[data-theme="dark"] .unscheduledReason {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
 /* ==================== Building and Room Filter Styles ==================== */
 .filterSection {
   margin: 24px 0;

@@ -80,6 +80,8 @@ interface ClassSchedule {
   course_code: string
   course_name: string
   section: string
+  year_level: number
+  student_count: number
   schedule_day: string
   schedule_time: string
   lec_hours: number
@@ -135,6 +137,7 @@ interface RoomAllocation {
   course_code: string
   course_name: string
   section: string
+  year_level: number
   schedule_day: string
   schedule_time: string
   campus: string
@@ -146,6 +149,17 @@ interface RoomAllocation {
   lab_hours: number
 }
 
+interface UnscheduledItem {
+  id: number
+  section_code: string
+  course_code: string
+  course_name: string
+  teacher_name: string
+  needed_slots: number
+  assigned_slots: number
+  reason: string
+}
+
 interface ScheduleResult {
   success: boolean
   scheduleId: number
@@ -154,6 +168,7 @@ interface ScheduleResult {
   totalClasses: number
   scheduledClasses: number
   unscheduledClasses: number
+  unscheduledList: UnscheduledItem[]
   conflicts: { conflict_type: string; description: string }[]
   optimizationStats: {
     initialCost: number
@@ -413,6 +428,8 @@ export default function GenerateSchedulePage() {
         course_code: c.course_code || '',
         course_name: c.course_name || '',
         section: c.section || '',
+        year_level: c.year_level || parseInt(c.section?.charAt(0)) || 1, // Extract from section if not available
+        student_count: c.student_count || 30, // Default 30 if not available
         schedule_day: c.schedule_day || '',
         schedule_time: c.schedule_time || '',
         lec_hours: c.lec_hr || c.lec_hours || 0,
@@ -699,6 +716,7 @@ export default function GenerateSchedulePage() {
         totalClasses: result.total_classes || classes.length,
         scheduledClasses: result.scheduled_classes || 0,
         unscheduledClasses: result.unscheduled_classes || 0,
+        unscheduledList: result.unscheduled_list || [],
         conflicts: result.conflicts || [],
         optimizationStats: {
           initialCost: result.optimization_stats?.initial_cost || 0,
@@ -856,6 +874,37 @@ export default function GenerateSchedulePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Unscheduled Classes Section */}
+              {scheduleResult.unscheduledList && scheduleResult.unscheduledList.length > 0 && (
+                <div className={styles.formCard}>
+                  <h3 className={styles.formSectionTitle}>
+                    <FaExclamationTriangle style={{ color: '#f59e0b' }} /> Unscheduled Classes ({scheduleResult.unscheduledList.length})
+                  </h3>
+                  <p className={styles.formDescription}>
+                    The following classes could not be scheduled. Review the reasons below.
+                  </p>
+                  <div className={styles.unscheduledList}>
+                    {scheduleResult.unscheduledList.map((item, index) => (
+                      <div key={index} className={styles.unscheduledItem}>
+                        <div className={styles.unscheduledHeader}>
+                          <span className={styles.unscheduledCourse}>
+                            {item.course_code} - {item.section_code}
+                          </span>
+                          <span className={styles.unscheduledSlots}>
+                            {item.assigned_slots}/{item.needed_slots} slots
+                          </span>
+                        </div>
+                        <div className={styles.unscheduledName}>{item.course_name}</div>
+                        {item.teacher_name && <div className={styles.unscheduledTeacher}>Teacher: {item.teacher_name}</div>}
+                        <div className={styles.unscheduledReason}>
+                          <FaExclamationTriangle /> {item.reason}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className={styles.resultActions}>
