@@ -86,7 +86,13 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                     <div className="account-menu-divider"></div>
                   </>
                 )}
-                <div className="account-menu-item">
+                <div 
+                  className="account-menu-item"
+                  onClick={() => {
+                    setShowAccountMenu(false)
+                    router.push('/LandingPages/Profile')
+                  }}
+                >
                   <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Profile
                 </div>
