@@ -382,7 +382,15 @@ function ViewSchedulePage() {
     }
 
     // Extract unique time slots and days
-    const uniqueTimes = [...new Set(filtered.map(a => a.schedule_time).filter(Boolean))].sort()
+    const uniqueTimes = [...new Set(filtered.map(a => a.schedule_time).filter(Boolean))].sort((a, b) => {
+      // Sort by start time (first time in the range)
+      const getStartHour = (time: string) => {
+        const startTime = time.split('-')[0].trim()
+        const [hour, minute] = startTime.split(':').map(Number)
+        return hour * 60 + (minute || 0) // Convert to minutes for comparison
+      }
+      return getStartHour(a) - getStartHour(b)
+    })
     const uniqueDays = [...new Set(filtered.map(a => {
       // Normalize day format
       const day = a.schedule_day?.trim()
@@ -456,6 +464,32 @@ function ViewSchedulePage() {
     }
     
     return [normalizeDay(day)]
+  }
+
+  // Format time from 24-hour to 12-hour AM/PM format
+  const formatTimeToAMPM = (time24: string): string => {
+    if (!time24) return time24
+    
+    // Handle time ranges like "10:00-11:30" or "13:00-14:30"
+    if (time24.includes('-')) {
+      const [start, end] = time24.split('-')
+      return `${convertTo12Hour(start.trim())}-${convertTo12Hour(end.trim())}`
+    }
+    
+    return convertTo12Hour(time24)
+  }
+
+  const convertTo12Hour = (time: string): string => {
+    const [hourStr, minuteStr] = time.split(':')
+    let hour = parseInt(hourStr)
+    const minute = minuteStr || '00'
+    
+    if (isNaN(hour)) return time
+    
+    const period = hour >= 12 ? 'PM' : 'AM'
+    hour = hour % 12 || 12 // Convert 0 to 12 for midnight, keep 12 for noon
+    
+    return `${hour}:${minute} ${period}`
   }
 
   const handleDelete = async (id: number) => {
@@ -940,7 +974,7 @@ function ViewSchedulePage() {
                         {timeSlots.map(timeSlot => (
                           <tr key={timeSlot}>
                             <td className={styles.timeCell}>
-                              {timeSlot}
+                              {formatTimeToAMPM(timeSlot)}
                             </td>
                             {activeDays.map(day => {
                               const key = `${timeSlot}|${day}`
