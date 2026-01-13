@@ -10,7 +10,8 @@ import {
   FaUserGraduate, FaChalkboardTeacher, FaCog, FaPlay,
   FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock,
   FaSync, FaDownload, FaChartBar, FaLayerGroup, FaUsers,
-  FaBolt, FaAtom, FaFileAlt, FaCalendar, FaChevronDown, FaChevronRight
+  FaBolt, FaAtom, FaFileAlt, FaCalendar, FaChevronDown, FaChevronRight,
+  FaEye, FaTimes, FaFilter
 } from 'react-icons/fa'
 import { 
   University, 
@@ -28,7 +29,9 @@ import {
   ChevronDown,
   ChevronRight,
   Play,
-  RotateCcw
+  RotateCcw,
+  Eye,
+  X
 } from 'lucide-react'
 
 // ==================== Types ====================
@@ -236,7 +239,7 @@ export default function GenerateSchedulePage() {
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
     endTime: '20:00',
-    slotDuration: 60,
+    slotDuration: 90, // Fixed to 90 minutes (1.5 hours) - standard academic period
     includeSaturday: true,
     includeSunday: false
   })
@@ -253,6 +256,17 @@ export default function GenerateSchedulePage() {
   const [expandedCampus, setExpandedCampus] = useState(false)
   const [expandedClass, setExpandedClass] = useState(false)
   const [expandedTeacher, setExpandedTeacher] = useState(false)
+  
+  // Building and room filters
+  const [selectedBuildings, setSelectedBuildings] = useState<string[]>([])
+  const [selectedRooms, setSelectedRooms] = useState<number[]>([])
+  const [showBuildingFilter, setShowBuildingFilter] = useState(false)
+  
+  // File viewer states
+  const [showClassFileViewer, setShowClassFileViewer] = useState(false)
+  const [showTeacherFileViewer, setShowTeacherFileViewer] = useState(false)
+  const [viewerData, setViewerData] = useState<any[]>([])
+  const [viewerLoading, setViewerLoading] = useState(false)
 
   // Load initial data
   useEffect(() => {
@@ -445,9 +459,13 @@ export default function GenerateSchedulePage() {
     if (selectedCampusGroup === groupId) {
       setSelectedCampusGroup(null)
       setRooms([])
+      setSelectedBuildings([])
+      setSelectedRooms([])
     } else {
       setSelectedCampusGroup(groupId)
       loadCampusData(groupId)
+      setSelectedBuildings([])
+      setSelectedRooms([])
     }
   }
 
@@ -469,6 +487,117 @@ export default function GenerateSchedulePage() {
       setSelectedTeacherGroup(groupId)
       loadTeacherData(groupId)
     }
+  }
+  
+  // Get unique buildings from loaded rooms
+  const uniqueBuildings = [...new Set(rooms.map(r => r.building).filter(Boolean))]
+  
+  // Toggle building selection
+  const handleToggleBuilding = (building: string) => {
+    setSelectedBuildings(prev => {
+      if (prev.includes(building)) {
+        // Deselect building - also remove its rooms from selectedRooms
+        const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
+        setSelectedRooms(prevRooms => prevRooms.filter(id => !buildingRoomIds.includes(id)))
+        return prev.filter(b => b !== building)
+      } else {
+        return [...prev, building]
+      }
+    })
+  }
+  
+  // Toggle room selection
+  const handleToggleRoom = (roomId: number) => {
+    setSelectedRooms(prev => 
+      prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]
+    )
+  }
+  
+  // Select all rooms in a building
+  const handleSelectAllRoomsInBuilding = (building: string) => {
+    const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
+    setSelectedRooms(prev => {
+      const allSelected = buildingRoomIds.every(id => prev.includes(id))
+      if (allSelected) {
+        // Deselect all
+        return prev.filter(id => !buildingRoomIds.includes(id))
+      } else {
+        // Select all
+        return [...new Set([...prev, ...buildingRoomIds])]
+      }
+    })
+  }
+  
+  // Get filtered rooms based on selection
+  const getFilteredRooms = () => {
+    if (selectedBuildings.length === 0 && selectedRooms.length === 0) {
+      return rooms // No filter applied
+    }
+    
+    if (selectedRooms.length > 0) {
+      // Specific rooms selected
+      return rooms.filter(r => selectedRooms.includes(r.id))
+    }
+    
+    if (selectedBuildings.length > 0) {
+      // Buildings selected but no specific rooms
+      return rooms.filter(r => selectedBuildings.includes(r.building))
+    }
+    
+    return rooms
+  }
+  
+  // File viewer functions
+  const handleViewClassFile = async () => {
+    if (!selectedClassGroup) return
+    
+    setViewerLoading(true)
+    setShowClassFileViewer(true)
+    
+    try {
+      const { data, error } = await (supabase
+        .from('class_schedules') as any)
+        .select('*')
+        .eq('upload_group_id', selectedClassGroup)
+        .order('course_code', { ascending: true })
+      
+      if (!error && data) {
+        setViewerData(data)
+      }
+    } catch (error) {
+      console.error('Error loading class file data:', error)
+    } finally {
+      setViewerLoading(false)
+    }
+  }
+  
+  const handleViewTeacherFile = async () => {
+    if (!selectedTeacherGroup) return
+    
+    setViewerLoading(true)
+    setShowTeacherFileViewer(true)
+    
+    try {
+      const { data, error } = await (supabase
+        .from('teacher_schedules') as any)
+        .select('*')
+        .eq('upload_group_id', selectedTeacherGroup)
+        .order('name', { ascending: true })
+      
+      if (!error && data) {
+        setViewerData(data)
+      }
+    } catch (error) {
+      console.error('Error loading teacher file data:', error)
+    } finally {
+      setViewerLoading(false)
+    }
+  }
+  
+  const closeFileViewer = () => {
+    setShowClassFileViewer(false)
+    setShowTeacherFileViewer(false)
+    setViewerData([])
   }
 
   // Validation
@@ -499,6 +628,15 @@ export default function GenerateSchedulePage() {
     setShowResults(false)
 
     try {
+      // Get filtered rooms based on user selection
+      const filteredRooms = getFilteredRooms()
+      
+      if (filteredRooms.length === 0) {
+        alert('No rooms selected. Please select at least one building or room.')
+        setScheduling(false)
+        return
+      }
+      
       // Generate time slots from settings
       const timeSlots = generateTimeSlots(timeSettings)
       const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -513,7 +651,7 @@ export default function GenerateSchedulePage() {
         campus_group_id: selectedCampusGroup,
         class_group_id: selectedClassGroup,
         teacher_group_id: selectedTeacherGroup,
-        rooms: rooms,
+        rooms: filteredRooms, // Use filtered rooms instead of all rooms
         classes: classes,
         teachers: teachers,
         time_slots: timeSlots,
@@ -531,7 +669,7 @@ export default function GenerateSchedulePage() {
       }
 
       console.log('[GenerateSchedule] Sending to Python backend:', {
-        rooms: rooms.length,
+        rooms: filteredRooms.length,
         classes: classes.length,
         teachers: teachers.length,
         timeSlots: timeSlots.length,
@@ -1077,6 +1215,13 @@ export default function GenerateSchedulePage() {
                       <div className={styles.summaryInfo}>
                         <h4>{selectedClassInfo?.college}</h4>
                         <p>{classes.length} classes • {uniqueDays.length} days • {uniqueTimeSlots.length} time slots</p>
+                        <button 
+                          className={styles.viewFileButton}
+                          onClick={handleViewClassFile}
+                          title="View class schedule file"
+                        >
+                          <FaEye size={14} /> View File
+                        </button>
                       </div>
                     </div>
                     {selectedTeacherInfo && (
@@ -1087,7 +1232,128 @@ export default function GenerateSchedulePage() {
                         <div className={styles.summaryInfo}>
                           <h4>{selectedTeacherInfo.college}</h4>
                           <p>{teachers.length} teachers available</p>
+                          <button 
+                            className={styles.viewFileButton}
+                            onClick={handleViewTeacherFile}
+                            title="View teacher schedule file"
+                          >
+                            <FaEye size={14} /> View File
+                          </button>
                         </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Building and Room Filter */}
+                  <div className={styles.filterSection}>
+                    <div className={styles.filterHeader} onClick={() => setShowBuildingFilter(!showBuildingFilter)}>
+                      <div className={styles.filterTitle}>
+                        <FaFilter size={18} />
+                        <h3>Filter Rooms by Building (Optional)</h3>
+                      </div>
+                      <div className={styles.filterStatus}>
+                        {selectedBuildings.length > 0 || selectedRooms.length > 0 ? (
+                          <span className={styles.filterActiveBadge}>
+                            {selectedRooms.length > 0 
+                              ? `${selectedRooms.length} rooms selected` 
+                              : `${selectedBuildings.length} building(s) selected`}
+                          </span>
+                        ) : (
+                          <span className={styles.filterInactiveBadge}>All rooms will be used</span>
+                        )}
+                        {showBuildingFilter ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                      </div>
+                    </div>
+                    
+                    {showBuildingFilter && (
+                      <div className={styles.filterContent}>
+                        <p className={styles.filterDescription}>
+                          Select specific buildings or rooms to use for scheduling. If no selection is made, all rooms will be used.
+                        </p>
+                        
+                        <div className={styles.buildingGrid}>
+                          {uniqueBuildings.map(building => {
+                            const buildingRooms = rooms.filter(r => r.building === building)
+                            const buildingRoomIds = buildingRooms.map(r => r.id)
+                            const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
+                            const someRoomsSelected = buildingRoomIds.some(id => selectedRooms.includes(id))
+                            const buildingSelected = selectedBuildings.includes(building)
+                            
+                            return (
+                              <div key={building} className={styles.buildingCard}>
+                                <div className={styles.buildingHeader}>
+                                  <label className={styles.buildingCheckbox}>
+                                    <input
+                                      type="checkbox"
+                                      checked={buildingSelected || allRoomsSelected}
+                                      onChange={() => {
+                                        if (buildingSelected || allRoomsSelected) {
+                                          // Deselect building and all its rooms
+                                          setSelectedBuildings(prev => prev.filter(b => b !== building))
+                                          setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
+                                        } else {
+                                          // Select building
+                                          setSelectedBuildings(prev => [...prev, building])
+                                          // Deselect individual rooms from this building
+                                          setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
+                                        }
+                                      }}
+                                      style={{
+                                        opacity: someRoomsSelected && !allRoomsSelected ? 0.5 : 1
+                                      }}
+                                    />
+                                    <Building2 size={18} />
+                                    <strong>{building}</strong>
+                                  </label>
+                                  <button
+                                    className={styles.selectAllRoomsBtn}
+                                    onClick={() => handleSelectAllRoomsInBuilding(building)}
+                                  >
+                                    {allRoomsSelected ? 'Deselect All' : 'Select Specific Rooms'}
+                                  </button>
+                                </div>
+                                
+                                <div className={styles.buildingStats}>
+                                  <span><DoorOpen size={14} /> {buildingRooms.length} rooms</span>
+                                  <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
+                                </div>
+                                
+                                {/* Show individual room checkboxes if some are selected */}
+                                {(someRoomsSelected && !buildingSelected) && (
+                                  <div className={styles.roomList}>
+                                    {buildingRooms.map(room => (
+                                      <label key={room.id} className={styles.roomCheckbox}>
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedRooms.includes(room.id)}
+                                          onChange={() => handleToggleRoom(room.id)}
+                                        />
+                                        <span>{room.room} (Cap: {room.capacity})</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        
+                        {(selectedBuildings.length > 0 || selectedRooms.length > 0) && (
+                          <div className={styles.filterSummary}>
+                            <p>
+                              <strong>Filtered Selection:</strong> {getFilteredRooms().length} out of {rooms.length} rooms will be used for scheduling
+                            </p>
+                            <button 
+                              className={styles.clearFilterBtn}
+                              onClick={() => {
+                                setSelectedBuildings([])
+                                setSelectedRooms([])
+                              }}
+                            >
+                              Clear All Filters
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1299,21 +1565,15 @@ export default function GenerateSchedulePage() {
                           onChange={(e) => setTimeSettings(prev => ({ ...prev, endTime: e.target.value }))}
                         />
                       </div>
-                      <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>
-                          Slot Duration
-                          <span className={styles.formHint}>Length of each time slot</span>
-                        </label>
-                        <select
-                          className={styles.formSelect}
-                          value={timeSettings.slotDuration}
-                          onChange={(e) => setTimeSettings(prev => ({ ...prev, slotDuration: Number(e.target.value) }))}
-                        >
-                          <option value={30}>30 minutes</option>
-                          <option value={60}>1 hour</option>
-                          <option value={90}>1.5 hours</option>
-                          <option value={120}>2 hours</option>
-                        </select>
+                    </div>
+                    
+                    <div className={styles.slotDurationInfo}>
+                      <Clock size={18} />
+                      <div>
+                        <strong>Time Slot Duration:</strong> 90 minutes (1.5 hours)
+                        <p className={styles.slotDurationNote}>
+                          Standard academic period. Schedule generation automatically allocates multiple slots based on each class's Lec Hours + Lab Hours from the CSV file.
+                        </p>
                       </div>
                     </div>
 
@@ -1359,7 +1619,10 @@ export default function GenerateSchedulePage() {
                         )}
                       </div>
                       <p className={styles.timeSlotCount}>
-                        Total: {generateTimeSlots(timeSettings).length} time slots per day
+                        Total: {generateTimeSlots(timeSettings).length} time slots per day (90 min each)
+                      </p>
+                      <p className={styles.slotAllocationNote}>
+                        💡 Each class will be allocated the required number of slots based on its Lec Hours + Lab Hours. For example, a class with 3 Lec hours + 3 Lab hours (6 hours/week) will be assigned 4 time slots across the week.
                       </p>
                     </div>
                   </div>
@@ -1575,6 +1838,107 @@ export default function GenerateSchedulePage() {
           )}
         </div>
       </main>
+      
+      {/* File Viewer Modal */}
+      {(showClassFileViewer || showTeacherFileViewer) && (
+        <div className={styles.modalOverlay} onClick={closeFileViewer}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>
+                {showClassFileViewer ? (
+                  <>
+                    <BookOpen size={24} /> Class Schedule File: {selectedClassInfo?.file_name}
+                  </>
+                ) : (
+                  <>
+                    <FaChalkboardTeacher size={24} /> Teacher Schedule File: {selectedTeacherInfo?.file_name}
+                  </>
+                )}
+              </h2>
+              <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {viewerLoading ? (
+                <div className={styles.modalLoading}>
+                  <FaSpinner className={styles.spinnerIcon} />
+                  <p>Loading file data...</p>
+                </div>
+              ) : viewerData.length === 0 ? (
+                <div className={styles.modalEmpty}>
+                  <p>No data found in this file.</p>
+                </div>
+              ) : showClassFileViewer ? (
+                <div className={styles.tableWrapper}>
+                  <table className={styles.viewerTable}>
+                    <thead>
+                      <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Section</th>
+                        <th>Day</th>
+                        <th>Time</th>
+                        <th>Lec Hours</th>
+                        <th>Lab Hours</th>
+                        <th>Department</th>
+                        <th>Semester</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewerData.map((item: any, idx: number) => (
+                        <tr key={idx}>
+                          <td>{item.course_code || 'N/A'}</td>
+                          <td>{item.course_name || 'N/A'}</td>
+                          <td>{item.section || 'N/A'}</td>
+                          <td>{item.schedule_day || 'N/A'}</td>
+                          <td>{item.schedule_time || 'N/A'}</td>
+                          <td>{item.lec_hr || item.lec_hours || 0}</td>
+                          <td>{item.lab_hr || item.lab_hours || 0}</td>
+                          <td>{item.department || 'N/A'}</td>
+                          <td>{item.semester || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.tableWrapper}>
+                  <table className={styles.viewerTable}>
+                    <thead>
+                      <tr>
+                        <th>Teacher ID</th>
+                        <th>Name</th>
+                        <th>Day</th>
+                        <th>Time</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewerData.map((item: any, idx: number) => (
+                        <tr key={idx}>
+                          <td>{item.teacher_id || 'N/A'}</td>
+                          <td>{item.name || item.teacher_name || 'N/A'}</td>
+                          <td>{item.schedule_day || 'N/A'}</td>
+                          <td>{item.schedule_time || 'N/A'}</td>
+                          <td>{item.department || 'N/A'}</td>
+                          <td>{item.email || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              
+              <div className={styles.modalFooter}>
+                <p><strong>Total Records:</strong> {viewerData.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

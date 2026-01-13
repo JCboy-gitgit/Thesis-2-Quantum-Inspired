@@ -17,6 +17,11 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def get_supabase_client() -> Client:
+    """Return the Supabase client instance"""
+    return supabase
+
+
 # ==================== Room Operations ====================
 async def get_all_rooms(campus: Optional[str] = None, building: Optional[str] = None) -> List[Dict]:
     """Fetch all rooms, optionally filtered by campus/building"""
@@ -196,6 +201,31 @@ async def get_all_schedules() -> List[Dict]:
         "created_at", desc=True
     ).execute()
     return response.data or []
+
+
+async def get_schedule_by_id(schedule_id: int) -> Optional[Dict]:
+    """Get a specific schedule by ID"""
+    response = supabase.table("class_schedule_summary").select("*").eq(
+        "id", schedule_id
+    ).execute()
+    return response.data[0] if response.data else None
+
+
+async def create_schedule_record(schedule_data: Dict) -> Dict:
+    """Create a new schedule summary record"""
+    response = supabase.table("class_schedule_summary").insert(schedule_data).execute()
+    return response.data[0] if response.data else {}
+
+
+async def update_schedule_status(schedule_id: int, status: str, message: str = "") -> Dict:
+    """Update the status of a schedule"""
+    update_data = {"status": status}
+    if message:
+        update_data["message"] = message
+    response = supabase.table("class_schedule_summary").update(update_data).eq(
+        "id", schedule_id
+    ).execute()
+    return response.data[0] if response.data else {}
 
 
 async def delete_schedule(schedule_id: int) -> bool:

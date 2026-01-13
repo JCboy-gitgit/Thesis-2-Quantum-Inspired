@@ -23,7 +23,7 @@ from models import (
 )
 from database import (
     get_supabase_client, get_all_rooms, get_sections_for_scheduling,
-    get_teachers, get_time_slots, save_schedule_entries,
+    get_all_teachers, get_time_slots, save_schedule_entries,
     check_room_conflicts, check_teacher_conflicts, get_room_utilization,
     create_schedule_record, update_schedule_status, get_schedule_by_id,
     delete_schedule, get_all_schedules
