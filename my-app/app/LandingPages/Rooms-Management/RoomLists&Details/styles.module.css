@@ -186,14 +186,14 @@
 }
 
 .headerIconWrapper {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   width: 80px;
   height: 80px;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
   flex-shrink: 0;
 }
 
@@ -368,7 +368,7 @@
 }
 
 .campusCardIcon.schoolIcon {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   color: white;
 }
 
@@ -403,7 +403,7 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   color: white;
   width: 36px;
   height: 36px;
@@ -643,7 +643,7 @@
 }
 
 .expandButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -652,7 +652,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px var(--glow-color);
 }
 
 .expandButton:hover {
@@ -1094,14 +1094,14 @@
 }
 
 .modalBtnSave {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .modalBtnSave:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 16px var(--glow-color);
 }
 
 .modalBtnSave:active {

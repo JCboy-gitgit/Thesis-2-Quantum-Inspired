@@ -35,23 +35,26 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   // Auto-expand schedule menu if on a schedule-related page
   useEffect(() => {
-    // Only expand the relevant submenu, not all at once
-    const newOpen: { [key: number]: boolean } = {}
-    menuItems.forEach((item, idx) => {
-      if (item.hasSubmenu && item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
-        newOpen[idx] = true
-      }
-      if (item.hasSubmenu && item.label === 'Room Management' && pathname.includes('/Rooms-Management')) {
-        newOpen[idx] = true
-      }
-      if (item.hasSubmenu && item.label === 'Faculty Management' && pathname.includes('/FacultyManagement')) {
-        newOpen[idx] = true
-      }
-      if (item.hasSubmenu && item.label === 'Courses Management' && pathname.includes('/CoursesManagement')) {
-        newOpen[idx] = true
-      }
+    // Only expand the relevant submenu, keeping others that are already open
+    setOpenSubmenus(prev => {
+      const newOpen: { [key: number]: boolean } = { ...prev }
+      
+      menuItems.forEach((item, idx) => {
+        if (item.hasSubmenu) {
+          if (item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
+            newOpen[idx] = true
+          } else if (item.label === 'Rooms Management' && pathname.includes('/Rooms-Management')) {
+            newOpen[idx] = true
+          } else if (item.label === 'Faculty Management' && pathname.includes('/FacultyManagement')) {
+            newOpen[idx] = true
+          } else if (item.label === 'Courses Management' && pathname.includes('/CoursesManagement')) {
+            newOpen[idx] = true
+          }
+        }
+      })
+      
+      return newOpen
     })
-    setOpenSubmenus(newOpen)
     // eslint-disable-next-line
   }, [pathname])
 

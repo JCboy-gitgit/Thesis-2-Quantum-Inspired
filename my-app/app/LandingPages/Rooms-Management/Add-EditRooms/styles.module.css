@@ -159,13 +159,13 @@
 .headerIcon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .headerTitle {
@@ -187,7 +187,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  background: var(--primary-gradient);
   color: white;
   border: none;
   border-radius: 10px;
@@ -195,12 +195,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .addButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 6px 20px var(--glow-color);
 }
 
 /* Messages */
@@ -752,7 +752,7 @@
 .campusCardIcon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -917,8 +917,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
+  background: var(--primary-alpha);
+  color: var(--primary);
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 12px;
