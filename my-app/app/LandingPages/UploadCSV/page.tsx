@@ -327,27 +327,83 @@ export default function UploadCSVPage(): JSX.Element {
       
       const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
 
-      // CSV: course_code | course_name | section | lec_units | lab_units | credit_units | lec_hours | lab_hours | schedule_day | schedule_time | semester | academic_year | department | college | status
+      // CSV: course_code | course_name | section | year_level | student_count | lec_units | lab_units | credit_units | lec_hours | lab_hours | schedule_day | schedule_time | semester | academic_year | department | college | status
       // Note: college field is ALWAYS set to the batch name you typed in the input field
-      const classData = dataRows.map(row => ({
-        upload_group_id: nextGroupId,
-        course_code: row[0] || '',
-        course_name: row[1] || '',
-        section: row[2] || '',
-        lec_units: parseInt(row[3]) || 0,
-        lab_units: parseInt(row[4]) || 0,
-        credit_units: parseInt(row[5]) || 0,
-        lec_hours: parseInt(row[6]) || 0,
-        lab_hours: parseInt(row[7]) || 0,
-        schedule_day: row[8] || '',
-        schedule_time: row[9] || '',
-        semester: row[10] || '1st Semester',
-        academic_year: row[11] || '2025-2026',
-        department: row[12] || '',
-        college: classBatchName, // Always use the batch name from input field
-        status: row[14] || 'pending',
-        file_name: classFile.name
-      }))
+      // Supports old format (15 columns) without year_level/student_count and new format (17 columns)
+      const classData = dataRows.map(row => {
+        // Check if this is the new format with year_level and student_count (17 columns)
+        const hasYearLevelAndStudentCount = row.length >= 17;
+        
+        if (hasYearLevelAndStudentCount) {
+          // New format with year_level at position 3 and student_count at position 4
+          return {
+            upload_group_id: nextGroupId,
+            course_code: row[0] || '',
+            course_name: row[1] || '',
+            section: row[2] || '',
+            year_level: parseInt(row[3]) || 1,
+            student_count: parseInt(row[4]) || 30,
+            lec_units: parseInt(row[5]) || 0,
+            lab_units: parseInt(row[6]) || 0,
+            credit_units: parseInt(row[7]) || 0,
+            lec_hours: parseInt(row[8]) || 0,
+            lab_hours: parseInt(row[9]) || 0,
+            schedule_day: row[10] || '',
+            schedule_time: row[11] || '',
+            semester: row[12] || '1st Semester',
+            academic_year: row[13] || '2025-2026',
+            department: row[14] || '',
+            college: classBatchName,
+            status: row[16] || 'pending',
+            file_name: classFile.name
+          }
+        } else if (row.length >= 16) {
+          // Format with student_count but no year_level (16 columns)
+          return {
+            upload_group_id: nextGroupId,
+            course_code: row[0] || '',
+            course_name: row[1] || '',
+            section: row[2] || '',
+            year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section (e.g., "1A" -> 1)
+            student_count: parseInt(row[3]) || 30,
+            lec_units: parseInt(row[4]) || 0,
+            lab_units: parseInt(row[5]) || 0,
+            credit_units: parseInt(row[6]) || 0,
+            lec_hours: parseInt(row[7]) || 0,
+            lab_hours: parseInt(row[8]) || 0,
+            schedule_day: row[9] || '',
+            schedule_time: row[10] || '',
+            semester: row[11] || '1st Semester',
+            academic_year: row[12] || '2025-2026',
+            department: row[13] || '',
+            college: classBatchName,
+            status: row[15] || 'pending',
+            file_name: classFile.name
+          }
+        } else {
+          // Old format without year_level and student_count (15 columns)
+          return {
+            upload_group_id: nextGroupId,
+            course_code: row[0] || '',
+            course_name: row[1] || '',
+            section: row[2] || '',
+            year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section
+            lec_units: parseInt(row[3]) || 0,
+            lab_units: parseInt(row[4]) || 0,
+            credit_units: parseInt(row[5]) || 0,
+            lec_hours: parseInt(row[6]) || 0,
+            lab_hours: parseInt(row[7]) || 0,
+            schedule_day: row[8] || '',
+            schedule_time: row[9] || '',
+            semester: row[10] || '1st Semester',
+            academic_year: row[11] || '2025-2026',
+            department: row[12] || '',
+            college: classBatchName,
+            status: row[14] || 'pending',
+            file_name: classFile.name
+          }
+        }
+      })
 
       console.log('Inserting class schedule data:', classData.length, 'rows')
 

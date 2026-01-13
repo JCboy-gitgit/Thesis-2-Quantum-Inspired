@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Room Scheduling Test Data Generator</title>
+    <title>BulSU Scheduling Test Data Generator</title>
     <style>
         :root {
-            --primary: #00a651;
-            --primary-dark: #005826;
-            --primary-light: #4cff96;
-            --bg-dark: #003d1a;
-            --card-bg: rgba(0, 88, 38, 0.95);
+            /* BulSU Colors mostly red/gold/white usually, but keeping the requested green theme or adapting? 
+               Sticking to the existing Green theme to ensure UI consistency with previous requests, 
+               but arguably BulSU is Gold/Red. I will keep the existing green theme to avoid breaking the user's styling preference 
+               unless asked, but I will make the headers generic. */
+            --primary: #d32f2f; /* Changed to Red for BulSU feel */
+            --primary-dark: #9a0007;
+            --primary-light: #ff6659;
+            --bg-dark: #1a1a1a;
+            --card-bg: rgba(30, 30, 30, 0.95);
             --text-light: #ffffff;
-            --text-secondary: #a8e6c0;
-            --border-color: rgba(0, 166, 81, 0.3);
+            --text-secondary: #e0e0e0;
+            --border-color: rgba(211, 47, 47, 0.3);
             --success: #10b981;
             --warning: #ed8936;
             --danger: #ef4444;
@@ -27,7 +31,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--bg-dark) 0%, #002d12 100%);
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #000000 100%);
             min-height: 100vh;
             color: var(--text-light);
             padding: 20px;
@@ -97,6 +101,7 @@
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
+            color: white;
         }
 
         .form-group {
@@ -127,7 +132,7 @@
         .form-group select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.2);
+            box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
         }
 
         .form-group input::placeholder {
@@ -162,7 +167,7 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 166, 81, 0.4);
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
         }
 
         .btn-success {
@@ -214,7 +219,7 @@
 
         .stat-badge {
             padding: 6px 12px;
-            background: rgba(0, 166, 81, 0.2);
+            background: rgba(211, 47, 47, 0.2);
             border-radius: 20px;
             font-size: 0.85rem;
             color: var(--primary-light);
@@ -242,7 +247,7 @@
         }
 
         .preview-table tbody tr:hover {
-            background: rgba(0, 166, 81, 0.1);
+            background: rgba(211, 47, 47, 0.1);
         }
 
         .table-container {
@@ -308,7 +313,7 @@
         }
 
         .badge-info {
-            background: rgba(0, 166, 81, 0.2);
+            background: rgba(211, 47, 47, 0.2);
             color: var(--primary-light);
         }
 
@@ -346,46 +351,44 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎓 Room Scheduling Test Data Generator</h1>
-            <p>Generate realistic CSV test data for the Quantum-Inspired Room Allocation System</p>
+            <h1>🎓 BulSU Test Data Generator</h1>
+            <p>Generate realistic CSV test data for the Bulacan State University (Main Campus)</p>
         </header>
 
         <div class="grid">
-            <!-- Campus/Rooms Generator -->
             <div class="card">
                 <h2>
                     <span class="icon">🏫</span>
                     Campus & Rooms
                 </h2>
-                <!-- school_name is entered in UploadCSV page, not in generator -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Number of Campuses</label>
-                        <input type="number" id="numCampuses" value="2" min="1" max="10">
+                        <label>Campus</label>
+                        <input type="text" id="campusName" value="Main Campus" readonly style="opacity: 0.7; cursor: not-allowed;">
                     </div>
                     <div class="form-group">
-                        <label>Buildings per Campus</label>
-                        <input type="number" id="buildingsPerCampus" value="3" min="1" max="10">
+                        <label>Buildings</label>
+                        <input type="number" id="buildingsPerCampus" value="8" min="1" max="20">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Rooms per Building</label>
-                        <input type="number" id="roomsPerBuilding" value="5" min="1" max="20">
+                        <input type="number" id="roomsPerBuilding" value="10" min="1" max="50">
                     </div>
                     <div class="form-group">
                         <label>Max Floors</label>
-                        <input type="number" id="maxFloors" value="4" min="1" max="10">
+                        <input type="number" id="maxFloors" value="5" min="1" max="10">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Min Capacity</label>
-                        <input type="number" id="minCapacity" value="20" min="10" max="100">
+                        <input type="number" id="minCapacity" value="30" min="10" max="100">
                     </div>
                     <div class="form-group">
                         <label>Max Capacity</label>
-                        <input type="number" id="maxCapacity" value="60" min="20" max="200">
+                        <input type="number" id="maxCapacity" value="50" min="20" max="200">
                     </div>
                 </div>
                 <button class="btn btn-primary" onclick="generateRooms()">
@@ -418,7 +421,6 @@
                 </div>
             </div>
 
-            <!-- Class Schedules Generator -->
             <div class="card">
                 <h2>
                     <span class="icon">📚</span>
@@ -427,11 +429,21 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Number of Classes</label>
-                        <input type="number" id="numClasses" value="30" min="5" max="200">
+                        <input type="number" id="numClasses" value="50" min="5" max="500">
                     </div>
                     <div class="form-group">
                         <label>Sections per Course</label>
-                        <input type="number" id="sectionsPerCourse" value="3" min="1" max="10">
+                        <input type="number" id="sectionsPerCourse" value="2" min="1" max="10">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Min Students per Section</label>
+                        <input type="number" id="minStudents" value="20" min="5" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Students per Section</label>
+                        <input type="number" id="maxStudents" value="50" min="10" max="200">
                     </div>
                 </div>
                 <div class="form-row">
@@ -449,14 +461,10 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Department Focus</label>
+                    <label>College/Focus</label>
                     <select id="departmentFocus">
-                        <option value="all">All Departments</option>
-                        <option value="cs">Computer Science</option>
-                        <option value="engineering">Engineering</option>
-                        <option value="business">Business</option>
-                        <option value="arts">Arts & Sciences</option>
-                    </select>
+                        <option value="all">All Colleges</option>
+                        </select>
                 </div>
                 <button class="btn btn-primary" onclick="generateClassSchedules()">
                     ⚡ Generate Class Schedules
@@ -474,11 +482,12 @@
                             <thead>
                                 <tr>
                                     <th>Code</th>
-                                    <th>Course</th>
+                                    <th>College</th>
+                                    <th>Course/Program</th>
                                     <th>Section</th>
-                                    <th>Day</th>
-                                    <th>Time</th>
-                                    <th>Units</th>
+                                    <th>Year</th>
+                                    <th>Students</th>
+                                    <th>Schedule</th>
                                 </tr>
                             </thead>
                             <tbody id="classesTableBody"></tbody>
@@ -487,7 +496,6 @@
                 </div>
             </div>
 
-            <!-- Teacher Schedules Generator -->
             <div class="card">
                 <h2>
                     <span class="icon">👨‍🏫</span>
@@ -496,23 +504,18 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Number of Teachers</label>
-                        <input type="number" id="numTeachers" value="20" min="5" max="100">
+                        <input type="number" id="numTeachers" value="30" min="5" max="200">
                     </div>
                     <div class="form-group">
-                        <label>Schedules per Teacher (Avg)</label>
-                        <input type="number" id="classesPerTeacher" value="4" min="1" max="10">
+                        <label>Schedules per Teacher</label>
+                        <input type="number" id="classesPerTeacher" value="3" min="1" max="10">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Department</label>
+                    <label>Assigned College</label>
                     <select id="teacherDepartment">
-                        <option value="all">All Departments</option>
-                        <option value="Computer Science">Computer Science</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Business">Business Administration</option>
-                        <option value="Arts">Arts & Sciences</option>
-                        <option value="Education">Education</option>
-                    </select>
+                        <option value="all">All Colleges</option>
+                         </select>
                 </div>
                 <button class="btn btn-primary" onclick="generateTeacherSchedules()">
                     ⚡ Generate Teacher Schedules
@@ -531,10 +534,9 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Name</th>
+                                    <th>College</th>
                                     <th>Email</th>
-                                    <th>Department</th>
-                                    <th>Day</th>
-                                    <th>Time</th>
+                                    <th>Day/Time</th>
                                 </tr>
                             </thead>
                             <tbody id="teachersTableBody"></tbody>
@@ -544,11 +546,10 @@
             </div>
         </div>
 
-        <!-- Download Section -->
         <div class="actions-section">
             <h2>📥 Download Generated Data</h2>
             <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                Click to download CSV files for upload to the scheduling system
+                Click to download CSV files formatted for the BulSU Scheduling System
             </p>
             <div class="download-buttons">
                 <button class="btn btn-success" onclick="downloadCSV('rooms')" id="downloadRooms" disabled>
@@ -570,11 +571,12 @@
                 </button>
             </div>
 
-            <div class="info-box">
+             <div class="info-box">
                 <strong>📋 CSV Format (Comma-separated):</strong><br><br>
                 <strong>Rooms:</strong> campus, building, room, capacity, is_first_floor, floor_number, room_type, has_ac, has_projector, has_whiteboard, is_pwd_accessible, status<br>
-                <em style="color: var(--text-secondary); font-size: 0.85rem;">💡 school_name is entered separately in the Upload CSV page</em><br><br>
-                <strong>Classes:</strong> course_code, course_name, section, lec_units, lab_units, credit_units, lec_hours, lab_hours, schedule_day, schedule_time, semester, academic_year, department, college, status<br><br>
+                <em style="color: var(--text-secondary); font-size: 0.85rem;">💡 Campus is locked to "Main Campus"</em><br><br>
+                <strong>Classes:</strong> course_code, course_name, section, year_level, student_count, lec_units, lab_units, credit_units, lec_hours, lab_hours, schedule_day, schedule_time, semester, academic_year, department, college, status<br>
+                <em style="color: var(--text-secondary); font-size: 0.85rem;">💡 "Department" field contains the specific Program Name (e.g. BS Civil Engineering)</em><br><br>
                 <strong>Teachers:</strong> teacher_id, teacher_name, schedule_day, schedule_time, department, email, college
             </div>
         </div>
@@ -588,52 +590,210 @@
             teachers: []
         };
 
+        // ==================== BulSU Data ====================
+        const bulsuData = {
+            "CAFA": {
+                name: "College of Architecture and Fine Arts",
+                programs: [
+                    "Bachelor of Fine Arts Major in Visual Communication",
+                    "Bachelor of Landscape Architecture",
+                    "Bachelor of Science in Architecture"
+                ],
+                codePrefix: ["BFA", "BLA", "ARCH"]
+            },
+            "CAL": {
+                name: "College of Arts and Letters",
+                programs: [
+                    "Bachelor of Arts in Broadcasting",
+                    "Bachelor of Arts in Journalism",
+                    "Bachelor of Performing Arts (Theater Track)",
+                    "Batsilyer ng Sining sa Malikhaing Pagsulat"
+                ],
+                codePrefix: ["BRD", "JRN", "BPA", "BMP"]
+            },
+            "CBEA": {
+                name: "College of Business Education and Accountancy",
+                programs: [
+                    "Bachelor of Science in Accountancy",
+                    "Bachelor of Science in Business Administration Major in Business Economics",
+                    "Bachelor of Science in Business Administration Major in Financial Management",
+                    "Bachelor of Science in Business Administration Major in Marketing Management",
+                    "Bachelor of Science in Entrepreneurship"
+                ],
+                codePrefix: ["ACC", "BAECON", "BAFIN", "BAMKT", "ENT"]
+            },
+            "CCJE": {
+                name: "College of Criminal Justice Education",
+                programs: [
+                    "Bachelor of Arts in Legal Management",
+                    "Bachelor of Science in Criminology"
+                ],
+                codePrefix: ["LM", "CRIM"]
+            },
+            "CHTM": {
+                name: "College of Hospitality and Tourism Management",
+                programs: [
+                    "Bachelor of Science in Hospitality Management",
+                    "Bachelor of Science in Tourism Management"
+                ],
+                codePrefix: ["HM", "TM"]
+            },
+            "CICT": {
+                name: "College of Information and Communications Technology",
+                programs: [
+                    "Bachelor of Library and Information Science",
+                    "Bachelor of Science in Information System",
+                    "Bachelor of Science in Information Technology"
+                ],
+                codePrefix: ["BLIS", "IS", "IT"]
+            },
+            "CIT": {
+                name: "College of Industrial Technology",
+                programs: [
+                    "BIT Automotive",
+                    "BIT Computer",
+                    "BIT Drafting",
+                    "BIT Electrical",
+                    "BIT Electronics & Communication",
+                    "BIT Electronics",
+                    "BIT Food Processing",
+                    "BIT HVACR",
+                    "BIT Mechanical",
+                    "BIT Mechatronics",
+                    "BIT Welding"
+                ],
+                codePrefix: ["AUTO", "COMPT", "DRAFT", "ELEC", "ECET", "ELT", "FOOD", "HVACR", "MECH", "MECHAT", "WELD"]
+            },
+            "CLaw": {
+                name: "College of Law",
+                programs: [
+                    "Bachelor of Laws",
+                    "Juris Doctor"
+                ],
+                codePrefix: ["LAW", "JD"]
+            },
+            "CN": {
+                name: "College of Nursing",
+                programs: [
+                    "Bachelor of Science in Nursing"
+                ],
+                codePrefix: ["NURS"]
+            },
+            "COE": {
+                name: "College of Engineering",
+                programs: [
+                    "Bachelor of Science in Civil Engineering",
+                    "Bachelor of Science in Computer Engineering",
+                    "Bachelor of Science in Electrical Engineering",
+                    "Bachelor of Science in Electronics Engineering",
+                    "Bachelor of Science in Industrial Engineering",
+                    "Bachelor of Science in Manufacturing Engineering",
+                    "Bachelor of Science in Mechanical Engineering",
+                    "Bachelor of Science in Mechatronics Engineering"
+                ],
+                codePrefix: ["CE", "CPE", "EE", "ECE", "IE", "MFGE", "ME", "MCE"]
+            },
+            "COED": {
+                name: "College of Education",
+                programs: [
+                    "Bachelor of Early Childhood Education",
+                    "Bachelor of Elementary Education",
+                    "Bachelor of Physical Education",
+                    "BSED English",
+                    "BSED Filipino",
+                    "BSED Mathematics",
+                    "BSED Sciences",
+                    "BSED Social Studies",
+                    "BSED Values Education",
+                    "BTLE Home Economics",
+                    "BTLE Industrial Arts",
+                    "BTLE ICT"
+                ],
+                codePrefix: ["ECED", "BEED", "BPED", "ENG", "FIL", "MATH", "SCI", "SS", "VE", "THE", "TIA", "TICT"]
+            },
+            "CS": {
+                name: "College of Science",
+                programs: [
+                    "Bachelor of Science in Biology",
+                    "Bachelor of Science in Environmental Science",
+                    "Bachelor of Science in Food Technology",
+                    "BS Math (Applied Statistics)",
+                    "BS Math (Business Applications)",
+                    "BS Math (Computer Science)"
+                ],
+                codePrefix: ["BIO", "ENVI", "FT", "STAT", "MBA", "MCS"]
+            },
+            "CSER": {
+                name: "College of Sports, Exercise and Recreation",
+                programs: [
+                    "BSESS Fitness and Sports Coaching",
+                    "BSESS Fitness and Sports Management",
+                    "Certificate of Physical Education"
+                ],
+                codePrefix: ["COACH", "MGMT", "CPE"]
+            },
+            "CSSP": {
+                name: "College of Social Sciences and Philosophy",
+                programs: [
+                    "Bachelor of Public Administration",
+                    "Bachelor of Science in Psychology",
+                    "Bachelor of Science in Social Work"
+                ],
+                codePrefix: ["BPA", "PSYCH", "SW"]
+            },
+            "GS": {
+                name: "Graduate School",
+                programs: [
+                    "Doctor of Education",
+                    "Doctor of Philosophy",
+                    "Doctor of Public Administration",
+                    "Master in Business Administration",
+                    "Master in Physical Education",
+                    "Master in Public Administration",
+                    "Master of Arts in Education",
+                    "Master of Engineering Program",
+                    "Master of Industrial Technology Management",
+                    "Master of Information Technology",
+                    "Master of Manufacturing Engineering",
+                    "Master of Science in Civil Engineering",
+                    "Master of Science in Computer Engineering",
+                    "Master of Science in Electronics and Communications Engineering"
+                ],
+                codePrefix: ["DED", "PHD", "DPA", "MBA", "MPE", "MPA", "MAED", "MEP", "MITM", "MIT", "MME", "MSCE", "MSCPE", "MSECE"]
+            }
+        };
+
+        // ==================== Initialization ====================
+        window.onload = function() {
+            populateCollegeDropdowns();
+        };
+
+        function populateCollegeDropdowns() {
+            const classSelect = document.getElementById('departmentFocus');
+            const teacherSelect = document.getElementById('teacherDepartment');
+            
+            Object.keys(bulsuData).forEach(key => {
+                const college = bulsuData[key];
+                const option = `<option value="${key}">${college.name} (${key})</option>`;
+                classSelect.insertAdjacentHTML('beforeend', option);
+                teacherSelect.insertAdjacentHTML('beforeend', option);
+            });
+        }
+
         // ==================== Random Data Generators ====================
-        const campusNames = ['Main Campus', 'North Campus', 'South Campus', 'East Campus', 'West Campus', 'Downtown Campus', 'Science Campus', 'Engineering Campus'];
-        const buildingNames = ['Academic Building', 'Science Hall', 'Engineering Complex', 'Business Center', 'Arts Building', 'Library Building', 'Technology Center', 'Innovation Hub', 'Learning Center', 'Research Building'];
-        const roomTypes = ['Classroom', 'Laboratory', 'Lecture Hall', 'Computer Lab', 'Conference Room', 'Seminar Room'];
+        const buildingNames = [
+            'Valencia Hall', 'Alvarado Hall', 'Federizo Hall', 'Natividad Hall', 
+            'Flores Hall', 'Carpio Hall', 'CIT Building', 'CIDE Building', 
+            'CSSP Building', 'Engineering Building', 'Information Tech Building', 
+            'University Hostel', 'Science Research Center'
+        ]; // Realistic BulSU Main Campus buildings logic
+        
+        const roomTypes = ['Lecture Room', 'Laboratory', 'Computer Lab', 'Smart Room', 'Drawing Room', 'AVR'];
         const firstNames = ['Juan', 'Maria', 'Jose', 'Ana', 'Miguel', 'Sofia', 'Carlos', 'Isabella', 'Antonio', 'Gabriela', 'Luis', 'Carmen', 'Francisco', 'Patricia', 'Rafael', 'Elena', 'Diego', 'Rosa', 'Manuel', 'Teresa', 'Pedro', 'Laura', 'Fernando', 'Lucia', 'Ricardo', 'Angela', 'Alberto', 'Beatriz', 'Eduardo', 'Clara'];
         const lastNames = ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Torres', 'Ramos', 'Flores', 'Rivera', 'Martinez', 'Lopez', 'Gonzales', 'Hernandez', 'Perez', 'Sanchez', 'Ramirez', 'Diaz', 'Morales', 'Jimenez', 'Ruiz', 'Vargas', 'Castillo', 'Mendoza', 'Romero', 'Aquino', 'Dela Cruz', 'Villanueva', 'Bautista', 'Navarro', 'Fernandez', 'Castro'];
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const timeSlots = ['7:00-8:30', '8:30-10:00', '10:00-11:30', '11:30-13:00', '13:00-14:30', '14:30-16:00', '16:00-17:30', '17:30-19:00'];
+        const timeSlots = ['7:00-10:00', '10:00-13:00', '13:00-16:00', '16:00-19:00'];
         
-        const coursesData = {
-            cs: [
-                { code: 'CS101', name: 'Introduction to Computer Science', lec: 3, lab: 0 },
-                { code: 'CS102', name: 'Data Structures and Algorithms', lec: 3, lab: 1 },
-                { code: 'CS103', name: 'Object-Oriented Programming', lec: 2, lab: 2 },
-                { code: 'CS201', name: 'Database Management Systems', lec: 3, lab: 1 },
-                { code: 'CS202', name: 'Web Development', lec: 2, lab: 2 },
-                { code: 'CS301', name: 'Software Engineering', lec: 3, lab: 1 },
-                { code: 'CS302', name: 'Artificial Intelligence', lec: 3, lab: 1 },
-                { code: 'CS401', name: 'Machine Learning', lec: 3, lab: 1 }
-            ],
-            engineering: [
-                { code: 'ENG101', name: 'Engineering Mathematics', lec: 3, lab: 0 },
-                { code: 'ENG102', name: 'Engineering Drawing', lec: 1, lab: 2 },
-                { code: 'ENG201', name: 'Thermodynamics', lec: 3, lab: 1 },
-                { code: 'ENG202', name: 'Mechanics of Materials', lec: 3, lab: 1 },
-                { code: 'ENG301', name: 'Circuit Analysis', lec: 3, lab: 1 },
-                { code: 'ENG302', name: 'Digital Electronics', lec: 2, lab: 2 }
-            ],
-            business: [
-                { code: 'BUS101', name: 'Principles of Management', lec: 3, lab: 0 },
-                { code: 'BUS102', name: 'Financial Accounting', lec: 3, lab: 0 },
-                { code: 'BUS201', name: 'Marketing Management', lec: 3, lab: 0 },
-                { code: 'BUS202', name: 'Business Statistics', lec: 3, lab: 1 },
-                { code: 'BUS301', name: 'Operations Management', lec: 3, lab: 0 },
-                { code: 'BUS302', name: 'Human Resource Management', lec: 3, lab: 0 }
-            ],
-            arts: [
-                { code: 'ART101', name: 'Introduction to Philosophy', lec: 3, lab: 0 },
-                { code: 'ART102', name: 'World Literature', lec: 3, lab: 0 },
-                { code: 'ART201', name: 'Psychology 101', lec: 3, lab: 0 },
-                { code: 'ART202', name: 'Sociology', lec: 3, lab: 0 },
-                { code: 'ART301', name: 'Communication Skills', lec: 2, lab: 1 },
-                { code: 'ART302', name: 'Critical Thinking', lec: 3, lab: 0 }
-            ]
-        };
-
         // ==================== Utility Functions ====================
         function random(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -643,20 +803,31 @@
             return arr[Math.floor(Math.random() * arr.length)];
         }
 
-        function generateEmail(firstName, lastName, domain = 'faculty.edu.ph') {
+        function generateEmail(firstName, lastName) {
             const cleanFirst = firstName.toLowerCase().replace(/[^a-z]/g, '');
             const cleanLast = lastName.toLowerCase().replace(/[^a-z]/g, '');
-            return `${cleanFirst}.${cleanLast}@${domain}`;
+            return `${cleanFirst}.${cleanLast}@bulsu.edu.ph`;
         }
 
         function generateTeacherId(index) {
-            return `T-${String(index).padStart(4, '0')}`;
+            // T-2025-XXXX format
+            return `T-2025-${String(index).padStart(4, '0')}`;
+        }
+
+        function generateSubjectName(prefix, level) {
+            const subjects = [
+                "Fundamentals", "Principles", "Introduction to", "Advanced", "Applied", 
+                "Contemporary", "Research in", "Management of", "Theories of", "Ethics in"
+            ];
+            const suffix = [
+                "System", "Analysis", "Design", "Communication", "Development", 
+                "Technology", "Practice", "Studies", "Planning", "Methods"
+            ];
+            return `${randomElement(subjects)} ${prefix} ${randomElement(suffix)}`;
         }
 
         // ==================== Room Generation ====================
         function generateRooms() {
-            // school_name is entered in UploadCSV page, not in generator
-            const numCampuses = parseInt(document.getElementById('numCampuses').value);
             const buildingsPerCampus = parseInt(document.getElementById('buildingsPerCampus').value);
             const roomsPerBuilding = parseInt(document.getElementById('roomsPerBuilding').value);
             const maxFloors = parseInt(document.getElementById('maxFloors').value);
@@ -664,36 +835,40 @@
             const maxCapacity = parseInt(document.getElementById('maxCapacity').value);
 
             generatedData.rooms = [];
+            const campusName = "Main Campus"; // Hardcoded as requested
 
-            for (let c = 0; c < numCampuses; c++) {
-                const campusName = campusNames[c % campusNames.length];
+            // Create a pool of buildings
+            let activeBuildings = buildingNames.slice(0, buildingsPerCampus);
+            if (buildingsPerCampus > buildingNames.length) {
+                for (let i = 0; i < buildingsPerCampus - buildingNames.length; i++) {
+                    activeBuildings.push(`Annex Building ${i+1}`);
+                }
+            }
+
+            for (let b = 0; b < activeBuildings.length; b++) {
+                const buildingName = activeBuildings[b];
                 
-                for (let b = 0; b < buildingsPerCampus; b++) {
-                    const buildingName = buildingNames[b % buildingNames.length];
-                    
-                    for (let r = 0; r < roomsPerBuilding; r++) {
-                        const floor = random(1, maxFloors);
-                        const roomNumber = floor * 100 + random(1, 20);
-                        const capacity = random(minCapacity, maxCapacity);
-                        const roomType = randomElement(roomTypes);
-                        const isPwdAccessible = floor === 1 || Math.random() < 0.3;
+                for (let r = 0; r < roomsPerBuilding; r++) {
+                    const floor = random(1, maxFloors);
+                    const roomNumber = floor * 100 + random(1, 20);
+                    const capacity = random(minCapacity, maxCapacity);
+                    const roomType = randomElement(roomTypes);
+                    const isPwdAccessible = floor === 1 || Math.random() < 0.6; // High PWD accessibility chance
 
-                        generatedData.rooms.push({
-                            // school_name is added in UploadCSV page
-                            campus: campusName,
-                            building: buildingName,
-                            room: `${buildingName.substring(0, 2).toUpperCase()}${roomNumber}`,
-                            capacity: capacity,
-                            is_first_floor: floor === 1,
-                            floor_number: floor,
-                            room_type: roomType,
-                            has_ac: Math.random() > 0.3,
-                            has_projector: Math.random() > 0.4,
-                            has_whiteboard: true,
-                            is_pwd_accessible: isPwdAccessible,
-                            status: 'active'
-                        });
-                    }
+                    generatedData.rooms.push({
+                        campus: campusName,
+                        building: buildingName,
+                        room: `${buildingName.substring(0, 3).toUpperCase()}-${roomNumber}`,
+                        capacity: capacity,
+                        is_first_floor: floor === 1,
+                        floor_number: floor,
+                        room_type: roomType,
+                        has_ac: Math.random() > 0.2, // 80% have AC
+                        has_projector: Math.random() > 0.4,
+                        has_whiteboard: true,
+                        is_pwd_accessible: isPwdAccessible,
+                        status: 'active'
+                    });
                 }
             }
 
@@ -727,50 +902,73 @@
         function generateClassSchedules() {
             const numClasses = parseInt(document.getElementById('numClasses').value);
             const sectionsPerCourse = parseInt(document.getElementById('sectionsPerCourse').value);
+            const minStudents = parseInt(document.getElementById('minStudents').value) || 20;
+            const maxStudents = parseInt(document.getElementById('maxStudents').value) || 50;
             const semester = document.getElementById('semester').value;
             const academicYear = document.getElementById('academicYear').value;
-            const departmentFocus = document.getElementById('departmentFocus').value;
+            const focus = document.getElementById('departmentFocus').value;
 
             generatedData.classes = [];
 
-            // Get courses based on department focus
-            let courses = [];
-            if (departmentFocus === 'all') {
-                courses = [...coursesData.cs, ...coursesData.engineering, ...coursesData.business, ...coursesData.arts];
-            } else {
-                courses = coursesData[departmentFocus] || coursesData.cs;
-            }
-
             const sectionLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let classIndex = 0;
+            let generatedCount = 0;
 
-            while (classIndex < numClasses) {
-                const course = courses[classIndex % courses.length];
-                const numSections = Math.min(sectionsPerCourse, numClasses - classIndex);
+            while (generatedCount < numClasses) {
+                // Determine College
+                let collegeKey;
+                if (focus === 'all') {
+                    const keys = Object.keys(bulsuData);
+                    collegeKey = keys[Math.floor(Math.random() * keys.length)];
+                } else {
+                    collegeKey = focus;
+                }
 
-                for (let s = 0; s < numSections && classIndex < numClasses; s++) {
+                const collegeData = bulsuData[collegeKey];
+                
+                // Select random program within college
+                const programIndex = Math.floor(Math.random() * collegeData.programs.length);
+                const programName = collegeData.programs[programIndex];
+                const prefix = collegeData.codePrefix[programIndex];
+                
+                // Generate Course Code
+                const yearLevel = random(1, 4);
+                const subjectNum = random(1, 99);
+                const courseCode = `${prefix}${yearLevel}${String(subjectNum).padStart(2, '0')}`;
+                
+                // Units - Major courses have 3 units lec, some have additional 3hr lab
+                const lec = 3; // Always 3 units for lecture
+                const lab = Math.random() > 0.5 ? 1 : 0; // 50% chance of lab for major courses
+
+                // Generate multiple sections for this course
+                for (let s = 0; s < sectionsPerCourse; s++) {
+                    if (generatedCount >= numClasses) break;
+
                     const day = randomElement(days);
                     const time = randomElement(timeSlots);
 
+                    // Generate realistic student count based on user inputs
+                    const studentCount = random(minStudents, maxStudents);
+                    
                     generatedData.classes.push({
-                        course_code: course.code,
-                        course_name: course.name,
-                        section: sectionLetters[s],
-                        lec_units: course.lec,
-                        lab_units: course.lab,
-                        credit_units: course.lec + course.lab,
-                        lec_hours: course.lec,
-                        lab_hours: course.lab * 3,
+                        course_code: courseCode,
+                        course_name: generateSubjectName(prefix, yearLevel),
+                        section: `${yearLevel}${sectionLetters[s]}`,
+                        year_level: yearLevel,
+                        student_count: studentCount,
+                        lec_units: lec,
+                        lab_units: lab,
+                        credit_units: lec + lab,
+                        lec_hours: 3, // Always 3 hours lecture
+                        lab_hours: lab * 3, // 3 hours lab if has lab component
                         schedule_day: day,
                         schedule_time: time,
                         semester: semester,
                         academic_year: academicYear,
-                        department: departmentFocus === 'all' ? 'General' : departmentFocus,
-                        college: 'College of Science',
+                        department: programName, // Mapping Program Name to Department Field
+                        college: collegeData.name, // Full College Name
                         status: 'pending'
                     });
-
-                    classIndex++;
+                    generatedCount++;
                 }
             }
 
@@ -790,11 +988,12 @@
             tableBody.innerHTML = generatedData.classes.slice(0, 50).map(c => `
                 <tr>
                     <td><strong>${c.course_code}</strong></td>
-                    <td>${c.course_name}</td>
+                    <td><small>${c.college.substring(0, 20)}...</small></td>
+                    <td>${c.department.substring(0, 25)}...</td>
                     <td><span class="badge badge-info">${c.section}</span></td>
-                    <td>${c.schedule_day}</td>
-                    <td>${c.schedule_time}</td>
-                    <td>${c.credit_units}</td>
+                    <td><span class="badge badge-warning">Year ${c.year_level}</span></td>
+                    <td><span class="badge badge-success">${c.student_count}</span></td>
+                    <td>${c.schedule_day} ${c.schedule_time}</td>
                 </tr>
             `).join('');
         }
@@ -803,19 +1002,25 @@
         function generateTeacherSchedules() {
             const numTeachers = parseInt(document.getElementById('numTeachers').value);
             const classesPerTeacher = parseInt(document.getElementById('classesPerTeacher').value);
-            const department = document.getElementById('teacherDepartment').value;
+            const focus = document.getElementById('teacherDepartment').value;
 
             generatedData.teachers = [];
-
-            const departments = department === 'all' 
-                ? ['Computer Science', 'Engineering', 'Business Administration', 'Arts & Sciences', 'Education']
-                : [department];
 
             for (let i = 0; i < numTeachers; i++) {
                 const firstName = randomElement(firstNames);
                 const lastName = randomElement(lastNames);
-                const teacherDept = randomElement(departments);
-                const numClasses = random(Math.max(1, classesPerTeacher - 2), classesPerTeacher + 2);
+                
+                // Determine Teacher's College
+                let collegeKey;
+                if (focus === 'all') {
+                    const keys = Object.keys(bulsuData);
+                    collegeKey = keys[Math.floor(Math.random() * keys.length)];
+                } else {
+                    collegeKey = focus;
+                }
+                const collegeData = bulsuData[collegeKey];
+
+                const numClasses = random(Math.max(1, classesPerTeacher - 1), classesPerTeacher + 1);
 
                 for (let c = 0; c < numClasses; c++) {
                     generatedData.teachers.push({
@@ -823,9 +1028,9 @@
                         teacher_name: `Prof. ${firstName} ${lastName}`,
                         schedule_day: randomElement(days),
                         schedule_time: randomElement(timeSlots),
-                        department: teacherDept,
+                        department: randomElement(collegeData.programs), // Assign them to a specific program within college
                         email: generateEmail(firstName, lastName),
-                        college: 'College of Science'
+                        college: collegeData.name
                     });
                 }
             }
@@ -841,27 +1046,25 @@
             const countBadge = document.getElementById('teacherCount');
 
             preview.style.display = 'block';
-            const uniqueTeachers = [...new Set(generatedData.teachers.map(t => t.teacher_id))].length;
+            // Count unique teachers
+            const uniqueTeachers = new Set(generatedData.teachers.map(t => t.teacher_id)).size;
             countBadge.textContent = `${uniqueTeachers} teachers, ${generatedData.teachers.length} schedules`;
 
-            // Show unique teachers
-            const uniqueTeacherData = [];
+            // Filter for display (unique only)
             const seen = new Set();
-            for (const t of generatedData.teachers) {
-                if (!seen.has(t.teacher_id)) {
-                    seen.add(t.teacher_id);
-                    uniqueTeacherData.push(t);
-                }
-            }
+            const displayData = generatedData.teachers.filter(t => {
+                const duplicate = seen.has(t.teacher_id);
+                seen.add(t.teacher_id);
+                return !duplicate;
+            });
 
-            tableBody.innerHTML = uniqueTeacherData.slice(0, 50).map(t => `
+            tableBody.innerHTML = displayData.slice(0, 50).map(t => `
                 <tr>
                     <td>${t.teacher_id}</td>
                     <td>${t.teacher_name}</td>
+                    <td><span class="badge badge-info">${t.college.match(/\(([^)]+)\)/)?.[1] || t.college.substring(0,4)}</span></td>
                     <td>${t.email}</td>
-                    <td><span class="badge badge-info">${t.department}</span></td>
-                    <td>${t.schedule_day}</td>
-                    <td>${t.schedule_time}</td>
+                    <td>${t.schedule_day} ${t.schedule_time}</td>
                 </tr>
             `).join('');
         }
@@ -870,16 +1073,13 @@
         function convertToCSV(data, type) {
             if (data.length === 0) return '';
 
-            // Define headers based on type - MATCHING DATABASE COLUMNS
-            // Note: school_name for rooms is entered separately in the UploadCSV page
             const headers = {
                 rooms: ['campus', 'building', 'room', 'capacity', 'is_first_floor', 'floor_number', 'room_type', 'has_ac', 'has_projector', 'has_whiteboard', 'is_pwd_accessible', 'status'],
-                classes: ['course_code', 'course_name', 'section', 'lec_units', 'lab_units', 'credit_units', 'lec_hours', 'lab_hours', 'schedule_day', 'schedule_time', 'semester', 'academic_year', 'department', 'college', 'status'],
+                classes: ['course_code', 'course_name', 'section', 'year_level', 'student_count', 'lec_units', 'lab_units', 'credit_units', 'lec_hours', 'lab_hours', 'schedule_day', 'schedule_time', 'semester', 'academic_year', 'department', 'college', 'status'],
                 teachers: ['teacher_id', 'teacher_name', 'schedule_day', 'schedule_time', 'department', 'email', 'college']
             };
 
             const cols = headers[type];
-            // Use comma separator for proper CSV format (Excel compatible)
             const csvRows = [cols.join(',')];
 
             for (const row of data) {
@@ -887,7 +1087,6 @@
                     let val = row[col];
                     if (val === undefined || val === null) val = '';
                     if (typeof val === 'boolean') val = val ? 'true' : 'false';
-                    // Escape values that contain commas or quotes
                     let strVal = String(val);
                     if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
                         strVal = '"' + strVal.replace(/"/g, '""') + '"';
@@ -913,9 +1112,9 @@
             const url = URL.createObjectURL(blob);
             
             const filename = {
-                rooms: 'test_campuses_rooms.csv',
-                classes: 'test_class_schedules.csv',
-                teachers: 'test_teacher_schedules.csv'
+                rooms: 'bulsu_rooms_main.csv',
+                classes: 'bulsu_class_schedules.csv',
+                teachers: 'bulsu_faculty_schedules.csv'
             };
 
             link.setAttribute('href', url);
@@ -947,7 +1146,6 @@
             document.getElementById('downloadAll').disabled = !hasAll;
         }
 
-        // ==================== Quick Generate All ====================
         function generateAll() {
             generateRooms();
             generateClassSchedules();

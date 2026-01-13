@@ -730,6 +730,121 @@
   color: var(--content-text);
 }
 
+/* ==================== View Mode Section ==================== */
+.viewModeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  margin-bottom: 16px;
+}
+
+.viewModeLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--content-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.viewModeButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewModeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--content-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewModeButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-alpha);
+}
+
+.viewModeButton.active {
+  background: var(--primary-gradient);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.viewModeButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.viewModeSelector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.viewModeSelector label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--content-text-secondary);
+  white-space: nowrap;
+}
+
+.viewModeSelect {
+  flex: 1;
+  max-width: 400px;
+  padding: 10px 14px;
+  border: 2px solid var(--primary);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--content-text);
+  background: var(--bg-white);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewModeSelect:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+/* ==================== Timetable Title ==================== */
+.timetableTitle {
+  padding: 20px 24px;
+  background: var(--primary-gradient);
+  color: white;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.timetableTitle h3 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.timetableSubtitle {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
 /* ==================== Timetable Grid ==================== */
 .timetableWrapper {
   background: var(--card-bg);
@@ -1273,4 +1388,44 @@
     margin-left: 0;
     text-align: center;
   }
+
+  .viewModeButtons {
+    flex-direction: column;
+  }
+
+  .viewModeSelector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .viewModeSelect {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* ==================== Dark Theme Overrides ==================== */
+[data-theme="dark"] .viewModeSection {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+[data-theme="dark"] .viewModeButton {
+  background: var(--bg-white);
+  border-color: var(--border-color);
+  color: var(--content-text);
+}
+
+[data-theme="dark"] .viewModeButton:hover {
+  background: var(--primary-alpha);
+}
+
+[data-theme="dark"] .viewModeSelect {
+  background: var(--bg-white);
+  color: var(--content-text);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .timetableTitle {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
 }

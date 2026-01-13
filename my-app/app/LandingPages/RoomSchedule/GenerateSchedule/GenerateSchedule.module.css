@@ -2129,3 +2129,650 @@
   color: #f59e0b;
   font-weight: 600;
 }
+
+/* ==================== Dark Theme Timetable Styles ==================== */
+[data-theme="dark"] .timetableSection {
+  background: #1e1e2e;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .timetableContainer {
+  background: #252535;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .timetable th {
+  background: #3a3a5a;
+  color: #ffffff;
+  border-color: #4a4a6a;
+}
+
+[data-theme="dark"] .timeCell {
+  background: #2a2a3a;
+  color: #e0e0e0;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .scheduleCell {
+  background: #1e1e2e;
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .allocationCard {
+  background: #2a2a4a;
+  border-left-color: #6366f1;
+}
+
+[data-theme="dark"] .allocationCourse {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .allocationRoom {
+  color: #818cf8;
+}
+
+[data-theme="dark"] .allocationSection {
+  color: #a0a0b0;
+}
+
+[data-theme="dark"] .allocationSummary {
+  background: #2a2a3a;
+}
+
+[data-theme="dark"] .allocationSummary p {
+  color: #d0d0e0;
+}
+
+/* ==================== Light Theme Timetable Styles ==================== */
+[data-theme="light"] .timetableSection {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .timetableContainer {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .timetable th {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+[data-theme="light"] .timeCell {
+  background: #f9fafb;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .scheduleCell {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .allocationCard {
+  background: #f0f9ff;
+  border-left-color: #4f46e5;
+}
+
+[data-theme="light"] .allocationCourse {
+  color: #1f2937;
+}
+
+[data-theme="light"] .allocationRoom {
+  color: #4f46e5;
+}
+
+[data-theme="light"] .allocationSection {
+  color: #6b7280;
+}
+
+/* ==================== Unscheduled Classes Styles ==================== */
+.unscheduledList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.unscheduledItem {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--bg-gray-50);
+  border-left: 4px solid #f59e0b;
+  transition: background 0.2s ease;
+}
+
+.unscheduledItem:hover {
+  background: var(--bg-gray-100);
+}
+
+.unscheduledHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.unscheduledCourse {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.unscheduledSlots {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.unscheduledName {
+  font-size: 13px;
+  color: var(--text-medium);
+  margin-bottom: 4px;
+}
+
+.unscheduledTeacher {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.unscheduledReason {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.unscheduledReason svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Dark theme for unscheduled list */
+[data-theme="dark"] .unscheduledItem {
+  background: #2a2a3a;
+  border-left-color: #f59e0b;
+}
+
+[data-theme="dark"] .unscheduledItem:hover {
+  background: #3a3a4a;
+}
+
+[data-theme="dark"] .unscheduledCourse {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .unscheduledName {
+  color: #d0d0e0;
+}
+
+[data-theme="dark"] .unscheduledTeacher {
+  color: #a0a0b0;
+}
+
+[data-theme="dark"] .unscheduledReason {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+/* ==================== Building and Room Filter Styles ==================== */
+.filterSection {
+  margin: 24px 0;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.filterHeader {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.filterHeader:hover {
+  background: var(--bg-gray-50);
+}
+
+.filterTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterTitle h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.filterStatus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterActiveBadge {
+  padding: 6px 12px;
+  background: var(--primary);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filterInactiveBadge {
+  padding: 6px 12px;
+  background: var(--bg-gray-100);
+  color: var(--text-medium);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filterContent {
+  padding: 0 24px 24px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
+}
+
+.filterDescription {
+  margin-bottom: 20px;
+  color: var(--text-medium);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.buildingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.buildingCard {
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.buildingCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.buildingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.buildingCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  color: var(--text-dark);
+}
+
+.buildingCheckbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.selectAllRoomsBtn {
+  padding: 4px 10px;
+  background: var(--bg-gray-100);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selectAllRoomsBtn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.buildingStats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-medium);
+}
+
+.buildingStats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roomList {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.roomCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-medium);
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.roomCheckbox:hover {
+  background: var(--bg-gray-50);
+}
+
+.roomCheckbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.filterSummary {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-blue-50);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filterSummary p {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+.clearFilterBtn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearFilterBtn:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+/* ==================== File Viewer Button ==================== */
+.viewFileButton {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.viewFileButton:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================== Modal Styles ==================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+  padding: 20px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: var(--card-bg);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 95vw;
+  max-height: 90vh;
+  width: 1400px;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  padding: 24px 32px;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalCloseBtn {
+  padding: 8px;
+  background: var(--bg-gray-100);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-medium);
+}
+
+.modalCloseBtn:hover {
+  background: #dc2626;
+  color: white;
+  transform: rotate(90deg);
+}
+
+.modalBody {
+  padding: 24px 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modalLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.modalLoading p {
+  color: var(--text-medium);
+  font-size: 16px;
+}
+
+.modalEmpty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-medium);
+  font-size: 16px;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.viewerTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.viewerTable thead {
+  background: var(--bg-gray-100);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.viewerTable th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-dark);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.viewerTable tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.viewerTable tbody tr:hover {
+  background: var(--bg-gray-50);
+}
+
+.viewerTable td {
+  padding: 12px 16px;
+  color: var(--text-medium);
+}
+
+.modalFooter {
+  padding: 16px 32px;
+  border-top: 2px solid var(--border-color);
+  background: var(--bg-gray-50);
+}
+
+.modalFooter p {
+  margin: 0;
+  color: var(--text-medium);
+  font-size: 14px;
+}
+
+/* ==================== Slot Duration Info Styles ==================== */
+.slotDurationInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-blue-50);
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.slotDurationInfo strong {
+  color: var(--text-dark);
+  font-size: 15px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.slotDurationNote {
+  margin: 4px 0 0 0;
+  color: var(--text-medium);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.slotAllocationNote {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: var(--bg-gray-50);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  color: var(--text-medium);
+  font-size: 13px;
+  line-height: 1.6;
+}

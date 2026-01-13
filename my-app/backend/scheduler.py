@@ -43,6 +43,7 @@ class Section:
     course_name: str
     teacher_id: int
     teacher_name: str
+    year_level: int
     student_count: int
     required_room_type: str
     weekly_hours: int  # Number of slots needed per week
@@ -77,10 +78,10 @@ class TimeSlot:
 @dataclass
 class SchedulingConstraints:
     """Constraints for scheduling"""
-    max_teacher_hours_per_day: int = 6
-    max_consecutive_classes: int = 3
+    max_teacher_hours_per_day: int = 8  # Increased to allow more scheduling
+    max_consecutive_classes: int = 4
     preferred_utilization: float = 0.75
-    min_room_capacity_buffer: float = 1.1  # Room should have 10% more capacity
+    min_room_capacity_buffer: float = 1.0  # Room should have at least same capacity as students
     prioritize_accessibility: bool = False
 
 
@@ -118,6 +119,11 @@ class QuantumInspiredScheduler:
         self.time_slots = {t.id: t for t in time_slots}
         self.constraints = constraints or SchedulingConstraints()
         
+        # Calculate slot duration from time slots (default 90 minutes)
+        self.slot_duration = 90
+        if time_slots:
+            self.slot_duration = time_slots[0].duration_minutes if time_slots[0].duration_minutes > 0 else 90
+        
         # Pre-compute compatible rooms for each section
         self.compatible_rooms = self._compute_compatible_rooms()
         
@@ -137,21 +143,31 @@ class QuantumInspiredScheduler:
             min_capacity = int(section.student_count * self.constraints.min_room_capacity_buffer)
             
             for room in self.rooms.values():
-                # Check capacity
+                # Check capacity - room must fit all students
                 if room.capacity < min_capacity:
                     continue
                     
-                # Check room type compatibility
-                if section.requires_lab and room.room_type not in ["laboratory", "computer_lab"]:
+                # Check room type compatibility - only enforce for labs
+                if section.requires_lab and room.room_type not in ["laboratory", "computer_lab", "lab"]:
                     continue
-                    
-                # If section prefers specific room type, prioritize but don't exclude
-                if section.required_room_type and room.room_type != section.required_room_type:
-                    # Still include but will be penalized in cost function
-                    pass
                 
                 compatible_rooms.append(room.id)
             
+            # If no rooms found with strict capacity, try with relaxed capacity (90%)
+            if not compatible_rooms:
+                relaxed_capacity = int(section.student_count * 0.9)
+                for room in self.rooms.values():
+                    if room.capacity >= relaxed_capacity:
+                        if section.requires_lab and room.room_type not in ["laboratory", "computer_lab", "lab"]:
+                            continue
+                        compatible_rooms.append(room.id)
+            
+            # If still no rooms, use any room (last resort)
+            if not compatible_rooms:
+                compatible_rooms = [room.id for room in self.rooms.values()]
+            
+            # Sort rooms by capacity (prefer rooms closer to student count)
+            compatible_rooms.sort(key=lambda r: abs(self.rooms[r].capacity - section.student_count))
             compatible[section.id] = compatible_rooms
             
         return compatible
@@ -162,6 +178,8 @@ class QuantumInspiredScheduler:
     
     def _check_teacher_conflict(self, teacher_id: int, day: str, slot_id: int) -> bool:
         """Check if teacher is already scheduled at this time"""
+        if not teacher_id or teacher_id == 0:
+            return False  # No teacher assigned, no conflict possible
         for key, slot in self.schedule.items():
             if slot.teacher_id == teacher_id and key[1] == day and key[2] == slot_id:
                 return True
@@ -169,6 +187,8 @@ class QuantumInspiredScheduler:
     
     def _get_teacher_daily_hours(self, teacher_id: int, day: str) -> int:
         """Get number of hours teacher is scheduled on a day"""
+        if not teacher_id or teacher_id == 0:
+            return 0  # No teacher assigned, return 0
         count = 0
         for key, slot in self.schedule.items():
             if slot.teacher_id == teacher_id and key[1] == day:
@@ -185,7 +205,7 @@ class QuantumInspiredScheduler:
         # Penalty for unscheduled sections
         for section_id, section in self.sections.items():
             assigned_slots = len(self.section_assignments.get(section_id, []))
-            needed_slots = max(1, section.weekly_hours // 90)  # Assuming 90 min slots
+            needed_slots = max(1, section.weekly_hours // self.slot_duration)
             
             if assigned_slots < needed_slots:
                 cost += 1000 * (needed_slots - assigned_slots)  # Heavy penalty
@@ -228,7 +248,7 @@ class QuantumInspiredScheduler:
         self.schedule.clear()
         self.section_assignments.clear()
         
-        # Sort sections by constraints (more constrained first)
+        # Sort sections by constraints (more constrained first - fewer compatible rooms)
         sorted_sections = sorted(
             self.sections.values(),
             key=lambda s: (len(self.compatible_rooms.get(s.id, [])), -s.student_count)
@@ -237,46 +257,47 @@ class QuantumInspiredScheduler:
         for section in sorted_sections:
             compatible_rooms = self.compatible_rooms.get(section.id, [])
             if not compatible_rooms:
+                # Log why this section has no compatible rooms
                 continue
             
-            needed_slots = max(1, section.weekly_hours // 90)
+            # Calculate needed slots - each section needs 1 slot per week minimum
+            # weekly_hours is in minutes, slot_duration is in minutes
+            needed_slots = max(1, section.weekly_hours // self.slot_duration)
             assigned = 0
             
-            # Try to assign required slots
+            # Try to assign required slots - use all available days and time slots
+            days_to_use = self.DAYS[:6]  # Monday to Saturday
+            time_slots_list = list(self.time_slots.keys())
+            
             for _ in range(needed_slots):
                 best_assignment = None
                 best_cost = float('inf')
                 
                 # Try each compatible room, day, and time slot
                 for room_id in compatible_rooms:
-                    for day in self.DAYS[:6]:  # Monday to Saturday
-                        for slot_id in self.time_slots:
+                    for day in days_to_use:
+                        for slot_id in time_slots_list:
                             # Check availability
                             if not self._is_slot_available(room_id, day, slot_id):
                                 continue
                             
-                            # Check teacher conflict
-                            if self._check_teacher_conflict(section.teacher_id, day, slot_id):
-                                continue
-                            
-                            # Check teacher daily hours
-                            if self._get_teacher_daily_hours(section.teacher_id, day) >= self.constraints.max_teacher_hours_per_day:
-                                continue
+                            # Check teacher conflict (skip if no teacher assigned)
+                            if section.teacher_id and section.teacher_id > 0:
+                                if self._check_teacher_conflict(section.teacher_id, day, slot_id):
+                                    continue
+                                
+                                # Check teacher daily hours
+                                if self._get_teacher_daily_hours(section.teacher_id, day) >= self.constraints.max_teacher_hours_per_day:
+                                    continue
                             
                             # Calculate local cost for this assignment
                             room = self.rooms[room_id]
                             local_cost = 0
                             
-                            # Prefer correct room type
-                            if section.required_room_type and room.room_type != section.required_room_type:
-                                local_cost += 50
-                            
-                            # Prefer appropriate capacity
-                            capacity_ratio = room.capacity / section.student_count
+                            # Prefer appropriate capacity (minimize waste)
+                            capacity_ratio = room.capacity / max(1, section.student_count)
                             if capacity_ratio > 2.0:
-                                local_cost += 20 * (capacity_ratio - 2.0)
-                            elif capacity_ratio < 1.0:
-                                local_cost += 1000  # Too small
+                                local_cost += 5 * (capacity_ratio - 1.0)  # Small penalty for large rooms
                             
                             if local_cost < best_cost:
                                 best_cost = local_cost
@@ -295,6 +316,53 @@ class QuantumInspiredScheduler:
                     self.schedule[(room_id, day, slot_id)] = slot
                     self.section_assignments[section.id].append((room_id, day, slot_id))
                     assigned += 1
+        
+        # Second pass: Try to schedule any remaining sections more aggressively
+        unscheduled_sections = [
+            s for s in self.sections.values() 
+            if len(self.section_assignments.get(s.id, [])) < max(1, s.weekly_hours // self.slot_duration)
+        ]
+        
+        for section in unscheduled_sections:
+            # Try ANY available slot with relaxed constraints
+            needed = max(1, section.weekly_hours // self.slot_duration)
+            assigned = len(self.section_assignments.get(section.id, []))
+            
+            while assigned < needed:
+                found = False
+                # Try all rooms (not just compatible ones) if necessary
+                all_room_ids = list(self.rooms.keys())
+                random.shuffle(all_room_ids)  # Randomize to distribute better
+                
+                for room_id in all_room_ids:
+                    if found:
+                        break
+                    for day in self.DAYS[:6]:
+                        if found:
+                            break
+                        for slot_id in self.time_slots:
+                            if self._is_slot_available(room_id, day, slot_id):
+                                # Skip teacher check for sections with no assigned teacher
+                                if section.teacher_id and section.teacher_id > 0:
+                                    if self._check_teacher_conflict(section.teacher_id, day, slot_id):
+                                        continue
+                                
+                                slot = ScheduleSlot(
+                                    section_id=section.id,
+                                    room_id=room_id,
+                                    day_of_week=day,
+                                    time_slot_id=slot_id,
+                                    teacher_id=section.teacher_id,
+                                    is_lab=section.requires_lab
+                                )
+                                self.schedule[(room_id, day, slot_id)] = slot
+                                self.section_assignments[section.id].append((room_id, day, slot_id))
+                                assigned += 1
+                                found = True
+                                break
+                
+                if not found:
+                    break  # No more slots available
         
         return len(self.schedule) > 0
     
@@ -383,9 +451,10 @@ class QuantumInspiredScheduler:
                 slot = self.schedule[key_to_remove]
                 section = self.sections[slot.section_id]
                 
-                # Remove
+                # Remove safely
                 del self.schedule[key_to_remove]
-                self.section_assignments[section.id].remove(key_to_remove)
+                if key_to_remove in self.section_assignments.get(section.id, []):
+                    self.section_assignments[section.id].remove(key_to_remove)
                 
                 # Try to re-add in a completely different location
                 compatible = self.compatible_rooms.get(section.id, [])
@@ -499,11 +568,12 @@ class QuantumInspiredScheduler:
                     # Accept the change
                     current_cost = new_cost
                     
-                    # Update section assignments
+                    # Update section assignments safely
                     section = self.sections[slot.section_id]
-                    if old_key in self.section_assignments[section.id]:
+                    if old_key in self.section_assignments.get(section.id, []):
                         self.section_assignments[section.id].remove(old_key)
-                    self.section_assignments[section.id].append(new_key)
+                    if new_key not in self.section_assignments.get(section.id, []):
+                        self.section_assignments[section.id].append(new_key)
                     
                     if new_cost < best_cost:
                         best_cost = new_cost
@@ -549,6 +619,7 @@ class QuantumInspiredScheduler:
                 "course_name": section.course_name,
                 "teacher_id": section.teacher_id,
                 "teacher_name": section.teacher_name,
+                "year_level": section.year_level,
                 "room_id": room.id,
                 "room_code": room.room_code,
                 "room_name": room.room_name,
@@ -564,16 +635,49 @@ class QuantumInspiredScheduler:
         
         return entries
     
-    def get_unscheduled_sections(self) -> List[Section]:
-        """Get list of sections that couldn't be scheduled"""
+    def get_unscheduled_sections(self) -> List[Dict]:
+        """Get list of sections that couldn't be scheduled with reasons"""
         unscheduled = []
         
         for section_id, section in self.sections.items():
             assigned = len(self.section_assignments.get(section_id, []))
-            needed = max(1, section.weekly_hours // 90)
+            needed = max(1, section.weekly_hours // self.slot_duration)
             
             if assigned < needed:
-                unscheduled.append(section)
+                # Determine detailed reason
+                compatible_rooms = self.compatible_rooms.get(section_id, [])
+                if not compatible_rooms:
+                    # Check why no rooms are compatible
+                    min_capacity = int(section.student_count * self.constraints.min_room_capacity_buffer)
+                    rooms_by_capacity = [r for r in self.rooms.values() if r.capacity >= min_capacity]
+                    
+                    if not rooms_by_capacity:
+                        reason = f"No rooms with capacity >= {min_capacity} students (section has {section.student_count} students)"
+                    elif section.requires_lab:
+                        reason = f"No laboratory rooms available with capacity >= {min_capacity} students"
+                    else:
+                        reason = f"No compatible rooms (capacity or type mismatch for {section.student_count} students)"
+                elif assigned == 0:
+                    # Calculate total available slots
+                    total_slots = len(self.DAYS[:6]) * len(self.time_slots)
+                    used_slots = len(self.schedule)
+                    reason = f"All {total_slots} time slots were filled or conflicted (schedule density: {used_slots}/{total_slots})"
+                else:
+                    reason = f"Partially scheduled: {assigned}/{needed} slots (remaining slots conflicted)"
+                
+                unscheduled.append({
+                    "id": section.id,
+                    "section_code": section.section_code,
+                    "course_code": section.course_code,
+                    "course_name": section.course_name,
+                    "teacher_name": section.teacher_name,
+                    "year_level": section.year_level,
+                    "student_count": section.student_count,
+                    "needed_slots": needed,
+                    "assigned_slots": assigned,
+                    "compatible_rooms_count": len(compatible_rooms),
+                    "reason": reason
+                })
         
         return unscheduled
     
@@ -595,11 +699,13 @@ class QuantumInspiredScheduler:
                     "involved_entries": sections
                 })
         
-        # Check for teacher conflicts
+        # Check for teacher conflicts - SKIP if teacher_id is 0 or None (no teacher assigned)
         teacher_usage = defaultdict(list)
         for key, slot in self.schedule.items():
-            usage_key = (slot.teacher_id, key[1], key[2])
-            teacher_usage[usage_key].append(slot.section_id)
+            # Only track conflicts for sections with actual teachers assigned
+            if slot.teacher_id and slot.teacher_id > 0:
+                usage_key = (slot.teacher_id, key[1], key[2])
+                teacher_usage[usage_key].append(slot.section_id)
         
         for usage_key, sections in teacher_usage.items():
             if len(sections) > 1:
@@ -639,6 +745,7 @@ def run_scheduler(
             course_name=s.get("course_name", ""),
             teacher_id=s.get("teacher_id", 0),
             teacher_name=s.get("teacher_name", ""),
+            year_level=s.get("year_level", 1),
             student_count=s.get("student_count", 30),
             required_room_type=s.get("required_room_type", "classroom"),
             weekly_hours=s.get("weekly_hours", 180),  # Default 3 hours (2 x 90 min)
@@ -700,10 +807,7 @@ def run_scheduler(
         "unscheduled_sections": len(unscheduled),
         "schedule_entries": entries,
         "conflicts": conflicts,
-        "unscheduled_list": [
-            {"id": s.id, "section_code": s.section_code, "course_name": s.course_name}
-            for s in unscheduled
-        ],
+        "unscheduled_list": unscheduled,  # Now includes detailed reasons
         "optimization_stats": {
             "initial_cost": stats.initial_cost,
             "final_cost": stats.final_cost,

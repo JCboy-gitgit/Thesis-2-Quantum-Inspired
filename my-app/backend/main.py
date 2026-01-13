@@ -23,10 +23,13 @@ from models import (
 )
 from database import (
     get_supabase_client, get_all_rooms, get_sections_for_scheduling,
-    get_teachers, get_time_slots, save_schedule_entries,
+    get_all_teachers, get_time_slots, save_schedule_entries,
     check_room_conflicts, check_teacher_conflicts, get_room_utilization,
     create_schedule_record, update_schedule_status, get_schedule_by_id,
-    delete_schedule, get_all_schedules
+    delete_schedule, get_all_schedules,
+    create_generated_schedule, update_generated_schedule, save_room_allocations,
+    get_generated_schedules, get_generated_schedule_by_id, delete_generated_schedule,
+    get_room_allocations_by_schedule
 )
 from scheduler import run_scheduler
 
@@ -231,6 +234,7 @@ class SectionDataModel(BaseModel):
     course_name: str
     teacher_id: int
     teacher_name: str
+    year_level: int = 1
     student_count: int
     required_room_type: str
     weekly_hours: int
@@ -342,12 +346,17 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         print(f"📅 Active days: {', '.join(active_days)}")
         
         # Create schedule record first
+        # Map fields to match database schema
+        current_date = datetime.utcnow().date()
         schedule_record = await create_schedule_record({
-            "schedule_name": request.schedule_name,
-            "semester": request.semester,
-            "academic_year": request.academic_year,
-            "status": "generating",
-            "created_at": datetime.utcnow().isoformat()
+            "event_name": f"{request.schedule_name} - {request.semester} {request.academic_year}",
+            "event_type": "Custom",
+            "schedule_date": current_date.isoformat(),
+            "start_time": "07:00:00",  # Default start time
+            "end_time": "19:00:00",    # Default end time
+            "campus_group_id": 1,      # Default campus group (can be updated)
+            "participant_group_id": 1, # Default participant group (can be updated)
+            "status": "generating"
         })
         
         schedule_id = schedule_record.get("id")
@@ -381,18 +390,58 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         print(f"   Scheduled: {result['scheduled_sections']}/{result['total_sections']}")
         print(f"   Unscheduled: {result['unscheduled_sections']}")
         
-        # Save schedule entries
+        # Save to generated_schedules table
+        generated_schedule_data = {
+            "schedule_name": request.schedule_name,
+            "semester": request.semester,
+            "academic_year": request.academic_year,
+            "campus_group_id": 1,  # Default campus group (can be updated)
+            "class_group_id": 1,   # Default class group (can be updated)
+            "total_classes": result["total_sections"],
+            "scheduled_classes": result["scheduled_sections"],
+            "unscheduled_classes": result["unscheduled_sections"],
+            "optimization_stats": result["optimization_stats"],
+            "status": "completed" if result["success"] else "failed"
+        }
+        
+        generated_schedule = await create_generated_schedule(generated_schedule_data)
+        generated_schedule_id = generated_schedule.get("id")
+        print(f"✅ Generated schedule record created with ID: {generated_schedule_id}")
+        
+        # Save room allocations
+        if result["schedule_entries"] and generated_schedule_id:
+            room_allocations = []
+            for entry in result["schedule_entries"]:
+                allocation = {
+                    "schedule_id": generated_schedule_id,
+                    "class_id": entry.get("section_id"),
+                    "room_id": entry.get("room_id"),
+                    "course_code": entry.get("course_code", ""),
+                    "course_name": entry.get("course_name", ""),
+                    "section": entry.get("section_code", ""),
+                    "year_level": entry.get("year_level", 1),
+                    "schedule_day": entry.get("day_of_week", ""),
+                    "schedule_time": f"{entry.get('start_time', '')} - {entry.get('end_time', '')}",
+                    "campus": entry.get("campus", ""),
+                    "building": entry.get("building", ""),
+                    "room": entry.get("room_code", entry.get("room_name", "")),
+                    "capacity": entry.get("room_capacity", 0),
+                    "teacher_name": entry.get("teacher_name", ""),
+                    "department": entry.get("department", ""),
+                    "lec_hours": entry.get("lec_hours", 0),
+                    "lab_hours": entry.get("lab_hours", 0),
+                    "status": "scheduled"
+                }
+                room_allocations.append(allocation)
+            
+            saved_allocations = await save_room_allocations(room_allocations)
+            print(f"✅ Saved {len(saved_allocations)} room allocations to database")
+        
+        # Also update the old schedule_summary table for backward compatibility
         if result["success"]:
-            entries_to_save = [
-                {**entry, "schedule_id": schedule_id}
-                for entry in result["schedule_entries"]
-            ]
-            await save_schedule_entries(schedule_id, entries_to_save)
             await update_schedule_status(schedule_id, "completed")
-            print(f"💾 Saved {len(entries_to_save)} schedule entries to database")
         else:
             await update_schedule_status(schedule_id, "failed")
-            print(f"⚠️  Scheduling failed or incomplete")
         
         print("=" * 60)
         print("🎉 SCHEDULE GENERATION COMPLETED")
@@ -400,7 +449,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         
         return ScheduleGenerationResponse(
             success=result["success"],
-            schedule_id=schedule_id,
+            schedule_id=generated_schedule_id if generated_schedule_id else schedule_id,
             message=result["message"],
             total_sections=result["total_sections"],
             scheduled_sections=result["scheduled_sections"],
@@ -449,6 +498,58 @@ async def remove_schedule(schedule_id: int):
     try:
         await delete_schedule(schedule_id)
         return {"message": "Schedule deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================
+# Generated Schedules (QIA Results with Room Allocations)
+# ========================
+
+@app.get("/api/generated-schedules")
+async def list_generated_schedules():
+    """Get all generated schedules with QIA results"""
+    try:
+        schedules = await get_generated_schedules()
+        return schedules
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/generated-schedules/{schedule_id}")
+async def get_generated_schedule(schedule_id: int):
+    """Get a specific generated schedule with all room allocations"""
+    try:
+        schedule = await get_generated_schedule_by_id(schedule_id)
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Generated schedule not found")
+        return schedule
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/generated-schedules/{schedule_id}/allocations")
+async def get_schedule_allocations(schedule_id: int):
+    """Get all room allocations for a specific generated schedule"""
+    try:
+        allocations = await get_room_allocations_by_schedule(schedule_id)
+        return {
+            "schedule_id": schedule_id,
+            "allocations": allocations,
+            "total": len(allocations)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/generated-schedules/{schedule_id}")
+async def remove_generated_schedule(schedule_id: int):
+    """Delete a generated schedule and all its room allocations"""
+    try:
+        await delete_generated_schedule(schedule_id)
+        return {"message": "Generated schedule deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
