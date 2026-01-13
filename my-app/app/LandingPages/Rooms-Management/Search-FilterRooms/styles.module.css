@@ -1,6 +1,81 @@
 /* ==================== Search & Filter Rooms Page Styles ==================== */
 /* Uses CSS variables from globals.css for theming support */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .pageContainer {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .searchCard,
+[data-theme="green"] .filterCard,
+[data-theme="green"] .resultsCard {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .roomCard {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .roomCard:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
+  transform: translateY(-4px);
+}
+
+[data-theme="green"] .searchButton,
+[data-theme="green"] .filterButton {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+}
+
+[data-theme="green"] .searchButton:hover,
+[data-theme="green"] .filterButton:hover {
+  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .searchCard,
+[data-theme="green"] .filterCard,
+[data-theme="green"] .resultsCard,
+[data-theme="green"] .roomCard,
+[data-theme="green"] .title,
+[data-theme="green"] .text,
+[data-theme="green"] .name {
+  color: #ffffff;
+}
+
+[data-theme="green"] .secondaryText,
+[data-theme="green"] .description,
+[data-theme="green"] .details {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .icon {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .headerIcon,
+[data-theme="green"] .searchIcon,
+[data-theme="green"] .roomIcon {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .label,
+[data-theme="green"] .input,
+[data-theme="green"] .select {
+  color: #ffffff;
+}
+
+[data-theme="green"] .input::placeholder {
+  color: #b3ffdb;
+  opacity: 0.7;
+}
+
 /* Layout */
 .pageContainer {
   min-height: 100vh;
@@ -9,12 +84,15 @@
 }
 
 .mainContent {
-  padding-top: 80px;
+  padding-top: 70px;
   transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mainContent.withSidebar {
-  margin-left: 280px;
+  margin-left: 240px;
 }
 
 .contentWrapper {

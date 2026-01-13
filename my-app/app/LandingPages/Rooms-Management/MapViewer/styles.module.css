@@ -1,6 +1,87 @@
 /* ==================== Map Viewer Page Styles ==================== */
 /* Uses CSS variables from globals.css for theming support */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .pageContainer {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .headerCard {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .mapContainer,
+[data-theme="green"] .card {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .mapContainer:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .controlButton,
+[data-theme="green"] .zoomButton {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 119, 59, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.15);
+  color: #ffffff;
+}
+
+[data-theme="green"] .controlButton:hover,
+[data-theme="green"] .zoomButton:hover {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  border-color: #00d96f;
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.4);
+}
+
+[data-theme="green"] .headerCard,
+[data-theme="green"] .mapContainer,
+[data-theme="green"] .card {
+  color: #ffffff;
+}
+
+[data-theme="green"] .mapLabel,
+[data-theme="green"] .roomLabel,
+[data-theme="green"] .title,
+[data-theme="green"] .text {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="green"] .headerSubtitle,
+[data-theme="green"] .comingSoonText,
+[data-theme="green"] .featurePreviewText {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .comingSoonTitle,
+[data-theme="green"] .featurePreviewTitle {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .infoText {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .icon,
+[data-theme="green"] .headerIcon,
+[data-theme="green"] .constructionIcon,
+[data-theme="green"] .featurePreviewIcon {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .featurePreviewIcon.blue,
+[data-theme="green"] .featurePreviewIcon.purple,
+[data-theme="green"] .featurePreviewIcon.green {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, rgba(0, 217, 111, 0.3) 0%, rgba(0, 217, 111, 0.2) 100%);
+}
+
 /* Layout */
 .pageContainer {
   min-height: 100vh;
@@ -9,12 +90,15 @@
 }
 
 .mainContent {
-  padding-top: 80px;
+  padding-top: 70px;
   transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mainContent.withSidebar {
-  margin-left: 280px;
+  margin-left: 240px;
 }
 
 .contentWrapper {

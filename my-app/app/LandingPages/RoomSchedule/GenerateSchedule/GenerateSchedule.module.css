@@ -2,6 +2,84 @@
 /* Uses global theme variables from globals.css */
 /* Supports: green, dark, and light themes */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .scheduleLayout {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .scheduleHeader,
+[data-theme="green"] .configurationCard {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .scheduleTitle {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .settingsCard,
+[data-theme="green"] .timeCard {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .settingsCard:hover,
+[data-theme="green"] .timeCard:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .generateButton {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.5);
+}
+
+[data-theme="green"] .generateButton:hover {
+  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.7);
+  transform: translateY(-4px) scale(1.03);
+}
+
+[data-theme="green"] .generateButton:disabled {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.6) 0%, rgba(0, 119, 59, 0.5) 100%);
+  box-shadow: none;
+}
+
+[data-theme="green"] .scheduleHeader,
+[data-theme="green"] .configurationCard,
+[data-theme="green"] .settingsCard,
+[data-theme="green"] .timeCard,
+[data-theme="green"] .title,
+[data-theme="green"] .text,
+[data-theme="green"] .heading {
+  color: #ffffff;
+}
+
+[data-theme="green"] .description,
+[data-theme="green"] .hint,
+[data-theme="green"] .subtitle,
+[data-theme="green"] .details {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .icon {
+  color: #5dffa7;
+}
+
+[data-theme="green"] .label,
+[data-theme="green"] .input,
+[data-theme="green"] .select {
+  color: #ffffff;
+}
+
+[data-theme="green"] .input::placeholder,
+[data-theme="green"] .select::placeholder {
+  color: #b3ffdb;
+  opacity: 0.7;
+}
+
 /* ==================== Layout ==================== */
 .scheduleLayout {
   min-height: 100vh;
@@ -620,6 +698,95 @@
   font-weight: 600;
   color: var(--content-text);
 }
+
+/* ==================== Time Configuration Styles ==================== */
+.timeConfigInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 22px;
+  background: linear-gradient(135deg, var(--primary-alpha) 0%, transparent 100%);
+  border-radius: 12px;
+  border-left: 4px solid var(--primary);
+  margin-bottom: 24px;
+}
+
+.timeConfigInfo svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.timeConfigInfo p {
+  font-size: 14px;
+  color: var(--content-text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.timeSlotPreview {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--bg-gray-50);
+  border-radius: 12px;
+  border: 2px dashed var(--border-color);
+}
+
+.timeSlotPreview strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--content-text);
+  margin-bottom: 12px;
+}
+
+.timeSlotsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.timeSlotChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--content-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.timeSlotChip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.timeSlotMore {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: var(--primary-alpha);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.timeSlotCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--content-text-secondary);
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==================== End Time Configuration Styles ==================== */
 
 .presetSection {
   display: flex;

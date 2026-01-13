@@ -1,3 +1,68 @@
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .pageLayout,
+[data-theme="green"] .pageMain {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .pageHeader {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .pageTitle {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .scheduleCard,
+[data-theme="green"] .classCard {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .scheduleCard:hover,
+[data-theme="green"] .classCard:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+  transform: translateY(-4px);
+}
+
+[data-theme="green"] .backButton,
+[data-theme="green"] .addButton {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+}
+
+[data-theme="green"] .backButton:hover,
+[data-theme="green"] .addButton:hover {
+  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .pageHeader,
+[data-theme="green"] .scheduleCard,
+[data-theme="green"] .classCard,
+[data-theme="green"] .title,
+[data-theme="green"] .text,
+[data-theme="green"] .name,
+[data-theme="green"] .heading {
+  color: #ffffff;
+}
+
+[data-theme="green"] .description,
+[data-theme="green"] .time,
+[data-theme="green"] .subtitle,
+[data-theme="green"] .details {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .icon {
+  color: #5dffa7;
+}
+
 /* ==================== Layout ==================== */
 .pageLayout {
   min-height: 100vh;
@@ -10,6 +75,8 @@
   padding: 30px;
   transition: margin-left 0.3s ease;
   min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--bg-white, #ffffff);
 }
 

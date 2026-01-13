@@ -2,6 +2,70 @@
 /* Uses global theme variables from globals.css */
 /* Supports: green, dark, and light themes */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .qtimeLayout {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .scheduleHeader,
+[data-theme="green"] .scheduleCard {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .scheduleTitle {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .scheduleItem,
+[data-theme="green"] .timeSlot {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .scheduleItem:hover,
+[data-theme="green"] .timeSlot:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .exportButton,
+[data-theme="green"] .actionButton {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+}
+
+[data-theme="green"] .exportButton:hover,
+[data-theme="green"] .actionButton:hover {
+  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .scheduleHeader,
+[data-theme="green"] .scheduleCard,
+[data-theme="green"] .scheduleItem,
+[data-theme="green"] .timeSlot,
+[data-theme="green"] .title,
+[data-theme="green"] .text,
+[data-theme="green"] .heading {
+  color: #ffffff;
+}
+
+[data-theme="green"] .time,
+[data-theme="green"] .room,
+[data-theme="green"] .details {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .icon {
+  color: #5dffa7;
+}
+
 /* ==================== Layout ==================== */
 .qtimeLayout {
   display: flex;
@@ -17,6 +81,8 @@
   padding: 32px;
   transition: margin-left 0.3s ease, background 0.3s ease;
   min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--background);
 }
 

@@ -1,5 +1,67 @@
 /* Faculty Lists Styles - Using Global Theme Variables */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .facultyLayout {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .facultyHeader {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .facultyCard,
+[data-theme="green"] .memberCard {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .facultyCard:hover,
+[data-theme="green"] .memberCard:hover {
+  border-color: #00d96f;
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
+  transform: translateY(-4px);
+}
+
+[data-theme="green"] .backButton,
+[data-theme="green"] .addButton {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 119, 59, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.15);
+  color: #ffffff;
+}
+
+[data-theme="green"] .backButton:hover,
+[data-theme="green"] .addButton:hover {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  border-color: #00d96f;
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.4);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .facultyHeader,
+[data-theme="green"] .facultyCard,
+[data-theme="green"] .memberCard,
+[data-theme="green"] .title,
+[data-theme="green"] .text,
+[data-theme="green"] .name,
+[data-theme="green"] .heading {
+  color: #ffffff;
+}
+
+[data-theme="green"] .description,
+[data-theme="green"] .department,
+[data-theme="green"] .email,
+[data-theme="green"] .details {
+  color: #b3ffdb !important;
+}
+
+[data-theme="green"] .icon {
+  color: #5dffa7;
+}
+
 /* ==================== Layout ==================== */
 .facultyLayout {
   display: flex;
@@ -9,11 +71,13 @@
 
 .facultyMain {
   flex: 1;
-  margin-left: 280px;
-  margin-top: 80px;
+  margin-left: 240px;
+  margin-top: 70px;
   padding: 30px;
   transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .facultyMain.fullWidth {

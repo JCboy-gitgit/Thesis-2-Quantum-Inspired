@@ -110,6 +110,22 @@ interface ScheduleConfig {
   avoidConflicts: boolean
 }
 
+interface TimeSettings {
+  startTime: string // "07:00"
+  endTime: string   // "20:00"
+  slotDuration: number // 60 minutes
+  includeSaturday: boolean
+  includeSunday: boolean
+}
+
+interface TimeSlot {
+  id: number
+  slot_name: string
+  start_time: string
+  end_time: string
+  duration_minutes: number
+}
+
 interface RoomAllocation {
   class_id: number
   room_id: number
@@ -150,6 +166,37 @@ interface ScheduleResult {
 // Days for timetable
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+// Utility function to generate time slots from settings
+function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
+  const slots: TimeSlot[] = []
+  const [startHour, startMin] = settings.startTime.split(':').map(Number)
+  const [endHour, endMin] = settings.endTime.split(':').map(Number)
+  
+  let currentTime = startHour * 60 + startMin // Convert to minutes
+  const endTimeMinutes = endHour * 60 + endMin
+  let slotId = 1
+  
+  while (currentTime < endTimeMinutes) {
+    const hour = Math.floor(currentTime / 60)
+    const min = currentTime % 60
+    const nextTime = currentTime + settings.slotDuration
+    const nextHour = Math.floor(nextTime / 60)
+    const nextMin = nextTime % 60
+    
+    slots.push({
+      id: slotId++,
+      slot_name: `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')} - ${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
+      start_time: `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`,
+      end_time: `${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
+      duration_minutes: settings.slotDuration
+    })
+    
+    currentTime = nextTime
+  }
+  
+  return slots
+}
+
 export default function GenerateSchedulePage() {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -183,6 +230,15 @@ export default function GenerateSchedulePage() {
     maxTeacherHoursPerDay: 8,
     prioritizeAccessibility: true,
     avoidConflicts: true
+  })
+  
+  // Time Configuration
+  const [timeSettings, setTimeSettings] = useState<TimeSettings>({
+    startTime: '07:00',
+    endTime: '20:00',
+    slotDuration: 60,
+    includeSaturday: true,
+    includeSunday: false
   })
   
   // UI states
@@ -443,7 +499,13 @@ export default function GenerateSchedulePage() {
     setShowResults(false)
 
     try {
-      // Prepare data for QIA algorithm
+      // Generate time slots from settings
+      const timeSlots = generateTimeSlots(timeSettings)
+      const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+      if (timeSettings.includeSaturday) activeDays.push('Saturday')
+      if (timeSettings.includeSunday) activeDays.push('Sunday')
+      
+      // Prepare data for QIA algorithm - will be sent to Python backend
       const scheduleData = {
         schedule_name: config.scheduleName,
         semester: config.semester,
@@ -454,6 +516,9 @@ export default function GenerateSchedulePage() {
         rooms: rooms,
         classes: classes,
         teachers: teachers,
+        time_slots: timeSlots,
+        active_days: activeDays,
+        time_settings: timeSettings,
         config: {
           max_iterations: config.maxIterations,
           initial_temperature: config.initialTemperature,
@@ -465,8 +530,16 @@ export default function GenerateSchedulePage() {
         }
       }
 
-      // Call the API (simulated for now - will connect to FastAPI backend)
-      const response = await fetch('/api/schedule/qia-generate', {
+      console.log('[GenerateSchedule] Sending to Python backend:', {
+        rooms: rooms.length,
+        classes: classes.length,
+        teachers: teachers.length,
+        timeSlots: timeSlots.length,
+        activeDays
+      })
+
+      // Call the new API that connects to Python backend
+      const response = await fetch('/api/schedule/qia-backend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(scheduleData)
@@ -1194,6 +1267,100 @@ export default function GenerateSchedulePage() {
                         />
                         <span>Strictly avoid teacher/room conflicts</span>
                       </label>
+                    </div>
+                  </div>
+
+                  {/* Time Configuration */}
+                  <div className={styles.formCard}>
+                    <h3 className={styles.formSectionTitle}>
+                      <FaClock /> Time Configuration
+                    </h3>
+                    <div className={styles.timeConfigInfo}>
+                      <Clock size={20} />
+                      <p>Configure the daily schedule time range and slot duration. The system will generate time slots automatically.</p>
+                    </div>
+                    
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Start Time</label>
+                        <input
+                          type="time"
+                          className={styles.formInput}
+                          value={timeSettings.startTime}
+                          onChange={(e) => setTimeSettings(prev => ({ ...prev, startTime: e.target.value }))}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>End Time</label>
+                        <input
+                          type="time"
+                          className={styles.formInput}
+                          value={timeSettings.endTime}
+                          onChange={(e) => setTimeSettings(prev => ({ ...prev, endTime: e.target.value }))}
+                        />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>
+                          Slot Duration
+                          <span className={styles.formHint}>Length of each time slot</span>
+                        </label>
+                        <select
+                          className={styles.formSelect}
+                          value={timeSettings.slotDuration}
+                          onChange={(e) => setTimeSettings(prev => ({ ...prev, slotDuration: Number(e.target.value) }))}
+                        >
+                          <option value={30}>30 minutes</option>
+                          <option value={60}>1 hour</option>
+                          <option value={90}>1.5 hours</option>
+                          <option value={120}>2 hours</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Days of Week</label>
+                      <div className={styles.checkboxGroup}>
+                        <label className={styles.checkboxLabel}>
+                          <input type="checkbox" checked disabled />
+                          <span>Monday - Friday (Required)</span>
+                        </label>
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={timeSettings.includeSaturday}
+                            onChange={(e) => setTimeSettings(prev => ({ ...prev, includeSaturday: e.target.checked }))}
+                          />
+                          <span>Include Saturday</span>
+                        </label>
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={timeSettings.includeSunday}
+                            onChange={(e) => setTimeSettings(prev => ({ ...prev, includeSunday: e.target.checked }))}
+                          />
+                          <span>Include Sunday</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Time Slot Preview */}
+                    <div className={styles.timeSlotPreview}>
+                      <strong>Generated Time Slots Preview:</strong>
+                      <div className={styles.timeSlotsList}>
+                        {generateTimeSlots(timeSettings).slice(0, 5).map(slot => (
+                          <span key={slot.id} className={styles.timeSlotChip}>
+                            {slot.slot_name}
+                          </span>
+                        ))}
+                        {generateTimeSlots(timeSettings).length > 5 && (
+                          <span className={styles.timeSlotMore}>
+                            +{generateTimeSlots(timeSettings).length - 5} more slots
+                          </span>
+                        )}
+                      </div>
+                      <p className={styles.timeSlotCount}>
+                        Total: {generateTimeSlots(timeSettings).length} time slots per day
+                      </p>
                     </div>
                   </div>
 

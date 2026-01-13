@@ -5,27 +5,27 @@
 /* Green Theme (Default - College of Science) */
 :root,
 [data-theme="green"] {
-  /* Primary Colors */
-  --primary: #00a651;
-  --primary-dark: #005826;
-  --primary-light: #4cff96;
-  --primary-alpha: rgba(0, 166, 81, 0.15);
-  --primary-medium: #008c45;
-  --primary-gradient: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  /* Primary Colors - More vibrant */
+  --primary: #00d96f;
+  --primary-dark: #00a651;
+  --primary-light: #5dffa7;
+  --primary-alpha: rgba(0, 217, 111, 0.18);
+  --primary-medium: #00bf5f;
+  --primary-gradient: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
   
-  /* Background Colors */
-  --background: #003d1a;
+  /* Background Colors - Rich and deep */
+  --background: #001a0f;
   --foreground: #ffffff;
-  --dark-bg: #003d1a;
-  --card-bg: rgba(0, 88, 38, 0.95);
-  --card-border: rgba(0, 166, 81, 0.3);
+  --dark-bg: #001a0f;
+  --card-bg: rgba(0, 77, 38, 0.95);
+  --card-border: rgba(0, 217, 111, 0.35);
   --bg-white: #ffffff;
   --bg-gray-50: #f8fafc;
   --bg-gray-100: #f1f5f9;
   
-  /* Text Colors */
+  /* Text Colors - High contrast */
   --text-primary: #ffffff;
-  --text-secondary: #a8e6c0;
+  --text-secondary: #b3ffdb;
   --text-dark: #1e293b;
   --text-medium: #475569;
   --text-light: #64748b;
@@ -33,28 +33,28 @@
   --content-text: #1e293b;
   --content-text-secondary: #475569;
   
-  /* Accent Colors */
+  /* Accent Colors - Vibrant */
   --secondary: #ffd700;
   --success: #10b981;
-  --error: #ef4444;
-  --warning-orange: #ed8936;
-  --warning-bg: #fef3c7;
-  --danger-red: #ef4444;
-  --info-blue: #3b82f6;
-  --info-bg: #dbeafe;
-  --accent-teal: #319795;
+  --error: #ff4d6d;
+  --warning-orange: #ffa500;
+  --warning-bg: #fff8e1;
+  --danger-red: #ff4d6d;
+  --info-blue: #00bfff;
+  --info-bg: #e0f7ff;
+  --accent-teal: #00e5cc;
   --success-green: #10b981;
   
   /* Sidebar */
-  --submenu-bg: rgba(0, 0, 0, 0.15);
-  --sidebar-text: #a8e6c0;
+  --submenu-bg: rgba(0, 0, 0, 0.2);
+  --sidebar-text: #b3ffdb;
   
-  /* Effects */
-  --glow-color: rgba(0, 166, 81, 0.5);
-  --accent-gradient: linear-gradient(135deg, #ffd700, #4cff96);
-  --gradient-start: #003d1a;
-  --gradient-mid: #005826;
-  --gradient-end: #002d12;
+  /* Effects - Enhanced glow */
+  --glow-color: rgba(0, 217, 111, 0.6);
+  --accent-gradient: linear-gradient(135deg, #ffd700, #00d96f, #5dffa7);
+  --gradient-start: #001a0f;
+  --gradient-mid: #004d26;
+  --gradient-end: #00331a;
   --border-color: #e2e8f0;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);

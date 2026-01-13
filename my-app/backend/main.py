@@ -215,13 +215,51 @@ async def list_time_slots():
 # Schedule Generation
 # ========================
 
+class TimeSlotModel(BaseModel):
+    """Time slot model"""
+    id: int
+    slot_name: str
+    start_time: str
+    end_time: str
+    duration_minutes: int
+
+class SectionDataModel(BaseModel):
+    """Section data from frontend"""
+    id: int
+    section_code: str
+    course_code: str
+    course_name: str
+    teacher_id: int
+    teacher_name: str
+    student_count: int
+    required_room_type: str
+    weekly_hours: int
+    requires_lab: bool
+    department: str
+
+class RoomDataModel(BaseModel):
+    """Room data from frontend"""
+    id: int
+    room_code: str
+    room_name: str
+    building: str
+    campus: str
+    capacity: int
+    room_type: str
+    floor: int
+    is_accessible: bool
+
 class ScheduleGenerationRequest(BaseModel):
-    """Request model for schedule generation"""
+    """Request model for schedule generation - accepts frontend data directly"""
     schedule_name: str
     semester: str
     academic_year: str
     section_ids: Optional[List[int]] = None  # If None, schedule all sections
     room_ids: Optional[List[int]] = None  # If None, use all rooms
+    time_slots: Optional[List[TimeSlotModel]] = None  # Time slots from frontend
+    active_days: Optional[List[str]] = None  # Days to schedule (Mon-Sun)
+    sections_data: Optional[List[SectionDataModel]] = None  # Direct section data
+    rooms_data: Optional[List[RoomDataModel]] = None  # Direct room data
     max_iterations: int = 1000
     initial_temperature: float = 100.0
     cooling_rate: float = 0.995
@@ -239,6 +277,7 @@ class ScheduleGenerationResponse(BaseModel):
     unscheduled_sections: int
     optimization_stats: Dict[str, Any]
     conflicts: List[Dict[str, Any]]
+    schedule_entries: Optional[List[Dict[str, Any]]] = None  # Include entries for frontend
 
 
 @app.post("/api/schedules/generate", response_model=ScheduleGenerationResponse)
@@ -246,29 +285,50 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     """
     Generate a new class schedule using quantum-inspired annealing.
     
-    This endpoint:
-    1. Fetches all sections that need scheduling
-    2. Fetches all available rooms
-    3. Runs the quantum-inspired optimization algorithm
-    4. Saves the resulting schedule to the database
+    This endpoint accepts data directly from frontend or fetches from database.
+    Supports custom time slots and days configuration.
     """
     try:
-        # Fetch data
-        all_sections = await get_sections_for_scheduling()
-        all_rooms = await get_all_rooms()
-        time_slots = await get_time_slots()
+        print("=" * 60)
+        print("🚀 SCHEDULE GENERATION STARTED")
+        print("=" * 60)
+        print(f"📋 Schedule Name: {request.schedule_name}")
+        print(f"📅 Semester: {request.semester} | Year: {request.academic_year}")
         
-        # Filter sections if specific IDs provided
-        if request.section_ids:
-            sections = [s for s in all_sections if s.get("id") in request.section_ids]
+        # Use direct data from frontend if provided, otherwise fetch from database
+        if request.sections_data and request.rooms_data:
+            print("📦 Using data provided directly from frontend")
+            sections = [s.dict() for s in request.sections_data]
+            rooms = [r.dict() for r in request.rooms_data]
+            
+            # Use time slots from frontend if provided
+            if request.time_slots:
+                time_slots = [t.dict() for t in request.time_slots]
+                print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
+            else:
+                time_slots = await get_time_slots()
+                print(f"⏰ Using {len(time_slots)} time slots from database")
         else:
-            sections = all_sections
+            print("🔍 Fetching data from database")
+            all_sections = await get_sections_for_scheduling()
+            all_rooms = await get_all_rooms()
+            time_slots = await get_time_slots()
+            
+            # Filter sections if specific IDs provided
+            if request.section_ids:
+                sections = [s for s in all_sections if s.get("id") in request.section_ids]
+            else:
+                sections = all_sections
+            
+            # Filter rooms if specific IDs provided
+            if request.room_ids:
+                rooms = [r for r in all_rooms if r.get("id") in request.room_ids]
+            else:
+                rooms = all_rooms
         
-        # Filter rooms if specific IDs provided
-        if request.room_ids:
-            rooms = [r for r in all_rooms if r.get("id") in request.room_ids]
-        else:
-            rooms = all_rooms
+        print(f"📚 Sections to schedule: {len(sections)}")
+        print(f"🏢 Available rooms: {len(rooms)}")
+        print(f"⏰ Time slots: {len(time_slots)}")
         
         if not sections:
             raise HTTPException(status_code=400, detail="No sections to schedule")
@@ -276,6 +336,10 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             raise HTTPException(status_code=400, detail="No rooms available")
         if not time_slots:
             raise HTTPException(status_code=400, detail="No time slots defined")
+        
+        # Active days - use from request or default to Mon-Fri
+        active_days = request.active_days if request.active_days else ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        print(f"📅 Active days: {', '.join(active_days)}")
         
         # Create schedule record first
         schedule_record = await create_schedule_record({
@@ -287,6 +351,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         })
         
         schedule_id = schedule_record.get("id")
+        print(f"✅ Schedule record created with ID: {schedule_id}")
         
         # Configuration for scheduler
         config = {
@@ -294,8 +359,14 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "initial_temperature": request.initial_temperature,
             "cooling_rate": request.cooling_rate,
             "max_teacher_hours_per_day": request.max_teacher_hours_per_day,
-            "prioritize_accessibility": request.prioritize_accessibility
+            "prioritize_accessibility": request.prioritize_accessibility,
+            "active_days": active_days
         }
+        
+        print("🎯 Running Quantum-Inspired Annealing Algorithm...")
+        print(f"   Max Iterations: {config['max_iterations']}")
+        print(f"   Initial Temperature: {config['initial_temperature']}")
+        print(f"   Cooling Rate: {config['cooling_rate']}")
         
         # Run the scheduler
         result = run_scheduler(
@@ -305,6 +376,11 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             config=config
         )
         
+        print(f"✅ Scheduling complete!")
+        print(f"   Success: {result['success']}")
+        print(f"   Scheduled: {result['scheduled_sections']}/{result['total_sections']}")
+        print(f"   Unscheduled: {result['unscheduled_sections']}")
+        
         # Save schedule entries
         if result["success"]:
             entries_to_save = [
@@ -313,8 +389,14 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             ]
             await save_schedule_entries(schedule_id, entries_to_save)
             await update_schedule_status(schedule_id, "completed")
+            print(f"💾 Saved {len(entries_to_save)} schedule entries to database")
         else:
             await update_schedule_status(schedule_id, "failed")
+            print(f"⚠️  Scheduling failed or incomplete")
+        
+        print("=" * 60)
+        print("🎉 SCHEDULE GENERATION COMPLETED")
+        print("=" * 60)
         
         return ScheduleGenerationResponse(
             success=result["success"],
@@ -324,12 +406,16 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             scheduled_sections=result["scheduled_sections"],
             unscheduled_sections=result["unscheduled_sections"],
             optimization_stats=result["optimization_stats"],
-            conflicts=result["conflicts"]
+            conflicts=result["conflicts"],
+            schedule_entries=result["schedule_entries"]  # Include for frontend
         )
         
     except HTTPException:
         raise
     except Exception as e:
+        print("=" * 60)
+        print(f"❌ ERROR: {str(e)}")
+        print("=" * 60)
         raise HTTPException(status_code=500, detail=f"Schedule generation failed: {str(e)}")
 
 

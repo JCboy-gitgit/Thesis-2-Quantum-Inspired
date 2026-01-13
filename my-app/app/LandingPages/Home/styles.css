@@ -1,5 +1,152 @@
 /* ==================== CSS Variables - Now using global theme ==================== */
 
+/* ==================== Green Theme Enhancements ==================== */
+[data-theme="green"] .qtime-layout {
+  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+}
+
+[data-theme="green"] .welcome-section {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .page-title {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .page-subtitle {
+  color: #b3ffdb;
+}
+
+[data-theme="green"] .empty-state {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .empty-state h2 {
+  color: #ffffff;
+}
+
+[data-theme="green"] .empty-state p {
+  color: #b3ffdb;
+}
+
+[data-theme="green"] .empty-icon {
+  color: #00d96f;
+  filter: drop-shadow(0 4px 12px rgba(0, 217, 111, 0.4));
+}
+
+[data-theme="green"] .file-section {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .file-section:hover {
+  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.35);
+  border-color: rgba(0, 217, 111, 0.6);
+}
+
+[data-theme="green"] .section-title {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .file-card {
+  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+}
+
+[data-theme="green"] .file-card:hover {
+  border-color: #00d96f;
+  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.4);
+  transform: translateY(-8px) scale(1.02);
+}
+
+[data-theme="green"] .file-card::before {
+  background: linear-gradient(90deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  height: 5px;
+}
+
+[data-theme="green"] .file-icon {
+  background: linear-gradient(135deg, rgba(0, 217, 111, 0.25) 0%, rgba(93, 255, 167, 0.15) 100%);
+  color: #5dffa7;
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.3);
+}
+
+[data-theme="green"] .file-name {
+  color: #ffffff;
+}
+
+[data-theme="green"] .file-details {
+  color: #b3ffdb;
+}
+
+[data-theme="green"] .file-meta {
+  color: #5dffa7;
+}
+
+[data-theme="green"] .file-date {
+  color: #b3ffdb;
+}
+
+[data-theme="green"] .file-id {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  box-shadow: 0 4px 12px rgba(0, 217, 111, 0.5);
+}
+
+[data-theme="green"] .view-button {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+}
+
+[data-theme="green"] .view-button:hover {
+  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  transform: translateY(-2px);
+}
+
+[data-theme="green"] .action-section {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+}
+
+[data-theme="green"] .action-section::before {
+  background: linear-gradient(90deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  height: 6px;
+}
+
+[data-theme="green"] .primary-button {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.5);
+}
+
+[data-theme="green"] .primary-button:hover {
+  box-shadow: 0 10px 36px rgba(0, 217, 111, 0.7);
+  transform: translateY(-3px) scale(1.05);
+}
+
+[data-theme="green"] .generate-schedule-button {
+  background: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
+  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.5);
+}
+
+[data-theme="green"] .generate-schedule-button:hover {
+  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.7);
+  transform: translateY(-4px) scale(1.03);
+}
+
+[data-theme="green"] .loading-state {
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 111, 0.4);
+  color: #b3ffdb;
+}
+
 /* ==================== Layout ==================== */
 .qtime-layout {
   min-height: 100vh;
@@ -8,11 +155,13 @@
 }
 
 .qtime-main {
-  margin-top: 80px;
-  margin-left: 280px;
+  margin-top: 70px;
+  margin-left: 240px;
   padding: 30px;
   transition: margin-left 0.3s ease, background 0.3s ease;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 70px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .qtime-main.full-width {
