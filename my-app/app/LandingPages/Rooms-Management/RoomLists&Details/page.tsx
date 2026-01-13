@@ -687,7 +687,7 @@ export default function SchoolCapacityPage() {
           )}
             <button 
               className={styles.backButton}
-              onClick={() => router.push('/LandingPages/QtimeHomePage')}
+              onClick={() => router.push('/LandingPages/Home')}
             >
               <ArrowLeft size={18} />
               Back to Home

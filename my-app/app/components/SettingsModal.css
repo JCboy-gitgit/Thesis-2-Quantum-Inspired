@@ -1,10 +1,10 @@
 /* Settings Modal Overlay */
 .settings-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: -1000px;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   display: flex;
@@ -31,7 +31,7 @@
   border-radius: 20px;
   width: 100%;
   max-width: 480px;
-  max-height: 85vh;
+  max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -40,6 +40,7 @@
     0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
     inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
   animation: slideUp 0.3s ease-out;
+  margin: auto;
 }
 
 @keyframes slideUp {
