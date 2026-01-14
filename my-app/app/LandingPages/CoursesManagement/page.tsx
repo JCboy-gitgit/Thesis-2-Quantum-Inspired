@@ -14,8 +14,7 @@ import {
   FaEdit,
   FaTrash,
   FaTimes,
-  FaSave,
-  FaClock
+  FaSave
 } from 'react-icons/fa'
 import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2 } from 'lucide-react'
 
@@ -29,8 +28,6 @@ interface ClassSchedule {
   lec_units: number
   lab_units: number
   credit_units: number
-  lec_hours: number
-  lab_hours: number
   schedule_day: string
   schedule_time: string
   start_time: string | null
@@ -59,9 +56,7 @@ interface Stats {
   totalClasses: number
   totalDepartments: number
   totalSections: number
-  totalLecUnits: number
-  totalLabUnits: number
-  totalCreditUnits: number
+  totalUnits: number
 }
 
 // Form data for creating/editing
@@ -69,11 +64,7 @@ interface ClassFormData {
   course_code: string
   course_name: string
   section: string
-  lec_units: number
-  lab_units: number
   credit_units: number
-  lec_hours: number
-  lab_hours: number
   schedule_day: string
   schedule_time: string
   semester: string
@@ -87,11 +78,7 @@ const emptyFormData: ClassFormData = {
   course_code: '',
   course_name: '',
   section: '',
-  lec_units: 0,
-  lab_units: 0,
   credit_units: 0,
-  lec_hours: 0,
-  lab_hours: 0,
   schedule_day: 'Monday',
   schedule_time: '',
   semester: '1st Semester',
@@ -161,9 +148,7 @@ function ClassSchedulesContent() {
     totalClasses: 0,
     totalDepartments: 0,
     totalSections: 0,
-    totalLecUnits: 0,
-    totalLabUnits: 0,
-    totalCreditUnits: 0
+    totalUnits: 0
   })
 
   // CRUD Modal States
@@ -255,17 +240,13 @@ function ClassSchedulesContent() {
   const calculateStats = (schedules: ClassSchedule[]) => {
     const departments = new Set(schedules.map(s => s.department).filter(Boolean))
     const sections = new Set(schedules.map(s => `${s.course_code}-${s.section}`))
-    const totalLecUnits = schedules.reduce((sum, s) => sum + (s.lec_units || 0), 0)
-    const totalLabUnits = schedules.reduce((sum, s) => sum + (s.lab_units || 0), 0)
-    const totalCreditUnits = schedules.reduce((sum, s) => sum + (s.credit_units || 0), 0)
+    const totalUnits = schedules.reduce((sum, s) => sum + (s.credit_units || 0), 0)
 
     setStats({
       totalClasses: schedules.length,
       totalDepartments: departments.size,
       totalSections: sections.size,
-      totalLecUnits,
-      totalLabUnits,
-      totalCreditUnits
+      totalUnits
     })
 
     // Expand all departments by default
@@ -343,20 +324,6 @@ function ClassSchedulesContent() {
     return `${hour}:${minute} ${period}`
   }
 
-  // Format hours to "Xh Ymins" format
-  const formatHours = (totalHours: number): string => {
-    if (!totalHours || totalHours === 0) return '0h'
-    
-    const hours = Math.floor(totalHours)
-    const minutes = Math.round((totalHours - hours) * 60)
-    
-    if (minutes === 0) {
-      return `${hours}h`
-    }
-    
-    return `${hours}h ${minutes}mins`
-  }
-
   // Group schedules by department
   const getSchedulesByDepartment = () => {
     const grouped = new Map<string, ClassSchedule[]>()
@@ -424,11 +391,7 @@ function ClassSchedulesContent() {
       course_code: schedule.course_code || '',
       course_name: schedule.course_name || '',
       section: schedule.section || '',
-      lec_units: schedule.lec_units || 0,
-      lab_units: schedule.lab_units || 0,
       credit_units: schedule.credit_units || 0,
-      lec_hours: schedule.lec_hours || 0,
-      lab_hours: schedule.lab_hours || 0,
       schedule_day: schedule.schedule_day || 'Monday',
       schedule_time: schedule.schedule_time || '',
       semester: schedule.semester || '1st Semester',
@@ -806,24 +769,10 @@ function ClassSchedulesContent() {
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.orange}`}>
-                  <span className={styles.statIcon}>📝</span>
-                  <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Lecture Units</span>
-                    <span className={styles.statValue}>{stats.totalLecUnits}</span>
-                  </div>
-                </div>
-                <div className={`${styles.statCard} ${styles.teal}`}>
-                  <span className={styles.statIcon}>🔬</span>
-                  <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Lab Units</span>
-                    <span className={styles.statValue}>{stats.totalLabUnits}</span>
-                  </div>
-                </div>
-                <div className={`${styles.statCard} ${styles.red}`}>
                   <span className={styles.statIcon}>⭐</span>
                   <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Credit Units</span>
-                    <span className={styles.statValue}>{stats.totalCreditUnits}</span>
+                    <span className={styles.statLabel}>Total Units</span>
+                    <span className={styles.statValue}>{stats.totalUnits}</span>
                   </div>
                 </div>
               </div>
@@ -922,7 +871,7 @@ function ClassSchedulesContent() {
                           {/* Table Header */}
                           <div style={{
                             display: 'grid',
-                            gridTemplateColumns: '100px 1fr 70px 90px 70px 110px 80px 100px',
+                            gridTemplateColumns: '100px 1fr 70px 70px 110px 80px 100px',
                             gap: '10px',
                             padding: '12px 16px',
                             background: 'var(--bg-gray-100, #edf2f7)',
@@ -938,7 +887,6 @@ function ClassSchedulesContent() {
                             <span>Course Name</span>
                             <span>Section</span>
                             <span>Units</span>
-                            <span>Hours</span>
                             <span>Schedule</span>
                             <span>Status</span>
                             <span style={{ textAlign: 'center' }}>Actions</span>
@@ -950,7 +898,7 @@ function ClassSchedulesContent() {
                               key={schedule.id}
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: '100px 1fr 70px 90px 70px 110px 80px 100px',
+                                gridTemplateColumns: '100px 1fr 70px 70px 110px 80px 100px',
                                 gap: '10px',
                                 padding: '14px 16px',
                                 background: 'var(--bg-white, #fff)',
@@ -991,15 +939,10 @@ function ClassSchedulesContent() {
                               </span>
                               <span style={{ 
                                 fontSize: '12px',
-                                color: 'var(--text-medium, #718096)'
+                                color: 'var(--text-medium, #718096)',
+                                fontWeight: 600
                               }}>
-                                L:{schedule.lec_units || 0} / Lab:{schedule.lab_units || 0}
-                              </span>
-                              <span style={{ 
-                                fontSize: '12px',
-                                color: 'var(--text-medium, #718096)'
-                              }}>
-                                {formatHours((schedule.lec_hours || 0) + (schedule.lab_hours || 0))}
+                                {schedule.credit_units || 0}
                               </span>
                               <span style={{ 
                                 fontSize: '11px',
@@ -1238,7 +1181,7 @@ function ClassSchedulesContent() {
               </div>
 
               {/* Section & Units Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
                     Section
@@ -1261,103 +1204,13 @@ function ClassSchedulesContent() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Lec Units
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lec_units}
-                    onChange={(e) => handleInputChange('lec_units', parseInt(e.target.value) || 0)}
-                    min="0"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Lab Units
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lab_units}
-                    onChange={(e) => handleInputChange('lab_units', parseInt(e.target.value) || 0)}
-                    min="0"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Credit Units
+                    Units
                   </label>
                   <input
                     type="number"
                     value={formData.credit_units}
                     onChange={(e) => handleInputChange('credit_units', parseInt(e.target.value) || 0)}
                     min="0"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Hours Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    <FaClock style={{ marginRight: '6px' }} />
-                    Lecture Hours
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lec_hours}
-                    onChange={(e) => handleInputChange('lec_hours', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.25"
-                    placeholder="e.g., 1.5 (1h 30mins)"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    <FaClock style={{ marginRight: '6px' }} />
-                    Lab Hours
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lab_hours}
-                    onChange={(e) => handleInputChange('lab_hours', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.25"
-                    placeholder="e.g., 2.5 (2h 30mins)"
                     style={{
                       width: '100%',
                       padding: '12px 14px',
