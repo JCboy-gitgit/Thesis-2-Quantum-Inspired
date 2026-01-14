@@ -22,7 +22,7 @@ from models import (
     RoomType, DayOfWeek
 )
 from database import (
-    get_supabase_client, get_all_rooms, get_sections_for_scheduling,
+    get_supabase_client, get_all_rooms, get_sections_for_scheduling, get_all_sections,
     get_all_teachers, get_time_slots, save_schedule_entries,
     check_room_conflicts, check_teacher_conflicts, get_room_utilization,
     create_schedule_record, update_schedule_status, get_schedule_by_id,
@@ -45,14 +45,31 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Build allowed origins list for CORS
+def get_allowed_origins():
+    """Get list of allowed origins including Vercel preview URLs"""
+    origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    
+    # Add production frontend URL from environment
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        origins.append(frontend_url)
+    
+    # Add additional origins from comma-separated list (for multiple Vercel previews)
+    additional_origins = os.getenv("ADDITIONAL_ORIGINS", "")
+    if additional_origins:
+        origins.extend([o.strip() for o in additional_origins.split(",") if o.strip()])
+    
+    return origins
+
 # Configure CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        os.getenv("FRONTEND_URL", "http://localhost:3000")
-    ],
+    allow_origins=get_allowed_origins(),
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,8 +96,8 @@ async def health_check():
     """Detailed health check"""
     try:
         client = get_supabase_client()
-        # Simple query to verify DB connection
-        result = await client.table("rooms").select("id").limit(1).execute()
+        # Simple query to verify DB connection (sync client, no await needed)
+        result = client.table("rooms").select("id").limit(1).execute()
         db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
@@ -88,6 +105,8 @@ async def health_check():
     return {
         "status": "healthy" if db_status == "connected" else "degraded",
         "database": db_status,
+        "supabase_url_set": bool(os.getenv("SUPABASE_URL")),
+        "supabase_key_set": bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
         "timestamp": datetime.utcnow().isoformat()
     }
 
@@ -170,10 +189,8 @@ async def list_sections(
 ):
     """Get all sections with optional filtering"""
     try:
-        sections = await get_sections_for_scheduling()
+        sections = await get_all_sections(department)
         
-        if department:
-            sections = [s for s in sections if s.get("department") == department]
         if course_code:
             sections = [s for s in sections if s.get("course_code") == course_code]
         
@@ -190,10 +207,7 @@ async def list_sections(
 async def list_teachers(department: Optional[str] = None):
     """Get all teachers with optional filtering"""
     try:
-        teachers = await get_teachers()
-        
-        if department:
-            teachers = [t for t in teachers if t.get("department") == department]
+        teachers = await get_all_teachers(department)
         
         return teachers
     except Exception as e:
@@ -709,8 +723,8 @@ async def get_analytics_summary(schedule_id: Optional[int] = None):
     """Get overall scheduling analytics summary"""
     try:
         rooms = await get_all_rooms()
-        sections = await get_sections_for_scheduling()
-        teachers = await get_teachers()
+        sections = await get_all_sections()
+        teachers = await get_all_teachers()
         
         summary = {
             "total_rooms": len(rooms),

@@ -1,0 +1,22 @@
+# Render deployment configuration for the Python FastAPI backend
+# See: https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: qia-scheduler-api
+    runtime: python
+    region: singapore  # Closest to Philippines
+    plan: free  # Use 'starter' for production
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SUPABASE_URL
+        sync: false  # Manual input required
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false  # Manual input required
+      - key: FRONTEND_URL
+        value: https://thesis-2-quantum-inspired.vercel.app  # Update with your actual Vercel URL
+    healthCheckPath: /health
+    autoDeploy: true
