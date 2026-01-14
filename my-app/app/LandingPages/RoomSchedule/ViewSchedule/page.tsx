@@ -329,10 +329,10 @@ function ViewSchedulePage() {
         setAllocations(allocationData)
         
         // Extract unique buildings, rooms, sections and teachers
-        const uniqueBuildings = [...new Set(allocationData.map(a => a.building).filter(Boolean))]
-        const uniqueRooms = [...new Set(allocationData.map(a => a.room).filter(Boolean))]
-        const uniqueSections = [...new Set(allocationData.map(a => a.section).filter(Boolean))]
-        const uniqueTeachers = [...new Set(allocationData.map(a => a.teacher_name).filter(Boolean))]
+        const uniqueBuildings = [...new Set(allocationData.map(a => a.building).filter((b): b is string => !!b))]
+        const uniqueRooms = [...new Set(allocationData.map(a => a.room).filter((r): r is string => !!r))]
+        const uniqueSections = [...new Set(allocationData.map(a => a.section).filter((s): s is string => !!s))]
+        const uniqueTeachers = [...new Set(allocationData.map(a => a.teacher_name).filter((t): t is string => !!t))]
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
         setSections(uniqueSections)
@@ -390,11 +390,11 @@ function ViewSchedulePage() {
 
         setAllocations(mockAllocations)
         
-        const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter(Boolean))]
-        const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter(Boolean))]
-        const uniqueSections = [...new Set(mockAllocations.map(a => a.section).filter(Boolean))]
-        const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter(Boolean))]
-        const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter(Boolean))]
+        const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
+        const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
+        const uniqueSections = [...new Set(mockAllocations.map(a => a.section).filter((s): s is string => !!s))]
+        const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
+        const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
         
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
