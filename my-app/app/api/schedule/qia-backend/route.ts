@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Backend URL - Python FastAPI server
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Backend URLs - Try local first, then fall back to Render
+const LOCAL_BACKEND_URL = 'http://localhost:8000'
+const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -248,38 +249,65 @@ export async function POST(request: NextRequest) {
       prioritize_accessibility: body.config.prioritize_accessibility
     }
 
-    console.log('📡 Sending request to Python backend:', BACKEND_URL)
+    console.log('📡 Trying to connect to Python backend...')
     
-    // Call Python FastAPI backend
+    // Try local backend first, then fall back to Render
+    const backendUrls = [
+      { url: LOCAL_BACKEND_URL, type: 'Local' },
+      { url: RENDER_BACKEND_URL, type: 'Render' }
+    ]
+    
     let backendResponse
-    try {
-      backendResponse = await fetch(`${BACKEND_URL}/api/schedules/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(backendPayload)
-      })
-    } catch (fetchError: any) {
-      console.error('❌ Failed to connect to Python backend:', fetchError.message)
-      
-      if (fetchError.message?.includes('fetch failed') || fetchError.code === 'ECONNREFUSED') {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: `Cannot connect to Python backend at ${BACKEND_URL}. Please ensure the backend server is running.`,
-            details: 'Run: cd backend && python -m uvicorn main:app --reload',
-            backend_url: BACKEND_URL
+    let usedBackendUrl = ''
+    let lastError: any = null
+    
+    for (const backend of backendUrls) {
+      try {
+        console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
+        
+        backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
-          { status: 503 }
-        )
+          body: JSON.stringify(backendPayload),
+          signal: AbortSignal.timeout(5000) // 5 second timeout for connection attempt
+        })
+        
+        usedBackendUrl = backend.url
+        console.log(`✅ Connected to ${backend.type} backend successfully`)
+        break // Success, exit the loop
+        
+      } catch (fetchError: any) {
+        lastError = fetchError
+        console.warn(`⚠️ ${backend.type} backend failed:`, fetchError.message)
+        
+        // Continue to next backend
+        if (backend === backendUrls[backendUrls.length - 1]) {
+          // This was the last backend, throw error
+          console.error('❌ All backends failed')
+          
+          return NextResponse.json(
+            { 
+              success: false,
+              error: `Cannot connect to any Python backend. Tried: ${backendUrls.map(b => b.url).join(', ')}`,
+              details: 'Ensure at least one backend server is running.',
+              local_backend: LOCAL_BACKEND_URL,
+              render_backend: RENDER_BACKEND_URL
+            },
+            { status: 503 }
+          )
+        }
       }
-      
-      throw fetchError
+    }
+    
+    if (!backendResponse) {
+      throw new Error('No backend response received')
     }
 
     console.log('📨 Backend response status:', backendResponse.status)
+    console.log('🎯 Using backend:', usedBackendUrl)
 
     if (!backendResponse.ok) {
       const errorText = await backendResponse.text()
