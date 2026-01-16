@@ -3,10 +3,10 @@
 /* Green Theme (Default - College of Science) */
 :root,
 [data-theme="green"] {
-  --primary: #00a651;
-  --primary-dark: #005826;
-  --primary-light: #4cff96;
-  --primary-alpha: rgba(0, 166, 81, 0.15);
+  --primary: #335b2c;
+  --primary-dark: #8BAE66;
+  --primary-light: #628141;
+  --primary-alpha: rgba(35, 109, 71, 0.15);
   --secondary: #ffd700;
   --dark-bg: #003d1a;
   --card-bg: rgba(0, 88, 38, 0.95);
