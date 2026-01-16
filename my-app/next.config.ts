@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+<<<<<<< HEAD
   /* config options here */
   
   // Enable experimental features for better production builds
@@ -26,6 +28,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+=======
+  outputFileTracingRoot: path.join(process.cwd()),
+>>>>>>> ulit
 };
 
 export default nextConfig;
