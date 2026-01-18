@@ -24,8 +24,8 @@ interface UserProfile {
   id: string
   email: string
   full_name: string
-  department: string
-  status?: string
+  department_id?: number
+  is_active: boolean
   phone?: string
   office_location?: string
   bio?: string
@@ -90,7 +90,7 @@ export default function FacultyProfilePage() {
         .eq('id', session.user.id)
         .single() as { data: UserProfile | null; error: any }
 
-      if (userError || !userData || userData.status !== 'approved') {
+      if (userError || !userData || !userData.is_active) {
         await supabase.auth.signOut()
         router.push('/faculty/login')
         return
@@ -129,10 +129,9 @@ export default function FacultyProfilePage() {
     setMessage(null)
 
     try {
-      // Update users table
+      // Update users table (only columns that exist: full_name, phone)
       const updateData = {
         full_name: editForm.full_name,
-        department: editForm.department,
         phone: editForm.phone,
         updated_at: new Date().toISOString()
       }
@@ -144,7 +143,7 @@ export default function FacultyProfilePage() {
 
       if (userError) throw userError
 
-      // Upsert user_profiles table
+      // Upsert user_profiles table for extended profile data
       const profileData = {
         user_id: user.id,
         office_location: editForm.office_location,
@@ -284,27 +283,13 @@ export default function FacultyProfilePage() {
               <p className={styles.readonly}>{user?.email}</p>
             </div>
 
-            {/* Department */}
+            {/* Department - Read only, managed by admin */}
             <div className={styles.formGroup}>
               <label>
                 <Building2 size={16} />
                 Department
               </label>
-              {editing ? (
-                <select
-                  value={editForm?.department || ''}
-                  onChange={(e) => setEditForm({ ...editForm!, department: e.target.value })}
-                >
-                  <option value="">Select department...</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.department_name}>
-                      {dept.department_name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p>{user?.department || 'Not set'}</p>
-              )}
+              <p className={styles.readOnly}>Contact admin to update department</p>
             </div>
 
             {/* Phone */}

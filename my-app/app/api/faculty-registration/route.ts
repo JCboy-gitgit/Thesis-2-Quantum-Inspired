@@ -147,21 +147,58 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by email confirmation status and role
-    // Pending = email not confirmed OR not in users table with approved status
+    // Status determination using database:
+    // - users.is_active = true → approved
+    // - users.is_active = false AND user_profiles.position = 'REJECTED' → rejected
+    // - Otherwise → pending or unconfirmed
     const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
     
-    // Get user status from our users table
+    // Get user data from our users table
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('users')
       .select('*')
     
+    if (usersError) {
+      console.error('Error fetching users:', usersError)
+    }
+    console.log(`Found ${usersData?.length || 0} users in database`)
+    
+    // Get user_profiles to check rejection status
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id, position')
+    
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError)
+    }
+    console.log(`Found ${profilesData?.length || 0} user profiles in database`)
+    
     const usersMap = new Map(usersData?.map(u => [u.email, u]) || [])
+    const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || [])
     
     const registrations = authUsers.users
       .filter(user => user.email !== ADMIN_EMAIL)
       .map(user => {
         const userRecord = usersMap.get(user.email || '')
-        const userStatus = userRecord?.status || (user.email_confirmed_at ? 'pending' : 'unconfirmed')
+        const userProfile = userRecord ? profilesMap.get(userRecord.id) : null
+        
+        // Determine status from database
+        let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed'
+        
+        if (!user.email_confirmed_at) {
+          userStatus = 'unconfirmed'
+        } else if (userRecord?.is_active === true) {
+          userStatus = 'approved'
+        } else if (userProfile?.position === 'REJECTED') {
+          userStatus = 'rejected'
+        } else {
+          userStatus = 'pending'
+        }
+        
+        // Debug log for each user
+        if (userRecord) {
+          console.log(`User ${user.email}: is_active=${userRecord.is_active}, profile_position=${userProfile?.position}, determined_status=${userStatus}`)
+        }
         
         return {
           id: user.id,
@@ -170,8 +207,8 @@ export async function GET(request: NextRequest) {
           created_at: user.created_at,
           email_confirmed_at: user.email_confirmed_at,
           status: userStatus,
-          role: userRecord?.role || 'professor',
-          department: userRecord?.department || null,
+          role: userRecord?.role || 'faculty',
+          department: user.user_metadata?.department || null,
           is_active: userRecord?.is_active ?? false
         }
       })
@@ -233,29 +270,30 @@ export async function POST(request: NextRequest) {
           id: userId,
           email: userEmail,
           full_name: full_name || userData.user.user_metadata?.full_name || 'Faculty Member',
-          role: 'professor',
-          department: department || null,
-          status: 'approved',
+          role: 'faculty',
           is_active: true,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
 
       if (upsertError) {
         console.error('Upsert error:', upsertError)
-        // If table doesn't have status column, try without it
-        const { error: fallbackError } = await supabaseAdmin
-          .from('users')
-          .upsert({
-            id: userId,
-            email: userEmail,
-            full_name: full_name || 'Faculty Member',
-            role: 'professor',
-            department: department || null,
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' })
-        
-        if (fallbackError) throw fallbackError
+        throw upsertError
+      }
+
+      // Clear rejection marker in user_profiles if previously rejected
+      const { data: profileResult, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: userId,
+          position: 'APPROVED',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id', ignoreDuplicates: false })
+
+      if (profileError) {
+        console.error('Profile update error:', profileError)
+        // Continue - main approval is done
+      } else {
+        console.log('Profile updated successfully for approval:', userId)
       }
 
       // Send approval email
@@ -279,23 +317,53 @@ export async function POST(request: NextRequest) {
       })
 
     } else {
-      // Reject - mark as rejected or delete
+      // Reject - mark as rejected in database
+      // First, get existing user data to preserve fields
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      // Update users table - set is_active to false
       const { error: updateError } = await supabaseAdmin
         .from('users')
         .upsert({
           id: userId,
           email: userEmail,
-          status: 'rejected',
+          full_name: full_name || existingUser?.full_name || userData.user.user_metadata?.full_name || 'User',
+          role: existingUser?.role || 'faculty',
           is_active: false,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
+
+      if (updateError) {
+        console.error('Reject update error:', updateError)
+        throw updateError
+      }
+
+      // Mark as rejected in user_profiles table (using position field)
+      const { data: profileResult, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: userId,
+          position: 'REJECTED',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id', ignoreDuplicates: false })
+
+      if (profileError) {
+        console.error('Profile update error for rejection:', profileError)
+        console.error('Failed to mark user as REJECTED in user_profiles:', userId)
+      } else {
+        console.log('Successfully marked user as REJECTED:', userId, profileResult)
+      }
 
       // Send rejection email
       try {
         await sendEmail({
           to: userEmail!,
           subject: '❌ Your Faculty Registration Status - Qtime Scheduler',
-          html: generateRejectionEmail(userEmail!, full_name || 'User')
+          html: generateRejectionEmail(userEmail!, full_name || existingUser?.full_name || 'User')
         })
         console.log(`📧 Rejection email sent to ${userEmail}`)
       } catch (emailError) {

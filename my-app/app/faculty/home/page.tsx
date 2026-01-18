@@ -23,8 +23,9 @@ interface UserProfile {
   id: string
   email: string
   full_name: string
-  department: string
+  department_id?: number
   role: string
+  is_active: boolean
   avatar_url?: string
 }
 
@@ -89,7 +90,7 @@ export default function FacultyHomePage() {
         .eq('id', session.user.id)
         .single() as { data: UserProfile | null; error: any }
 
-      if (userError || !userData || (userData as any).status !== 'approved') {
+      if (userError || !userData || !userData.is_active) {
         await supabase.auth.signOut()
         router.push('/faculty/login')
         return
@@ -224,7 +225,7 @@ export default function FacultyHomePage() {
           <div className={styles.userInfo}>
             <div className={styles.infoBadge}>
               <Building2 size={16} />
-              <span>{user?.department || 'Department'}</span>
+              <span>{user?.full_name ? 'Faculty' : 'Department'}</span>
             </div>
             <div className={styles.infoBadge}>
               <GraduationCap size={16} />

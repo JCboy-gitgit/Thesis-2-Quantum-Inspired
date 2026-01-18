@@ -25,14 +25,14 @@ export default function FacultyLoginPage(): JSX.Element {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user && session.user.email !== ADMIN_EMAIL) {
-        // Check if user is approved
+        // Check if user is approved (is_active = true)
         const { data: userData } = await supabase
           .from('users')
-          .select('status, is_active')
+          .select('is_active')
           .eq('id', session.user.id)
-          .single() as { data: { status: string; is_active: boolean } | null }
+          .single() as { data: { is_active: boolean } | null }
 
-        if (userData?.status === 'approved' && userData?.is_active) {
+        if (userData?.is_active) {
           router.push('/faculty/home')
         }
       }
@@ -72,28 +72,45 @@ export default function FacultyLoginPage(): JSX.Element {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
-      // Check if faculty is approved
-      const { data: userData, error: userError } = await supabase
+      // Check if faculty is approved (is_active = true means approved)
+      // Also check user_profiles for rejection status
+      let userData: { is_active: boolean; full_name: string; id: string } | null = null
+      
+      // First try by user ID
+      const { data: userById, error: userByIdError } = await supabase
         .from('users')
-        .select('status, is_active, full_name')
+        .select('id, is_active, full_name')
         .eq('id', data.user.id)
-        .single() as { data: { status: string; is_active: boolean; full_name: string } | null; error: any }
+        .single() as { data: { id: string; is_active: boolean; full_name: string } | null; error: any }
 
-      if (userError || !userData) {
+      if (!userByIdError && userById) {
+        userData = userById
+      } else {
+        // Fallback: try by email
+        const { data: userByEmail } = await supabase
+          .from('users')
+          .select('id, is_active, full_name')
+          .eq('email', email)
+          .single() as { data: { id: string; is_active: boolean; full_name: string } | null; error: any }
+        
+        userData = userByEmail
+      }
+
+      if (!userData) {
         await supabase.auth.signOut()
         setError('❌ Your account is not found. Please register first.')
         setLoading(false)
         return
       }
 
-      if (userData.status === 'pending') {
-        await supabase.auth.signOut()
-        setError('⏳ Your registration is still pending admin approval. Please wait.')
-        setLoading(false)
-        return
-      }
+      // Check if rejected in user_profiles
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('position')
+        .eq('user_id', userData.id)
+        .single() as { data: { position: string } | null; error: any }
 
-      if (userData.status === 'rejected') {
+      if (profileData?.position === 'REJECTED') {
         await supabase.auth.signOut()
         setError('❌ Your registration was not approved. Please contact the administrator.')
         setLoading(false)
@@ -102,7 +119,7 @@ export default function FacultyLoginPage(): JSX.Element {
 
       if (!userData.is_active) {
         await supabase.auth.signOut()
-        setError('❌ Your account is inactive. Please contact the administrator.')
+        setError('⏳ Your account is pending admin approval. Please wait for confirmation.')
         setLoading(false)
         return
       }

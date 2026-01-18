@@ -133,9 +133,7 @@ export default function Page(): JSX.Element {
             id: data.user.id,
             email: email,
             full_name: fullName,
-            department: selectedDepartment,
-            status: 'pending',
-            role: 'professor',
+            role: 'faculty',
             is_active: false,
             created_at: new Date().toISOString()
           } as any, { onConflict: 'id' })

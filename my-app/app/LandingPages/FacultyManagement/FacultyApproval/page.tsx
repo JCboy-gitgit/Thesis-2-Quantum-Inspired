@@ -105,17 +105,22 @@ export default function FacultyApprovalPage() {
       setMessage({ 
         type: 'success', 
         text: action === 'approve' 
-          ? `✅ ${user.email} has been approved!`
-          : `❌ ${user.email} has been rejected.`
+          ? `✅ ${user.email} has been approved! Email notification sent.`
+          : `❌ ${user.email} has been rejected. Email notification sent.`
       })
 
-      // Refresh the list
-      fetchRegistrations()
+      // Auto-clear message after 4 seconds
+      setTimeout(() => setMessage(null), 4000)
+
+      // Immediately refresh from server to show updated status
+      await fetchRegistrations()
+      
       setEditingUser(null)
       setEditForm({ full_name: '', department: '' })
 
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Action failed' })
+      setTimeout(() => setMessage(null), 5000)
     } finally {
       setActionLoading(null)
     }
@@ -136,11 +141,15 @@ export default function FacultyApprovalPage() {
         throw new Error(data.error)
       }
 
+      // Immediately remove from local state
+      setRegistrations(prev => prev.filter(reg => reg.id !== userId))
+
       setMessage({ type: 'success', text: '🗑️ Registration deleted successfully' })
-      fetchRegistrations()
+      setTimeout(() => setMessage(null), 3000)
 
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Delete failed' })
+      setTimeout(() => setMessage(null), 5000)
     } finally {
       setActionLoading(null)
     }
