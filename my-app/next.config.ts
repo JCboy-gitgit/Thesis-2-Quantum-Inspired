@@ -27,8 +27,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  
-  outputFileTracingRoot: path.join(process.cwd()),
 };
 
 export default nextConfig;
