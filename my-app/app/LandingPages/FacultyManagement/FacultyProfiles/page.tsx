@@ -325,7 +325,11 @@ function FacultyProfilesContent() {
 
   return (
     <div className={styles.layout}>
-      <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <MenuBar 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
       <Sidebar isOpen={sidebarOpen} />
 
       <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>

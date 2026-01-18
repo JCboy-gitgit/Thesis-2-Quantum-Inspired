@@ -1,15 +1,23 @@
 .sidebar {
   position: fixed;
   left: 0;
-  top: 64px;
-  height: calc(100vh - 64px);
+  top: 70px;
+  height: calc(100vh - 70px);
   width: 250px;
-  background: var(--card-bg, rgba(0, 88, 38, 0.95));
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease, background 0.3s ease;
-  z-index: 100;
+  background: var(--card-bg, rgba(0, 88, 38, 0.85));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, background 0.3s ease, top 0.3s ease, height 0.3s ease;
+  z-index: 999;
   overflow-y: auto;
   border-right: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+}
+
+/* When menubar is hidden */
+.sidebar.menuHidden {
+  top: 0;
+  height: 100vh;
 }
 
 .sidebar.closed {

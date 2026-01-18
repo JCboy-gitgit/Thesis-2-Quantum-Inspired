@@ -755,7 +755,11 @@ export default function GenerateSchedulePage() {
 
   return (
     <div className={styles.scheduleLayout}>
-      <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <MenuBar 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
       <Sidebar isOpen={sidebarOpen} />
 
       <main className={`${styles.scheduleMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>

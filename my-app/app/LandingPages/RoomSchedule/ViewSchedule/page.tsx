@@ -723,7 +723,11 @@ function ViewSchedulePage() {
 
   return (
     <>
-      <MenuBar onToggleSidebar={toggleSidebar} />
+      <MenuBar 
+        onToggleSidebar={toggleSidebar} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
       <Sidebar isOpen={sidebarOpen} />
       
       <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>

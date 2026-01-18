@@ -1,8 +1,14 @@
 .profile-container {
   padding: 40px;
+  padding-top: 100px;
   max-width: 900px;
   margin: 0 auto;
   min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+
+.profile-container.with-sidebar {
+  margin-left: 250px;
 }
 
 /* test */
