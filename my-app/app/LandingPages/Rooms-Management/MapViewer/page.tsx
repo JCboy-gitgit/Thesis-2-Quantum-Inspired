@@ -1903,8 +1903,8 @@ export default function MapViewerPage() {
                     >
                       <Layers size={14} />
                       <span>{floor.floor_name || `Floor ${floor.floor_number}`}</span>
-                      {floor.is_default_view && <Eye size={12} title="Default View" />}
-                      {floor.is_published && <ExternalLink size={12} title="Published" />}
+                      {floor.is_default_view && <span title="Default View"><Eye size={12} /></span>}
+                      {floor.is_published && <span title="Published"><ExternalLink size={12} /></span>}
                     </div>
                   ))}
                   {(selectedBuilding.floor_plans || []).length === 0 && (
