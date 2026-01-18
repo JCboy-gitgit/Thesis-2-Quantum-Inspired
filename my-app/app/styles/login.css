@@ -309,6 +309,12 @@ body {
   text-align: center;
 }
 
+.switch-row.faculty-login-link {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--card-border);
+}
+
 .switch-text {
   font-size: 14px;
   color: var(--text-secondary);
@@ -329,6 +335,56 @@ body {
 .link-button:hover {
   color: var(--secondary);
   text-decoration-thickness: 2px;
+}
+
+/* ==================== Select Input ==================== */
+.select-input {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300d4ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 24px;
+  padding-right: 40px;
+}
+
+.select-input option {
+  background: #1a1f3a;
+  color: white;
+  padding: 10px;
+}
+
+.select-input optgroup {
+  background: #0a0e27;
+  color: var(--primary);
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* ==================== Checkbox ==================== */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.checkbox-text {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 /* ==================== Messages ==================== */

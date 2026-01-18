@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown } from 'lucide-react'
 import SettingsModal from './SettingsModal'
+import NotificationBell from './NotificationBell'
 import './MenuBar.css'
 
 interface MenuBarProps {
@@ -21,6 +22,10 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const [showSettings, setShowSettings] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
+  const [pendingRegistrations, setPendingRegistrations] = useState(0)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
   useEffect(() => {
     // Get current user email
@@ -28,6 +33,12 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserEmail(user.email || null)
+        setIsAdmin(user.email === ADMIN_EMAIL)
+        
+        // Fetch pending registrations count for admin
+        if (user.email === ADMIN_EMAIL) {
+          fetchPendingCount()
+        }
       }
     }
 
@@ -37,15 +48,39 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUserEmail(session.user.email || null)
+        setIsAdmin(session.user.email === ADMIN_EMAIL)
+        
+        if (session.user.email === ADMIN_EMAIL) {
+          fetchPendingCount()
+        }
       } else {
         setUserEmail(null)
+        setIsAdmin(false)
       }
     })
 
+    // Poll for new registrations every 30 seconds for admin
+    const interval = setInterval(() => {
+      if (isAdmin) {
+        fetchPendingCount()
+      }
+    }, 30000)
+
     return () => {
       subscription.unsubscribe()
+      clearInterval(interval)
     }
-  }, [])
+  }, [isAdmin])
+
+  const fetchPendingCount = async () => {
+    try {
+      const response = await fetch('/api/faculty-registration?status=pending')
+      const data = await response.json()
+      setPendingRegistrations(data.registrations?.length || 0)
+    } catch (error) {
+      console.error('Error fetching pending count:', error)
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -78,6 +113,14 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         </div>
 
         <div className="menu-bar-right">
+        {/* Notification Bell - Only for Admin */}
+        {isAdmin && showAccountIcon && (
+          <NotificationBell 
+            pendingCount={pendingRegistrations}
+            onNotificationClick={() => fetchPendingCount()}
+          />
+        )}
+
         {showAccountIcon && (
           <div className="account-section">
             <button 

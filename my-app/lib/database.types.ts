@@ -18,18 +18,32 @@ export type EmploymentType = 'full-time' | 'part-time' | 'contractual';
 // USER & AUTH
 // ============================================================================
 
+export type UserStatus = 'pending' | 'approved' | 'rejected';
+
 export interface User {
   id: string;
   email: string;
   full_name?: string;
   role: UserRole;
   department_id?: number;
+  department?: string;
   phone?: string;
   avatar_url?: string;
+  status?: UserStatus;
   is_active: boolean;
   last_login?: string;
   created_at: string;
   updated_at: string;
+}
+
+// User Profiles for extended info
+export interface UserProfile {
+  user_id: string;
+  contact_phone?: string;
+  office_location?: string;
+  bio?: string;
+  specialization?: string;
+  updated_at?: string;
 }
 
 // ============================================================================
@@ -464,6 +478,7 @@ export interface Database {
   public: {
     Tables: {
       users: { Row: User; Insert: Partial<User>; Update: Partial<User> };
+      user_profiles: { Row: UserProfile; Insert: Partial<UserProfile>; Update: Partial<UserProfile> };
       departments: { Row: Department; Insert: Partial<Department>; Update: Partial<Department> };
       rooms: { Row: Room; Insert: Partial<Room>; Update: Partial<Room> };
       faculty: { Row: Faculty; Insert: Partial<Faculty>; Update: Partial<Faculty> };

@@ -1,12 +1,19 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { FormEvent, JSX } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import './styles/login.css'
 import { supabase } from '@/lib/supabaseClient'
 
 type Mode = 'login' | 'register'
+
+interface Department {
+  id: number
+  department_code: string
+  department_name: string
+  college: string | null
+}
 
 const eyeShowSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`
 const eyeHideSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24m4.24 4.24L3 3m6 6l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
@@ -16,19 +23,43 @@ const rocketSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" x
 
 export default function Page(): JSX.Element {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [selectedDepartment, setSelectedDepartment] = useState('')
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [groupedDepartments, setGroupedDepartments] = useState<Record<string, Department[]>>({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [registerSuccess, setRegisterSuccess] = useState(false)
+  const [staySignedIn, setStaySignedIn] = useState(false)
 
   // Only allow admin login 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
-  const [isAdminLogin, setIsAdminLogin] = useState(false)
+  const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('mode') === 'admin')
+
+  // Fetch departments on mount
+  useEffect(() => {
+    fetchDepartments()
+  }, [])
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch('/api/departments')
+      const data = await response.json()
+      if (data.departments) {
+        setDepartments(data.departments)
+        setGroupedDepartments(data.groupedByCollege || {})
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error)
+    }
+  }
 
   const validate = (): boolean => {
     setError(null)
@@ -42,6 +73,14 @@ export default function Page(): JSX.Element {
     }
     if (!isAdminLogin && password !== confirmPassword) {
       setError('Passwords do not match.')
+      return false
+    }
+    if (!isAdminLogin && !fullName.trim()) {
+      setError('Please enter your full name.')
+      return false
+    }
+    if (!isAdminLogin && !selectedDepartment) {
+      setError('Please select your department.')
       return false
     }
     return true
@@ -58,28 +97,60 @@ export default function Page(): JSX.Element {
       if (isAdminLogin) {
         // Only admin can login
         if (email !== ADMIN_EMAIL) {
-          setError('❌ Only admin can login.')
+          setError('❌ Only admin can login here. Faculty should use the Faculty Login page.')
           setLoading(false)
           return
         }
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+
+        // Handle stay signed in - store preference
+        if (staySignedIn) {
+          localStorage.setItem('adminStaySignedIn', 'true')
+        }
+
         setMessage('✅ Login successful. Redirecting...')
         setTimeout(() => {
           router.push('/LandingPages/Home')
         }, 1500)
       } else {
-        // Faculty registration only
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        // Faculty registration with metadata
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              department: selectedDepartment
+            }
+          }
+        })
         if (error) throw error
-        setMessage('✅ Registration successful. Await admin approval.')
+
+        // Also save to users table immediately
+        if (data.user) {
+          await supabase.from('users').upsert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            department: selectedDepartment,
+            status: 'pending',
+            role: 'professor',
+            is_active: false,
+            created_at: new Date().toISOString()
+          } as any, { onConflict: 'id' })
+        }
+
+        setMessage('✅ Registration successful! Please wait for admin approval. You will receive an email once approved.')
         setRegisterSuccess(true)
         setTimeout(() => {
           setEmail('')
           setPassword('')
           setConfirmPassword('')
+          setFullName('')
+          setSelectedDepartment('')
           setRegisterSuccess(false)
-        }, 4000)
+        }, 5000)
       }
     } catch (err: any) {
       setError('❌ ' + (err?.message ?? String(err)))
@@ -135,10 +206,27 @@ export default function Page(): JSX.Element {
           </div>
 
           <form onSubmit={handleSubmit} className="form">
+            {/* Full Name Field (Faculty Registration Only) */}
+            {!isAdminLogin && (
+              <div className="form-group">
+                <label className="label">
+                  <span className="label-text">👤 Full Name</span>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input"
+                    placeholder="Juan Dela Cruz"
+                    required
+                  />
+                </label>
+              </div>
+            )}
+
             {/* Email Field */}
             <div className="form-group">
               <label className="label">
-                <span className="label-text"> Email Address</span>
+                <span className="label-text">📧 Email Address</span>
                 <input
                   type="email"
                   value={email}
@@ -150,10 +238,44 @@ export default function Page(): JSX.Element {
               </label>
             </div>
 
+            {/* Department Selection (Faculty Registration Only) */}
+            {!isAdminLogin && (
+              <div className="form-group">
+                <label className="label">
+                  <span className="label-text">🏛️ College / Department</span>
+                  <select
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="input select-input"
+                    required
+                  >
+                    <option value="">Select your department...</option>
+                    {Object.keys(groupedDepartments).length > 0 ? (
+                      Object.entries(groupedDepartments).map(([college, depts]) => (
+                        <optgroup key={college} label={college}>
+                          {depts.map((dept) => (
+                            <option key={dept.id} value={dept.department_name}>
+                              {dept.department_name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))
+                    ) : (
+                      departments.map((dept) => (
+                        <option key={dept.id} value={dept.department_name}>
+                          {dept.department_name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+              </div>
+            )}
+
             {/* Password Field */}
             <div className="form-group">
               <label className="label">
-                <span className="label-text"> Password</span>
+                <span className="label-text">🔒 Password</span>
                 <div className="password-input-wrapper">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -178,7 +300,7 @@ export default function Page(): JSX.Element {
             {!isAdminLogin && (
               <div className="form-group">
                 <label className="label">
-                  <span className="label-text"> Confirm Password</span>
+                  <span className="label-text">🔒 Confirm Password</span>
                   <div className="password-input-wrapper">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
@@ -196,6 +318,21 @@ export default function Page(): JSX.Element {
                       dangerouslySetInnerHTML={{ __html: showConfirmPassword ? eyeHideSVG : eyeShowSVG }}
                     />
                   </div>
+                </label>
+              </div>
+            )}
+
+            {/* Stay Signed In (Admin Only) */}
+            {isAdminLogin && (
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={staySignedIn}
+                    onChange={(e) => setStaySignedIn(e.target.checked)}
+                    className="checkbox-input"
+                  />
+                  <span className="checkbox-text">🔐 Keep me signed in</span>
                 </label>
               </div>
             )}
@@ -236,6 +373,8 @@ export default function Page(): JSX.Element {
                   setEmail('')
                   setPassword('')
                   setConfirmPassword('')
+                  setFullName('')
+                  setSelectedDepartment('')
                   setRegisterSuccess(false)
                 }}
                 className="link-button"
@@ -243,6 +382,20 @@ export default function Page(): JSX.Element {
                 {isAdminLogin ? 'Faculty Registration' : 'Admin Login'}
               </button>
             </div>
+
+            {/* Faculty Login Link */}
+            {!isAdminLogin && (
+              <div className="switch-row faculty-login-link">
+                <span className="switch-text">Already approved?</span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/faculty/login')}
+                  className="link-button"
+                >
+                  Faculty Login →
+                </button>
+              </div>
+            )}
 
             {/* Messages */}
             {message && <div className="message success">{message}</div>}
