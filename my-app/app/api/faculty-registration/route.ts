@@ -182,16 +182,27 @@ export async function GET(request: NextRequest) {
         const userRecord = usersMap.get(user.email || '')
         const userProfile = userRecord ? profilesMap.get(userRecord.id) : null
         
-        // Determine status from database
+        // Determine status from database - FIXED LOGIC
         let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed'
         
+        // First check if email is confirmed
         if (!user.email_confirmed_at) {
           userStatus = 'unconfirmed'
-        } else if (userRecord?.is_active === true) {
-          userStatus = 'approved'
-        } else if (userProfile?.position === 'REJECTED') {
+        } 
+        // Then check database status - prioritize profile position for rejection status
+        else if (userProfile?.position === 'REJECTED') {
           userStatus = 'rejected'
-        } else {
+        }
+        // Check if user is explicitly approved (is_active = true)
+        else if (userRecord?.is_active === true) {
+          userStatus = 'approved'
+        }
+        // Check profile for APPROVED status
+        else if (userProfile?.position === 'APPROVED') {
+          userStatus = 'approved'
+        }
+        // Default to pending for confirmed but not yet processed users
+        else {
           userStatus = 'pending'
         }
         

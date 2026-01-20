@@ -219,7 +219,8 @@ function FacultyListsContent() {
     if (selectedFile) {
       fetchFacultyData(selectedFile.upload_group_id)
     }
-  }, [selectedFile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFile?.upload_group_id])
 
   useEffect(() => {
     let filtered = facultyData
@@ -248,6 +249,7 @@ function FacultyListsContent() {
   }, [searchTerm, filterStatus, filterDepartment, facultyData])
 
   // Fetch faculty for selected file, and mark not registered if not in DB
+  // Also fetch approved faculty from users table
   const fetchFacultyData = async (upload_group_id: number) => {
     setLoading(true)
     try {
@@ -258,7 +260,7 @@ function FacultyListsContent() {
         .eq('upload_group_id', upload_group_id)
       if (teacherError) throw teacherError
 
-      // Fetch faculty from DB
+      // Fetch faculty from DB (faculty table)
       let faculty: Faculty[] = []
       try {
         faculty = await fetchAllRows('faculty')
@@ -266,12 +268,51 @@ function FacultyListsContent() {
         faculty = []
       }
 
+      // Also fetch approved users from users table
+      let approvedUsers: any[] = []
+      try {
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('is_active', true)
+          .eq('role', 'faculty')
+        
+        if (!usersError && users) {
+          approvedUsers = users
+        }
+      } catch (err) {
+        console.log('Could not fetch approved users:', err)
+      }
+
       // Map teachers to faculty, mark as not_registered if not in DB
       const facultyByEmail = new Map(faculty.map(f => [f.email.toLowerCase(), f]))
+      const approvedByEmail = new Map(approvedUsers.map(u => [u.email?.toLowerCase(), u]))
+      
       const merged: Faculty[] = (teachers || []).map((t: any, i: number) => {
         const match = facultyByEmail.get((t.email || '').toLowerCase())
+        const approvedMatch = approvedByEmail.get((t.email || '').toLowerCase())
+        
         if (match) {
-          return { ...match, upload_group_id }
+          return { ...match, upload_group_id, status: 'active' as const }
+        } else if (approvedMatch) {
+          // Faculty is approved in users table but not in faculty table
+          return {
+            id: 100000 + i,
+            employee_id: t.teacher_id || approvedMatch.id?.substring(0, 8) || '-',
+            first_name: approvedMatch.full_name?.split(' ')[0] || t.name?.split(' ')[0] || '-',
+            last_name: approvedMatch.full_name?.split(' ').slice(1).join(' ') || t.name?.split(' ').slice(1).join(' ') || '-',
+            email: t.email || approvedMatch.email || '-',
+            phone: '',
+            department: t.department || approvedMatch.department || '-',
+            position: 'Faculty',
+            status: 'active' as const,
+            hire_date: '',
+            office_location: '',
+            profile_image: '',
+            courses_count: 0,
+            created_at: approvedMatch.created_at || '',
+            upload_group_id
+          }
         } else {
           // Not registered in DB
           return {
@@ -283,7 +324,7 @@ function FacultyListsContent() {
             phone: '',
             department: t.department || '-',
             position: '-',
-            status: 'not_registered',
+            status: 'not_registered' as const,
             hire_date: '',
             office_location: '',
             profile_image: '',

@@ -40,7 +40,7 @@ export default function Page(): JSX.Element {
   const [staySignedIn, setStaySignedIn] = useState(false)
 
   // Only allow admin login 
-  const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
   const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('mode') === 'admin')
 
   // Fetch departments on mount

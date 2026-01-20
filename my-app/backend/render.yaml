@@ -13,10 +13,27 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
       - key: SUPABASE_URL
-        sync: false  # Manual input required
+        sync: false  # Manual input required - get from Supabase Dashboard
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false  # Manual input required
+        sync: false  # Manual input required - get from Supabase Dashboard
       - key: FRONTEND_URL
         value: https://thesis-2-quantum-inspired.vercel.app  # Update with your actual Vercel URL
+      - key: ADDITIONAL_ORIGINS
+        value: ""  # Comma-separated list of additional allowed origins
     healthCheckPath: /health
     autoDeploy: true
+
+# =============== DEPLOYMENT NOTES ===============
+# 1. Push this file to your GitHub repo
+# 2. Go to https://dashboard.render.com
+# 3. Click "New" > "Web Service"
+# 4. Connect your GitHub repo
+# 5. Render will auto-detect render.yaml
+# 6. Set the SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY manually
+# 7. After deployment, update FRONTEND_URL with your actual Vercel domain
+#
+# Environment Variables to set manually:
+# - SUPABASE_URL: Your Supabase project URL (e.g., https://xxx.supabase.co)
+# - SUPABASE_SERVICE_ROLE_KEY: From Supabase Dashboard > Settings > API
+#
+# ================================================
