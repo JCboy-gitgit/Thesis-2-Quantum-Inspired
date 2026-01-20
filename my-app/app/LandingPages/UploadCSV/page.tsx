@@ -16,7 +16,8 @@ import {
   Download,
   BookOpen,
   GraduationCap,
-  DoorOpen
+  DoorOpen,
+  Users
 } from 'lucide-react'
 import styles from './styles/bQtime.module.css'
 import React, { useState, useRef } from 'react'
@@ -49,6 +50,13 @@ export default function UploadCSVPage(): JSX.Element {
   const [teacherMessage, setTeacherMessage] = useState<string | null>(null)
   const [teacherError, setTeacherError] = useState<string | null>(null)
   
+  // ==================== Faculty Profiles Upload States ====================
+  const [facultyFile, setFacultyFile] = useState<File | null>(null)
+  const [facultyCollegeName, setFacultyCollegeName] = useState('')
+  const [facultyLoading, setFacultyLoading] = useState(false)
+  const [facultyMessage, setFacultyMessage] = useState<string | null>(null)
+  const [facultyError, setFacultyError] = useState<string | null>(null)
+
   // ==================== Image OCR States ====================
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imageProcessing, setImageProcessing] = useState(false)
@@ -57,6 +65,31 @@ export default function UploadCSVPage(): JSX.Element {
   const [imageUploadType, setImageUploadType] = useState<'class' | 'teacher'>('class')
   
   const imageFolderInputRef = useRef<HTMLInputElement>(null)
+
+  // Auth check on mount
+  React.useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   // ==================== CSV Parsing Utilities ====================
   const parseCSV = (text: string): string[][] => {
@@ -129,6 +162,20 @@ export default function UploadCSVPage(): JSX.Element {
     return headerStr.includes('assignment_id') || 
            (headerStr.includes('faculty_id') && headerStr.includes('section_id')) ||
            (headerStr.includes('subject_code') && headerStr.includes('weekly_hours'))
+  }
+
+  // Validate Faculty Profiles CSV headers (Name, Position, Department, Type format)
+  const validateFacultyProfilesHeaders = (headers: string[]): boolean => {
+    if (headers.length < 4) return false
+    const headerStr = headers.map(h => h.toLowerCase()).join(' ')
+    
+    // Expected format: Name | Position | Department | Type
+    const hasName = headerStr.includes('name')
+    const hasPosition = headerStr.includes('position')
+    const hasDepartment = headerStr.includes('department')
+    const hasType = headerStr.includes('type')
+    
+    return hasName && hasPosition && hasDepartment && hasType
   }
 
   // LEGACY: Validate Teacher Schedule CSV headers (kept for backwards compatibility)
@@ -269,6 +316,47 @@ export default function UploadCSVPage(): JSX.Element {
       console.error('Teacher file validation error:', err)
       setTeacherFile(null)
       setTeacherError(err?.message ?? String(err))
+    }
+  }
+
+  // Faculty Profiles file validation (Name, Position, Department, Type format)
+  const handleFacultyFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setFacultyError(null)
+    setFacultyMessage(null)
+
+    try {
+      const text = await file.text()
+      const rows = parseCSV(text)
+
+      if (rows.length < 1) {
+        throw new Error('CSV file is empty or invalid.')
+      }
+
+      const headers = rows[0]
+      if (!validateFacultyProfilesHeaders(headers)) {
+        e.target.value = ''
+        throw new Error(
+          '❌ INVALID CSV FORMAT DETECTED!\n\n' +
+          '📋 Expected headers (pipe-separated):\n' +
+          'Name | Position | Department | Type\n\n' +
+          '📋 Examples:\n' +
+          '"Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"\n' +
+          '"Benedict M. Estrella" | "Faculty" | "Mathematics" | "Faculty"\n' +
+          '"Joshua P. Valeroso" | "Faculty (Part-Time)" | "Mathematics" | "Faculty (Part-Time)"\n\n' +
+          `❗ Found headers:\n${headers.join(' | ')}\n\n` +
+          '⚠️ Please fix the format and try again.'
+        )
+      }
+
+      setFacultyFile(file)
+      setFacultyMessage(`✅ Faculty Profiles CSV format validated successfully! (${rows.length - 1} entries found)`)
+    } catch (err: any) {
+      console.error('Faculty file validation error:', err)
+      setFacultyFile(null)
+      setFacultyError(err?.message ?? String(err))
     }
   }
 
@@ -654,6 +742,108 @@ export default function UploadCSVPage(): JSX.Element {
       setTeacherError(err?.message ?? String(err))
     } finally {
       setTeacherLoading(false)
+    }
+  }
+
+  // Upload Faculty Profiles (Name, Position, Department, Type format)
+  const handleFacultyUpload = async () => {
+    if (!facultyFile || !facultyCollegeName) {
+      setFacultyError('Please provide college name and choose a file.')
+      return
+    }
+
+    setFacultyLoading(true)
+    setFacultyError(null)
+    setFacultyMessage(null)
+
+    try {
+      const text = await facultyFile.text()
+      const rows = parseCSV(text)
+
+      if (rows.length < 2) {
+        throw new Error('CSV file must contain at least one data row.')
+      }
+
+      const dataRows = rows.slice(1)
+
+      // Generate faculty_id based on name
+      const generateFacultyId = (name: string, index: number) => {
+        const nameParts = name.split(/[,\s]+/).filter(p => p.length > 0)
+        const initials = nameParts.map(p => p.charAt(0).toUpperCase()).join('')
+        return `FAC-${initials}-${String(index + 1).padStart(4, '0')}`
+      }
+
+      // Parse the Name, Position, Department, Type format
+      const facultyData = dataRows.map((row, index) => {
+        const name = row[0]?.replace(/"/g, '').trim() || ''
+        const position = row[1]?.replace(/"/g, '').trim() || 'Faculty'
+        const department = row[2]?.replace(/"/g, '').trim() || ''
+        const type = row[3]?.replace(/"/g, '').trim() || 'Faculty'
+
+        // Determine role based on position
+        let role = 'faculty'
+        if (position.toLowerCase().includes('dean')) role = 'administrator'
+        else if (position.toLowerCase().includes('department head')) role = 'department_head'
+        else if (position.toLowerCase().includes('program chair')) role = 'program_chair'
+        else if (position.toLowerCase().includes('coordinator') || position.toLowerCase().includes('head')) role = 'coordinator'
+        else if (position.toLowerCase().includes('staff') || position.toLowerCase().includes('technician') || position.toLowerCase().includes('clerk')) role = 'staff'
+
+        return {
+          faculty_id: generateFacultyId(name, index),
+          full_name: name,
+          position: position,
+          role: role,
+          department: department,
+          college: facultyCollegeName,
+          employment_type: type.toLowerCase().includes('part-time') ? 'part-time' 
+            : type.toLowerCase().includes('adjunct') ? 'adjunct'
+            : type.toLowerCase().includes('guest') ? 'guest'
+            : 'full-time',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      })
+
+      console.log('Upserting faculty profiles data:', facultyData.length, 'rows')
+
+      // Upsert into faculty_profiles table (insert or update on conflict)
+      const { error: insertError } = await supabase
+        .from('faculty_profiles')
+        .upsert(facultyData as any, { 
+          onConflict: 'faculty_id',
+          ignoreDuplicates: false 
+        })
+
+      if (insertError) {
+        console.error('Faculty profiles insert error:', insertError)
+        throw insertError
+      }
+
+      // Count by type
+      const typeCounts = facultyData.reduce((acc: any, f) => {
+        acc[f.role] = (acc[f.role] || 0) + 1
+        return acc
+      }, {})
+
+      setFacultyMessage(
+        `✅ Faculty Profiles uploaded successfully!\n` +
+        `College: ${facultyCollegeName}\n` +
+        `File: ${facultyFile.name}\n` +
+        `Total: ${facultyData.length} profiles\n` +
+        `Breakdown:\n` +
+        Object.entries(typeCounts).map(([role, count]) => `  • ${role}: ${count}`).join('\n')
+      )
+      
+      setFacultyFile(null)
+      setFacultyCollegeName('')
+      const fileInput = document.getElementById('facultyFile') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+    } catch (err: any) {
+      console.error('Faculty upload error:', err)
+      setFacultyError(err?.message ?? String(err))
+    } finally {
+      setFacultyLoading(false)
     }
   }
 
@@ -1053,6 +1243,97 @@ export default function UploadCSVPage(): JSX.Element {
               <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
                 <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {teacherError}
+              </div>
+            )}
+          </div>
+
+          {/* ==================== FACULTY PROFILES UPLOAD ==================== */}
+          <div className={styles['upload-card']}>
+            <h2 className={styles['section-title']}>
+              <GraduationCap size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
+              👔 Faculty Profiles (Officials & Staff)
+            </h2>
+            
+            <div className={styles['format-info']}>
+              <h3>
+                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                Expected CSV Format:
+              </h3>
+              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Name | Position | Department | Type</p>
+              <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
+                <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                Examples:
+              </small>
+              <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace' }}>
+                "Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"<br/>
+                "Benedict M. Estrella" | "Associate Dean" | "Administration" | "Official"<br/>
+                "Harris R. Dela Cruz" | "Faculty" | "Mathematics" | "Faculty"<br/>
+                "Joshua P. Valeroso" | "Faculty (Part-Time)" | "Mathematics" | "Faculty (Part-Time)"<br/>
+                "Aubrey Rose T. Gan" | "Faculty (Adjunct)" | "Mathematics" | "Faculty (Adjunct)"<br/>
+                "Karl Kenneth R. Santos" | "Guest Lecturer" | "Science" | "Guest Lecturer"
+              </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
+                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <strong style={{ color: '#065f46' }}>Types Supported:</strong> <span style={{ color: 'var(--text-dark)' }}>Official, Staff, Faculty, Faculty (Part-Time), Faculty (Adjunct), Guest Lecturer</span>
+              </div>
+            </div>
+
+            <div className={styles['form-group']}>
+              <label className={styles['label']}>
+                <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                College Name
+                <input
+                  type="text"
+                  value={facultyCollegeName}
+                  onChange={(e) => setFacultyCollegeName(e.target.value)}
+                  className={styles['input']}
+                  placeholder="e.g., College of Science"
+                  required
+                />
+              </label>
+            </div>
+
+            <div className={styles['form-group']}>
+              <label className={styles['label']}>
+                <FileText size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                Select CSV File
+                <input
+                  id="facultyFile"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFacultyFileChange}
+                  className={styles['file-input']}
+                  required
+                />
+              </label>
+              {facultyFile && (
+                <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
+                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  Selected: {facultyFile.name}
+                </small>
+              )}
+            </div>
+
+            <button
+              onClick={handleFacultyUpload}
+              disabled={facultyLoading || !facultyFile || !facultyCollegeName}
+              className={styles['upload-button']}
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+            >
+              <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+              {facultyLoading ? 'Uploading...' : 'Upload Faculty Profiles CSV'}
+            </button>
+
+            {facultyMessage && (
+              <div className={`${styles['message']} ${styles['success']}`} style={{ whiteSpace: 'pre-line' }}>
+                <CheckCircle2 size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                {facultyMessage}
+              </div>
+            )}
+            {facultyError && (
+              <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
+                <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                {facultyError}
               </div>
             )}
           </div>

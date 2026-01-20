@@ -125,8 +125,29 @@ export default function SchoolCapacityPage() {
   const [expandedCampuses, setExpandedCampuses] = useState<Map<string, boolean>>(new Map())
 
   useEffect(() => {
+    checkAuth()
     fetchCampusFiles()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   const fetchCampusFiles = async () => {
     setLoading(true)
@@ -434,6 +455,29 @@ export default function SchoolCapacityPage() {
     setDeletingRoom(roomId)
     setShowActionsFor(null)
     try {
+      // Find the room to archive
+      const roomToDelete = campusData.find(r => r.id === roomId)
+      
+      if (roomToDelete) {
+        // Archive the room before deleting
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          await supabase
+            .from('archived_items')
+            .insert({
+              item_type: 'room',
+              item_name: `${roomToDelete.building} - ${roomToDelete.room}`,
+              item_data: roomToDelete,
+              deleted_by: user?.id || null,
+              original_table: 'campuses',
+              original_id: String(roomId)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive room (table may not exist):', archiveError)
+          // Continue with deletion even if archiving fails
+        }
+      }
+
       const { error } = await supabase
         .from('campuses')
         .delete()
@@ -508,6 +552,35 @@ export default function SchoolCapacityPage() {
     setDeletingCampus(true)
     try {
       console.log(`🗑️ Deleting campus ${campusToDelete.upload_group_id}...`)
+
+      // Get all rooms for archiving
+      const { data: roomsToArchive } = await supabase
+        .from('campuses')
+        .select('*')
+        .eq('upload_group_id', campusToDelete.upload_group_id)
+
+      // Archive the campus data before deleting
+      if (roomsToArchive && roomsToArchive.length > 0) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          await supabase
+            .from('archived_items')
+            .insert({
+              item_type: 'csv_file',
+              item_name: campusToDelete.file_name || campusToDelete.school_name,
+              item_data: {
+                file_info: campusToDelete,
+                rooms: roomsToArchive
+              },
+              deleted_by: user?.id || null,
+              original_table: 'campuses',
+              original_id: String(campusToDelete.upload_group_id)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive campus (table may not exist):', archiveError)
+          // Continue with deletion even if archiving fails
+        }
+      }
 
       // Delete all rooms in this campus
       const { error } = await supabase

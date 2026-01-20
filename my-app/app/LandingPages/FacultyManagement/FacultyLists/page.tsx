@@ -7,45 +7,63 @@ import Sidebar from '@/app/components/Sidebar'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './FacultyLists.module.css'
 
-// Faculty interface
-interface Faculty {
-  id: number
-  employee_id: string
-  first_name: string
-  last_name: string
-  email: string
-  phone?: string
-  department: string
+// Faculty Profile interface (from faculty_profiles table)
+interface FacultyProfile {
+  id: string
+  faculty_id: string
+  full_name: string
   position: string
-  status: 'active' | 'inactive' | 'on_leave' | 'not_registered'
-  hire_date?: string
-  office_location?: string
-  profile_image?: string
-  courses_count?: number
-  created_at?: string
-  upload_group_id?: number // for file association
-}
-// TeacherFile interface for file selection
-interface TeacherFile {
-  upload_group_id: number
-  file_name: string
-  batch_name: string
-  department: string
+  role: 'administrator' | 'department_head' | 'program_chair' | 'coordinator' | 'faculty' | 'staff'
+  department: string | null
+  college: string | null
+  email: string | null
+  phone: string | null
+  office_location: string | null
+  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  is_active: boolean
+  profile_image: string | null
+  bio: string | null
+  specialization: string | null
+  education: string | null
   created_at: string
-  teacher_count: number
+  updated_at: string
+}
+
+// College group interface
+interface CollegeGroup {
+  college: string
+  faculty_count: number
+  departments: string[]
+  created_at: string
+}
+
+// Form data interface (uses strings instead of null for input compatibility)
+interface FacultyFormData {
+  faculty_id: string
+  full_name: string
+  position: string
+  role: 'administrator' | 'department_head' | 'program_chair' | 'coordinator' | 'faculty' | 'staff'
+  department: string
+  college: string
+  email: string
+  phone: string
+  office_location: string
+  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  is_active: boolean
 }
 
 interface FacultyStats {
   totalFaculty: number
-  activeFaculty: number
-  departments: number
-  onLeave: number
+  totalColleges: number
+  administrators: number
+  fullTime: number
+  partTime: number
 }
 
-// Helper function to fetch ALL rows
-async function fetchAllRows(table: string, filters: any = {}) {
+// Helper function to fetch ALL rows with pagination
+async function fetchAllRows(table: string, filters: Record<string, string | number | boolean> = {}) {
   const PAGE_SIZE = 1000
-  let allData: any[] = []
+  let allData: FacultyProfile[] = []
   let page = 0
   let hasMore = true
 
@@ -53,33 +71,26 @@ async function fetchAllRows(table: string, filters: any = {}) {
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
 
-    let query = (supabase.from(table) as any)
+    let query = supabase
+      .from(table)
       .select('*')
       .range(from, to)
-      .order('id', { ascending: true })
+      .order('full_name', { ascending: true })
 
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value as string | number | boolean)
+      query = query.eq(key, value)
     }
 
     const { data, error } = await query
 
-    if (error) {
-      console.error(`Error fetching ${table}:`, error)
-      throw error
-    }
-    
+    if (error) throw error
     if (!data || data.length === 0) {
       hasMore = false
       break
     }
 
     allData = [...allData, ...data]
-    
-    if (data.length < PAGE_SIZE) {
-      hasMore = false
-    }
-    
+    if (data.length < PAGE_SIZE) hasMore = false
     page++
   }
 
@@ -87,29 +98,47 @@ async function fetchAllRows(table: string, filters: any = {}) {
 }
 
 // Get initials from name
-function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+function getInitials(name: string | null): string {
+  if (!name) return '?'
+  const parts = name.split(/[,\s]+/).filter(p => p.length > 0)
+  if (parts.length >= 2) {
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
+  }
+  return name.substring(0, 2).toUpperCase()
 }
 
-// Get status badge class
-function getStatusClass(status: string): string {
-  switch (status) {
-    case 'active': return styles.statusActive
-    case 'inactive': return styles.statusInactive
-    case 'on_leave': return styles.statusOnLeave
-    case 'not_registered': return styles.statusNotRegistered
-    default: return styles.statusActive
+// Get role color
+function getRoleColor(role: string): string {
+  switch (role) {
+    case 'administrator': return '#f59e0b'
+    case 'department_head': return '#8b5cf6'
+    case 'program_chair': return '#ec4899'
+    case 'coordinator': return '#06b6d4'
+    case 'staff': return '#64748b'
+    default: return '#22c55e'
   }
 }
 
-// Format status text
-function formatStatus(status: string): string {
-  switch (status) {
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'on_leave': return 'On Leave'
-    case 'not_registered': return 'Not Registered'
-    default: return status
+// Get role label
+function getRoleLabel(role: string): string {
+  switch (role) {
+    case 'administrator': return 'Administrator'
+    case 'department_head': return 'Dept. Head'
+    case 'program_chair': return 'Program Chair'
+    case 'coordinator': return 'Coordinator'
+    case 'staff': return 'Staff'
+    default: return 'Faculty'
+  }
+}
+
+// Get employment type badge
+function getEmploymentBadge(type: string): { label: string; color: string } {
+  switch (type) {
+    case 'full-time': return { label: 'Full-Time', color: '#22c55e' }
+    case 'part-time': return { label: 'Part-Time', color: '#f59e0b' }
+    case 'adjunct': return { label: 'Adjunct', color: '#8b5cf6' }
+    case 'guest': return { label: 'Guest', color: '#06b6d4' }
+    default: return { label: type, color: '#64748b' }
   }
 }
 
@@ -162,45 +191,68 @@ function PlusIcon({ className }: { className?: string }) {
   )
 }
 
-async function fetchAllTeacherFiles() {
-  const { data, error } = await supabase
-    .from('teacher_files')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data as TeacherFile[]
+function EditIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+    </svg>
+  )
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+    </svg>
+  )
+}
+
+function FolderIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+    </svg>
+  )
 }
 
 function FacultyListsContent() {
   const router = useRouter()
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [facultyData, setFacultyData] = useState<Faculty[]>([])
-  const [filteredData, setFilteredData] = useState<Faculty[]>([])
-  const [teacherFiles, setTeacherFiles] = useState<TeacherFile[]>([])
-  const [selectedFile, setSelectedFile] = useState<TeacherFile | null>(null)
-  const [fileSearchTerm, setFileSearchTerm] = useState('')
-  const [stats, setStats] = useState<FacultyStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
+  const [filteredData, setFilteredData] = useState<FacultyProfile[]>([])
+  const [collegeGroups, setCollegeGroups] = useState<CollegeGroup[]>([])
+  const [selectedCollege, setSelectedCollege] = useState<string | null>(null)
+  const [stats, setStats] = useState<FacultyStats | null>(null)
+  
+  // Search and filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [filterDepartment, setFilterDepartment] = useState<string>('all')
+  const [filterRole, setFilterRole] = useState<string>('all')
+  const [filterEmployment, setFilterEmployment] = useState<string>('all')
   const [departments, setDepartments] = useState<string[]>([])
+  const [filterDepartment, setFilterDepartment] = useState<string>('all')
   
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
-  const [addForm, setAddForm] = useState<Partial<Faculty>>({
-    employee_id: '',
-    first_name: '',
-    last_name: '',
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
+  const [formData, setFormData] = useState<FacultyFormData>({
+    faculty_id: '',
+    full_name: '',
+    position: '',
+    role: 'faculty',
+    department: '',
+    college: '',
     email: '',
     phone: '',
-    department: '',
-    position: '',
-    status: 'active',
-    office_location: ''
+    office_location: '',
+    employment_type: 'full-time',
+    is_active: true
   })
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
   // Pagination
@@ -208,216 +260,305 @@ function FacultyListsContent() {
   const PAGE_SIZE = 12
 
   useEffect(() => {
-    // Fetch files first
-    fetchAllTeacherFiles().then(files => {
-      setTeacherFiles(files)
-      if (files.length > 0) setSelectedFile(files[0])
-    }).catch(() => setTeacherFiles([]))
+    checkAuth()
+    fetchFacultyData()
   }, [])
 
   useEffect(() => {
-    if (selectedFile) {
-      fetchFacultyData(selectedFile.upload_group_id)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFile?.upload_group_id])
+    applyFilters()
+  }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedCollege])
 
-  useEffect(() => {
-    let filtered = facultyData
-    // Filter by search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(f =>
-        f.first_name.toLowerCase().includes(term) ||
-        f.last_name.toLowerCase().includes(term) ||
-        f.email.toLowerCase().includes(term) ||
-        f.employee_id.toLowerCase().includes(term) ||
-        f.department.toLowerCase().includes(term) ||
-        f.position.toLowerCase().includes(term)
-      )
-    }
-    // Filter by status
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(f => f.status === filterStatus)
-    }
-    // Filter by department
-    if (filterDepartment !== 'all') {
-      filtered = filtered.filter(f => f.department === filterDepartment)
-    }
-    setFilteredData(filtered)
-    setCurrentPage(1)
-  }, [searchTerm, filterStatus, filterDepartment, facultyData])
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
 
-  // Fetch faculty for selected file, and mark not registered if not in DB
-  // Also fetch approved faculty from users table
-  const fetchFacultyData = async (upload_group_id: number) => {
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
+
+  const fetchFacultyData = async () => {
     setLoading(true)
     try {
-      // Fetch teachers from the selected file
-      const { data: teachers, error: teacherError } = await supabase
-        .from('teacher_schedules')
-        .select('*')
-        .eq('upload_group_id', upload_group_id)
-      if (teacherError) throw teacherError
+      const data = await fetchAllRows('faculty_profiles')
+      setAllFaculty(data)
 
-      // Fetch faculty from DB (faculty table)
-      let faculty: Faculty[] = []
-      try {
-        faculty = await fetchAllRows('faculty')
-      } catch {
-        faculty = []
-      }
-
-      // Also fetch approved users from users table
-      let approvedUsers: any[] = []
-      try {
-        const { data: users, error: usersError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('is_active', true)
-          .eq('role', 'faculty')
-        
-        if (!usersError && users) {
-          approvedUsers = users
+      // Group by college
+      const collegeMap = new Map<string, { faculty: FacultyProfile[], departments: Set<string> }>()
+      data.forEach(f => {
+        const college = f.college || 'Unassigned'
+        if (!collegeMap.has(college)) {
+          collegeMap.set(college, { faculty: [], departments: new Set() })
         }
-      } catch (err) {
-        console.log('Could not fetch approved users:', err)
-      }
-
-      // Map teachers to faculty, mark as not_registered if not in DB
-      const facultyByEmail = new Map(faculty.map(f => [f.email.toLowerCase(), f]))
-      const approvedByEmail = new Map(approvedUsers.map(u => [u.email?.toLowerCase(), u]))
-      
-      const merged: Faculty[] = (teachers || []).map((t: any, i: number) => {
-        const match = facultyByEmail.get((t.email || '').toLowerCase())
-        const approvedMatch = approvedByEmail.get((t.email || '').toLowerCase())
-        
-        if (match) {
-          return { ...match, upload_group_id, status: 'active' as const }
-        } else if (approvedMatch) {
-          // Faculty is approved in users table but not in faculty table
-          return {
-            id: 100000 + i,
-            employee_id: t.teacher_id || approvedMatch.id?.substring(0, 8) || '-',
-            first_name: approvedMatch.full_name?.split(' ')[0] || t.name?.split(' ')[0] || '-',
-            last_name: approvedMatch.full_name?.split(' ').slice(1).join(' ') || t.name?.split(' ').slice(1).join(' ') || '-',
-            email: t.email || approvedMatch.email || '-',
-            phone: '',
-            department: t.department || approvedMatch.department || '-',
-            position: 'Faculty',
-            status: 'active' as const,
-            hire_date: '',
-            office_location: '',
-            profile_image: '',
-            courses_count: 0,
-            created_at: approvedMatch.created_at || '',
-            upload_group_id
-          }
-        } else {
-          // Not registered in DB
-          return {
-            id: 100000 + i,
-            employee_id: t.teacher_id || '-',
-            first_name: t.name?.split(' ')[0] || '-',
-            last_name: t.name?.split(' ').slice(1).join(' ') || '-',
-            email: t.email || '-',
-            phone: '',
-            department: t.department || '-',
-            position: '-',
-            status: 'not_registered' as const,
-            hire_date: '',
-            office_location: '',
-            profile_image: '',
-            courses_count: 0,
-            created_at: '',
-            upload_group_id
-          }
+        collegeMap.get(college)!.faculty.push(f)
+        if (f.department) {
+          collegeMap.get(college)!.departments.add(f.department)
         }
       })
 
-      setFacultyData(merged)
-      setFilteredData(merged)
-      const uniqueDepts = [...new Set(merged.map(f => f.department))]
-      setDepartments(uniqueDepts)
+      const groups: CollegeGroup[] = Array.from(collegeMap.entries()).map(([college, info]) => ({
+        college,
+        faculty_count: info.faculty.length,
+        departments: Array.from(info.departments),
+        created_at: info.faculty[0]?.created_at || ''
+      })).sort((a, b) => b.faculty_count - a.faculty_count)
+
+      setCollegeGroups(groups)
+
+      // Extract unique departments
+      const uniqueDepts = [...new Set(data.map(f => f.department).filter(Boolean))] as string[]
+      setDepartments(uniqueDepts.sort())
+
+      // Calculate stats
       setStats({
-        totalFaculty: merged.length,
-        activeFaculty: merged.filter(f => f.status === 'active').length,
-        departments: uniqueDepts.length,
-        onLeave: merged.filter(f => f.status === 'on_leave').length
+        totalFaculty: data.length,
+        totalColleges: groups.length,
+        administrators: data.filter(f => f.role === 'administrator' || f.role === 'department_head').length,
+        fullTime: data.filter(f => f.employment_type === 'full-time').length,
+        partTime: data.filter(f => f.employment_type !== 'full-time').length
       })
     } catch (error) {
-      setFacultyData([])
-      setFilteredData([])
-      setStats(null)
+      console.error('Error fetching faculty data:', error)
+      setAllFaculty([])
+      setCollegeGroups([])
     } finally {
       setLoading(false)
     }
   }
 
-  // Generate mock data for demonstration
-  const generateMockFacultyData = (): Faculty[] => {
-    const departments = ['Computer Science', 'Information Technology', 'Engineering', 'Mathematics', 'Physics']
-    const positions = ['Professor', 'Associate Professor', 'Assistant Professor', 'Instructor', 'Lecturer']
-    const statuses: ('active' | 'inactive' | 'on_leave')[] = ['active', 'active', 'active', 'active', 'on_leave', 'inactive']
-    
-    const firstNames = ['John', 'Maria', 'Carlos', 'Ana', 'Miguel', 'Sofia', 'Jose', 'Elena', 'Pedro', 'Isabella', 'Rafael', 'Carmen']
-    const lastNames = ['Garcia', 'Santos', 'Reyes', 'Cruz', 'Flores', 'Rivera', 'Gonzales', 'Torres', 'Lopez', 'Martinez', 'Ramirez', 'Dela Cruz']
+  const applyFilters = () => {
+    let filtered = [...allFaculty]
 
-    return Array.from({ length: 24 }, (_, i) => ({
-      id: i + 1,
-      employee_id: `EMP-${String(i + 1).padStart(4, '0')}`,
-      first_name: firstNames[i % firstNames.length],
-      last_name: lastNames[i % lastNames.length],
-      email: `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}@university.edu`,
-      phone: `+63 912 ${String(Math.floor(Math.random() * 9000000) + 1000000)}`,
-      department: departments[i % departments.length],
-      position: positions[i % positions.length],
-      status: statuses[i % statuses.length],
-      hire_date: `202${i % 4}-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, '0')}`,
-      office_location: `Building ${String.fromCharCode(65 + (i % 5))}, Room ${100 + (i % 50)}`,
-      courses_count: Math.floor(Math.random() * 5) + 1
-    }))
+    // Filter by selected college
+    if (selectedCollege) {
+      filtered = filtered.filter(f => (f.college || 'Unassigned') === selectedCollege)
+    }
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(f =>
+        f.full_name?.toLowerCase().includes(term) ||
+        f.faculty_id?.toLowerCase().includes(term) ||
+        f.email?.toLowerCase().includes(term) ||
+        f.position?.toLowerCase().includes(term) ||
+        f.department?.toLowerCase().includes(term)
+      )
+    }
+
+    // Role filter
+    if (filterRole !== 'all') {
+      filtered = filtered.filter(f => f.role === filterRole)
+    }
+
+    // Employment filter
+    if (filterEmployment !== 'all') {
+      filtered = filtered.filter(f => f.employment_type === filterEmployment)
+    }
+
+    // Department filter
+    if (filterDepartment !== 'all') {
+      filtered = filtered.filter(f => f.department === filterDepartment)
+    }
+
+    setFilteredData(filtered)
+    setCurrentPage(1)
   }
 
+  // Generate faculty ID
+  const generateFacultyId = (name: string) => {
+    const nameParts = name.split(/[,\s]+/).filter(p => p.length > 0)
+    const initials = nameParts.map(p => p.charAt(0).toUpperCase()).join('')
+    const random = Math.floor(Math.random() * 9000) + 1000
+    return `FAC-${initials}-${random}`
+  }
+
+  // CREATE - Add new faculty
   const handleAddFaculty = async () => {
-    if (!addForm.employee_id || !addForm.first_name || !addForm.last_name || !addForm.email || !addForm.department || !addForm.position) {
-      alert('Please fill in all required fields')
+    if (!formData.full_name || !formData.position || !formData.department) {
+      alert('Please fill in required fields: Name, Position, and Department')
       return
     }
 
     setSaving(true)
     try {
-      const { error } = await (supabase.from('faculty') as any).insert([addForm])
-      
+      const newFaculty = {
+        faculty_id: formData.faculty_id || generateFacultyId(formData.full_name),
+        full_name: formData.full_name,
+        position: formData.position,
+        role: formData.role || 'faculty',
+        department: formData.department,
+        college: formData.college || selectedCollege || '',
+        email: formData.email || null,
+        phone: formData.phone || null,
+        office_location: formData.office_location || null,
+        employment_type: formData.employment_type || 'full-time',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('faculty_profiles')
+        .insert([newFaculty])
+
       if (error) throw error
-      
+
       setSuccessMessage('Faculty member added successfully!')
       setShowAddModal(false)
-      setAddForm({
-        employee_id: '',
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        department: '',
-        position: '',
-        status: 'active',
-        office_location: ''
-      })
-      if (selectedFile) {
-        fetchFacultyData(selectedFile.upload_group_id)
-      }
+      resetForm()
+      fetchFacultyData()
       
       setTimeout(() => setSuccessMessage(''), 3000)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Error adding faculty:', error)
-      // Still show success for demo if table doesn't exist
-      setSuccessMessage('Faculty member added! (Demo mode)')
-      setShowAddModal(false)
-      setTimeout(() => setSuccessMessage(''), 3000)
+      alert(`Failed to add faculty: ${errorMessage}`)
     } finally {
       setSaving(false)
     }
+  }
+
+  // UPDATE - Edit faculty
+  const handleEditFaculty = async () => {
+    if (!selectedFaculty || !formData.full_name) {
+      alert('Please fill in required fields')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('faculty_profiles')
+        .update({
+          full_name: formData.full_name,
+          position: formData.position,
+          role: formData.role,
+          department: formData.department,
+          college: formData.college,
+          email: formData.email,
+          phone: formData.phone,
+          office_location: formData.office_location,
+          employment_type: formData.employment_type,
+          is_active: formData.is_active,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedFaculty.id)
+
+      if (error) throw error
+
+      setSuccessMessage('Faculty member updated successfully!')
+      setShowEditModal(false)
+      resetForm()
+      fetchFacultyData()
+      
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error updating faculty:', error)
+      alert(`Failed to update faculty: ${errorMessage}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // DELETE - Archive and delete faculty
+  const handleDeleteFaculty = async () => {
+    if (!selectedFaculty) return
+
+    setDeleting(true)
+    try {
+      // Archive before deleting
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('archived_items')
+          .insert({
+            item_type: 'faculty',
+            item_name: selectedFaculty.full_name,
+            item_data: selectedFaculty,
+            deleted_by: user?.id || null,
+            original_table: 'faculty_profiles',
+            original_id: selectedFaculty.id
+          })
+      } catch (archiveError) {
+        console.warn('Could not archive faculty:', archiveError)
+      }
+
+      // Delete from faculty_profiles
+      const { error } = await supabase
+        .from('faculty_profiles')
+        .delete()
+        .eq('id', selectedFaculty.id)
+
+      if (error) throw error
+
+      setSuccessMessage(`"${selectedFaculty.full_name}" has been archived and deleted`)
+      setShowDeleteConfirm(false)
+      setSelectedFaculty(null)
+      fetchFacultyData()
+      
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error deleting faculty:', error)
+      alert(`Failed to delete faculty: ${errorMessage}`)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      faculty_id: '',
+      full_name: '',
+      position: '',
+      role: 'faculty',
+      department: '',
+      college: selectedCollege || '',
+      email: '',
+      phone: '',
+      office_location: '',
+      employment_type: 'full-time',
+      is_active: true
+    })
+    setSelectedFaculty(null)
+  }
+
+  const openEditModal = (faculty: FacultyProfile) => {
+    setSelectedFaculty(faculty)
+    setFormData({
+      faculty_id: faculty.faculty_id,
+      full_name: faculty.full_name,
+      position: faculty.position,
+      role: faculty.role,
+      department: faculty.department || '',
+      college: faculty.college || '',
+      email: faculty.email || '',
+      phone: faculty.phone || '',
+      office_location: faculty.office_location || '',
+      employment_type: faculty.employment_type,
+      is_active: faculty.is_active
+    })
+    setShowEditModal(true)
+  }
+
+  const openDeleteConfirm = (faculty: FacultyProfile) => {
+    setSelectedFaculty(faculty)
+    setShowDeleteConfirm(true)
   }
 
   // Pagination
@@ -439,53 +580,26 @@ function FacultyListsContent() {
     )
   }
 
-  // File selection UI
-  if (!selectedFile) {
-    return (
-      <div className={styles.facultyLayout}>
-        <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-        <Sidebar isOpen={sidebarOpen} />
-        <main className={styles.facultyMain}>
-          <div className={styles.fileSelectSection}>
-            <h2>Select a Faculty CSV File</h2>
-            <input
-              type="text"
-              placeholder="Search files..."
-              value={fileSearchTerm}
-              onChange={e => setFileSearchTerm(e.target.value)}
-              className={styles.fileSearchInput}
-            />
-            <div className={styles.fileGrid}>
-              {teacherFiles.filter(f => f.file_name.toLowerCase().includes(fileSearchTerm.toLowerCase())).map(file => (
-                <div
-                  key={file.upload_group_id}
-                  className={styles.fileCard}
-                  onClick={() => setSelectedFile(file)}
-                >
-                  <div className={styles.fileName}>{file.file_name}</div>
-                  <div className={styles.fileMeta}>{file.department} | {file.teacher_count} teachers</div>
-                  <div className={styles.fileDate}>{new Date(file.created_at).toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-            {teacherFiles.length === 0 && <div>No files found.</div>}
-          </div>
-        </main>
-      </div>
-    )
-  }
-
   return (
     <div className={styles.facultyLayout}>
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
       <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.facultyContainer}>
-          {/* File selection bar */}
+          {/* College Selection Bar */}
           <div className={styles.selectedFileBar}>
-            <span>File: <b>{selectedFile.file_name}</b> ({selectedFile.department}, {selectedFile.teacher_count} teachers)</span>
-            <button className={styles.changeFileBtn} onClick={() => setSelectedFile(null)}>Change File</button>
+            {selectedCollege ? (
+              <>
+                <span>🏫 College: <b>{selectedCollege}</b> ({filteredData.length} faculty members)</span>
+                <button className={styles.changeFileBtn} onClick={() => setSelectedCollege(null)}>
+                  View All Colleges
+                </button>
+              </>
+            ) : (
+              <span>👥 Viewing: <b>All Faculty Profiles</b> ({allFaculty.length} total from {collegeGroups.length} colleges)</span>
+            )}
           </div>
+
           {/* Header */}
           <div className={styles.facultyHeader}>
             <button className={styles.backButton} onClick={() => router.back()}>
@@ -500,8 +614,10 @@ function FacultyListsContent() {
                 </svg>
               </div>
               <div className={styles.headerText}>
-                <h1 className={styles.facultyTitle}>Faculty Directory</h1>
-                <p className={styles.facultySubtitle}>Browse and manage faculty members</p>
+                <h1 className={styles.facultyTitle}>Faculty Lists</h1>
+                <p className={styles.facultySubtitle}>
+                  Manage faculty members from uploaded CSV files
+                </p>
               </div>
             </div>
           </div>
@@ -520,36 +636,63 @@ function FacultyListsContent() {
               </div>
               <div className={styles.statCard}>
                 <div className={styles.statIcon}>
+                  <FolderIcon />
+                </div>
+                <div className={styles.statContent}>
+                  <p className={styles.statLabel}>Colleges</p>
+                  <p className={styles.statValue}>{stats.totalColleges}</p>
+                </div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                   </svg>
                 </div>
                 <div className={styles.statContent}>
-                  <p className={styles.statLabel}>Active</p>
-                  <p className={styles.statValue}>{stats.activeFaculty}</p>
+                  <p className={styles.statLabel}>Full-Time</p>
+                  <p className={styles.statValue}>{stats.fullTime}</p>
                 </div>
               </div>
               <div className={styles.statCard}>
                 <div className={styles.statIcon}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                   </svg>
                 </div>
                 <div className={styles.statContent}>
-                  <p className={styles.statLabel}>Departments</p>
-                  <p className={styles.statValue}>{stats.departments}</p>
+                  <p className={styles.statLabel}>Administrators</p>
+                  <p className={styles.statValue}>{stats.administrators}</p>
                 </div>
               </div>
-              <div className={styles.statCard}>
-                <div className={styles.statIcon}>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/>
-                  </svg>
-                </div>
-                <div className={styles.statContent}>
-                  <p className={styles.statLabel}>On Leave</p>
-                  <p className={styles.statValue}>{stats.onLeave}</p>
-                </div>
+            </div>
+          )}
+
+          {/* College Groups (if no college selected) */}
+          {!selectedCollege && collegeGroups.length > 0 && (
+            <div className={styles.collegeGroupsSection}>
+              <h3 className={styles.sectionTitle}>📁 Faculty by College (from CSV Uploads)</h3>
+              <div className={styles.collegeGrid}>
+                {collegeGroups.map(group => (
+                  <div
+                    key={group.college}
+                    className={styles.collegeCard}
+                    onClick={() => setSelectedCollege(group.college)}
+                  >
+                    <div className={styles.collegeIcon}>
+                      <FolderIcon />
+                    </div>
+                    <div className={styles.collegeInfo}>
+                      <h4>{group.college}</h4>
+                      <p>{group.faculty_count} faculty members</p>
+                      <p className={styles.collegeDepts}>
+                        {group.departments.slice(0, 3).join(', ')}
+                        {group.departments.length > 3 && ` +${group.departments.length - 3} more`}
+                      </p>
+                    </div>
+                    <span className={styles.collegeArrow}>→</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -569,24 +712,31 @@ function FacultyListsContent() {
               </div>
               
               <div className={styles.filterButtons}>
-                <button
-                  className={`${styles.filterBtn} ${filterStatus === 'all' ? styles.active : ''}`}
-                  onClick={() => setFilterStatus('all')}
+                <select
+                  className={styles.filterBtn}
+                  value={filterRole}
+                  onChange={e => setFilterRole(e.target.value)}
                 >
-                  All
-                </button>
-                <button
-                  className={`${styles.filterBtn} ${filterStatus === 'active' ? styles.active : ''}`}
-                  onClick={() => setFilterStatus('active')}
+                  <option value="all">All Roles</option>
+                  <option value="administrator">Administrator</option>
+                  <option value="department_head">Dept. Head</option>
+                  <option value="program_chair">Program Chair</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="staff">Staff</option>
+                </select>
+
+                <select
+                  className={styles.filterBtn}
+                  value={filterEmployment}
+                  onChange={e => setFilterEmployment(e.target.value)}
                 >
-                  Active
-                </button>
-                <button
-                  className={`${styles.filterBtn} ${filterStatus === 'on_leave' ? styles.active : ''}`}
-                  onClick={() => setFilterStatus('on_leave')}
-                >
-                  On Leave
-                </button>
+                  <option value="all">All Types</option>
+                  <option value="full-time">Full-Time</option>
+                  <option value="part-time">Part-Time</option>
+                  <option value="adjunct">Adjunct</option>
+                  <option value="guest">Guest</option>
+                </select>
                 
                 <select
                   className={styles.filterBtn}
@@ -600,7 +750,10 @@ function FacultyListsContent() {
                 </select>
               </div>
 
-              <button className={styles.addFacultyBtn} onClick={() => setShowAddModal(true)}>
+              <button className={styles.addFacultyBtn} onClick={() => {
+                resetForm()
+                setShowAddModal(true)
+              }}>
                 <PlusIcon />
                 Add Faculty
               </button>
@@ -619,7 +772,20 @@ function FacultyListsContent() {
                 <UserIcon />
               </div>
               <h3>No Faculty Found</h3>
-              <p>Try adjusting your search or filter criteria</p>
+              <p>
+                {allFaculty.length === 0 
+                  ? 'Upload faculty profiles from the Upload CSV page to get started.'
+                  : 'Try adjusting your search or filter criteria'}
+              </p>
+              {allFaculty.length === 0 && (
+                <button 
+                  className={styles.addFacultyBtn}
+                  onClick={() => router.push('/LandingPages/UploadCSV')}
+                  style={{ marginTop: '16px' }}
+                >
+                  Go to Upload CSV
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -629,19 +795,22 @@ function FacultyListsContent() {
                     {/* Cover */}
                     <div className={styles.profileCover}>
                       <div className={styles.profileCoverPattern}></div>
-                      <span className={`${styles.statusBadge} ${getStatusClass(faculty.status)}`}>
-                        {formatStatus(faculty.status)}
+                      <span 
+                        className={styles.statusBadge}
+                        style={{ backgroundColor: getRoleColor(faculty.role) }}
+                      >
+                        {getRoleLabel(faculty.role)}
                       </span>
                     </div>
 
                     {/* Avatar */}
                     <div className={styles.profileAvatarSection}>
-                      <div className={styles.profileAvatar}>
+                      <div className={styles.profileAvatar} style={{ borderColor: getRoleColor(faculty.role) }}>
                         {faculty.profile_image ? (
-                          <img src={faculty.profile_image} alt={`${faculty.first_name} ${faculty.last_name}`} />
+                          <img src={faculty.profile_image} alt={faculty.full_name} />
                         ) : (
                           <div className={styles.avatarInitials}>
-                            {getInitials(faculty.first_name, faculty.last_name)}
+                            {getInitials(faculty.full_name)}
                           </div>
                         )}
                       </div>
@@ -649,35 +818,37 @@ function FacultyListsContent() {
 
                     {/* Body */}
                     <div className={styles.profileBody}>
-                      <h3 className={styles.profileName}>
-                        {faculty.first_name} {faculty.last_name}
-                      </h3>
+                      <h3 className={styles.profileName}>{faculty.full_name}</h3>
                       <p className={styles.profileTitle}>{faculty.position}</p>
+                      <span 
+                        className={styles.employmentBadge}
+                        style={{ backgroundColor: getEmploymentBadge(faculty.employment_type).color }}
+                      >
+                        {getEmploymentBadge(faculty.employment_type).label}
+                      </span>
                       <span className={styles.profileDepartment}>
                         <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
                           <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/>
                         </svg>
-                        {faculty.department}
+                        {faculty.department || 'No Department'}
                       </span>
 
                       {/* Stats */}
                       <div className={styles.profileStats}>
                         <div className={styles.profileStat}>
-                          <span className={styles.profileStatValue}>{faculty.courses_count || 0}</span>
-                          <span className={styles.profileStatLabel}>Courses</span>
-                        </div>
-                        <div className={styles.profileStat}>
-                          <span className={styles.profileStatValue}>{faculty.employee_id}</span>
-                          <span className={styles.profileStatLabel}>ID</span>
+                          <span className={styles.profileStatValue}>{faculty.faculty_id}</span>
+                          <span className={styles.profileStatLabel}>Faculty ID</span>
                         </div>
                       </div>
 
                       {/* Contact Info */}
                       <div className={styles.profileContact}>
-                        <div className={styles.contactItem}>
-                          <EmailIcon />
-                          <span>{faculty.email}</span>
-                        </div>
+                        {faculty.email && (
+                          <div className={styles.contactItem}>
+                            <EmailIcon />
+                            <span>{faculty.email}</span>
+                          </div>
+                        )}
                         {faculty.phone && (
                           <div className={styles.contactItem}>
                             <PhoneIcon />
@@ -694,12 +865,18 @@ function FacultyListsContent() {
 
                       {/* Actions */}
                       <div className={styles.profileActions}>
-                        <button className={styles.btnViewProfile}>
-                          <UserIcon />
-                          View Profile
+                        <button 
+                          className={styles.btnViewProfile}
+                          onClick={() => openEditModal(faculty)}
+                        >
+                          <EditIcon />
+                          Edit
                         </button>
-                        <button className={styles.btnMessage}>
-                          <EmailIcon />
+                        <button 
+                          className={styles.btnDelete}
+                          onClick={() => openDeleteConfirm(faculty)}
+                        >
+                          <TrashIcon />
                         </button>
                       </div>
                     </div>
@@ -768,72 +945,56 @@ function FacultyListsContent() {
             <div className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Employee ID *</label>
+                  <label>Full Name *</label>
                   <input
                     type="text"
                     className={styles.formInput}
-                    value={addForm.employee_id}
-                    onChange={e => setAddForm({ ...addForm, employee_id: e.target.value })}
-                    placeholder="EMP-0001"
+                    value={formData.full_name}
+                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                    placeholder="John Doe"
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Status</label>
-                  <select
-                    className={styles.formSelect}
-                    value={addForm.status}
-                    onChange={e => setAddForm({ ...addForm, status: e.target.value as 'active' | 'inactive' | 'on_leave' })}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="on_leave">On Leave</option>
-                  </select>
+                  <label>Position *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.position}
+                    onChange={e => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="Professor"
+                  />
                 </div>
               </div>
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>First Name *</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={addForm.first_name}
-                    onChange={e => setAddForm({ ...addForm, first_name: e.target.value })}
-                    placeholder="John"
-                  />
+                  <label>Role</label>
+                  <select
+                    className={styles.formSelect}
+                    value={formData.role}
+                    onChange={e => setFormData({ ...formData, role: e.target.value as FacultyProfile['role'] })}
+                  >
+                    <option value="faculty">Faculty</option>
+                    <option value="administrator">Administrator</option>
+                    <option value="department_head">Department Head</option>
+                    <option value="program_chair">Program Chair</option>
+                    <option value="coordinator">Coordinator</option>
+                    <option value="staff">Staff</option>
+                  </select>
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Last Name *</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={addForm.last_name}
-                    onChange={e => setAddForm({ ...addForm, last_name: e.target.value })}
-                    placeholder="Doe"
-                  />
+                  <label>Employment Type</label>
+                  <select
+                    className={styles.formSelect}
+                    value={formData.employment_type}
+                    onChange={e => setFormData({ ...formData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
+                  >
+                    <option value="full-time">Full-Time</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="adjunct">Adjunct</option>
+                    <option value="guest">Guest</option>
+                  </select>
                 </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Email *</label>
-                <input
-                  type="email"
-                  className={styles.formInput}
-                  value={addForm.email}
-                  onChange={e => setAddForm({ ...addForm, email: e.target.value })}
-                  placeholder="john.doe@university.edu"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Phone</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={addForm.phone}
-                  onChange={e => setAddForm({ ...addForm, phone: e.target.value })}
-                  placeholder="+63 912 345 6789"
-                />
               </div>
 
               <div className={styles.formRow}>
@@ -842,32 +1003,55 @@ function FacultyListsContent() {
                   <input
                     type="text"
                     className={styles.formInput}
-                    value={addForm.department}
-                    onChange={e => setAddForm({ ...addForm, department: e.target.value })}
+                    value={formData.department}
+                    onChange={e => setFormData({ ...formData, department: e.target.value })}
                     placeholder="Computer Science"
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Position *</label>
+                  <label>College</label>
                   <input
                     type="text"
                     className={styles.formInput}
-                    value={addForm.position}
-                    onChange={e => setAddForm({ ...addForm, position: e.target.value })}
-                    placeholder="Professor"
+                    value={formData.college}
+                    onChange={e => setFormData({ ...formData, college: e.target.value })}
+                    placeholder="College of Science"
                   />
                 </div>
               </div>
 
               <div className={styles.formGroup}>
-                <label>Office Location</label>
+                <label>Email</label>
                 <input
-                  type="text"
+                  type="email"
                   className={styles.formInput}
-                  value={addForm.office_location}
-                  onChange={e => setAddForm({ ...addForm, office_location: e.target.value })}
-                  placeholder="Building A, Room 101"
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="john.doe@university.edu"
                 />
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+63 912 345 6789"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Office Location</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.office_location}
+                    onChange={e => setFormData({ ...formData, office_location: e.target.value })}
+                    placeholder="Building A, Room 101"
+                  />
+                </div>
               </div>
             </div>
 
@@ -877,6 +1061,203 @@ function FacultyListsContent() {
               </button>
               <button className={styles.btnSave} onClick={handleAddFaculty} disabled={saving}>
                 {saving ? 'Saving...' : 'Add Faculty'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Faculty Modal */}
+      {showEditModal && selectedFaculty && (
+        <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Edit Faculty Member</h3>
+              <button className={styles.modalClose} onClick={() => setShowEditModal(false)}>
+                ✕
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Faculty ID</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.faculty_id}
+                    disabled
+                    style={{ backgroundColor: 'var(--bg-gray-50)' }}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Active Status</label>
+                  <select
+                    className={styles.formSelect}
+                    value={formData.is_active ? 'true' : 'false'}
+                    onChange={e => setFormData({ ...formData, is_active: e.target.value === 'true' })}
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.full_name}
+                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Position *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.position}
+                    onChange={e => setFormData({ ...formData, position: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Role</label>
+                  <select
+                    className={styles.formSelect}
+                    value={formData.role}
+                    onChange={e => setFormData({ ...formData, role: e.target.value as FacultyProfile['role'] })}
+                  >
+                    <option value="faculty">Faculty</option>
+                    <option value="administrator">Administrator</option>
+                    <option value="department_head">Department Head</option>
+                    <option value="program_chair">Program Chair</option>
+                    <option value="coordinator">Coordinator</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Employment Type</label>
+                  <select
+                    className={styles.formSelect}
+                    value={formData.employment_type}
+                    onChange={e => setFormData({ ...formData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
+                  >
+                    <option value="full-time">Full-Time</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="adjunct">Adjunct</option>
+                    <option value="guest">Guest</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Department</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.department}
+                    onChange={e => setFormData({ ...formData, department: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>College</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.college}
+                    onChange={e => setFormData({ ...formData, college: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Email</label>
+                <input
+                  type="email"
+                  className={styles.formInput}
+                  value={formData.email}
+                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.phone}
+                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Office Location</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.office_location}
+                    onChange={e => setFormData({ ...formData, office_location: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowEditModal(false)}>
+                Cancel
+              </button>
+              <button className={styles.btnSave} onClick={handleEditFaculty} disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedFaculty && (
+        <div className={styles.modalOverlay} onClick={() => setShowDeleteConfirm(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <div className={styles.modalHeader}>
+              <h3>⚠️ Confirm Delete</h3>
+              <button className={styles.modalClose} onClick={() => setShowDeleteConfirm(false)}>
+                ✕
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <p style={{ marginBottom: '16px' }}>
+                Are you sure you want to delete <strong>&quot;{selectedFaculty.full_name}&quot;</strong>?
+              </p>
+              <p style={{ color: 'var(--text-light)', fontSize: '14px' }}>
+                This faculty member will be moved to the archive and can be restored later if needed.
+              </p>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </button>
+              <button 
+                className={styles.btnDelete} 
+                onClick={handleDeleteFaculty} 
+                disabled={deleting}
+                style={{ 
+                  backgroundColor: '#ef4444', 
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {deleting ? 'Deleting...' : 'Delete & Archive'}
               </button>
             </div>
           </div>

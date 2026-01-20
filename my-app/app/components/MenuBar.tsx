@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown } from 'lucide-react'
+import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown, Archive } from 'lucide-react'
 import SettingsModal from './SettingsModal'
+import ArchiveModal from './ArchiveModal'
 import NotificationBell from './NotificationBell'
 import './MenuBar.css'
 
@@ -20,6 +21,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const router = useRouter()
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
@@ -153,6 +155,18 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                   <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Profile
                 </div>
+                {isAdmin && (
+                  <div 
+                    className="account-menu-item"
+                    onClick={() => {
+                      setShowAccountMenu(false)
+                      setShowArchive(true)
+                    }}
+                  >
+                    <Archive size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Archive
+                  </div>
+                )}
                 <div 
                   className="account-menu-item"
                   onClick={() => {
@@ -198,6 +212,11 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
       <SettingsModal 
         isOpen={showSettings} 
         onClose={() => setShowSettings(false)} 
+      />
+
+      <ArchiveModal
+        isOpen={showArchive}
+        onClose={() => setShowArchive(false)}
       />
     </>
   )

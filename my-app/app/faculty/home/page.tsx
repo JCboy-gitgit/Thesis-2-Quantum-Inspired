@@ -50,7 +50,7 @@ export default function FacultyHomePage() {
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
   const [greeting, setGreeting] = useState('')
 
-  const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
   useEffect(() => {
     checkAuthAndLoad()

@@ -50,7 +50,7 @@ export default function FacultyProfilePage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
   useEffect(() => {
     checkAuthAndLoad()
