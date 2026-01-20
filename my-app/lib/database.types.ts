@@ -46,6 +46,30 @@ export interface UserProfile {
   updated_at?: string;
 }
 
+// Faculty Profiles (from CSV imports)
+export type FacultyRole = 'administrator' | 'department_head' | 'program_chair' | 'coordinator' | 'faculty' | 'staff';
+
+export interface FacultyProfile {
+  id: string;
+  faculty_id: string;
+  full_name: string;
+  position: string;
+  role: FacultyRole;
+  department?: string;
+  college?: string;
+  email?: string;
+  phone?: string;
+  office_location?: string;
+  employment_type?: EmploymentType | 'adjunct' | 'guest';
+  is_active: boolean;
+  profile_image?: string;
+  bio?: string;
+  specialization?: string;
+  education?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================================
 // DEPARTMENT
 // ============================================================================
@@ -471,27 +495,91 @@ export const TABLE_NAMES = {
 } as const;
 
 // ============================================================================
+// ARCHIVED ITEMS
+// ============================================================================
+
+export type ArchivedItemType = 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room';
+
+export interface ArchivedItem {
+  id: string;
+  item_type: ArchivedItemType;
+  item_name: string;
+  item_data: Record<string, unknown>;
+  deleted_at?: string;
+  deleted_by?: string;
+  original_table: string;
+  original_id: string;
+  created_at: string;
+}
+
+// ============================================================================
+// CAMPUSES (from CSV uploads)
+// ============================================================================
+
+export interface Campus {
+  id: number;
+  upload_group_id: number;
+  school_name: string;
+  campus: string;
+  building: string;
+  room: string;
+  capacity: number;
+  file_name?: string;
+  is_first_floor: boolean;
+  floor_number?: number;
+  room_type: string;
+  has_ac: boolean;
+  has_projector: boolean;
+  has_whiteboard: boolean;
+  is_pwd_accessible: boolean;
+  status: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
 // DATABASE TYPE DEFINITION FOR SUPABASE CLIENT
 // ============================================================================
+
+// Generic insert type helper - makes id and timestamps optional
+type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at'> & {
+  id?: T extends { id: number } ? number : T extends { id: string } ? string : never;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// Generic update type helper - all fields optional
+type UpdateType<T> = Partial<Omit<T, 'id'>>;
+
+// Table type structure for proper Supabase typing
+type TableDefinition<TRow, TInsert = Partial<TRow>, TUpdate = Partial<TRow>> = {
+  Row: TRow;
+  Insert: TInsert;
+  Update: TUpdate;
+};
 
 export interface Database {
   public: {
     Tables: {
-      users: { Row: User; Insert: Partial<User>; Update: Partial<User> };
-      user_profiles: { Row: UserProfile; Insert: Partial<UserProfile>; Update: Partial<UserProfile> };
-      departments: { Row: Department; Insert: Partial<Department>; Update: Partial<Department> };
-      rooms: { Row: Room; Insert: Partial<Room>; Update: Partial<Room> };
-      faculty: { Row: Faculty; Insert: Partial<Faculty>; Update: Partial<Faculty> };
-      faculty_availability: { Row: FacultyAvailability; Insert: Partial<FacultyAvailability>; Update: Partial<FacultyAvailability> };
-      courses: { Row: Course; Insert: Partial<Course>; Update: Partial<Course> };
-      class_schedules: { Row: ClassSchedule; Insert: Partial<ClassSchedule>; Update: Partial<ClassSchedule> };
-      teacher_schedules: { Row: TeacherSchedule; Insert: Partial<TeacherSchedule>; Update: Partial<TeacherSchedule> };
-      schedule_generations: { Row: ScheduleGeneration; Insert: Partial<ScheduleGeneration>; Update: Partial<ScheduleGeneration> };
-      room_allocations: { Row: RoomAllocation; Insert: Partial<RoomAllocation>; Update: Partial<RoomAllocation> };
-      time_slots: { Row: TimeSlot; Insert: Partial<TimeSlot>; Update: Partial<TimeSlot> };
-      schedule_conflicts: { Row: ScheduleConflict; Insert: Partial<ScheduleConflict>; Update: Partial<ScheduleConflict> };
-      file_uploads: { Row: FileUpload; Insert: Partial<FileUpload>; Update: Partial<FileUpload> };
-      system_settings: { Row: SystemSetting; Insert: Partial<SystemSetting>; Update: Partial<SystemSetting> };
+      users: TableDefinition<User>;
+      user_profiles: TableDefinition<UserProfile>;
+      departments: TableDefinition<Department>;
+      rooms: TableDefinition<Room>;
+      faculty: TableDefinition<Faculty>;
+      faculty_availability: TableDefinition<FacultyAvailability>;
+      faculty_profiles: TableDefinition<FacultyProfile>;
+      courses: TableDefinition<Course>;
+      class_schedules: TableDefinition<ClassSchedule>;
+      teacher_schedules: TableDefinition<TeacherSchedule>;
+      schedule_generations: TableDefinition<ScheduleGeneration>;
+      room_allocations: TableDefinition<RoomAllocation>;
+      time_slots: TableDefinition<TimeSlot>;
+      schedule_conflicts: TableDefinition<ScheduleConflict>;
+      file_uploads: TableDefinition<FileUpload>;
+      system_settings: TableDefinition<SystemSetting>;
+      archived_items: TableDefinition<ArchivedItem>;
+      campuses: TableDefinition<Campus>;
     };
     Views: {
       room_schedule_view: { Row: RoomAllocation };

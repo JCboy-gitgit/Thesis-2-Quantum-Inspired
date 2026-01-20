@@ -462,8 +462,8 @@ export default function SchoolCapacityPage() {
         // Archive the room before deleting
         try {
           const { data: { user } } = await supabase.auth.getUser()
-          await supabase
-            .from('archived_items')
+          await (supabase
+            .from('archived_items') as any)
             .insert({
               item_type: 'room',
               item_name: `${roomToDelete.building} - ${roomToDelete.room}`,
@@ -563,8 +563,8 @@ export default function SchoolCapacityPage() {
       if (roomsToArchive && roomsToArchive.length > 0) {
         try {
           const { data: { user } } = await supabase.auth.getUser()
-          await supabase
-            .from('archived_items')
+          await (supabase
+            .from('archived_items') as any)
             .insert({
               item_type: 'csv_file',
               item_name: campusToDelete.file_name || campusToDelete.school_name,

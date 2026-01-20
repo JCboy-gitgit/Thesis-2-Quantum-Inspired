@@ -248,8 +248,8 @@ export default function FacultyDepartmentsPage() {
       }
 
       if (modalMode === 'create') {
-        const { error } = await supabase
-          .from('departments')
+        const { error } = await (supabase
+          .from('departments') as any)
           .insert([{
             ...formData,
             created_at: new Date().toISOString(),
@@ -259,8 +259,8 @@ export default function FacultyDepartmentsPage() {
         if (error) throw error
         setFormSuccess('Department created successfully!')
       } else {
-        const { error } = await supabase
-          .from('departments')
+        const { error } = await (supabase
+          .from('departments') as any)
           .update({
             ...formData,
             updated_at: new Date().toISOString()
@@ -290,8 +290,8 @@ export default function FacultyDepartmentsPage() {
 
     try {
       // First archive the department
-      const { error: archiveError } = await supabase
-        .from('archived_items')
+      const { error: archiveError } = await (supabase
+        .from('archived_items') as any)
         .insert([{
           item_type: 'department',
           item_name: deleteConfirm.department_name,
@@ -428,8 +428,8 @@ export default function FacultyDepartmentsPage() {
       }))
 
       // Try to insert into faculty_profiles table
-      const { error } = await supabase
-        .from('faculty_profiles')
+      const { error } = await (supabase
+        .from('faculty_profiles') as any)
         .upsert(facultyRecords, { 
           onConflict: 'faculty_id',
           ignoreDuplicates: false 
