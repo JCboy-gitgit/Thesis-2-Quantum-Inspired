@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import './styles/login.css'
@@ -25,7 +25,28 @@ const buildingSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"
 const lockSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const lockClosedSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>`
 
-export default function Page(): JSX.Element {
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="login-page">
+      <div className="background-container">
+        <div className="quantum-logo"></div>
+        <div className="stars"></div>
+        <div className="glow-effect"></div>
+      </div>
+      <main className="container">
+        <div className="card">
+          <div className="card-header">
+            <h1 className="title">Loading...</h1>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+// Main page content component that uses useSearchParams
+function PageContent(): JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -452,5 +473,14 @@ export default function Page(): JSX.Element {
         </div>
       </main>
     </div>
+  )
+}
+
+// Default export wrapped with Suspense for useSearchParams
+export default function Page(): JSX.Element {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PageContent />
+    </Suspense>
   )
 }
