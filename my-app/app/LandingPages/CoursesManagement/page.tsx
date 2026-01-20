@@ -503,7 +503,8 @@ function ClassSchedulesContent() {
         // Archive the schedule before deleting
         try {
           const { data: { user } } = await supabase.auth.getUser()
-          await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
             .from('archived_items')
             .insert({
               item_type: 'schedule',
