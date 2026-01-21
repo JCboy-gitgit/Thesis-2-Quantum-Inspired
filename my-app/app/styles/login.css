@@ -23,18 +23,20 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: var(--dark-bg);
   color: var(--text-primary);
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* ==================== Page Container ==================== */
 .login-page {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh; 
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow-y: auto;   
+  padding: 40px 0;
+  animation: fadeIn 1s ease-out 0.5s;
 }
 
 /* ==================== Background ==================== */
@@ -404,12 +406,12 @@ body {
 
 .card {
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   padding: 40px;
   background: var(--card-bg);
-  border: 2px solid var(--card-border);
+  border: 3px solid var(--card-border);
   border-radius: 20px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 212, 255, 0.1),
@@ -797,6 +799,15 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
