@@ -158,6 +158,7 @@ function PageContent(): JSX.Element {
             id: data.user.id,
             email: email,
             full_name: fullName,
+            department: selectedDepartment,
             role: 'faculty',
             is_active: false,
             created_at: new Date().toISOString()
