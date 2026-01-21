@@ -16,6 +16,7 @@
 -- ============================================================================
 
 -- Enum for user roles
+DROP TYPE IF EXISTS user_role CASCADE;
 CREATE TYPE user_role AS ENUM ('admin', 'sub_admin', 'professor');
 
 -- Users table (extends Supabase auth.users)
@@ -173,6 +174,41 @@ CREATE INDEX IF NOT EXISTS idx_teacher_schedules_teacher_id ON teacher_schedules
 CREATE INDEX IF NOT EXISTS idx_teacher_schedules_schedule_day ON teacher_schedules(schedule_day);
 
 -- ============================================================================
+-- SECTION 4.3: FACULTY PROFILES (Officials, Staff, Faculty)
+-- ============================================================================
+
+-- Faculty profiles table - stores faculty profiles from CSV (Name, Position, Department, Type format)
+CREATE TABLE IF NOT EXISTS faculty_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    faculty_id VARCHAR(100) NOT NULL UNIQUE,
+    full_name VARCHAR(255) NOT NULL,
+    position VARCHAR(255) NOT NULL DEFAULT 'Faculty',
+    role VARCHAR(50) NOT NULL DEFAULT 'faculty' CHECK (role IN ('administrator', 'department_head', 'program_chair', 'coordinator', 'faculty', 'staff')),
+    department VARCHAR(255),
+    college VARCHAR(255),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    office_location VARCHAR(255),
+    employment_type VARCHAR(50) DEFAULT 'full-time' CHECK (employment_type IN ('full-time', 'part-time', 'adjunct', 'guest')),
+    is_active BOOLEAN DEFAULT true,
+    profile_image TEXT,
+    bio TEXT,
+    specialization TEXT,
+    education TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for faculty_profiles
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_faculty_id ON faculty_profiles(faculty_id);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_full_name ON faculty_profiles(full_name);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_department ON faculty_profiles(department);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_college ON faculty_profiles(college);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_role ON faculty_profiles(role);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_employment_type ON faculty_profiles(employment_type);
+CREATE INDEX IF NOT EXISTS idx_faculty_profiles_is_active ON faculty_profiles(is_active);
+
+-- ============================================================================
 -- SECTION 4.5: QIA GENERATED SCHEDULES & ROOM ALLOCATIONS
 -- ============================================================================
 
@@ -239,6 +275,7 @@ CREATE INDEX IF NOT EXISTS idx_room_allocations_building ON room_allocations(bui
 -- ============================================================================
 
 -- Enum for event types
+DROP TYPE IF EXISTS event_type CASCADE;
 CREATE TYPE event_type AS ENUM ('Admission_Test', 'Enrollment', 'Orientation', 'Custom');
 
 -- Schedule summary table - stores generated schedule metadata
@@ -610,6 +647,7 @@ ALTER TABLE schedule_batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedule_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculty_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faculty_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculty_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE course_offerings ENABLE ROW LEVEL SECURITY;
@@ -620,139 +658,197 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can read their own data
+DROP POLICY IF EXISTS "Users can view own data" ON users;
 CREATE POLICY "Users can view own data" ON users
     FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own data" ON users;
 CREATE POLICY "Users can update own data" ON users
     FOR UPDATE USING (auth.uid() = id);
 
 -- Policy: Allow all authenticated users to read campuses (public data)
+DROP POLICY IF EXISTS "Authenticated users can view campuses" ON campuses;
 CREATE POLICY "Authenticated users can view campuses" ON campuses
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert campuses" ON campuses;
 CREATE POLICY "Authenticated users can insert campuses" ON campuses
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update campuses" ON campuses;
 CREATE POLICY "Authenticated users can update campuses" ON campuses
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete campuses" ON campuses;
 CREATE POLICY "Authenticated users can delete campuses" ON campuses
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage participants
+DROP POLICY IF EXISTS "Authenticated users can view participants" ON participants;
 CREATE POLICY "Authenticated users can view participants" ON participants
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert participants" ON participants;
 CREATE POLICY "Authenticated users can insert participants" ON participants
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update participants" ON participants;
 CREATE POLICY "Authenticated users can update participants" ON participants
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete participants" ON participants;
 CREATE POLICY "Authenticated users can delete participants" ON participants
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage schedules
+DROP POLICY IF EXISTS "Authenticated users can view schedule_summary" ON schedule_summary;
 CREATE POLICY "Authenticated users can view schedule_summary" ON schedule_summary
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert schedule_summary" ON schedule_summary;
 CREATE POLICY "Authenticated users can insert schedule_summary" ON schedule_summary
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update schedule_summary" ON schedule_summary;
 CREATE POLICY "Authenticated users can update schedule_summary" ON schedule_summary
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete schedule_summary" ON schedule_summary;
 CREATE POLICY "Authenticated users can delete schedule_summary" ON schedule_summary
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage schedule_batches
+DROP POLICY IF EXISTS "Authenticated users can view schedule_batches" ON schedule_batches;
 CREATE POLICY "Authenticated users can view schedule_batches" ON schedule_batches
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert schedule_batches" ON schedule_batches;
 CREATE POLICY "Authenticated users can insert schedule_batches" ON schedule_batches
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update schedule_batches" ON schedule_batches;
 CREATE POLICY "Authenticated users can update schedule_batches" ON schedule_batches
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete schedule_batches" ON schedule_batches;
 CREATE POLICY "Authenticated users can delete schedule_batches" ON schedule_batches
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage schedule_assignments
+DROP POLICY IF EXISTS "Authenticated users can view schedule_assignments" ON schedule_assignments;
 CREATE POLICY "Authenticated users can view schedule_assignments" ON schedule_assignments
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert schedule_assignments" ON schedule_assignments;
 CREATE POLICY "Authenticated users can insert schedule_assignments" ON schedule_assignments
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update schedule_assignments" ON schedule_assignments;
 CREATE POLICY "Authenticated users can update schedule_assignments" ON schedule_assignments
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete schedule_assignments" ON schedule_assignments;
 CREATE POLICY "Authenticated users can delete schedule_assignments" ON schedule_assignments
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage class_schedules
+DROP POLICY IF EXISTS "Authenticated users can view class_schedules" ON class_schedules;
 CREATE POLICY "Authenticated users can view class_schedules" ON class_schedules
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert class_schedules" ON class_schedules;
 CREATE POLICY "Authenticated users can insert class_schedules" ON class_schedules
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update class_schedules" ON class_schedules;
 CREATE POLICY "Authenticated users can update class_schedules" ON class_schedules
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete class_schedules" ON class_schedules;
 CREATE POLICY "Authenticated users can delete class_schedules" ON class_schedules
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage teacher_schedules
+DROP POLICY IF EXISTS "Authenticated users can view teacher_schedules" ON teacher_schedules;
 CREATE POLICY "Authenticated users can view teacher_schedules" ON teacher_schedules
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert teacher_schedules" ON teacher_schedules;
 CREATE POLICY "Authenticated users can insert teacher_schedules" ON teacher_schedules
     FOR INSERT TO authenticated WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated users can update teacher_schedules" ON teacher_schedules;
 CREATE POLICY "Authenticated users can update teacher_schedules" ON teacher_schedules
     FOR UPDATE TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can delete teacher_schedules" ON teacher_schedules;
 CREATE POLICY "Authenticated users can delete teacher_schedules" ON teacher_schedules
     FOR DELETE TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to view departments
+DROP POLICY IF EXISTS "Authenticated users can view departments" ON departments;
 CREATE POLICY "Authenticated users can view departments" ON departments
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can manage departments" ON departments;
 CREATE POLICY "Authenticated users can manage departments" ON departments
     FOR ALL TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to manage faculty
+DROP POLICY IF EXISTS "Authenticated users can view faculty_members" ON faculty_members;
 CREATE POLICY "Authenticated users can view faculty_members" ON faculty_members
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can manage faculty_members" ON faculty_members;
 CREATE POLICY "Authenticated users can manage faculty_members" ON faculty_members
     FOR ALL TO authenticated USING (true);
 
+-- Policy: Allow all authenticated users to manage faculty_profiles
+DROP POLICY IF EXISTS "Authenticated users can view faculty_profiles" ON faculty_profiles;
+CREATE POLICY "Authenticated users can view faculty_profiles" ON faculty_profiles
+    FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can insert faculty_profiles" ON faculty_profiles;
+CREATE POLICY "Authenticated users can insert faculty_profiles" ON faculty_profiles
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Authenticated users can update faculty_profiles" ON faculty_profiles;
+CREATE POLICY "Authenticated users can update faculty_profiles" ON faculty_profiles
+    FOR UPDATE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can delete faculty_profiles" ON faculty_profiles;
+CREATE POLICY "Authenticated users can delete faculty_profiles" ON faculty_profiles
+    FOR DELETE TO authenticated USING (true);
+
 -- Policy: Allow all authenticated users to manage courses
+DROP POLICY IF EXISTS "Authenticated users can view courses" ON courses;
 CREATE POLICY "Authenticated users can view courses" ON courses
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can manage courses" ON courses;
 CREATE POLICY "Authenticated users can manage courses" ON courses
     FOR ALL TO authenticated USING (true);
 
 -- Policy: Allow all authenticated users to view email logs
+DROP POLICY IF EXISTS "Authenticated users can view email_logs" ON email_logs;
 CREATE POLICY "Authenticated users can view email_logs" ON email_logs
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert email_logs" ON email_logs;
 CREATE POLICY "Authenticated users can insert email_logs" ON email_logs
     FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Policy: Allow all authenticated users to view file uploads
+DROP POLICY IF EXISTS "Authenticated users can view file_uploads" ON file_uploads;
 CREATE POLICY "Authenticated users can view file_uploads" ON file_uploads
     FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Authenticated users can insert file_uploads" ON file_uploads;
 CREATE POLICY "Authenticated users can insert file_uploads" ON file_uploads
     FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Policy: Public settings readable by all, others by authenticated
+DROP POLICY IF EXISTS "Public settings are viewable by all" ON system_settings;
 CREATE POLICY "Public settings are viewable by all" ON system_settings
     FOR SELECT USING (is_public = true OR auth.role() = 'authenticated');
 
@@ -761,6 +857,7 @@ CREATE POLICY "Public settings are viewable by all" ON system_settings
 -- ============================================================================
 
 -- Function to update updated_at timestamp
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -770,71 +867,88 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply updated_at trigger to all relevant tables
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_campuses_updated_at ON campuses;
 CREATE TRIGGER update_campuses_updated_at
     BEFORE UPDATE ON campuses
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_participants_updated_at ON participants;
 CREATE TRIGGER update_participants_updated_at
     BEFORE UPDATE ON participants
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_class_schedules_updated_at ON class_schedules;
 CREATE TRIGGER update_class_schedules_updated_at
     BEFORE UPDATE ON class_schedules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_teacher_schedules_updated_at ON teacher_schedules;
 CREATE TRIGGER update_teacher_schedules_updated_at
     BEFORE UPDATE ON teacher_schedules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_schedule_summary_updated_at ON schedule_summary;
 CREATE TRIGGER update_schedule_summary_updated_at
     BEFORE UPDATE ON schedule_summary
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_schedule_batches_updated_at ON schedule_batches;
 CREATE TRIGGER update_schedule_batches_updated_at
     BEFORE UPDATE ON schedule_batches
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_schedule_assignments_updated_at ON schedule_assignments;
 CREATE TRIGGER update_schedule_assignments_updated_at
     BEFORE UPDATE ON schedule_assignments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_departments_updated_at ON departments;
 CREATE TRIGGER update_departments_updated_at
     BEFORE UPDATE ON departments
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_faculty_members_updated_at ON faculty_members;
 CREATE TRIGGER update_faculty_members_updated_at
     BEFORE UPDATE ON faculty_members
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_faculty_schedules_updated_at ON faculty_schedules;
 CREATE TRIGGER update_faculty_schedules_updated_at
     BEFORE UPDATE ON faculty_schedules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_courses_updated_at ON courses;
 CREATE TRIGGER update_courses_updated_at
     BEFORE UPDATE ON courses
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_course_offerings_updated_at ON course_offerings;
 CREATE TRIGGER update_course_offerings_updated_at
     BEFORE UPDATE ON course_offerings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_room_availability_updated_at ON room_availability;
 CREATE TRIGGER update_room_availability_updated_at
     BEFORE UPDATE ON room_availability
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_system_settings_updated_at ON system_settings;
 CREATE TRIGGER update_system_settings_updated_at
     BEFORE UPDATE ON system_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to automatically determine first floor from room number
+DROP FUNCTION IF EXISTS set_is_first_floor() CASCADE;
 CREATE OR REPLACE FUNCTION set_is_first_floor()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -851,11 +965,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply first floor trigger to campuses
+DROP TRIGGER IF EXISTS set_campuses_first_floor ON campuses;
 CREATE TRIGGER set_campuses_first_floor
     BEFORE INSERT OR UPDATE ON campuses
     FOR EACH ROW EXECUTE FUNCTION set_is_first_floor();
 
 -- Function to get next upload group ID
+DROP FUNCTION IF EXISTS get_next_upload_group_id(TEXT) CASCADE;
 CREATE OR REPLACE FUNCTION get_next_upload_group_id(table_name TEXT)
 RETURNS INTEGER AS $$
 DECLARE
@@ -877,6 +993,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to calculate schedule statistics
+DROP FUNCTION IF EXISTS calculate_schedule_stats(INTEGER) CASCADE;
 CREATE OR REPLACE FUNCTION calculate_schedule_stats(schedule_id INTEGER)
 RETURNS TABLE (
     total_batches INTEGER,
@@ -937,7 +1054,6 @@ CREATE OR REPLACE VIEW schedule_overview AS
 SELECT 
     ss.id,
     ss.event_name,
-    ss.event_type::TEXT,
     ss.schedule_date,
     ss.start_time,
     ss.end_time,

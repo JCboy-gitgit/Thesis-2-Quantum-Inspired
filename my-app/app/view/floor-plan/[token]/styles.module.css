@@ -1,0 +1,693 @@
+/* ==================== Public Floor Plan Viewer Styles ==================== */
+
+/* ==================== Containers ==================== */
+.viewerContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #F3F4F6;
+}
+
+.loadingContainer,
+.errorContainer,
+.passwordContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.errorCard,
+.passwordCard {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.errorCard h2,
+.passwordCard h2 {
+  color: #1F2937;
+  margin: 16px 0 8px;
+  font-size: 20px;
+}
+
+.errorCard p,
+.passwordCard p {
+  color: #6B7280;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.errorIcon {
+  color: #EF4444;
+}
+
+.lockIcon {
+  color: #10B981;
+}
+
+.homeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #10B981;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.homeButton:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.passwordInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.passwordInput:focus {
+  outline: none;
+  border-color: #10B981;
+}
+
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 24px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitButton:hover {
+  background: #059669;
+}
+
+/* ==================== Header ==================== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: white;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.headerLeft,
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.logoText {
+  font-weight: 600;
+  font-size: 18px;
+  color: #1F2937;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: #E5E7EB;
+}
+
+.floorInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 14px;
+}
+
+.floorInfo svg {
+  color: #10B981;
+}
+
+.buildingName,
+.floorName {
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #F3F4F6;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.zoomControls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zoomControls button:hover {
+  background: #E5E7EB;
+  color: #1F2937;
+}
+
+.zoomLevel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  min-width: 40px;
+  text-align: center;
+}
+
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #F3F4F6;
+  color: #6B7280;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iconButton:hover {
+  background: #E5E7EB;
+  color: #1F2937;
+}
+
+.iconButton.active {
+  background: #D1FAE5;
+  color: #10B981;
+}
+
+/* ==================== Info Panel ==================== */
+.infoPanel {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  width: 300px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.infoPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.infoPanelHeader h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.infoPanelHeader button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.infoPanelHeader button:hover {
+  background: #E5E7EB;
+}
+
+.infoPanelContent {
+  padding: 16px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #F3F4F6;
+  font-size: 13px;
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  color: #6B7280;
+}
+
+.infoRow span:last-child {
+  color: #1F2937;
+  font-weight: 500;
+}
+
+/* ==================== Canvas Container ==================== */
+.canvasContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #E5E7EB;
+  background-image: 
+    radial-gradient(circle at 1px 1px, #D1D5DB 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+.canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  transition: cursor 0.1s ease;
+}
+
+/* ==================== Element Info Bar ==================== */
+.elementInfoBar {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.elementType {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #10B981;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.elementLabel {
+  color: #1F2937;
+  font-size: 14px;
+}
+
+.roomDetails {
+  display: flex;
+  gap: 16px;
+  color: #6B7280;
+  font-size: 13px;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #F3F4F6;
+  color: #6B7280;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.closeBtn:hover {
+  background: #E5E7EB;
+  color: #1F2937;
+}
+
+/* ==================== Footer ==================== */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: white;
+  border-top: 1px solid #E5E7EB;
+  font-size: 13px;
+  color: #6B7280;
+  flex-shrink: 0;
+}
+
+.viewCount {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewCount svg {
+  color: #10B981;
+}
+
+/* ==================== View Details Button ==================== */
+.viewDetailsBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #10B981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewDetailsBtn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* ==================== Room Details Modal ==================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.roomDetailsModal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+}
+
+.modalHeader h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modalHeader button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalHeader button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modalContent {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.detailItem:hover {
+  background: #F3F4F6;
+}
+
+.detailIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #10B981;
+  color: white;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.detailInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: 11px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #1F2937;
+  font-weight: 600;
+}
+
+.detailValue.available {
+  color: #10B981;
+}
+
+.detailValue.unavailable {
+  color: #EF4444;
+}
+
+.descriptionSection {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.descriptionSection h4 {
+  font-size: 14px;
+  color: #374151;
+  margin: 0 0 8px;
+}
+
+.descriptionSection p {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ==================== Print Styles ==================== */
+@media print {
+  .header,
+  .footer,
+  .elementInfoBar,
+  .infoPanel {
+    display: none !important;
+  }
+  
+  .viewerContainer {
+    background: white;
+  }
+  
+  .canvasContainer {
+    background: white;
+    background-image: none;
+  }
+  
+  .canvas {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ==================== Responsive ==================== */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .headerLeft,
+  .headerRight {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .logoText {
+    display: none;
+  }
+  
+  .floorInfo {
+    font-size: 12px;
+  }
+  
+  .infoPanel {
+    width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+  }
+  
+  .elementInfoBar {
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    gap: 8px;
+    width: calc(100% - 40px);
+    justify-content: center;
+  }
+  
+  .roomDetails {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .roomDetailsModal {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    max-height: 70vh;
+  }
+  
+  .modalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+}

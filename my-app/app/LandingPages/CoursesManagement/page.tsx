@@ -17,6 +17,7 @@ import {
   FaSave
 } from 'react-icons/fa'
 import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 // ==================== Interfaces ====================
 interface ClassSchedule {
@@ -132,6 +133,7 @@ async function fetchAllRows<T = Record<string, unknown>>(
 
 // ==================== Main Component ====================
 function ClassSchedulesContent() {
+  const router = useRouter()
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -171,8 +173,29 @@ function ClassSchedulesContent() {
 
   // Effects
   useEffect(() => {
+    checkAuth()
     fetchUploadGroups()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   useEffect(() => {
     filterSchedules()
@@ -473,6 +496,30 @@ function ClassSchedulesContent() {
   // Delete single class schedule
   const handleDelete = async (id: number) => {
     try {
+      // Find the schedule to archive
+      const scheduleToDelete = classSchedules.find(s => s.id === id)
+      
+      if (scheduleToDelete) {
+        // Archive the schedule before deleting
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('archived_items')
+            .insert({
+              item_type: 'schedule',
+              item_name: `${scheduleToDelete.course_code} - ${scheduleToDelete.section}`,
+              item_data: scheduleToDelete,
+              deleted_by: user?.id || null,
+              original_table: 'class_schedules',
+              original_id: String(id)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive schedule (table may not exist):', archiveError)
+          // Continue with deletion even if archiving fails
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('class_schedules')
@@ -495,6 +542,36 @@ function ClassSchedulesContent() {
   // Delete entire upload group
   const handleDeleteGroup = async (groupId: number) => {
     try {
+      // Find the group info for archiving
+      const groupToDelete = uploadGroups.find(g => g.upload_group_id === groupId)
+      
+      // Get all schedules for this group for archiving
+      const schedulesToArchive = await fetchAllRows<ClassSchedule>('class_schedules', { upload_group_id: groupId })
+      
+      if (groupToDelete && schedulesToArchive.length > 0) {
+        // Archive the group before deleting
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('archived_items')
+            .insert({
+              item_type: 'csv_file',
+              item_name: groupToDelete.file_name || `Upload Group ${groupId}`,
+              item_data: {
+                group_info: groupToDelete,
+                schedules: schedulesToArchive
+              },
+              deleted_by: user?.id || null,
+              original_table: 'class_schedules',
+              original_id: String(groupId)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive group (table may not exist):', archiveError)
+          // Continue with deletion even if archiving fails
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('class_schedules')

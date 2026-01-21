@@ -175,8 +175,29 @@ function ViewSchedulePage() {
   const [filteredRooms, setFilteredRooms] = useState<string[]>([])
 
   useEffect(() => {
+    checkAuth()
     fetchSchedules()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   // Filter and sort schedules when filters change
   useEffect(() => {
@@ -575,6 +596,48 @@ function ViewSchedulePage() {
     }
 
     try {
+      // Find the schedule to archive
+      const scheduleToDelete = schedules.find(s => s.id === id)
+      
+      // Get room allocations for this schedule to archive them too
+      const { data: allocationsToArchive } = await supabase
+        .from('room_allocations')
+        .select('*')
+        .eq('schedule_id', id)
+      
+      if (scheduleToDelete) {
+        // Archive the schedule before deleting
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          await supabase
+            .from('archived_items')
+            .insert({
+              item_type: 'schedule',
+              item_name: scheduleToDelete.schedule_name,
+              item_data: {
+                schedule: scheduleToDelete,
+                allocations: allocationsToArchive || []
+              },
+              deleted_by: user?.id || null,
+              original_table: 'generated_schedules',
+              original_id: String(id)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive schedule (table may not exist):', archiveError)
+          // Continue with deletion even if archiving fails
+        }
+      }
+
+      // Delete room_allocations first (foreign key constraint)
+      const { error: allocError } = await supabase
+        .from('room_allocations')
+        .delete()
+        .eq('schedule_id', id)
+
+      if (allocError) {
+        console.warn('Error deleting room allocations:', allocError)
+      }
+
       // Delete from generated_schedules
       const { error } = await supabase
         .from('generated_schedules')
@@ -583,20 +646,17 @@ function ViewSchedulePage() {
 
       if (error) throw error
 
-      // Also delete room_allocations
-      await supabase
-        .from('room_allocations')
-        .delete()
-        .eq('schedule_id', id)
-
-      // Refresh list
-      await fetchSchedules()
+      // Update local state immediately
+      setSchedules(prev => prev.filter(s => s.id !== id))
+      
+      // Clear selection if deleted schedule was selected
       if (selectedSchedule?.id === id) {
         setSelectedSchedule(null)
         setAllocations([])
         setViewMode('list')
       }
-      alert('Schedule deleted successfully')
+      
+      alert('Schedule deleted and archived successfully')
     } catch (error: any) {
       console.error('Error deleting schedule:', error)
       alert(`Failed to delete schedule: ${error.message}`)
@@ -723,7 +783,11 @@ function ViewSchedulePage() {
 
   return (
     <>
-      <MenuBar onToggleSidebar={toggleSidebar} />
+      <MenuBar 
+        onToggleSidebar={toggleSidebar} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
       <Sidebar isOpen={sidebarOpen} />
       
       <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College of Science - CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e4e4e4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #7b2cbf, #5a189a);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(123, 44, 191, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00c853, #00a844);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 200, 83, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff5252, #d32f2f);
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 82, 82, 0.3);
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 .badge {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #00d4ff;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(123, 44, 191, 0.2));
+        }
+
+        th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #00d4ff;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .tag-official { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .tag-staff { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+        .tag-faculty { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+        .tag-parttime { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
+        .tag-adjunct { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+        .tag-guest { background: rgba(96, 125, 139, 0.2); color: #90a4ae; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: #00d4ff;
+        }
+
+        .stat-card p {
+            color: #a0a0a0;
+            margin-top: 5px;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-section label {
+            color: #a0a0a0;
+        }
+
+        select, input[type="text"] {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #e4e4e4;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 College of Science</h1>
+            <p>Officials, Staff & Faculty CSV Generator</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3 id="totalCount">0</h3>
+                <p>Total Personnel</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="officialsCount">0</h3>
+                <p>Officials & Staff</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="facultyCount">0</h3>
+                <p>Faculty Members</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="mathCount">0</h3>
+                <p>Mathematics Dept</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="scienceCount">0</h3>
+                <p>Science Dept</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="downloadCSV()">
+                📥 Download CSV
+            </button>
+            <button class="btn btn-secondary" onclick="downloadOfficialCSV()">
+                👔 Download Officials Only
+            </button>
+            <button class="btn btn-success" onclick="downloadFacultyCSV()">
+                👨‍🏫 Download Faculty Only
+            </button>
+            <button class="btn btn-danger" onclick="copyToClipboard()">
+                📋 Copy to Clipboard
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Filter Options</h2>
+            <div class="filter-section">
+                <label>Search:</label>
+                <input type="text" id="searchInput" placeholder="Search by name..." onkeyup="filterTable()">
+                
+                <label>Department:</label>
+                <select id="deptFilter" onchange="filterTable()">
+                    <option value="all">All Departments</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="Administration">Administration</option>
+                </select>
+                
+                <label>Type:</label>
+                <select id="typeFilter" onchange="filterTable()">
+                    <option value="all">All Types</option>
+                    <option value="Official">Officials</option>
+                    <option value="Staff">Staff</option>
+                    <option value="Faculty">Faculty (Full-Time)</option>
+                    <option value="Faculty (Part-Time)">Faculty (Part-Time)</option>
+                    <option value="Faculty (Adjunct)">Faculty (Adjunct)</option>
+                    <option value="Guest Lecturer">Guest Lecturer</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>👔 Officials and Staff <span class="badge" id="officialsBadge">0</span></h2>
+            <div class="table-container">
+                <table id="officialsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Department</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>👨‍🏫 Faculty Members <span class="badge" id="facultyBadge">0</span></h2>
+            <div class="table-container">
+                <table id="facultyTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Position</th>
+                            <th>Department</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            <p>College of Science CSV Generator | Generated on <span id="currentDate"></span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Officials and Staff Data
+        const officialsData = [
+            { name: "Thelma V. Pagtalunan", position: "Dean", department: "Administration", type: "Official" },
+            { name: "Benedict M. Estrella", position: "Associate Dean", department: "Administration", type: "Official" },
+            { name: "Rosario M. Poñado", position: "Department Head, Science Department", department: "Science", type: "Official" },
+            { name: "Irish T. Baldevarona", position: "Department Head, Mathematics Department", department: "Mathematics", type: "Official" },
+            { name: "Harris R. Dela Cruz", position: "Program Chair, BS Mathematics", department: "Mathematics", type: "Official" },
+            { name: "Mary Ylane S. Lee", position: "Program Chair, BS Biology", department: "Science", type: "Official" },
+            { name: "Anna Dominique T. Salunga", position: "Program Chair, BS Food Technology", department: "Science", type: "Official" },
+            { name: "Oliver R. Alaijos", position: "Program Chair, BS Environmental Science", department: "Science", type: "Official" },
+            { name: "Merlyn C. Cruz", position: "Program Chair, BS Medical Technology", department: "Science", type: "Official" },
+            { name: "Michelle S. Agustin", position: "College Extension and Services Unit (CESU) Head", department: "Administration", type: "Official" },
+            { name: "Jo Ann V. Reyes", position: "College Research Development Unit (CRDU) Head", department: "Administration", type: "Official" },
+            { name: "Judith Clarisse Tan", position: "Student Internship Program Coordinator", department: "Administration", type: "Staff" },
+            { name: "Aubrey Rose T. Gan", position: "College Clerk", department: "Administration", type: "Staff" },
+            { name: "Baby Rhodora S. Mendoza", position: "Laboratory Technician", department: "Science", type: "Staff" },
+            { name: "Danica G. Manahan", position: "Medical Laboratory Technician", department: "Science", type: "Staff" },
+            { name: "Acsani D. Macalawi", position: "Laboratory Technician", department: "Science", type: "Staff" },
+            { name: "Andrei Michael C. Gumatay", position: "Computer Laboratory Technician", department: "Administration", type: "Staff" }
+        ];
+
+        // Faculty Data
+        const facultyData = [
+            // Mathematics Faculty (Full-Time)
+            { name: "Minerva R. Amores", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Deo Stephanie R. Angeles", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Ma. Concepcion DC. Arellano", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Michael R. Balagtas", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Irish T. Baldevarona", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Jeffrhaim Balilla", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Evelyn R. Camara", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Imelda Cristina B. Carcosia", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Carla M. Clemente", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Harris R. Dela Cruz", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Luzviminda F. Dela Cruz", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Rainilyn L. Duque", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Benedict M. Estrella", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Raevinor R. Gonzales", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Valentine Blez L. Lampayan", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Mary Ann C. Magtulis", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Ellenita G. Manalaysay", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Armele J. Mangaran", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Lyca D. Marcelino", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Maria Cecilia E. Martin", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Thelma V. Pagtalunan", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Jo Ann V. Reyes", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Yolanda C. Roberto", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Edgardo M. Santos", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Adolfo Jr. D. Victorino", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            { name: "Joselito V. Viola", position: "Faculty", department: "Mathematics", type: "Faculty" },
+            
+            // Mathematics Faculty (Part-Time)
+            { name: "Arcel F. Galvez", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            { name: "Cherielyn C. Regalado", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            { name: "Gertrudes C. Reyes", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            { name: "Mara N. Roxas", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            { name: "Judy Ann T. Sumala", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            { name: "Joshua P. Valeroso", position: "Faculty (Part-Time)", department: "Mathematics", type: "Faculty (Part-Time)" },
+            
+            // Mathematics Faculty (Adjunct)
+            { name: "Aubrey Rose T. Gan", position: "Faculty (Adjunct)", department: "Mathematics", type: "Faculty (Adjunct)" },
+            
+            // Science Faculty (Full-Time)
+            { name: "Michelle S. Agustin", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Oliver R. Alaijos", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Thelma D.C. Arrieta", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Eleonor R. Basilio", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Kristan Diane B. Canta", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Rachel D.C. Clavio", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Richard F. Clemente", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Maria Lin D. Cristobal", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Merlyn C. Cruz", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Marissa DA. Dela Cruz", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Raymundo F. Javier", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Freya Gay A. Jingco", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Mary Ylane S. Lee", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Mery day P. Neo", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Joana May C. Nepomuceno", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Virginia P. Paitan", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Rosario M. Poñado", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Jose Ravenal S. Ocampo", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Ma. Theresa F. Reyes", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Eden C. Ronquillo", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Marlyn Rose M. Sacdalan", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Anna Dominique M. Salunga", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Eloisa Q. Singian", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Edwin R. Tadiosa", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Judith Clarisse J. Tan", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Ma. Victoria S. Tiongson", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Debbie Ann S. Tuazon", position: "Faculty", department: "Science", type: "Faculty" },
+            { name: "Cielo Emar M. Villareal", position: "Faculty", department: "Science", type: "Faculty" },
+            
+            // Science Faculty (Part-Time)
+            { name: "Ria Laura B. Abuzo", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Mark Andrew R. Anacleto", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Atheena Cammara T. Barre", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Emily K. Bernardo", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Alfredo P. Carpio", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Jayson V. Cayetano", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Reynaldo S. Jacinto", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Maribeth V. Martinez", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Jovie E. Nicolas", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Alma D. Politano", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Racquel Z. Rubico", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Maria Salome C. Santos", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            { name: "Marianne P. Santos", position: "Faculty (Part-Time)", department: "Science", type: "Faculty (Part-Time)" },
+            
+            // Science Guest Lecturers
+            { name: "Atty. Julius Victor C. Degala", position: "Guest Lecturer", department: "Science", type: "Guest Lecturer" },
+            { name: "Agatha Ruth T. Gan", position: "Guest Lecturer", department: "Science", type: "Guest Lecturer" },
+            { name: "Karl Kenneth R. Santos", position: "Guest Lecturer", department: "Science", type: "Guest Lecturer" },
+            
+            // Science Faculty (Adjunct)
+            { name: "Mary Ann L. Nicolas", position: "Faculty (Adjunct)", department: "Science", type: "Faculty (Adjunct)" }
+        ];
+
+        // Combine all data
+        const allData = [...officialsData, ...facultyData];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTables();
+            updateStats();
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        });
+
+        function getTypeTag(type) {
+            const tagClasses = {
+                'Official': 'tag-official',
+                'Staff': 'tag-staff',
+                'Faculty': 'tag-faculty',
+                'Faculty (Part-Time)': 'tag-parttime',
+                'Faculty (Adjunct)': 'tag-adjunct',
+                'Guest Lecturer': 'tag-guest'
+            };
+            return `<span class="category-tag ${tagClasses[type] || 'tag-faculty'}">${type}</span>`;
+        }
+
+        function renderTables() {
+            renderOfficialsTable(officialsData);
+            renderFacultyTable(facultyData);
+        }
+
+        function renderOfficialsTable(data) {
+            const tbody = document.querySelector('#officialsTable tbody');
+            tbody.innerHTML = data.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.position}</td>
+                    <td>${item.department}</td>
+                    <td>${getTypeTag(item.type)}</td>
+                </tr>
+            `).join('');
+            document.getElementById('officialsBadge').textContent = data.length;
+        }
+
+        function renderFacultyTable(data) {
+            const tbody = document.querySelector('#facultyTable tbody');
+            tbody.innerHTML = data.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.position}</td>
+                    <td>${item.department}</td>
+                    <td>${getTypeTag(item.type)}</td>
+                </tr>
+            `).join('');
+            document.getElementById('facultyBadge').textContent = data.length;
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allData.length;
+            document.getElementById('officialsCount').textContent = officialsData.length;
+            document.getElementById('facultyCount').textContent = facultyData.length;
+            document.getElementById('mathCount').textContent = allData.filter(d => d.department === 'Mathematics').length;
+            document.getElementById('scienceCount').textContent = allData.filter(d => d.department === 'Science').length;
+        }
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const deptFilter = document.getElementById('deptFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            const filteredOfficials = officialsData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
+                                     item.position.toLowerCase().includes(searchTerm);
+                const matchesDept = deptFilter === 'all' || item.department === deptFilter;
+                const matchesType = typeFilter === 'all' || item.type === typeFilter;
+                return matchesSearch && matchesDept && matchesType;
+            });
+
+            const filteredFaculty = facultyData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
+                                     item.position.toLowerCase().includes(searchTerm);
+                const matchesDept = deptFilter === 'all' || item.department === deptFilter;
+                const matchesType = typeFilter === 'all' || item.type === typeFilter;
+                return matchesSearch && matchesDept && matchesType;
+            });
+
+            renderOfficialsTable(filteredOfficials);
+            renderFacultyTable(filteredFaculty);
+        }
+
+        function generateCSV(data) {
+            const headers = ['Name', 'Position', 'Department', 'Type'];
+            const rows = data.map(item => [
+                `"${item.name}"`,
+                `"${item.position}"`,
+                `"${item.department}"`,
+                `"${item.type}"`
+            ].join(','));
+            
+            return [headers.join(','), ...rows].join('\n');
+        }
+
+        function downloadCSV() {
+            const csv = generateCSV(allData);
+            downloadFile(csv, 'college_of_science_all_personnel.csv');
+        }
+
+        function downloadOfficialCSV() {
+            const csv = generateCSV(officialsData);
+            downloadFile(csv, 'college_of_science_officials_staff.csv');
+        }
+
+        function downloadFacultyCSV() {
+            const csv = generateCSV(facultyData);
+            downloadFile(csv, 'college_of_science_faculty.csv');
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function copyToClipboard() {
+            const csv = generateCSV(allData);
+            navigator.clipboard.writeText(csv).then(() => {
+                alert('✅ CSV data copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('❌ Failed to copy to clipboard');
+            });
+        }
+    </script>
+</body>
+</html>

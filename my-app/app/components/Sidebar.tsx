@@ -19,7 +19,8 @@ import {
   UserCircle,
   Building,
   GraduationCap,
-  BookOpen
+  BookOpen,
+  UserCheck
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -97,6 +98,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
        path: '/LandingPages/FacultyManagement',
       hasSubmenu: true,
       submenu: [
+        {
+          label: 'Faculty Approval',
+          path: '/LandingPages/FacultyManagement/FacultyApproval',
+          icon: UserCheck,
+          exact: true
+        },
         {
           label: 'Faculty Lists',
           path: '/LandingPages/FacultyManagement/FacultyLists',

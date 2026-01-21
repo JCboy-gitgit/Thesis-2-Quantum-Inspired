@@ -285,8 +285,29 @@ export default function GenerateSchedulePage() {
 
   // Load initial data
   useEffect(() => {
+    checkAuth()
     fetchAllGroups()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   // Timer for scheduling
   useEffect(() => {
@@ -755,7 +776,11 @@ export default function GenerateSchedulePage() {
 
   return (
     <div className={styles.scheduleLayout}>
-      <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <MenuBar 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
       <Sidebar isOpen={sidebarOpen} />
 
       <main className={`${styles.scheduleMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>

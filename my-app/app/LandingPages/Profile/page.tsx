@@ -4,12 +4,15 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FaUser, FaEnvelope, FaShieldAlt, FaKey, FaEye, FaEyeSlash, FaEdit, FaTimes, FaSave, FaArrowLeft } from 'react-icons/fa'
 import { supabase } from '@/lib/supabaseClient'
+import MenuBar from '@/app/components/MenuBar'
+import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -30,8 +33,29 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
+    checkAuth()
     fetchUserData()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   const fetchUserData = async () => {
     try {
@@ -146,11 +170,19 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className={styles['profile-container']}>
-      <button 
-        className={styles['back-button']}
-        onClick={() => router.back()}
-      >
+    <>
+      <MenuBar 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        showSidebarToggle={true}
+        setSidebarOpen={setSidebarOpen}
+      />
+      <Sidebar isOpen={sidebarOpen} />
+      
+      <div className={`${styles['profile-container']} ${sidebarOpen ? styles['with-sidebar'] : ''}`}>
+        <button 
+          className={styles['back-button']}
+          onClick={() => router.back()}
+        >
         <FaArrowLeft />
         Back
       </button>
@@ -469,5 +501,6 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+    </>
   )
 }
