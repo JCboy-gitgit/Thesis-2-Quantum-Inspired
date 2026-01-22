@@ -3,23 +3,23 @@
 /* Green Theme (Default - College of Science) */
 :root,
 [data-theme="green"] {
-  --primary: #335b2c;
-  --primary-dark: #8BAE66;
-  --primary-light: #628141;
-  --primary-alpha: rgba(35, 109, 71, 0.15);
-  --secondary: #ffd700;
-  --dark-bg: #003d1a;
-  --card-bg: rgba(0, 88, 38, 0.95);
-  --card-border: rgba(0, 166, 81, 0.3);
+  --primary: #22c55e;
+  --primary-dark: #16a34a;
+  --primary-light: #4ade80;
+  --primary-alpha: rgba(34, 197, 94, 0.15);
+  --secondary: #fbbf24;
+  --dark-bg: linear-gradient(135deg, #0a2e1a 0%, #0f3a1f 25%, #1a4d2e 50%, #0f3a1f 75%, #0a2e1a 100%);
+  --card-bg: rgba(15, 23, 42, 0.95);
+  --card-border: rgba(34, 197, 94, 0.4);
   --text-primary: #ffffff;
-  --text-secondary: #a8e6c0;
-  --success: #10b981;
+  --text-secondary: #86efac;
+  --success: #22c55e;
   --error: #ef4444;
-  --gradient-start: #003d1a;
-  --gradient-mid: #005826;
-  --gradient-end: #002d12;
-  --glow-color: rgba(0, 166, 81, 0.5);
-  --accent-gradient: linear-gradient(135deg, #ffd700, #4cff96);
+  --gradient-start: #0a2e1a;
+  --gradient-mid: #0f3a1f;
+  --gradient-end: #0a2e1a;
+  --glow-color: rgba(34, 197, 94, 0.6);
+  --accent-gradient: linear-gradient(135deg, #22c55e, #4ade80, #fbbf24);
 }
 
 /* Dark Theme (Quantum Inspired) */
@@ -318,6 +318,20 @@ body {
   left: 100%;
 }
 
+.account-chevron {
+  margin-left: 6px;
+  color: var(--text-secondary);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.account-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.account-button:hover .account-chevron {
+  color: var(--primary);
+}
+
 .account-menu {
   position: absolute;
   top: calc(100% + 10px);
@@ -384,11 +398,24 @@ body {
   transform: scaleY(1);
 }
 
-.account-menu-divider {
-  height: 2px;
-  background: var(--card-border);
-  margin: 6px 0;
-  box-shadow: 0 1px 3px var(--primary-alpha);
+.account-menu-item.logout-item {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  font-weight: 600;
+  margin: 8px 12px;
+  border-radius: 8px;
+}
+
+.account-menu-item.logout-item:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.account-menu-item.logout-item::before {
+  background: #ef4444;
 }
 
 /* ==================== Page Layout ==================== */

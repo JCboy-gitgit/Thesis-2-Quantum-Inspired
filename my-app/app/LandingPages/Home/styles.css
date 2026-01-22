@@ -6,9 +6,9 @@
 }
 
 [data-theme="green"] .welcome-section {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(6, 43, 24, 0.95) 100%);
+  border: 2px solid rgba(0, 217, 112, 0.253);
+  box-shadow: 0 8px 10px rgba(0, 217, 111, 0.2);
 }
 
 [data-theme="green"] .page-title {
@@ -40,13 +40,13 @@
 }
 
 [data-theme="green"] .file-section {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(45, 91, 67, 0.98) 0%, rgba(4, 48, 26, 0.95) 100%);
   border: 2px solid rgba(0, 217, 111, 0.4);
   box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
 }
 
 [data-theme="green"] .file-section:hover {
-  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.35);
+  box-shadow: 0 12px 40px rgba(1, 54, 28, 0.35);
   border-color: rgba(0, 217, 111, 0.6);
 }
 
@@ -56,7 +56,7 @@
 }
 
 [data-theme="green"] .file-card {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(1, 50, 25, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
   border: 2px solid rgba(0, 217, 111, 0.35);
   box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
 }
@@ -100,12 +100,12 @@
 }
 
 [data-theme="green"] .view-button {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+  background: linear-gradient(135deg, #0a582f 0%, #052f1b 100%);
+  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.3);
 }
 
 [data-theme="green"] .view-button:hover {
-  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
+  background: linear-gradient(135deg, #3d8662 0%, #1d4d32 100%);
   box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
   transform: translateY(-2px);
 }
