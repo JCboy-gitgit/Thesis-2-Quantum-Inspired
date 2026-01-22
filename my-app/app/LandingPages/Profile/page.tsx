@@ -33,8 +33,29 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
+    checkAuth()
     fetchUserData()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
+      }
+
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
+    }
+  }
 
   const fetchUserData = async () => {
     try {

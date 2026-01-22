@@ -32,6 +32,8 @@ from database import (
     get_room_allocations_by_schedule
 )
 from scheduler import run_scheduler
+# Import enhanced v2 scheduler with 30-min slots
+from scheduler_v2 import run_enhanced_scheduler, generate_30min_slots
 
 # Load environment variables
 load_dotenv()
@@ -241,22 +243,28 @@ class TimeSlotModel(BaseModel):
     duration_minutes: int
 
 class SectionDataModel(BaseModel):
-    """Section data from frontend"""
+    """Section data from frontend - Enhanced v2 with subject support"""
     id: int
     section_code: str
     course_code: str
     course_name: str
+    subject_code: Optional[str] = None  # New: Subject code (e.g., IT-311)
+    subject_name: Optional[str] = None  # New: Subject name
     teacher_id: int
     teacher_name: str
     year_level: int = 1
     student_count: int
     required_room_type: str
     weekly_hours: int
+    lec_hours: int = 0  # New: Lecture hours
+    lab_hours: int = 0  # New: Lab hours
     requires_lab: bool
     department: str
+    college: Optional[str] = None  # New: College name
+    semester: Optional[str] = "1st Semester"
 
 class RoomDataModel(BaseModel):
-    """Room data from frontend"""
+    """Room data from frontend - Enhanced with equipment"""
     id: int
     room_code: str
     room_name: str
@@ -266,23 +274,42 @@ class RoomDataModel(BaseModel):
     room_type: str
     floor: int
     is_accessible: bool
+    has_projector: bool = False
+    has_ac: bool = False
+    has_computers: int = 0
+    has_lab_equipment: bool = False
 
 class ScheduleGenerationRequest(BaseModel):
-    """Request model for schedule generation - accepts frontend data directly"""
+    """Request model for schedule generation - Enhanced v2 with 30-min slots"""
     schedule_name: str
     semester: str
     academic_year: str
-    section_ids: Optional[List[int]] = None  # If None, schedule all sections
-    room_ids: Optional[List[int]] = None  # If None, use all rooms
-    time_slots: Optional[List[TimeSlotModel]] = None  # Time slots from frontend
-    active_days: Optional[List[str]] = None  # Days to schedule (Mon-Sun)
-    sections_data: Optional[List[SectionDataModel]] = None  # Direct section data
-    rooms_data: Optional[List[RoomDataModel]] = None  # Direct room data
-    max_iterations: int = 1000
-    initial_temperature: float = 100.0
-    cooling_rate: float = 0.995
-    max_teacher_hours_per_day: int = 6
-    prioritize_accessibility: bool = False
+    section_ids: Optional[List[int]] = None
+    room_ids: Optional[List[int]] = None
+    time_slots: Optional[List[TimeSlotModel]] = None
+    active_days: Optional[List[str]] = None
+    sections_data: Optional[List[SectionDataModel]] = None
+    rooms_data: Optional[List[RoomDataModel]] = None
+    
+    # Time configuration - Now supports 30-minute intervals
+    start_time: str = "07:00"
+    end_time: str = "21:00"
+    slot_duration: int = 30  # Default to 30 minutes
+    
+    # Enhanced optimization parameters
+    max_iterations: int = 5000  # Increased default
+    initial_temperature: float = 150.0
+    cooling_rate: float = 0.997
+    quantum_tunneling_prob: float = 0.12
+    max_teacher_hours_per_day: int = 8
+    max_consecutive_hours: int = 4
+    prioritize_accessibility: bool = True
+    avoid_lunch_conflicts: bool = True
+    lunch_start: str = "12:00"
+    lunch_end: str = "13:00"
+    
+    # Use enhanced scheduler
+    use_enhanced_scheduler: bool = True
 
 
 class ScheduleGenerationResponse(BaseModel):
@@ -304,14 +331,15 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     Generate a new class schedule using quantum-inspired annealing.
     
     This endpoint accepts data directly from frontend or fetches from database.
-    Supports custom time slots and days configuration.
+    Supports 30-minute time slot intervals for flexible scheduling.
     """
     try:
         print("=" * 60)
-        print("🚀 SCHEDULE GENERATION STARTED")
+        print("🚀 SCHEDULE GENERATION STARTED (Enhanced v2 - 30min slots)")
         print("=" * 60)
         print(f"📋 Schedule Name: {request.schedule_name}")
         print(f"📅 Semester: {request.semester} | Year: {request.academic_year}")
+        print(f"⏰ Slot Duration: {request.slot_duration} minutes")
         
         # Use direct data from frontend if provided, otherwise fetch from database
         if request.sections_data and request.rooms_data:
@@ -319,10 +347,23 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             sections = [s.dict() for s in request.sections_data]
             rooms = [r.dict() for r in request.rooms_data]
             
-            # Use time slots from frontend if provided
+            # Generate 30-minute time slots if not provided
             if request.time_slots:
                 time_slots = [t.dict() for t in request.time_slots]
                 print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
+            elif request.use_enhanced_scheduler:
+                # Generate 30-minute slots
+                time_slots = [
+                    {
+                        'id': s.id,
+                        'slot_name': s.slot_name,
+                        'start_time': s.start_time,
+                        'end_time': s.end_time,
+                        'duration_minutes': s.duration_minutes
+                    }
+                    for s in generate_30min_slots(request.start_time, request.end_time)
+                ]
+                print(f"⏰ Generated {len(time_slots)} 30-minute time slots")
             else:
                 time_slots = await get_time_slots()
                 print(f"⏰ Using {len(time_slots)} time slots from database")
@@ -330,7 +371,20 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             print("🔍 Fetching data from database")
             all_sections = await get_sections_for_scheduling()
             all_rooms = await get_all_rooms()
-            time_slots = await get_time_slots()
+            
+            if request.use_enhanced_scheduler:
+                time_slots = [
+                    {
+                        'id': s.id,
+                        'slot_name': s.slot_name,
+                        'start_time': s.start_time,
+                        'end_time': s.end_time,
+                        'duration_minutes': s.duration_minutes
+                    }
+                    for s in generate_30min_slots(request.start_time, request.end_time)
+                ]
+            else:
+                time_slots = await get_time_slots()
             
             # Filter sections if specific IDs provided
             if request.section_ids:
@@ -355,49 +409,66 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         if not time_slots:
             raise HTTPException(status_code=400, detail="No time slots defined")
         
-        # Active days - use from request or default to Mon-Fri
-        active_days = request.active_days if request.active_days else ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        # Active days - use from request or default to Mon-Sat
+        active_days = request.active_days if request.active_days else ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         print(f"📅 Active days: {', '.join(active_days)}")
         
         # Create schedule record first
-        # Map fields to match database schema
         current_date = datetime.utcnow().date()
         schedule_record = await create_schedule_record({
             "event_name": f"{request.schedule_name} - {request.semester} {request.academic_year}",
             "event_type": "Custom",
             "schedule_date": current_date.isoformat(),
-            "start_time": "07:00:00",  # Default start time
-            "end_time": "19:00:00",    # Default end time
-            "campus_group_id": 1,      # Default campus group (can be updated)
-            "participant_group_id": 1, # Default participant group (can be updated)
+            "start_time": f"{request.start_time}:00",
+            "end_time": f"{request.end_time}:00",
+            "campus_group_id": 1,
+            "participant_group_id": 1,
             "status": "generating"
         })
         
         schedule_id = schedule_record.get("id")
         print(f"✅ Schedule record created with ID: {schedule_id}")
         
-        # Configuration for scheduler
+        # Configuration for enhanced scheduler
         config = {
             "max_iterations": request.max_iterations,
             "initial_temperature": request.initial_temperature,
             "cooling_rate": request.cooling_rate,
             "max_teacher_hours_per_day": request.max_teacher_hours_per_day,
+            "max_consecutive_hours": request.max_consecutive_hours,
             "prioritize_accessibility": request.prioritize_accessibility,
-            "active_days": active_days
+            "avoid_lunch_conflicts": request.avoid_lunch_conflicts,
+            "active_days": active_days,
+            "start_time": request.start_time,
+            "end_time": request.end_time
         }
         
-        print("🎯 Running Quantum-Inspired Annealing Algorithm...")
+        print("🎯 Running Enhanced Quantum-Inspired Annealing Algorithm...")
         print(f"   Max Iterations: {config['max_iterations']}")
         print(f"   Initial Temperature: {config['initial_temperature']}")
         print(f"   Cooling Rate: {config['cooling_rate']}")
+        print(f"   30-min Slot Support: Enabled")
         
-        # Run the scheduler
-        result = run_scheduler(
-            sections_data=sections,
-            rooms_data=rooms,
-            time_slots_data=time_slots,
-            config=config
-        )
+        # Run the enhanced scheduler with 30-minute slots
+        if request.use_enhanced_scheduler:
+            result = run_enhanced_scheduler(
+                sections_data=sections,
+                rooms_data=rooms,
+                time_slots_data=time_slots,
+                config=config
+            )
+            # Map result to expected format
+            result["schedule_entries"] = result.get("allocations", [])
+            result["message"] = f"Enhanced scheduler completed. Scheduled {result['scheduled_sections']}/{result['total_sections']} sections with 30-minute time slots."
+            result["conflicts"] = []  # Enhanced scheduler handles conflicts internally
+        else:
+            # Fallback to original scheduler
+            result = run_scheduler(
+                sections_data=sections,
+                rooms_data=rooms,
+                time_slots_data=time_slots,
+                config=config
+            )
         
         print(f"✅ Scheduling complete!")
         print(f"   Success: {result['success']}")

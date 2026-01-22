@@ -227,6 +227,110 @@
   color: var(--danger-red);
 }
 
+/* ==================== Header Stats ==================== */
+.headerStats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.statBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-alpha);
+  color: var(--primary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==================== Filters Section ==================== */
+.filtersSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--card-bg);
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--card-border);
+  margin-bottom: 24px;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.filterGroup label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filterGroup label svg {
+  font-size: 14px;
+  color: var(--primary);
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-white);
+  color: var(--content-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterSelect:hover {
+  border-color: var(--primary);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.clearFiltersButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--danger-red);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearFiltersButton:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
 .resultCount {
   font-size: 13px;
   color: var(--text-light);
@@ -266,6 +370,42 @@
   margin: 0;
 }
 
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.uploadButton:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==================== Employment Badge ==================== */
+.employmentBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* ==================== File Grid ==================== */
 .fileGrid {
   display: grid;
@@ -284,6 +424,7 @@
   border: 2px solid var(--card-border);
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .fileCard:hover {
@@ -338,6 +479,55 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* File Delete Button */
+.fileDeleteButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.fileCard:hover .fileDeleteButton {
+  opacity: 1;
+}
+
+.fileDeleteButton:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+.fileDeleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.spinnerSmall {
+  animation: spin 1s linear infinite;
+  font-size: 14px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==================== Profiles Section ==================== */
@@ -574,6 +764,13 @@
   margin: 0 0 4px 0;
 }
 
+.profilePosition {
+  font-size: 14px;
+  color: var(--text-medium);
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
 .profileId {
   font-size: 14px;
   color: var(--text-medium);
@@ -582,6 +779,39 @@
 
 .profileBody {
   padding: 24px 32px 32px;
+}
+
+.profileActions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.deleteProfileButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--danger-red);
+  border: 2px solid var(--danger-red);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deleteProfileButton:hover {
+  background: var(--danger-red);
+  color: white;
+}
+
+.deleteProfileButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .profileInfo {

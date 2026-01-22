@@ -24,43 +24,43 @@ import {
   FaCrown,
   FaStar,
   FaGraduationCap,
-  FaChalkboardTeacher
+  FaChalkboardTeacher,
+  FaTrash,
+  FaUserCog,
+  FaUserShield,
+  FaUserGraduate,
+  FaBriefcase,
+  FaFilter,
+  FaPhone,
+  FaMapMarkerAlt
 } from 'react-icons/fa'
 
-// Interfaces
-interface TeacherFile {
-  upload_group_id: number
-  file_name: string
-  batch_name: string
-  department: string
+// Interface for faculty_profiles table
+interface FacultyProfile {
+  id: string
+  faculty_id: string
+  full_name: string
+  position: string
+  role: 'administrator' | 'department_head' | 'program_chair' | 'coordinator' | 'faculty' | 'staff'
+  department: string | null
+  college: string | null
+  email: string | null
+  phone: string | null
+  office_location: string | null
+  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  is_active: boolean
+  profile_image: string | null
+  bio: string | null
+  specialization: string | null
+  education: string | null
   created_at: string
-  teacher_count: number
+  updated_at: string
 }
 
-interface Teacher {
-  id: number
-  upload_group_id: number
-  teacher_id: string
-  name: string
-  schedule_day: string
-  schedule_time: string
-  batch_name: string
-  file_name: string
-  department: string
-  email: string
-  status: string
-  created_at: string
-}
-
-interface TeacherWithRole extends Teacher {
-  role: 'dean' | 'head' | 'senior' | 'faculty'
-  scheduleCount: number
-}
-
-// Helper function to fetch ALL rows
-async function fetchAllRows(table: string, filters: any = {}) {
+// Helper function to fetch ALL rows with pagination
+async function fetchAllRows(table: string, filters: Record<string, string | number | boolean> = {}) {
   const PAGE_SIZE = 1000
-  let allData: any[] = []
+  let allData: FacultyProfile[] = []
   let page = 0
   let hasMore = true
 
@@ -72,10 +72,10 @@ async function fetchAllRows(table: string, filters: any = {}) {
       .from(table)
       .select('*')
       .range(from, to)
-      .order('id', { ascending: true }) as any
+      .order('full_name', { ascending: true })
 
     for (const [key, value] of Object.entries(filters)) {
-      query = query.eq(key, value as string | number | boolean)
+      query = query.eq(key, value)
     }
 
     const { data, error } = await query
@@ -97,178 +97,229 @@ async function fetchAllRows(table: string, filters: any = {}) {
 // Get initials from name
 function getInitials(name: string | undefined | null): string {
   if (!name) return '?'
-  const parts = name.split(' ')
+  const parts = name.split(/[,\s]+/).filter(p => p.length > 0)
   if (parts.length >= 2) {
     return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
   }
   return name.substring(0, 2).toUpperCase()
 }
 
-// Assign roles based on schedule count and position in list
-function assignRoles(teachers: Teacher[]): TeacherWithRole[] {
-  // Group by unique teacher
-  const teacherMap = new Map<string, Teacher[]>()
-  teachers.forEach(t => {
-    const key = t.teacher_id || t.name
-    if (!teacherMap.has(key)) {
-      teacherMap.set(key, [])
-    }
-    teacherMap.get(key)!.push(t)
-  })
+// Role hierarchy order (for sorting)
+const ROLE_ORDER: Record<string, number> = {
+  'administrator': 1,
+  'department_head': 2,
+  'program_chair': 3,
+  'coordinator': 4,
+  'faculty': 5,
+  'staff': 6
+}
 
-  // Convert to unique teachers with schedule count
-  const uniqueTeachers: TeacherWithRole[] = []
-  teacherMap.forEach((schedules, key) => {
-    const first = schedules[0]
-    uniqueTeachers.push({
-      ...first,
-      scheduleCount: schedules.length,
-      role: 'faculty'
-    })
-  })
+// Get role display info with icons and colors
+function getRoleInfo(role: string) {
+  switch (role) {
+    case 'administrator':
+      return { 
+        icon: <FaCrown />, 
+        label: 'Administrator / Dean', 
+        color: '#f59e0b', 
+        bgColor: 'rgba(245, 158, 11, 0.15)',
+        description: 'College/University Administration'
+      }
+    case 'department_head':
+      return { 
+        icon: <FaUserShield />, 
+        label: 'Department Head', 
+        color: '#8b5cf6', 
+        bgColor: 'rgba(139, 92, 246, 0.15)',
+        description: 'Department Leadership'
+      }
+    case 'program_chair':
+      return { 
+        icon: <FaStar />, 
+        label: 'Program Chair', 
+        color: '#ec4899', 
+        bgColor: 'rgba(236, 72, 153, 0.15)',
+        description: 'Program Management'
+      }
+    case 'coordinator':
+      return { 
+        icon: <FaUserCog />, 
+        label: 'Coordinator', 
+        color: '#06b6d4', 
+        bgColor: 'rgba(6, 182, 212, 0.15)',
+        description: 'Program/Area Coordination'
+      }
+    case 'staff':
+      return { 
+        icon: <FaBriefcase />, 
+        label: 'Staff', 
+        color: '#64748b', 
+        bgColor: 'rgba(100, 116, 139, 0.15)',
+        description: 'Administrative Staff'
+      }
+    default: // faculty
+      return { 
+        icon: <FaChalkboardTeacher />, 
+        label: 'Faculty Member', 
+        color: '#22c55e', 
+        bgColor: 'rgba(34, 197, 94, 0.15)',
+        description: 'Teaching Faculty'
+      }
+  }
+}
 
-  // Sort by schedule count (more schedules = more senior)
-  uniqueTeachers.sort((a, b) => b.scheduleCount - a.scheduleCount)
-
-  // Assign roles based on position
-  uniqueTeachers.forEach((teacher, index) => {
-    if (index === 0) {
-      teacher.role = 'dean'
-    } else if (index <= 2) {
-      teacher.role = 'head'
-    } else if (index <= 6) {
-      teacher.role = 'senior'
-    } else {
-      teacher.role = 'faculty'
-    }
-  })
-
-  return uniqueTeachers
+// Get employment type badge
+function getEmploymentBadge(type: string) {
+  switch (type) {
+    case 'full-time':
+      return { label: 'Full-Time', color: '#22c55e' }
+    case 'part-time':
+      return { label: 'Part-Time', color: '#f59e0b' }
+    case 'adjunct':
+      return { label: 'Adjunct', color: '#8b5cf6' }
+    case 'guest':
+      return { label: 'Guest', color: '#06b6d4' }
+    default:
+      return { label: type, color: '#64748b' }
+  }
 }
 
 function FacultyProfilesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const groupIdFromUrl = searchParams.get('id')
+  const collegeFilter = searchParams.get('college')
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [loadingTeachers, setLoadingTeachers] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
-  // File selection state
-  const [teacherFiles, setTeacherFiles] = useState<TeacherFile[]>([])
-  const [selectedFile, setSelectedFile] = useState<TeacherFile | null>(null)
-  const [fileSearchTerm, setFileSearchTerm] = useState('')
+  // Faculty data state
+  const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
+  const [filteredFaculty, setFilteredFaculty] = useState<FacultyProfile[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCollege, setSelectedCollege] = useState<string>(collegeFilter || '')
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('')
+  const [selectedRole, setSelectedRole] = useState<string>('')
+  const [selectedEmploymentType, setSelectedEmploymentType] = useState<string>('')
 
-  // Teacher data state
-  const [teachers, setTeachers] = useState<TeacherWithRole[]>([])
-  const [filteredTeachers, setFilteredTeachers] = useState<TeacherWithRole[]>([])
-  const [teacherSearchTerm, setTeacherSearchTerm] = useState('')
+  // Available filter options
+  const [colleges, setColleges] = useState<string[]>([])
+  const [departments, setDepartments] = useState<string[]>([])
 
-  // Carousel state
+  // Carousel/Selection state
+  const [selectedProfile, setSelectedProfile] = useState<FacultyProfile | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [selectedTeacher, setSelectedTeacher] = useState<TeacherWithRole | null>(null)
   const carouselRef = useRef<HTMLDivElement>(null)
 
-  // Fetch teacher files on mount
+  // Fetch faculty profiles on mount
   useEffect(() => {
-    fetchTeacherFiles()
+    checkAuth()
+    fetchFacultyProfiles()
   }, [])
 
-  // Auto-select file from URL parameter
+  // Apply filters when data or filter values change
   useEffect(() => {
-    if (groupIdFromUrl && teacherFiles.length > 0) {
-      const groupId = parseInt(groupIdFromUrl)
-      const file = teacherFiles.find(f => f.upload_group_id === groupId)
-      if (file) {
-        handleSelectFile(file)
+    applyFilters()
+  }, [allFaculty, searchTerm, selectedCollege, selectedDepartment, selectedRole, selectedEmploymentType])
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.user) {
+        router.push('/faculty/login')
+        return
       }
-    }
-  }, [groupIdFromUrl, teacherFiles])
 
-  // Filter teachers when search changes
-  useEffect(() => {
-    if (teacherSearchTerm) {
-      const filtered = teachers.filter(t =>
-        t.name.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
-        t.teacher_id.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
-        t.email?.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
-        t.department?.toLowerCase().includes(teacherSearchTerm.toLowerCase())
-      )
-      setFilteredTeachers(filtered)
-    } else {
-      setFilteredTeachers(teachers)
+      // Only admin can access admin pages
+      if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        router.push('/faculty/home')
+        return
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      router.push('/faculty/login')
     }
-    setCurrentIndex(0)
-  }, [teacherSearchTerm, teachers])
+  }
 
-  const fetchTeacherFiles = async () => {
+  const fetchFacultyProfiles = async () => {
     setLoading(true)
     try {
-      const allData = await fetchAllRows('teacher_schedules')
+      const data = await fetchAllRows('faculty_profiles')
+      
+      // Sort by role hierarchy, then by name
+      data.sort((a, b) => {
+        const roleCompare = (ROLE_ORDER[a.role] || 99) - (ROLE_ORDER[b.role] || 99)
+        if (roleCompare !== 0) return roleCompare
+        return (a.full_name || '').localeCompare(b.full_name || '')
+      })
+      
+      setAllFaculty(data)
 
-      // Group by upload_group_id
-      const grouped = allData.reduce((acc: any[], curr) => {
-        const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
-        if (existing) {
-          existing.teacher_count++
-        } else {
-          acc.push({
-            upload_group_id: curr.upload_group_id,
-            file_name: curr.file_name || 'Unknown File',
-            batch_name: curr.batch_name || '',
-            department: curr.department || 'General',
-            created_at: curr.created_at,
-            teacher_count: 1
-          })
-        }
-        return acc
-      }, [])
+      // Extract unique colleges and departments for filters
+      const uniqueColleges = [...new Set(data.map(f => f.college).filter(Boolean))] as string[]
+      const uniqueDepartments = [...new Set(data.map(f => f.department).filter(Boolean))] as string[]
+      setColleges(uniqueColleges.sort())
+      setDepartments(uniqueDepartments.sort())
 
-      // Sort by date (newest first)
-      grouped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      setTeacherFiles(grouped)
+      // Auto-select first profile
+      if (data.length > 0) {
+        setSelectedProfile(data[0])
+      }
     } catch (error) {
-      console.error('Error fetching teacher files:', error)
+      console.error('Error fetching faculty profiles:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSelectFile = async (file: TeacherFile) => {
-    setSelectedFile(file)
-    setLoadingTeachers(true)
-    setTeacherSearchTerm('')
+  const applyFilters = () => {
+    let filtered = [...allFaculty]
 
-    try {
-      const allData = await fetchAllRows('teacher_schedules', { upload_group_id: file.upload_group_id })
-      const teachersWithRoles = assignRoles(allData)
-      setTeachers(teachersWithRoles)
-      setFilteredTeachers(teachersWithRoles)
-      setCurrentIndex(0)
-      
-      // Auto-select the first (dean) teacher
-      if (teachersWithRoles.length > 0) {
-        setSelectedTeacher(teachersWithRoles[0])
-      }
-    } catch (error) {
-      console.error('Error fetching teachers:', error)
-    } finally {
-      setLoadingTeachers(false)
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(f =>
+        f.full_name?.toLowerCase().includes(term) ||
+        f.faculty_id?.toLowerCase().includes(term) ||
+        f.email?.toLowerCase().includes(term) ||
+        f.position?.toLowerCase().includes(term) ||
+        f.department?.toLowerCase().includes(term)
+      )
+    }
+
+    // College filter
+    if (selectedCollege) {
+      filtered = filtered.filter(f => f.college === selectedCollege)
+    }
+
+    // Department filter
+    if (selectedDepartment) {
+      filtered = filtered.filter(f => f.department === selectedDepartment)
+    }
+
+    // Role filter
+    if (selectedRole) {
+      filtered = filtered.filter(f => f.role === selectedRole)
+    }
+
+    // Employment type filter
+    if (selectedEmploymentType) {
+      filtered = filtered.filter(f => f.employment_type === selectedEmploymentType)
+    }
+
+    setFilteredFaculty(filtered)
+    setCurrentIndex(0)
+    
+    // Update selected profile
+    if (filtered.length > 0 && (!selectedProfile || !filtered.find(f => f.id === selectedProfile.id))) {
+      setSelectedProfile(filtered[0])
     }
   }
 
-  const handleBackToFiles = () => {
-    setSelectedFile(null)
-    setTeachers([])
-    setFilteredTeachers([])
-    setSelectedTeacher(null)
-    setCurrentIndex(0)
-  }
-
-  const handleSelectTeacher = (teacher: TeacherWithRole) => {
-    setSelectedTeacher(teacher)
-    const index = filteredTeachers.findIndex(t => t.id === teacher.id)
+  const handleSelectProfile = (profile: FacultyProfile) => {
+    setSelectedProfile(profile)
+    const index = filteredFaculty.findIndex(f => f.id === profile.id)
     if (index !== -1) {
       setCurrentIndex(index)
     }
@@ -277,51 +328,79 @@ function FacultyProfilesContent() {
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
-      setSelectedTeacher(filteredTeachers[currentIndex - 1])
+      setSelectedProfile(filteredFaculty[currentIndex - 1])
     }
   }
 
   const handleNext = () => {
-    if (currentIndex < filteredTeachers.length - 1) {
+    if (currentIndex < filteredFaculty.length - 1) {
       setCurrentIndex(currentIndex + 1)
-      setSelectedTeacher(filteredTeachers[currentIndex + 1])
+      setSelectedProfile(filteredFaculty[currentIndex + 1])
     }
   }
 
-  // Get role display info
-  const getRoleInfo = (role: string) => {
-    switch (role) {
-      case 'dean':
-        return { icon: <FaCrown />, label: 'Dean / Department Head', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.15)' }
-      case 'head':
-        return { icon: <FaStar />, label: 'Program Head', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.15)' }
-      case 'senior':
-        return { icon: <FaGraduationCap />, label: 'Senior Faculty', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.15)' }
-      default:
-        return { icon: <FaChalkboardTeacher />, label: 'Faculty Member', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.15)' }
+  const handleDeleteProfile = async (profile: FacultyProfile) => {
+    if (!confirm(`Are you sure you want to delete "${profile.full_name}"?\n\nThis action cannot be undone.`)) {
+      return
+    }
+
+    setDeleting(profile.id)
+
+    try {
+      // Archive before deleting
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('archived_items')
+          .insert({
+            item_type: 'faculty',
+            item_name: profile.full_name,
+            item_data: profile,
+            deleted_by: user?.id || null,
+            original_table: 'faculty_profiles',
+            original_id: profile.id
+          })
+      } catch (archiveError) {
+        console.warn('Could not archive profile:', archiveError)
+      }
+
+      // Delete from faculty_profiles
+      const { error } = await supabase
+        .from('faculty_profiles')
+        .delete()
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      // Update local state
+      setAllFaculty(prev => prev.filter(f => f.id !== profile.id))
+      
+      alert(`"${profile.full_name}" deleted successfully`)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error deleting profile:', error)
+      alert(`Failed to delete profile: ${errorMessage}`)
+    } finally {
+      setDeleting(null)
     }
   }
 
-  // Filter files by search
-  const filteredFiles = teacherFiles.filter(f =>
-    f.file_name.toLowerCase().includes(fileSearchTerm.toLowerCase()) ||
-    f.department.toLowerCase().includes(fileSearchTerm.toLowerCase()) ||
-    f.batch_name?.toLowerCase().includes(fileSearchTerm.toLowerCase())
-  )
-
-  // Group teachers by role for pyramid display
-  const deans = filteredTeachers.filter(t => t.role === 'dean')
-  const heads = filteredTeachers.filter(t => t.role === 'head')
-  const seniors = filteredTeachers.filter(t => t.role === 'senior')
-  const faculty = filteredTeachers.filter(t => t.role === 'faculty')
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
+  const clearFilters = () => {
+    setSearchTerm('')
+    setSelectedCollege('')
+    setSelectedDepartment('')
+    setSelectedRole('')
+    setSelectedEmploymentType('')
   }
+
+  // Group faculty by role for hierarchy display
+  const administrators = filteredFaculty.filter(f => f.role === 'administrator')
+  const departmentHeads = filteredFaculty.filter(f => f.role === 'department_head')
+  const programChairs = filteredFaculty.filter(f => f.role === 'program_chair')
+  const coordinators = filteredFaculty.filter(f => f.role === 'coordinator')
+  const facultyMembers = filteredFaculty.filter(f => f.role === 'faculty')
+  const staffMembers = filteredFaculty.filter(f => f.role === 'staff')
 
   return (
     <div className={styles.layout}>
@@ -338,212 +417,305 @@ function FacultyProfilesContent() {
           <div className={styles.header}>
             <button 
               className={styles.backButton} 
-              onClick={selectedFile ? handleBackToFiles : () => router.back()}
+              onClick={() => router.back()}
             >
-              <FaArrowLeft /> {selectedFile ? 'Back to Files' : 'Back'}
+              <FaArrowLeft /> Back
             </button>
             <h1 className={styles.title}>
               <FaUserTie className={styles.titleIcon} />
-              {selectedFile ? selectedFile.file_name : 'Faculty Profiles'}
+              Faculty Profiles
             </h1>
+            <div className={styles.headerStats}>
+              <span className={styles.statBadge}>
+                <FaUsers /> {allFaculty.length} Total Faculty
+              </span>
+            </div>
           </div>
 
           {/* Loading State */}
           {loading && (
             <div className={styles.loadingState}>
               <FaSpinner className={styles.spinner} />
-              <p>Loading faculty files...</p>
+              <p>Loading faculty profiles...</p>
             </div>
           )}
 
-          {/* File Selection View */}
-          {!loading && !selectedFile && (
-            <div className={styles.fileSelectionSection}>
-              <div className={styles.welcomeCard}>
-                <FaUsers className={styles.welcomeIcon} />
-                <h2>Select a Faculty File</h2>
-                <p>Choose an uploaded teacher CSV file to view faculty profiles in a hierarchical display</p>
-              </div>
-
-              {/* Search */}
-              <div className={styles.searchBar}>
-                <FaSearch className={styles.searchIcon} />
-                <input
-                  type="text"
-                  placeholder="Search files by name, department..."
-                  value={fileSearchTerm}
-                  onChange={(e) => setFileSearchTerm(e.target.value)}
-                  className={styles.searchInput}
-                />
-                {fileSearchTerm && (
-                  <button className={styles.clearButton} onClick={() => setFileSearchTerm('')}>
-                    <FaTimes />
-                  </button>
-                )}
-              </div>
-
-              {/* File Grid */}
-              {filteredFiles.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <FaFileAlt className={styles.emptyIcon} />
-                  <h3>No Faculty Files Found</h3>
-                  <p>Upload a teacher CSV file from the Upload CSV page to get started.</p>
+          {!loading && (
+            <>
+              {/* Filters Section */}
+              <div className={styles.filtersSection}>
+                {/* Search Bar */}
+                <div className={styles.searchBar}>
+                  <FaSearch className={styles.searchIcon} />
+                  <input
+                    type="text"
+                    placeholder="Search by name, ID, email, position..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                  {searchTerm && (
+                    <button className={styles.clearButton} onClick={() => setSearchTerm('')}>
+                      <FaTimes />
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <div className={styles.fileGrid}>
-                  {filteredFiles.map((file) => (
-                    <div
-                      key={file.upload_group_id}
-                      className={styles.fileCard}
-                      onClick={() => handleSelectFile(file)}
+
+                {/* Filter Dropdowns */}
+                <div className={styles.filterRow}>
+                  <div className={styles.filterGroup}>
+                    <label><FaBuilding /> College</label>
+                    <select 
+                      value={selectedCollege} 
+                      onChange={(e) => setSelectedCollege(e.target.value)}
+                      className={styles.filterSelect}
                     >
-                      <div className={styles.fileCardIcon}>
-                        <FaFileAlt />
-                      </div>
-                      <div className={styles.fileCardContent}>
-                        <h3>{file.file_name}</h3>
-                        <p className={styles.fileDepartment}>{file.department}</p>
-                        <div className={styles.fileStats}>
-                          <span><FaUsers /> {file.teacher_count} Teachers</span>
-                          <span><FaCalendar /> {formatDate(file.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                      <option value="">All Colleges</option>
+                      {colleges.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
 
-          {/* Faculty Profiles View */}
-          {selectedFile && (
-            <div className={styles.profilesSection}>
-              {loadingTeachers ? (
-                <div className={styles.loadingState}>
-                  <FaSpinner className={styles.spinner} />
-                  <p>Loading faculty profiles...</p>
+                  <div className={styles.filterGroup}>
+                    <label><FaUsers /> Department</label>
+                    <select 
+                      value={selectedDepartment} 
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      className={styles.filterSelect}
+                    >
+                      <option value="">All Departments</option>
+                      {departments.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.filterGroup}>
+                    <label><FaUserTie /> Role</label>
+                    <select 
+                      value={selectedRole} 
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className={styles.filterSelect}
+                    >
+                      <option value="">All Roles</option>
+                      <option value="administrator">Administrator/Dean</option>
+                      <option value="department_head">Department Head</option>
+                      <option value="program_chair">Program Chair</option>
+                      <option value="coordinator">Coordinator</option>
+                      <option value="faculty">Faculty</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.filterGroup}>
+                    <label><FaBriefcase /> Employment</label>
+                    <select 
+                      value={selectedEmploymentType} 
+                      onChange={(e) => setSelectedEmploymentType(e.target.value)}
+                      className={styles.filterSelect}
+                    >
+                      <option value="">All Types</option>
+                      <option value="full-time">Full-Time</option>
+                      <option value="part-time">Part-Time</option>
+                      <option value="adjunct">Adjunct</option>
+                      <option value="guest">Guest</option>
+                    </select>
+                  </div>
+
+                  {(searchTerm || selectedCollege || selectedDepartment || selectedRole || selectedEmploymentType) && (
+                    <button className={styles.clearFiltersButton} onClick={clearFilters}>
+                      <FaTimes /> Clear Filters
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.resultCount}>
+                  Showing {filteredFaculty.length} of {allFaculty.length} faculty profiles
+                </div>
+              </div>
+
+              {/* Empty State */}
+              {filteredFaculty.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <FaUsers className={styles.emptyIcon} />
+                  <h3>No Faculty Profiles Found</h3>
+                  <p>
+                    {allFaculty.length === 0 
+                      ? 'Upload faculty profiles from the Upload CSV page to get started.'
+                      : 'No profiles match your current filters. Try adjusting your search criteria.'}
+                  </p>
+                  {allFaculty.length === 0 && (
+                    <button 
+                      className={styles.uploadButton}
+                      onClick={() => router.push('/LandingPages/UploadCSV')}
+                    >
+                      <FaFileAlt /> Go to Upload CSV
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
-                  {/* Search Bar */}
-                  <div className={styles.searchBar}>
-                    <FaSearch className={styles.searchIcon} />
-                    <input
-                      type="text"
-                      placeholder="Search faculty by name, ID, email..."
-                      value={teacherSearchTerm}
-                      onChange={(e) => setTeacherSearchTerm(e.target.value)}
-                      className={styles.searchInput}
-                    />
-                    {teacherSearchTerm && (
-                      <button className={styles.clearButton} onClick={() => setTeacherSearchTerm('')}>
-                        <FaTimes />
-                      </button>
-                    )}
-                    <span className={styles.resultCount}>
-                      {filteredTeachers.length} of {teachers.length} faculty
-                    </span>
-                  </div>
-
                   {/* Pyramid Hierarchy Display */}
                   <div className={styles.pyramidSection}>
-                    <h2 className={styles.pyramidTitle}>Faculty Hierarchy</h2>
+                    <h2 className={styles.pyramidTitle}>
+                      <FaCrown /> Organizational Hierarchy
+                    </h2>
                     
-                    {/* Dean Level (Top) */}
-                    {deans.length > 0 && (
+                    {/* Administrator Level (Top) */}
+                    {administrators.length > 0 && (
                       <div className={styles.pyramidLevel}>
-                        <div className={styles.levelLabel}>
-                          <FaCrown /> Dean / Department Head
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('administrator').color }}>
+                          {getRoleInfo('administrator').icon} Administrators / Deans ({administrators.length})
                         </div>
                         <div className={styles.levelCards} style={{ justifyContent: 'center' }}>
-                          {deans.map((teacher) => (
+                          {administrators.map((profile) => (
                             <div
-                              key={teacher.id}
-                              className={`${styles.pyramidCard} ${styles.deanCard} ${selectedTeacher?.id === teacher.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectTeacher(teacher)}
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.adminCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
                             >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(teacher.role).bgColor, borderColor: getRoleInfo(teacher.role).color }}>
-                                {getInitials(teacher.name)}
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
                               </div>
-                              <div className={styles.pyramidName}>{teacher.name || 'Unknown'}</div>
-                              <div className={styles.pyramidId}>{teacher.teacher_id || 'N/A'}</div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.position}</div>
+                              <div className={styles.pyramidId}>{profile.department || profile.college}</div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Head Level */}
-                    {heads.length > 0 && (
+                    {/* Department Heads Level */}
+                    {departmentHeads.length > 0 && (
                       <div className={styles.pyramidLevel}>
-                        <div className={styles.levelLabel}>
-                          <FaStar /> Program Heads
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('department_head').color }}>
+                          {getRoleInfo('department_head').icon} Department Heads ({departmentHeads.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {heads.map((teacher) => (
+                          {departmentHeads.map((profile) => (
                             <div
-                              key={teacher.id}
-                              className={`${styles.pyramidCard} ${styles.headCard} ${selectedTeacher?.id === teacher.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectTeacher(teacher)}
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.headCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
                             >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(teacher.role).bgColor, borderColor: getRoleInfo(teacher.role).color }}>
-                                {getInitials(teacher.name)}
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
                               </div>
-                              <div className={styles.pyramidName}>{teacher.name || 'Unknown'}</div>
-                              <div className={styles.pyramidId}>{teacher.teacher_id || 'N/A'}</div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.position}</div>
+                              <div className={styles.pyramidId}>{profile.department}</div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Senior Level */}
-                    {seniors.length > 0 && (
+                    {/* Program Chairs Level */}
+                    {programChairs.length > 0 && (
                       <div className={styles.pyramidLevel}>
-                        <div className={styles.levelLabel}>
-                          <FaGraduationCap /> Senior Faculty
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('program_chair').color }}>
+                          {getRoleInfo('program_chair').icon} Program Chairs ({programChairs.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {seniors.map((teacher) => (
+                          {programChairs.map((profile) => (
                             <div
-                              key={teacher.id}
-                              className={`${styles.pyramidCard} ${styles.seniorCard} ${selectedTeacher?.id === teacher.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectTeacher(teacher)}
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.chairCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
                             >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(teacher.role).bgColor, borderColor: getRoleInfo(teacher.role).color }}>
-                                {getInitials(teacher.name)}
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
                               </div>
-                              <div className={styles.pyramidName}>{teacher.name || 'Unknown'}</div>
-                              <div className={styles.pyramidId}>{teacher.teacher_id || 'N/A'}</div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.position}</div>
+                              <div className={styles.pyramidId}>{profile.department}</div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Faculty Level */}
-                    {faculty.length > 0 && (
+                    {/* Coordinators Level */}
+                    {coordinators.length > 0 && (
                       <div className={styles.pyramidLevel}>
-                        <div className={styles.levelLabel}>
-                          <FaChalkboardTeacher /> Faculty Members
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('coordinator').color }}>
+                          {getRoleInfo('coordinator').icon} Coordinators ({coordinators.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {faculty.slice(0, 8).map((teacher) => (
+                          {coordinators.map((profile) => (
                             <div
-                              key={teacher.id}
-                              className={`${styles.pyramidCard} ${styles.facultyCard} ${selectedTeacher?.id === teacher.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectTeacher(teacher)}
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.coordinatorCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
                             >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(teacher.role).bgColor, borderColor: getRoleInfo(teacher.role).color }}>
-                                {getInitials(teacher.name)}
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
                               </div>
-                              <div className={styles.pyramidName}>{teacher.name || 'Unknown'}</div>
-                              <div className={styles.pyramidId}>{teacher.teacher_id || 'N/A'}</div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.position}</div>
+                              <div className={styles.pyramidId}>{profile.department}</div>
                             </div>
                           ))}
-                          {faculty.length > 8 && (
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Faculty Members Level */}
+                    {facultyMembers.length > 0 && (
+                      <div className={styles.pyramidLevel}>
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('faculty').color }}>
+                          {getRoleInfo('faculty').icon} Faculty Members ({facultyMembers.length})
+                        </div>
+                        <div className={styles.levelCards}>
+                          {facultyMembers.slice(0, 12).map((profile) => (
+                            <div
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.facultyCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
+                            >
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
+                              </div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.employment_type}</div>
+                              <div className={styles.pyramidId}>{profile.department}</div>
+                            </div>
+                          ))}
+                          {facultyMembers.length > 12 && (
                             <div className={styles.moreIndicator}>
-                              +{faculty.length - 8} more
+                              +{facultyMembers.length - 12} more faculty
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Staff Members Level */}
+                    {staffMembers.length > 0 && (
+                      <div className={styles.pyramidLevel}>
+                        <div className={styles.levelLabel} style={{ color: getRoleInfo('staff').color }}>
+                          {getRoleInfo('staff').icon} Staff ({staffMembers.length})
+                        </div>
+                        <div className={styles.levelCards}>
+                          {staffMembers.slice(0, 8).map((profile) => (
+                            <div
+                              key={profile.id}
+                              className={`${styles.pyramidCard} ${styles.staffCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                              onClick={() => handleSelectProfile(profile)}
+                            >
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                                {getInitials(profile.full_name)}
+                              </div>
+                              <div className={styles.pyramidName}>{profile.full_name}</div>
+                              <div className={styles.pyramidPosition}>{profile.position}</div>
+                              <div className={styles.pyramidId}>{profile.department}</div>
+                            </div>
+                          ))}
+                          {staffMembers.length > 8 && (
+                            <div className={styles.moreIndicator}>
+                              +{staffMembers.length - 8} more staff
                             </div>
                           )}
                         </div>
@@ -551,128 +723,148 @@ function FacultyProfilesContent() {
                     )}
                   </div>
 
-                  {/* Carousel Section */}
-                  <div className={styles.carouselSection}>
-                    <h2 className={styles.carouselTitle}>Individual Profiles</h2>
-                    
-                    <div className={styles.carouselContainer}>
-                      <button 
-                        className={`${styles.carouselButton} ${styles.prevButton}`}
-                        onClick={handlePrevious}
-                        disabled={currentIndex === 0}
-                      >
-                        <FaChevronLeft />
-                      </button>
+                  {/* Selected Profile Detail Card */}
+                  {selectedProfile && (
+                    <div className={styles.carouselSection}>
+                      <h2 className={styles.carouselTitle}>Profile Details</h2>
+                      
+                      <div className={styles.carouselContainer}>
+                        <button 
+                          className={`${styles.carouselButton} ${styles.prevButton}`}
+                          onClick={handlePrevious}
+                          disabled={currentIndex === 0}
+                        >
+                          <FaChevronLeft />
+                        </button>
 
-                      <div className={styles.carouselContent} ref={carouselRef}>
-                        {selectedTeacher && (
+                        <div className={styles.carouselContent} ref={carouselRef}>
                           <div className={styles.profileCard}>
-                            <div className={styles.profileHeader} style={{ background: `linear-gradient(135deg, ${getRoleInfo(selectedTeacher.role).color}20 0%, ${getRoleInfo(selectedTeacher.role).color}40 100%)` }}>
-                              <div className={styles.profileBadge} style={{ backgroundColor: getRoleInfo(selectedTeacher.role).color }}>
-                                {getRoleInfo(selectedTeacher.role).icon}
-                                <span>{getRoleInfo(selectedTeacher.role).label}</span>
+                            <div className={styles.profileHeader} style={{ background: `linear-gradient(135deg, ${getRoleInfo(selectedProfile.role).color}20 0%, ${getRoleInfo(selectedProfile.role).color}40 100%)` }}>
+                              <div className={styles.profileBadge} style={{ backgroundColor: getRoleInfo(selectedProfile.role).color }}>
+                                {getRoleInfo(selectedProfile.role).icon}
+                                <span>{getRoleInfo(selectedProfile.role).label}</span>
                               </div>
-                              <div className={styles.profileAvatar} style={{ borderColor: getRoleInfo(selectedTeacher.role).color }}>
-                                {getInitials(selectedTeacher.name)}
+                              <div className={styles.employmentBadge} style={{ backgroundColor: getEmploymentBadge(selectedProfile.employment_type).color }}>
+                                {getEmploymentBadge(selectedProfile.employment_type).label}
                               </div>
-                              <h2 className={styles.profileName}>{selectedTeacher.name || 'Unknown'}</h2>
-                              <p className={styles.profileId}>{selectedTeacher.teacher_id || 'N/A'}</p>
+                              <div className={styles.profileAvatar} style={{ borderColor: getRoleInfo(selectedProfile.role).color }}>
+                                {getInitials(selectedProfile.full_name)}
+                              </div>
+                              <h2 className={styles.profileName}>{selectedProfile.full_name}</h2>
+                              <p className={styles.profilePosition}>{selectedProfile.position}</p>
+                              <p className={styles.profileId}>ID: {selectedProfile.faculty_id}</p>
                             </div>
 
                             <div className={styles.profileBody}>
                               <div className={styles.profileInfo}>
-                                <div className={styles.infoRow}>
-                                  <FaEnvelope className={styles.infoIcon} />
-                                  <div>
-                                    <span className={styles.infoLabel}>Email</span>
-                                    <span className={styles.infoValue}>{selectedTeacher.email || 'Not provided'}</span>
+                                {selectedProfile.email && (
+                                  <div className={styles.infoRow}>
+                                    <FaEnvelope className={styles.infoIcon} />
+                                    <div>
+                                      <span className={styles.infoLabel}>Email</span>
+                                      <span className={styles.infoValue}>{selectedProfile.email}</span>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
+                                {selectedProfile.phone && (
+                                  <div className={styles.infoRow}>
+                                    <FaPhone className={styles.infoIcon} />
+                                    <div>
+                                      <span className={styles.infoLabel}>Phone</span>
+                                      <span className={styles.infoValue}>{selectedProfile.phone}</span>
+                                    </div>
+                                  </div>
+                                )}
                                 <div className={styles.infoRow}>
                                   <FaBuilding className={styles.infoIcon} />
                                   <div>
                                     <span className={styles.infoLabel}>Department</span>
-                                    <span className={styles.infoValue}>{selectedTeacher.department || 'Not assigned'}</span>
+                                    <span className={styles.infoValue}>{selectedProfile.department || 'Not assigned'}</span>
                                   </div>
                                 </div>
                                 <div className={styles.infoRow}>
-                                  <FaCalendar className={styles.infoIcon} />
+                                  <FaGraduationCap className={styles.infoIcon} />
                                   <div>
-                                    <span className={styles.infoLabel}>Schedule Day</span>
-                                    <span className={styles.infoValue}>{selectedTeacher.schedule_day || 'Not set'}</span>
+                                    <span className={styles.infoLabel}>College</span>
+                                    <span className={styles.infoValue}>{selectedProfile.college || 'Not assigned'}</span>
                                   </div>
                                 </div>
-                                <div className={styles.infoRow}>
-                                  <FaClock className={styles.infoIcon} />
-                                  <div>
-                                    <span className={styles.infoLabel}>Schedule Time</span>
-                                    <span className={styles.infoValue}>{selectedTeacher.schedule_time || 'Not set'}</span>
+                                {selectedProfile.office_location && (
+                                  <div className={styles.infoRow}>
+                                    <FaMapMarkerAlt className={styles.infoIcon} />
+                                    <div>
+                                      <span className={styles.infoLabel}>Office Location</span>
+                                      <span className={styles.infoValue}>{selectedProfile.office_location}</span>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
+                                {selectedProfile.specialization && (
+                                  <div className={styles.infoRow}>
+                                    <FaStar className={styles.infoIcon} />
+                                    <div>
+                                      <span className={styles.infoLabel}>Specialization</span>
+                                      <span className={styles.infoValue}>{selectedProfile.specialization}</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
-                              <div className={styles.profileStats}>
-                                <div className={styles.statItem}>
-                                  <span className={styles.statNumber}>{selectedTeacher.scheduleCount}</span>
-                                  <span className={styles.statLabel}>Schedules</span>
-                                </div>
+                              <div className={styles.profileActions}>
+                                <button 
+                                  className={styles.deleteProfileButton}
+                                  onClick={() => handleDeleteProfile(selectedProfile)}
+                                  disabled={deleting === selectedProfile.id}
+                                >
+                                  {deleting === selectedProfile.id ? (
+                                    <FaSpinner className={styles.spinnerSmall} />
+                                  ) : (
+                                    <FaTrash />
+                                  )}
+                                  Delete Profile
+                                </button>
                               </div>
                             </div>
                           </div>
-                        )}
+                        </div>
+
+                        <button 
+                          className={`${styles.carouselButton} ${styles.nextButton}`}
+                          onClick={handleNext}
+                          disabled={currentIndex >= filteredFaculty.length - 1}
+                        >
+                          <FaChevronRight />
+                        </button>
                       </div>
 
-                      <button 
-                        className={`${styles.carouselButton} ${styles.nextButton}`}
-                        onClick={handleNext}
-                        disabled={currentIndex >= filteredTeachers.length - 1}
-                      >
-                        <FaChevronRight />
-                      </button>
-                    </div>
-
-                    {/* Carousel Indicators */}
-                    <div className={styles.carouselIndicators}>
-                      <span className={styles.indicatorText}>
-                        {currentIndex + 1} of {filteredTeachers.length}
-                      </span>
-                      <div className={styles.indicatorDots}>
-                        {filteredTeachers.slice(Math.max(0, currentIndex - 3), Math.min(filteredTeachers.length, currentIndex + 4)).map((_, idx) => {
-                          const actualIndex = Math.max(0, currentIndex - 3) + idx
-                          return (
-                            <button
-                              key={actualIndex}
-                              className={`${styles.dot} ${actualIndex === currentIndex ? styles.activeDot : ''}`}
-                              onClick={() => {
-                                setCurrentIndex(actualIndex)
-                                setSelectedTeacher(filteredTeachers[actualIndex])
-                              }}
-                            />
-                          )
-                        })}
+                      {/* Carousel Indicators */}
+                      <div className={styles.carouselIndicators}>
+                        <span className={styles.indicatorText}>
+                          {currentIndex + 1} of {filteredFaculty.length}
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Quick Navigation List */}
                   <div className={styles.quickNavSection}>
-                    <h3 className={styles.quickNavTitle}>All Faculty ({filteredTeachers.length})</h3>
+                    <h3 className={styles.quickNavTitle}>All Faculty ({filteredFaculty.length})</h3>
                     <div className={styles.quickNavGrid}>
-                      {filteredTeachers.map((teacher, idx) => {
-                        const roleInfo = getRoleInfo(teacher.role)
+                      {filteredFaculty.map((profile) => {
+                        const roleInfo = getRoleInfo(profile.role)
                         return (
                           <button
-                            key={teacher.id}
-                            className={`${styles.quickNavItem} ${selectedTeacher?.id === teacher.id ? styles.activeNav : ''}`}
-                            onClick={() => handleSelectTeacher(teacher)}
+                            key={profile.id}
+                            className={`${styles.quickNavItem} ${selectedProfile?.id === profile.id ? styles.activeNav : ''}`}
+                            onClick={() => handleSelectProfile(profile)}
                             style={{ borderLeftColor: roleInfo.color }}
                           >
                             <span className={styles.quickNavIcon} style={{ color: roleInfo.color }}>
                               {roleInfo.icon}
                             </span>
                             <div className={styles.quickNavInfo}>
-                              <span className={styles.quickNavName}>{teacher.name || 'Unknown'}</span>
-                              <span className={styles.quickNavId}>{teacher.teacher_id || 'N/A'}</span>
+                              <span className={styles.quickNavName}>{profile.full_name}</span>
+                              <span className={styles.quickNavPosition}>{profile.position}</span>
+                              <span className={styles.quickNavDept}>{profile.department}</span>
                             </div>
                           </button>
                         )
@@ -681,7 +873,7 @@ function FacultyProfilesContent() {
                   </div>
                 </>
               )}
-            </div>
+            </>
           )}
         </div>
       </main>
