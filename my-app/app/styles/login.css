@@ -1099,20 +1099,121 @@ body {
 }
 
 /* ==================== Responsive Design ==================== */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .login-page {
+    padding: 20px 0;
+    min-height: 100vh;
+  }
+
   .card {
     margin: 20px;
-    padding: 30px 20px;
+    padding: 32px 24px;
     max-width: none;
+    border-width: 2px;
+  }
+
+  .title {
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .button {
+    padding: 13px 20px;
+    font-size: 15px;
+  }
+
+  .form {
+    gap: 18px;
+  }
+
+  /* Reduce background effects on mobile for performance */
+  .quantum-logo {
+    width: 500px;
+    height: 500px;
+    opacity: 0.08;
+  }
+
+  .quantum-cube-1,
+  .quantum-cube-2,
+  .quantum-cube-3 {
+    display: none; /* Hide extra cubes on mobile */
+  }
+
+  .quantum-orb-1,
+  .quantum-orb-2 {
+    opacity: 0.3;
+  }
+
+  .stars::after {
+    display: none; /* Reduce star layers on mobile */
+  }
+
+  .input {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .label-text {
+    font-size: 13px;
+  }
+
+  .password-input-wrapper .toggle-password {
+    padding: 10px;
+    right: 8px;
+  }
+
+  /* Make checkbox easier to tap */
+  .checkbox-input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .checkbox-text {
+    font-size: 13px;
+  }
+
+  /* Improve select on mobile */
+  .select-input {
+    background-position: right 10px center;
+    padding-right: 36px;
+  }
+
+  /* Floating particles - reduce on mobile */
+  .floating-particles .particle:nth-child(n+11) {
+    display: none; /* Show only 10 particles on tablet */
+  }
+}
+
+@media (max-width: 600px) {
+  .login-page {
+    padding: 16px 0;
+  }
+
+  .card {
+    margin: 16px;
+    padding: 28px 20px;
+  }
+
+  .card-header {
+    margin-bottom: 24px;
   }
 
   .title {
     font-size: 24px;
   }
 
+  .subtitle {
+    font-size: 12px;
+  }
+
   .button {
-    padding: 12px 20px;
+    padding: 12px 18px;
     font-size: 14px;
+    font-weight: 600;
   }
 
   .form {
@@ -1125,15 +1226,117 @@ body {
     opacity: 0.05;
   }
 
+  .quantum-orb-1 {
+    width: 200px;
+    height: 200px;
+  }
+
+  .quantum-orb-2 {
+    width: 150px;
+    height: 150px;
+  }
+
+  .glow-effect {
+    opacity: 0.4;
+  }
+
   .input {
     padding: 11px 14px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+  }
+
+  .label-text {
+    font-size: 13px;
+  }
+
+  .switch-text {
+    font-size: 13px;
+  }
+
+  .link-button {
+    font-size: 13px;
+  }
+
+  .message {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .footer-text {
+    font-size: 11px;
+  }
+
+  /* Hide even more particles on mobile */
+  .floating-particles .particle:nth-child(n+6) {
+    display: none; /* Show only 5 particles on mobile */
+  }
+
+  /* Sparkle particles for registration success */
+  .sparkle-overlay .sparkle-particle:nth-child(n+16) {
+    display: none; /* Reduce sparkle particles */
+  }
+
+  /* Make quantum portal smaller */
+  .quantum-portal {
+    width: 150px;
+    height: 150px;
+  }
+
+  .portal-ring {
+    width: 150px;
+    height: 150px;
+  }
+
+  .portal-core {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    margin: 12px;
+    padding: 24px 18px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .button {
+    padding: 11px 16px;
+    font-size: 14px;
+  }
+
+  .input {
+    padding: 10px 12px;
+  }
+
+  .password-input-wrapper .input {
+    padding-right: 38px;
+  }
+
+  .toggle-password {
+    right: 6px;
   }
 }
 
 @media (max-width: 400px) {
+  .login-page {
+    padding: 12px 0;
+  }
+
   .card {
-    padding: 24px 16px;
+    margin: 10px;
+    padding: 20px 16px;
+  }
+
+  .card-header {
+    margin-bottom: 20px;
   }
 
   .title {
@@ -1141,7 +1344,7 @@ body {
   }
 
   .subtitle {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .label-text {
@@ -1150,7 +1353,7 @@ body {
 
   .input {
     padding: 10px 12px;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .button {
@@ -1161,5 +1364,115 @@ body {
   .switch-row {
     flex-direction: column;
     gap: 6px;
+    text-align: center;
+  }
+
+  .switch-text {
+    font-size: 12px;
+  }
+
+  .link-button {
+    font-size: 12px;
+  }
+
+  .quantum-logo {
+    width: 300px;
+    height: 300px;
+    opacity: 0.03;
+  }
+
+  /* Minimal particles on very small screens */
+  .floating-particles .particle:nth-child(n+4) {
+    display: none; /* Show only 3 particles */
+  }
+
+  .sparkle-overlay .sparkle-particle:nth-child(n+11) {
+    display: none; /* Show only 10 sparkle particles */
+  }
+
+  .quantum-portal {
+    width: 120px;
+    height: 120px;
+  }
+
+  .portal-ring {
+    width: 120px;
+    height: 120px;
+  }
+
+  .portal-core {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 900px) and (max-height: 500px) {
+  .login-page {
+    padding: 20px 0;
+  }
+
+  .card {
+    margin: 20px auto;
+    padding: 24px;
+    max-width: 480px;
+  }
+
+  .card-header {
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .form {
+    gap: 12px;
+  }
+
+  .form-group {
+    gap: 4px;
+  }
+
+  .button {
+    padding: 10px 16px;
+  }
+
+  .quantum-logo,
+  .quantum-orb-1,
+  .quantum-orb-2 {
+    opacity: 0.05;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .button:hover {
+    transform: none;
+  }
+
+  .button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .link-button:hover {
+    text-decoration: underline;
+  }
+
+  .toggle-password {
+    padding: 12px;
+  }
+
+  /* Larger tap targets */
+  .checkbox-label {
+    padding: 4px 0;
+  }
+
+  .switch-row {
+    padding: 4px 0;
   }
 }

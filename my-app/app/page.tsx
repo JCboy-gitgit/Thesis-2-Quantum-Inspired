@@ -68,6 +68,30 @@ function PageContent(): JSX.Element {
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
   const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('mode') === 'admin')
 
+  // Particle data - generated on client side only to avoid hydration mismatch
+  const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
+  const [sparkleParticles, setSparkleParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
+
+  // Generate particles on mount (client-side only)
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 20 }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 5}s`,
+        duration: `${8 + Math.random() * 12}s`
+      }))
+    )
+    setSparkleParticles(
+      Array.from({ length: 30 }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 2}s`,
+        duration: `${2 + Math.random() * 2}s`
+      }))
+    )
+  }, [])
+
   // Fetch departments on mount
   useEffect(() => {
     fetchDepartments()
@@ -198,15 +222,15 @@ function PageContent(): JSX.Element {
         <div className="glow-effect"></div>
         {/* Floating particles */}
         <div className="floating-particles">
-          {Array.from({ length: 20 }, (_, i) => (
+          {particles.map((particle, i) => (
             <span
               key={i}
               className="particle"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${8 + Math.random() * 12}s`
+                left: particle.left,
+                top: particle.top,
+                animationDelay: particle.delay,
+                animationDuration: particle.duration
               }}
             ></span>
           ))}
@@ -217,15 +241,15 @@ function PageContent(): JSX.Element {
       {registerSuccess && (
         <div className="animation-overlay sparkle-overlay">
           <div className="starry-background"></div>
-          {Array.from({ length: 30 }, (_, i) => (
+          {sparkleParticles.map((particle, i) => (
             <span
               key={i}
               className="sparkle-particle"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 2}s`
+                left: particle.left,
+                top: particle.top,
+                animationDelay: particle.delay,
+                animationDuration: particle.duration
               }}
             ></span>
           ))}
