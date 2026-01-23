@@ -15,9 +15,11 @@ import {
   ChevronRight,
   Building2,
   GraduationCap,
-  RefreshCw
+  RefreshCw,
+  ChevronDown
 } from 'lucide-react'
 import styles from './styles.module.css'
+import RoomViewer2D from '@/app/components/RoomViewer2D'
 
 interface UserProfile {
   id: string
@@ -48,6 +50,7 @@ export default function FacultyHomePage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
   const [currentClass, setCurrentClass] = useState<ScheduleItem | null>(null)
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [greeting, setGreeting] = useState('')
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
@@ -60,6 +63,22 @@ export default function FacultyHomePage() {
     const interval = setInterval(updateGreeting, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Don't close if clicking on the profile button or menu items
+      if (!target.closest('.profileSection') && !target.closest('.profileMenuItem')) {
+        setShowProfileMenu(false)
+      }
+    }
+
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileMenu])
 
   const updateGreeting = () => {
     const hour = new Date().getHours()
@@ -155,8 +174,21 @@ export default function FacultyHomePage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/faculty/login')
+    try {
+      console.log('Logging out...')
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Logout error:', error)
+      } else {
+        console.log('Logout successful')
+      }
+      // Force redirect to login page
+      router.push('/faculty/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Even if logout fails, redirect to login
+      router.push('/faculty/login')
+    }
   }
 
   const formatTime = (time: string) => {
@@ -199,13 +231,46 @@ export default function FacultyHomePage() {
           <button className={styles.iconBtn} title="Notifications">
             <Bell size={20} />
           </button>
-          <button className={styles.iconBtn} onClick={() => router.push('/faculty/profile')} title="Profile">
-            <Settings size={20} />
-          </button>
-          <button className={styles.logoutBtn} onClick={handleLogout}>
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
+          
+          {/* Profile Icon with Dropdown */}
+          <div className={`${styles.profileSection} profileSection`}>
+            <button 
+              className={styles.profileBtn}
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              title="Profile Menu"
+            >
+              <div className={styles.profileAvatar}>
+                <User size={20} />
+              </div>
+              <ChevronDown size={14} className={`${styles.profileChevron} ${showProfileMenu ? styles.rotated : ''}`} />
+            </button>
+            
+            {showProfileMenu && (
+              <div className={styles.profileMenu}>
+                <div 
+                  className={styles.profileMenuItem}
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    router.push('/faculty/profile')
+                  }}
+                >
+                  <Settings size={16} />
+                  <span>Profile</span>
+                </div>
+                <div className={styles.profileMenuDivider}></div>
+                <div 
+                  className={styles.profileMenuItem}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleLogout()
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -328,6 +393,9 @@ export default function FacultyHomePage() {
             </div>
           )}
         </section>
+
+        {/* Room Viewer 2D */}
+        <RoomViewer2D />
 
         {/* Quick Actions */}
         <section className={styles.quickActions}>
