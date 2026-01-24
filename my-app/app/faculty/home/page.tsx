@@ -16,16 +16,24 @@ import {
   Building2,
   GraduationCap,
   RefreshCw,
-  ChevronDown
+  ChevronDown,
+  Sun,
+  Moon,
+  Palette,
+  Menu,
+  X
 } from 'lucide-react'
 import styles from './styles.module.css'
 import RoomViewer2D from '@/app/components/RoomViewer2D'
+import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 
 interface UserProfile {
   id: string
   email: string
   full_name: string
   department_id?: number
+  department?: string
+  college?: string
   role: string
   is_active: boolean
   avatar_url?: string
@@ -45,12 +53,15 @@ interface ScheduleItem {
 
 export default function FacultyHomePage() {
   const router = useRouter()
+  const { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors } = useTheme()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
   const [currentClass, setCurrentClass] = useState<ScheduleItem | null>(null)
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [greeting, setGreeting] = useState('')
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
@@ -72,13 +83,17 @@ export default function FacultyHomePage() {
       if (!target.closest('.profileSection') && !target.closest('.profileMenuItem')) {
         setShowProfileMenu(false)
       }
+      // Close theme menu if clicking outside
+      if (!target.closest(`.${styles.themeSection}`)) {
+        setShowThemeMenu(false)
+      }
     }
 
-    if (showProfileMenu) {
+    if (showProfileMenu || showThemeMenu) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showProfileMenu])
+  }, [showProfileMenu, showThemeMenu])
 
   const updateGreeting = () => {
     const hour = new Date().getHours()
@@ -116,6 +131,15 @@ export default function FacultyHomePage() {
       }
 
       setUser(userData)
+      
+      // Set college theme based on user's college/department
+      if (userData.college) {
+        const collegeLower = userData.college.toLowerCase()
+        const matchedTheme = COLLEGE_THEME_MAP[collegeLower]
+        if (matchedTheme) {
+          setCollegeTheme(matchedTheme)
+        }
+      }
 
       // Fetch schedules for this faculty (mock data for now)
       await fetchSchedules(userData.email)
@@ -218,16 +242,98 @@ export default function FacultyHomePage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.pageContainer} data-college-theme={collegeTheme}>
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
+          <button 
+            className={styles.mobileMenuBtn}
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+          >
+            {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+          </button>
           <div className={styles.logo}>
             <span className={styles.logoIcon}>Q</span>
             <span className={styles.logoText}>Qtime Faculty</span>
           </div>
         </div>
         <div className={styles.headerRight}>
+          {/* Theme Toggle Button */}
+          <div className={styles.themeSection}>
+            <button 
+              className={styles.iconBtn} 
+              title="Theme Settings"
+              onClick={() => setShowThemeMenu(!showThemeMenu)}
+            >
+              <Palette size={20} />
+            </button>
+            
+            {showThemeMenu && (
+              <div className={styles.themeMenu}>
+                <div className={styles.themeMenuHeader}>
+                  <Palette size={16} />
+                  <span>Theme Settings</span>
+                </div>
+                
+                <div className={styles.themeSection}>
+                  <span className={styles.themeSectionLabel}>Mode</span>
+                  <div className={styles.themeModeButtons}>
+                    <button 
+                      className={`${styles.themeModeBtn} ${theme === 'light' ? styles.active : ''}`}
+                      onClick={() => setTheme('light')}
+                    >
+                      <Sun size={16} /> Light
+                    </button>
+                    <button 
+                      className={`${styles.themeModeBtn} ${theme === 'dark' ? styles.active : ''}`}
+                      onClick={() => setTheme('dark')}
+                    >
+                      <Moon size={16} /> Dark
+                    </button>
+                  </div>
+                </div>
+                
+                <div className={styles.themeSection}>
+                  <span className={styles.themeSectionLabel}>College Theme</span>
+                  <div className={styles.collegeThemeOptions}>
+                    <button 
+                      className={`${styles.collegeThemeBtn} ${collegeTheme === 'science' ? styles.active : ''}`}
+                      onClick={() => setCollegeTheme('science')}
+                      style={{ '--btn-color': 'rgba(37, 150, 190, 1)' } as React.CSSProperties}
+                    >
+                      <span className={styles.colorDot}></span>
+                      College of Science
+                    </button>
+                    <button 
+                      className={`${styles.collegeThemeBtn} ${collegeTheme === 'arts-letters' ? styles.active : ''}`}
+                      onClick={() => setCollegeTheme('arts-letters')}
+                      style={{ '--btn-color': 'rgba(249, 115, 22, 1)' } as React.CSSProperties}
+                    >
+                      <span className={styles.colorDot}></span>
+                      Arts & Letters
+                    </button>
+                    <button 
+                      className={`${styles.collegeThemeBtn} ${collegeTheme === 'architecture' ? styles.active : ''}`}
+                      onClick={() => setCollegeTheme('architecture')}
+                      style={{ '--btn-color': 'rgba(127, 29, 29, 1)' } as React.CSSProperties}
+                    >
+                      <span className={styles.colorDot}></span>
+                      Architecture & Fine Arts
+                    </button>
+                    <button 
+                      className={`${styles.collegeThemeBtn} ${collegeTheme === 'default' ? styles.active : ''}`}
+                      onClick={() => setCollegeTheme('default')}
+                      style={{ '--btn-color': 'rgba(0, 212, 255, 1)' } as React.CSSProperties}
+                    >
+                      <span className={styles.colorDot}></span>
+                      Default (Cyan)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
           <button className={styles.iconBtn} title="Notifications">
             <Bell size={20} />
           </button>

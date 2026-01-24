@@ -129,7 +129,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       hasSubmenu: true,
       submenu: [
         {
-          label: 'Courses Schedules',
+          label: 'Courses & Sections',
           path: '/LandingPages/CoursesManagement',
           icon: BookOpen,
           exact: true

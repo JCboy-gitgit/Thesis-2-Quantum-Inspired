@@ -600,7 +600,7 @@
   color: #3b82f6;
 }
 
-.featureProjector {
+.featureTv {
   background: rgba(168, 85, 247, 0.1);
   color: #a855f7;
 }
@@ -773,6 +773,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
 }
 
 /* No Selection Prompt */
@@ -824,19 +830,406 @@
   to { transform: rotate(360deg); }
 }
 
-/* Dark mode */
-:global(.dark) .headerIcon {
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+/* ==================== Search & Filter Card - NEW Classroom Design ==================== */
+
+.searchFilterCard {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--card-border);
+}
+
+/* Search Section */
+.searchSection {
+  margin-bottom: 20px;
+}
+
+.searchInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 14px 48px;
+  border: 2px solid var(--card-border);
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--content-text);
+  background: var(--background);
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-alpha);
+}
+
+.searchInput::placeholder {
+  color: var(--text-light);
+}
+
+.clearSearchBtn {
+  position: absolute;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--submenu-bg);
+  color: var(--text-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearSearchBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Filters Row */
+.filtersRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterDropdowns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.filterSelect {
+  padding: 10px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--background);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Amenity Filter Buttons */
+.amenityFilters {
+  display: flex;
+  gap: 8px;
+}
+
+.amenityBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text-light);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.amenityBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.amenityBtn.amenityActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* Clear Filters Button */
+.clearFiltersBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearFiltersBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Results Summary */
+.resultsSummary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.resultsSummary strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ==================== Building Blocks View ==================== */
+
+.blocksContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.blockSection {
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.blockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  cursor: pointer;
+  background: var(--card-bg);
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.blockHeader:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.02));
+}
+
+.blockTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--content-text);
+}
+
+.blockCount {
+  background: var(--primary-alpha);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.blockContent {
+  border-top: 1px solid var(--card-border);
+}
+
+/* Floor Section */
+.floorSection {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.floorSection:last-child {
+  border-bottom: none;
+}
+
+.floorHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.floorTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--content-text);
+}
+
+.floorRoomCount {
+  background: var(--submenu-bg);
+  color: var(--text-light);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+/* Classroom Cards Grid */
+.roomsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+/* Individual Classroom Card */
+.roomCard {
+  background: var(--background);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 18px;
+  transition: all 0.25s ease;
+}
+
+.roomCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.roomCardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.roomIcon {
+  width: 42px;
+  height: 42px;
+  background: var(--primary-gradient);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.roomTitleArea {
+  flex: 1;
+  min-width: 0;
+}
+
+.roomName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--content-text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.roomCode {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 2px;
+  display: block;
+}
+
+.roomTypeBadge {
+  background: var(--primary-alpha);
+  color: var(--primary);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Room Details */
+.roomDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.roomDetailItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.roomDetailItem strong {
+  color: var(--content-text);
+}
+
+/* Amenities Tags */
+.roomAmenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.amenityTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.amenityAvailable {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.amenityUnavailable {
+  background: var(--submenu-bg);
+  color: var(--text-light);
+  opacity: 0.6;
+}
+
+/* Dark mode adjustments */
+:global(.dark) .roomCard {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 :global(.dark) .roomCard:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--primary);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
 }
 
-/* Responsive */
+:global(.dark) .amenityAvailable {
+  background: rgba(34, 197, 94, 0.15);
+}
+
+:global(.dark) .amenityUnavailable {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ==================== Responsive Design ==================== */
+
 @media (max-width: 1200px) {
-  .resultsGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .roomsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
 
@@ -845,24 +1238,34 @@
     margin-left: 0;
   }
   
-  .searchInputWrapper {
-    min-width: 100%;
+  .filtersRow {
+    flex-direction: column;
+    align-items: stretch;
   }
   
-  .quickFilters {
-    width: 100%;
+  .filterDropdowns {
+    flex-direction: column;
   }
   
   .filterSelect {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
   
-  .filtersGrid {
+  .amenityFilters {
+    justify-content: flex-start;
+  }
+  
+  .roomsGrid {
     grid-template-columns: 1fr;
   }
   
-  .resultsGrid {
-    grid-template-columns: 1fr;
+  .roomCardHeader {
+    flex-wrap: wrap;
+  }
+  
+  .roomTypeBadge {
+    margin-top: 8px;
+    width: 100%;
+    text-align: center;
   }
 }

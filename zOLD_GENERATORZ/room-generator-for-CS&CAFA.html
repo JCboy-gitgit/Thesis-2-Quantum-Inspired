@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Inventory Generator</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        p { color: #666; line-height: 1.6; }
+        button {
+            background-color: #28a745; color: white; border: none; padding: 15px 30px;
+            font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s;
+        }
+        button:hover { background-color: #218838; }
+        .preview { margin-top: 20px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CS & CAFA Room Inventory</h1>
+    <p>This tool generates a CSV file containing the data extracted from:</p>
+    <ul>
+        <li><strong>CS Rooms Inventory 2024-2025</strong> (Federizo Hall 1st/2nd Floor & Labs)</li>
+        <li><strong>CAFA Facilities Inventory 2025</strong> (Federizo Hall 3rd Floor)</li>
+    </ul>
+    <p>It includes the inferred columns <em>Has_Whiteboard</em> and <em>Has_TV</em> based on the room classification.</p>
+    
+    <button onclick="downloadCSV()">Download Room Inventory CSV</button>
+
+    <div class="preview">
+        <p><strong>Data Logic Used:</strong><br>
+        - <strong>Aircon:</strong> Set to 'Yes'/'No' for CAFA (as specified in doc); 'Unknown' for CS.<br>
+        - <strong>Whiteboard:</strong> Assumed 'Yes' for Lecture Rooms, Labs, and Drafting Rooms.<br>
+        - <strong>TV:</strong> Assumed 'Yes' for AVRs, Multimedia Labs, and Computer Rooms only.</p>
+    </div>
+</div>
+
+<script>
+    // DATA SOURCE: Extracted from "CS Rooms Inventory and Classifications.pdf" and "IMG20260120205927.jpg"
+    const data = [
+        // --- COLLEGE OF SCIENCE (Source: CS Rooms Inventory) ---
+        // Floor 1
+        { id: "FH 104", name: "Medical Laboratory A", bldg: "Federizo Hall", floor: "1", college: "College of Science", type: "Laboratory", spec: "Medical Technology", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 105", name: "Medical Laboratory B", bldg: "Federizo Hall", floor: "1", college: "College of Science", type: "Laboratory", spec: "Medical Technology", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 106", name: "Biology Laboratory", bldg: "Federizo Hall", floor: "1", college: "College of Science", type: "Laboratory", spec: "Biology", cap: 40, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 107", name: "Physics Laboratory", bldg: "Federizo Hall", floor: "1", college: "College of Science", type: "Laboratory", spec: "Physics", cap: 40, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 108", name: "", bldg: "Federizo Hall", floor: "1", college: "College of Science", type: "Lecture Room", spec: "General", cap: 30, ac: "Unknown", wb: "Yes", tv: "No" },
+        
+        // Floor 2
+        { id: "FH 109", name: "Research Laboratory", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Laboratory", spec: "Research", cap: 10, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 110", name: "Physics Laboratory", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Laboratory", spec: "Physics", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "", name: "Accreditation Room", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "Accreditation", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 201A", name: "", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "General", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 201B", name: "", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "General", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "N 202", name: "", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "General", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" }, // Source lists location as Federizo Hall (2nd floor) despite 'N' prefix
+        { id: "", name: "Research & Extension", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "General", cap: 20, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "AVR A", name: "Audio Visual Room A", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "AVR", spec: "Audio Visual", cap: 50, ac: "Unknown", wb: "Yes", tv: "Yes" },
+        { id: "AVR B", name: "Audio Visual Room B", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "AVR", spec: "Audio Visual", cap: 50, ac: "Unknown", wb: "Yes", tv: "Yes" },
+        { id: "FH 205", name: "Statistics Laboratory", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Laboratory", spec: "Statistics", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 206", name: "", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Lecture Room", spec: "General", cap: 50, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "FH 207", name: "Multimedia Laboratory", bldg: "Federizo Hall", floor: "2", college: "College of Science", type: "Laboratory", spec: "Multimedia", cap: 50, ac: "Unknown", wb: "Yes", tv: "Yes" },
+        
+        // Page 2 (Misc Labs)
+        { id: "", name: "Biology Laboratory", bldg: "Unknown", floor: "", college: "College of Science", type: "Laboratory", spec: "Biology", cap: 45, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "", name: "Physics Laboratory", bldg: "Unknown", floor: "", college: "College of Science", type: "Laboratory", spec: "Physics", cap: 45, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "", name: "Environmental and Food Laboratory", bldg: "Unknown", floor: "", college: "College of Science", type: "Laboratory", spec: "Environmental/Food", cap: 45, ac: "Unknown", wb: "Yes", tv: "No" },
+        { id: "", name: "Chemistry Laboratory", bldg: "Unknown", floor: "", college: "College of Science", type: "Laboratory", spec: "Chemistry", cap: 45, ac: "Unknown", wb: "Yes", tv: "No" },
+
+        // --- COLLEGE OF ARCHITECTURE & FINE ARTS (Source: CAFA Inventory Image) ---
+        // Offices (Floor implied as 3 based on FH 3xx series being in same list)
+        { id: "", name: "Dean's Office", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Office", spec: "Administrative", cap: 4, ac: "Yes", wb: "No", tv: "No" },
+        { id: "", name: "Research and Extension", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Office", spec: "Administrative", cap: 3, ac: "Yes", wb: "No", tv: "No" },
+        { id: "", name: "Accreditation Room", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Office", spec: "Administrative", cap: 6, ac: "Yes", wb: "No", tv: "No" },
+
+        // Lecture Rooms
+        { id: "FH 301", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 302", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 303", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 35, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 304", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 305", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 306", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "No", wb: "Yes", tv: "No" },
+        { id: "FH 307", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "No", wb: "Yes", tv: "No" },
+        { id: "FH 308", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "No", wb: "Yes", tv: "No" },
+        { id: "FH 309", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "No", wb: "Yes", tv: "No" },
+        { id: "FH 311a", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 311b", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "General", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+
+        // CAFA Labs and Specialized Rooms
+        { id: "Computer Room", name: "Computer Room", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Laboratory", spec: "Computer", cap: 50, ac: "Yes", wb: "Yes", tv: "Yes" },
+        { id: "Old AVR", name: "Old AVR", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "Audio Visual", cap: 50, ac: "Yes", wb: "Yes", tv: "Yes" },
+        { id: "Tropical Lab", name: "Tropical Lab", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Lecture Room", spec: "Tropical Studies", cap: 35, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "Photo Lab", name: "Photo Lab", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Laboratory", spec: "Photography", cap: 10, ac: "Yes", wb: "Yes", tv: "No" },
+        
+        // Drafting Rooms
+        { id: "FH 314", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Drafting Room", spec: "Architecture", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 315", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Drafting Room", spec: "Architecture", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 316", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Drafting Room", spec: "Architecture", cap: 50, ac: "Yes", wb: "Yes", tv: "No" },
+        { id: "FH 317", name: "", bldg: "Federizo Hall", floor: "3", college: "CAFA", type: "Drafting Room", spec: "Architecture", cap: 50, ac: "Yes", wb: "Yes", tv: "No" }
+    ];
+
+    function downloadCSV() {
+        const headers = ["Room_ID", "Room_Name", "Building", "Floor", "College", "Primary_Type", "Specific_Classification", "Capacity", "Is_Airconditioned", "Has_Whiteboard", "Has_TV"];
+        
+        let csvContent = "data:text/csv;charset=utf-8," 
+            + headers.join(",") + "\n";
+
+        data.forEach(row => {
+            let rowStr = [
+                row.id,
+                `"${row.name}"`, // Quote names to handle commas
+                row.bldg,
+                row.floor,
+                row.college,
+                row.type,
+                row.spec,
+                row.cap,
+                row.ac,
+                row.wb,
+                row.tv
+            ].join(",");
+            csvContent += rowStr + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "BulSU_Room_Inventory.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>

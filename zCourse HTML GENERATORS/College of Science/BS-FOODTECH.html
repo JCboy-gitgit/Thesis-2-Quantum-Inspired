@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Food Technology CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #f5576c;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #f5576c;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BS Food Technology Curriculum CSV Generator</h1>
+        <p class="subtitle">AY 2024-2025 - Convert curriculum data to CSV format</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 10 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // First Year - First Semester
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "PE 10", title: "PATHFit 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "NSTP 10", title: "National Service Training Program 1", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "CHE 102/L", title: "Qualitative Chemistry", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "BFP 201/201L", title: "Basic Food Preparation", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "First Semester", grade: "", code: "FIF 102", title: "Introduction to Food Science and Technology", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // First Year - Second Semester
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "PHY 106", title: "Applied Physics", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "MAT 204", title: "Calculus (Integral and Differential)", labUnits: "", labHours: "", lecHours: "5", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "STS 101", title: "Science Technology and Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "PE 11", title: "PATHFit 2", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "NSTP 11", title: "National Service Training Program 2", labUnits: "", labHours: "", lecHours: "3", prereq: "NSTP 10"},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "FMB 104/104L", title: "General Microbiology", labUnits: "2", labHours: "6", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "CHE 105/105L", title: "Quantitative Chemistry", labUnits: "1", labHours: "3", lecHours: "2", prereq: "CHE102/L"},
+            {degree: "Bachelor of Science in Food Technology", year: "First Year", semester: "Second Semester", grade: "", code: "FCS 401", title: "Culinary Science and Technology", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Second Year - First Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MST 101d", title: "Living in the IT Era", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "PE 12", title: "PATHFit 3", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't-ibang Disiplina", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "CHE202/202L", title: "Organic Chemistry", labUnits: "1", labHours: "3", lecHours: "2", prereq: "CHE105/105L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "FBM 103", title: "Business Management and Entrepreneurship", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "FMB 203/203L", title: "Food Microbiology", labUnits: "2", labHours: "6", lecHours: "3", prereq: "FMB 104/104L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "FFP 310", title: "Food Packaging and Labelling", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "RLW 101", title: "Life and Works of Rizal", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "First Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Second Year - Second Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "PE 13", title: "PATHFit 4", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "FPR 206/206L", title: "Food Processing I", labUnits: "1", labHours: "3", lecHours: "2", prereq: "FMB 206/206L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "CHE 207/207L", title: "General Biochemistry", labUnits: "1", labHours: "3", lecHours: "2", prereq: "CHE202/202L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "FCH 208/208L", title: "Food Chemistry I", labUnits: "2", labHours: "6", lecHours: "3", prereq: "CHE 207/207L, CHE202/202L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MAT305", title: "Applied Statistics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "CHE 306/306L", title: "Physical Chemistry", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            
+            // Second Year - Summer
+            {degree: "Bachelor of Science in Food Technology", year: "Second Year", semester: "Summer", grade: "", code: "OJT-1", title: "On-the-Job Training", labUnits: "", labHours: "", lecHours: "5", prereq: "All professional and tool subjects"},
+            
+            // Third Year - First Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "FPR 301/301L", title: "Food Processing II", labUnits: "1", labHours: "3", lecHours: "2", prereq: "FPR 206/206L, FMB 203/203L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "FSE 303/302L", title: "Sensory Evaluation", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MAT 305"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "FBN 403", title: "Basic Nutrition", labUnits: "", labHours: "", lecHours: "3", prereq: "BFP 201/201L, CHE 207/207L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "FFE 304/304L", title: "Food Engineering", labUnits: "2", labHours: "6", lecHours: "3", prereq: "FPR 301/301L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "First Semester", grade: "", code: "FCH 307/307L", title: "Food Chemistry II", labUnits: "2", labHours: "6", lecHours: "3", prereq: "FCH 302/302L"},
+            
+            // Third Year - Second Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "FFS 308", title: "Food Safety", labUnits: "", labHours: "", lecHours: "3", prereq: "FMB 203/203L, FPR 206/206L, FPR 301/301L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "FFA 309", title: "Food Analysis", labUnits: "2", labHours: "6", lecHours: "3", prereq: "FCH 307/307L, FSE 303/302L, FMB 203/203L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "FPH 303/303L", title: "Post-harvest Handling Technology", labUnits: "1", labHours: "3", lecHours: "2", prereq: "FMB 206/206L, FCH 307/307L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "FBT 406", title: "Biotechnology", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "TW1", title: "Technical / scientific writing", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Third Year - Summer
+            {degree: "Bachelor of Science in Food Technology", year: "Third Year", semester: "Summer", grade: "", code: "OJT-2", title: "On-the-Job Training", labUnits: "", labHours: "", lecHours: "6", prereq: "All professional and tool subjects"},
+            
+            // Fourth Year - First Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "FFL 401", title: "Food Laws", labUnits: "", labHours: "", lecHours: "3", prereq: "FPR 301/301L, FPR 301/301L"},
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "FQA 402/402L", title: "Food Quality Assurance", labUnits: "1", labHours: "3", lecHours: "2", prereq: "FPR 301/301L , FPR 301/301L, FFS 203, MAT305"},
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "FPD 404/404L", title: "Food Product Development and Innovation", labUnits: "1", labHours: "3", lecHours: "2", prereq: "FPR 301/301L, FPR 301/301L, FFP 310, FSE 303/302L, FFA 309"},
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "FMR 405", title: "Methods of Research in Food Science and Technology", labUnits: "", labHours: "", lecHours: "3", prereq: "Pre-requisite: TW1 Technical Co-requisite: FPD 404/404L"},
+            
+            // Fourth Year - Second Semester
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "FUS 407", title: "Undergraduate Seminar", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "FTH 409", title: "Thesis", labUnits: "", labHours: "", lecHours: "3", prereq: "FMR 405"},
+            {degree: "Bachelor of Science in Food Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "FES 408", title: "Environmental Sustainability in the Food Industry", labUnits: "", labHours: "", lecHours: "3", prereq: "FPR 301/301L, FPR 301/301L, FFA 309, FFS 203"}
+        ];
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            curriculumData.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Calculate stats
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 11).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "BS_Food_Technology_Curriculum_2024-2025.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Calculate initial stats
+        window.onload = function() {
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+        };
+    </script>
+</body>
+</html>

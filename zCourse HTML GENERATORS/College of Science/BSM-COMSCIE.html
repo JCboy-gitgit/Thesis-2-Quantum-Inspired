@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Mathematics (Computer Science) CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        
+        .program-title {
+            color: #141e30;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #141e30;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #141e30;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(20, 30, 48, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BS Mathematics Curriculum CSV Generator</h1>
+        <p class="program-title">Specialization in Computer Science</p>
+        <p class="subtitle">AY 2024-2025 - Convert curriculum data to CSV format</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 10 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // First Year - First Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "MAT 102", title: "Fundamentals of Computing", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "MAT 103", title: "Calculus I", labUnits: "", labHours: "", lecHours: "5", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "MCS 102a", title: "Computer Programming I", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "PE 10", title: "PATHFIT 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "First Semester", grade: "", code: "NSTP 10", title: "National Service Training Program 1", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // First Year - Second Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "MAT 104", title: "Fundamental Concept of Mathematics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "MAT 105", title: "Calculus II", labUnits: "", labHours: "", lecHours: "5", prereq: "MAT 103"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "MAT 107", title: "Probability", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 103 Coreq: MAT104, MT105"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "MCS 103a", title: "Computer Programming II", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MCS 102a"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "MCS 104a", title: "Database Management System", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MCS 102a"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't Ibang Disiplina", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "PE 11", title: "PATHFIT 2", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "First Year", semester: "Second Semester", grade: "", code: "NSTP 11", title: "National Service Training Program 2", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Second Year - First Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "MAT 201", title: "Calculus III", labUnits: "", labHours: "", lecHours: "5", prereq: "MAT105"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "MAT 207", title: "Abstract Algebra", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT104"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "MAT 208", title: "Statistical Theory", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MAT 107 Coreq: MAT 201"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "MCS 201a", title: "Data Structure and Algorithms", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MCS 103"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "PHY201a", title: "Mechanics and Heat", labUnits: "1", labHours: "3", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "MST 101a", title: "Environmental Science", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "First Semester", grade: "", code: "PE 12", title: "PATHFIT 3", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            
+            // Second Year - Second Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "MAT 204a", title: "Linear Algebra", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 104"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "MAT 205", title: "Differential Equations", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT105"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "MAT 206", title: "Number Theory", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT104"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "MCS 205", title: "Concept of Operating System", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "MCS 206", title: "Introduction to Data Science", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "PHY202a", title: "Electricity, Lights and Sounds", labUnits: "1", labHours: "3", lecHours: "2", prereq: "PHY201a"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "SSP 101c", title: "Gender and Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Second Year", semester: "Second Semester", grade: "", code: "PE 13", title: "PATHFIT 4", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            
+            // Third Year - First Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "MAT 301", title: "Advanced Calculus", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 201"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "MAT 302", title: "Modern Geometry", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 204a, MAT 207"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "MAT 304a", title: "Operations Research", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MAT 107, MAT 204a"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "MCS 305", title: "Software Engineering", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "MCS 306", title: "Introduction to Artificial Intelligence", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "TWM 301", title: "Technical Writing in Mathematics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "First Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Third Year - Second Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "MAT 305", title: "Mathematical Modeling", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 102, MAT 204a, MAT 205"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "MAT 306", title: "Graph Theory and Applications", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 204a"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "MAT 308", title: "Real Analysis", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 301"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "MCS 307", title: "Automata Theory and Formal Languages", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 104"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "MAT 399c", title: "Thesis I", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 102, MAT 103, MAT 104, MAT 105, MAT107, MAT 201, MAT 204a, MAT 205, MAT 206, MAT 207, MAT 208, MAT 301, MAT 302, MAT304a, MCS 102a, MCS 103a, MCS 104a, MCS 201a, MCS 205, MCS 206, MCS 305, MCS 306"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Third Year", semester: "Second Semester", grade: "", code: "SSP 101d", title: "Entrepreneurial Mind", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Fourth Year - First Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "First Semester", grade: "", code: "MAT 400c", title: "Thesis II", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 399c"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "First Semester", grade: "", code: "MAT 403", title: "Numerical Analysis", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 204a, MAT 205"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "First Semester", grade: "", code: "MAT 406", title: "Complex Analysis", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 301"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "First Semester", grade: "", code: "FEL 401c", title: "Free Elective I", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "First Semester", grade: "", code: "RLW 401", title: "Rizal's Life and Works", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Fourth Year - Second Semester
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "Second Semester", grade: "", code: "INT 401", title: "Student Internship", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 305, MAT 306, MAT 308, MAT 400c, MAT 403, MAT 406, MCS 307"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "Second Semester", grade: "", code: "MAT 404", title: "Actuarial Mathematics", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 105, MAT 107"},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "Second Semester", grade: "", code: "FEL 402c", title: "Free Elective II", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Mathematics - Computer Science", year: "Fourth Year", semester: "Second Semester", grade: "", code: "STS 101", title: "Science, Technology, and Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""}
+        ];
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            curriculumData.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Calculate stats
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 11).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "BS_Mathematics_Computer_Science_Curriculum_2024-2025.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Calculate initial stats
+        window.onload = function() {
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+        };
+    </script>
+</body>
+</html>

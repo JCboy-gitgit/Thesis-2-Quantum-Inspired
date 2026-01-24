@@ -108,7 +108,7 @@ body {
 /* Toggle Button inside Menu Bar */
 .menu-bar-toggle-btn {
   position: absolute;
-  bottom: 0;
+  top: 49px;
   left: 50%;
   transform: translateX(-50%) translateY(50%);
   width: 48px;

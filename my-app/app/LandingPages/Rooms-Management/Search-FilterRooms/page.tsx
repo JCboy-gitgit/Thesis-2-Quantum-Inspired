@@ -8,27 +8,33 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
 import { 
   Search, 
-  Filter, 
   Building2, 
   DoorOpen,
   Users,
   X,
   ChevronDown,
-  Snowflake,
-  MonitorPlay,
-  Accessibility,
-  MapPin,
-  SlidersHorizontal,
+  ChevronUp,
   University,
-  Hotel,
-  Landmark,
   FileSpreadsheet,
   Calendar,
   CheckCircle,
-  ArrowLeft
+  ArrowLeft,
+  Layers,
+  Wind,
+  Tv,
+  PresentationIcon,
+  MapPin,
+  GraduationCap,
+  Filter
 } from 'lucide-react'
 
-// Campus room from CSV uploads
+// Helper to display null values
+const displayValue = (value: any, fallback: string = 'N/A'): string => {
+  if (value === null || value === undefined || value === '') return fallback
+  return String(value)
+}
+
+// Campus room interface
 interface CampusRoom {
   id: number
   upload_group_id: number
@@ -36,14 +42,15 @@ interface CampusRoom {
   campus: string
   building: string
   room: string
+  room_code: string | null
   capacity: number
-  is_first_floor: boolean
-  floor_number: number
+  floor_number: number | null
   room_type: string
-  has_ac: boolean
-  has_projector: boolean
-  has_whiteboard: boolean
-  is_pwd_accessible: boolean
+  specific_classification: string | null
+  college: string | null
+  has_ac: boolean | null
+  has_whiteboard: boolean | null
+  has_tv: boolean | null
   status: string
   file_name: string
   created_at: string
@@ -58,14 +65,14 @@ interface CampusGroup {
 }
 
 const ROOM_TYPES = [
-  { value: 'all', label: 'All Types' },
+  { value: 'all', label: 'All Room Types' },
+  { value: 'Lecture Room', label: 'Lecture Room' },
   { value: 'Classroom', label: 'Classroom' },
   { value: 'Laboratory', label: 'Laboratory' },
   { value: 'Computer Lab', label: 'Computer Lab' },
   { value: 'Lecture Hall', label: 'Lecture Hall' },
   { value: 'Conference Room', label: 'Conference Room' },
   { value: 'Auditorium', label: 'Auditorium' },
-  { value: 'Other', label: 'Other' },
 ]
 
 export default function SearchFilterRoomsPage() {
@@ -76,21 +83,16 @@ export default function SearchFilterRoomsPage() {
   const [rooms, setRooms] = useState<CampusRoom[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingRooms, setLoadingRooms] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
   
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedType, setSelectedType] = useState<string>('all')
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all')
-  const [selectedCampus, setSelectedCampus] = useState<string>('all')
-  const [minCapacity, setMinCapacity] = useState<number>(0)
-  const [maxCapacity, setMaxCapacity] = useState<number>(500)
-  const [filterFeatures, setFilterFeatures] = useState({
-    has_ac: false,
-    has_projector: false,
-    has_whiteboard: false,
-    is_pwd_accessible: false
-  })
+  const [selectedFloor, setSelectedFloor] = useState<string>('all')
+  const [selectedRoomType, setSelectedRoomType] = useState<string>('all')
+  const [filterAC, setFilterAC] = useState<boolean>(false)
+  const [filterTV, setFilterTV] = useState<boolean>(false)
+  const [filterWhiteboard, setFilterWhiteboard] = useState<boolean>(false)
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set())
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
 
@@ -102,13 +104,10 @@ export default function SearchFilterRoomsPage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
       if (!session?.user) {
         router.push('/faculty/login')
         return
       }
-
-      // Only admin can access admin pages
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
         router.push('/faculty/home')
         return
@@ -119,7 +118,6 @@ export default function SearchFilterRoomsPage() {
     }
   }
 
-  // Fetch all upload groups from campuses table
   const fetchCampusGroups = async () => {
     setLoading(true)
     try {
@@ -130,7 +128,6 @@ export default function SearchFilterRoomsPage() {
 
       if (error) throw error
 
-      // Group by upload_group_id
       const grouped = (data || []).reduce((acc: CampusGroup[], curr: any) => {
         const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
         if (existing) {
@@ -155,7 +152,6 @@ export default function SearchFilterRoomsPage() {
     }
   }
 
-  // Fetch rooms for a specific upload group
   const fetchRooms = async (groupId: number) => {
     setLoadingRooms(true)
     try {
@@ -163,12 +159,15 @@ export default function SearchFilterRoomsPage() {
         .from('campuses')
         .select('*')
         .eq('upload_group_id', groupId)
-        .order('campus', { ascending: true })
         .order('building', { ascending: true })
+        .order('floor_number', { ascending: true })
         .order('room', { ascending: true })
 
       if (error) throw error
       setRooms(data || [])
+      
+      const buildingsList = [...new Set((data || []).map((r: CampusRoom) => r.building))]
+      setExpandedBlocks(new Set(buildingsList))
     } catch (error: any) {
       console.error('Error fetching rooms:', error)
     } finally {
@@ -188,78 +187,109 @@ export default function SearchFilterRoomsPage() {
     }
   }
 
-  // Get unique buildings for filter dropdown
+  const clearFilters = () => {
+    setSearchQuery('')
+    setSelectedBuilding('all')
+    setSelectedFloor('all')
+    setSelectedRoomType('all')
+    setFilterAC(false)
+    setFilterTV(false)
+    setFilterWhiteboard(false)
+  }
+
+  // Get unique buildings
   const buildings = useMemo(() => {
-    const uniqueBuildings = [...new Set(rooms.map(r => r.building))]
-    return uniqueBuildings.sort()
+    return [...new Set(rooms.map(r => r.building))].sort()
   }, [rooms])
 
-  // Get unique campuses for filter dropdown
-  const campuses = useMemo(() => {
-    const uniqueCampuses = [...new Set(rooms.map(r => r.campus))]
-    return uniqueCampuses.sort()
+  // Get unique floors
+  const floors = useMemo(() => {
+    const floorSet = new Set(rooms.map(r => r.floor_number).filter(f => f !== null))
+    return Array.from(floorSet).sort((a, b) => (a as number) - (b as number)) as number[]
   }, [rooms])
 
-  // Filtered results
+  // Get unique room types from data
+  const roomTypes = useMemo(() => {
+    const typeSet = new Set(rooms.map(r => r.room_type).filter(t => t))
+    return Array.from(typeSet).sort()
+  }, [rooms])
+
+  const toggleBlock = (building: string) => {
+    setExpandedBlocks(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(building)) {
+        newSet.delete(building)
+      } else {
+        newSet.add(building)
+      }
+      return newSet
+    })
+  }
+
+  // Filtered rooms
   const filteredRooms = useMemo(() => {
     return rooms.filter(room => {
-      // Search query filter
+      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch = 
           room.room.toLowerCase().includes(query) ||
           room.building.toLowerCase().includes(query) ||
-          room.campus.toLowerCase().includes(query)
+          room.campus.toLowerCase().includes(query) ||
+          (room.room_code && room.room_code.toLowerCase().includes(query)) ||
+          (room.room_type && room.room_type.toLowerCase().includes(query))
         if (!matchesSearch) return false
       }
-
-      // Room type filter
-      if (selectedType !== 'all' && room.room_type !== selectedType) return false
-
+      
       // Building filter
       if (selectedBuilding !== 'all' && room.building !== selectedBuilding) return false
-
-      // Campus filter
-      if (selectedCampus !== 'all' && room.campus !== selectedCampus) return false
-
-      // Capacity filter
-      if (room.capacity < minCapacity || room.capacity > maxCapacity) return false
-
-      // Feature filters
-      if (filterFeatures.has_ac && !room.has_ac) return false
-      if (filterFeatures.has_projector && !room.has_projector) return false
-      if (filterFeatures.has_whiteboard && !room.has_whiteboard) return false
-      if (filterFeatures.is_pwd_accessible && !room.is_pwd_accessible) return false
-
+      
+      // Floor filter
+      if (selectedFloor !== 'all' && room.floor_number !== parseInt(selectedFloor)) return false
+      
+      // Room type filter
+      if (selectedRoomType !== 'all' && room.room_type !== selectedRoomType) return false
+      
+      // Amenity filters
+      if (filterAC && !room.has_ac) return false
+      if (filterTV && !room.has_tv) return false
+      if (filterWhiteboard && !room.has_whiteboard) return false
+      
       return true
     })
-  }, [rooms, searchQuery, selectedType, selectedBuilding, selectedCampus, minCapacity, maxCapacity, filterFeatures])
+  }, [rooms, searchQuery, selectedBuilding, selectedFloor, selectedRoomType, filterAC, filterTV, filterWhiteboard])
 
-  const clearFilters = () => {
-    setSearchQuery('')
-    setSelectedType('all')
-    setSelectedBuilding('all')
-    setSelectedCampus('all')
-    setMinCapacity(0)
-    setMaxCapacity(500)
-    setFilterFeatures({
-      has_ac: false,
-      has_projector: false,
-      has_whiteboard: false,
-      is_pwd_accessible: false
+  // Group filtered rooms by building and floor
+  const groupedRooms = useMemo(() => {
+    const groups: { [building: string]: { [floor: string]: CampusRoom[] } } = {}
+    
+    filteredRooms.forEach(room => {
+      const building = room.building
+      const floor = room.floor_number !== null ? `Floor ${room.floor_number}` : 'Ground Floor'
+      
+      if (!groups[building]) {
+        groups[building] = {}
+      }
+      if (!groups[building][floor]) {
+        groups[building][floor] = []
+      }
+      groups[building][floor].push(room)
     })
-  }
+    
+    return groups
+  }, [filteredRooms])
 
+  // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (selectedType !== 'all') count++
     if (selectedBuilding !== 'all') count++
-    if (selectedCampus !== 'all') count++
-    if (minCapacity > 0) count++
-    if (maxCapacity < 500) count++
-    if (Object.values(filterFeatures).some(v => v)) count++
+    if (selectedFloor !== 'all') count++
+    if (selectedRoomType !== 'all') count++
+    if (filterAC) count++
+    if (filterTV) count++
+    if (filterWhiteboard) count++
     return count
-  }, [selectedType, selectedBuilding, selectedCampus, minCapacity, maxCapacity, filterFeatures])
+  }, [selectedBuilding, selectedFloor, selectedRoomType, filterAC, filterTV, filterWhiteboard])
 
   const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
 
@@ -289,9 +319,9 @@ export default function SearchFilterRoomsPage() {
               <div className={styles.headerIcon}>
                 <Search size={24} />
               </div>
-              <h1 className={styles.headerTitle}>Search & Filter Rooms</h1>
+              <h1 className={styles.headerTitle}>Search & Filter Classrooms</h1>
             </div>
-            <p className={styles.headerSubtitle}>Find rooms from uploaded Campus/Building CSV files based on your requirements</p>
+            <p className={styles.headerSubtitle}>Find classrooms by building, floor, type, and amenities</p>
           </div>
 
           {/* Campus Group Selection */}
@@ -350,50 +380,33 @@ export default function SearchFilterRoomsPage() {
               {/* Search & Filter Section */}
               {selectedGroup && (
                 <>
-                  {/* Search Bar */}
-                  <div className={styles.searchCard}>
-                    <div className={styles.searchCardHeader}>
-                      <h3>
-                        <Search size={20} />
-                        Search in {selectedGroupData?.school_name}
-                      </h3>
-                      <span className={styles.roomCountBadge}>{rooms.length} total rooms</span>
-                    </div>
-                    
-                    <div className={styles.searchRow}>
-                      {/* Search Input */}
+                  <div className={styles.searchFilterCard}>
+                    {/* Search Bar */}
+                    <div className={styles.searchSection}>
                       <div className={styles.searchInputWrapper}>
-                        <Search className={styles.searchIcon} size={18} />
+                        <Search className={styles.searchIcon} size={20} />
                         <input
                           type="text"
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
-                          placeholder="Search by room, building, or campus..."
+                          placeholder="Search by room name, code, building, or type..."
                           className={styles.searchInput}
                         />
                         {searchQuery && (
-                          <button onClick={() => setSearchQuery('')} className={styles.clearButton}>
+                          <button onClick={() => setSearchQuery('')} className={styles.clearSearchBtn}>
                             <X size={16} />
                           </button>
                         )}
                       </div>
+                    </div>
 
-                      {/* Quick Filters */}
-                      <div className={styles.quickFilters}>
-                        <select
-                          value={selectedCampus}
-                          onChange={e => setSelectedCampus(e.target.value)}
-                          className={styles.filterSelect}
-                        >
-                          <option value="all">All Campuses</option>
-                          {campuses.map(campus => (
-                            <option key={campus} value={campus}>{campus}</option>
-                          ))}
-                        </select>
-
+                    {/* Filters Row */}
+                    <div className={styles.filtersRow}>
+                      <div className={styles.filterDropdowns}>
+                        {/* Building Filter */}
                         <select
                           value={selectedBuilding}
-                          onChange={e => setSelectedBuilding(e.target.value)}
+                          onChange={(e) => setSelectedBuilding(e.target.value)}
                           className={styles.filterSelect}
                         >
                           <option value="all">All Buildings</option>
@@ -402,177 +415,202 @@ export default function SearchFilterRoomsPage() {
                           ))}
                         </select>
 
+                        {/* Floor Filter */}
                         <select
-                          value={selectedType}
-                          onChange={e => setSelectedType(e.target.value)}
+                          value={selectedFloor}
+                          onChange={(e) => setSelectedFloor(e.target.value)}
                           className={styles.filterSelect}
                         >
-                          {ROOM_TYPES.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
+                          <option value="all">All Floors</option>
+                          {floors.map(floor => (
+                            <option key={floor} value={floor}>Floor {floor}</option>
                           ))}
                         </select>
 
-                        <button
-                          onClick={() => setShowFilters(!showFilters)}
-                          className={`${styles.filtersButton} ${showFilters || activeFilterCount > 0 ? styles.filtersButtonActive : ''}`}
+                        {/* Room Type Filter */}
+                        <select
+                          value={selectedRoomType}
+                          onChange={(e) => setSelectedRoomType(e.target.value)}
+                          className={styles.filterSelect}
                         >
-                          <SlidersHorizontal size={18} />
-                          More Filters
-                          {activeFilterCount > 0 && (
-                            <span className={styles.filterBadge}>{activeFilterCount}</span>
-                          )}
+                          <option value="all">All Room Types</option>
+                          {roomTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Amenity Filters */}
+                      <div className={styles.amenityFilters}>
+                        <button
+                          onClick={() => setFilterAC(!filterAC)}
+                          className={`${styles.amenityBtn} ${filterAC ? styles.amenityActive : ''}`}
+                          title="Has Air Conditioning"
+                        >
+                          <Wind size={16} />
+                          <span>AC</span>
+                        </button>
+                        <button
+                          onClick={() => setFilterTV(!filterTV)}
+                          className={`${styles.amenityBtn} ${filterTV ? styles.amenityActive : ''}`}
+                          title="Has TV"
+                        >
+                          <Tv size={16} />
+                          <span>TV</span>
+                        </button>
+                        <button
+                          onClick={() => setFilterWhiteboard(!filterWhiteboard)}
+                          className={`${styles.amenityBtn} ${filterWhiteboard ? styles.amenityActive : ''}`}
+                          title="Has Whiteboard"
+                        >
+                          <PresentationIcon size={16} />
+                          <span>Board</span>
                         </button>
                       </div>
+
+                      {/* Clear Filters */}
+                      {activeFilterCount > 0 && (
+                        <button onClick={clearFilters} className={styles.clearFiltersBtn}>
+                          <X size={14} />
+                          Clear ({activeFilterCount})
+                        </button>
+                      )}
                     </div>
 
-                    {/* Advanced Filters */}
-                    {showFilters && (
-                      <div className={styles.advancedFilters}>
-                        <div className={styles.filtersGrid}>
-                          {/* Capacity Range */}
-                          <div className={styles.filterGroup}>
-                            <label className={styles.filterLabel}>
-                              <Users size={16} /> Capacity Range
-                            </label>
-                            <div className={styles.capacityRange}>
-                              <input
-                                type="number"
-                                value={minCapacity}
-                                onChange={e => setMinCapacity(parseInt(e.target.value) || 0)}
-                                min="0"
-                                className={styles.capacityInput}
-                                placeholder="Min"
-                              />
-                              <span className={styles.capacitySeparator}>to</span>
-                              <input
-                                type="number"
-                                value={maxCapacity}
-                                onChange={e => setMaxCapacity(parseInt(e.target.value) || 500)}
-                                min="0"
-                                className={styles.capacityInput}
-                                placeholder="Max"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Features */}
-                          <div className={styles.filterGroup}>
-                            <label className={styles.filterLabel}>Required Features</label>
-                            <div className={styles.featuresRow}>
-                              <button
-                                onClick={() => setFilterFeatures(prev => ({ ...prev, has_ac: !prev.has_ac }))}
-                                className={`${styles.featureButton} ${filterFeatures.has_ac ? styles.featureButtonActive : ''}`}
-                              >
-                                <Snowflake size={16} />
-                                Air Conditioned
-                              </button>
-                              <button
-                                onClick={() => setFilterFeatures(prev => ({ ...prev, has_projector: !prev.has_projector }))}
-                                className={`${styles.featureButton} ${filterFeatures.has_projector ? styles.featureButtonActive : ''}`}
-                              >
-                                <MonitorPlay size={16} />
-                                Projector
-                              </button>
-                              <button
-                                onClick={() => setFilterFeatures(prev => ({ ...prev, is_pwd_accessible: !prev.is_pwd_accessible }))}
-                                className={`${styles.featureButton} ${filterFeatures.is_pwd_accessible ? styles.featureButtonActive : ''}`}
-                              >
-                                <Accessibility size={16} />
-                                PWD Accessible
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className={styles.clearFiltersRow}>
-                          <button onClick={clearFilters} className={styles.clearFiltersButton}>
-                            Clear all filters
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    {/* Results Summary */}
+                    <div className={styles.resultsSummary}>
+                      <span>
+                        Showing <strong>{filteredRooms.length}</strong> of <strong>{rooms.length}</strong> classrooms
+                        {selectedGroupData && ` in ${selectedGroupData.school_name}`}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Results Count */}
-                  <div className={styles.resultsCount}>
-                    Showing <span className={styles.resultsNumber}>{filteredRooms.length}</span> of {rooms.length} rooms
-                  </div>
-
-                  {/* Results Grid */}
+                  {/* Results - Building Blocks View */}
                   {loadingRooms ? (
-                    <div className={styles.resultsGrid}>
-                      {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className={styles.skeletonCard}>
-                          <div className={styles.skeletonLine}></div>
-                          <div className={styles.skeletonLine}></div>
-                          <div className={styles.skeletonLine}></div>
-                        </div>
-                      ))}
+                    <div className={styles.loadingState}>
+                      <div className={styles.spinner}></div>
+                      <p>Loading classrooms...</p>
                     </div>
                   ) : filteredRooms.length === 0 ? (
                     <div className={styles.emptyState}>
                       <Search size={48} />
-                      <h3 className={styles.emptyTitle}>No Rooms Found</h3>
+                      <h3 className={styles.emptyTitle}>No Classrooms Found</h3>
                       <p className={styles.emptyText}>Try adjusting your search or filter criteria</p>
-                      <button onClick={clearFilters} className={styles.emptyButton}>
-                        Clear Filters
+                      <button onClick={clearFilters} className={styles.clearFiltersBtn}>
+                        Clear All Filters
                       </button>
                     </div>
                   ) : (
-                    <div className={styles.resultsGrid}>
-                      {filteredRooms.map(room => (
-                        <div key={room.id} className={styles.roomCard}>
-                          <div className={styles.roomCardHeader}>
-                            <div>
-                              <h3 className={styles.roomCode}>
-                                <DoorOpen size={18} />
-                                {room.room}
-                              </h3>
-                              <p className={styles.roomType}>{room.room_type || 'Classroom'}</p>
+                    <div className={styles.blocksContainer}>
+                      {Object.entries(groupedRooms).map(([building, floorData]) => (
+                        <div key={building} className={styles.blockSection}>
+                          {/* Block Header */}
+                          <div 
+                            className={styles.blockHeader}
+                            onClick={() => toggleBlock(building)}
+                          >
+                            <div className={styles.blockTitle}>
+                              <Building2 size={20} />
+                              <span>{building}</span>
+                              <span className={styles.blockCount}>
+                                {Object.values(floorData).flat().length} rooms
+                              </span>
                             </div>
-                            <span className={styles.capacityBadge}>
-                              <Users size={14} />
-                              {room.capacity}
-                            </span>
+                            {expandedBlocks.has(building) ? (
+                              <ChevronUp size={20} />
+                            ) : (
+                              <ChevronDown size={20} />
+                            )}
                           </div>
 
-                          <div className={styles.roomDetails}>
-                            <div className={styles.roomDetailRow}>
-                              <Landmark size={14} />
-                              <span>{room.campus}</span>
-                            </div>
-                            <div className={styles.roomDetailRow}>
-                              <Hotel size={14} />
-                              <span>{room.building}</span>
-                            </div>
-                            <div className={styles.roomDetailRow}>
-                              <MapPin size={14} />
-                              <span>Floor {room.floor_number}</span>
-                            </div>
-                          </div>
+                          {/* Block Content - Floors */}
+                          {expandedBlocks.has(building) && (
+                            <div className={styles.blockContent}>
+                              {Object.entries(floorData).sort((a, b) => {
+                                const floorA = parseInt(a[0].replace('Floor ', '')) || 0
+                                const floorB = parseInt(b[0].replace('Floor ', '')) || 0
+                                return floorA - floorB
+                              }).map(([floor, floorRooms]) => (
+                                <div key={floor} className={styles.floorSection}>
+                                  {/* Floor Header */}
+                                  <div className={styles.floorHeader}>
+                                    <div className={styles.floorTitle}>
+                                      <Layers size={16} />
+                                      <span>{floor}</span>
+                                      <span className={styles.floorRoomCount}>{floorRooms.length} Rooms</span>
+                                    </div>
+                                  </div>
 
-                          <div className={styles.roomFeatures}>
-                            {room.has_ac && (
-                              <span className={`${styles.featureIcon} ${styles.featureAc}`} title="Air Conditioned">
-                                <Snowflake size={14} />
-                              </span>
-                            )}
-                            {room.has_projector && (
-                              <span className={`${styles.featureIcon} ${styles.featureProjector}`} title="Projector">
-                                <MonitorPlay size={14} />
-                              </span>
-                            )}
-                            {room.has_whiteboard && (
-                              <span className={`${styles.featureIcon} ${styles.featureWhiteboard}`} title="Whiteboard">
-                                ✏️
-                              </span>
-                            )}
-                            {room.is_pwd_accessible && (
-                              <span className={`${styles.featureIcon} ${styles.featureAccessible}`} title="PWD Accessible">
-                                <Accessibility size={14} />
-                              </span>
-                            )}
-                          </div>
+                                  {/* Rooms Grid */}
+                                  <div className={styles.roomsGrid}>
+                                    {floorRooms.map(room => (
+                                      <div key={room.id} className={styles.roomCard}>
+                                        {/* Room Header */}
+                                        <div className={styles.roomCardHeader}>
+                                          <div className={styles.roomIcon}>
+                                            <GraduationCap size={20} />
+                                          </div>
+                                          <div className={styles.roomTitleArea}>
+                                            <h4 className={styles.roomName}>{room.room}</h4>
+                                            {room.room_code && (
+                                              <span className={styles.roomCode}>{room.room_code}</span>
+                                            )}
+                                          </div>
+                                          <span className={styles.roomTypeBadge}>
+                                            {room.room_type || 'Classroom'}
+                                          </span>
+                                        </div>
+
+                                        {/* Room Details */}
+                                        <div className={styles.roomDetails}>
+                                          <div className={styles.roomDetailItem}>
+                                            <Users size={14} />
+                                            <span>Capacity: <strong>{room.capacity}</strong></span>
+                                          </div>
+                                          <div className={styles.roomDetailItem}>
+                                            <MapPin size={14} />
+                                            <span>Floor {displayValue(room.floor_number, 'G')}</span>
+                                          </div>
+                                          {room.specific_classification && (
+                                            <div className={styles.roomDetailItem}>
+                                              <DoorOpen size={14} />
+                                              <span>{room.specific_classification}</span>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Amenities */}
+                                        <div className={styles.roomAmenities}>
+                                          <span 
+                                            className={`${styles.amenityTag} ${room.has_ac ? styles.amenityAvailable : styles.amenityUnavailable}`}
+                                            title={room.has_ac ? 'Has Air Conditioning' : 'No Air Conditioning'}
+                                          >
+                                            <Wind size={14} />
+                                            AC
+                                          </span>
+                                          <span 
+                                            className={`${styles.amenityTag} ${room.has_tv ? styles.amenityAvailable : styles.amenityUnavailable}`}
+                                            title={room.has_tv ? 'Has TV' : 'No TV'}
+                                          >
+                                            <Tv size={14} />
+                                            TV
+                                          </span>
+                                          <span 
+                                            className={`${styles.amenityTag} ${room.has_whiteboard ? styles.amenityAvailable : styles.amenityUnavailable}`}
+                                            title={room.has_whiteboard ? 'Has Whiteboard' : 'No Whiteboard'}
+                                          >
+                                            <PresentationIcon size={14} />
+                                            Board
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -585,7 +623,7 @@ export default function SearchFilterRoomsPage() {
                 <div className={styles.noSelectionPrompt}>
                   <University size={64} />
                   <h3>Select a School/Campus File</h3>
-                  <p>Choose a campus file above to search and filter rooms</p>
+                  <p>Choose a campus file above to browse classrooms</p>
                 </div>
               )}
             </>
