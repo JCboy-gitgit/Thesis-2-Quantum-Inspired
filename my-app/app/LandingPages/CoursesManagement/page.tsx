@@ -745,12 +745,7 @@ function CoursesManagementContent() {
                           <span>{group.degree_programs.length} Degree Program(s)</span>
                         </div>
                       )}
-                      {(group.semester || group.academic_year) && (
-                        <div className={styles.scheduleInfo}>
-                          <Calendar size={16} />
-                          <span>{[group.semester, group.academic_year].filter(Boolean).join(' - ')}</span>
-                        </div>
-                      )}
+
                       <div className={styles.scheduleInfo}>
                         <Clock size={16} />
                         <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>

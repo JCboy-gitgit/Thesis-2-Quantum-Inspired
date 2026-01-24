@@ -46,7 +46,9 @@ class Section:
     year_level: int
     student_count: int
     required_room_type: str
-    weekly_hours: int  # Number of slots needed per week
+    weekly_hours: int  # Total contact hours per week (calculated from units)
+    lec_hours: int = 0  # Lecture hours per week
+    lab_hours: int = 0  # Lab hours per week (usually 3 hours per lab unit)
     requires_lab: bool = False
     department: str = ""
 
@@ -737,8 +739,28 @@ def run_scheduler(
         Result dictionary with schedule and statistics
     """
     # Convert data to dataclasses
-    sections = [
-        Section(
+    # Unit-to-hour computation: 1 lec unit = 1 hour, 1 lab unit = 3 hours per week
+    sections = []
+    for s in sections_data:
+        # Calculate weekly hours from units/hours
+        lec_hours = s.get("lec_hours", 0) or 0
+        lab_hours = s.get("lab_hours", 0) or 0
+        
+        # If hours are provided directly, use them
+        # Otherwise calculate from units (1 lec unit ≈ 1 hour, 1 lab unit = 3 hours)
+        if lec_hours == 0 and lab_hours == 0:
+            lec_units = s.get("lec_units", 0) or 0
+            lab_units = s.get("lab_units", 0) or 0
+            lec_hours = lec_units  # 1 lec unit = 1 hour per week
+            lab_hours = lab_units * 3  # 1 lab unit = 3 hours per week
+        
+        total_weekly_hours = lec_hours + lab_hours
+        weekly_minutes = total_weekly_hours * 60  # Convert to minutes for slot calculation
+        
+        # Determine if this section requires a lab room
+        requires_lab = lab_hours > 0 or s.get("requires_lab", False)
+        
+        sections.append(Section(
             id=s["id"],
             section_code=s.get("section_code", f"SEC-{s['id']}"),
             course_code=s.get("course_code", ""),
@@ -748,12 +770,12 @@ def run_scheduler(
             year_level=s.get("year_level", 1),
             student_count=s.get("student_count", 30),
             required_room_type=s.get("required_room_type", "classroom"),
-            weekly_hours=s.get("weekly_hours", 180),  # Default 3 hours (2 x 90 min)
-            requires_lab=s.get("requires_lab", False),
+            weekly_hours=weekly_minutes if weekly_minutes > 0 else 180,  # Default 3 hours
+            lec_hours=lec_hours,
+            lab_hours=lab_hours,
+            requires_lab=requires_lab,
             department=s.get("department", "")
-        )
-        for s in sections_data
-    ]
+        ))
     
     rooms = [
         Room(
@@ -782,7 +804,7 @@ def run_scheduler(
     ]
     
     constraints = SchedulingConstraints(
-        max_teacher_hours_per_day=config.get("max_teacher_hours_per_day", 6),
+        max_teacher_hours_per_day=config.get("max_teacher_hours_per_day", 8),
         prioritize_accessibility=config.get("prioritize_accessibility", False)
     )
     
@@ -799,15 +821,36 @@ def run_scheduler(
     unscheduled = scheduler.get_unscheduled_sections()
     conflicts = scheduler.get_conflicts()
     
+    # If there are conflicts, report them but don't save
+    if len(conflicts) > 0:
+        return {
+            "success": False,
+            "message": f"Schedule generation stopped: {len(conflicts)} conflict(s) detected. Conflicts must be resolved before scheduling can continue.",
+            "total_sections": len(sections),
+            "scheduled_sections": len(sections) - len(unscheduled),
+            "unscheduled_sections": len(unscheduled),
+            "schedule_entries": [],  # Don't return conflicting schedule
+            "conflicts": conflicts,
+            "unscheduled_list": unscheduled,
+            "optimization_stats": {
+                "initial_cost": stats.initial_cost,
+                "final_cost": stats.final_cost,
+                "iterations": stats.iterations,
+                "improvements": stats.improvements,
+                "quantum_tunnels": stats.quantum_tunnels,
+                "time_elapsed_ms": stats.time_elapsed_ms
+            }
+        }
+    
     return {
-        "success": len(conflicts) == 0 and len(unscheduled) < len(sections),
-        "message": "Schedule generated successfully" if len(conflicts) == 0 else f"Schedule has {len(conflicts)} conflicts",
+        "success": len(unscheduled) < len(sections),
+        "message": "Schedule generated successfully with zero conflicts" if len(unscheduled) == 0 else f"Schedule generated: {len(unscheduled)} section(s) could not be fully scheduled",
         "total_sections": len(sections),
         "scheduled_sections": len(sections) - len(unscheduled),
         "unscheduled_sections": len(unscheduled),
         "schedule_entries": entries,
         "conflicts": conflicts,
-        "unscheduled_list": unscheduled,  # Now includes detailed reasons
+        "unscheduled_list": unscheduled,
         "optimization_stats": {
             "initial_cost": stats.initial_cost,
             "final_cost": stats.final_cost,

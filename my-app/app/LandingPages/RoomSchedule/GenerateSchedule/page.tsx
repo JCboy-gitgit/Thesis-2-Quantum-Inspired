@@ -282,6 +282,11 @@ export default function GenerateSchedulePage() {
   const [showTeacherFileViewer, setShowTeacherFileViewer] = useState(false)
   const [viewerData, setViewerData] = useState<any[]>([])
   const [viewerLoading, setViewerLoading] = useState(false)
+  
+  // Auto-generate toggle state
+  const [autoGenerateEnabled, setAutoGenerateEnabled] = useState(false)
+  const [lastDataHash, setLastDataHash] = useState<string>('')
+  const [autoGenerateCountdown, setAutoGenerateCountdown] = useState(0)
 
   // Load initial data
   useEffect(() => {
@@ -551,19 +556,24 @@ export default function GenerateSchedulePage() {
     )
   }
   
-  // Select all rooms in a building
+  // Select all rooms in a building OR toggle to show individual room selection
   const handleSelectAllRoomsInBuilding = (building: string) => {
     const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
-    setSelectedRooms(prev => {
-      const allSelected = buildingRoomIds.every(id => prev.includes(id))
-      if (allSelected) {
-        // Deselect all
-        return prev.filter(id => !buildingRoomIds.includes(id))
-      } else {
-        // Select all
-        return [...new Set([...prev, ...buildingRoomIds])]
-      }
-    })
+    const buildingSelected = selectedBuildings.includes(building)
+    const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
+    
+    if (buildingSelected) {
+      // If building is selected, switch to individual room selection mode
+      // Deselect the building and select all its rooms instead
+      setSelectedBuildings(prev => prev.filter(b => b !== building))
+      setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
+    } else if (allRoomsSelected) {
+      // All rooms are selected, deselect all
+      setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
+    } else {
+      // Select all rooms in this building
+      setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
+    }
   }
   
   // Get filtered rooms based on selection
@@ -1116,7 +1126,7 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
 
-                  {/* Class Schedules Selection */}
+                  {/* Courses & Sections Selection */}
                   <div className={styles.dataSourceCard}>
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedClass(!expandedClass)}>
                       <div className={styles.dataSourceTitle}>
@@ -1124,8 +1134,8 @@ export default function GenerateSchedulePage() {
                           <BookOpen size={24} />
                         </div>
                         <div>
-                          <h3>Class Schedules</h3>
-                          <p>Select the class schedule CSV file with courses and sections</p>
+                          <h3>Courses & Sections</h3>
+                          <p>Select curriculum data with academic year, semester, sections and assigned courses</p>
                         </div>
                       </div>
                       <div className={styles.dataSourceStatus}>
@@ -1145,7 +1155,7 @@ export default function GenerateSchedulePage() {
                         {classGroups.length === 0 ? (
                           <div className={styles.emptyDataSource}>
                             <FileSpreadsheet size={40} />
-                            <p>No class schedule data found. Upload a Class Schedule CSV first.</p>
+                            <p>No course data found. Upload a Curriculum/Courses CSV first.</p>
                             <button onClick={() => router.push('/LandingPages/UploadCSV')}>
                               Upload CSV
                             </button>
@@ -1163,8 +1173,12 @@ export default function GenerateSchedulePage() {
                                   <h4>{group.college}</h4>
                                 </div>
                                 <div className={styles.dataCardStats}>
-                                  <span><BookOpen size={14} /> {group.class_count} classes</span>
-                                  {group.semester && <span>{group.semester}</span>}
+                                  <span><BookOpen size={14} /> {group.class_count} courses</span>
+                                </div>
+                                <div className={styles.dataCardAcademic}>
+                                  <span className={styles.academicBadge}>
+                                    {group.academic_year || 'N/A'} • {group.semester || 'N/A'}
+                                  </span>
                                 </div>
                                 <div className={styles.dataCardFile}>
                                   <FileSpreadsheet size={14} /> {group.file_name}
@@ -1392,8 +1406,11 @@ export default function GenerateSchedulePage() {
                                   <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
                                 </div>
                                 
-                                {/* Show individual room checkboxes if some are selected */}
-                                {(someRoomsSelected && !buildingSelected) && (
+                                {/* Show individual room checkboxes when:
+                                    - Some rooms in this building are individually selected, OR
+                                    - All rooms are selected (to allow deselecting specific ones)
+                                    But NOT when the entire building is selected (as a whole) */}
+                                {((someRoomsSelected || allRoomsSelected) && !buildingSelected) && (
                                   <div className={styles.roomList}>
                                     {buildingRooms.map(room => (
                                       <label key={room.id} className={styles.roomCheckbox}>
@@ -1876,6 +1893,33 @@ export default function GenerateSchedulePage() {
                     </button>
                   </div>
 
+                  {/* Auto-Generate Toggle */}
+                  <div className={styles.autoGenerateSection}>
+                    <div className={styles.autoGenerateHeader}>
+                      <div className={styles.autoGenerateInfo}>
+                        <FaSync className={autoGenerateEnabled ? styles.autoSyncActive : ''} />
+                        <div>
+                          <h4>Auto-Generate Schedules</h4>
+                          <p>Automatically regenerate schedules when data changes (30 min interval)</p>
+                        </div>
+                      </div>
+                      <label className={styles.toggleSwitch}>
+                        <input
+                          type="checkbox"
+                          checked={autoGenerateEnabled}
+                          onChange={(e) => setAutoGenerateEnabled(e.target.checked)}
+                        />
+                        <span className={styles.toggleSlider}></span>
+                      </label>
+                    </div>
+                    {autoGenerateEnabled && (
+                      <div className={styles.autoGenerateStatus}>
+                        <FaClock />
+                        <span>Auto-generate is active. System will check for data changes every 30 minutes.</span>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Generate Button */}
                   <div className={styles.generateSection}>
                     <button
@@ -1902,7 +1946,7 @@ export default function GenerateSchedulePage() {
                     {canGenerate && !scheduling && (
                       <p className={styles.generateInfo}>
                         <Zap size={16} />
-                        Will process {classes.length} classes across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
+                        Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
                       </p>
                     )}
                   </div>

@@ -17,9 +17,13 @@ import {
   Briefcase,
   BookOpen,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Sun,
+  Moon,
+  Palette
 } from 'lucide-react'
 import styles from './styles.module.css'
+import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 
 interface UserProfile {
   id: string
@@ -43,12 +47,14 @@ interface Department {
 
 export default function FacultyProfilePage() {
   const router = useRouter()
+  const { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme } = useTheme()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState<UserProfile | null>(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showThemeSettings, setShowThemeSettings] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 

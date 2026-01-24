@@ -24,7 +24,8 @@ import {
   UserPlus,
   FileText,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -52,10 +53,11 @@ interface Course {
 
 interface YearBatch {
   id: number
-  year_batch: string // e.g., "2024-2025"
+  year_batch: string // e.g., "2024-2025 First Semester"
   academic_year: string
   is_active?: boolean
   created_at: string
+  updated_at?: string
 }
 
 interface Section {
@@ -98,7 +100,7 @@ interface SectionFormData {
 }
 
 const emptyYearBatchForm: YearBatchFormData = {
-  year_batch: '2024-2025',
+  year_batch: '2024-25 1st Sem',
   academic_year: '2024-2025'
 }
 
@@ -285,6 +287,48 @@ function ClassSectionAssigningContent() {
     return courses.filter(c => sectionAssignments.some(a => a.course_id === c.id))
   }
 
+  // Download CSV for a specific year batch
+  const downloadBatchCSV = (batch: YearBatch) => {
+    const batchSections = sections.filter(s => s.year_batch_id === batch.id)
+    
+    if (batchSections.length === 0) {
+      setNotification({ type: 'error', message: 'No sections found for this year batch' })
+      return
+    }
+
+    // Create CSV content with header
+    let csvContent = `Year Batch: ${batch.year_batch}\n\n`
+    csvContent += 'Section Name,Year Level,Degree Program,Student Count,Max Capacity,Assigned Courses (Code),Assigned Courses (Name)\n'
+    
+    batchSections.forEach(section => {
+      const assignedCourses = getAssignedCourses(section.id)
+      
+      const courseCodes = assignedCourses.map(c => c.course_code).join('; ')
+      const courseNames = assignedCourses.map(c => c.course_name).join('; ')
+      
+      csvContent += `"${section.section_name}",`
+      csvContent += `${section.year_level},`
+      csvContent += `"${section.degree_program}",`
+      csvContent += `${section.student_count},`
+      csvContent += `${section.max_capacity},`
+      csvContent += `"${courseCodes}",`
+      csvContent += `"${courseNames}"\n`
+    })
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `sections_${batch.year_batch.replace(/ /g, '_')}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    setNotification({ type: 'success', message: 'CSV downloaded successfully!' })
+  }
+
   // Filter sections
   const getFilteredSections = () => {
     let filtered = [...sections]
@@ -313,6 +357,10 @@ function ClassSectionAssigningContent() {
     const grouped = new Map<number, Map<number, Section[]>>()
     
     getFilteredSections().forEach(section => {
+      // Get the batch for this section
+      const batch = yearBatches.find(b => b.id === section.year_batch_id)
+      if (!batch) return
+      
       if (!grouped.has(section.year_batch_id)) {
         grouped.set(section.year_batch_id, new Map())
       }
@@ -379,7 +427,18 @@ function ClassSectionAssigningContent() {
 
   const handleSaveYearBatch = async () => {
     if (!yearBatchForm.year_batch) {
-      setNotification({ type: 'error', message: 'Please enter a year batch' })
+      setNotification({ type: 'error', message: 'Please enter a year batch name' })
+      return
+    }
+
+    // Check for duplicate year_batch names
+    const duplicateBatch = yearBatches.find(b => 
+      b.year_batch.toLowerCase() === yearBatchForm.year_batch.toLowerCase() &&
+      (modalMode === 'create' || b.id !== editingId)
+    )
+    
+    if (duplicateBatch) {
+      setNotification({ type: 'error', message: `Year batch "${yearBatchForm.year_batch}" already exists.` })
       return
     }
 
@@ -391,25 +450,103 @@ function ClassSectionAssigningContent() {
           .from('year_batches')
           .insert({
             year_batch: yearBatchForm.year_batch,
-            academic_year: yearBatchForm.academic_year || yearBatchForm.year_batch,
+            academic_year: yearBatchForm.academic_year || yearBatchForm.year_batch.split(' ')[0],
             is_active: true
           })
           .select()
           .single()
         
-        if (error) throw error
+        if (error) {
+          console.error('Supabase insert error:', error)
+          throw new Error(error.message || 'Failed to create year batch')
+        }
         
         setYearBatches(prev => [data, ...prev])
         setExpandedBatches(prev => new Set([...prev, data.id]))
         setNotification({ type: 'success', message: 'Year batch created successfully!' })
+      } else {
+        // Edit mode
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase as any)
+          .from('year_batches')
+          .update({
+            year_batch: yearBatchForm.year_batch,
+            academic_year: yearBatchForm.academic_year || yearBatchForm.year_batch.split(' ')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingId)
+          .select()
+          .single()
+        
+        if (error) {
+          console.error('Supabase update error:', error)
+          throw new Error(error.message || 'Failed to update year batch')
+        }
+        
+        setYearBatches(prev => prev.map(b => b.id === editingId ? data : b))
+        setNotification({ type: 'success', message: 'Year batch updated successfully!' })
       }
       setShowYearBatchModal(false)
     } catch (error) {
       console.error('Error saving year batch:', error)
-      setNotification({ type: 'error', message: 'Failed to save year batch. Please try again.' })
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save year batch. Please try again.'
+      setNotification({ type: 'error', message: errorMessage })
     } finally {
       setSaving(false)
     }
+  }
+
+  // Open Edit Year Batch Modal
+  const openEditYearBatchModal = (batch: YearBatch) => {
+    setYearBatchForm({
+      year_batch: batch.year_batch,
+      academic_year: batch.academic_year
+    })
+    setModalMode('edit')
+    setEditingId(batch.id)
+    setShowYearBatchModal(true)
+  }
+
+  // Delete Year Batch
+  const [deleteYearBatchConfirm, setDeleteYearBatchConfirm] = useState<number | null>(null)
+  
+  const handleDeleteYearBatch = async (id: number) => {
+    try {
+      // Check if there are sections associated with this year batch
+      const associatedSections = sections.filter(s => s.year_batch_id === id)
+      if (associatedSections.length > 0) {
+        setNotification({ 
+          type: 'error', 
+          message: `Cannot delete: ${associatedSections.length} section(s) are assigned to this year batch. Delete the sections first.` 
+        })
+        setDeleteYearBatchConfirm(null)
+        return
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('year_batches')
+        .delete()
+        .eq('id', id)
+      
+      if (error) {
+        console.error('Supabase delete error:', error)
+        throw new Error(error.message || 'Failed to delete year batch')
+      }
+      
+      setYearBatches(prev => prev.filter(b => b.id !== id))
+      setExpandedBatches(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setNotification({ type: 'success', message: 'Year batch deleted successfully!' })
+    } catch (error) {
+      console.error('Error deleting year batch:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete year batch.'
+      setNotification({ type: 'error', message: errorMessage })
+    }
+    setDeleteYearBatchConfirm(null)
   }
 
   // ==================== Section CRUD ====================
@@ -449,6 +586,22 @@ function ClassSectionAssigningContent() {
       return
     }
 
+    // Check for duplicate section names in the same year batch and year level
+    const duplicateSection = sections.find(s => 
+      s.section_name.toLowerCase() === sectionForm.section_name.toLowerCase() &&
+      s.year_batch_id === sectionForm.year_batch_id &&
+      s.year_level === sectionForm.year_level &&
+      (modalMode === 'create' || s.id !== editingId)
+    )
+    
+    if (duplicateSection) {
+      setNotification({ 
+        type: 'error', 
+        message: `Section "${sectionForm.section_name}" already exists in ${getYearLevelLabel(sectionForm.year_level)} of this year batch.` 
+      })
+      return
+    }
+
     setSaving(true)
     try {
       if (modalMode === 'create') {
@@ -474,7 +627,44 @@ function ClassSectionAssigningContent() {
         setSections(prev => [...prev, data])
         const yearKey = `${data.year_batch_id}-${data.year_level}`
         setExpandedYearLevels(prev => new Set([...prev, yearKey]))
-        setNotification({ type: 'success', message: 'Section created successfully!' })
+        
+        // Auto-assign courses for the year level if available
+        const coursesToAutoAssign = courses.filter(course => 
+          course.year_level === data.year_level &&
+          (course.degree_program === data.degree_program || !course.degree_program)
+        )
+        
+        if (coursesToAutoAssign.length > 0) {
+          try {
+            const assignments = coursesToAutoAssign.map(course => ({
+              section_id: data.id,
+              course_id: course.id
+            }))
+            
+            const { error: assignError } = await (supabase as any)
+              .from('section_course_assignments')
+              .insert(assignments)
+            
+            if (!assignError) {
+              setAssignments(prev => [...prev, ...assignments.map((a, i) => ({
+                id: Date.now() + i,
+                ...a,
+                created_at: new Date().toISOString()
+              }))])
+              setNotification({ 
+                type: 'success', 
+                message: `Section created successfully! Auto-assigned ${coursesToAutoAssign.length} courses.` 
+              })
+            } else {
+              setNotification({ type: 'success', message: 'Section created successfully!' })
+            }
+          } catch (autoAssignError) {
+            console.log('Auto-assign failed:', autoAssignError)
+            setNotification({ type: 'success', message: 'Section created successfully!' })
+          }
+        } else {
+          setNotification({ type: 'success', message: 'Section created successfully!' })
+        }
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
@@ -531,7 +721,10 @@ function ClassSectionAssigningContent() {
     setSelectedSection(section)
     setSelectedDegreeForAssignment(section.degree_program)
     setSelectedYearLevelForAssignment(section.year_level)
+    
+    // Default to showing all semesters
     setSelectedSemester('all')
+    
     setShowAssignCoursesModal(true)
   }
 
@@ -863,17 +1056,144 @@ function ClassSectionAssigningContent() {
                   {/* Year Batch Header */}
                   <div 
                     className={styles.campusHeaderRow}
-                    onClick={() => toggleBatch(batch.id)}
-                    style={{ marginBottom: '12px' }}
+                    style={{ marginBottom: '12px', cursor: 'pointer' }}
                   >
                     <Calendar size={20} />
-                    <span style={{ fontWeight: 700, fontSize: '16px' }}>
-                      Academic Year {batch.year_batch}
+                    <span 
+                      style={{ fontWeight: 700, fontSize: '16px', flex: 1 }}
+                      onClick={() => toggleBatch(batch.id)}
+                    >
+                      {batch.year_batch}
                     </span>
+                    
+                    {/* Edit Year Batch Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openEditYearBatchModal(batch)
+                      }}
+                      title="Edit Year Batch"
+                      style={{
+                        padding: '6px 10px',
+                        background: 'rgba(49, 130, 206, 0.1)',
+                        color: 'var(--primary-blue, #3182ce)',
+                        border: '1px solid var(--primary-blue, #3182ce)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginRight: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    
+                    {/* Delete Year Batch Button */}
+                    {deleteYearBatchConfirm === batch.id ? (
+                      <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteYearBatch(batch.id)
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#e53e3e',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteYearBatchConfirm(null)
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'var(--bg-gray-100, #edf2f7)',
+                            color: 'var(--text-secondary)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteYearBatchConfirm(batch.id)
+                        }}
+                        title="Delete Year Batch"
+                        style={{
+                          padding: '6px 10px',
+                          background: 'rgba(229, 62, 62, 0.1)',
+                          color: '#e53e3e',
+                          border: '1px solid #e53e3e',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          marginRight: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        downloadBatchCSV(batch)
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(56, 161, 105, 0.15)'
+                        e.currentTarget.style.transform = 'scale(1.05)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(56, 161, 105, 0.1)'
+                        e.currentTarget.style.transform = 'scale(1)'
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        background: 'rgba(56, 161, 105, 0.1)',
+                        color: 'var(--primary-medium, #38a169)',
+                        border: '1px solid var(--primary-medium, #38a169)',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        marginRight: '12px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Download size={16} />
+                      Download CSV
+                    </button>
                     <span className={styles.roomCount}>
                       {totalSections} sections
                     </span>
-                    <button className={styles.toggleBtn}>
+                    <button 
+                      className={styles.toggleBtn}
+                      onClick={() => toggleBatch(batch.id)}
+                    >
                       {expandedBatches.has(batch.id) ? (
                         <ChevronDown size={20} />
                       ) : (
@@ -923,6 +1243,14 @@ function ClassSectionAssigningContent() {
                                     e.stopPropagation()
                                     openCreateSectionModal(batch.id)
                                   }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'var(--primary-medium, #38a169)'
+                                    e.currentTarget.style.color = 'white'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
+                                    e.currentTarget.style.color = 'var(--primary-dark, #276749)'
+                                  }}
                                   style={{
                                     marginLeft: 'auto',
                                     padding: '4px 10px',
@@ -935,7 +1263,8 @@ function ClassSectionAssigningContent() {
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    gap: '4px',
+                                    transition: 'all 0.2s ease'
                                   }}
                                 >
                                   <Plus size={12} />
@@ -958,7 +1287,9 @@ function ClassSectionAssigningContent() {
                                   gap: '16px',
                                   marginLeft: '16px'
                                 }}>
-                                  {levelSections.map(section => (
+                                  {levelSections
+                                    .sort((a, b) => a.section_name.localeCompare(b.section_name))
+                                    .map(section => (
                                     <div 
                                       key={section.id}
                                       style={{
@@ -967,7 +1298,16 @@ function ClassSectionAssigningContent() {
                                         border: '1px solid var(--border-color, #e2e8f0)',
                                         overflow: 'hidden',
                                         transition: 'all 0.2s ease',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                        cursor: 'pointer'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)'
+                                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0px)'
+                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'
                                       }}
                                     >
                                       {/* Card Header - Colored Banner */}
@@ -985,13 +1325,29 @@ function ClassSectionAssigningContent() {
                                         }}>
                                           {section.section_name}
                                         </h3>
-                                        <p style={{ 
-                                          margin: 0, 
-                                          fontSize: '12px', 
-                                          opacity: 0.9 
-                                        }}>
-                                          {section.degree_program}
-                                        </p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                          <p style={{ 
+                                            margin: 0, 
+                                            fontSize: '12px', 
+                                            opacity: 0.9,
+                                            flex: 1
+                                          }}>
+                                            {section.degree_program}
+                                          </p>
+                                          {/* Completion Status */}
+                                          <div style={{
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            fontSize: '10px',
+                                            fontWeight: 600,
+                                            background: getAssignedCourses(section.id).length > 0 
+                                              ? 'rgba(255, 255, 255, 0.3)'
+                                              : 'rgba(255, 255, 255, 0.2)',
+                                            color: 'white'
+                                          }}>
+                                            {getAssignedCourses(section.id).length > 0 ? 'Complete' : 'Incomplete'}
+                                          </div>
+                                        </div>
                                         
                                         {/* Action Buttons */}
                                         <div style={{ 
@@ -1002,14 +1358,26 @@ function ClassSectionAssigningContent() {
                                           gap: '4px'
                                         }}>
                                           <button
-                                            onClick={() => openEditSectionModal(section)}
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              openEditSectionModal(section)
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.background = 'rgba(255,255,255,0.3)'
+                                              e.currentTarget.style.transform = 'scale(1.1)'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
+                                              e.currentTarget.style.transform = 'scale(1)'
+                                            }}
                                             style={{
                                               padding: '6px',
                                               background: 'rgba(255,255,255,0.2)',
                                               border: 'none',
                                               borderRadius: '6px',
                                               cursor: 'pointer',
-                                              color: 'white'
+                                              color: 'white',
+                                              transition: 'all 0.2s ease'
                                             }}
                                           >
                                             <Edit3 size={14} />
@@ -1047,14 +1415,26 @@ function ClassSectionAssigningContent() {
                                             </div>
                                           ) : (
                                             <button
-                                              onClick={() => setDeleteConfirm(section.id)}
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setDeleteConfirm(section.id)
+                                              }}
+                                              onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)'
+                                                e.currentTarget.style.transform = 'scale(1.1)'
+                                              }}
+                                              onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
+                                                e.currentTarget.style.transform = 'scale(1)'
+                                              }}
                                               style={{
                                                 padding: '6px',
                                                 background: 'rgba(255,255,255,0.2)',
                                                 border: 'none',
                                                 borderRadius: '6px',
                                                 cursor: 'pointer',
-                                                color: 'white'
+                                                color: 'white',
+                                                transition: 'all 0.2s ease'
                                               }}
                                             >
                                               <Trash2 size={14} />
@@ -1154,7 +1534,18 @@ function ClassSectionAssigningContent() {
 
                                         {/* Assign Courses Button */}
                                         <button
-                                          onClick={() => openAssignCoursesModal(section)}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            openAssignCoursesModal(section)
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
+                                            e.currentTarget.style.borderColor = 'var(--primary-dark, #276749)'
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'var(--bg-gray-50, #f7fafc)'
+                                            e.currentTarget.style.borderColor = 'var(--primary-medium, #38a169)'
+                                          }}
                                           style={{
                                             width: '100%',
                                             padding: '10px',
@@ -1254,7 +1645,7 @@ function ClassSectionAssigningContent() {
             }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <FolderPlus size={20} />
-                Add Year Batch
+                {modalMode === 'edit' ? 'Edit Year Batch' : 'Add Year Batch'}
               </h2>
               <button
                 onClick={() => setShowYearBatchModal(false)}
@@ -1274,13 +1665,14 @@ function ClassSectionAssigningContent() {
             <div style={{ padding: '24px' }}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
-                  Year Batch *
+                  Year Batch Name * <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(max 20 chars)</span>
                 </label>
                 <input
                   type="text"
                   value={yearBatchForm.year_batch}
-                  onChange={(e) => setYearBatchForm(prev => ({ ...prev, year_batch: e.target.value }))}
-                  placeholder="e.g., 2024-2025"
+                  onChange={(e) => setYearBatchForm(prev => ({ ...prev, year_batch: e.target.value.slice(0, 20) }))}
+                  placeholder="e.g., 2024-25 1st Sem"
+                  maxLength={20}
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -1289,6 +1681,9 @@ function ClassSectionAssigningContent() {
                     fontSize: '14px'
                   }}
                 />
+                <span style={{ fontSize: '11px', color: yearBatchForm.year_batch.length > 18 ? '#e53e3e' : 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                  {yearBatchForm.year_batch.length}/20 characters • e.g., &quot;2024-25 1st Sem&quot;, &quot;2024-25 2nd Sem&quot;, &quot;2024-25 Summer&quot;
+                </span>
               </div>
 
               <div style={{ marginBottom: '24px' }}>
@@ -1342,7 +1737,7 @@ function ClassSectionAssigningContent() {
                   }}
                 >
                   <Save size={16} />
-                  {saving ? 'Saving...' : 'Create'}
+                  {saving ? 'Saving...' : (modalMode === 'edit' ? 'Update' : 'Create')}
                 </button>
               </div>
             </div>

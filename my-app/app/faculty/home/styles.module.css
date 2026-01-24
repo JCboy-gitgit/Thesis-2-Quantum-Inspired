@@ -1,5 +1,45 @@
 /* Faculty Home Page Styles */
 
+/* ==================== College Theme Variables ==================== */
+.pageContainer {
+  --college-primary: rgba(0, 212, 255, 1);
+  --college-primary-light: rgba(0, 212, 255, 0.2);
+  --college-primary-dark: rgba(0, 153, 204, 1);
+  --college-accent: #00d4ff;
+  --college-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+  --college-glow: rgba(0, 212, 255, 0.5);
+}
+
+/* College of Science Theme */
+.pageContainer[data-college-theme="science"] {
+  --college-primary: rgba(37, 150, 190, 1);
+  --college-primary-light: rgba(37, 150, 190, 0.2);
+  --college-primary-dark: rgba(25, 100, 130, 1);
+  --college-accent: #10b981;
+  --college-gradient: linear-gradient(135deg, #25969e 0%, #10b981 50%, #34d399 100%);
+  --college-glow: rgba(37, 150, 190, 0.5);
+}
+
+/* College of Arts and Letters Theme */
+.pageContainer[data-college-theme="arts-letters"] {
+  --college-primary: rgba(249, 115, 22, 1);
+  --college-primary-light: rgba(249, 115, 22, 0.2);
+  --college-primary-dark: rgba(194, 65, 12, 1);
+  --college-accent: #fbbf24;
+  --college-gradient: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
+  --college-glow: rgba(249, 115, 22, 0.5);
+}
+
+/* College of Architecture and Fine Arts Theme */
+.pageContainer[data-college-theme="architecture"] {
+  --college-primary: rgba(127, 29, 29, 1);
+  --college-primary-light: rgba(127, 29, 29, 0.2);
+  --college-primary-dark: rgba(69, 10, 10, 1);
+  --college-accent: #dc2626;
+  --college-gradient: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%);
+  --college-glow: rgba(127, 29, 29, 0.5);
+}
+
 .loadingScreen {
   min-height: 100vh;
   display: flex;
@@ -14,8 +54,8 @@
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(0, 212, 255, 0.2);
-  border-top-color: #00d4ff;
+  border: 4px solid var(--college-primary-light);
+  border-top-color: var(--college-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -30,6 +70,12 @@
   color: white;
 }
 
+/* Light mode support */
+[data-theme="light"] .pageContainer {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  color: #1e293b;
+}
+
 /* Header */
 .header {
   display: flex;
@@ -37,16 +83,36 @@
   align-items: center;
   padding: 15px 30px;
   background: rgba(20, 26, 50, 0.95);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  border-bottom: 1px solid var(--college-primary-light);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
+[data-theme="light"] .header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .headerLeft {
   display: flex;
   align-items: center;
+  gap: 15px;
+}
+
+.mobileMenuBtn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  background: var(--college-primary-light);
+  border: 1px solid var(--college-primary-light);
+  border-radius: 10px;
+  color: var(--college-primary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .logo {
@@ -58,21 +124,23 @@
 .logoIcon {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: var(--college-gradient);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 20px;
+  color: white;
 }
 
 .logoText {
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #00d4ff, #ffd700);
+  background: var(--college-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .headerRight {
@@ -84,10 +152,10 @@
 .iconBtn {
   width: 40px;
   height: 40px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: var(--college-primary-light);
+  border: 1px solid var(--college-primary-light);
   border-radius: 10px;
-  color: #a0aec0;
+  color: var(--college-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -96,8 +164,153 @@
 }
 
 .iconBtn:hover {
-  background: rgba(0, 212, 255, 0.2);
-  color: #00d4ff;
+  background: var(--college-primary-light);
+  color: var(--college-primary);
+  box-shadow: 0 0 15px var(--college-glow);
+}
+
+/* Theme Menu */
+.themeSection {
+  position: relative;
+}
+
+.themeMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: rgba(20, 26, 50, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--college-primary-light);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  min-width: 280px;
+  overflow: hidden;
+  animation: slideInMenu 0.3s ease-out;
+  z-index: 1000;
+  padding: 16px;
+}
+
+[data-theme="light"] .themeMenu {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.themeMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--college-primary-light);
+  font-weight: 700;
+  color: var(--college-primary);
+}
+
+.themeSectionLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme="light"] .themeSectionLabel {
+  color: #64748b;
+}
+
+.themeModeButtons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.themeModeBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+[data-theme="light"] .themeModeBtn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.themeModeBtn:hover {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.themeModeBtn.active {
+  background: var(--college-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+.collegeThemeOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collegeThemeBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+[data-theme="light"] .collegeThemeBtn {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+.collegeThemeBtn:hover {
+  background: var(--college-primary-light);
+  border-color: var(--btn-color, var(--college-primary));
+}
+
+.collegeThemeBtn.active {
+  background: var(--college-primary-light);
+  border-color: var(--btn-color, var(--college-primary));
+  color: white;
+}
+
+[data-theme="light"] .collegeThemeBtn.active {
+  color: var(--btn-color);
+}
+
+.colorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--btn-color, var(--college-primary));
+  flex-shrink: 0;
 }
 
 /* Profile Section */
@@ -122,19 +335,19 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(255, 215, 0, 0.1));
-  border: 2px solid rgba(0, 212, 255, 0.3);
+  background: var(--college-primary-light);
+  border: 2px solid var(--college-primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00d4ff;
+  color: var(--college-primary);
   transition: all 0.3s ease;
 }
 
 .profileBtn:hover .profileAvatar {
   transform: scale(1.1);
-  border-color: #00d4ff;
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+  border-color: var(--college-primary);
+  box-shadow: 0 0 15px var(--college-glow);
 }
 
 .profileChevron {
@@ -142,12 +355,16 @@
   transition: transform 0.3s ease, color 0.3s ease;
 }
 
+[data-theme="light"] .profileChevron {
+  color: #64748b;
+}
+
 .profileChevron.rotated {
   transform: rotate(180deg);
 }
 
 .profileBtn:hover .profileChevron {
-  color: #00d4ff;
+  color: var(--college-primary);
 }
 
 .profileMenu {
@@ -156,13 +373,19 @@
   right: 0;
   background: rgba(20, 26, 50, 0.95);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid var(--college-primary-light);
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   min-width: 150px;
   overflow: hidden;
   animation: slideInMenu 0.3s ease-out;
   z-index: 1000;
+}
+
+[data-theme="light"] .profileMenu {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes slideInMenu {
@@ -188,15 +411,19 @@
   font-weight: 500;
 }
 
+[data-theme="light"] .profileMenuItem {
+  color: #475569;
+}
+
 .profileMenuItem:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
+  background: var(--college-primary-light);
+  color: var(--college-primary);
   padding-left: 22px;
 }
 
 .profileMenuDivider {
   height: 1px;
-  background: rgba(0, 212, 255, 0.2);
+  background: var(--college-primary-light);
   margin: 6px 0;
 }
 
@@ -215,10 +442,16 @@
 /* Welcome Section */
 .welcomeSection {
   background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid var(--college-primary-light);
   border-radius: 20px;
   padding: 30px;
   margin-bottom: 30px;
+}
+
+[data-theme="light"] .welcomeSection {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .welcomeContent {
@@ -231,12 +464,13 @@
 .userAvatar {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: var(--college-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0;
 }
 
 .welcomeText h1 {
@@ -244,9 +478,17 @@
   margin: 0 0 5px 0;
 }
 
+[data-theme="light"] .welcomeText h1 {
+  color: #1e293b;
+}
+
 .welcomeText p {
   color: #a0aec0;
   margin: 0;
+}
+
+[data-theme="light"] .welcomeText p {
+  color: #64748b;
 }
 
 .userInfo {
@@ -259,11 +501,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 212, 255, 0.1);
+  background: var(--college-primary-light);
   padding: 8px 15px;
   border-radius: 20px;
   font-size: 14px;
-  color: #00d4ff;
+  color: var(--college-primary);
 }
 
 /* Class Cards */
@@ -276,15 +518,25 @@
 
 .classCard {
   background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid var(--college-primary-light);
   border-radius: 15px;
   padding: 20px;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
+[data-theme="light"] .classCard {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
 .classCard:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .classCard:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .classCard.currentClass {
@@ -353,9 +605,17 @@
   margin: 0 0 5px 0;
 }
 
+[data-theme="light"] .classCard h3 {
+  color: #1e293b;
+}
+
 .courseName {
   color: #a0aec0;
   margin: 0 0 15px 0;
+}
+
+[data-theme="light"] .courseName {
+  color: #64748b;
 }
 
 .classDetails {
@@ -364,6 +624,10 @@
   gap: 5px;
   font-size: 13px;
   color: #a0aec0;
+}
+
+[data-theme="light"] .classDetails {
+  color: #64748b;
 }
 
 .classDetails span {
@@ -375,10 +639,16 @@
 /* Schedule Section */
 .scheduleSection {
   background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid var(--college-primary-light);
   border-radius: 20px;
   padding: 25px;
   margin-bottom: 30px;
+}
+
+[data-theme="light"] .scheduleSection {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .sectionHeader {
@@ -396,13 +666,17 @@
   margin: 0;
 }
 
+[data-theme="light"] .sectionHeader h2 {
+  color: #1e293b;
+}
+
 .refreshBtn {
   width: 36px;
   height: 36px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: var(--college-primary-light);
+  border: 1px solid var(--college-primary-light);
   border-radius: 8px;
-  color: #00d4ff;
+  color: var(--college-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -411,7 +685,7 @@
 }
 
 .refreshBtn:hover {
-  background: rgba(0, 212, 255, 0.2);
+  background: var(--college-primary-light);
   transform: rotate(180deg);
 }
 
@@ -431,8 +705,12 @@
   transition: background 0.2s;
 }
 
+[data-theme="light"] .scheduleItem {
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .scheduleItem:hover {
-  background: rgba(0, 212, 255, 0.1);
+  background: var(--college-primary-light);
 }
 
 .scheduleTime {
@@ -440,7 +718,7 @@
   align-items: center;
   gap: 6px;
   min-width: 160px;
-  color: #00d4ff;
+  color: var(--college-primary);
   font-size: 13px;
   font-weight: 600;
 }
@@ -454,6 +732,10 @@
   font-size: 15px;
 }
 
+[data-theme="light"] .scheduleInfo h4 {
+  color: #1e293b;
+}
+
 .scheduleInfo p {
   margin: 0;
   font-size: 13px;
@@ -461,6 +743,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+[data-theme="light"] .scheduleInfo p {
+  color: #64748b;
 }
 
 .separator {
@@ -477,6 +764,10 @@
   color: #a0aec0;
 }
 
+[data-theme="light"] .emptySchedule {
+  color: #64748b;
+}
+
 .emptySchedule svg {
   opacity: 0.3;
   margin-bottom: 15px;
@@ -485,6 +776,10 @@
 .emptySchedule h3 {
   color: white;
   margin: 0 0 10px 0;
+}
+
+[data-theme="light"] .emptySchedule h3 {
+  color: #1e293b;
 }
 
 .emptySchedule p {
@@ -502,6 +797,10 @@
   margin: 0 0 20px 0;
 }
 
+[data-theme="light"] .quickActions h2 {
+  color: #1e293b;
+}
+
 .actionGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -515,15 +814,21 @@
   gap: 10px;
   padding: 25px;
   background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid var(--college-primary-light);
   border-radius: 15px;
-  color: #00d4ff;
+  color: var(--college-primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
+[data-theme="light"] .actionCard {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
 .actionCard:hover {
-  background: rgba(0, 212, 255, 0.1);
+  background: var(--college-primary-light);
   transform: translateY(-3px);
 }
 
@@ -533,10 +838,18 @@
   color: white;
 }
 
-/* Responsive */
+[data-theme="light"] .actionCard span {
+  color: #1e293b;
+}
+
+/* Mobile Responsive */
 @media (max-width: 768px) {
+  .mobileMenuBtn {
+    display: flex;
+  }
+  
   .mainContent {
-    padding: 20px;
+    padding: 15px;
   }
 
   .welcomeContent {
@@ -547,18 +860,75 @@
   .userInfo {
     justify-content: center;
   }
+  
+  .welcomeText h1 {
+    font-size: 22px;
+  }
+  
+  .welcomeSection {
+    padding: 20px;
+  }
+  
+  .classCards {
+    grid-template-columns: 1fr;
+  }
 
   .scheduleTime {
     min-width: auto;
     flex-direction: column;
     align-items: flex-start;
   }
-
-  .header {
-    padding: 15px;
+  
+  .scheduleItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 
-  .logoutBtn span {
+  .header {
+    padding: 12px 15px;
+  }
+  
+  .logoText {
+    font-size: 16px;
+  }
+  
+  .themeMenu {
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    min-width: unset;
+  }
+  
+  .actionGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .actionCard {
+    padding: 20px 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logoIcon {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+  
+  .logoText {
     display: none;
+  }
+  
+  .iconBtn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .userAvatar {
+    width: 60px;
+    height: 60px;
   }
 }
