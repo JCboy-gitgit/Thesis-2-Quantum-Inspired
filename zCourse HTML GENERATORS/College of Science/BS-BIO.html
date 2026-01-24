@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Biology Curriculum CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BS Biology Curriculum CSV Generator</h1>
+        <p class="subtitle">AY 2024-2025 - Convert curriculum data to CSV format</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 10 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // First Year - First Semester
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "MMW 101", title: "Mathematics for the Modern World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "BOT 102", title: "Botany Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "BOT 102L", title: "Botany Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "ZOO 103", title: "Zoology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "ZOO 103L", title: "Zoology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "PE 10", title: "PAHTFIT 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "First Semester", grade: "", code: "NSTP 10", title: "National Service Training Program 10", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // First Year - Second Semester
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "STS 101", title: "Science Technology & Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "PID 101", title: "Pagsasalin sa iba't ibang Disiplina", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "SYS 104", title: "Systematics Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "BOT 102, BOT 102L, ZOO 103, ZOO 103L"},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "SYS 104L", title: "Systematics Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "ECO 105", title: "General Ecology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "ECO 105L", title: "General Ecology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "CHEM 106", title: "Chemical Biology I Lec (Organic Molecules)", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "CHEM 106L", title: "Chemical Biology Lab (Organic Molecules)", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "PE 11", title: "PAHTFIT 2", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "First Year", semester: "Second Semester", grade: "", code: "NSTP 11", title: "National Service Training Program 11", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Second Year - First Semester
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "INV 204", title: "Invertebrate Zoology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "SYS 104, SYS 104L, ECO 105, ECO 105L"},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "INV 204L", title: "Invertebrate Zoology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "ETB 201", title: "Ethnobotany Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "ETB 201L", title: "Ethnobotany Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "PHY 205", title: "Biophysics Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "PHY 205L", title: "Biophysics Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "CHEM 203", title: "Chemical Biology II Lec (Analytical Methods for Biology)", labUnits: "", labHours: "", lecHours: "2", prereq: "CHEM 106, CHEM 106L"},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "CHEM 203L", title: "Chemical Biology II Lab (Analytical Methods for Biology)", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "First Semester", grade: "", code: "PE 12", title: "PAHTFIT 3", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            
+            // Second Year - Second Semester
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "AAH 101a", title: "Great Books", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "CHEM 204", title: "Chemical Biology III Lec (Biomolecules Lec)", labUnits: "", labHours: "", lecHours: "3", prereq: "CHEM 203"},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "CHEM 204L", title: "Chemical Biology III Lab (Biomolecules Lab)", labUnits: "2", labHours: "6", lecHours: "", prereq: "CHEM 203L"},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "MIC 205", title: "Microbiology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "BOT 102, BOT 102L, ZOO 103, ZOO 103L, SYS 104, SYS 104L, ECO 105, ECO 105L"},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "MIC 205L", title: "Microbiology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "ECB 205", title: "Economic Botany Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "ECB 205L", title: "Economic Botany Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Second Year", semester: "Second Semester", grade: "", code: "PE 13", title: "PAHTFIT 4", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            
+            // Third Year - First Semester
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "SSP 101", title: "The Entrepreneurial Mind", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "MST 101", title: "Living in the IT Era", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "RLW 101", title: "Rizal's Life and Works", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "GEN 301", title: "Genetics Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "CHEM 204, CHEM 204L, MIC 205, MIC 205L"},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "GEN 301L", title: "Genetics Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "CMB 302", title: "Cell and Molecular Biology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "First Semester", grade: "", code: "CMB 302L", title: "Cell and Molecular Biology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            
+            // Third Year - Second Semester
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "CVA 302", title: "Comparative Vertebrate Anatomy Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "Zoo 103, Zoo 103L, SYS 104, SYS 104L, ECO 105, ECO 105L, INV 204, INV 204L"},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "CVA 302L", title: "Comparative Vertebrate Anatomy Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "PAR 304", title: "Parasitology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "INV 204, INV 204L, MIC 205, MIC 205L"},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "PAR 304L", title: "Parasitology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "BST 305", title: "Biostatistics Lec", labUnits: "", labHours: "", lecHours: "2", prereq: "MMW 101"},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "BST 305L", title: "Biostatistics Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Second Semester", grade: "", code: "THE 306", title: "Thesis I", labUnits: "", labHours: "", lecHours: "2", prereq: "Third Year Regular Student (All major subjects)"},
+            
+            // Third Year - Summer
+            {degree: "Bachelor of Science in Biology", year: "Third Year", semester: "Summer", grade: "", code: "OJT 307 A", title: "On-the-Job Training", labUnits: "", labHours: "", lecHours: "3", prereq: "All subjects from 1st year to 3rd year Senior Standing"},
+            
+            // Fourth Year - First Semester
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "GPH 401", title: "General Physiology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "CVA 302, CVA 302L"},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "GPH 401L", title: "General Physiology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "DEV 402", title: "Developmental Biology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "DEV 402L", title: "Developmental Biology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "THE 403", title: "Thesis II", labUnits: "", labHours: "", lecHours: "2", prereq: "THE 306"},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "First Semester", grade: "", code: "ELEC I", title: "Free Elective I (Personality Development)", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Fourth Year - Second Semester
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "EVO 303", title: "Evolutionary Biology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "GPH 201, GPH 201L, DEV 202, DEV 202L"},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "EVO 303L", title: "Evolutionary Biology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "THE 406", title: "Thesis III", labUnits: "", labHours: "", lecHours: "2", prereq: "THE 403"},
+            {degree: "Bachelor of Science in Biology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "ELEC II", title: "Free Elective 2 (Foreign Language)", labUnits: "", labHours: "", lecHours: "3", prereq: ""}
+        ];
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            curriculumData.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Calculate stats
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 11).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "BS_Biology_Curriculum_2024-2025.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Calculate initial stats
+        window.onload = function() {
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+        };
+    </script>
+</body>
+</html>

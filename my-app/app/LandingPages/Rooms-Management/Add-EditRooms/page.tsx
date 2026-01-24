@@ -26,12 +26,25 @@ import {
   ChevronRight,
   Landmark,
   MapPin,
-  Snowflake,
-  MonitorPlay,
+  Wind,
+  Tv,
+  PresentationIcon,
   Accessibility,
   ArrowLeft,
   Search
 } from 'lucide-react'
+
+// Helper function to display "None" for null/undefined values
+const displayValue = (value: any, defaultVal: string = 'None'): string => {
+  if (value === null || value === undefined || value === '') return defaultVal
+  return String(value)
+}
+
+// Helper function to display boolean values
+const displayBool = (value: boolean | null | undefined): string => {
+  if (value === null || value === undefined) return 'None'
+  return value ? 'Yes' : 'No'
+}
 
 // Campus room from CSV uploads
 interface CampusRoom {
@@ -41,18 +54,20 @@ interface CampusRoom {
   campus: string
   building: string
   room: string
+  room_code: string | null
   capacity: number
-  is_first_floor: boolean
-  floor_number: number
+  floor_number: number | null
   room_type: string
-  has_ac: boolean
-  has_projector: boolean
-  has_whiteboard: boolean
-  is_pwd_accessible: boolean
+  specific_classification: string | null
+  has_ac: boolean | null
+  has_whiteboard: boolean | null
+  has_tv: boolean | null
+  has_projector: boolean | null
   status: string
   notes: string | null
   file_name: string
   created_at: string
+  college: string | null
 }
 
 interface CampusGroup {
@@ -82,13 +97,15 @@ export default function AddEditRoomsPage() {
     campus: '',
     building: '',
     room: '',
+    room_code: '',
     capacity: 30,
     floor_number: 1,
     room_type: 'Classroom',
+    specific_classification: '',
     has_ac: false,
-    has_projector: false,
     has_whiteboard: true,
-    is_pwd_accessible: false,
+    has_tv: false,
+    status: 'usable',
     notes: ''
   })
 
@@ -210,14 +227,16 @@ export default function AddEditRoomsPage() {
             campus: formData.campus,
             building: formData.building,
             room: formData.room,
+            room_code: formData.room_code || null,
             capacity: formData.capacity,
-            floor_number: formData.floor_number,
-            is_first_floor: formData.floor_number === 1,
+            floor_number: formData.floor_number || null,
             room_type: formData.room_type,
-            has_ac: formData.has_ac,
-            has_projector: formData.has_projector,
-            has_whiteboard: formData.has_whiteboard,
-            is_pwd_accessible: formData.is_pwd_accessible,
+            specific_classification: formData.specific_classification || null,
+            has_ac: Boolean(formData.has_ac),
+            has_whiteboard: Boolean(formData.has_whiteboard),
+            has_tv: Boolean(formData.has_tv),
+            has_projector: false,
+            status: formData.status || 'usable',
             notes: formData.notes || null
           })
           .eq('id', editingRoom.id)
@@ -234,17 +253,18 @@ export default function AddEditRoomsPage() {
             campus: formData.campus,
             building: formData.building,
             room: formData.room,
+            room_code: formData.room_code || null,
             capacity: formData.capacity,
-            floor_number: formData.floor_number,
-            is_first_floor: formData.floor_number === 1,
+            floor_number: formData.floor_number || null,
             room_type: formData.room_type,
-            has_ac: formData.has_ac,
-            has_projector: formData.has_projector,
-            has_whiteboard: formData.has_whiteboard,
-            is_pwd_accessible: formData.is_pwd_accessible,
+            specific_classification: formData.specific_classification || null,
+            has_ac: Boolean(formData.has_ac),
+            has_whiteboard: Boolean(formData.has_whiteboard),
+            has_tv: Boolean(formData.has_tv),
+            has_projector: false,
+            status: formData.status || 'usable',
             notes: formData.notes || null,
-            file_name: 'Manual Entry',
-            status: 'active'
+            file_name: 'Manual Entry'
           })
         
         if (error) throw error
@@ -267,13 +287,15 @@ export default function AddEditRoomsPage() {
       campus: room.campus || '',
       building: room.building || '',
       room: room.room || '',
+      room_code: room.room_code || '',
       capacity: room.capacity || 30,
       floor_number: room.floor_number || 1,
       room_type: room.room_type || 'Classroom',
+      specific_classification: room.specific_classification || '',
       has_ac: room.has_ac || false,
-      has_projector: room.has_projector || false,
       has_whiteboard: room.has_whiteboard ?? true,
-      is_pwd_accessible: room.is_pwd_accessible || false,
+      has_tv: room.has_tv || false,
+      status: room.status || 'usable',
       notes: room.notes || ''
     })
     setShowAddModal(true)
@@ -308,13 +330,15 @@ export default function AddEditRoomsPage() {
       campus: '',
       building: '',
       room: '',
+      room_code: '',
       capacity: 30,
       floor_number: 1,
       room_type: 'Classroom',
+      specific_classification: '',
       has_ac: false,
-      has_projector: false,
       has_whiteboard: true,
-      is_pwd_accessible: false,
+      has_tv: false,
+      status: 'usable',
       notes: ''
     })
   }
@@ -555,12 +579,15 @@ export default function AddEditRoomsPage() {
                                           <div className={styles.roomCell}>
                                             <DoorOpen size={16} />
                                             <span>{room.room}</span>
+                                            {room.room_code && (
+                                              <small style={{ color: 'var(--text-light)', marginLeft: '4px' }}>({room.room_code})</small>
+                                            )}
                                           </div>
                                         </td>
                                         <td>
                                           <div className={styles.floorCell}>
                                             <MapPin size={14} />
-                                            Floor {room.floor_number}
+                                            {room.floor_number ? `Floor ${room.floor_number}` : 'None'}
                                           </div>
                                         </td>
                                         <td>
@@ -576,21 +603,21 @@ export default function AddEditRoomsPage() {
                                         </td>
                                         <td>
                                           <div className={styles.featuresCell}>
-                                            {room.has_ac && (
-                                              <span className={styles.featureIcon} title="Air Conditioned">
-                                                <Snowflake size={14} />
-                                              </span>
-                                            )}
-                                            {room.has_projector && (
-                                              <span className={styles.featureIcon} title="Projector">
-                                                <MonitorPlay size={14} />
-                                              </span>
-                                            )}
-                                            {room.is_pwd_accessible && (
-                                              <span className={styles.featureIcon} title="PWD Accessible">
-                                                <Accessibility size={14} />
-                                              </span>
-                                            )}
+                                            <span className={styles.featureIcon} title={`AC: ${displayBool(room.has_ac)}`} style={{ 
+                                              opacity: room.has_ac ? 1 : 0.3 
+                                            }}>
+                                              <Wind size={14} />
+                                            </span>
+                                            <span className={styles.featureIcon} title={`Whiteboard: ${displayBool(room.has_whiteboard)}`} style={{ 
+                                              opacity: room.has_whiteboard ? 1 : 0.3 
+                                            }}>
+                                              <PresentationIcon size={14} />
+                                            </span>
+                                            <span className={styles.featureIcon} title={`TV: ${displayBool(room.has_tv)}`} style={{ 
+                                              opacity: room.has_tv ? 1 : 0.3 
+                                            }}>
+                                              <Tv size={14} />
+                                            </span>
                                           </div>
                                         </td>
                                         <td>
@@ -646,7 +673,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <Landmark size={16} /> Campus *
+                    <Landmark size={16} /> Campus/College *
                   </label>
                   <input
                     type="text"
@@ -654,7 +681,7 @@ export default function AddEditRoomsPage() {
                     onChange={e => setFormData(prev => ({ ...prev, campus: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., Main Campus"
+                    placeholder="e.g., College of Science"
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -667,7 +694,7 @@ export default function AddEditRoomsPage() {
                     onChange={e => setFormData(prev => ({ ...prev, building: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., Engineering Building"
+                    placeholder="e.g., Science Building"
                   />
                 </div>
               </div>
@@ -675,7 +702,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <DoorOpen size={16} /> Room *
+                    <DoorOpen size={16} /> Room Name *
                   </label>
                   <input
                     type="text"
@@ -683,9 +710,24 @@ export default function AddEditRoomsPage() {
                     onChange={e => setFormData(prev => ({ ...prev, room: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., 101 or Lab-A"
+                    placeholder="e.g., Room 101"
                   />
                 </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Room ID (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.room_code}
+                    onChange={e => setFormData(prev => ({ ...prev, room_code: e.target.value }))}
+                    className={styles.formInput}
+                    placeholder="e.g., CS-101"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
                     <Users size={16} /> Capacity *
@@ -699,36 +741,48 @@ export default function AddEditRoomsPage() {
                     className={styles.formInput}
                   />
                 </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    <MapPin size={16} /> Floor (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.floor_number || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, floor_number: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                    className={styles.formInput}
+                    placeholder="Leave empty for None"
+                  />
+                </div>
               </div>
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    <MapPin size={16} /> Floor Number
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.floor_number}
-                    onChange={e => setFormData(prev => ({ ...prev, floor_number: parseInt(e.target.value) || 1 }))}
-                    min="1"
-                    className={styles.formInput}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Room Type</label>
+                  <label className={styles.formLabel}>Primary Type</label>
                   <select
                     value={formData.room_type}
                     onChange={e => setFormData(prev => ({ ...prev, room_type: e.target.value }))}
                     className={styles.formSelect}
                   >
-                    <option value="Classroom">Classroom</option>
+                    <option value="Lecture Room">Lecture Room</option>
                     <option value="Laboratory">Laboratory</option>
                     <option value="Computer Lab">Computer Lab</option>
                     <option value="Lecture Hall">Lecture Hall</option>
                     <option value="Conference Room">Conference Room</option>
                     <option value="Auditorium">Auditorium</option>
+                    <option value="Classroom">Classroom</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Specific Classification</label>
+                  <input
+                    type="text"
+                    value={formData.specific_classification}
+                    onChange={e => setFormData(prev => ({ ...prev, specific_classification: e.target.value }))}
+                    className={styles.formInput}
+                    placeholder="e.g., Physics Lab, Computer Room"
+                  />
                 </div>
               </div>
 
@@ -738,40 +792,50 @@ export default function AddEditRoomsPage() {
                   <label className={styles.featureCheckbox}>
                     <input
                       type="checkbox"
-                      checked={formData.has_ac}
+                      checked={formData.has_ac || false}
                       onChange={e => setFormData(prev => ({ ...prev, has_ac: e.target.checked }))}
                     />
-                    <Snowflake size={16} />
+                    <Wind size={16} />
                     <span>Air Conditioned</span>
                   </label>
                   <label className={styles.featureCheckbox}>
                     <input
                       type="checkbox"
-                      checked={formData.has_projector}
-                      onChange={e => setFormData(prev => ({ ...prev, has_projector: e.target.checked }))}
-                    />
-                    <MonitorPlay size={16} />
-                    <span>Projector</span>
-                  </label>
-                  <label className={styles.featureCheckbox}>
-                    <input
-                      type="checkbox"
-                      checked={formData.has_whiteboard}
+                      checked={formData.has_whiteboard || false}
                       onChange={e => setFormData(prev => ({ ...prev, has_whiteboard: e.target.checked }))}
                     />
-                    <PenSquare size={16} />
+                    <PresentationIcon size={16} />
                     <span>Whiteboard</span>
                   </label>
                   <label className={styles.featureCheckbox}>
                     <input
                       type="checkbox"
-                      checked={formData.is_pwd_accessible}
-                      onChange={e => setFormData(prev => ({ ...prev, is_pwd_accessible: e.target.checked }))}
+                      checked={formData.has_tv || false}
+                      onChange={e => setFormData(prev => ({ ...prev, has_tv: e.target.checked }))}
                     />
-                    <Accessibility size={16} />
-                    <span>PWD Accessible</span>
+                    <Tv size={16} />
+                    <span>TV</span>
                   </label>
                 </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Room Status</label>
+                <select
+                  value={formData.status}
+                  onChange={e => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                  className={styles.formSelect}
+                  style={{
+                    borderColor: formData.status === 'usable' ? '#22c55e' : formData.status === 'not_usable' ? '#ef4444' : '#f59e0b',
+                    background: formData.status === 'usable' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 
+                               formData.status === 'not_usable' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 
+                               'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+                  }}
+                >
+                  <option value="usable">✓ Usable</option>
+                  <option value="not_usable">✗ Not Usable</option>
+                  <option value="maintenance">🔧 Under Maintenance</option>
+                </select>
               </div>
 
               <div className={styles.formGroup}>

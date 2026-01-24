@@ -421,9 +421,14 @@
   color: #3b82f6;
 }
 
-.featureProjector {
+.featureTv {
   background: rgba(168, 85, 247, 0.1);
   color: #a855f7;
+}
+
+.featureWhiteboard {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
 }
 
 .featureComputer {
