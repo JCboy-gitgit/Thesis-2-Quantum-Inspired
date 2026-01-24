@@ -45,6 +45,7 @@ interface CampusGroup {
 }
 
 interface ClassGroup {
+  id: string
   upload_group_id: number
   college: string
   file_name: string
@@ -228,7 +229,7 @@ export default function GenerateSchedulePage() {
   
   // Selected data
   const [selectedCampusGroup, setSelectedCampusGroup] = useState<number | null>(null)
-  const [selectedClassGroup, setSelectedClassGroup] = useState<number | null>(null)
+  const [selectedClassGroup, setSelectedClassGroup] = useState<string | null>(null)
   const [selectedTeacherGroup, setSelectedTeacherGroup] = useState<number | null>(null)
   
   // Loaded detailed data
@@ -366,11 +367,13 @@ export default function GenerateSchedulePage() {
 
       if (!classError && classData) {
         const grouped = classData.reduce((acc: ClassGroup[], curr: any) => {
-          const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
+          const key = `${curr.college || ''}|${curr.semester || ''}|${curr.academic_year || ''}`
+          const existing = acc.find(item => item.id === key)
           if (existing) {
             existing.class_count++
           } else {
             acc.push({
+              id: key,
               upload_group_id: curr.upload_group_id,
               college: curr.college || 'Unnamed Batch',
               file_name: curr.file_name,
@@ -441,11 +444,13 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const loadClassData = async (groupId: number) => {
+  const loadClassData = async (college: string, semester: string, academicYear: string) => {
     const { data, error } = await (supabase
       .from('class_schedules') as any)
       .select('*')
-      .eq('upload_group_id', groupId)
+      .eq('college', college)
+      .eq('semester', semester)
+      .eq('academic_year', academicYear)
       .order('course_code', { ascending: true })
 
     if (!error && data) {
@@ -512,13 +517,16 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const handleSelectClassGroup = (groupId: number) => {
+  const handleSelectClassGroup = (groupId: string) => {
     if (selectedClassGroup === groupId) {
       setSelectedClassGroup(null)
       setClasses([])
     } else {
       setSelectedClassGroup(groupId)
-      loadClassData(groupId)
+      const group = classGroups.find(g => g.id === groupId)
+      if (group) {
+        loadClassData(group.college, group.semester, group.academic_year)
+      }
     }
   }
 
@@ -603,10 +611,15 @@ export default function GenerateSchedulePage() {
     setShowClassFileViewer(true)
     
     try {
+      const group = classGroups.find(g => g.id === selectedClassGroup)
+      if (!group) return
+
       const { data, error } = await (supabase
         .from('class_schedules') as any)
         .select('*')
-        .eq('upload_group_id', selectedClassGroup)
+        .eq('college', group.college)
+        .eq('semester', group.semester)
+        .eq('academic_year', group.academic_year)
         .order('course_code', { ascending: true })
       
       if (!error && data) {
@@ -655,7 +668,7 @@ export default function GenerateSchedulePage() {
 
   // Get selected group info
   const selectedCampusInfo = campusGroups.find(g => g.upload_group_id === selectedCampusGroup)
-  const selectedClassInfo = classGroups.find(g => g.upload_group_id === selectedClassGroup)
+  const selectedClassInfo = classGroups.find(g => g.id === selectedClassGroup)
   const selectedTeacherInfo = teacherGroups.find(g => g.upload_group_id === selectedTeacherGroup)
 
   // Calculate stats
@@ -697,7 +710,7 @@ export default function GenerateSchedulePage() {
         semester: config.semester,
         academic_year: config.academicYear,
         campus_group_id: selectedCampusGroup,
-        class_group_id: selectedClassGroup,
+        class_group_id: selectedClassInfo?.upload_group_id || null,
         teacher_group_id: selectedTeacherGroup,
         rooms: filteredRooms, // Use filtered rooms instead of all rooms
         classes: classes,
@@ -1164,9 +1177,9 @@ export default function GenerateSchedulePage() {
                           <div className={styles.dataSourceGrid}>
                             {classGroups.map(group => (
                               <div
-                                key={group.upload_group_id}
-                                className={`${styles.dataCard} ${selectedClassGroup === group.upload_group_id ? styles.selected : ''}`}
-                                onClick={() => handleSelectClassGroup(group.upload_group_id)}
+                                key={group.id}
+                                className={`${styles.dataCard} ${selectedClassGroup === group.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectClassGroup(group.id)}
                               >
                                 <div className={styles.dataCardHeader}>
                                   <GraduationCap size={20} />
@@ -1186,7 +1199,7 @@ export default function GenerateSchedulePage() {
                                 <div className={styles.dataCardDate}>
                                   {new Date(group.created_at).toLocaleDateString()}
                                 </div>
-                                {selectedClassGroup === group.upload_group_id && (
+                                {selectedClassGroup === group.id && (
                                   <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
                                 )}
                               </div>
