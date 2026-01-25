@@ -800,6 +800,110 @@
   font-size: 14px;
 }
 
+/* View Resources Section */
+.resourcesSection {
+  margin-bottom: 30px;
+}
+
+.resourcesSection h2 {
+  font-size: 20px;
+  margin: 0 0 8px 0;
+}
+
+[data-theme="light"] .resourcesSection h2 {
+  color: #1e293b;
+}
+
+.sectionDescription {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 20px 0;
+}
+
+[data-theme="light"] .sectionDescription {
+  color: #64748b;
+}
+
+.resourceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.resourceCard {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(20, 26, 50, 0.8);
+  border: 2px solid var(--college-primary-light);
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+}
+
+[data-theme="light"] .resourceCard {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.resourceCard:hover {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px var(--college-glow);
+}
+
+.resourceIcon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: var(--college-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.resourceContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.resourceContent h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+  color: white;
+}
+
+[data-theme="light"] .resourceContent h3 {
+  color: #1e293b;
+}
+
+.resourceContent p {
+  font-size: 13px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .resourceContent p {
+  color: #64748b;
+}
+
+.resourceCard .chevron {
+  flex-shrink: 0;
+  color: var(--college-primary);
+  transition: transform 0.2s;
+}
+
+.resourceCard:hover .chevron {
+  transform: translateX(4px);
+}
+
 /* Quick Actions */
 .quickActions {
   margin-bottom: 30px;
@@ -921,6 +1025,27 @@
 
   .actionCard {
     padding: 20px 15px;
+  }
+
+  .resourceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resourceCard {
+    padding: 15px;
+  }
+
+  .resourceIcon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .resourceContent h3 {
+    font-size: 15px;
+  }
+
+  .resourceContent p {
+    font-size: 12px;
   }
 }
 

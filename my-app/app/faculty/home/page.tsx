@@ -503,6 +503,46 @@ export default function FacultyHomePage() {
         {/* Room Viewer 2D */}
         <RoomViewer2D />
 
+        {/* View Resources Section */}
+        <section className={styles.resourcesSection}>
+          <h2>View Resources</h2>
+          <p className={styles.sectionDescription}>Access important information and schedules</p>
+          <div className={styles.resourceGrid}>
+            <button className={styles.resourceCard} onClick={() => router.push('/faculty/directory')}>
+              <div className={styles.resourceIcon}>
+                <User size={32} />
+              </div>
+              <div className={styles.resourceContent}>
+                <h3>Faculty Directory</h3>
+                <p>Browse all faculty members and their profiles</p>
+              </div>
+              <ChevronRight size={20} className={styles.chevron} />
+            </button>
+            
+            <button className={styles.resourceCard} onClick={() => router.push('/faculty/departments')}>
+              <div className={styles.resourceIcon}>
+                <Building2 size={32} />
+              </div>
+              <div className={styles.resourceContent}>
+                <h3>Departments</h3>
+                <p>View department structures and information</p>
+              </div>
+              <ChevronRight size={20} className={styles.chevron} />
+            </button>
+            
+            <button className={styles.resourceCard} onClick={() => router.push('/faculty/schedules')}>
+              <div className={styles.resourceIcon}>
+                <Calendar size={32} />
+              </div>
+              <div className={styles.resourceContent}>
+                <h3>Room Schedules</h3>
+                <p>Check master schedule and room availability</p>
+              </div>
+              <ChevronRight size={20} className={styles.chevron} />
+            </button>
+          </div>
+        </section>
+
         {/* Quick Actions */}
         <section className={styles.quickActions}>
           <h2>Quick Actions</h2>
@@ -514,6 +554,18 @@ export default function FacultyHomePage() {
             <button className={styles.actionCard} onClick={() => router.push('/faculty/schedule')}>
               <Calendar size={24} />
               <span>Full Schedule</span>
+            </button>
+            <button className={styles.actionCard} onClick={() => router.push('/faculty/directory')}>
+              <User size={24} />
+              <span>Faculty Directory</span>
+            </button>
+            <button className={styles.actionCard} onClick={() => router.push('/faculty/departments')}>
+              <Building2 size={24} />
+              <span>Departments</span>
+            </button>
+            <button className={styles.actionCard} onClick={() => router.push('/faculty/schedules')}>
+              <Calendar size={24} />
+              <span>Room Schedules</span>
             </button>
           </div>
         </section>
