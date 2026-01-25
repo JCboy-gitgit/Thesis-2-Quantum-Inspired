@@ -32,12 +32,13 @@
 
 /* College of Architecture and Fine Arts Theme */
 .pageContainer[data-college-theme="architecture"] {
-  --college-primary: rgba(127, 29, 29, 1);
-  --college-primary-light: rgba(127, 29, 29, 0.2);
-  --college-primary-dark: rgba(69, 10, 10, 1);
-  --college-accent: #dc2626;
-  --college-gradient: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%);
-  --college-glow: rgba(127, 29, 29, 0.5);
+  --college-primary: rgba(239, 68, 68, 1);
+  --college-primary-light: rgba(239, 68, 68, 0.2);
+  --college-primary-dark: rgba(127, 29, 29, 1);
+  --college-accent: #f87171;
+  --college-gradient: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+  --college-glow: rgba(239, 68, 68, 0.5);
+  --college-text: #fca5a5;
 }
 
 .loadingScreen {
@@ -61,7 +62,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pageContainer {
@@ -389,13 +392,14 @@
 }
 
 @keyframes slideInMenu {
-  from { 
-    opacity: 0; 
-    transform: translateY(-10px) scale(0.95); 
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -582,8 +586,17 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
 }
 
 .statusBadge {
@@ -847,7 +860,7 @@
   .mobileMenuBtn {
     display: flex;
   }
-  
+
   .mainContent {
     padding: 15px;
   }
@@ -860,15 +873,15 @@
   .userInfo {
     justify-content: center;
   }
-  
+
   .welcomeText h1 {
     font-size: 22px;
   }
-  
+
   .welcomeSection {
     padding: 20px;
   }
-  
+
   .classCards {
     grid-template-columns: 1fr;
   }
@@ -878,7 +891,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .scheduleItem {
     flex-direction: column;
     align-items: flex-start;
@@ -888,11 +901,11 @@
   .header {
     padding: 12px 15px;
   }
-  
+
   .logoText {
     font-size: 16px;
   }
-  
+
   .themeMenu {
     position: fixed;
     top: 70px;
@@ -901,11 +914,11 @@
     width: auto;
     min-width: unset;
   }
-  
+
   .actionGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .actionCard {
     padding: 20px 15px;
   }
@@ -917,16 +930,16 @@
     height: 35px;
     font-size: 16px;
   }
-  
+
   .logoText {
     display: none;
   }
-  
+
   .iconBtn {
     width: 36px;
     height: 36px;
   }
-  
+
   .userAvatar {
     width: 60px;
     height: 60px;

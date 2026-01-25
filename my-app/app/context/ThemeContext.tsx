@@ -48,12 +48,12 @@ const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
     name: 'College of Arts and Letters'
   },
   architecture: {
-    primary: 'rgba(127, 29, 29, 1)',
-    primaryLight: 'rgba(127, 29, 29, 0.2)',
-    primaryDark: 'rgba(69, 10, 10, 1)',
-    accent: '#dc2626',
-    gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%)',
-    glow: 'rgba(127, 29, 29, 0.5)',
+    primary: 'rgba(239, 68, 68, 1)',
+    primaryLight: 'rgba(239, 68, 68, 0.2)',
+    primaryDark: 'rgba(127, 29, 29, 1)',
+    accent: '#f87171',
+    gradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%)',
+    glow: 'rgba(239, 68, 68, 0.5)',
     name: 'College of Architecture and Fine Arts'
   },
   default: {
@@ -85,9 +85,9 @@ export const COLLEGE_THEME_MAP: Record<string, CollegeTheme> = {
 const defaultContext: ThemeContextType = {
   theme: 'dark',
   collegeTheme: 'default',
-  setTheme: () => {},
-  setCollegeTheme: () => {},
-  toggleTheme: () => {},
+  setTheme: () => { },
+  setCollegeTheme: () => { },
+  toggleTheme: () => { },
   getCollegeColors: () => COLLEGE_COLORS.default,
 }
 
@@ -103,14 +103,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Load saved themes from localStorage
     const savedTheme = localStorage.getItem('app-base-theme') as BaseTheme
     const savedCollegeTheme = localStorage.getItem('app-college-theme') as CollegeTheme
-    
+
     if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
       setThemeState(savedTheme)
       document.documentElement.setAttribute('data-theme', savedTheme)
     } else {
       document.documentElement.setAttribute('data-theme', 'dark')
     }
-    
+
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {
       setCollegeThemeState(savedCollegeTheme)
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
@@ -152,7 +152,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   // Always provide the context, but with default values until mounted
-  const value = mounted 
+  const value = mounted
     ? { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors }
     : defaultContext
 
