@@ -6,11 +6,11 @@ import { createClient } from '@supabase/supabase-js'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './ViewSchedule.module.css'
-import { 
-  FaArrowLeft, 
-  FaCalendar, 
-  FaClock, 
-  FaUsers, 
+import {
+  FaArrowLeft,
+  FaCalendar,
+  FaClock,
+  FaUsers,
   FaExclamationTriangle,
   FaTrash,
   FaEye,
@@ -32,12 +32,12 @@ import {
   FaTh,
   FaImage
 } from 'react-icons/fa'
-import { 
-  Calendar, 
-  Clock, 
-  Building2, 
-  DoorOpen, 
-  Users, 
+import {
+  Calendar,
+  Clock,
+  Building2,
+  DoorOpen,
+  Users,
   BookOpen,
   GraduationCap,
   ChevronDown,
@@ -125,7 +125,7 @@ function ViewSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const scheduleIdParam = searchParams.get('id')
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [filteredSchedules, setFilteredSchedules] = useState<Schedule[]>([])
@@ -133,43 +133,43 @@ function ViewSchedulePage() {
   const [allocations, setAllocations] = useState<RoomAllocation[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingDetails, setLoadingDetails] = useState(false)
-  
+
   // History filters
   const [historySearch, setHistorySearch] = useState('')
   const [historySortBy, setHistorySortBy] = useState<'date' | 'name' | 'classes'>('date')
   const [historySortOrder, setHistorySortOrder] = useState<'asc' | 'desc'>('desc')
-  
+
   // View mode
   const [viewMode, setViewMode] = useState<'list' | 'timetable'>('list')
-  
+
   // Timetable view mode: all, room, section, teacher, course
   const [timetableViewMode, setTimetableViewMode] = useState<TimetableViewMode>('all')
   const [selectedRoom, setSelectedRoom] = useState<string>('all')
   const [selectedSection, setSelectedSection] = useState<string>('all')
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
   const [selectedCourse, setSelectedCourse] = useState<string>('all')
-  
+
   // Timetable ref for export
   const timetableRef = useRef<HTMLDivElement>(null)
-  
+
   // Filters
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterRoom, setFilterRoom] = useState<string>('all')
   const [filterDay, setFilterDay] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   // Timetable data
   const [timeSlots, setTimeSlots] = useState<string[]>([])
   const [activeDays, setActiveDays] = useState<string[]>([])
   const [timetableData, setTimetableData] = useState<Map<string, TimetableCell>>(new Map())
-  
+
   // Unique values for filters
   const [buildings, setBuildings] = useState<string[]>([])
   const [rooms, setRooms] = useState<string[]>([])
   const [sections, setSections] = useState<string[]>([])
   const [teachers, setTeachers] = useState<string[]>([])
   const [courses, setCourses] = useState<string[]>([])
-  
+
   // Building-Room mapping for connected filters
   const [buildingRoomMap, setBuildingRoomMap] = useState<Map<string, string[]>>(new Map())
   const [filteredRooms, setFilteredRooms] = useState<string[]>([])
@@ -182,7 +182,7 @@ function ViewSchedulePage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -202,11 +202,11 @@ function ViewSchedulePage() {
   // Filter and sort schedules when filters change
   useEffect(() => {
     let result = [...schedules]
-    
+
     // Apply search filter
     if (historySearch) {
       const query = historySearch.toLowerCase()
-      result = result.filter(s => 
+      result = result.filter(s =>
         s.schedule_name?.toLowerCase().includes(query) ||
         s.school_name?.toLowerCase().includes(query) ||
         s.college?.toLowerCase().includes(query) ||
@@ -214,7 +214,7 @@ function ViewSchedulePage() {
         s.academic_year?.toLowerCase().includes(query)
       )
     }
-    
+
     // Apply sorting
     result.sort((a, b) => {
       let comparison = 0
@@ -231,7 +231,7 @@ function ViewSchedulePage() {
       }
       return historySortOrder === 'asc' ? comparison : -comparison
     })
-    
+
     setFilteredSchedules(result)
   }, [schedules, historySearch, historySortBy, historySortOrder])
 
@@ -336,7 +336,7 @@ function ViewSchedulePage() {
     setSelectedSchedule(schedule)
     setLoadingDetails(true)
     setViewMode('timetable')
-    
+
     try {
       // Fetch room allocations for this schedule
       const { data: allocationData, error: allocationError } = await supabase
@@ -348,7 +348,7 @@ function ViewSchedulePage() {
 
       if (!allocationError && allocationData && allocationData.length > 0) {
         setAllocations(allocationData)
-        
+
         // Extract unique buildings, rooms, sections and teachers
         const uniqueBuildings = [...new Set(allocationData.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(allocationData.map(a => a.room).filter((r): r is string => !!r))]
@@ -410,13 +410,13 @@ function ViewSchedulePage() {
         })
 
         setAllocations(mockAllocations)
-        
+
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
         const uniqueSections = [...new Set(mockAllocations.map(a => a.section).filter((s): s is string => !!s))]
         const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
         const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
-        
+
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
         mockAllocations.forEach(a => {
@@ -429,7 +429,7 @@ function ViewSchedulePage() {
             }
           }
         })
-        
+
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
         setFilteredRooms(uniqueRooms) // Initially show all rooms
@@ -470,7 +470,7 @@ function ViewSchedulePage() {
     }
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter(a =>
         a.course_code?.toLowerCase().includes(query) ||
         a.course_name?.toLowerCase().includes(query) ||
         a.section?.toLowerCase().includes(query) ||
@@ -493,7 +493,7 @@ function ViewSchedulePage() {
       // Normalize day format
       const day = a.schedule_day?.trim()
       if (!day) return null
-      
+
       // Handle multi-day formats like "M/W/F" or "TTH"
       if (day.includes('/')) {
         return day.split('/').map(d => normalizeDay(d.trim()))
@@ -509,19 +509,19 @@ function ViewSchedulePage() {
 
     // Sort days in week order
     const sortedDays = DAYS.filter(d => uniqueDays.includes(d))
-    
+
     setTimeSlots(uniqueTimes)
     setActiveDays(sortedDays)
 
     // Build timetable map
     const timetable = new Map<string, TimetableCell>()
-    
+
     filtered.forEach(allocation => {
       const days = expandDays(allocation.schedule_day || '')
-      
+
       days.forEach(day => {
         const key = `${allocation.schedule_time}|${day}`
-        
+
         if (!timetable.has(key)) {
           timetable.set(key, { allocations: [] })
         }
@@ -547,7 +547,7 @@ function ViewSchedulePage() {
 
   const expandDays = (dayStr: string): string[] => {
     const day = dayStr.trim().toUpperCase()
-    
+
     if (day.includes('/')) {
       return day.split('/').map(d => normalizeDay(d.trim()))
     }
@@ -560,20 +560,20 @@ function ViewSchedulePage() {
     if (day === 'MW') {
       return ['Monday', 'Wednesday']
     }
-    
+
     return [normalizeDay(day)]
   }
 
   // Format time from 24-hour to 12-hour AM/PM format
   const formatTimeToAMPM = (time24: string): string => {
     if (!time24) return time24
-    
+
     // Handle time ranges like "10:00-11:30" or "13:00-14:30"
     if (time24.includes('-')) {
       const [start, end] = time24.split('-')
       return `${convertTo12Hour(start.trim())}-${convertTo12Hour(end.trim())}`
     }
-    
+
     return convertTo12Hour(time24)
   }
 
@@ -581,12 +581,12 @@ function ViewSchedulePage() {
     const [hourStr, minuteStr] = time.split(':')
     let hour = parseInt(hourStr)
     const minute = minuteStr || '00'
-    
+
     if (isNaN(hour)) return time
-    
+
     const period = hour >= 12 ? 'PM' : 'AM'
     hour = hour % 12 || 12 // Convert 0 to 12 for midnight, keep 12 for noon
-    
+
     return `${hour}:${minute} ${period}`
   }
 
@@ -598,13 +598,13 @@ function ViewSchedulePage() {
     try {
       // Find the schedule to archive
       const scheduleToDelete = schedules.find(s => s.id === id)
-      
+
       // Get room allocations for this schedule to archive them too
       const { data: allocationsToArchive } = await supabase
         .from('room_allocations')
         .select('*')
         .eq('schedule_id', id)
-      
+
       if (scheduleToDelete) {
         // Archive the schedule before deleting
         try {
@@ -648,14 +648,14 @@ function ViewSchedulePage() {
 
       // Update local state immediately
       setSchedules(prev => prev.filter(s => s.id !== id))
-      
+
       // Clear selection if deleted schedule was selected
       if (selectedSchedule?.id === id) {
         setSelectedSchedule(null)
         setAllocations([])
         setViewMode('list')
       }
-      
+
       alert('Schedule deleted and archived successfully')
     } catch (error: any) {
       console.error('Error deleting schedule:', error)
@@ -671,7 +671,7 @@ function ViewSchedulePage() {
 
     try {
       const csvRows: string[] = []
-      
+
       // Header info
       csvRows.push(`Schedule Name,${selectedSchedule.schedule_name}`)
       csvRows.push(`School,${selectedSchedule.school_name}`)
@@ -682,10 +682,10 @@ function ViewSchedulePage() {
       csvRows.push(`Scheduled,${selectedSchedule.scheduled_classes}`)
       csvRows.push(`Unscheduled,${selectedSchedule.unscheduled_classes}`)
       csvRows.push('')
-      
+
       // Data header
       csvRows.push('Day,Time,Course Code,Course Name,Section,Building,Room,Capacity,Department')
-      
+
       // Data rows
       allocations.forEach(allocation => {
         csvRows.push([
@@ -705,11 +705,11 @@ function ViewSchedulePage() {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
-      
+
       link.setAttribute('href', url)
       link.setAttribute('download', `schedule_${selectedSchedule.schedule_name}_${new Date().toISOString().split('T')[0]}.csv`)
       link.style.visibility = 'hidden'
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -732,20 +732,20 @@ function ViewSchedulePage() {
     try {
       // Dynamically import html2canvas
       const html2canvas = (await import('html2canvas')).default
-      
+
       const canvas = await html2canvas(timetableRef.current, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         logging: false
       })
-      
+
       const link = document.createElement('a')
       const viewLabel = timetableViewMode === 'room' ? `Room_${selectedRoom}` :
-                       timetableViewMode === 'section' ? `Section_${selectedSection}` :
-                       timetableViewMode === 'teacher' ? `Teacher_${selectedTeacher}` :
-                       'All'
-      
+        timetableViewMode === 'section' ? `Section_${selectedSection}` :
+          timetableViewMode === 'teacher' ? `Teacher_${selectedTeacher}` :
+            'All'
+
       link.download = `timetable_${selectedSchedule?.schedule_name || 'schedule'}_${viewLabel}_${new Date().toISOString().split('T')[0]}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
@@ -782,14 +782,14 @@ function ViewSchedulePage() {
   }
 
   return (
-    <>
-      <MenuBar 
-        onToggleSidebar={toggleSidebar} 
+    <div data-page="admin">
+      <MenuBar
+        onToggleSidebar={toggleSidebar}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.qtimeContainer}>
           {/* Header */}
@@ -805,7 +805,7 @@ function ViewSchedulePage() {
             }}>
               <FaArrowLeft /> {selectedSchedule ? 'Back to History' : 'Back'}
             </button>
-            
+
             {selectedSchedule && (
               <div className={styles.headerActions}>
                 <button className={styles.actionButton} onClick={handleExportImage}>
@@ -850,7 +850,7 @@ function ViewSchedulePage() {
               </div>
               <h2>No Schedules Found</h2>
               <p>You haven&apos;t created any room allocation schedules yet.</p>
-              <button 
+              <button
                 className={styles.primaryButton}
                 onClick={() => router.push('/LandingPages/RoomSchedule/GenerateSchedule')}
               >
@@ -875,7 +875,7 @@ function ViewSchedulePage() {
                     className={styles.historySearchInput}
                   />
                   {historySearch && (
-                    <button 
+                    <button
                       className={styles.clearSearch}
                       onClick={() => setHistorySearch('')}
                     >
@@ -885,8 +885,8 @@ function ViewSchedulePage() {
                 </div>
                 <div className={styles.historySortGroup}>
                   <label>Sort by:</label>
-                  <select 
-                    value={historySortBy} 
+                  <select
+                    value={historySortBy}
                     onChange={(e) => setHistorySortBy(e.target.value as 'date' | 'name' | 'classes')}
                     className={styles.sortSelect}
                   >
@@ -894,7 +894,7 @@ function ViewSchedulePage() {
                     <option value="name">Name</option>
                     <option value="classes">Total Classes</option>
                   </select>
-                  <button 
+                  <button
                     className={styles.sortOrderButton}
                     onClick={() => setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                     title={historySortOrder === 'asc' ? 'Ascending' : 'Descending'}
@@ -960,8 +960,8 @@ function ViewSchedulePage() {
                           <div className={styles.optStatItem}>
                             <span className={styles.optStatLabel}>Processing Time</span>
                             <span className={styles.optStatValue}>
-                              {schedule.optimization_stats.time_elapsed_ms 
-                                ? `${(schedule.optimization_stats.time_elapsed_ms / 1000).toFixed(2)}s` 
+                              {schedule.optimization_stats.time_elapsed_ms
+                                ? `${(schedule.optimization_stats.time_elapsed_ms / 1000).toFixed(2)}s`
                                 : 'N/A'}
                             </span>
                           </div>
@@ -1060,44 +1060,44 @@ function ViewSchedulePage() {
               <div className={styles.viewModeSection}>
                 <div className={styles.viewModeLabel}>View Timetable By:</div>
                 <div className={styles.viewModeButtons}>
-                  <button 
+                  <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
                     onClick={() => { setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
                   >
                     <Grid3X3 size={16} /> All
                   </button>
-                  <button 
+                  <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'room' ? styles.active : ''}`}
                     onClick={() => setTimetableViewMode('room')}
                   >
                     <DoorOpen size={16} /> By Room
                   </button>
-                  <button 
+                  <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'section' ? styles.active : ''}`}
                     onClick={() => setTimetableViewMode('section')}
                   >
                     <Users size={16} /> By Section
                   </button>
-                  <button 
+                  <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'teacher' ? styles.active : ''}`}
                     onClick={() => setTimetableViewMode('teacher')}
                   >
                     <FaChalkboardTeacher /> By Teacher
                   </button>
-                  <button 
+                  <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'course' ? styles.active : ''}`}
                     onClick={() => setTimetableViewMode('course')}
                   >
                     <BookOpen size={16} /> By Course
                   </button>
                 </div>
-                
+
                 {/* View Mode Specific Selector */}
                 {timetableViewMode === 'room' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Room:</label>
-                    <select 
-                      value={selectedRoom} 
+                    <select
+                      value={selectedRoom}
                       onChange={(e) => setSelectedRoom(e.target.value)}
                       className={styles.viewModeSelect}
                     >
@@ -1111,8 +1111,8 @@ function ViewSchedulePage() {
                 {timetableViewMode === 'section' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Section:</label>
-                    <select 
-                      value={selectedSection} 
+                    <select
+                      value={selectedSection}
                       onChange={(e) => setSelectedSection(e.target.value)}
                       className={styles.viewModeSelect}
                     >
@@ -1126,8 +1126,8 @@ function ViewSchedulePage() {
                 {timetableViewMode === 'teacher' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Teacher:</label>
-                    <select 
-                      value={selectedTeacher} 
+                    <select
+                      value={selectedTeacher}
                       onChange={(e) => setSelectedTeacher(e.target.value)}
                       className={styles.viewModeSelect}
                     >
@@ -1141,8 +1141,8 @@ function ViewSchedulePage() {
                 {timetableViewMode === 'course' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Course:</label>
-                    <select 
-                      value={selectedCourse} 
+                    <select
+                      value={selectedCourse}
                       onChange={(e) => setSelectedCourse(e.target.value)}
                       className={styles.viewModeSelect}
                     >
@@ -1159,8 +1159,8 @@ function ViewSchedulePage() {
               <div className={styles.filtersBar}>
                 <div className={styles.filterGroup}>
                   <label>Building</label>
-                  <select 
-                    value={filterBuilding} 
+                  <select
+                    value={filterBuilding}
                     onChange={(e) => setFilterBuilding(e.target.value)}
                     className={styles.filterSelect}
                   >
@@ -1172,8 +1172,8 @@ function ViewSchedulePage() {
                 </div>
                 <div className={styles.filterGroup}>
                   <label>Room</label>
-                  <select 
-                    value={filterRoom} 
+                  <select
+                    value={filterRoom}
                     onChange={(e) => setFilterRoom(e.target.value)}
                     className={styles.filterSelect}
                   >
@@ -1185,8 +1185,8 @@ function ViewSchedulePage() {
                 </div>
                 <div className={styles.filterGroup}>
                   <label>Day</label>
-                  <select 
-                    value={filterDay} 
+                  <select
+                    value={filterDay}
                     onChange={(e) => setFilterDay(e.target.value)}
                     className={styles.filterSelect}
                   >
@@ -1206,7 +1206,7 @@ function ViewSchedulePage() {
                     className={styles.searchInput}
                   />
                   {searchQuery && (
-                    <button 
+                    <button
                       className={styles.clearSearch}
                       onClick={() => setSearchQuery('')}
                     >
@@ -1269,14 +1269,14 @@ function ViewSchedulePage() {
                             {activeDays.map(day => {
                               const key = `${timeSlot}|${day}`
                               const cell = timetableData.get(key)
-                              
+
                               return (
                                 <td key={day} className={styles.dataCell}>
                                   {cell && cell.allocations.length > 0 ? (
                                     <div className={styles.cellContent}>
                                       {cell.allocations.map((allocation, idx) => (
-                                        <div 
-                                          key={idx} 
+                                        <div
+                                          key={idx}
                                           className={styles.allocationCard}
                                           style={{ backgroundColor: getCellColor(allocation) }}
                                         >
@@ -1324,8 +1324,8 @@ function ViewSchedulePage() {
                       'rgba(16, 185, 129, 0.15)'
                     ]
                     return (
-                      <span 
-                        key={building} 
+                      <span
+                        key={building}
                         className={styles.legendItem}
                         style={{ backgroundColor: colors[idx % colors.length] }}
                       >
@@ -1339,7 +1339,7 @@ function ViewSchedulePage() {
           )}
         </div>
       </main>
-    </>
+    </div>
   )
 }
 

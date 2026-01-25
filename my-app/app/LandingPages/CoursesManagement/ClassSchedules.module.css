@@ -1,44 +1,46 @@
 /* ==================== Green Theme Enhancements ==================== */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
 [data-theme="green"] .pageLayout,
 [data-theme="green"] .pageMain {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+  background: linear-gradient(135deg, #02353C 0%, #034a4d 50%, #02353C 100%);
 }
 
 [data-theme="green"] .pageHeader {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.98) 0%, rgba(3, 74, 77, 0.95) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.4);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
 [data-theme="green"] .pageTitle {
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+  text-shadow: 0 2px 8px rgba(63, 208, 201, 0.3);
 }
 
 [data-theme="green"] .scheduleCard,
 [data-theme="green"] .classCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.35);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15);
 }
 
 [data-theme="green"] .scheduleCard:hover,
 [data-theme="green"] .classCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+  border-color: #3FD0C9;
+  box-shadow: 0 8px 32px rgba(63, 208, 201, 0.3);
   transform: translateY(-4px);
 }
 
 [data-theme="green"] .backButton,
 [data-theme="green"] .addButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.4);
 }
 
 [data-theme="green"] .backButton:hover,
 [data-theme="green"] .addButton:hover {
-  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  box-shadow: 0 6px 24px rgba(63, 208, 201, 0.6);
   transform: translateY(-2px);
 }
 
@@ -56,11 +58,11 @@
 [data-theme="green"] .time,
 [data-theme="green"] .subtitle,
 [data-theme="green"] .details {
-  color: #b3ffdb !important;
+  color: #C1F6ED !important;
 }
 
 [data-theme="green"] .icon {
-  color: #5dffa7;
+  color: #3FD0C9;
 }
 
 /* ==================== Layout ==================== */
@@ -252,24 +254,58 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.statCard.blue { border-left: 4px solid #3182ce; }
-.statCard.green { border-left: 4px solid #38a169; }
-.statCard.purple { border-left: 4px solid #805ad5; }
-.statCard.orange { border-left: 4px solid #dd6b20; }
-.statCard.teal { border-left: 4px solid #319795; }
-.statCard.red { border-left: 4px solid #e53e3e; }
+.statCard.blue {
+  border-left: 4px solid #3182ce;
+}
+
+.statCard.green {
+  border-left: 4px solid #38a169;
+}
+
+.statCard.purple {
+  border-left: 4px solid #805ad5;
+}
+
+.statCard.orange {
+  border-left: 4px solid #dd6b20;
+}
+
+.statCard.teal {
+  border-left: 4px solid #319795;
+}
+
+.statCard.red {
+  border-left: 4px solid #e53e3e;
+}
 
 .statIcon {
   font-size: 32px;
   line-height: 1;
 }
 
-.statCard.blue .statIcon { color: #3182ce; }
-.statCard.green .statIcon { color: #38a169; }
-.statCard.purple .statIcon { color: #805ad5; }
-.statCard.orange .statIcon { color: #dd6b20; }
-.statCard.teal .statIcon { color: #319795; }
-.statCard.red .statIcon { color: #e53e3e; }
+.statCard.blue .statIcon {
+  color: #3182ce;
+}
+
+.statCard.green .statIcon {
+  color: #38a169;
+}
+
+.statCard.purple .statIcon {
+  color: #805ad5;
+}
+
+.statCard.orange .statIcon {
+  color: #dd6b20;
+}
+
+.statCard.teal .statIcon {
+  color: #319795;
+}
+
+.statCard.red .statIcon {
+  color: #e53e3e;
+}
 
 .statContent {
   display: flex;
@@ -868,7 +904,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingState p {
@@ -910,11 +948,11 @@
     margin-left: 0;
     padding: 20px;
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
-  
+
   .schedulesGrid {
     grid-template-columns: 1fr;
   }
@@ -926,37 +964,37 @@
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .headerLeft {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
   }
-  
+
   .pageTitle {
     font-size: 22px;
   }
-  
+
   .welcomeSection {
     padding: 24px;
   }
-  
+
   .welcomeTitle {
     font-size: 28px;
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .roomsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .infoRow {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .seatingGrid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
@@ -966,20 +1004,20 @@
   .pageMain {
     padding: 16px;
   }
-  
+
   .statsGrid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-  
+
   .statCard {
     padding: 14px;
   }
-  
+
   .statValue {
     font-size: 22px;
   }
-  
+
   .infoRow {
     grid-template-columns: 1fr;
   }

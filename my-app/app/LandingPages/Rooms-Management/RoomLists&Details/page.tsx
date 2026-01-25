@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { 
-  Building2, 
-  ArrowLeft, 
-  Search, 
+import {
+  Building2,
+  ArrowLeft,
+  Search,
   Calendar,
   Plus,
   Check,
@@ -124,7 +124,7 @@ interface RoomUsage {
 
 export default function SchoolCapacityPage() {
   const router = useRouter()
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [campusFiles, setCampusFiles] = useState<CampusFile[]>([])
   const [selectedCampus, setSelectedCampus] = useState<number | null>(null)
@@ -134,7 +134,7 @@ export default function SchoolCapacityPage() {
   const [loadingData, setLoadingData] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set())
-  
+
   // CRUD states
   const [showActionsFor, setShowActionsFor] = useState<number | null>(null)
   const [editingRoom, setEditingRoom] = useState<number | null>(null)
@@ -178,7 +178,7 @@ export default function SchoolCapacityPage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -252,11 +252,11 @@ export default function SchoolCapacityPage() {
 
       // Group by campus name
       const groups = new Map<string, CampusRoom[]>()
-      ;(data || []).forEach((room: CampusRoom) => {
-        const campusName: string = room.campus || 'Unknown Campus'
-        if (!groups.has(campusName)) groups.set(campusName, [])
-        groups.get(campusName)!.push(room)
-      })
+        ; (data || []).forEach((room: CampusRoom) => {
+          const campusName: string = room.campus || 'Unknown Campus'
+          if (!groups.has(campusName)) groups.set(campusName, [])
+          groups.get(campusName)!.push(room)
+        })
       setCampusGroups(groups)
 
       // Hide all campuses by default when a school is selected
@@ -314,7 +314,7 @@ export default function SchoolCapacityPage() {
     setSelectedCampus(groupId)
     setLoadingData(true)
     setExpandedBuildings(new Set())
-    
+
     try {
       const { data, error } = await supabase
         .from('campuses')
@@ -327,7 +327,7 @@ export default function SchoolCapacityPage() {
 
       setCampusData(data || [])
       calculateStats(data || [])
-      
+
       // ✅ Fetch room usage data from schedule_batches
       const usage = await fetchRoomUsage(groupId)
       setRoomUsage(usage)
@@ -370,36 +370,36 @@ export default function SchoolCapacityPage() {
 
       // Create a map of room capacities
       const capacityMap = new Map<string, number>()
-      ;(rooms as any[])?.forEach((room: any) => {
-        capacityMap.set(room.room, room.capacity)
-      })
+        ; (rooms as any[])?.forEach((room: any) => {
+          capacityMap.set(room.room, room.capacity)
+        })
 
       // Calculate usage per room
       const usageMap = new Map<string, RoomUsage>()
-      
-      ;(batches as any[])?.forEach((batch: any) => {
-        const roomKey = batch.room
-        const capacity = capacityMap.get(roomKey) || 0
-        
-        if (!usageMap.has(roomKey)) {
-          usageMap.set(roomKey, {
-            roomId: roomKey,
-            assignedSeats: 0,
-            capacity: capacity,
-            isOverbooked: false,
-            utilizationPercent: 0,
-            batchCount: 0
-          })
-        }
-        
-        const usage = usageMap.get(roomKey)!
-        usage.assignedSeats += batch.participant_count
-        usage.batchCount++
-        usage.utilizationPercent = capacity > 0 
-          ? Math.round((usage.assignedSeats / capacity) * 100) 
-          : 0
-        usage.isOverbooked = usage.assignedSeats > capacity
-      })
+
+        ; (batches as any[])?.forEach((batch: any) => {
+          const roomKey = batch.room
+          const capacity = capacityMap.get(roomKey) || 0
+
+          if (!usageMap.has(roomKey)) {
+            usageMap.set(roomKey, {
+              roomId: roomKey,
+              assignedSeats: 0,
+              capacity: capacity,
+              isOverbooked: false,
+              utilizationPercent: 0,
+              batchCount: 0
+            })
+          }
+
+          const usage = usageMap.get(roomKey)!
+          usage.assignedSeats += batch.participant_count
+          usage.batchCount++
+          usage.utilizationPercent = capacity > 0
+            ? Math.round((usage.assignedSeats / capacity) * 100)
+            : 0
+          usage.isOverbooked = usage.assignedSeats > capacity
+        })
 
       return usageMap
     } catch (error) {
@@ -436,9 +436,9 @@ export default function SchoolCapacityPage() {
     const number = match[0]
     const floor = parseInt(number.charAt(0))
     const roomNum = parseInt(number.slice(1))
-    
+
     const floorName = floor === 1 ? '1st' : floor === 2 ? '2nd' : floor === 3 ? '3rd' : `${floor}th`
-    
+
     return {
       original: roomName,
       floor: floor,
@@ -483,7 +483,7 @@ export default function SchoolCapacityPage() {
 
       if (error) throw error
 
-      const updatedData = campusData.map(room => 
+      const updatedData = campusData.map(room =>
         room.id === roomId ? { ...room, ...editForm } : room
       )
       setCampusData(updatedData)
@@ -503,7 +503,7 @@ export default function SchoolCapacityPage() {
     try {
       // Find the room to archive
       const roomToDelete = campusData.find(r => r.id === roomId)
-      
+
       if (roomToDelete) {
         // Archive the room before deleting
         try {
@@ -551,7 +551,7 @@ export default function SchoolCapacityPage() {
 
     try {
       const selectedFile = campusFiles.find(f => f.upload_group_id === selectedCampus)
-      
+
       const { data, error } = await (supabase
         .from('campuses') as any)
         .insert([{
@@ -649,7 +649,7 @@ export default function SchoolCapacityPage() {
 
       setSuccessMessage(`✅ Campus "${campusToDelete.school_name}" deleted successfully!`)
       setTimeout(() => setSuccessMessage(''), 3000)
-      
+
       setShowDeleteCampusModal(false)
       setCampusToDelete(null)
     } catch (error) {
@@ -663,7 +663,7 @@ export default function SchoolCapacityPage() {
 
   const getFilteredFiles = () => {
     if (!searchTerm) return campusFiles
-    return campusFiles.filter(file => 
+    return campusFiles.filter(file =>
       file.school_name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }
@@ -697,7 +697,7 @@ export default function SchoolCapacityPage() {
 
   const groupRoomsByFloor = (rooms: CampusRoom[]) => {
     const floorGroups = new Map<number, CampusRoom[]>()
-    
+
     rooms.forEach(room => {
       const parsed = parseRoomNumber(room.room)
       if (!floorGroups.has(parsed.floor)) {
@@ -782,7 +782,7 @@ export default function SchoolCapacityPage() {
       totalBuildings += buildings.size
       totalRooms += rooms.length
       totalCapacity += rooms.reduce((sum, room) => sum + room.capacity, 0)
-      
+
       // Count usable/not usable rooms
       rooms.forEach(room => {
         const status = room.status?.toLowerCase()
@@ -800,14 +800,14 @@ export default function SchoolCapacityPage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className={styles.pageContainer} data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         showAccountIcon={true}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.mainContent} ${sidebarOpen ? '' : styles.fullWidth}`}>
         <div className={styles.contentWrapper}>
           {/* Success Message */}
@@ -816,13 +816,13 @@ export default function SchoolCapacityPage() {
               {successMessage}
             </div>
           )}
-            <button 
-              className={styles.backButton}
-              onClick={() => router.push('/LandingPages/Home')}
-            >
-              <ArrowLeft size={18} />
-              Back to Home
-            </button>
+          <button
+            className={styles.backButton}
+            onClick={() => router.push('/LandingPages/Home')}
+          >
+            <ArrowLeft size={18} />
+            Back to Home
+          </button>
           <div className={styles.headerCard}>
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
@@ -862,7 +862,7 @@ export default function SchoolCapacityPage() {
 
                 <div className={styles.campusCardsGrid}>
                   {getFilteredFiles().map(file => (
-                    <div 
+                    <div
                       key={file.upload_group_id}
                       className={`${styles.campusSelectCard} ${selectedCampus === file.upload_group_id ? styles.selected : ''}`}
                       onClick={() => handleSelectSchool(file.upload_group_id)}
@@ -996,7 +996,7 @@ export default function SchoolCapacityPage() {
                               {campusesExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                               {campusesExpanded ? 'Hide Campuses' : 'Show Campuses'}
                             </button>
-                            <button 
+                            <button
                               className={styles.addRoomButton}
                               onClick={() => setShowAddModal(true)}
                             >
@@ -1014,16 +1014,16 @@ export default function SchoolCapacityPage() {
                             const isCampusExpanded = expandedCampuses.get(campusName) ?? true
                             function toggleCampus(campusName: string): void {
                               setExpandedCampuses(prev => {
-                              const newMap = new Map(prev)
-                              newMap.set(campusName, !(prev.get(campusName) ?? true))
-                              return newMap
+                                const newMap = new Map(prev)
+                                newMap.set(campusName, !(prev.get(campusName) ?? true))
+                                return newMap
                               })
                             }
 
                             return (
                               <div key={campusName} className={styles.campusSection} style={{ marginBottom: 28 }}>
                                 <div className={styles.campusHeader} style={{ fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
-                                <Landmark size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                                  <Landmark size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                                   {campusName}
                                   <span style={{ marginLeft: 14, color: '#888', fontSize: 15 }}>
                                     {buildings.size} buildings
@@ -1047,7 +1047,7 @@ export default function SchoolCapacityPage() {
                                     const buildingCapacity = buildingRooms.reduce((sum, room) => sum + room.capacity, 0)
                                     return (
                                       <div key={buildingKey} className={styles.buildingSection} style={{ marginLeft: 24 }}>
-                                        <div 
+                                        <div
                                           className={`${styles.buildingHeader} ${styles.clickable}`}
                                           onClick={() => toggleBuilding(buildingKey)}
                                         >
@@ -1087,8 +1087,8 @@ export default function SchoolCapacityPage() {
                                                       const showActions = showActionsFor === room.id
                                                       const usage = roomUsage.get(room.room)
                                                       const statusInfo = getRoomStatusInfo(room.status)
-                                                      const statusClass = statusInfo.icon === 'check' ? styles.usable : 
-                                                                         statusInfo.icon === 'x' ? styles.notUsable : styles.maintenance
+                                                      const statusClass = statusInfo.icon === 'check' ? styles.usable :
+                                                        statusInfo.icon === 'x' ? styles.notUsable : styles.maintenance
                                                       return (
                                                         <div
                                                           key={room.id}
@@ -1103,40 +1103,40 @@ export default function SchoolCapacityPage() {
                                                               <input
                                                                 type="text"
                                                                 value={editForm.campus}
-                                                                onChange={(e) => setEditForm({...editForm, campus: e.target.value})}
+                                                                onChange={(e) => setEditForm({ ...editForm, campus: e.target.value })}
                                                                 placeholder="Campus"
                                                                 className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="text"
                                                                 value={editForm.building}
-                                                                onChange={(e) => setEditForm({...editForm, building: e.target.value})}
+                                                                onChange={(e) => setEditForm({ ...editForm, building: e.target.value })}
                                                                 placeholder="Building"
                                                                 className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="text"
                                                                 value={editForm.room}
-                                                                onChange={(e) => setEditForm({...editForm, room: e.target.value})}
+                                                                onChange={(e) => setEditForm({ ...editForm, room: e.target.value })}
                                                                 placeholder="Room"
                                                                 className={styles.editInputSmall}
                                                               />
                                                               <input
                                                                 type="number"
                                                                 value={editForm.capacity}
-                                                                onChange={(e) => setEditForm({...editForm, capacity: parseInt(e.target.value) || 0})}
+                                                                onChange={(e) => setEditForm({ ...editForm, capacity: parseInt(e.target.value) || 0 })}
                                                                 placeholder="Capacity"
                                                                 className={styles.editInputSmall}
                                                               />
                                                               <div className={styles.editActions}>
-                                                                <button 
+                                                                <button
                                                                   className={styles.saveBtnSmall}
                                                                   onClick={() => handleEditSave(room.id!)}
                                                                 >
                                                                   <Check size={16} />
                                                                   Save
                                                                 </button>
-                                                                <button 
+                                                                <button
                                                                   className={styles.cancelBtnSmall}
                                                                   onClick={handleEditCancel}
                                                                 >
@@ -1173,10 +1173,10 @@ export default function SchoolCapacityPage() {
                                                                   </div>
                                                                 )
                                                               })()}
-                                                              
+
                                                               <div className={styles.roomIcon} style={{
-                                                                background: getRoomStatusInfo(room.status).icon === 'check' 
-                                                                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                                                                background: getRoomStatusInfo(room.status).icon === 'check'
+                                                                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
                                                                   : getRoomStatusInfo(room.status).icon === 'x'
                                                                     ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
                                                                     : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
@@ -1208,9 +1208,9 @@ export default function SchoolCapacityPage() {
                                                                   Type: {displayValue(room.room_type, 'Classroom')}
                                                                 </p>
                                                                 <div className={styles.roomAmenities} style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                                                  <span className={styles.amenityBadge} title="Air Conditioning" style={{ 
-                                                                    padding: '2px 6px', 
-                                                                    borderRadius: '4px', 
+                                                                  <span className={styles.amenityBadge} title="Air Conditioning" style={{
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '4px',
                                                                     fontSize: '10px',
                                                                     background: room.has_ac ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_ac ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
@@ -1218,9 +1218,9 @@ export default function SchoolCapacityPage() {
                                                                     <Wind size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
                                                                     AC: {displayBool(room.has_ac)}
                                                                   </span>
-                                                                  <span className={styles.amenityBadge} title="Whiteboard" style={{ 
-                                                                    padding: '2px 6px', 
-                                                                    borderRadius: '4px', 
+                                                                  <span className={styles.amenityBadge} title="Whiteboard" style={{
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '4px',
                                                                     fontSize: '10px',
                                                                     background: room.has_whiteboard ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_whiteboard ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
@@ -1228,9 +1228,9 @@ export default function SchoolCapacityPage() {
                                                                     <PresentationIcon size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
                                                                     Board: {displayBool(room.has_whiteboard)}
                                                                   </span>
-                                                                  <span className={styles.amenityBadge} title="TV" style={{ 
-                                                                    padding: '2px 6px', 
-                                                                    borderRadius: '4px', 
+                                                                  <span className={styles.amenityBadge} title="TV" style={{
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '4px',
                                                                     fontSize: '10px',
                                                                     background: room.has_tv ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_tv ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
@@ -1243,9 +1243,9 @@ export default function SchoolCapacityPage() {
                                                               <div className={styles.roomCapacityBadge}>
                                                                 {room.capacity}
                                                               </div>
-                                                              
+
                                                               <div className={styles.roomOptions}>
-                                                                <button 
+                                                                <button
                                                                   className={styles.optionsTrigger}
                                                                   onClick={(e) => {
                                                                     e.stopPropagation()
@@ -1257,14 +1257,14 @@ export default function SchoolCapacityPage() {
                                                                 </button>
                                                                 {showActions && (
                                                                   <div className={styles.actionsPopup}>
-                                                                    <button 
+                                                                    <button
                                                                       className={`${styles.actionOption} ${styles.editOption}`}
                                                                       onClick={() => handleEditClick(room)}
                                                                     >
                                                                       <Edit2 size={16} />
                                                                       Edit Room
                                                                     </button>
-                                                                    <button 
+                                                                    <button
                                                                       className={`${styles.actionOption} ${styles.deleteOption}`}
                                                                       onClick={() => handleDelete(room.id!)}
                                                                       disabled={deletingRoom === room.id}
@@ -1272,7 +1272,7 @@ export default function SchoolCapacityPage() {
                                                                       <Trash2 size={16} />
                                                                       {deletingRoom === room.id ? 'Deleting...' : 'Delete Room'}
                                                                     </button>
-                                                                    <button 
+                                                                    <button
                                                                       className={`${styles.actionOption} ${styles.viewScheduleOption}`}
                                                                       onClick={() => {
                                                                         // Future: Navigate to ViewSchedule with room filter
@@ -1300,11 +1300,11 @@ export default function SchoolCapacityPage() {
                                       </div>
                                     )
                                   })}
-                                </div>
-                              )
-                            })}
-                        </div>
-                      
+                              </div>
+                            )
+                          })}
+                      </div>
+
                     </>
                   )}
                 </>
@@ -1332,7 +1332,7 @@ export default function SchoolCapacityPage() {
                 <Plus size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 Add New Room
               </h3>
-              <button 
+              <button
                 className={styles.modalClose}
                 onClick={() => setShowAddModal(false)}
               >
@@ -1348,7 +1348,7 @@ export default function SchoolCapacityPage() {
                 <input
                   type="text"
                   value={addForm.campus}
-                  onChange={(e) => setAddForm({...addForm, campus: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, campus: e.target.value })}
                   placeholder="e.g., Main Campus"
                   className={styles.modalInput}
                 />
@@ -1361,7 +1361,7 @@ export default function SchoolCapacityPage() {
                 <input
                   type="text"
                   value={addForm.building}
-                  onChange={(e) => setAddForm({...addForm, building: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, building: e.target.value })}
                   placeholder="e.g., Building A"
                   className={styles.modalInput}
                 />
@@ -1374,7 +1374,7 @@ export default function SchoolCapacityPage() {
                 <input
                   type="text"
                   value={addForm.room}
-                  onChange={(e) => setAddForm({...addForm, room: e.target.value})}
+                  onChange={(e) => setAddForm({ ...addForm, room: e.target.value })}
                   placeholder="e.g., 101"
                   className={styles.modalInput}
                 />
@@ -1387,21 +1387,21 @@ export default function SchoolCapacityPage() {
                 <input
                   type="number"
                   value={addForm.capacity || ''}
-                  onChange={(e) => setAddForm({...addForm, capacity: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setAddForm({ ...addForm, capacity: parseInt(e.target.value) || 0 })}
                   placeholder="e.g., 30"
                   className={styles.modalInput}
                 />
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button 
+              <button
                 className={styles.modalBtnCancel}
                 onClick={() => setShowAddModal(false)}
               >
                 <X size={18} />
                 Cancel
               </button>
-              <button 
+              <button
                 className={styles.modalBtnSave}
                 onClick={handleAddRoom}
               >
@@ -1422,7 +1422,7 @@ export default function SchoolCapacityPage() {
                 <AlertTriangle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
                 Delete Campus
               </h3>
-              <button 
+              <button
                 className={styles.modalClose}
                 onClick={() => setShowDeleteCampusModal(false)}
                 disabled={deletingCampus}
@@ -1450,7 +1450,7 @@ export default function SchoolCapacityPage() {
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button 
+              <button
                 className={styles.modalBtnCancel}
                 onClick={() => setShowDeleteCampusModal(false)}
                 disabled={deletingCampus}
@@ -1458,7 +1458,7 @@ export default function SchoolCapacityPage() {
                 <X size={18} />
                 Cancel
               </button>
-              <button 
+              <button
                 className={styles.modalBtnDelete}
                 onClick={handleDeleteCampus}
                 disabled={deletingCampus}

@@ -6,10 +6,10 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/hooks/useAuth'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { 
-  Building2, 
-  ArrowLeft, 
-  Search, 
+import {
+  Building2,
+  ArrowLeft,
+  Search,
   Users,
   BookOpen,
   GraduationCap,
@@ -76,12 +76,12 @@ const initialFormData: DepartmentFormData = {
 
 export default function FacultyDepartmentsPage() {
   const router = useRouter()
-  const { isAdmin, isLoading: authLoading, isAuthenticated } = useAuth({ 
-    requireAuth: true, 
+  const { isAdmin, isLoading: authLoading, isAuthenticated } = useAuth({
+    requireAuth: true,
     requireAdmin: true,
     redirectTo: '/faculty/login'
   })
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
@@ -123,7 +123,7 @@ export default function FacultyDepartmentsPage() {
 
   useEffect(() => {
     if (searchTerm) {
-      const filtered = departments.filter(dept => 
+      const filtered = departments.filter(dept =>
         dept.department_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         dept.department_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         dept.college?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -146,7 +146,7 @@ export default function FacultyDepartmentsPage() {
 
       setDepartments(data || [])
       setFilteredDepartments(data || [])
-      
+
       // Calculate stats
       const activeDepts = (data || []).filter((d: Department) => d.is_active).length
       setStats({
@@ -160,7 +160,7 @@ export default function FacultyDepartmentsPage() {
       const { count: facultyCount } = await (supabase
         .from('faculty')
         .select('*', { count: 'exact', head: true }) as any)
-      
+
       // Optionally fetch courses count
       const { count: coursesCount } = await (supabase
         .from('courses')
@@ -344,20 +344,20 @@ export default function FacultyDepartmentsPage() {
   const parseCSV = (text: string): any[] => {
     const lines = text.trim().split('\n')
     if (lines.length < 2) return []
-    
+
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
     const data: any[] = []
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || []
       const row: any = {}
-      
+
       headers.forEach((header, index) => {
         let value = values[index] || ''
         value = value.replace(/^"|"$/g, '').trim()
         row[header] = value
       })
-      
+
       if (Object.values(row).some(v => v)) {
         data.push(row)
       }
@@ -381,7 +381,7 @@ export default function FacultyDepartmentsPage() {
     try {
       const text = await file.text()
       const data = parseCSV(text)
-      
+
       if (data.length === 0) {
         setUploadError('No valid data found in CSV file')
         return
@@ -430,9 +430,9 @@ export default function FacultyDepartmentsPage() {
       // Try to insert into faculty_profiles table
       const { error } = await (supabase
         .from('faculty_profiles') as any)
-        .upsert(facultyRecords, { 
+        .upsert(facultyRecords, {
           onConflict: 'faculty_id',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         })
 
       if (error) {
@@ -480,14 +480,14 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
   }
 
   return (
-    <div className={styles.pageLayout}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className={styles.pageLayout} data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
           {/* Header */}
@@ -496,7 +496,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
               <ArrowLeft size={18} />
               Back
             </button>
-            
+
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
                 <Building2 className={styles.headerLargeIcon} size={48} />
@@ -592,16 +592,16 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                 <FolderOpen className={styles.emptyStateIcon} size={80} />
                 <h3>No Departments Found</h3>
                 <p>
-                  {searchTerm 
-                    ? 'No departments match your search criteria.' 
+                  {searchTerm
+                    ? 'No departments match your search criteria.'
                     : 'No departments have been added yet. Run the database schema to add default departments.'}
                 </p>
               </div>
             ) : (
               <div className={styles.departmentsGrid}>
                 {filteredDepartments.map((dept) => (
-                  <div 
-                    key={dept.id} 
+                  <div
+                    key={dept.id}
                     className={styles.departmentCard}
                   >
                     <div className={styles.departmentCardIcon}>
@@ -621,7 +621,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                       </span>
                     </div>
                     <div className={styles.departmentActions}>
-                      <button 
+                      <button
                         className={styles.actionBtn}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -631,7 +631,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                       >
                         <Edit2 size={16} />
                       </button>
-                      <button 
+                      <button
                         className={`${styles.actionBtn} ${styles.deleteBtn}`}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -786,16 +786,16 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
               </div>
 
               <div className={styles.modalActions}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className={styles.btnSecondary}
                   onClick={closeModal}
                   disabled={formLoading}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className={styles.btnPrimary}
                   disabled={formLoading}
                 >
@@ -831,14 +831,14 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
               <span className={styles.warningText}>This will move the department to archive.</span>
             </p>
             <div className={styles.confirmActions}>
-              <button 
+              <button
                 className={styles.btnSecondary}
                 onClick={() => setDeleteConfirm(null)}
                 disabled={deleteLoading}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className={styles.btnDanger}
                 onClick={handleDelete}
                 disabled={deleteLoading}
@@ -890,7 +890,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                   onChange={handleFileSelect}
                   className={styles.fileInput}
                 />
-                <button 
+                <button
                   className={styles.btnSecondary}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -913,7 +913,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                   <li><strong>office_location</strong> - Office location (optional)</li>
                   <li><strong>is_active</strong> - true/false</li>
                 </ul>
-                <button 
+                <button
                   className={styles.downloadSampleBtn}
                   onClick={downloadSampleCSV}
                 >
@@ -954,16 +954,16 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
             </div>
 
             <div className={styles.modalActions}>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={styles.btnSecondary}
                 onClick={closeUploadModal}
                 disabled={uploadLoading}
               >
                 Cancel
               </button>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className={styles.btnPrimary}
                 onClick={handleImportFaculty}
                 disabled={uploadLoading || csvPreview.length === 0}

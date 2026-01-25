@@ -146,7 +146,7 @@ function getEmploymentBadge(type: string): { label: string; color: string } {
 function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
     </svg>
   )
 }
@@ -154,7 +154,7 @@ function UserIcon({ className }: { className?: string }) {
 function EmailIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
     </svg>
   )
 }
@@ -162,7 +162,7 @@ function EmailIcon({ className }: { className?: string }) {
 function PhoneIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
     </svg>
   )
 }
@@ -170,7 +170,7 @@ function PhoneIcon({ className }: { className?: string }) {
 function LocationIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
     </svg>
   )
 }
@@ -178,7 +178,7 @@ function LocationIcon({ className }: { className?: string }) {
 function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
     </svg>
   )
 }
@@ -186,7 +186,7 @@ function SearchIcon({ className }: { className?: string }) {
 function PlusIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
     </svg>
   )
 }
@@ -194,7 +194,7 @@ function PlusIcon({ className }: { className?: string }) {
 function EditIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
     </svg>
   )
 }
@@ -202,7 +202,7 @@ function EditIcon({ className }: { className?: string }) {
 function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
     </svg>
   )
 }
@@ -210,7 +210,7 @@ function TrashIcon({ className }: { className?: string }) {
 function FolderIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
     </svg>
   )
 }
@@ -225,14 +225,14 @@ function FacultyListsContent() {
   const [collegeGroups, setCollegeGroups] = useState<CollegeGroup[]>([])
   const [selectedCollege, setSelectedCollege] = useState<string | null>(null)
   const [stats, setStats] = useState<FacultyStats | null>(null)
-  
+
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
   const [filterEmployment, setFilterEmployment] = useState<string>('all')
   const [departments, setDepartments] = useState<string[]>([])
   const [filterDepartment, setFilterDepartment] = useState<string>('all')
-  
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -271,7 +271,7 @@ function FacultyListsContent() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -419,7 +419,7 @@ function FacultyListsContent() {
       setShowAddModal(false)
       resetForm()
       fetchFacultyData()
-      
+
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -463,7 +463,7 @@ function FacultyListsContent() {
       setShowEditModal(false)
       resetForm()
       fetchFacultyData()
-      
+
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -510,7 +510,7 @@ function FacultyListsContent() {
       setShowDeleteConfirm(false)
       setSelectedFaculty(null)
       fetchFacultyData()
-      
+
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -567,7 +567,7 @@ function FacultyListsContent() {
 
   if (loading) {
     return (
-      <div className={styles.facultyLayout}>
+      <div className={styles.facultyLayout} data-page="admin">
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
         <Sidebar isOpen={sidebarOpen} />
         <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
@@ -581,7 +581,7 @@ function FacultyListsContent() {
   }
 
   return (
-    <div className={styles.facultyLayout}>
+    <div className={styles.facultyLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
       <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
@@ -606,11 +606,11 @@ function FacultyListsContent() {
               <span className={styles.iconBack}>←</span>
               Back
             </button>
-            
+
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
                 <svg className={styles.headerLargeIcon} viewBox="0 0 24 24" fill="none">
-                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor" />
                 </svg>
               </div>
               <div className={styles.headerText}>
@@ -646,7 +646,7 @@ function FacultyListsContent() {
               <div className={styles.statCard}>
                 <div className={styles.statIcon}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
                 <div className={styles.statContent}>
@@ -657,7 +657,7 @@ function FacultyListsContent() {
               <div className={styles.statCard}>
                 <div className={styles.statIcon}>
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                   </svg>
                 </div>
                 <div className={styles.statContent}>
@@ -710,7 +710,7 @@ function FacultyListsContent() {
                   className={styles.searchInput}
                 />
               </div>
-              
+
               <div className={styles.filterButtons}>
                 <select
                   className={styles.filterBtn}
@@ -737,7 +737,7 @@ function FacultyListsContent() {
                   <option value="adjunct">Adjunct</option>
                   <option value="guest">Guest</option>
                 </select>
-                
+
                 <select
                   className={styles.filterBtn}
                   value={filterDepartment}
@@ -773,12 +773,12 @@ function FacultyListsContent() {
               </div>
               <h3>No Faculty Found</h3>
               <p>
-                {allFaculty.length === 0 
+                {allFaculty.length === 0
                   ? 'Upload faculty profiles from the Upload CSV page to get started.'
                   : 'Try adjusting your search or filter criteria'}
               </p>
               {allFaculty.length === 0 && (
-                <button 
+                <button
                   className={styles.addFacultyBtn}
                   onClick={() => router.push('/LandingPages/UploadCSV')}
                   style={{ marginTop: '16px' }}
@@ -795,7 +795,7 @@ function FacultyListsContent() {
                     {/* Cover */}
                     <div className={styles.profileCover}>
                       <div className={styles.profileCoverPattern}></div>
-                      <span 
+                      <span
                         className={styles.statusBadge}
                         style={{ backgroundColor: getRoleColor(faculty.role) }}
                       >
@@ -820,7 +820,7 @@ function FacultyListsContent() {
                     <div className={styles.profileBody}>
                       <h3 className={styles.profileName}>{faculty.full_name}</h3>
                       <p className={styles.profileTitle}>{faculty.position}</p>
-                      <span 
+                      <span
                         className={styles.employmentBadge}
                         style={{ backgroundColor: getEmploymentBadge(faculty.employment_type).color }}
                       >
@@ -828,7 +828,7 @@ function FacultyListsContent() {
                       </span>
                       <span className={styles.profileDepartment}>
                         <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                          <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/>
+                          <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z" />
                         </svg>
                         {faculty.department || 'No Department'}
                       </span>
@@ -865,14 +865,14 @@ function FacultyListsContent() {
 
                       {/* Actions */}
                       <div className={styles.profileActions}>
-                        <button 
+                        <button
                           className={styles.btnViewProfile}
                           onClick={() => openEditModal(faculty)}
                         >
                           <EditIcon />
                           Edit
                         </button>
-                        <button 
+                        <button
                           className={styles.btnDelete}
                           onClick={() => openDeleteConfirm(faculty)}
                         >
@@ -894,7 +894,7 @@ function FacultyListsContent() {
                   >
                     ← Prev
                   </button>
-                  
+
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let pageNum: number
                     if (totalPages <= 5) {
@@ -916,7 +916,7 @@ function FacultyListsContent() {
                       </button>
                     )
                   })}
-                  
+
                   <button
                     className={styles.paginationBtn}
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -941,7 +941,7 @@ function FacultyListsContent() {
                 ✕
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
@@ -1077,7 +1077,7 @@ function FacultyListsContent() {
                 ✕
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
@@ -1230,7 +1230,7 @@ function FacultyListsContent() {
                 ✕
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               <p style={{ marginBottom: '16px' }}>
                 Are you sure you want to delete <strong>&quot;{selectedFaculty.full_name}&quot;</strong>?
@@ -1244,12 +1244,12 @@ function FacultyListsContent() {
               <button className={styles.btnCancel} onClick={() => setShowDeleteConfirm(false)}>
                 Cancel
               </button>
-              <button 
-                className={styles.btnDelete} 
-                onClick={handleDeleteFaculty} 
+              <button
+                className={styles.btnDelete}
+                onClick={handleDeleteFaculty}
                 disabled={deleting}
-                style={{ 
-                  backgroundColor: '#ef4444', 
+                style={{
+                  backgroundColor: '#ef4444',
                   color: 'white',
                   padding: '10px 20px',
                   borderRadius: '8px',

@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import { 
-  Search, 
-  Building2, 
+import {
+  Search,
+  Building2,
   DoorOpen,
   Users,
   X,
@@ -83,7 +83,7 @@ export default function SearchFilterRoomsPage() {
   const [rooms, setRooms] = useState<CampusRoom[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingRooms, setLoadingRooms] = useState(false)
-  
+
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBuilding, setSelectedBuilding] = useState<string>('all')
@@ -165,7 +165,7 @@ export default function SearchFilterRoomsPage() {
 
       if (error) throw error
       setRooms(data || [])
-      
+
       const buildingsList = [...new Set((data || []).map((r: CampusRoom) => r.building))]
       setExpandedBlocks(new Set(buildingsList))
     } catch (error: any) {
@@ -232,7 +232,7 @@ export default function SearchFilterRoomsPage() {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
-        const matchesSearch = 
+        const matchesSearch =
           room.room.toLowerCase().includes(query) ||
           room.building.toLowerCase().includes(query) ||
           room.campus.toLowerCase().includes(query) ||
@@ -240,21 +240,21 @@ export default function SearchFilterRoomsPage() {
           (room.room_type && room.room_type.toLowerCase().includes(query))
         if (!matchesSearch) return false
       }
-      
+
       // Building filter
       if (selectedBuilding !== 'all' && room.building !== selectedBuilding) return false
-      
+
       // Floor filter
       if (selectedFloor !== 'all' && room.floor_number !== parseInt(selectedFloor)) return false
-      
+
       // Room type filter
       if (selectedRoomType !== 'all' && room.room_type !== selectedRoomType) return false
-      
+
       // Amenity filters
       if (filterAC && !room.has_ac) return false
       if (filterTV && !room.has_tv) return false
       if (filterWhiteboard && !room.has_whiteboard) return false
-      
+
       return true
     })
   }, [rooms, searchQuery, selectedBuilding, selectedFloor, selectedRoomType, filterAC, filterTV, filterWhiteboard])
@@ -262,11 +262,11 @@ export default function SearchFilterRoomsPage() {
   // Group filtered rooms by building and floor
   const groupedRooms = useMemo(() => {
     const groups: { [building: string]: { [floor: string]: CampusRoom[] } } = {}
-    
+
     filteredRooms.forEach(room => {
       const building = room.building
       const floor = room.floor_number !== null ? `Floor ${room.floor_number}` : 'Ground Floor'
-      
+
       if (!groups[building]) {
         groups[building] = {}
       }
@@ -275,7 +275,7 @@ export default function SearchFilterRoomsPage() {
       }
       groups[building][floor].push(room)
     })
-    
+
     return groups
   }, [filteredRooms])
 
@@ -294,18 +294,18 @@ export default function SearchFilterRoomsPage() {
   const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
 
   return (
-    <div className={styles.pageContainer}>
-      <MenuBar 
+    <div className={styles.pageContainer} data-page="admin">
+      <MenuBar
         onToggleSidebar={toggleSidebar}
         showSidebarToggle={true}
         showAccountIcon={true}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.contentWrapper}>
           {/* Back Button */}
-          <button 
+          <button
             className={styles.backButton}
             onClick={() => router.push('/LandingPages/Home')}
           >
@@ -345,10 +345,10 @@ export default function SearchFilterRoomsPage() {
                   Select School/Campus File
                 </h2>
               </div>
-              
+
               <div className={styles.campusGrid}>
                 {campusGroups.map(group => (
-                  <div 
+                  <div
                     key={group.upload_group_id}
                     className={`${styles.campusCard} ${selectedGroup === group.upload_group_id ? styles.selected : ''}`}
                     onClick={() => handleSelectGroup(group.upload_group_id)}
@@ -506,7 +506,7 @@ export default function SearchFilterRoomsPage() {
                       {Object.entries(groupedRooms).map(([building, floorData]) => (
                         <div key={building} className={styles.blockSection}>
                           {/* Block Header */}
-                          <div 
+                          <div
                             className={styles.blockHeader}
                             onClick={() => toggleBlock(building)}
                           >
@@ -582,21 +582,21 @@ export default function SearchFilterRoomsPage() {
 
                                         {/* Amenities */}
                                         <div className={styles.roomAmenities}>
-                                          <span 
+                                          <span
                                             className={`${styles.amenityTag} ${room.has_ac ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_ac ? 'Has Air Conditioning' : 'No Air Conditioning'}
                                           >
                                             <Wind size={14} />
                                             AC
                                           </span>
-                                          <span 
+                                          <span
                                             className={`${styles.amenityTag} ${room.has_tv ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_tv ? 'Has TV' : 'No TV'}
                                           >
                                             <Tv size={14} />
                                             TV
                                           </span>
-                                          <span 
+                                          <span
                                             className={`${styles.amenityTag} ${room.has_whiteboard ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_whiteboard ? 'Has Whiteboard' : 'No Whiteboard'}
                                           >

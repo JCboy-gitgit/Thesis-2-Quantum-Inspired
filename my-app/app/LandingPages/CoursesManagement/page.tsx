@@ -5,7 +5,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
-import { 
+import {
   BookOpen,
   ChevronDown,
   ChevronRight,
@@ -103,8 +103,8 @@ const emptyFormData: CourseFormData = {
 
 // ==================== Helper Functions ====================
 async function fetchAllRows<T = Record<string, unknown>>(
-  table: string, 
-  filters: Record<string, string | number | boolean> = {}, 
+  table: string,
+  filters: Record<string, string | number | boolean> = {},
   orderBy: string = 'id'
 ): Promise<T[]> {
   const PAGE_SIZE = 1000
@@ -191,7 +191,7 @@ function CoursesManagementContent() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -210,7 +210,7 @@ function CoursesManagementContent() {
 
   useEffect(() => {
     filterCourses()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, filterSemester, filterYearLevel, filterDegreeProgram, courses])
 
   // Fetch upload groups
@@ -218,10 +218,10 @@ function CoursesManagementContent() {
     setLoading(true)
     try {
       const coursesList = await fetchAllRows<Course>('class_schedules', {}, 'created_at')
-      
+
       // Group by upload_group_id
       const groupMap = new Map<number, UploadGroup>()
-      
+
       coursesList.forEach(course => {
         if (!groupMap.has(course.upload_group_id)) {
           groupMap.set(course.upload_group_id, {
@@ -237,14 +237,14 @@ function CoursesManagementContent() {
         }
         const group = groupMap.get(course.upload_group_id)!
         group.total_courses++
-        
+
         // Collect unique degree programs
         if (course.degree_program && !group.degree_programs.includes(course.degree_program)) {
           group.degree_programs.push(course.degree_program)
         }
       })
 
-      const groups = Array.from(groupMap.values()).sort((a, b) => 
+      const groups = Array.from(groupMap.values()).sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
 
@@ -294,7 +294,7 @@ function CoursesManagementContent() {
 
     // Expand all programs by default
     setExpandedPrograms(degreePrograms as Set<string>)
-    
+
     // Expand all year levels by default
     const yearLevelKeys = new Set(['1st Year', '2nd Year', '3rd Year', '4th Year'])
     setExpandedYearLevels(yearLevelKeys)
@@ -373,16 +373,16 @@ function CoursesManagementContent() {
   // Group courses by degree program and year level
   const getCoursesByProgramAndYear = () => {
     const grouped = new Map<string, Map<number, Course[]>>()
-    
+
     filteredCourses.forEach(course => {
       const program = course.degree_program || 'Unassigned'
       const year = course.year_level || 1
-      
+
       if (!grouped.has(program)) {
         grouped.set(program, new Map())
       }
       const programMap = grouped.get(program)!
-      
+
       if (!programMap.has(year)) {
         programMap.set(year, [])
       }
@@ -511,7 +511,7 @@ function CoursesManagementContent() {
         if (error) throw error
 
         // Update local state
-        setCourses(prev => 
+        setCourses(prev =>
           prev.map(c => c.id === editingId ? { ...c, ...formData, credit_units } : c)
         )
       }
@@ -530,7 +530,7 @@ function CoursesManagementContent() {
     try {
       // Find the course to archive
       const courseToDelete = courses.find(c => c.id === id)
-      
+
       if (courseToDelete) {
         // Archive the course before deleting
         try {
@@ -576,10 +576,10 @@ function CoursesManagementContent() {
     try {
       // Find the group info for archiving
       const groupToDelete = uploadGroups.find(g => g.upload_group_id === groupId)
-      
+
       // Get all courses for this group for archiving
       const coursesToArchive = await fetchAllRows<Course>('class_schedules', { upload_group_id: groupId })
-      
+
       if (groupToDelete && coursesToArchive.length > 0) {
         // Archive the group before deleting
         try {
@@ -640,13 +640,13 @@ function CoursesManagementContent() {
   }
 
   return (
-    <div className={styles.pageLayout}>
+    <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
-          
+
           {/* ==================== Upload Group Selection View ==================== */}
           {viewMode === 'selection' && (
             <>
@@ -718,124 +718,124 @@ function CoursesManagementContent() {
               {/* Upload Groups Grid */}
               <div className={styles.schedulesGrid}>
                 {uploadGroups
-                  .filter(group => 
-                    !searchTerm || 
+                  .filter(group =>
+                    !searchTerm ||
                     group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     group.degree_programs?.some(dp => dp.toLowerCase().includes(searchTerm.toLowerCase())) ||
                     group.file_name?.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((group) => (
-                  <div 
-                    key={group.upload_group_id} 
-                    className={styles.scheduleCard}
-                  >
-                    <div className={styles.scheduleCardHeader}>
-                      <h3 className={styles.scheduleEventName}>
-                        <FileSpreadsheet size={20} />
-                        {group.college || `Upload Group #${group.upload_group_id}`}
-                      </h3>
-                      <span className={styles.scheduleType}>
-                        {group.total_courses} Courses
-                      </span>
-                    </div>
-                    <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
-                      {group.degree_programs && group.degree_programs.length > 0 && (
-                        <div className={styles.scheduleInfo}>
-                          <GraduationCap size={16} />
-                          <span>{group.degree_programs.length} Degree Program(s)</span>
-                        </div>
-                      )}
+                    <div
+                      key={group.upload_group_id}
+                      className={styles.scheduleCard}
+                    >
+                      <div className={styles.scheduleCardHeader}>
+                        <h3 className={styles.scheduleEventName}>
+                          <FileSpreadsheet size={20} />
+                          {group.college || `Upload Group #${group.upload_group_id}`}
+                        </h3>
+                        <span className={styles.scheduleType}>
+                          {group.total_courses} Courses
+                        </span>
+                      </div>
+                      <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
+                        {group.degree_programs && group.degree_programs.length > 0 && (
+                          <div className={styles.scheduleInfo}>
+                            <GraduationCap size={16} />
+                            <span>{group.degree_programs.length} Degree Program(s)</span>
+                          </div>
+                        )}
 
-                      <div className={styles.scheduleInfo}>
-                        <Clock size={16} />
-                        <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>
-                      </div>
-                    </div>
-                    <div className={styles.scheduleCardFooter}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          className={styles.viewButton}
-                          onClick={() => handleGroupSelect(group.upload_group_id)}
-                          style={{ flex: 1 }}
-                        >
-                          <BookOpen size={16} />
-                          View & Manage
-                        </button>
-                        <button 
-                          onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
-                          style={{
-                            padding: '12px 16px',
-                            background: '#fed7d7',
-                            color: '#c53030',
-                            border: 'none',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease'
-                          }}
-                          title="Delete entire group"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      
-                      {/* Delete Group Confirmation */}
-                      {deleteGroupConfirm === group.upload_group_id && (
-                        <div style={{
-                          marginTop: '12px',
-                          padding: '12px',
-                          background: '#fff5f5',
-                          borderRadius: '8px',
-                          border: '1px solid #fed7d7'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <AlertTriangle size={16} color="#c53030" />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
-                              Delete all {group.total_courses} courses?
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              onClick={() => handleDeleteGroup(group.upload_group_id)}
-                              style={{
-                                flex: 1,
-                                padding: '8px',
-                                background: '#c53030',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                fontSize: '12px'
-                              }}
-                            >
-                              Yes, Delete All
-                            </button>
-                            <button
-                              onClick={() => setDeleteGroupConfirm(null)}
-                              style={{
-                                flex: 1,
-                                padding: '8px',
-                                background: '#e2e8f0',
-                                color: '#4a5568',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                fontSize: '12px'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
+                        <div className={styles.scheduleInfo}>
+                          <Clock size={16} />
+                          <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>
                         </div>
-                      )}
+                      </div>
+                      <div className={styles.scheduleCardFooter}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className={styles.viewButton}
+                            onClick={() => handleGroupSelect(group.upload_group_id)}
+                            style={{ flex: 1 }}
+                          >
+                            <BookOpen size={16} />
+                            View & Manage
+                          </button>
+                          <button
+                            onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
+                            style={{
+                              padding: '12px 16px',
+                              background: '#fed7d7',
+                              color: '#c53030',
+                              border: 'none',
+                              borderRadius: '10px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: 600,
+                              transition: 'all 0.2s ease'
+                            }}
+                            title="Delete entire group"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        {/* Delete Group Confirmation */}
+                        {deleteGroupConfirm === group.upload_group_id && (
+                          <div style={{
+                            marginTop: '12px',
+                            padding: '12px',
+                            background: '#fff5f5',
+                            borderRadius: '8px',
+                            border: '1px solid #fed7d7'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                              <AlertTriangle size={16} color="#c53030" />
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
+                                Delete all {group.total_courses} courses?
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => handleDeleteGroup(group.upload_group_id)}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px',
+                                  background: '#c53030',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                  fontSize: '12px'
+                                }}
+                              >
+                                Yes, Delete All
+                              </button>
+                              <button
+                                onClick={() => setDeleteGroupConfirm(null)}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px',
+                                  background: '#e2e8f0',
+                                  color: '#4a5568',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                  fontSize: '12px'
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
 
               {uploadGroups.length === 0 && (
@@ -854,7 +854,7 @@ function CoursesManagementContent() {
               {/* Header */}
               <div className={styles.pageHeader}>
                 <div className={styles.headerLeft}>
-                  <button 
+                  <button
                     className={styles.backButton}
                     onClick={handleBackToSelection}
                     style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -938,11 +938,11 @@ function CoursesManagementContent() {
               </div>
 
               {/* Secondary Stats Row */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(2, 1fr)', 
-                gap: '16px', 
-                marginBottom: '24px' 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '16px',
+                marginBottom: '24px'
               }}>
                 <div style={{
                   background: 'var(--card-bg, #fff)',
@@ -953,9 +953,9 @@ function CoursesManagementContent() {
                   alignItems: 'center',
                   gap: '12px'
                 }}>
-                  <div style={{ 
-                    padding: '10px', 
-                    background: 'rgba(99, 102, 241, 0.1)', 
+                  <div style={{
+                    padding: '10px',
+                    background: 'rgba(99, 102, 241, 0.1)',
                     borderRadius: '10px',
                     color: '#6366f1'
                   }}>
@@ -975,9 +975,9 @@ function CoursesManagementContent() {
                   alignItems: 'center',
                   gap: '12px'
                 }}>
-                  <div style={{ 
-                    padding: '10px', 
-                    background: 'rgba(236, 72, 153, 0.1)', 
+                  <div style={{
+                    padding: '10px',
+                    background: 'rgba(236, 72, 153, 0.1)',
                     borderRadius: '10px',
                     color: '#ec4899'
                   }}>
@@ -991,9 +991,9 @@ function CoursesManagementContent() {
               </div>
 
               {/* Filters - Updated with Semester, Year Level, Degree Program */}
-              <div style={{ 
-                display: 'flex', 
-                gap: '16px', 
+              <div style={{
+                display: 'flex',
+                gap: '16px',
                 marginBottom: '24px',
                 flexWrap: 'wrap',
                 alignItems: 'center'
@@ -1008,7 +1008,7 @@ function CoursesManagementContent() {
                     className={styles.searchInput}
                   />
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Filter size={16} style={{ color: 'var(--text-secondary, #718096)' }} />
                 </div>
@@ -1091,7 +1091,7 @@ function CoursesManagementContent() {
                   {Array.from(getCoursesByProgramAndYear().entries()).map(([program, yearMap]) => (
                     <div key={program} className={styles.campusSection}>
                       {/* Degree Program Header */}
-                      <div 
+                      <div
                         className={styles.campusHeaderRow}
                         onClick={() => toggleProgram(program)}
                         style={{ marginBottom: '12px' }}
@@ -1118,11 +1118,11 @@ function CoursesManagementContent() {
                             .map(([year, yearCourses]) => {
                               const yearKey = `${program}-${year}`
                               const yearLabel = getYearLevelLabel(year)
-                              
+
                               return (
                                 <div key={yearKey} style={{ marginBottom: '16px' }}>
                                   {/* Year Level Header */}
-                                  <div 
+                                  <div
                                     onClick={() => toggleYearLevel(yearKey)}
                                     style={{
                                       display: 'flex',
@@ -1139,8 +1139,8 @@ function CoursesManagementContent() {
                                     <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-dark, #1a202c)' }}>
                                       {yearLabel}
                                     </span>
-                                    <span style={{ 
-                                      fontSize: '12px', 
+                                    <span style={{
+                                      fontSize: '12px',
                                       color: 'var(--text-secondary, #718096)',
                                       background: 'var(--bg-gray-100, #edf2f7)',
                                       padding: '2px 8px',
@@ -1159,14 +1159,14 @@ function CoursesManagementContent() {
 
                                   {/* Course Cards for this Year Level */}
                                   {expandedYearLevels.has(yearKey) && (
-                                    <div style={{ 
-                                      display: 'grid', 
-                                      gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+                                    <div style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                                       gap: '12px',
                                       marginLeft: '16px'
                                     }}>
                                       {yearCourses.map((course) => (
-                                        <div 
+                                        <div
                                           key={course.id}
                                           style={{
                                             background: 'var(--card-bg, #fff)',
@@ -1178,15 +1178,15 @@ function CoursesManagementContent() {
                                           }}
                                         >
                                           {/* Course Header */}
-                                          <div style={{ 
-                                            display: 'flex', 
-                                            justifyContent: 'space-between', 
+                                          <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
                                             alignItems: 'flex-start',
                                             marginBottom: '12px'
                                           }}>
                                             <div>
-                                              <span style={{ 
-                                                fontWeight: 700, 
+                                              <span style={{
+                                                fontWeight: 700,
                                                 color: 'var(--primary-dark, #276749)',
                                                 fontSize: '15px',
                                                 display: 'block',
@@ -1194,7 +1194,7 @@ function CoursesManagementContent() {
                                               }}>
                                                 {course.course_code}
                                               </span>
-                                              <span style={{ 
+                                              <span style={{
                                                 fontWeight: 500,
                                                 color: 'var(--text-dark, #1a202c)',
                                                 fontSize: '13px',
@@ -1203,7 +1203,7 @@ function CoursesManagementContent() {
                                                 {course.course_name || 'N/A'}
                                               </span>
                                             </div>
-                                            
+
                                             {/* Actions */}
                                             <div style={{ display: 'flex', gap: '4px' }}>
                                               <button
@@ -1222,7 +1222,7 @@ function CoursesManagementContent() {
                                               >
                                                 <Edit3 size={14} />
                                               </button>
-                                              
+
                                               {deleteConfirm === course.id ? (
                                                 <div style={{ display: 'flex', gap: '2px' }}>
                                                   <button
@@ -1278,9 +1278,9 @@ function CoursesManagementContent() {
                                           </div>
 
                                           {/* Course Details */}
-                                          <div style={{ 
-                                            display: 'grid', 
-                                            gridTemplateColumns: '1fr 1fr', 
+                                          <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr',
                                             gap: '8px',
                                             fontSize: '12px',
                                             color: 'var(--text-secondary, #718096)'
@@ -1294,10 +1294,10 @@ function CoursesManagementContent() {
                                               <span>Lab: {course.lab_hours || 0}hrs ({course.lab_units || 0} units)</span>
                                             </div>
                                             {course.prerequisite && course.prerequisite !== 'None' && (
-                                              <div style={{ 
+                                              <div style={{
                                                 gridColumn: '1 / -1',
-                                                display: 'flex', 
-                                                alignItems: 'center', 
+                                                display: 'flex',
+                                                alignItems: 'center',
                                                 gap: '6px',
                                                 marginTop: '4px'
                                               }}>
@@ -1308,7 +1308,7 @@ function CoursesManagementContent() {
                                           </div>
 
                                           {/* Semester Badge */}
-                                          <div style={{ 
+                                          <div style={{
                                             marginTop: '12px',
                                             display: 'flex',
                                             gap: '6px'
@@ -1696,10 +1696,10 @@ function CoursesManagementContent() {
 // Loading fallback component
 function LoadingFallback() {
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
       height: '100vh',
       flexDirection: 'column',
       gap: '16px'

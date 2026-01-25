@@ -1,36 +1,38 @@
 /* ==================== Green Theme Enhancements ==================== */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
 [data-theme="green"] .pageLayout {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+  background: linear-gradient(135deg, #02353C 0%, #034a4d 50%, #02353C 100%);
 }
 
 [data-theme="green"] .headerCard {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.98) 0%, rgba(3, 74, 77, 0.95) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.4);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
 [data-theme="green"] .departmentCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.35);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15);
 }
 
 [data-theme="green"] .departmentCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
+  border-color: #3FD0C9;
+  box-shadow: 0 8px 32px rgba(63, 208, 201, 0.35);
   transform: translateY(-4px);
 }
 
 [data-theme="green"] .addButton,
 [data-theme="green"] .actionButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.4);
 }
 
 [data-theme="green"] .addButton:hover,
 [data-theme="green"] .actionButton:hover {
-  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
+  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  box-shadow: 0 6px 24px rgba(63, 208, 201, 0.6);
   transform: translateY(-2px);
 }
 
@@ -47,11 +49,11 @@
 [data-theme="green"] .count,
 [data-theme="green"] .info,
 [data-theme="green"] .details {
-  color: #b3ffdb !important;
+  color: #C1F6ED !important;
 }
 
 [data-theme="green"] .icon {
-  color: #5dffa7;
+  color: #3FD0C9;
 }
 
 /* ==================== Layout ==================== */
@@ -178,7 +180,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingState p {
@@ -628,8 +632,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ==================== Modal ==================== */
@@ -641,7 +650,7 @@
   max-height: 90vh;
   overflow-y: auto;
   border: 2px solid rgba(0, 212, 255, 0.3);
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     0 0 50px rgba(0, 212, 255, 0.15);
   animation: slideUp 0.3s ease-out;
@@ -652,6 +661,7 @@
     opacity: 0;
     transform: translateY(20px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -886,7 +896,7 @@
 /* ==================== Green Theme Modal ==================== */
 [data-theme="green"] .modal {
   border-color: rgba(0, 217, 111, 0.3);
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.5),
     0 0 50px rgba(0, 217, 111, 0.15);
 }
@@ -910,11 +920,11 @@
   .formRow {
     grid-template-columns: 1fr;
   }
-  
+
   .modalActions {
     flex-direction: column;
   }
-  
+
   .confirmActions {
     flex-direction: column;
   }
@@ -1142,17 +1152,17 @@
     width: 100%;
     margin-top: 16px;
   }
-  
+
   .uploadButton,
   .headerButtons .addButton {
     width: 100%;
     justify-content: center;
   }
-  
+
   .uploadContent {
     padding: 16px;
   }
-  
+
   .uploadZone {
     padding: 24px;
   }

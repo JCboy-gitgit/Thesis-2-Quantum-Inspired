@@ -1,43 +1,45 @@
 /* Faculty Lists Styles - Using Global Theme Variables */
 
 /* ==================== Green Theme Enhancements ==================== */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
 [data-theme="green"] .facultyLayout {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+  background: linear-gradient(135deg, #02353C 0%, #034a4d 50%, #02353C 100%);
 }
 
 [data-theme="green"] .facultyHeader {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.98) 0%, rgba(3, 74, 77, 0.95) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.4);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
 [data-theme="green"] .facultyCard,
 [data-theme="green"] .memberCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.35);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15);
 }
 
 [data-theme="green"] .facultyCard:hover,
 [data-theme="green"] .memberCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
+  border-color: #3FD0C9;
+  box-shadow: 0 8px 32px rgba(63, 208, 201, 0.35);
   transform: translateY(-4px);
 }
 
 [data-theme="green"] .backButton,
 [data-theme="green"] .addButton {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 119, 59, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.15);
+  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
+  border: 2px solid rgba(63, 208, 201, 0.35);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.15);
   color: #ffffff;
 }
 
 [data-theme="green"] .backButton:hover,
 [data-theme="green"] .addButton:hover {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  border-color: #00d96f;
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.4);
+  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  border-color: #3FD0C9;
+  box-shadow: 0 6px 24px rgba(63, 208, 201, 0.4);
   transform: translateY(-2px);
 }
 
@@ -55,11 +57,11 @@
 [data-theme="green"] .department,
 [data-theme="green"] .email,
 [data-theme="green"] .details {
-  color: #b3ffdb !important;
+  color: #C1F6ED !important;
 }
 
 [data-theme="green"] .icon {
-  color: #5dffa7;
+  color: #3FD0C9;
 }
 
 /* ==================== Layout ==================== */
@@ -191,7 +193,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingState p {
@@ -461,13 +465,11 @@
 .profileCoverPattern {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 10px,
-    rgba(255, 255, 255, 0.05) 10px,
-    rgba(255, 255, 255, 0.05) 20px
-  );
+  background: repeating-linear-gradient(45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 20px);
 }
 
 .profileAvatarSection {
@@ -886,16 +888,16 @@
     margin-left: 0;
     padding: 20px;
   }
-  
+
   .searchHeader {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .searchBox {
     min-width: 100%;
   }
-  
+
   .filterButtons {
     justify-content: flex-start;
   }
@@ -907,23 +909,23 @@
     text-align: center;
     padding: 24px;
   }
-  
+
   .facultyTitle {
     font-size: 26px;
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .facultyGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .formRow {
     grid-template-columns: 1fr;
   }
-  
+
   .paginationWrapper {
     flex-wrap: wrap;
   }
@@ -933,16 +935,16 @@
   .statsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .filterButtons {
     width: 100%;
   }
-  
+
   .filterBtn {
     flex: 1;
     text-align: center;
   }
-  
+
   .addFacultyBtn {
     width: 100%;
     justify-content: center;

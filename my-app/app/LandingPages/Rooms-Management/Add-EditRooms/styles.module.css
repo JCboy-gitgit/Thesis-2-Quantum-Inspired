@@ -1,96 +1,9 @@
 /* ==================== Add/Edit Rooms Page Styles ==================== */
 /* Uses CSS variables from globals.css for theming support */
 
-/* ==================== Green Theme Enhancements ==================== */
-[data-theme="green"] .pageContainer {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
-}
-
-[data-theme="green"] .headerCard {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
-}
-
-[data-theme="green"] .headerTitle {
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
-}
-
-[data-theme="green"] .formCard,
-[data-theme="green"] .card {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
-}
-
-[data-theme="green"] .formCard:hover,
-[data-theme="green"] .card:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
-}
-
-[data-theme="green"] .submitButton,
-[data-theme="green"] .saveButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.5);
-}
-
-[data-theme="green"] .submitButton:hover,
-[data-theme="green"] .saveButton:hover {
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.7);
-  transform: translateY(-2px) scale(1.02);
-}
-
-[data-theme="green"] .cancelButton {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 119, 59, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.15);
-  color: #ffffff;
-}
-
-[data-theme="green"] .cancelButton:hover {
-  border-color: #00d96f;
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.4);
-}
-
-[data-theme="green"] .headerCard,
-[data-theme="green"] .formCard,
-[data-theme="green"] .card,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .fieldLabel {
-  color: #ffffff;
-}
-
-[data-theme="green"] .description,
-[data-theme="green"] .hint,
-[data-theme="green"] .helpText {
-  color: #b3ffdb !important;
-}
-
-[data-theme="green"] .icon {
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .headerIcon,
-[data-theme="green"] .schoolIcon {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .label,
-[data-theme="green"] .input,
-[data-theme="green"] .select,
-[data-theme="green"] .textarea {
-  color: #ffffff;
-}
-
-[data-theme="green"] .input::placeholder,
-[data-theme="green"] .textarea::placeholder {
-  color: #b3ffdb;
-  opacity: 0.7;
-}
+/* ==================== Green Theme Styles ==================== */
+/* Green theme styles are now handled globally via green-theme.css imported in layout.tsx */
+/* This includes nature-inspired light mode backgrounds, proper z-indexing, and consistent styling */
 
 /* Local text muted variable for fallback */
 .pageContainer {
@@ -297,9 +210,7 @@
   text-align: right;
 }
 
-.tableBody {
-  
-}
+.tableBody {}
 
 .tableRow {
   transition: background-color 0.2s ease;
@@ -1043,7 +954,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Form Row */
@@ -1059,39 +972,39 @@
   .mainContent.withSidebar {
     margin-left: 0;
   }
-  
+
   .headerContent {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .headerSubtitle {
     padding-left: 0;
   }
-  
+
   .formGrid2,
   .formGrid3,
   .formRow {
     grid-template-columns: 1fr;
   }
-  
+
   .featuresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .campusGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .roomsSectionHeader {
     flex-direction: column;
   }
-  
+
   .roomsActions {
     width: 100%;
     flex-direction: column;
   }
-  
+
   .searchInput {
     width: 100%;
   }

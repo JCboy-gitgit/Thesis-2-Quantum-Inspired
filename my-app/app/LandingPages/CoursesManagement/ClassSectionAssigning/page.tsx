@@ -5,7 +5,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from '../ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
-import { 
+import {
   BookOpen,
   ChevronDown,
   ChevronRight,
@@ -117,7 +117,7 @@ const emptySectionForm: SectionFormData = {
 // ==================== Main Component ====================
 function ClassSectionAssigningContent() {
   const router = useRouter()
-  
+
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -142,7 +142,7 @@ function ClassSectionAssigningContent() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
-  
+
   // Course assignment by Year Level
   const [selectedYearLevelForAssignment, setSelectedYearLevelForAssignment] = useState<number | null>(null)
   const [selectedDegreeForAssignment, setSelectedDegreeForAssignment] = useState<string>('')
@@ -172,7 +172,7 @@ function ClassSectionAssigningContent() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -198,7 +198,7 @@ function ClassSectionAssigningContent() {
         .select('*')
         .order('year_level', { ascending: true })
         .order('course_code', { ascending: true })
-      
+
       if (coursesError) throw coursesError
       if (coursesData) {
         setCourses(coursesData)
@@ -210,7 +210,7 @@ function ClassSectionAssigningContent() {
         .from('year_batches')
         .select('*')
         .order('year_batch', { ascending: false })
-      
+
       if (batchesError) {
         console.log('year_batches table may not exist, using empty array:', batchesError)
         setYearBatches([])
@@ -227,7 +227,7 @@ function ClassSectionAssigningContent() {
         .from('sections')
         .select('*')
         .order('section_name', { ascending: true })
-      
+
       if (sectionsError) {
         console.log('sections table may not exist, using empty array:', sectionsError)
         setSections([])
@@ -244,7 +244,7 @@ function ClassSectionAssigningContent() {
       const { data: assignmentsData, error: assignmentsError } = await (supabase as any)
         .from('section_course_assignments')
         .select('*')
-      
+
       if (assignmentsError) {
         console.log('section_course_assignments table may not exist:', assignmentsError)
         setAssignments([])
@@ -290,7 +290,7 @@ function ClassSectionAssigningContent() {
   // Download CSV for a specific year batch
   const downloadBatchCSV = (batch: YearBatch) => {
     const batchSections = sections.filter(s => s.year_batch_id === batch.id)
-    
+
     if (batchSections.length === 0) {
       setNotification({ type: 'error', message: 'No sections found for this year batch' })
       return
@@ -299,13 +299,13 @@ function ClassSectionAssigningContent() {
     // Create CSV content with header
     let csvContent = `Year Batch: ${batch.year_batch}\n\n`
     csvContent += 'Section Name,Year Level,Degree Program,Student Count,Max Capacity,Assigned Courses (Code),Assigned Courses (Name)\n'
-    
+
     batchSections.forEach(section => {
       const assignedCourses = getAssignedCourses(section.id)
-      
+
       const courseCodes = assignedCourses.map(c => c.course_code).join('; ')
       const courseNames = assignedCourses.map(c => c.course_name).join('; ')
-      
+
       csvContent += `"${section.section_name}",`
       csvContent += `${section.year_level},`
       csvContent += `"${section.degree_program}",`
@@ -325,14 +325,14 @@ function ClassSectionAssigningContent() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     setNotification({ type: 'success', message: 'CSV downloaded successfully!' })
   }
 
   // Filter sections
   const getFilteredSections = () => {
     let filtered = [...sections]
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(s =>
@@ -340,32 +340,32 @@ function ClassSectionAssigningContent() {
         s.degree_program.toLowerCase().includes(term)
       )
     }
-    
+
     if (filterYearLevel !== 'all') {
       filtered = filtered.filter(s => s.year_level === parseInt(filterYearLevel))
     }
-    
+
     if (filterDegreeProgram !== 'all') {
       filtered = filtered.filter(s => s.degree_program === filterDegreeProgram)
     }
-    
+
     return filtered
   }
 
   // Group sections by year batch and year level
   const getSectionsByBatchAndYear = () => {
     const grouped = new Map<number, Map<number, Section[]>>()
-    
+
     getFilteredSections().forEach(section => {
       // Get the batch for this section
       const batch = yearBatches.find(b => b.id === section.year_batch_id)
       if (!batch) return
-      
+
       if (!grouped.has(section.year_batch_id)) {
         grouped.set(section.year_batch_id, new Map())
       }
       const batchMap = grouped.get(section.year_batch_id)!
-      
+
       if (!batchMap.has(section.year_level)) {
         batchMap.set(section.year_level, [])
       }
@@ -378,16 +378,16 @@ function ClassSectionAssigningContent() {
   // Get courses for selected year level in assignment modal
   const getCoursesForAssignment = () => {
     if (!selectedSection || selectedYearLevelForAssignment === null) return []
-    
-    let filtered = courses.filter(c => 
+
+    let filtered = courses.filter(c =>
       c.degree_program === selectedDegreeForAssignment &&
       c.year_level === selectedYearLevelForAssignment
     )
-    
+
     if (selectedSemester !== 'all') {
       filtered = filtered.filter(c => c.semester === selectedSemester)
     }
-    
+
     return filtered
   }
 
@@ -432,11 +432,11 @@ function ClassSectionAssigningContent() {
     }
 
     // Check for duplicate year_batch names
-    const duplicateBatch = yearBatches.find(b => 
+    const duplicateBatch = yearBatches.find(b =>
       b.year_batch.toLowerCase() === yearBatchForm.year_batch.toLowerCase() &&
       (modalMode === 'create' || b.id !== editingId)
     )
-    
+
     if (duplicateBatch) {
       setNotification({ type: 'error', message: `Year batch "${yearBatchForm.year_batch}" already exists.` })
       return
@@ -455,12 +455,12 @@ function ClassSectionAssigningContent() {
           })
           .select()
           .single()
-        
+
         if (error) {
           console.error('Supabase insert error:', error)
           throw new Error(error.message || 'Failed to create year batch')
         }
-        
+
         setYearBatches(prev => [data, ...prev])
         setExpandedBatches(prev => new Set([...prev, data.id]))
         setNotification({ type: 'success', message: 'Year batch created successfully!' })
@@ -477,12 +477,12 @@ function ClassSectionAssigningContent() {
           .eq('id', editingId)
           .select()
           .single()
-        
+
         if (error) {
           console.error('Supabase update error:', error)
           throw new Error(error.message || 'Failed to update year batch')
         }
-        
+
         setYearBatches(prev => prev.map(b => b.id === editingId ? data : b))
         setNotification({ type: 'success', message: 'Year batch updated successfully!' })
       }
@@ -509,15 +509,15 @@ function ClassSectionAssigningContent() {
 
   // Delete Year Batch
   const [deleteYearBatchConfirm, setDeleteYearBatchConfirm] = useState<number | null>(null)
-  
+
   const handleDeleteYearBatch = async (id: number) => {
     try {
       // Check if there are sections associated with this year batch
       const associatedSections = sections.filter(s => s.year_batch_id === id)
       if (associatedSections.length > 0) {
-        setNotification({ 
-          type: 'error', 
-          message: `Cannot delete: ${associatedSections.length} section(s) are assigned to this year batch. Delete the sections first.` 
+        setNotification({
+          type: 'error',
+          message: `Cannot delete: ${associatedSections.length} section(s) are assigned to this year batch. Delete the sections first.`
         })
         setDeleteYearBatchConfirm(null)
         return
@@ -528,12 +528,12 @@ function ClassSectionAssigningContent() {
         .from('year_batches')
         .delete()
         .eq('id', id)
-      
+
       if (error) {
         console.error('Supabase delete error:', error)
         throw new Error(error.message || 'Failed to delete year batch')
       }
-      
+
       setYearBatches(prev => prev.filter(b => b.id !== id))
       setExpandedBatches(prev => {
         const next = new Set(prev)
@@ -587,17 +587,17 @@ function ClassSectionAssigningContent() {
     }
 
     // Check for duplicate section names in the same year batch and year level
-    const duplicateSection = sections.find(s => 
+    const duplicateSection = sections.find(s =>
       s.section_name.toLowerCase() === sectionForm.section_name.toLowerCase() &&
       s.year_batch_id === sectionForm.year_batch_id &&
       s.year_level === sectionForm.year_level &&
       (modalMode === 'create' || s.id !== editingId)
     )
-    
+
     if (duplicateSection) {
-      setNotification({ 
-        type: 'error', 
-        message: `Section "${sectionForm.section_name}" already exists in ${getYearLevelLabel(sectionForm.year_level)} of this year batch.` 
+      setNotification({
+        type: 'error',
+        message: `Section "${sectionForm.section_name}" already exists in ${getYearLevelLabel(sectionForm.year_level)} of this year batch.`
       })
       return
     }
@@ -621,39 +621,39 @@ function ClassSectionAssigningContent() {
           })
           .select()
           .single()
-        
+
         if (error) throw error
-        
+
         setSections(prev => [...prev, data])
         const yearKey = `${data.year_batch_id}-${data.year_level}`
         setExpandedYearLevels(prev => new Set([...prev, yearKey]))
-        
+
         // Auto-assign courses for the year level if available
-        const coursesToAutoAssign = courses.filter(course => 
+        const coursesToAutoAssign = courses.filter(course =>
           course.year_level === data.year_level &&
           (course.degree_program === data.degree_program || !course.degree_program)
         )
-        
+
         if (coursesToAutoAssign.length > 0) {
           try {
             const assignments = coursesToAutoAssign.map(course => ({
               section_id: data.id,
               course_id: course.id
             }))
-            
+
             const { error: assignError } = await (supabase as any)
               .from('section_course_assignments')
               .insert(assignments)
-            
+
             if (!assignError) {
               setAssignments(prev => [...prev, ...assignments.map((a, i) => ({
                 id: Date.now() + i,
                 ...a,
                 created_at: new Date().toISOString()
               }))])
-              setNotification({ 
-                type: 'success', 
-                message: `Section created successfully! Auto-assigned ${coursesToAutoAssign.length} courses.` 
+              setNotification({
+                type: 'success',
+                message: `Section created successfully! Auto-assigned ${coursesToAutoAssign.length} courses.`
               })
             } else {
               setNotification({ type: 'success', message: 'Section created successfully!' })
@@ -681,9 +681,9 @@ function ClassSectionAssigningContent() {
           .eq('id', editingId)
           .select()
           .single()
-        
+
         if (error) throw error
-        
+
         setSections(prev => prev.map(s => s.id === editingId ? data : s))
         setNotification({ type: 'success', message: 'Section updated successfully!' })
       }
@@ -703,9 +703,9 @@ function ClassSectionAssigningContent() {
         .from('sections')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
-      
+
       setSections(prev => prev.filter(s => s.id !== id))
       setAssignments(prev => prev.filter(a => a.section_id !== id))
       setNotification({ type: 'success', message: 'Section deleted successfully!' })
@@ -721,20 +721,20 @@ function ClassSectionAssigningContent() {
     setSelectedSection(section)
     setSelectedDegreeForAssignment(section.degree_program)
     setSelectedYearLevelForAssignment(section.year_level)
-    
+
     // Default to showing all semesters
     setSelectedSemester('all')
-    
+
     setShowAssignCoursesModal(true)
   }
 
   const handleAssignYearLevelCourses = async () => {
     if (!selectedSection || selectedYearLevelForAssignment === null) return
-    
+
     setSaving(true)
     try {
       const coursesToAssign = getCoursesForAssignment()
-      
+
       if (coursesToAssign.length === 0) {
         setNotification({ type: 'error', message: 'No courses found for the selected year level and semester.' })
         setSaving(false)
@@ -747,7 +747,7 @@ function ClassSectionAssigningContent() {
         .from('section_course_assignments')
         .delete()
         .eq('section_id', selectedSection.id)
-      
+
       if (deleteError) throw deleteError
 
       // Insert new assignments
@@ -761,7 +761,7 @@ function ClassSectionAssigningContent() {
         .from('section_course_assignments')
         .insert(assignmentRecords)
         .select()
-      
+
       if (error) throw error
 
       // Update local state
@@ -770,9 +770,9 @@ function ClassSectionAssigningContent() {
         return [...filtered, ...(data || [])]
       })
 
-      setNotification({ 
-        type: 'success', 
-        message: `Successfully assigned ${coursesToAssign.length} courses from ${getYearLevelLabel(selectedYearLevelForAssignment)} to ${selectedSection.section_name}!` 
+      setNotification({
+        type: 'success',
+        message: `Successfully assigned ${coursesToAssign.length} courses from ${getYearLevelLabel(selectedYearLevelForAssignment)} to ${selectedSection.section_name}!`
       })
       setShowAssignCoursesModal(false)
     } catch (error) {
@@ -786,8 +786,8 @@ function ClassSectionAssigningContent() {
   // Get courses for assignment modal (filtered by year level and degree program)
   const getAvailableCourses = () => {
     if (!selectedSection) return []
-    
-    return courses.filter(c => 
+
+    return courses.filter(c =>
       c.year_level === selectedSection.year_level ||
       c.degree_program === selectedSection.degree_program ||
       !c.year_level // Include courses without year level
@@ -812,13 +812,13 @@ function ClassSectionAssigningContent() {
   }
 
   return (
-    <div className={styles.pageLayout}>
+    <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
-          
+
           {/* Notification */}
           {notification && (
             <div style={{
@@ -894,9 +894,9 @@ function ClassSectionAssigningContent() {
           </div>
 
           {/* Action Buttons */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '12px', 
+          <div style={{
+            display: 'flex',
+            gap: '12px',
             marginBottom: '24px',
             flexWrap: 'wrap'
           }}>
@@ -942,9 +942,9 @@ function ClassSectionAssigningContent() {
           </div>
 
           {/* Search and Filters */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '16px', 
+          <div style={{
+            display: 'flex',
+            gap: '16px',
             marginBottom: '24px',
             flexWrap: 'wrap',
             alignItems: 'center'
@@ -1047,25 +1047,25 @@ function ClassSectionAssigningContent() {
           <div className={styles.campusView}>
             {yearBatches.map(batch => {
               const batchSections = getSectionsByBatchAndYear().get(batch.id)
-              const totalSections = batchSections 
+              const totalSections = batchSections
                 ? Array.from(batchSections.values()).reduce((sum, arr) => sum + arr.length, 0)
                 : 0
 
               return (
                 <div key={batch.id} className={styles.campusSection}>
                   {/* Year Batch Header */}
-                  <div 
+                  <div
                     className={styles.campusHeaderRow}
                     style={{ marginBottom: '12px', cursor: 'pointer' }}
                   >
                     <Calendar size={20} />
-                    <span 
+                    <span
                       style={{ fontWeight: 700, fontSize: '16px', flex: 1 }}
                       onClick={() => toggleBatch(batch.id)}
                     >
                       {batch.year_batch}
                     </span>
-                    
+
                     {/* Edit Year Batch Button */}
                     <button
                       onClick={(e) => {
@@ -1089,7 +1089,7 @@ function ClassSectionAssigningContent() {
                     >
                       <Edit3 size={14} />
                     </button>
-                    
+
                     {/* Delete Year Batch Button */}
                     {deleteYearBatchConfirm === batch.id ? (
                       <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
@@ -1154,7 +1154,7 @@ function ClassSectionAssigningContent() {
                         <Trash2 size={14} />
                       </button>
                     )}
-                    
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -1190,7 +1190,7 @@ function ClassSectionAssigningContent() {
                     <span className={styles.roomCount}>
                       {totalSections} sections
                     </span>
-                    <button 
+                    <button
                       className={styles.toggleBtn}
                       onClick={() => toggleBatch(batch.id)}
                     >
@@ -1208,11 +1208,11 @@ function ClassSectionAssigningContent() {
                         .sort((a, b) => a[0] - b[0])
                         .map(([yearLevel, levelSections]) => {
                           const yearKey = `${batch.id}-${yearLevel}`
-                          
+
                           return (
                             <div key={yearKey} style={{ marginBottom: '16px' }}>
                               {/* Year Level Header */}
-                              <div 
+                              <div
                                 onClick={() => toggleYearLevel(yearKey)}
                                 style={{
                                   display: 'flex',
@@ -1229,8 +1229,8 @@ function ClassSectionAssigningContent() {
                                 <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-dark, #1a202c)' }}>
                                   {getYearLevelLabel(yearLevel)}
                                 </span>
-                                <span style={{ 
-                                  fontSize: '12px', 
+                                <span style={{
+                                  fontSize: '12px',
                                   color: 'var(--text-secondary, #718096)',
                                   background: 'var(--bg-gray-100, #edf2f7)',
                                   padding: '2px 8px',
@@ -1281,146 +1281,89 @@ function ClassSectionAssigningContent() {
 
                               {/* Section Cards - Google Classroom Style */}
                               {expandedYearLevels.has(yearKey) && (
-                                <div style={{ 
-                                  display: 'grid', 
-                                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                                <div style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                                   gap: '16px',
                                   marginLeft: '16px'
                                 }}>
                                   {levelSections
                                     .sort((a, b) => a.section_name.localeCompare(b.section_name))
                                     .map(section => (
-                                    <div 
-                                      key={section.id}
-                                      style={{
-                                        background: 'var(--card-bg, #fff)',
-                                        borderRadius: '12px',
-                                        border: '1px solid var(--border-color, #e2e8f0)',
-                                        overflow: 'hidden',
-                                        transition: 'all 0.2s ease',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                        cursor: 'pointer'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(-2px)'
-                                        e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'translateY(0px)'
-                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'
-                                      }}
-                                    >
-                                      {/* Card Header - Colored Banner */}
-                                      <div style={{
-                                        background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
-                                        padding: '16px',
-                                        color: 'white',
-                                        position: 'relative'
-                                      }}>
-                                        <h3 style={{ 
-                                          margin: 0, 
-                                          fontSize: '18px', 
-                                          fontWeight: 700,
-                                          marginBottom: '4px'
+                                      <div
+                                        key={section.id}
+                                        style={{
+                                          background: 'var(--card-bg, #fff)',
+                                          borderRadius: '12px',
+                                          border: '1px solid var(--border-color, #e2e8f0)',
+                                          overflow: 'hidden',
+                                          transition: 'all 0.2s ease',
+                                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                          cursor: 'pointer'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.transform = 'translateY(-2px)'
+                                          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.transform = 'translateY(0px)'
+                                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'
+                                        }}
+                                      >
+                                        {/* Card Header - Colored Banner */}
+                                        <div style={{
+                                          background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                                          padding: '16px',
+                                          color: 'white',
+                                          position: 'relative'
                                         }}>
-                                          {section.section_name}
-                                        </h3>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                          <p style={{ 
-                                            margin: 0, 
-                                            fontSize: '12px', 
-                                            opacity: 0.9,
-                                            flex: 1
+                                          <h3 style={{
+                                            margin: 0,
+                                            fontSize: '18px',
+                                            fontWeight: 700,
+                                            marginBottom: '4px'
                                           }}>
-                                            {section.degree_program}
-                                          </p>
-                                          {/* Completion Status */}
-                                          <div style={{
-                                            padding: '2px 6px',
-                                            borderRadius: '10px',
-                                            fontSize: '10px',
-                                            fontWeight: 600,
-                                            background: getAssignedCourses(section.id).length > 0 
-                                              ? 'rgba(255, 255, 255, 0.3)'
-                                              : 'rgba(255, 255, 255, 0.2)',
-                                            color: 'white'
-                                          }}>
-                                            {getAssignedCourses(section.id).length > 0 ? 'Complete' : 'Incomplete'}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Action Buttons */}
-                                        <div style={{ 
-                                          position: 'absolute', 
-                                          top: '12px', 
-                                          right: '12px',
-                                          display: 'flex',
-                                          gap: '4px'
-                                        }}>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              openEditSectionModal(section)
-                                            }}
-                                            onMouseEnter={(e) => {
-                                              e.currentTarget.style.background = 'rgba(255,255,255,0.3)'
-                                              e.currentTarget.style.transform = 'scale(1.1)'
-                                            }}
-                                            onMouseLeave={(e) => {
-                                              e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
-                                              e.currentTarget.style.transform = 'scale(1)'
-                                            }}
-                                            style={{
-                                              padding: '6px',
-                                              background: 'rgba(255,255,255,0.2)',
-                                              border: 'none',
-                                              borderRadius: '6px',
-                                              cursor: 'pointer',
-                                              color: 'white',
-                                              transition: 'all 0.2s ease'
-                                            }}
-                                          >
-                                            <Edit3 size={14} />
-                                          </button>
-                                          {deleteConfirm === section.id ? (
-                                            <div style={{ display: 'flex', gap: '2px' }}>
-                                              <button
-                                                onClick={() => handleDeleteSection(section.id)}
-                                                style={{
-                                                  padding: '6px 8px',
-                                                  background: '#c53030',
-                                                  color: 'white',
-                                                  border: 'none',
-                                                  borderRadius: '6px',
-                                                  cursor: 'pointer',
-                                                  fontSize: '10px'
-                                                }}
-                                              >
-                                                Yes
-                                              </button>
-                                              <button
-                                                onClick={() => setDeleteConfirm(null)}
-                                                style={{
-                                                  padding: '6px 8px',
-                                                  background: 'rgba(255,255,255,0.3)',
-                                                  color: 'white',
-                                                  border: 'none',
-                                                  borderRadius: '6px',
-                                                  cursor: 'pointer',
-                                                  fontSize: '10px'
-                                                }}
-                                              >
-                                                No
-                                              </button>
+                                            {section.section_name}
+                                          </h3>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                            <p style={{
+                                              margin: 0,
+                                              fontSize: '12px',
+                                              opacity: 0.9,
+                                              flex: 1
+                                            }}>
+                                              {section.degree_program}
+                                            </p>
+                                            {/* Completion Status */}
+                                            <div style={{
+                                              padding: '2px 6px',
+                                              borderRadius: '10px',
+                                              fontSize: '10px',
+                                              fontWeight: 600,
+                                              background: getAssignedCourses(section.id).length > 0
+                                                ? 'rgba(255, 255, 255, 0.3)'
+                                                : 'rgba(255, 255, 255, 0.2)',
+                                              color: 'white'
+                                            }}>
+                                              {getAssignedCourses(section.id).length > 0 ? 'Complete' : 'Incomplete'}
                                             </div>
-                                          ) : (
+                                          </div>
+
+                                          {/* Action Buttons */}
+                                          <div style={{
+                                            position: 'absolute',
+                                            top: '12px',
+                                            right: '12px',
+                                            display: 'flex',
+                                            gap: '4px'
+                                          }}>
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation()
-                                                setDeleteConfirm(section.id)
+                                                openEditSectionModal(section)
                                               }}
                                               onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)'
+                                                e.currentTarget.style.background = 'rgba(255,255,255,0.3)'
                                                 e.currentTarget.style.transform = 'scale(1.1)'
                                               }}
                                               onMouseLeave={(e) => {
@@ -1437,138 +1380,195 @@ function ClassSectionAssigningContent() {
                                                 transition: 'all 0.2s ease'
                                               }}
                                             >
-                                              <Trash2 size={14} />
+                                              <Edit3 size={14} />
                                             </button>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Card Body */}
-                                      <div style={{ padding: '16px' }}>
-                                        {/* Student Count */}
-                                        <div style={{ 
-                                          display: 'flex', 
-                                          alignItems: 'center', 
-                                          gap: '8px',
-                                          marginBottom: '12px'
-                                        }}>
-                                          <Users size={16} style={{ color: 'var(--text-secondary, #718096)' }} />
-                                          <span style={{ 
-                                            fontSize: '13px', 
-                                            color: 'var(--text-dark, #1a202c)',
-                                            fontWeight: 500
-                                          }}>
-                                            {section.student_count} / {section.max_capacity} students
-                                          </span>
-                                          <div style={{
-                                            flex: 1,
-                                            height: '6px',
-                                            background: 'var(--bg-gray-100, #edf2f7)',
-                                            borderRadius: '3px',
-                                            overflow: 'hidden'
-                                          }}>
-                                            <div style={{
-                                              width: `${(section.student_count / section.max_capacity) * 100}%`,
-                                              height: '100%',
-                                              background: section.student_count >= section.max_capacity 
-                                                ? '#e53e3e' 
-                                                : 'var(--primary-medium, #38a169)',
-                                              borderRadius: '3px'
-                                            }} />
-                                          </div>
-                                        </div>
-
-                                        {/* Assigned Courses */}
-                                        <div style={{ marginBottom: '12px' }}>
-                                          <div style={{ 
-                                            fontSize: '11px', 
-                                            color: 'var(--text-secondary, #718096)',
-                                            fontWeight: 600,
-                                            marginBottom: '6px',
-                                            textTransform: 'uppercase'
-                                          }}>
-                                            Assigned Courses
-                                          </div>
-                                          {(() => {
-                                            const assignedCourses = getAssignedCourses(section.id)
-                                            return assignedCourses.length > 0 ? (
-                                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                                {assignedCourses.slice(0, 3).map(course => (
-                                                  <span 
-                                                    key={course.id}
-                                                    style={{
-                                                      padding: '2px 8px',
-                                                      background: 'var(--bg-gray-100, #edf2f7)',
-                                                      borderRadius: '4px',
-                                                      fontSize: '11px',
-                                                      color: 'var(--text-dark, #1a202c)'
-                                                    }}
-                                                  >
-                                                    {course.course_code}
-                                                  </span>
-                                                ))}
-                                                {assignedCourses.length > 3 && (
-                                                  <span style={{
-                                                    padding: '2px 8px',
-                                                    background: 'var(--primary-light, #c6f6d5)',
-                                                    borderRadius: '4px',
-                                                    fontSize: '11px',
-                                                    color: 'var(--primary-dark, #276749)',
-                                                    fontWeight: 600
-                                                  }}>
-                                                    +{assignedCourses.length - 3} more
-                                                  </span>
-                                                )}
+                                            {deleteConfirm === section.id ? (
+                                              <div style={{ display: 'flex', gap: '2px' }}>
+                                                <button
+                                                  onClick={() => handleDeleteSection(section.id)}
+                                                  style={{
+                                                    padding: '6px 8px',
+                                                    background: '#c53030',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '10px'
+                                                  }}
+                                                >
+                                                  Yes
+                                                </button>
+                                                <button
+                                                  onClick={() => setDeleteConfirm(null)}
+                                                  style={{
+                                                    padding: '6px 8px',
+                                                    background: 'rgba(255,255,255,0.3)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '10px'
+                                                  }}
+                                                >
+                                                  No
+                                                </button>
                                               </div>
                                             ) : (
-                                              <span style={{ 
-                                                fontSize: '12px', 
-                                                color: 'var(--text-secondary, #718096)',
-                                                fontStyle: 'italic'
-                                              }}>
-                                                No courses assigned
-                                              </span>
-                                            )
-                                          })()}
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setDeleteConfirm(section.id)
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)'
+                                                  e.currentTarget.style.transform = 'scale(1.1)'
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)'
+                                                  e.currentTarget.style.transform = 'scale(1)'
+                                                }}
+                                                style={{
+                                                  padding: '6px',
+                                                  background: 'rgba(255,255,255,0.2)',
+                                                  border: 'none',
+                                                  borderRadius: '6px',
+                                                  cursor: 'pointer',
+                                                  color: 'white',
+                                                  transition: 'all 0.2s ease'
+                                                }}
+                                              >
+                                                <Trash2 size={14} />
+                                              </button>
+                                            )}
+                                          </div>
                                         </div>
 
-                                        {/* Assign Courses Button */}
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            openAssignCoursesModal(section)
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
-                                            e.currentTarget.style.borderColor = 'var(--primary-dark, #276749)'
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'var(--bg-gray-50, #f7fafc)'
-                                            e.currentTarget.style.borderColor = 'var(--primary-medium, #38a169)'
-                                          }}
-                                          style={{
-                                            width: '100%',
-                                            padding: '10px',
-                                            background: 'var(--bg-gray-50, #f7fafc)',
-                                            color: 'var(--primary-medium, #38a169)',
-                                            border: '1px dashed var(--primary-medium, #38a169)',
-                                            borderRadius: '8px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
+                                        {/* Card Body */}
+                                        <div style={{ padding: '16px' }}>
+                                          {/* Student Count */}
+                                          <div style={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '6px',
-                                            fontSize: '13px',
-                                            transition: 'all 0.2s ease'
-                                          }}
-                                        >
-                                          <FileText size={16} />
-                                          Assign Courses by Year Level
-                                        </button>
+                                            gap: '8px',
+                                            marginBottom: '12px'
+                                          }}>
+                                            <Users size={16} style={{ color: 'var(--text-secondary, #718096)' }} />
+                                            <span style={{
+                                              fontSize: '13px',
+                                              color: 'var(--text-dark, #1a202c)',
+                                              fontWeight: 500
+                                            }}>
+                                              {section.student_count} / {section.max_capacity} students
+                                            </span>
+                                            <div style={{
+                                              flex: 1,
+                                              height: '6px',
+                                              background: 'var(--bg-gray-100, #edf2f7)',
+                                              borderRadius: '3px',
+                                              overflow: 'hidden'
+                                            }}>
+                                              <div style={{
+                                                width: `${(section.student_count / section.max_capacity) * 100}%`,
+                                                height: '100%',
+                                                background: section.student_count >= section.max_capacity
+                                                  ? '#e53e3e'
+                                                  : 'var(--primary-medium, #38a169)',
+                                                borderRadius: '3px'
+                                              }} />
+                                            </div>
+                                          </div>
+
+                                          {/* Assigned Courses */}
+                                          <div style={{ marginBottom: '12px' }}>
+                                            <div style={{
+                                              fontSize: '11px',
+                                              color: 'var(--text-secondary, #718096)',
+                                              fontWeight: 600,
+                                              marginBottom: '6px',
+                                              textTransform: 'uppercase'
+                                            }}>
+                                              Assigned Courses
+                                            </div>
+                                            {(() => {
+                                              const assignedCourses = getAssignedCourses(section.id)
+                                              return assignedCourses.length > 0 ? (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                  {assignedCourses.slice(0, 3).map(course => (
+                                                    <span
+                                                      key={course.id}
+                                                      style={{
+                                                        padding: '2px 8px',
+                                                        background: 'var(--bg-gray-100, #edf2f7)',
+                                                        borderRadius: '4px',
+                                                        fontSize: '11px',
+                                                        color: 'var(--text-dark, #1a202c)'
+                                                      }}
+                                                    >
+                                                      {course.course_code}
+                                                    </span>
+                                                  ))}
+                                                  {assignedCourses.length > 3 && (
+                                                    <span style={{
+                                                      padding: '2px 8px',
+                                                      background: 'var(--primary-light, #c6f6d5)',
+                                                      borderRadius: '4px',
+                                                      fontSize: '11px',
+                                                      color: 'var(--primary-dark, #276749)',
+                                                      fontWeight: 600
+                                                    }}>
+                                                      +{assignedCourses.length - 3} more
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <span style={{
+                                                  fontSize: '12px',
+                                                  color: 'var(--text-secondary, #718096)',
+                                                  fontStyle: 'italic'
+                                                }}>
+                                                  No courses assigned
+                                                </span>
+                                              )
+                                            })()}
+                                          </div>
+
+                                          {/* Assign Courses Button */}
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              openAssignCoursesModal(section)
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
+                                              e.currentTarget.style.borderColor = 'var(--primary-dark, #276749)'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.background = 'var(--bg-gray-50, #f7fafc)'
+                                              e.currentTarget.style.borderColor = 'var(--primary-medium, #38a169)'
+                                            }}
+                                            style={{
+                                              width: '100%',
+                                              padding: '10px',
+                                              background: 'var(--bg-gray-50, #f7fafc)',
+                                              color: 'var(--primary-medium, #38a169)',
+                                              border: '1px dashed var(--primary-medium, #38a169)',
+                                              borderRadius: '8px',
+                                              fontWeight: 600,
+                                              cursor: 'pointer',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              gap: '6px',
+                                              fontSize: '13px',
+                                              transition: 'all 0.2s ease'
+                                            }}
+                                          >
+                                            <FileText size={16} />
+                                            Assign Courses by Year Level
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               )}
                             </div>
@@ -2000,9 +2000,9 @@ function ClassSectionAssigningContent() {
 
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)' }}>
               {/* Year Level Selection */}
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(3, 1fr)', 
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '16px',
                 marginBottom: '16px'
               }}>
@@ -2098,21 +2098,21 @@ function ClassSectionAssigningContent() {
               {selectedDegreeForAssignment && selectedYearLevelForAssignment !== null ? (
                 getCoursesForAssignment().length > 0 ? (
                   <div>
-                    <h4 style={{ 
-                      margin: '0 0 12px', 
-                      fontSize: '14px', 
+                    <h4 style={{
+                      margin: '0 0 12px',
+                      fontSize: '14px',
                       fontWeight: 600,
                       color: 'var(--text-dark, #1a202c)'
                     }}>
                       Courses to be Assigned:
                     </h4>
-                    <div style={{ 
-                      display: 'grid', 
+                    <div style={{
+                      display: 'grid',
                       gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
                       gap: '10px'
                     }}>
                       {getCoursesForAssignment().map(course => (
-                        <div 
+                        <div
                           key={course.id}
                           style={{
                             padding: '12px 16px',
@@ -2137,14 +2137,14 @@ function ClassSectionAssigningContent() {
                             <BookOpen size={18} style={{ color: 'var(--primary-dark, #276749)' }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ 
-                              fontWeight: 600, 
+                            <div style={{
+                              fontWeight: 600,
                               fontSize: '13px',
                               color: 'var(--text-dark, #1a202c)'
                             }}>
                               {course.course_code}
                             </div>
-                            <div style={{ 
+                            <div style={{
                               fontSize: '11px',
                               color: 'var(--text-secondary, #718096)',
                               whiteSpace: 'nowrap',
@@ -2155,13 +2155,13 @@ function ClassSectionAssigningContent() {
                             </div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ 
+                            <div style={{
                               fontSize: '11px',
                               color: 'var(--text-secondary, #718096)'
                             }}>
                               {course.credit_units || 0} units
                             </div>
-                            <div style={{ 
+                            <div style={{
                               fontSize: '10px',
                               color: 'var(--primary-medium, #38a169)',
                               fontWeight: 500
@@ -2174,8 +2174,8 @@ function ClassSectionAssigningContent() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ 
-                    textAlign: 'center', 
+                  <div style={{
+                    textAlign: 'center',
                     padding: '40px',
                     color: 'var(--text-secondary, #718096)'
                   }}>
@@ -2188,8 +2188,8 @@ function ClassSectionAssigningContent() {
                   </div>
                 )
               ) : (
-                <div style={{ 
-                  textAlign: 'center', 
+                <div style={{
+                  textAlign: 'center',
                   padding: '40px',
                   color: 'var(--text-secondary, #718096)'
                 }}>
@@ -2202,12 +2202,12 @@ function ClassSectionAssigningContent() {
               )}
             </div>
 
-            <div style={{ 
-              padding: '16px 24px', 
+            <div style={{
+              padding: '16px 24px',
               borderTop: '1px solid var(--border-color)',
-              display: 'flex', 
-              gap: '12px', 
-              justifyContent: 'flex-end' 
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
             }}>
               <button
                 onClick={() => setShowAssignCoursesModal(false)}
@@ -2228,8 +2228,8 @@ function ClassSectionAssigningContent() {
                 disabled={saving || getCoursesForAssignment().length === 0}
                 style={{
                   padding: '12px 24px',
-                  background: getCoursesForAssignment().length === 0 
-                    ? 'var(--bg-gray-200, #cbd5e0)' 
+                  background: getCoursesForAssignment().length === 0
+                    ? 'var(--bg-gray-200, #cbd5e0)'
                     : 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
                   color: 'white',
                   border: 'none',
@@ -2255,10 +2255,10 @@ function ClassSectionAssigningContent() {
 // Loading fallback
 function LoadingFallback() {
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
       height: '100vh',
       flexDirection: 'column',
       gap: '16px'

@@ -1,29 +1,31 @@
 /* ==================== Green Theme Overrides ==================== */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
 [data-theme="green"] .pyramidCard {
-  background: rgba(0, 77, 38, 0.6);
-  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(2, 53, 60, 0.6);
+  border-color: rgba(63, 208, 201, 0.3);
 }
 
 [data-theme="green"] .pyramidCard:hover {
-  background: rgba(0, 77, 38, 0.8);
-  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(2, 53, 60, 0.8);
+  border-color: rgba(63, 208, 201, 0.5);
 }
 
 [data-theme="green"] .pyramidCard.selected {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(46, 175, 125, 0.2);
   border-color: var(--primary);
 }
 
 [data-theme="green"] .quickNavItem {
-  background: rgba(0, 77, 38, 0.5);
+  background: rgba(2, 53, 60, 0.5);
 }
 
 [data-theme="green"] .quickNavItem:hover {
-  background: rgba(0, 77, 38, 0.7);
+  background: rgba(2, 53, 60, 0.7);
 }
 
 [data-theme="green"] .quickNavItem.activeNav {
-  background: rgba(34, 197, 94, 0.2);
+  background: rgba(46, 175, 125, 0.2);
 }
 
 /* ==================== Faculty Profiles Page Styles ==================== */
@@ -124,8 +126,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingState p {
@@ -525,6 +532,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -839,7 +847,7 @@
   flex-shrink: 0;
 }
 
-.infoRow > div {
+.infoRow>div {
   display: flex;
   flex-direction: column;
   gap: 2px;

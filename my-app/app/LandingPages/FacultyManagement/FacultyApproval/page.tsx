@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { 
-  UserCheck, 
-  UserX, 
-  Clock, 
-  Mail, 
+import {
+  UserCheck,
+  UserX,
+  Clock,
+  Mail,
   Calendar,
   CheckCircle2,
   XCircle,
@@ -56,7 +56,7 @@ export default function FacultyApprovalPage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -78,11 +78,11 @@ export default function FacultyApprovalPage() {
     try {
       const response = await fetch(`/api/faculty-registration?status=${filter}`)
       const data = await response.json()
-      
+
       if (data.error) {
         throw new Error(data.error)
       }
-      
+
       setRegistrations(data.registrations || [])
     } catch (error: any) {
       console.error('Error fetching registrations:', error)
@@ -110,14 +110,14 @@ export default function FacultyApprovalPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.error) {
         throw new Error(data.error)
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: action === 'approve' 
+      setMessage({
+        type: 'success',
+        text: action === 'approve'
           ? `✅ ${user.email} has been approved! Email notification sent.`
           : `❌ ${user.email} has been rejected. Email notification sent.`
       })
@@ -127,7 +127,7 @@ export default function FacultyApprovalPage() {
 
       // Immediately refresh from server to show updated status
       await fetchRegistrations()
-      
+
       setEditingUser(null)
       setEditForm({ full_name: '', department: '' })
 
@@ -149,7 +149,7 @@ export default function FacultyApprovalPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.error) {
         throw new Error(data.error)
       }
@@ -168,7 +168,7 @@ export default function FacultyApprovalPage() {
     }
   }
 
-  const filteredRegistrations = registrations.filter(reg => 
+  const filteredRegistrations = registrations.filter(reg =>
     reg.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     reg.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -199,9 +199,9 @@ export default function FacultyApprovalPage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className={styles.pageContainer} data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
@@ -216,7 +216,7 @@ export default function FacultyApprovalPage() {
               <p>Review and approve faculty account registrations</p>
             </div>
           </div>
-          
+
           {pendingCount > 0 && (
             <div className={styles.pendingAlert}>
               <AlertCircle size={20} />
@@ -247,25 +247,25 @@ export default function FacultyApprovalPage() {
           </div>
 
           <div className={styles.filterTabs}>
-            <button 
+            <button
               className={`${styles.filterTab} ${filter === 'pending' ? styles.active : ''}`}
               onClick={() => setFilter('pending')}
             >
               <Clock size={16} /> Pending
             </button>
-            <button 
+            <button
               className={`${styles.filterTab} ${filter === 'approved' ? styles.active : ''}`}
               onClick={() => setFilter('approved')}
             >
               <CheckCircle2 size={16} /> Approved
             </button>
-            <button 
+            <button
               className={`${styles.filterTab} ${filter === 'rejected' ? styles.active : ''}`}
               onClick={() => setFilter('rejected')}
             >
               <XCircle size={16} /> Rejected
             </button>
-            <button 
+            <button
               className={`${styles.filterTab} ${filter === 'all' ? styles.active : ''}`}
               onClick={() => setFilter('all')}
             >
@@ -358,7 +358,7 @@ export default function FacultyApprovalPage() {
                     <>
                       {editingUser === reg.id ? (
                         <>
-                          <button 
+                          <button
                             className={styles.approveBtn}
                             onClick={() => handleApproval(reg.id, 'approve')}
                             disabled={actionLoading === reg.id}
@@ -366,7 +366,7 @@ export default function FacultyApprovalPage() {
                             {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserCheck size={16} />}
                             Approve
                           </button>
-                          <button 
+                          <button
                             className={styles.cancelBtn}
                             onClick={() => {
                               setEditingUser(null)
@@ -378,19 +378,19 @@ export default function FacultyApprovalPage() {
                         </>
                       ) : (
                         <>
-                          <button 
+                          <button
                             className={styles.approveBtn}
                             onClick={() => {
                               setEditingUser(reg.id)
-                              setEditForm({ 
-                                full_name: reg.full_name || '', 
-                                department: reg.department || '' 
+                              setEditForm({
+                                full_name: reg.full_name || '',
+                                department: reg.department || ''
                               })
                             }}
                           >
                             <UserCheck size={16} /> Approve
                           </button>
-                          <button 
+                          <button
                             className={styles.rejectBtn}
                             onClick={() => handleApproval(reg.id, 'reject')}
                             disabled={actionLoading === reg.id}
@@ -402,7 +402,7 @@ export default function FacultyApprovalPage() {
                       )}
                     </>
                   ) : (
-                    <button 
+                    <button
                       className={styles.deleteBtn}
                       onClick={() => handleDelete(reg.id)}
                       disabled={actionLoading === reg.id}

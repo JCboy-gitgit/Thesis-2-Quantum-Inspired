@@ -5,18 +5,18 @@ import styles from './GenerateSchedule.module.css'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  FaCalendarPlus, FaArrowLeft, FaBuilding, FaDoorOpen, 
+import {
+  FaCalendarPlus, FaArrowLeft, FaBuilding, FaDoorOpen,
   FaUserGraduate, FaChalkboardTeacher, FaCog, FaPlay,
   FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock,
   FaSync, FaDownload, FaChartBar, FaLayerGroup, FaUsers,
   FaBolt, FaAtom, FaFileAlt, FaCalendar, FaChevronDown, FaChevronRight,
   FaEye, FaTimes, FaFilter
 } from 'react-icons/fa'
-import { 
-  University, 
-  FileSpreadsheet, 
-  GraduationCap, 
+import {
+  University,
+  FileSpreadsheet,
+  GraduationCap,
   BookOpen,
   Users,
   Settings,
@@ -190,18 +190,18 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
   const slots: TimeSlot[] = []
   const [startHour, startMin] = settings.startTime.split(':').map(Number)
   const [endHour, endMin] = settings.endTime.split(':').map(Number)
-  
+
   let currentTime = startHour * 60 + startMin // Convert to minutes
   const endTimeMinutes = endHour * 60 + endMin
   let slotId = 1
-  
+
   while (currentTime < endTimeMinutes) {
     const hour = Math.floor(currentTime / 60)
     const min = currentTime % 60
     const nextTime = currentTime + settings.slotDuration
     const nextHour = Math.floor(nextTime / 60)
     const nextMin = nextTime % 60
-    
+
     slots.push({
       id: slotId++,
       slot_name: `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')} - ${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
@@ -209,10 +209,10 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
       end_time: `${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
       duration_minutes: settings.slotDuration
     })
-    
+
     currentTime = nextTime
   }
-  
+
   return slots
 }
 
@@ -221,22 +221,22 @@ export default function GenerateSchedulePage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
-  
+
   // Data source states
   const [campusGroups, setCampusGroups] = useState<CampusGroup[]>([])
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([])
   const [teacherGroups, setTeacherGroups] = useState<TeacherGroup[]>([])
-  
+
   // Selected data
   const [selectedCampusGroup, setSelectedCampusGroup] = useState<number | null>(null)
   const [selectedClassGroup, setSelectedClassGroup] = useState<string | null>(null)
   const [selectedTeacherGroup, setSelectedTeacherGroup] = useState<number | null>(null)
-  
+
   // Loaded detailed data
   const [rooms, setRooms] = useState<CampusRoom[]>([])
   const [classes, setClasses] = useState<ClassSchedule[]>([])
   const [teachers, setTeachers] = useState<TeacherSchedule[]>([])
-  
+
   // Configuration
   const [config, setConfig] = useState<ScheduleConfig>({
     scheduleName: '',
@@ -250,7 +250,7 @@ export default function GenerateSchedulePage() {
     prioritizeAccessibility: true,
     avoidConflicts: true
   })
-  
+
   // Time Configuration
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
@@ -259,7 +259,7 @@ export default function GenerateSchedulePage() {
     includeSaturday: true,
     includeSunday: false
   })
-  
+
   // UI states
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1)
@@ -267,23 +267,23 @@ export default function GenerateSchedulePage() {
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [showTimetable, setShowTimetable] = useState(false)
-  
+
   // Expanded sections
   const [expandedCampus, setExpandedCampus] = useState(false)
   const [expandedClass, setExpandedClass] = useState(false)
   const [expandedTeacher, setExpandedTeacher] = useState(false)
-  
+
   // Building and room filters
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([])
   const [selectedRooms, setSelectedRooms] = useState<number[]>([])
   const [showBuildingFilter, setShowBuildingFilter] = useState(false)
-  
+
   // File viewer states
   const [showClassFileViewer, setShowClassFileViewer] = useState(false)
   const [showTeacherFileViewer, setShowTeacherFileViewer] = useState(false)
   const [viewerData, setViewerData] = useState<any[]>([])
   const [viewerLoading, setViewerLoading] = useState(false)
-  
+
   // Auto-generate toggle state
   const [autoGenerateEnabled, setAutoGenerateEnabled] = useState(false)
   const [lastDataHash, setLastDataHash] = useState<string>('')
@@ -298,7 +298,7 @@ export default function GenerateSchedulePage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -470,7 +470,7 @@ export default function GenerateSchedulePage() {
         semester: c.semester || '',
         academic_year: c.academic_year || ''
       })))
-      
+
       // Auto-fill semester and academic year from class data
       if (data.length > 0) {
         setConfig(prev => ({
@@ -539,10 +539,10 @@ export default function GenerateSchedulePage() {
       loadTeacherData(groupId)
     }
   }
-  
+
   // Get unique buildings from loaded rooms
   const uniqueBuildings = [...new Set(rooms.map(r => r.building).filter(Boolean))]
-  
+
   // Toggle building selection
   const handleToggleBuilding = (building: string) => {
     setSelectedBuildings(prev => {
@@ -556,20 +556,20 @@ export default function GenerateSchedulePage() {
       }
     })
   }
-  
+
   // Toggle room selection
   const handleToggleRoom = (roomId: number) => {
-    setSelectedRooms(prev => 
+    setSelectedRooms(prev =>
       prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]
     )
   }
-  
+
   // Select all rooms in a building OR toggle to show individual room selection
   const handleSelectAllRoomsInBuilding = (building: string) => {
     const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
     const buildingSelected = selectedBuildings.includes(building)
     const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
-    
+
     if (buildingSelected) {
       // If building is selected, switch to individual room selection mode
       // Deselect the building and select all its rooms instead
@@ -583,33 +583,33 @@ export default function GenerateSchedulePage() {
       setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
     }
   }
-  
+
   // Get filtered rooms based on selection
   const getFilteredRooms = () => {
     if (selectedBuildings.length === 0 && selectedRooms.length === 0) {
       return rooms // No filter applied
     }
-    
+
     if (selectedRooms.length > 0) {
       // Specific rooms selected
       return rooms.filter(r => selectedRooms.includes(r.id))
     }
-    
+
     if (selectedBuildings.length > 0) {
       // Buildings selected but no specific rooms
       return rooms.filter(r => selectedBuildings.includes(r.building))
     }
-    
+
     return rooms
   }
-  
+
   // File viewer functions
   const handleViewClassFile = async () => {
     if (!selectedClassGroup) return
-    
+
     setViewerLoading(true)
     setShowClassFileViewer(true)
-    
+
     try {
       const group = classGroups.find(g => g.id === selectedClassGroup)
       if (!group) return
@@ -621,7 +621,7 @@ export default function GenerateSchedulePage() {
         .eq('semester', group.semester)
         .eq('academic_year', group.academic_year)
         .order('course_code', { ascending: true })
-      
+
       if (!error && data) {
         setViewerData(data)
       }
@@ -631,20 +631,20 @@ export default function GenerateSchedulePage() {
       setViewerLoading(false)
     }
   }
-  
+
   const handleViewTeacherFile = async () => {
     if (!selectedTeacherGroup) return
-    
+
     setViewerLoading(true)
     setShowTeacherFileViewer(true)
-    
+
     try {
       const { data, error } = await (supabase
         .from('teacher_schedules') as any)
         .select('*')
         .eq('upload_group_id', selectedTeacherGroup)
         .order('name', { ascending: true })
-      
+
       if (!error && data) {
         setViewerData(data)
       }
@@ -654,7 +654,7 @@ export default function GenerateSchedulePage() {
       setViewerLoading(false)
     }
   }
-  
+
   const closeFileViewer = () => {
     setShowClassFileViewer(false)
     setShowTeacherFileViewer(false)
@@ -691,19 +691,19 @@ export default function GenerateSchedulePage() {
     try {
       // Get filtered rooms based on user selection
       const filteredRooms = getFilteredRooms()
-      
+
       if (filteredRooms.length === 0) {
         alert('No rooms selected. Please select at least one building or room.')
         setScheduling(false)
         return
       }
-      
+
       // Generate time slots from settings
       const timeSlots = generateTimeSlots(timeSettings)
       const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       if (timeSettings.includeSaturday) activeDays.push('Saturday')
       if (timeSettings.includeSunday) activeDays.push('Sunday')
-      
+
       // Prepare data for QIA algorithm - will be sent to Python backend
       const scheduleData = {
         schedule_name: config.scheduleName,
@@ -798,9 +798,9 @@ export default function GenerateSchedulePage() {
   }
 
   return (
-    <div className={styles.scheduleLayout}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className={styles.scheduleLayout} data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
@@ -810,8 +810,8 @@ export default function GenerateSchedulePage() {
         <div className={styles.scheduleContainer}>
           {/* Header */}
           <header className={styles.scheduleHeader}>
-            <button 
-              className={styles.backButton} 
+            <button
+              className={styles.backButton}
               onClick={() => router.push('/LandingPages/RoomSchedule/ViewSchedule')}
             >
               <FaArrowLeft className={styles.iconBack} />
@@ -1004,15 +1004,15 @@ export default function GenerateSchedulePage() {
                                   return (
                                     <td key={`${day}-${timeSlot}`} className={styles.scheduleCell}>
                                       {dayAllocations.map((allocation, idx) => (
-                                        <div 
-                                          key={idx} 
+                                        <div
+                                          key={idx}
                                           className={styles.allocationCard}
                                           style={{
                                             backgroundColor: allocation.building === 'GLE' ? '#e3f2fd' :
-                                                           allocation.building === 'RGR' ? '#f3e5f5' :
-                                                           allocation.building === 'RTL' ? '#e8f5e9' :
-                                                           allocation.building === 'SAL' ? '#fff3e0' :
-                                                           allocation.building === 'NGE' ? '#fce4ec' : '#f5f5f5'
+                                              allocation.building === 'RGR' ? '#f3e5f5' :
+                                                allocation.building === 'RTL' ? '#e8f5e9' :
+                                                  allocation.building === 'SAL' ? '#fff3e0' :
+                                                    allocation.building === 'NGE' ? '#fce4ec' : '#f5f5f5'
                                           }}
                                         >
                                           <div className={styles.allocationCourse}>
@@ -1036,12 +1036,12 @@ export default function GenerateSchedulePage() {
                       </table>
                     </div>
                   </div>
-                  
+
                   {/* Allocation Summary */}
                   <div className={styles.allocationSummary}>
                     <p><strong>Total Allocations:</strong> {scheduleResult.allocations.length}</p>
-                    <p><strong>Database Status:</strong> {scheduleResult.savedToDatabase ? 
-                      <span className={styles.successText}>✓ Saved to database</span> : 
+                    <p><strong>Database Status:</strong> {scheduleResult.savedToDatabase ?
+                      <span className={styles.successText}>✓ Saved to database</span> :
                       <span className={styles.warningText}>⚠ Not saved (check console for errors)</span>}
                     </p>
                   </div>
@@ -1095,7 +1095,7 @@ export default function GenerateSchedulePage() {
                         {expandedCampus ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {expandedCampus && (
                       <div className={styles.dataSourceContent}>
                         {campusGroups.length === 0 ? (
@@ -1162,7 +1162,7 @@ export default function GenerateSchedulePage() {
                         {expandedClass ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {expandedClass && (
                       <div className={styles.dataSourceContent}>
                         {classGroups.length === 0 ? (
@@ -1233,7 +1233,7 @@ export default function GenerateSchedulePage() {
                         {expandedTeacher ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {expandedTeacher && (
                       <div className={styles.dataSourceContent}>
                         {teacherGroups.length === 0 ? (
@@ -1316,7 +1316,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.summaryInfo}>
                         <h4>{selectedClassInfo?.college}</h4>
                         <p>{classes.length} classes • {uniqueDays.length} days • {uniqueTimeSlots.length} time slots</p>
-                        <button 
+                        <button
                           className={styles.viewFileButton}
                           onClick={handleViewClassFile}
                           title="View class schedule file"
@@ -1333,7 +1333,7 @@ export default function GenerateSchedulePage() {
                         <div className={styles.summaryInfo}>
                           <h4>{selectedTeacherInfo.college}</h4>
                           <p>{teachers.length} teachers available</p>
-                          <button 
+                          <button
                             className={styles.viewFileButton}
                             onClick={handleViewTeacherFile}
                             title="View teacher schedule file"
@@ -1344,7 +1344,7 @@ export default function GenerateSchedulePage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Building and Room Filter */}
                   <div className={styles.filterSection}>
                     <div className={styles.filterHeader} onClick={() => setShowBuildingFilter(!showBuildingFilter)}>
@@ -1355,8 +1355,8 @@ export default function GenerateSchedulePage() {
                       <div className={styles.filterStatus}>
                         {selectedBuildings.length > 0 || selectedRooms.length > 0 ? (
                           <span className={styles.filterActiveBadge}>
-                            {selectedRooms.length > 0 
-                              ? `${selectedRooms.length} rooms selected` 
+                            {selectedRooms.length > 0
+                              ? `${selectedRooms.length} rooms selected`
                               : `${selectedBuildings.length} building(s) selected`}
                           </span>
                         ) : (
@@ -1365,13 +1365,13 @@ export default function GenerateSchedulePage() {
                         {showBuildingFilter ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {showBuildingFilter && (
                       <div className={styles.filterContent}>
                         <p className={styles.filterDescription}>
                           Select specific buildings or rooms to use for scheduling. If no selection is made, all rooms will be used.
                         </p>
-                        
+
                         <div className={styles.buildingGrid}>
                           {uniqueBuildings.map(building => {
                             const buildingRooms = rooms.filter(r => r.building === building)
@@ -1379,7 +1379,7 @@ export default function GenerateSchedulePage() {
                             const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
                             const someRoomsSelected = buildingRoomIds.some(id => selectedRooms.includes(id))
                             const buildingSelected = selectedBuildings.includes(building)
-                            
+
                             return (
                               <div key={building} className={styles.buildingCard}>
                                 <div className={styles.buildingHeader}>
@@ -1413,12 +1413,12 @@ export default function GenerateSchedulePage() {
                                     {allRoomsSelected ? 'Deselect All' : 'Select Specific Rooms'}
                                   </button>
                                 </div>
-                                
+
                                 <div className={styles.buildingStats}>
                                   <span><DoorOpen size={14} /> {buildingRooms.length} rooms</span>
                                   <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
                                 </div>
-                                
+
                                 {/* Show individual room checkboxes when:
                                     - Some rooms in this building are individually selected, OR
                                     - All rooms are selected (to allow deselecting specific ones)
@@ -1441,13 +1441,13 @@ export default function GenerateSchedulePage() {
                             )
                           })}
                         </div>
-                        
+
                         {(selectedBuildings.length > 0 || selectedRooms.length > 0) && (
                           <div className={styles.filterSummary}>
                             <p>
                               <strong>Filtered Selection:</strong> {getFilteredRooms().length} out of {rooms.length} rooms will be used for scheduling
                             </p>
-                            <button 
+                            <button
                               className={styles.clearFilterBtn}
                               onClick={() => {
                                 setSelectedBuildings([])
@@ -1649,7 +1649,7 @@ export default function GenerateSchedulePage() {
                       <Clock size={20} />
                       <p>Configure the daily schedule time range and slot duration. The system will generate time slots automatically.</p>
                     </div>
-                    
+
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Start Time</label>
@@ -1670,7 +1670,7 @@ export default function GenerateSchedulePage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className={styles.slotDurationInfo}>
                       <Clock size={18} />
                       <div>
@@ -1749,12 +1749,12 @@ export default function GenerateSchedulePage() {
                       <h3 className={styles.formSectionTitle}>
                         <FaAtom /> Quantum-Inspired Algorithm Parameters
                       </h3>
-                      
+
                       <div className={styles.algorithmInfo}>
                         <Zap size={20} />
                         <p>
-                          The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation 
-                          to escape local minima and find globally optimal room allocations. Default settings 
+                          The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation
+                          to escape local minima and find globally optimal room allocations. Default settings
                           are optimized for thorough optimization.
                         </p>
                       </div>
@@ -1772,9 +1772,9 @@ export default function GenerateSchedulePage() {
                             max={50000}
                             step={1000}
                             value={config.maxIterations}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              maxIterations: parseInt(e.target.value) || 10000 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              maxIterations: parseInt(e.target.value) || 10000
                             }))}
                           />
                         </div>
@@ -1790,9 +1790,9 @@ export default function GenerateSchedulePage() {
                             max={500}
                             step={10}
                             value={config.initialTemperature}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              initialTemperature: parseFloat(e.target.value) || 200 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              initialTemperature: parseFloat(e.target.value) || 200
                             }))}
                           />
                         </div>
@@ -1811,9 +1811,9 @@ export default function GenerateSchedulePage() {
                             max={0.9999}
                             step={0.001}
                             value={config.coolingRate}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              coolingRate: parseFloat(e.target.value) || 0.999 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              coolingRate: parseFloat(e.target.value) || 0.999
                             }))}
                           />
                         </div>
@@ -1829,9 +1829,9 @@ export default function GenerateSchedulePage() {
                             max={0.30}
                             step={0.01}
                             value={config.quantumTunnelingProbability}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              quantumTunnelingProbability: parseFloat(e.target.value) || 0.15 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              quantumTunnelingProbability: parseFloat(e.target.value) || 0.15
                             }))}
                           />
                         </div>
@@ -1848,9 +1848,9 @@ export default function GenerateSchedulePage() {
                           min={4}
                           max={12}
                           value={config.maxTeacherHoursPerDay}
-                          onChange={(e) => setConfig(prev => ({ 
-                            ...prev, 
-                            maxTeacherHoursPerDay: parseInt(e.target.value) || 8 
+                          onChange={(e) => setConfig(prev => ({
+                            ...prev,
+                            maxTeacherHoursPerDay: parseInt(e.target.value) || 8
                           }))}
                         />
                       </div>
@@ -1858,7 +1858,7 @@ export default function GenerateSchedulePage() {
                       {/* Presets */}
                       <div className={styles.presetSection}>
                         <span className={styles.presetLabel}>Quick Presets:</span>
-                        <button 
+                        <button
                           className={styles.presetButton}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1870,7 +1870,7 @@ export default function GenerateSchedulePage() {
                         >
                           Fast (2k iterations)
                         </button>
-                        <button 
+                        <button
                           className={styles.presetButton}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1882,7 +1882,7 @@ export default function GenerateSchedulePage() {
                         >
                           Balanced (5k iterations)
                         </button>
-                        <button 
+                        <button
                           className={`${styles.presetButton} ${styles.activePreset}`}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1969,7 +1969,7 @@ export default function GenerateSchedulePage() {
           )}
         </div>
       </main>
-      
+
       {/* File Viewer Modal */}
       {(showClassFileViewer || showTeacherFileViewer) && (
         <div className={styles.modalOverlay} onClick={closeFileViewer}>
@@ -1990,7 +1990,7 @@ export default function GenerateSchedulePage() {
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               {viewerLoading ? (
                 <div className={styles.modalLoading}>
@@ -2062,7 +2062,7 @@ export default function GenerateSchedulePage() {
                   </table>
                 </div>
               )}
-              
+
               <div className={styles.modalFooter}>
                 <p><strong>Total Records:</strong> {viewerData.length}</p>
               </div>

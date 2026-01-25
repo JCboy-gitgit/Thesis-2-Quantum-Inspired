@@ -6,10 +6,10 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import { 
-  PenSquare, 
-  Plus, 
-  Building2, 
+import {
+  PenSquare,
+  Plus,
+  Building2,
   DoorOpen,
   Users,
   Save,
@@ -92,7 +92,7 @@ export default function AddEditRoomsPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedBuildings, setExpandedBuildings] = useState<Set<string>>(new Set())
-  
+
   const [formData, setFormData] = useState({
     campus: '',
     building: '',
@@ -119,7 +119,7 @@ export default function AddEditRoomsPage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -210,7 +210,7 @@ export default function AddEditRoomsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
-    
+
     if (!selectedGroup) {
       setErrorMessage('Please select a campus group first')
       return
@@ -218,7 +218,7 @@ export default function AddEditRoomsPage() {
 
     try {
       const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
-      
+
       if (editingRoom) {
         // Update existing room
         const { error } = await (supabase
@@ -240,7 +240,7 @@ export default function AddEditRoomsPage() {
             notes: formData.notes || null
           })
           .eq('id', editingRoom.id)
-        
+
         if (error) throw error
         setSuccessMessage('Room updated successfully!')
       } else {
@@ -266,11 +266,11 @@ export default function AddEditRoomsPage() {
             notes: formData.notes || null,
             file_name: 'Manual Entry'
           })
-        
+
         if (error) throw error
         setSuccessMessage('Room added successfully!')
       }
-      
+
       resetForm()
       fetchRooms(selectedGroup)
       fetchCampusGroups() // Refresh counts
@@ -303,13 +303,13 @@ export default function AddEditRoomsPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this room?')) return
-    
+
     try {
       const { error } = await (supabase
         .from('campuses') as any)
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
       setSuccessMessage('Room deleted successfully!')
       if (selectedGroup) {
@@ -346,13 +346,13 @@ export default function AddEditRoomsPage() {
   // Group rooms by building
   const getBuildingGroups = () => {
     const groups = new Map<string, CampusRoom[]>()
-    const filteredRooms = rooms.filter(room => 
-      !searchTerm || 
+    const filteredRooms = rooms.filter(room =>
+      !searchTerm ||
       room.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.building.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.campus.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    
+
     filteredRooms.forEach(room => {
       const key = `${room.campus}|||${room.building}`
       if (!groups.has(key)) groups.set(key, [])
@@ -374,18 +374,18 @@ export default function AddEditRoomsPage() {
   const selectedGroupData = campusGroups.find(g => g.upload_group_id === selectedGroup)
 
   return (
-    <div className={styles.pageContainer}>
-      <MenuBar 
+    <div className={styles.pageContainer} data-page="admin">
+      <MenuBar
         onToggleSidebar={toggleSidebar}
         showSidebarToggle={true}
         showAccountIcon={true}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.contentWrapper}>
           {/* Back Button */}
-          <button 
+          <button
             className={styles.backButton}
             onClick={() => router.push('/LandingPages/Home')}
           >
@@ -415,7 +415,7 @@ export default function AddEditRoomsPage() {
               <span>{successMessage}</span>
             </div>
           )}
-          
+
           {errorMessage && (
             <div className={styles.errorMessage}>
               <AlertTriangle size={20} />
@@ -437,8 +437,8 @@ export default function AddEditRoomsPage() {
               <FileSpreadsheet size={64} />
               <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
               <p className={styles.emptyText}>Upload a Campus/Building CSV file first to manage rooms</p>
-              <button 
-                onClick={() => router.push('/LandingPages/UploadCSV')} 
+              <button
+                onClick={() => router.push('/LandingPages/UploadCSV')}
                 className={styles.addButton}
               >
                 <Plus size={20} />
@@ -454,10 +454,10 @@ export default function AddEditRoomsPage() {
                   Select School/Campus File
                 </h2>
               </div>
-              
+
               <div className={styles.campusGrid}>
                 {campusGroups.map(group => (
-                  <div 
+                  <div
                     key={group.upload_group_id}
                     className={`${styles.campusCard} ${selectedGroup === group.upload_group_id ? styles.selected : ''}`}
                     onClick={() => handleSelectGroup(group.upload_group_id)}
@@ -534,10 +534,10 @@ export default function AddEditRoomsPage() {
                         const [campus, building] = key.split('|||')
                         const isExpanded = expandedBuildings.has(key)
                         const totalCapacity = buildingRooms.reduce((sum, r) => sum + r.capacity, 0)
-                        
+
                         return (
                           <div key={key} className={styles.buildingGroup}>
-                            <div 
+                            <div
                               className={styles.buildingHeader}
                               onClick={() => toggleBuilding(key)}
                             >
@@ -558,7 +558,7 @@ export default function AddEditRoomsPage() {
                                 </span>
                               </div>
                             </div>
-                            
+
                             {isExpanded && (
                               <div className={styles.roomsTable}>
                                 <table>
@@ -603,18 +603,18 @@ export default function AddEditRoomsPage() {
                                         </td>
                                         <td>
                                           <div className={styles.featuresCell}>
-                                            <span className={styles.featureIcon} title={`AC: ${displayBool(room.has_ac)}`} style={{ 
-                                              opacity: room.has_ac ? 1 : 0.3 
+                                            <span className={styles.featureIcon} title={`AC: ${displayBool(room.has_ac)}`} style={{
+                                              opacity: room.has_ac ? 1 : 0.3
                                             }}>
                                               <Wind size={14} />
                                             </span>
-                                            <span className={styles.featureIcon} title={`Whiteboard: ${displayBool(room.has_whiteboard)}`} style={{ 
-                                              opacity: room.has_whiteboard ? 1 : 0.3 
+                                            <span className={styles.featureIcon} title={`Whiteboard: ${displayBool(room.has_whiteboard)}`} style={{
+                                              opacity: room.has_whiteboard ? 1 : 0.3
                                             }}>
                                               <PresentationIcon size={14} />
                                             </span>
-                                            <span className={styles.featureIcon} title={`TV: ${displayBool(room.has_tv)}`} style={{ 
-                                              opacity: room.has_tv ? 1 : 0.3 
+                                            <span className={styles.featureIcon} title={`TV: ${displayBool(room.has_tv)}`} style={{
+                                              opacity: room.has_tv ? 1 : 0.3
                                             }}>
                                               <Tv size={14} />
                                             </span>
@@ -622,14 +622,14 @@ export default function AddEditRoomsPage() {
                                         </td>
                                         <td>
                                           <div className={styles.actionsCell}>
-                                            <button 
+                                            <button
                                               onClick={() => handleEdit(room)}
                                               className={styles.editBtn}
                                               title="Edit Room"
                                             >
                                               <Edit2 size={16} />
                                             </button>
-                                            <button 
+                                            <button
                                               onClick={() => handleDelete(room.id)}
                                               className={styles.deleteBtn}
                                               title="Delete Room"
@@ -668,7 +668,7 @@ export default function AddEditRoomsPage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
@@ -827,9 +827,9 @@ export default function AddEditRoomsPage() {
                   className={styles.formSelect}
                   style={{
                     borderColor: formData.status === 'usable' ? '#22c55e' : formData.status === 'not_usable' ? '#ef4444' : '#f59e0b',
-                    background: formData.status === 'usable' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : 
-                               formData.status === 'not_usable' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' : 
-                               'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+                    background: formData.status === 'usable' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' :
+                      formData.status === 'not_usable' ? 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)' :
+                        'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
                   }}
                 >
                   <option value="usable">✓ Usable</option>
