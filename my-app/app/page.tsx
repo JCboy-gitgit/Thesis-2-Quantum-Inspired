@@ -49,6 +49,7 @@ function LoadingFallback() {
 function PageContent(): JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [checkingSession, setCheckingSession] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -67,6 +68,37 @@ function PageContent(): JSX.Element {
   // Only allow admin login 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
   const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('mode') === 'admin')
+
+  // Check existing session on mount - auto-redirect if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          // Admin check
+          if (session.user.email === ADMIN_EMAIL) {
+            router.replace('/LandingPages/Home')
+            return
+          }
+          // Faculty check - only redirect if approved
+          const { data: userData } = await supabase
+            .from('users')
+            .select('is_active')
+            .eq('id', session.user.id)
+            .single() as { data: { is_active: boolean } | null; error: any }
+          if (userData?.is_active) {
+            router.replace('/faculty/home')
+            return
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error)
+      } finally {
+        setCheckingSession(false)
+      }
+    }
+    checkSession()
+  }, [router, ADMIN_EMAIL])
 
   // Particle data - generated on client side only to avoid hydration mismatch
   const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
@@ -164,8 +196,8 @@ function PageContent(): JSX.Element {
         }, 1500)
       } else {
         // Faculty registration with metadata
-        const { data, error } = await supabase.auth.signUp({ 
-          email, 
+        const { data, error } = await supabase.auth.signUp({
+          email,
           password,
           options: {
             data: {
@@ -205,6 +237,11 @@ function PageContent(): JSX.Element {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while checking session
+  if (checkingSession) {
+    return <LoadingFallback />
   }
 
   return (
