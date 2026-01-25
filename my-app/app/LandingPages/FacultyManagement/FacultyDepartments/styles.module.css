@@ -1,59 +1,222 @@
 /* ==================== Green Theme Enhancements ==================== */
 /* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
 
+/* Main Layout with Nature Background */
 [data-theme="green"] .pageLayout {
-  background: linear-gradient(135deg, #02353C 0%, #034a4d 50%, #02353C 100%);
-}
-
-[data-theme="green"] .headerCard {
-  background: linear-gradient(135deg, rgba(2, 53, 60, 0.98) 0%, rgba(3, 74, 77, 0.95) 100%);
-  border: 2px solid rgba(63, 208, 201, 0.4);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
-}
-
-[data-theme="green"] .departmentCard {
-  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
-  border: 2px solid rgba(63, 208, 201, 0.35);
-  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15);
-}
-
-[data-theme="green"] .departmentCard:hover {
-  border-color: #3FD0C9;
-  box-shadow: 0 8px 32px rgba(63, 208, 201, 0.35);
-  transform: translateY(-4px);
-}
-
-[data-theme="green"] .addButton,
-[data-theme="green"] .actionButton {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.4);
-}
-
-[data-theme="green"] .addButton:hover,
-[data-theme="green"] .actionButton:hover {
-  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
-  box-shadow: 0 6px 24px rgba(63, 208, 201, 0.6);
-  transform: translateY(-2px);
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
 }
 
 [data-theme="green"] .headerCard,
-[data-theme="green"] .departmentCard,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .name,
-[data-theme="green"] .heading {
+[data-theme="green"] .headerTitleSection {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.4) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
+}
+
+[data-theme="green"] .pageTitle {
+  color: #02353C;
+}
+
+[data-theme="green"] .pageSubtitle {
+  color: #166534;
+}
+
+[data-theme="green"] .headerLargeIcon {
   color: #ffffff;
 }
 
-[data-theme="green"] .description,
-[data-theme="green"] .count,
-[data-theme="green"] .info,
-[data-theme="green"] .details {
-  color: #C1F6ED !important;
+[data-theme="green"] .headerIconWrapper {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .icon {
-  color: #3FD0C9;
+/* Department Cards */
+[data-theme="green"] .departmentCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+}
+
+[data-theme="green"] .departmentCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25);
+  transform: translateY(-5px);
+}
+
+[data-theme="green"] .departmentCardIcon {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .departmentCardIcon svg {
+  color: #ffffff;
+}
+
+[data-theme="green"] .departmentName {
+  color: #02353C;
+}
+
+[data-theme="green"] .departmentCode {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .departmentMeta {
+  color: #166534;
+}
+
+[data-theme="green"] .departmentBadge {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #02353C;
+  border-color: rgba(46, 175, 125, 0.25);
+}
+
+/* Add Button */
+[data-theme="green"] .addButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .addButton:hover {
+  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
+}
+
+/* Action Buttons */
+[data-theme="green"] .actionBtn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #166534;
+}
+
+[data-theme="green"] .actionBtn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .actionBtn.deleteBtn:hover {
+  background: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+}
+
+/* Back Button */
+[data-theme="green"] .backButton {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .backButton:hover {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: #2EAF7D;
+}
+
+/* Stats Grid */
+[data-theme="green"] .statCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+}
+
+[data-theme="green"] .statCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .statIcon {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+}
+
+[data-theme="green"] .statLabel {
+  color: #166534;
+}
+
+[data-theme="green"] .statValue {
+  color: #02353C;
+}
+
+/* Content Section */
+[data-theme="green"] .contentSection {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+[data-theme="green"] .sectionHeader h2 {
+  color: #02353C;
+}
+
+[data-theme="green"] .sectionHeader h2 svg {
+  color: #2EAF7D;
+}
+
+/* Search Box */
+[data-theme="green"] .searchInput {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .searchInput:focus {
+  border-color: #2EAF7D;
+}
+
+[data-theme="green"] .searchInput::placeholder {
+  color: #166534;
+}
+
+[data-theme="green"] .searchIcon {
+  color: #2EAF7D;
+}
+
+/* Empty State */
+[data-theme="green"] .emptyState {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px dashed rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .emptyStateIcon {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .emptyState h3 {
+  color: #02353C;
+}
+
+[data-theme="green"] .emptyState p {
+  color: #166534;
+}
+
+/* Loading State */
+[data-theme="green"] .loadingState {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .loadingState p {
+  color: #166534;
+}
+
+[data-theme="green"] .spinner {
+  border-color: rgba(46, 175, 125, 0.2);
+  border-top-color: #2EAF7D;
+}
+
+/* Buttons */
+[data-theme="green"] .btnPrimary {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .btnPrimary:hover:not(:disabled) {
+  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
+}
+
+[data-theme="green"] .btnSecondary {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #2EAF7D;
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .btnSecondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
 }
 
 /* ==================== Layout ==================== */

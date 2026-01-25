@@ -1106,3 +1106,142 @@
 [data-theme="green"] [style*="color:#22c55e"] {
     color: #02353C !important;
 }
+
+/* ==================== Courses Management Green Theme Overrides ==================== */
+/* Fix visibility issues for inline-styled elements in CoursesManagement page */
+
+/* Course Cards - Override inline card-bg backgrounds */
+[data-theme="green"] div[style*="var(--card-bg"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%) !important;
+    border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Course Card Course Codes - Fix dark primary color for visibility */
+[data-theme="green"] span[style*="primary-dark"],
+[data-theme="green"] span[style*="#276749"] {
+    color: #02353C !important;
+}
+
+/* Course Card Course Names - Dark text for visibility */
+[data-theme="green"] span[style*="var(--text-dark"] {
+    color: #02353C !important;
+}
+
+/* Course Card Details (Lec/Lab hours, Pre-req) - Use forest green for secondary text */
+[data-theme="green"] div[style*="var(--text-secondary"] {
+    color: #166534 !important;
+}
+
+/* Year Level Headers with inline bg-gray backgrounds */
+[data-theme="green"] div[style*="var(--bg-gray-50"] {
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+}
+
+/* Semester Badges */
+[data-theme="green"] span[style*="rgba(56, 161, 105"] {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #02353C !important;
+}
+
+/* Primary Medium Color Elements (Icons, labels) */
+[data-theme="green"] [style*="var(--primary-medium"] {
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] svg[style*="var(--primary-medium"] {
+    color: #2EAF7D !important;
+}
+
+/* Edit Button Backgrounds */
+[data-theme="green"] button[style*="var(--bg-gray-100"] {
+    background: rgba(193, 246, 237, 0.4) !important;
+    color: #166534 !important;
+}
+
+/* Stats Grid - 3rd/4th Year Course Cards with inline styles */
+[data-theme="green"] div[style*="var(--card-bg, #fff)"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%) !important;
+    border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Text in inline-styled elements */
+[data-theme="green"] div[style*="var(--text-dark, #1a202c)"] {
+    color: #02353C !important;
+}
+
+[data-theme="green"] div[style*="var(--text-secondary, #718096)"] {
+    color: #166534 !important;
+}
+
+/* Filter Select Dropdowns with inline styles */
+[data-theme="green"] select[style*="var(--bg-white, #fff)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] select[style*="var(--border-color"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+/* Course Count badge in Year Level headers */
+[data-theme="green"] span[style*="var(--bg-gray-100, #edf2f7)"] {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #166534 !important;
+}
+
+/* Clock and Book icons in course details */
+[data-theme="green"] .campusView svg,
+[data-theme="green"] .campusSection svg:not(.campusHeaderRow svg) {
+    color: #2EAF7D !important;
+}
+
+/* Total Units badge in courses */
+[data-theme="green"] span[style*="rgba(66, 153, 225"] {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Modal header for Create/Edit Course */
+[data-theme="green"] div[style*="var(--primary-gradient)"] {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+}
+
+/* Modal save button - ensure white text */
+[data-theme="green"] button[style*="primary-gradient"] {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Label colors in modal forms */
+[data-theme="green"] label[style*="var(--label-color)"] {
+    color: #02353C !important;
+}
+
+/* Input fields in modal forms */
+[data-theme="green"] input[style*="var(--input-border)"],
+[data-theme="green"] input[style*="var(--input-bg)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] select[style*="var(--input-border)"],
+[data-theme="green"] select[style*="var(--input-bg)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+/* Cancel button in modal */
+[data-theme="green"] button[style*="var(--bg-gray-100)"] {
+    background: rgba(193, 246, 237, 0.4) !important;
+    color: #166534 !important;
+}
+
+/* Chevron icons in year level headers */
+[data-theme="green"] div[style*="marginLeft: 'auto'"] svg {
+    color: #2EAF7D !important;
+}

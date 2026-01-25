@@ -2,71 +2,318 @@
 /* Uses global theme variables from globals.css */
 /* Supports: green, dark, and light themes */
 
-/* ==================== Green Theme Enhancements ==================== */
-/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+/* ==================== Green Theme - Nature Inspired Light Mode ==================== */
+/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
 
-[data-theme="green"] .qtimeLayout {
-  background: linear-gradient(135deg, #02353C 0%, #034a4d 50%, #02353C 100%);
+:global([data-theme="green"]) .qtimeLayout,
+:global([data-theme="green"]) .qtimeMain {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
 }
 
-[data-theme="green"] .scheduleHeader,
-[data-theme="green"] .scheduleCard {
-  background: linear-gradient(135deg, rgba(2, 53, 60, 0.98) 0%, rgba(3, 74, 77, 0.95) 100%);
-  border: 2px solid rgba(63, 208, 201, 0.4);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+:global([data-theme="green"]) .pageHeader,
+:global([data-theme="green"]) .welcomeSection,
+:global([data-theme="green"]) .scheduleCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12);
 }
 
-[data-theme="green"] .scheduleTitle {
+:global([data-theme="green"]) .pageTitle {
+  background: linear-gradient(135deg, #02353C, #449342);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global([data-theme="green"]) .pageSubtitle {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .scheduleTitle {
+  color: #02353C;
+  text-shadow: none;
+}
+
+:global([data-theme="green"]) .scheduleCardHeader {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+}
+
+:global([data-theme="green"]) .scheduleCardHeader .scheduleTitle {
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(63, 208, 201, 0.3);
 }
 
-[data-theme="green"] .scheduleItem,
-[data-theme="green"] .timeSlot {
-  background: linear-gradient(135deg, rgba(2, 53, 60, 0.95) 0%, rgba(3, 74, 77, 0.9) 100%);
-  border: 2px solid rgba(63, 208, 201, 0.35);
-  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15);
+:global([data-theme="green"]) .scheduleInfoGrid {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .scheduleItem:hover,
-[data-theme="green"] .timeSlot:hover {
-  border-color: #3FD0C9;
-  box-shadow: 0 8px 32px rgba(63, 208, 201, 0.35);
-  transform: translateY(-2px);
+:global([data-theme="green"]) .infoIcon {
+  color: #2EAF7D;
 }
 
-[data-theme="green"] .exportButton,
-[data-theme="green"] .actionButton {
+:global([data-theme="green"]) .infoLabel {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .infoValue {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .statsContainer {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%);
+}
+
+:global([data-theme="green"]) .statBadge {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 1px solid rgba(46, 175, 125, 0.25);
+}
+
+:global([data-theme="green"]) .statLabel {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .scheduleActions {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border-top-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .backButton,
+:global([data-theme="green"]) .refreshButton,
+:global([data-theme="green"]) .detailsButton,
+:global([data-theme="green"]) .viewButton,
+:global([data-theme="green"]) .primaryButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.4);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .exportButton:hover,
-[data-theme="green"] .actionButton:hover {
+:global([data-theme="green"]) .backButton:hover,
+:global([data-theme="green"]) .refreshButton:hover,
+:global([data-theme="green"]) .detailsButton:hover,
+:global([data-theme="green"]) .viewButton:hover,
+:global([data-theme="green"]) .primaryButton:hover {
   background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
-  box-shadow: 0 6px 24px rgba(63, 208, 201, 0.6);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
 }
 
-[data-theme="green"] .scheduleHeader,
-[data-theme="green"] .scheduleCard,
-[data-theme="green"] .scheduleItem,
-[data-theme="green"] .timeSlot,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .heading {
+:global([data-theme="green"]) .actionButton {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .actionButton:hover {
+  background: rgba(46, 175, 125, 0.15);
+  border-color: #2EAF7D;
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .loadingState,
+:global([data-theme="green"]) .emptyState {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .emptyIcon {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .emptyState h2 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .emptyState p {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .spinner {
+  border-color: rgba(46, 175, 125, 0.15);
+  border-top-color: #2EAF7D;
+}
+
+/* Filters and Search */
+:global([data-theme="green"]) .filtersBar,
+:global([data-theme="green"]) .viewModeSection,
+:global([data-theme="green"]) .historyControls {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .filterSelect,
+:global([data-theme="green"]) .searchInput,
+:global([data-theme="green"]) .historySearchInput,
+:global([data-theme="green"]) .sortSelect,
+:global([data-theme="green"]) .viewModeSelect {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .filterSelect:focus,
+:global([data-theme="green"]) .searchInput:focus,
+:global([data-theme="green"]) .historySearchInput:focus,
+:global([data-theme="green"]) .viewModeSelect:focus {
+  border-color: #2EAF7D;
+  box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .filterGroup label {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .searchIcon {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .viewModeLabel {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .viewModeButton {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .viewModeButton:hover {
+  background: rgba(46, 175, 125, 0.15);
+  border-color: #2EAF7D;
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .viewModeButton.active {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  border-color: #2EAF7D;
   color: #ffffff;
 }
 
-[data-theme="green"] .time,
-[data-theme="green"] .room,
-[data-theme="green"] .details {
-  color: #C1F6ED !important;
+/* Timetable */
+:global([data-theme="green"]) .timetableWrapper,
+:global([data-theme="green"]) .legend {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .icon {
-  color: #3FD0C9;
+:global([data-theme="green"]) .timetableTitle,
+:global([data-theme="green"]) .timeHeader,
+:global([data-theme="green"]) .dayHeader {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
 }
+
+:global([data-theme="green"]) .timeCell {
+  background: rgba(240, 253, 244, 0.95);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .dataCell {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+:global([data-theme="green"]) .dataCell:hover {
+  background: rgba(193, 246, 237, 0.3);
+}
+
+:global([data-theme="green"]) .allocationCard {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98) 0%, rgba(193, 246, 237, 0.4) 100%);
+  border-left-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .courseCode {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .courseName {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .sectionInfo {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .roomInfo {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .legendTitle {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .legendItem {
+  color: #02353C;
+}
+
+/* Schedule Info Header */
+:global([data-theme="green"]) .scheduleInfoHeader {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .scheduleInfoMain h2 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .scheduleInfoMain p {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .semesterInfo {
+  background: rgba(46, 175, 125, 0.15);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .statNumber {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .statText {
+  color: #166534;
+}
+
+/* Optimization Info */
+:global([data-theme="green"]) .optimizationInfo {
+  background: rgba(240, 253, 244, 0.95);
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .optStatLabel {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .optStatValue {
+  color: #2EAF7D;
+}
+
+/* Card Date */
+:global([data-theme="green"]) .cardDate {
+  background: rgba(240, 253, 244, 0.95);
+  color: #166534;
+  border-top-color: rgba(46, 175, 125, 0.2);
+}
+
+/* Delete Button */
+:global([data-theme="green"]) .deleteIconButton {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+/* History */
+:global([data-theme="green"]) .historyCount {
+  background: rgba(46, 175, 125, 0.15);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .sortOrderButton {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .sortOrderButton:hover {
+  background: rgba(46, 175, 125, 0.15);
+  border-color: #2EAF7D;
+  color: #02353C;
+}
+
 
 /* ==================== Layout ==================== */
 .qtimeLayout {

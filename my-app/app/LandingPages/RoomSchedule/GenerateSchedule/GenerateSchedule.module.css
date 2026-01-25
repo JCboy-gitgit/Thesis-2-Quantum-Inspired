@@ -3,81 +3,529 @@
 /* Supports: green, dark, and light themes */
 
 /* ==================== Green Theme Enhancements ==================== */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
+/* Main Layout with Nature Background */
 [data-theme="green"] .scheduleLayout {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
 }
 
 [data-theme="green"] .scheduleHeader,
-[data-theme="green"] .configurationCard {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
+[data-theme="green"] .headerTitleSection {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.4) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
 }
 
 [data-theme="green"] .scheduleTitle {
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 217, 111, 0.3);
+  color: #02353C;
 }
 
+[data-theme="green"] .scheduleSubtitle {
+  color: #166534;
+}
+
+[data-theme="green"] .headerIconWrapper {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .headerLargeIcon {
+  color: #ffffff;
+}
+
+/* Back Button */
+[data-theme="green"] .backButton {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .backButton:hover {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: #2EAF7D;
+}
+
+/* Configuration Cards */
+[data-theme="green"] .configurationCard,
+[data-theme="green"] .formCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12);
+}
+
+[data-theme="green"] .formSectionTitle {
+  color: #02353C;
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .formSectionTitle svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .formLabel {
+  color: #02353C;
+}
+
+[data-theme="green"] .formHint {
+  color: #166534;
+}
+
+[data-theme="green"] .formInput,
+[data-theme="green"] .formSelect {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .formInput:focus,
+[data-theme="green"] .formSelect:focus {
+  border-color: #2EAF7D;
+  box-shadow: 0 0 0 4px rgba(46, 175, 125, 0.15);
+}
+
+[data-theme="green"] .formInput::placeholder {
+  color: #166534;
+}
+
+/* Settings Cards */
 [data-theme="green"] .settingsCard,
 [data-theme="green"] .timeCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
 }
 
 [data-theme="green"] .settingsCard:hover,
 [data-theme="green"] .timeCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
+/* Generate Button */
 [data-theme="green"] .generateButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 50%, #5dffa7 100%);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.5);
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.5);
 }
 
 [data-theme="green"] .generateButton:hover {
-  box-shadow: 0 12px 40px rgba(0, 217, 111, 0.7);
+  box-shadow: 0 12px 40px rgba(46, 175, 125, 0.7);
   transform: translateY(-4px) scale(1.03);
 }
 
 [data-theme="green"] .generateButton:disabled {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.6) 0%, rgba(0, 119, 59, 0.5) 100%);
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.3) 0%, rgba(63, 208, 201, 0.3) 100%);
   box-shadow: none;
 }
 
-[data-theme="green"] .scheduleHeader,
-[data-theme="green"] .configurationCard,
-[data-theme="green"] .settingsCard,
-[data-theme="green"] .timeCard,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .heading {
+/* Tab Navigation */
+[data-theme="green"] .tabNavigation {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .tabButton {
+  color: #02353C;
+}
+
+[data-theme="green"] .tabButton:hover {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .tabButton.activeTab {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
+}
+
+/* Summary Cards */
+[data-theme="green"] .summaryCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .summaryCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .summaryIcon {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .summaryValue {
+  color: #02353C;
+}
+
+[data-theme="green"] .summaryLabel {
+  color: #166534;
+}
+
+/* Selection Cards */
+[data-theme="green"] .selectionCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .selectionCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .selectionCard.selected {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .selectionCheckbox {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+}
+
+[data-theme="green"] .selectionTitle {
+  color: #02353C;
+}
+
+[data-theme="green"] .selectionSubtitle {
+  color: #166534;
+}
+
+[data-theme="green"] .selectionDetail {
+  color: #166534;
+}
+
+[data-theme="green"] .selectionDetail svg {
+  color: #2EAF7D;
+}
+
+/* Filter Row */
+[data-theme="green"] .filterRow {
+  color: #02353C;
+}
+
+[data-theme="green"] .filterSelect {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .filterSelect:focus {
+  border-color: #2EAF7D;
+}
+
+[data-theme="green"] .filterStats {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #02353C;
+}
+
+[data-theme="green"] .selectAllButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .selectAllButton:hover {
+  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
+}
+
+/* Algorithm Info */
+[data-theme="green"] .algorithmInfo {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .algorithmInfoIcon {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .algorithmInfo p {
+  color: #166534;
+}
+
+/* Checkbox Group */
+[data-theme="green"] .checkboxLabel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid transparent;
+}
+
+[data-theme="green"] .checkboxLabel:hover {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  border-color: rgba(46, 175, 125, 0.3);
+}
+
+[data-theme="green"] .checkboxText {
+  color: #02353C;
+}
+
+[data-theme="green"] .checkboxLabel input[type="checkbox"] {
+  accent-color: #2EAF7D;
+}
+
+/* Time Configuration */
+[data-theme="green"] .timeConfigInfo {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  border-left: 4px solid #2EAF7D;
+}
+
+[data-theme="green"] .timeConfigInfo svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .timeConfigInfo p {
+  color: #166534;
+}
+
+[data-theme="green"] .timeSlotPreview {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px dashed rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .timeSlotPreview strong {
+  color: #02353C;
+}
+
+[data-theme="green"] .timeSlotChip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #166534;
+}
+
+[data-theme="green"] .timeSlotChip:hover {
+  border-color: #2EAF7D;
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .timeSlotMore {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .timeSlotCount {
+  color: #166534;
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+/* Loading Container */
+[data-theme="green"] .loadingContainer {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .loadingContainer p {
+  color: #166534;
+}
+
+[data-theme="green"] .spinnerIcon {
+  color: #2EAF7D;
+}
+
+/* Step Progress */
+[data-theme="green"] .stepProgress {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .step {
+  color: #166534;
+}
+
+[data-theme="green"] .step.active {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .step.completed {
+  color: #166534;
+}
+
+[data-theme="green"] .stepNumber {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: #02353C;
+}
+
+[data-theme="green"] .step.active .stepNumber {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .step.completed .stepNumber {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   color: #ffffff;
 }
 
-[data-theme="green"] .description,
-[data-theme="green"] .hint,
-[data-theme="green"] .subtitle,
-[data-theme="green"] .details {
-  color: #b3ffdb !important;
+[data-theme="green"] .stepLine {
+  background: rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .icon {
-  color: #5dffa7;
+/* Data Source Cards */
+[data-theme="green"] .dataSourceCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .label,
-[data-theme="green"] .input,
-[data-theme="green"] .select {
-  color: #ffffff;
+[data-theme="green"] .dataSourceCard:hover {
+  border-color: #2EAF7D;
 }
 
-[data-theme="green"] .input::placeholder,
-[data-theme="green"] .select::placeholder {
-  color: #b3ffdb;
-  opacity: 0.7;
+[data-theme="green"] .dataSourceHeader:hover {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.08) 0%, rgba(193, 246, 237, 0.15) 100%);
+}
+
+[data-theme="green"] .dataSourceTitle h3 {
+  color: #02353C;
+}
+
+[data-theme="green"] .dataSourceTitle p {
+  color: #166534;
+}
+
+[data-theme="green"] .dataSourceIcon {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .dataSourceIcon.campusIcon,
+[data-theme="green"] .dataSourceIcon.classIcon,
+[data-theme="green"] .dataSourceIcon.teacherIcon {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .dataSourceStatus {
+  color: #166534;
+}
+
+[data-theme="green"] .requiredBadge {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+  color: #dc2626;
+}
+
+[data-theme="green"] .selectedBadge {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: #166534;
+}
+
+[data-theme="green"] .optionalBadge {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #166534;
+}
+
+/* Data Cards */
+[data-theme="green"] .dataCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .dataCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .dataCard.selected {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .dataCardHeader h4 {
+  color: #02353C;
+}
+
+[data-theme="green"] .dataCardHeader svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .dataCardStats {
+  color: #166534;
+}
+
+[data-theme="green"] .dataCardFile {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .dataCardDate {
+  color: #166534;
+}
+
+[data-theme="green"] .selectedCheck {
+  color: #2EAF7D;
+}
+
+/* Empty Data Source */
+[data-theme="green"] .emptyDataSource {
+  color: #166534;
+}
+
+[data-theme="green"] .emptyDataSource svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .emptyDataSource button {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+/* Step Navigation */
+[data-theme="green"] .nextButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .nextButton:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.5);
+}
+
+[data-theme="green"] .backStepButton {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .backStepButton:hover {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .navigationHint {
+  color: #166534;
+}
+
+/* Preview Section */
+[data-theme="green"] .previewCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+/* Generate Hint */
+[data-theme="green"] .generateHint {
+  color: #166534;
+}
+
+[data-theme="green"] .generateInfo {
+  color: #166534;
+}
+
+[data-theme="green"] .generateInfo svg {
+  color: #2EAF7D;
+}
+
+/* Preset Section */
+[data-theme="green"] .presetLabel {
+  color: #02353C;
+}
+
+[data-theme="green"] .presetButton {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+[data-theme="green"] .presetButton:hover {
+  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: #2EAF7D;
 }
 
 /* ==================== Layout ==================== */
@@ -211,7 +659,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==================== Tab Navigation ==================== */
@@ -267,8 +717,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ==================== Form Section ==================== */
@@ -1201,8 +1658,13 @@
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+  from {
+    transform: scale(0);
+  }
+
+  to {
+    transform: scale(1);
+  }
 }
 
 /* ==================== Step Navigation ==================== */
@@ -1820,23 +2282,23 @@
   .summaryGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .optimizationStats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .previewSection {
     grid-template-columns: 1fr;
   }
-  
+
   .stepProgress {
     padding: 20px;
   }
-  
+
   .step span {
     display: none;
   }
@@ -1847,15 +2309,15 @@
     margin-left: 0;
     padding: 24px;
   }
-  
+
   .tabNavigation {
     flex-direction: column;
   }
-  
+
   .tabButton {
     min-width: unset;
   }
-  
+
   .dataSourceGrid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
@@ -1879,11 +2341,11 @@
   .summaryGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .statsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .optimizationStats {
     grid-template-columns: 1fr;
   }
@@ -1895,7 +2357,7 @@
   .filterRow {
     flex-direction: column;
   }
-  
+
   .filterSelect {
     min-width: unset;
   }
@@ -1914,41 +2376,41 @@
     width: 100%;
     min-width: unset;
   }
-  
+
   .stepProgress {
     padding: 16px;
     gap: 8px;
   }
-  
+
   .stepLine {
     max-width: 40px;
   }
-  
+
   .dataSourceHeader {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .dataSourceStatus {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .dataSourceGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .stepNavigation {
     flex-direction: column-reverse;
     gap: 12px;
   }
-  
+
   .backStepButton {
     width: 100%;
     justify-content: center;
   }
-  
+
   .nextButton {
     width: 100%;
     justify-content: center;
@@ -1973,26 +2435,26 @@
   .formCard {
     padding: 20px;
   }
-  
+
   .presetSection {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .presetButton {
     width: 100%;
     text-align: center;
   }
-  
+
   .dataSourceIcon {
     width: 40px;
     height: 40px;
   }
-  
+
   .dataSourceTitle h3 {
     font-size: 15px;
   }
-  
+
   .stepNumber {
     width: 28px;
     height: 28px;
@@ -2397,6 +2859,7 @@
     opacity: 0;
     max-height: 0;
   }
+
   to {
     opacity: 1;
     max-height: 2000px;
@@ -2595,6 +3058,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -2617,6 +3081,7 @@
     opacity: 0;
     transform: translateY(40px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2818,8 +3283,13 @@
 }
 
 @keyframes rotateSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .autoGenerateInfo h4 {
@@ -2874,12 +3344,12 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.toggleSwitch input:checked + .toggleSlider {
+.toggleSwitch input:checked+.toggleSlider {
   background: var(--primary-gradient);
   box-shadow: 0 0 10px var(--glow-color);
 }
 
-.toggleSwitch input:checked + .toggleSlider:before {
+.toggleSwitch input:checked+.toggleSlider:before {
   transform: translateX(28px);
 }
 
