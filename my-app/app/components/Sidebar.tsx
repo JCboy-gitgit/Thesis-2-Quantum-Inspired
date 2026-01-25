@@ -26,9 +26,10 @@ import './Sidebar.css'
 
 interface SidebarProps {
   isOpen: boolean
+  menuBarHidden?: boolean
 }
 
-export default function Sidebar({ isOpen }: SidebarProps) {
+export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   // Track open state for each submenu by index
@@ -178,7 +179,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   }
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+    <aside className={`sidebar ${isOpen ? 'open' : 'closed'} ${menuBarHidden ? 'menuHidden' : ''}`}>
       <nav className="sidebar-nav">
         {menuItems.map((item, index) => (
           <div key={index}>
