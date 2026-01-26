@@ -789,12 +789,16 @@
   padding: 64px 24px;
   text-align: center;
   margin-top: 24px;
+  
 }
 
 .noSelectionPrompt svg {
   color: var(--text-light);
   opacity: 0.4;
   margin-bottom: 16px;
+  display: flex;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .noSelectionPrompt h3 {

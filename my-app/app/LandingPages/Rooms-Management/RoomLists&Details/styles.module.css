@@ -1321,6 +1321,9 @@
   margin-bottom: 16px;
   color: var(--primary);
   opacity: 0.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ==================== Campus Section ==================== */
