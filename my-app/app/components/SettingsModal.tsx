@@ -52,7 +52,7 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                 <span className="theme-description">College of Science theme</span>
                 {theme === 'green' && <span className="theme-active-badge">Active</span>}
               </button>
-              
+
               <button
                 className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
                 onClick={() => setTheme('dark')}
