@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Environmental Science (CCDM) CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        
+        .program-title {
+            color: #11998e;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #11998e;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #11998e;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Environmental Science Curriculum CSV Generator</h1>
+        <p class="program-title">Climate Change and Disaster Management</p>
+        <p class="subtitle">AY 2024-2025 - Convert curriculum data to CSV format</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 10 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // First Year - First Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "MMW 101", title: "Mathematics for the Modern World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't Ibang Disiplina", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "BIO 101", title: "Biology: Foundations of Life Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "BIO 101L", title: "Biology: Foundations of Life Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "PE 1", title: "Path Fit 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "First Semester", grade: "", code: "NSTP 10", title: "NSTP", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // First Year - Second Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "STS 101", title: "Science Technology & Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "MAT 102", title: "Trigonometry", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "BIO 102", title: "Biodiversity and Evolution Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "BIO 101/BIO 102L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "BIO 102L", title: "Biodiversity and Evolution Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "ErS 102", title: "Earth Science Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "ErS 102L", title: "Earth Science Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "PE 2", title: "PathFit 2", labUnits: "", labHours: "", lecHours: "2", prereq: "PathFit 1"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "First Year", semester: "Second Semester", grade: "", code: "NSTP 11", title: "NSTP", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Second Year - First Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "MAT 201", title: "Calculus 1", labUnits: "", labHours: "", lecHours: "4", prereq: "MAT 102"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "CHE 201", title: "Analytical Chemistry Lec", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "CHE 201L", title: "Analytical Chemistry Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "PHY 201", title: "Environmental Physics Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "MAT 102"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "PHY 201L", title: "Environmental Physics Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "ESC 201", title: "General Ecology Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "BIO 101/BIO 101L, BIO 102/BIO 102L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "ESC 201L", title: "General Ecology Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "ErS 201", title: "Geography", labUnits: "", labHours: "", lecHours: "3", prereq: "ErS 102/ErS 102L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "First Semester", grade: "", code: "PE 3", title: "PathFit 3", labUnits: "", labHours: "", lecHours: "2", prereq: "PathFit 2"},
+            
+            // Second Year - Second Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "GIS 201", title: "Geographic Information System Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "ErS 102/ErS 102L, ErS 201"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "GIS 201L", title: "Geographic Information System Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "ESC 202", title: "Soil Science Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "ErS 102/ErS 102L, CHE 201/201L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "ESC 202L", title: "Soil Science Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "CHE 202", title: "Organic Chemistry Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "CHE 201/201L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "CHE 202L", title: "Organic Chemistry Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Second Year", semester: "Second Semester", grade: "", code: "PE 4", title: "PathFit 4", labUnits: "", labHours: "", lecHours: "2", prereq: "PathFit 3"},
+            
+            // Third Year - First Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "ESM 301", title: "Coastal Resource Management", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "ESC 301", title: "Aquatic and Terrestrial Ecosystem Sampling Techniques", labUnits: "1", labHours: "3", lecHours: "3", prereq: "ESC 201/ESC 201L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "ESt 301", title: "Environmental Statistics", labUnits: "1", labHours: "3", lecHours: "4", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "CHE 301", title: "Environmental Chemistry Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "CHE 202, CHE 202L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "CHE 301L", title: "Environmental Chemistry Lab", labUnits: "2", labHours: "6", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "IRS 301", title: "Introduction to Remote Sensing Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "PHY 202, PHY 202L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "First Semester", grade: "", code: "IRS 301L", title: "Introduction to Remote Sensing Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            
+            // Third Year - Second Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "THE 301", title: "Thesis 1", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "SSP 101b", title: "Philippine Indigenous Communities", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "ESC 302", title: "Environmental Monitoring Lec", labUnits: "", labHours: "", lecHours: "3", prereq: "CHE 202,CHE 202L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "ESC 302L", title: "Environmental Monitoring Lab", labUnits: "1", labHours: "3", lecHours: "", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "ESM 302", title: "Natural Resource Valuation and Economics", labUnits: "", labHours: "", lecHours: "3", prereq: "ESM 301"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "ESC 303", title: "Climate Change Impacts, Mitigation and Adaptation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "CDM 301", title: "Foundations for Risk Assessment Management", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "CDM 302", title: "Environmental Risk Assessment and Management", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Second Semester", grade: "", code: "CDM 303", title: "Disaster Risk Management", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Third Year - Summer
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Third Year", semester: "Summer", grade: "", code: "OJT", title: "On the Job Training", labUnits: "", labHours: "", lecHours: "3", prereq: "PCM 101, MMW 101,RPH 101, AAP 101,PID 101, BIO 101, BIO 101L, PE 1, NSTP 10, STS 101, UTS 101, MAT 102, BIO 102, BIO 102L, ErS 102, ErS 102L, PE 2, NSTP 11, MAT 201, CHE 201, CHE 201L, PHY 201, PHY 201L, ESC 201, ESC 201L, ErS 201, PE 3, TCW 101, ETH 101, GIS 201, GIS 201L, ESC 202, ESC 202L, CHE 202, CHE 202L, PE 4, PAL 101, ESM 301, ESC 301, ESt 301, CHE 301, CHE 301L, IRS 301, IRS 301L, THE 301, SSP101b, ESC 302, ESC 302L, ESM 303, ESC 303"},
+            
+            // Fourth Year - First Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "First Semester", grade: "", code: "THE 401", title: "Thesis 2", labUnits: "", labHours: "", lecHours: "2", prereq: "THE 301"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "First Semester", grade: "", code: "CDM 401", title: "Community Based Disaster Risk Management", labUnits: "", labHours: "", lecHours: "3", prereq: "CDM 301, CDM 302, CDM 303"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "First Semester", grade: "", code: "CDM 402", title: "Rehabilitation and Recovery Management", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "First Semester", grade: "", code: "ESC 401", title: "Geological Hazards", labUnits: "", labHours: "", lecHours: "3", prereq: "GIS 201, GIS 201L"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "First Semester", grade: "", code: "ESM 401", title: "Nature Based Solutions for Sustainable Development", labUnits: "", labHours: "", lecHours: "3", prereq: "ESM 302"},
+            
+            // Fourth Year - Second Semester
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "Second Semester", grade: "", code: "THE 402", title: "Thesis 3", labUnits: "", labHours: "", lecHours: "2", prereq: "THE 401"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "Second Semester", grade: "", code: "CDM 403", title: "Incident Command System Management", labUnits: "", labHours: "", lecHours: "3", prereq: "CDM 401, CDM 402"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "Second Semester", grade: "", code: "EIA 402", title: "Environmental Impact Assessment System", labUnits: "", labHours: "", lecHours: "3", prereq: "ESC 401, ESM 401"},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "Second Semester", grade: "", code: "ESC 402", title: "Environmental Policies and Standards", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Environmental Science - CCDM", year: "Fourth Year", semester: "Second Semester", grade: "", code: "RLW 101", title: "Rizal's Life and Works", labUnits: "", labHours: "", lecHours: "3", prereq: ""}
+        ];
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            curriculumData.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Calculate stats
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 11).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "BS_EnvSci_CCDM_Curriculum_2024-2025.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Calculate initial stats
+        window.onload = function() {
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+        };
+    </script>
+</body>
+</html>

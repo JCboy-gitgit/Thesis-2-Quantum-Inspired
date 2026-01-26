@@ -10,21 +10,19 @@ import {
   FileSpreadsheet,
   Info,
   AlertTriangle,
-  FolderOpen,
-  Image as ImageIcon,
-  Loader2,
-  Download,
   BookOpen,
   GraduationCap,
   DoorOpen,
-  Users
+  Tv,
+  Wind,
+  PresentationIcon,
+  Landmark
 } from 'lucide-react'
 import styles from './styles/bQtime.module.css'
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import type { JSX } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
-import Tesseract from 'tesseract.js'
 
 export default function UploadCSVPage(): JSX.Element {
   const router = useRouter()
@@ -32,13 +30,14 @@ export default function UploadCSVPage(): JSX.Element {
   // ==================== Room/Campus Upload States ====================
   const [roomFile, setRoomFile] = useState<File | null>(null)
   const [roomSchoolName, setRoomSchoolName] = useState('')
+  const [roomCampusName, setRoomCampusName] = useState('')
   const [roomLoading, setRoomLoading] = useState(false)
   const [roomMessage, setRoomMessage] = useState<string | null>(null)
   const [roomError, setRoomError] = useState<string | null>(null)
   
-  // ==================== Class Schedule Upload States ====================
+  // ==================== Degree Program Upload States ====================
   const [classFile, setClassFile] = useState<File | null>(null)
-  const [classBatchName, setClassBatchName] = useState('')
+  const [degreeProgramName, setDegreeProgramName] = useState('')
   const [classLoading, setClassLoading] = useState(false)
   const [classMessage, setClassMessage] = useState<string | null>(null)
   const [classError, setClassError] = useState<string | null>(null)
@@ -56,15 +55,6 @@ export default function UploadCSVPage(): JSX.Element {
   const [facultyLoading, setFacultyLoading] = useState(false)
   const [facultyMessage, setFacultyMessage] = useState<string | null>(null)
   const [facultyError, setFacultyError] = useState<string | null>(null)
-
-  // ==================== Image OCR States ====================
-  const [imageFiles, setImageFiles] = useState<File[]>([])
-  const [imageProcessing, setImageProcessing] = useState(false)
-  const [imageProgress, setImageProgress] = useState<string>('')
-  const [extractedCSV, setExtractedCSV] = useState<string | null>(null)
-  const [imageUploadType, setImageUploadType] = useState<'class' | 'teacher'>('class')
-  
-  const imageFolderInputRef = useRef<HTMLInputElement>(null)
 
   // Auth check on mount
   React.useEffect(() => {
@@ -95,10 +85,46 @@ export default function UploadCSVPage(): JSX.Element {
   const parseCSV = (text: string): string[][] => {
     const lines = text.trim().split('\n')
     return lines.map(line => {
+      // Check if pipe-separated
       if (line.includes('|')) {
-        return line.split('|').map(cell => cell.trim())
+        return line.split('|').map(cell => cell.trim().replace(/^["']|["']$/g, ''))
       }
-      return line.split(',').map(cell => cell.trim())
+      
+      // Parse comma-separated with proper quote handling
+      const cells: string[] = []
+      let current = ''
+      let inQuotes = false
+      let quoteChar = ''
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        
+        if ((char === '"' || char === "'") && !inQuotes) {
+          // Start of quoted field
+          inQuotes = true
+          quoteChar = char
+        } else if (char === quoteChar && inQuotes) {
+          // Check for escaped quote (double quote)
+          if (line[i + 1] === quoteChar) {
+            current += char
+            i++ // Skip the next quote
+          } else {
+            // End of quoted field
+            inQuotes = false
+            quoteChar = ''
+          }
+        } else if (char === ',' && !inQuotes) {
+          // Field separator
+          cells.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      // Push the last field
+      cells.push(current.trim())
+      
+      return cells
     })
   }
 
@@ -106,36 +132,39 @@ export default function UploadCSVPage(): JSX.Element {
   
   // ==================== NEW v2 CSV Format Validation ====================
   
-  // Validate Room/Campus CSV headers (supports both old and new v2 format)
+  // Validate Room/Campus CSV headers
+  // NEW format: Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
   const validateRoomHeaders = (headers: string[]): boolean => {
-    if (headers.length < 4) return false
-    const headerStr = headers.map(h => h.toLowerCase()).join(' ')
+    if (headers.length < 6) return false
+    const headerStr = headers.map(h => h.toLowerCase().replace(/[_\s-]/g, '')).join(' ')
     
-    // NEW v2 format: room_id | capacity | room_type | equipment_bitmask | campus_id | building | floor_number | is_pwd_accessible
-    const isNewFormat = headerStr.includes('room_id') && headerStr.includes('equipment_bitmask')
+    // NEW format check - must have room_name, building, and capacity
+    const hasRoomName = headerStr.includes('roomname') || headerStr.includes('roomid')
+    const hasBuilding = headerStr.includes('building')
+    const hasCapacity = headerStr.includes('capacity')
+    const hasCollege = headerStr.includes('college')
+    const hasPrimaryType = headerStr.includes('primarytype') || headerStr.includes('type')
     
-    // OLD format: campus | building | room | capacity
-    const hasRoom = headerStr.includes('room') || headerStr.includes('building')
-    const hasCampus = headerStr.includes('campus') || headerStr.includes('school')
-    const hasCapacity = headerStr.includes('capacity') || headerStr.includes('seats')
-    
-    return isNewFormat || (hasRoom || (hasCampus && hasCapacity))
+    return hasRoomName && hasBuilding && hasCapacity && (hasCollege || hasPrimaryType)
   }
 
-  // Validate Class/Course CSV headers (supports both old and new v2 format)
+  // Validate Degree Program CSV headers (NEW format)
   const validateClassHeaders = (headers: string[]): boolean => {
     if (headers.length < 4) return false
-    const headerStr = headers.map(h => h.toLowerCase()).join(' ')
+    const headerStr = headers.map(h => h.toLowerCase().replace(/[_\s-]/g, '')).join(' ')
     
-    // NEW v2 format: class_id | course_code | course_name | section | subject_code | subject_name | size | duration | room_req | year_level | semester | academic_year
-    const isNewFormat = headerStr.includes('class_id') && headerStr.includes('subject_code')
+    // NEW Degree Program format: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite
+    const hasDegreeProgram = headerStr.includes('degreeprogram') || headerStr.includes('program')
+    const hasCourseCode = headerStr.includes('coursecode') || headerStr.includes('code')
+    const hasYearLevel = headerStr.includes('yearlevel') || headerStr.includes('year')
+    const hasSemester = headerStr.includes('semester')
+    const hasDescriptiveTitle = headerStr.includes('descriptivetitle') || headerStr.includes('title') || headerStr.includes('coursename')
     
-    // OLD format: class section | course code | course name
+    // OLD format fallback: class section | course code | course name
     const hasClassOrSection = headerStr.includes('class') || headerStr.includes('section')
-    const hasCourseCode = headerStr.includes('course') || headerStr.includes('code')
-    const hasSchedule = headerStr.includes('schedule') || headerStr.includes('day') || headerStr.includes('time') || headerStr.includes('subject')
+    const hasSchedule = headerStr.includes('schedule') || headerStr.includes('day') || headerStr.includes('time')
     
-    return isNewFormat || (hasClassOrSection || hasCourseCode || hasSchedule)
+    return (hasDegreeProgram && hasCourseCode) || (hasYearLevel && hasCourseCode && hasDescriptiveTitle) || (hasClassOrSection || hasSchedule)
   }
 
   // Validate Faculty CSV headers (NEW v2 format)
@@ -219,19 +248,17 @@ export default function UploadCSVPage(): JSX.Element {
       if (!validateRoomHeaders(headers)) {
         e.target.value = ''
         throw new Error(
-          '❌ INVALID CSV FORMAT DETECTED!\n\n' +
-          '📋 Expected headers (NEW v2 format - pipe-separated):\n' +
-          'room_id | capacity | room_type | equipment_bitmask | campus_id | building | floor_number | is_pwd_accessible\n\n' +
-          '📋 OR Legacy format:\n' +
-          'campus | building | room | capacity | floor_number | room_type | is_pwd_accessible\n\n' +
-          `❗ Found headers:\n${headers.join(' | ')}\n\n` +
-          '⚠️ Please fix the format and try again.'
+          'INVALID CSV FORMAT DETECTED!\n\n' +
+          'Expected headers (comma-separated):\n' +
+          'Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV\n\n' +
+          'Note: Room_ID, Floor, and Is_Airconditioned can be empty\n\n' +
+          `Found headers:\n${headers.join(', ')}\n\n` +
+          'Please fix the format and try again.'
         )
       }
 
-      const version = detectCSVVersion(headers)
       setRoomFile(file)
-      setRoomMessage(`✅ CSV format validated successfully! (${version === 'v2' ? 'NEW v2' : 'Legacy'} format)`)
+      setRoomMessage('CSV format validated successfully!')
     } catch (err: any) {
       console.error('Room file validation error:', err)
       setRoomFile(null)
@@ -260,18 +287,17 @@ export default function UploadCSVPage(): JSX.Element {
         e.target.value = ''
         throw new Error(
           '❌ INVALID CSV FORMAT DETECTED!\n\n' +
-          '📋 Expected headers (NEW v2 format - pipe-separated):\n' +
-          'class_id | course_code | course_name | section | subject_code | subject_name | size | duration | room_req | year_level | semester | academic_year\n\n' +
-          '📋 OR Legacy format:\n' +
-          'course_code | course_name | section | lec_units | lab_units | schedule_day | schedule_time\n\n' +
-          `❗ Found headers:\n${headers.join(' | ')}\n\n` +
+          '📋 Expected headers (comma or pipe-separated):\n' +
+          'Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite\n\n' +
+          '📋 Example row:\n' +
+          'BS Biology, 1, 1st Semester, 1.0, BIO 101, General Biology, 1, 3, 2, None\n\n' +
+          `❗ Found headers:\n${headers.join(', ')}\n\n` +
           '⚠️ Please fix the format and try again.'
         )
       }
 
-      const version = detectCSVVersion(headers)
       setClassFile(file)
-      setClassMessage(`✅ CSV format validated successfully! (${version === 'v2' ? 'NEW v2' : 'Legacy'} format)`)
+      setClassMessage(`✅ Degree Program CSV format validated successfully! (${rows.length - 1} courses found)`)
     } catch (err: any) {
       console.error('Class file validation error:', err)
       setClassFile(null)
@@ -363,6 +389,7 @@ export default function UploadCSVPage(): JSX.Element {
   // ==================== Upload Handlers ====================
 
   // Upload Rooms/Campuses
+  // NEW CSV Format: Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
   const handleRoomUpload = async () => {
     if (!roomFile || !roomSchoolName) {
       setRoomError('Please provide school name and choose a file.')
@@ -382,8 +409,7 @@ export default function UploadCSVPage(): JSX.Element {
       }
 
       const dataRows = rows.slice(1)
-      const headers = rows[0]
-      const version = detectCSVVersion(headers)
+      const headers = rows[0].map(h => h.toLowerCase().replace(/[_\s-]/g, ''))
 
       // Get the next upload_group_id for rooms
       const { data: maxGroupData } = await supabase
@@ -394,51 +420,68 @@ export default function UploadCSVPage(): JSX.Element {
       
       const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
 
-      // Parse based on detected format version
-      let roomData: any[] = []
-      
-      if (version === 'v2') {
-        // NEW v2 format: room_id | capacity | room_type | equipment_bitmask | campus_id | building | floor_number | is_pwd_accessible
-        roomData = dataRows.map(row => {
-          const equipmentBitmask = row[3] || '11111'
-          return {
-            upload_group_id: nextGroupId,
-            school_name: roomSchoolName,
-            campus: row[4] || 'MAIN',
-            building: row[5] || '',
-            room: row[0] || '',
-            capacity: parseInt(row[1]) || 30,
-            is_first_floor: (parseInt(row[6]) || 1) === 1,
-            floor_number: parseInt(row[6]) || 1,
-            room_type: row[2] || 'Lecture',
-            has_ac: equipmentBitmask.charAt(1) === '1',
-            has_projector: equipmentBitmask.charAt(0) === '1',
-            has_whiteboard: equipmentBitmask.charAt(2) === '1',
-            is_pwd_accessible: row[7]?.toLowerCase() === 'true',
-            status: 'active',
-            file_name: roomFile.name
-          }
-        })
-      } else {
-        // LEGACY format: campus | building | room | capacity | is_first_floor | floor_number | room_type | has_ac | has_projector | has_whiteboard | is_pwd_accessible | status
-        roomData = dataRows.map(row => ({
+      // Map headers to indices
+      const getIndex = (names: string[]): number => {
+        return headers.findIndex(h => names.some(n => h.includes(n)))
+      }
+
+      const roomIdIdx = getIndex(['roomid'])
+      const roomNameIdx = getIndex(['roomname'])
+      const buildingIdx = getIndex(['building'])
+      const floorIdx = getIndex(['floor'])
+      const collegeIdx = getIndex(['college'])
+      const primaryTypeIdx = getIndex(['primarytype'])
+      const specificClassIdx = getIndex(['specificclassification', 'classification'])
+      const capacityIdx = getIndex(['capacity'])
+      const acIdx = getIndex(['isaircon', 'airconditioned', 'hasac', 'ac'])
+      const whiteboardIdx = getIndex(['whiteboard', 'haswhiteboard'])
+      const tvIdx = getIndex(['hastv', 'tv'])
+
+      // Parse NEW format data
+      const roomData = dataRows.map(row => {
+        // Handle empty values - show as 'None' or default values
+        const roomId = roomIdIdx >= 0 ? (row[roomIdIdx]?.trim() || '') : ''
+        const roomName = roomNameIdx >= 0 ? (row[roomNameIdx]?.trim() || '') : ''
+        const building = buildingIdx >= 0 ? (row[buildingIdx]?.trim() || '') : ''
+        const floorStr = floorIdx >= 0 ? row[floorIdx]?.trim() : ''
+        // Properly parse floor number - handle empty, invalid, and valid cases
+        const floorNum = floorStr ? parseInt(floorStr, 10) : null
+        const floor = (floorNum !== null && !isNaN(floorNum)) ? floorNum : null
+        const college = collegeIdx >= 0 ? (row[collegeIdx]?.trim() || '') : ''
+        const primaryType = primaryTypeIdx >= 0 ? (row[primaryTypeIdx]?.trim() || 'Classroom') : 'Classroom'
+        const specificClass = specificClassIdx >= 0 ? (row[specificClassIdx]?.trim() || '') : ''
+        const capacityStr = capacityIdx >= 0 ? row[capacityIdx]?.trim() : '30'
+        const capacity = parseInt(capacityStr) || 30
+        
+        // Handle boolean fields - empty means null/none
+        const acStr = acIdx >= 0 ? row[acIdx]?.trim().toLowerCase() : ''
+        const hasAc = acStr === '' ? null : (acStr === 'true' || acStr === 'yes' || acStr === '1')
+        
+        const whiteboardStr = whiteboardIdx >= 0 ? row[whiteboardIdx]?.trim().toLowerCase() : 'true'
+        const hasWhiteboard = whiteboardStr === '' ? null : (whiteboardStr === 'true' || whiteboardStr === 'yes' || whiteboardStr === '1')
+        
+        const tvStr = tvIdx >= 0 ? row[tvIdx]?.trim().toLowerCase() : ''
+        const hasTv = tvStr === '' ? null : (tvStr === 'true' || tvStr === 'yes' || tvStr === '1')
+
+        return {
           upload_group_id: nextGroupId,
           school_name: roomSchoolName,
-          campus: row[0] || '',
-          building: row[1] || '',
-          room: row[2] || '',
-          capacity: parseInt(row[3]) || 30,
-          is_first_floor: row[4]?.toLowerCase() === 'true',
-          floor_number: parseInt(row[5]) || 1,
-          room_type: row[6] || 'Classroom',
-          has_ac: row[7]?.toLowerCase() === 'true',
-          has_projector: row[8]?.toLowerCase() === 'true',
-          has_whiteboard: row[9]?.toLowerCase() === 'true' || row[9] === undefined,
-          is_pwd_accessible: row[10]?.toLowerCase() === 'true',
-          status: row[11] || 'active',
+          campus: roomCampusName || 'Main Campus',  // Use the admin-input campus name
+          building: building,
+          room: roomName || roomId || 'Unknown Room',
+          room_code: roomId || null,
+          capacity: capacity,
+          floor_number: floor,
+          room_type: primaryType,
+          specific_classification: specificClass || null,
+          college: college || null,  // Store college from CSV in college field
+          has_ac: hasAc,
+          has_whiteboard: hasWhiteboard,
+          has_tv: hasTv,
+          status: 'active',
           file_name: roomFile.name
-        }))
-      }
+        }
+      }).filter(room => room.room && room.building) // Filter out completely empty rows
 
       console.log('Inserting room data:', roomData.length, 'rows')
 
@@ -452,14 +495,16 @@ export default function UploadCSVPage(): JSX.Element {
       }
 
       setRoomMessage(
-        `✅ Rooms uploaded successfully!\n` +
+        `Rooms uploaded successfully!\n` +
         `School: ${roomSchoolName}\n` +
+        `Campus: ${roomCampusName}\n` +
         `File: ${roomFile.name}\n` +
         `Rooms: ${roomData.length}`
       )
       
       setRoomFile(null)
       setRoomSchoolName('')
+      setRoomCampusName('')
       const fileInput = document.getElementById('roomFile') as HTMLInputElement
       if (fileInput) fileInput.value = ''
     } catch (err: any) {
@@ -470,10 +515,10 @@ export default function UploadCSVPage(): JSX.Element {
     }
   }
 
-  // Upload Class Schedules
+  // Upload Degree Program Courses
   const handleClassUpload = async () => {
-    if (!classFile || !classBatchName) {
-      setClassError('Please provide batch name and choose a file.')
+    if (!classFile || !degreeProgramName) {
+      setClassError('Please provide College & Degree Program name and choose a file.')
       return
     }
 
@@ -490,8 +535,7 @@ export default function UploadCSVPage(): JSX.Element {
       }
 
       const dataRows = rows.slice(1)
-      const headers = rows[0]
-      const version = detectCSVVersion(headers)
+      const headers = rows[0].map(h => h.toLowerCase().replace(/[_\s-]/g, ''))
 
       // Get the next upload_group_id for class schedules
       const { data: maxGroupData } = await supabase
@@ -502,37 +546,82 @@ export default function UploadCSVPage(): JSX.Element {
       
       const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
 
-      // Parse based on detected format version
+      // Map headers to indices for new Degree Program format
+      const getIndex = (names: string[]): number => {
+        return headers.findIndex(h => names.some(n => h.includes(n)))
+      }
+
+      const degreeProgramIdx = getIndex(['degreeprogram', 'program'])
+      const yearLevelIdx = getIndex(['yearlevel', 'year'])
+      const semesterIdx = getIndex(['semester'])
+      const gradeIdx = getIndex(['grade'])
+      const courseCodeIdx = getIndex(['coursecode', 'code'])
+      const descriptiveTitleIdx = getIndex(['descriptivetitle', 'title', 'coursename'])
+      const labUnitsIdx = getIndex(['labunits', 'labunit'])
+      const labHoursIdx = getIndex(['labhours', 'labhour'])
+      const lecHoursIdx = getIndex(['lechours', 'lecturehours', 'lechour'])
+      const prerequisiteIdx = getIndex(['prerequisite', 'prereq'])
+
+      // Check if this is the new Degree Program format
+      const isDegreeProgramFormat = degreeProgramIdx >= 0 || (courseCodeIdx >= 0 && descriptiveTitleIdx >= 0)
+
       let classData: any[] = []
       
-      if (version === 'v2') {
-        // NEW v2 format: class_id | course_code | course_name | section | subject_code | subject_name | size | duration | room_req | year_level | semester | academic_year
-        classData = dataRows.map(row => ({
-          upload_group_id: nextGroupId,
-          course_code: row[1] || '',
-          course_name: row[2] || '',
-          section: row[3] || '',
-          year_level: parseInt(row[9]) || parseInt(row[3]?.charAt(0)) || 1,
-          student_count: parseInt(row[6]) || 30,
-          lec_units: row[8]?.toLowerCase() === 'lecture' ? 3 : 0,
-          lab_units: row[8]?.toLowerCase() === 'lab' || row[8]?.toLowerCase() === 'computerlab' ? 3 : 0,
-          credit_units: 3,
-          lec_hours: parseInt(row[7]) || 3,
-          lab_hours: row[8]?.toLowerCase().includes('lab') ? parseInt(row[7]) || 3 : 0,
-          schedule_day: '', // Will be assigned by scheduler
-          schedule_time: '', // Will be assigned by scheduler
-          semester: row[10] || '1st Semester',
-          academic_year: row[11] || '2025-2026',
-          department: row[2]?.substring(0, 50) || '',
-          college: classBatchName,
-          status: 'pending',
-          file_name: classFile.name,
-          // NEW v2 fields
-          class_id: row[0] || '',
-          subject_code: row[4] || '',
-          subject_name: row[5] || '',
-          room_req: row[8] || 'Lecture'
-        }))
+      // Helper function to convert text year level to integer
+      const parseYearLevel = (yearStr: string): number => {
+        if (!yearStr) return 1
+        const trimmed = yearStr.trim().toLowerCase()
+        // Handle text format: "First Year", "Second Year", etc.
+        if (trimmed.includes('first') || trimmed === '1st year' || trimmed === '1') return 1
+        if (trimmed.includes('second') || trimmed === '2nd year' || trimmed === '2') return 2
+        if (trimmed.includes('third') || trimmed === '3rd year' || trimmed === '3') return 3
+        if (trimmed.includes('fourth') || trimmed === '4th year' || trimmed === '4') return 4
+        // Try to parse as integer
+        const parsed = parseInt(trimmed)
+        return !isNaN(parsed) && parsed >= 1 && parsed <= 4 ? parsed : 1
+      }
+
+      if (isDegreeProgramFormat) {
+        // NEW Degree Program format: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite
+        classData = dataRows.map(row => {
+          const degreeProgram = degreeProgramIdx >= 0 ? (row[degreeProgramIdx]?.trim() || '') : ''
+          const yearLevelRaw = yearLevelIdx >= 0 ? row[yearLevelIdx]?.trim() || '' : ''
+          const yearLevel = parseYearLevel(yearLevelRaw)
+          const semester = semesterIdx >= 0 ? (row[semesterIdx]?.trim() || '1st Semester') : '1st Semester'
+          const grade = gradeIdx >= 0 ? (row[gradeIdx]?.trim() || '') : ''
+          const courseCode = courseCodeIdx >= 0 ? (row[courseCodeIdx]?.trim() || '') : (row[0]?.trim() || '')
+          const descriptiveTitle = descriptiveTitleIdx >= 0 ? (row[descriptiveTitleIdx]?.trim() || '') : (row[1]?.trim() || '')
+          const labUnits = labUnitsIdx >= 0 ? parseInt(row[labUnitsIdx]?.trim()) || 0 : 0
+          const labHours = labHoursIdx >= 0 ? parseInt(row[labHoursIdx]?.trim()) || 0 : 0
+          const lecHours = lecHoursIdx >= 0 ? parseInt(row[lecHoursIdx]?.trim()) || 3 : 3
+          const prerequisite = prerequisiteIdx >= 0 ? (row[prerequisiteIdx]?.trim() || 'None') : 'None'
+
+          return {
+            upload_group_id: nextGroupId,
+            course_code: courseCode,
+            course_name: descriptiveTitle,
+            section: `${yearLevel}A`, // Default section based on year level
+            year_level: yearLevel,
+            student_count: 30, // Default
+            lec_units: lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3,
+            lab_units: labUnits,
+            credit_units: (lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3) + labUnits,
+            lec_hours: lecHours,
+            lab_hours: labHours,
+            schedule_day: '', // Will be assigned by scheduler
+            schedule_time: '', // Will be assigned by scheduler
+            semester: semester,
+            academic_year: '2025-2026',
+            department: degreeProgram,
+            college: degreeProgramName,
+            status: 'pending',
+            file_name: classFile.name,
+            // Additional fields
+            degree_program: degreeProgram,
+            prerequisite: prerequisite,
+            grade: grade
+          }
+        }).filter(item => item.course_code) // Filter out empty rows
       } else {
         // LEGACY formats
         classData = dataRows.map(row => {
@@ -558,7 +647,7 @@ export default function UploadCSVPage(): JSX.Element {
               semester: row[12] || '1st Semester',
               academic_year: row[13] || '2025-2026',
               department: row[14] || '',
-              college: classBatchName,
+              college: degreeProgramName,
               status: row[16] || 'pending',
               file_name: classFile.name
             }
@@ -581,7 +670,7 @@ export default function UploadCSVPage(): JSX.Element {
               semester: row[11] || '1st Semester',
               academic_year: row[12] || '2025-2026',
               department: row[13] || '',
-              college: classBatchName,
+              college: degreeProgramName,
               status: row[15] || 'pending',
               file_name: classFile.name
             }
@@ -603,7 +692,7 @@ export default function UploadCSVPage(): JSX.Element {
               semester: row[10] || '1st Semester',
               academic_year: row[11] || '2025-2026',
               department: row[12] || '',
-              college: classBatchName,
+              college: degreeProgramName,
               status: row[14] || 'pending',
               file_name: classFile.name
             }
@@ -623,14 +712,14 @@ export default function UploadCSVPage(): JSX.Element {
       }
 
       setClassMessage(
-        `✅ Class Schedule uploaded successfully!\n` +
-        `Batch: ${classBatchName}\n` +
+        `✅ Degree Program Courses uploaded successfully!\n` +
+        `College & Program: ${degreeProgramName}\n` +
         `File: ${classFile.name}\n` +
-        `Rows: ${classData.length}`
+        `Courses: ${classData.length}`
       )
       
       setClassFile(null)
-      setClassBatchName('')
+      setDegreeProgramName('')
       const fileInput = document.getElementById('classFile') as HTMLInputElement
       if (fileInput) fileInput.value = ''
     } catch (err: any) {
@@ -827,12 +916,12 @@ export default function UploadCSVPage(): JSX.Element {
       }, {})
 
       setFacultyMessage(
-        `✅ Faculty Profiles uploaded successfully!\n` +
+        `Faculty Profiles uploaded successfully!\n` +
         `College: ${facultyCollegeName}\n` +
         `File: ${facultyFile.name}\n` +
         `Total: ${facultyData.length} profiles\n` +
         `Breakdown:\n` +
-        Object.entries(typeCounts).map(([role, count]) => `  • ${role}: ${count}`).join('\n')
+        Object.entries(typeCounts).map(([role, count]) => `  - ${role}: ${count}`).join('\n')
       )
       
       setFacultyFile(null)
@@ -847,148 +936,6 @@ export default function UploadCSVPage(): JSX.Element {
     }
   }
 
-  // ==================== Image OCR Functions ====================
-  
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
-    
-    const imageArray = Array.from(files).filter(file => 
-      file.type.startsWith('image/') || 
-      file.name.toLowerCase().match(/\.(png|jpg|jpeg|gif|bmp|webp)$/)
-    )
-    
-    setImageFiles(imageArray)
-    setExtractedCSV(null)
-    setImageProgress('')
-  }
-
-  const processImagesWithOCR = async () => {
-    if (imageFiles.length === 0) return
-    
-    setImageProcessing(true)
-    setImageProgress('🔄 Initializing AI-powered OCR analysis...')
-    setExtractedCSV(null)
-    
-    const TIMEOUT_MS = 5 * 60 * 1000
-    
-    try {
-      const allExtractedText: string[] = []
-      
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i]
-        setImageProgress(`📷 Processing image ${i + 1} of ${imageFiles.length}: ${file.name}`)
-        
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = (e) => resolve(e.target?.result as string)
-          reader.readAsDataURL(file)
-        })
-        
-        const ocrPromise = Tesseract.recognize(dataUrl, 'eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              const percent = Math.round(m.progress * 100)
-              setImageProgress(`🧠 Analyzing ${file.name}: ${percent}%`)
-            }
-          }
-        })
-        
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`OCR timeout: ${file.name}`)), TIMEOUT_MS)
-        })
-        
-        try {
-          const result = await Promise.race([ocrPromise, timeoutPromise])
-          allExtractedText.push(result.data.text)
-        } catch (timeoutErr: any) {
-          console.warn(`⚠️ ${file.name} timed out`)
-          continue
-        }
-      }
-      
-      setImageProgress('🤖 Extracting schedule data...')
-      
-      const combinedText = allExtractedText.join('\n\n--- NEW IMAGE ---\n\n')
-      const parsedData = parseExtractedText(combinedText, imageUploadType)
-      
-      let csvContent = ''
-      if (imageUploadType === 'class') {
-        csvContent = 'Class Section | Course Code | Course Name | LEC Unit | LAB Unit | Credit Unit | LEC Hr | LAB Hr | Section | Schedule(Day) | Schedule(Time)\n'
-      } else {
-        csvContent = "Teacher's ID | Name | Schedule(Day) | Schedule(Time)\n"
-      }
-      
-      parsedData.forEach(row => {
-        csvContent += row.join(' | ') + '\n'
-      })
-      
-      setExtractedCSV(csvContent)
-      setImageProgress(
-        `✅ OCR COMPLETE!\n` +
-        `Images: ${imageFiles.length}\n` +
-        `Entries: ${parsedData.length}\n\n` +
-        (parsedData.length === 0 ? 
-          `⚠️ No data extracted. Check image quality.` :
-          `✅ Data ready! Review and download.`)
-      )
-      
-    } catch (err: any) {
-      console.error('OCR Error:', err)
-      setImageProgress(`❌ Error: ${err.message}`)
-    } finally {
-      setImageProcessing(false)
-    }
-  }
-
-  // Simple text parser for OCR output
-  const parseExtractedText = (text: string, type: 'class' | 'teacher'): string[][] => {
-    const result: string[][] = []
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3)
-    
-    if (type === 'class') {
-      const coursePattern = /([A-Z]{2,4}\s*\d{3,4})/gi
-      for (const line of lines) {
-        const match = line.match(coursePattern)
-        if (match) {
-          result.push([
-            '', // Class Section
-            match[0], // Course Code
-            line.replace(match[0], '').trim().substring(0, 50), // Course Name
-            '3', '0', '3', '3', '0', '', '', '' // Defaults
-          ])
-        }
-      }
-    } else {
-      let idCounter = 1
-      for (const line of lines) {
-        if (line.match(/[A-Za-z]{2,}/)) {
-          result.push([
-            String(2020000000 + idCounter++),
-            line.substring(0, 50),
-            '', ''
-          ])
-        }
-      }
-    }
-    
-    return result
-  }
-
-  const downloadExtractedCSV = () => {
-    if (!extractedCSV) return
-    
-    const blob = new Blob([extractedCSV], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `extracted_${imageUploadType}_schedule_${Date.now()}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
   const handleSkip = () => {
     router.push('/LandingPages/Home')
   }
@@ -998,7 +945,10 @@ export default function UploadCSVPage(): JSX.Element {
       <MenuBar onToggleSidebar={() => {}} showSidebarToggle={false} showAccountIcon={false} />
       
       <div className={styles['page-header-content']}>
-        <h1>📤 Upload CSV Data</h1>
+        <h1>
+          <Upload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
+          Upload CSV Data
+        </h1>
         <h2>Upload Rooms, Class Schedules, and Teacher Schedules for Room Allocation</h2>
       </div>
 
@@ -1009,42 +959,61 @@ export default function UploadCSVPage(): JSX.Element {
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <DoorOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Rooms & Campuses
+              Rooms & Buildings
             </h2>
             
             <div className={styles['format-info']}>
               <h3>
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Expected CSV Format (NEW v2):
+                Expected CSV Format:
               </h3>
-              <p style={{ fontSize: '11px', wordBreak: 'break-word' }}>room_id | capacity | room_type | equipment_bitmask | campus_id | building | floor_number | is_pwd_accessible</p>
+              <p style={{ fontSize: '11px', wordBreak: 'break-word', fontFamily: 'monospace' }}>
+                Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
+              </p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
                 <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: MN-CICT-101 | 40 | ComputerLab | 11111 | MAIN | CICT Building | 1 | true
+                Example: CS-101, Room 101, Science Building, 1, College of Science, Lecture Room, Standard Classroom, 40, true, true, false
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
                 <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Equipment Bitmask:</strong> <span style={{ color: 'var(--text-dark)' }}>5 bits: Projector|AC|Whiteboard|Computers|LabEquip (e.g., 11110 = all except lab equipment)</span>
+                <strong style={{ color: '#1e40af' }}>Room Types:</strong> <span style={{ color: 'var(--text-dark)' }}>Lecture Room, Laboratory, Computer Lab, Conference Room, Auditorium, etc.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '4px', fontSize: '12px' }}>
                 <AlertTriangle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
-                <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>School Name is entered above, not in CSV. Use pipe (|) separator. Legacy format also supported.</span>
+                <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
               </div>
             </div>
 
-            <div className={styles['form-group']}>
-              <label className={styles['label']}>
-                <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                School Name
-                <input
-                  type="text"
-                  value={roomSchoolName}
-                  onChange={(e) => setRoomSchoolName(e.target.value)}
-                  className={styles['input']}
-                  placeholder="e.g., University of the Philippines"
-                  required
-                />
-              </label>
+            <div className={styles['form-row']}>
+              <div className={styles['form-group']}>
+                <label className={styles['label']}>
+                  <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                  School Name
+                  <input
+                    type="text"
+                    value={roomSchoolName}
+                    onChange={(e) => setRoomSchoolName(e.target.value)}
+                    className={styles['input']}
+                    placeholder="e.g., University of the Philippines"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className={styles['form-group']}>
+                <label className={styles['label']}>
+                  <Landmark size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                  Campus Name
+                  <input
+                    type="text"
+                    value={roomCampusName}
+                    onChange={(e) => setRoomCampusName(e.target.value)}
+                    className={styles['input']}
+                    placeholder="e.g., Main Campus, Diliman Campus"
+                    required
+                  />
+                </label>
+              </div>
             </div>
 
             <div className={styles['form-group']}>
@@ -1070,7 +1039,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <button
               onClick={handleRoomUpload}
-              disabled={roomLoading || !roomFile || !roomSchoolName}
+              disabled={roomLoading || !roomFile || !roomSchoolName || !roomCampusName}
               className={styles['upload-button']}
             >
               <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
@@ -1091,11 +1060,11 @@ export default function UploadCSVPage(): JSX.Element {
             )}
           </div>
 
-          {/* ==================== CLASS SCHEDULES UPLOAD ==================== */}
+          {/* ==================== DEGREE PROGRAM SECTION UPLOAD ==================== */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <BookOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Class Schedules
+              Degree Program Section
             </h2>
             
             <div className={styles['format-info']}>
@@ -1103,23 +1072,27 @@ export default function UploadCSVPage(): JSX.Element {
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
-              <p style={{ fontSize: '11px', wordBreak: 'break-word' }}>course_code | course_name | section | lec_units | lab_units | credit_units | lec_hours | lab_hours | schedule_day | schedule_time | semester | academic_year | department | college | status</p>
+              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
                 <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: CS101 | Intro to Programming | A | 3 | 0 | 3 | 3 | 0 | Monday | 7:00-8:30 | 1st Semester | 2025-2026 | Computer Science | College of Science | pending
+                Example: BS Biology, 1, 1st Semester, 1.0, BIO 101, General Biology, 1, 3, 2, None
               </small>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
+                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <strong style={{ color: '#1e40af' }}>Degree Programs:</strong> <span style={{ color: 'var(--text-dark)' }}>BS Biology, BS Mathematics, BS Computer Science, BS Chemistry, BS Physics, etc.</span>
+              </div>
             </div>
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
                 <GraduationCap size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Batch/Semester Name
+                College & Degree Program
                 <input
                   type="text"
-                  value={classBatchName}
-                  onChange={(e) => setClassBatchName(e.target.value)}
+                  value={degreeProgramName}
+                  onChange={(e) => setDegreeProgramName(e.target.value)}
                   className={styles['input']}
-                  placeholder="e.g., 2025-2026 First Semester"
+                  placeholder="e.g., College of Science - BS Biology"
                   required
                 />
               </label>
@@ -1148,11 +1121,11 @@ export default function UploadCSVPage(): JSX.Element {
 
             <button
               onClick={handleClassUpload}
-              disabled={classLoading || !classFile || !classBatchName}
+              disabled={classLoading || !classFile || !degreeProgramName}
               className={styles['upload-button']}
             >
               <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-              {classLoading ? 'Uploading...' : 'Upload Class Schedule CSV'}
+              {classLoading ? 'Uploading...' : 'Upload Degree Program CSV'}
             </button>
 
             {classMessage && (
@@ -1251,7 +1224,7 @@ export default function UploadCSVPage(): JSX.Element {
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <GraduationCap size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              👔 Faculty Profiles (Officials & Staff)
+              Faculty Profiles (Officials & Staff)
             </h2>
             
             <div className={styles['format-info']}>
@@ -1334,122 +1307,6 @@ export default function UploadCSVPage(): JSX.Element {
               <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
                 <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {facultyError}
-              </div>
-            )}
-          </div>
-
-          {/* ==================== IMAGE OCR UPLOAD ==================== */}
-          <div className={styles['upload-card']}>
-            <h2 className={styles['section-title']}>
-              <ImageIcon size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Scan Images (OCR)
-            </h2>
-            
-            <div className={styles['format-info']}>
-              <h3>
-                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Image Upload Feature
-              </h3>
-              <p style={{ fontSize: '13px' }}>
-                Upload images of schedule timetables and we'll extract the data using OCR.
-              </p>
-              <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                Supported: PNG, JPG, JPEG, GIF, BMP, WebP
-              </small>
-            </div>
-
-            <div className={styles['form-group']}>
-              <label className={styles['label']}>
-                Schedule Type:
-                <select
-                  value={imageUploadType}
-                  onChange={(e) => setImageUploadType(e.target.value as 'class' | 'teacher')}
-                  className={styles['input']}
-                  style={{ marginTop: '6px', cursor: 'pointer' }}
-                >
-                  <option value="class">Class Schedule</option>
-                  <option value="teacher">Teacher Schedule</option>
-                </select>
-              </label>
-            </div>
-
-            <div className={styles['form-group']}>
-              <label className={styles['label']}>
-                <FolderOpen size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Select Images
-                <input
-                  ref={imageFolderInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageSelect}
-                  className={styles['file-input']}
-                />
-              </label>
-              {imageFiles.length > 0 && (
-                <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  {imageFiles.length} image(s) selected
-                </small>
-              )}
-            </div>
-
-            <button
-              onClick={processImagesWithOCR}
-              disabled={imageProcessing || imageFiles.length === 0}
-              className={styles['upload-button']}
-              style={{ 
-                background: imageProcessing 
-                  ? 'linear-gradient(135deg, #6b7280, #9ca3af)' 
-                  : 'linear-gradient(135deg, #7c3aed, #a855f7)'
-              }}
-            >
-              {imageProcessing ? (
-                <>
-                  <Loader2 size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', animation: 'spin 1s linear infinite' }} />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ImageIcon size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                  Scan Images (OCR)
-                </>
-              )}
-            </button>
-
-            {imageProgress && (
-              <div className={`${styles['message']} ${imageProgress.includes('❌') ? styles['error'] : styles['success']}`}>
-                {imageProgress}
-              </div>
-            )}
-
-            {extractedCSV && (
-              <div style={{ marginTop: '16px' }}>
-                <h4 style={{ marginBottom: '8px', color: 'var(--text-dark)', fontWeight: '600' }}>
-                  <FileSpreadsheet size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Extracted CSV (Editable):
-                </h4>
-                <textarea
-                  value={extractedCSV}
-                  onChange={(e) => setExtractedCSV(e.target.value)}
-                  className={styles['input']}
-                  style={{ 
-                    height: '200px', 
-                    fontFamily: 'monospace', 
-                    fontSize: '11px',
-                    resize: 'vertical',
-                    lineHeight: '1.5',
-                    whiteSpace: 'pre'
-                  }}
-                />
-                <button
-                  onClick={downloadExtractedCSV}
-                  className={styles['upload-button']}
-                  style={{ marginTop: '12px', background: 'linear-gradient(135deg, #059669, #10b981)' }}
-                >
-                  <Download size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                  Download as CSV
-                </button>
               </div>
             )}
           </div>

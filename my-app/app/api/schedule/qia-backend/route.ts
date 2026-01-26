@@ -138,32 +138,38 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
     return {
       class_id: entry.section_id,
       room_id: entry.room_id,
-      course_code: classData?.course_code || 'N/A',
-      course_name: classData?.course_name || 'N/A',
-      section: classData?.section || 'N/A',
-      year_level: classData?.year_level || parseInt(classData?.section?.charAt(0) || '1') || 1,
+      course_code: entry.course_code || classData?.course_code || 'N/A',
+      course_name: entry.course_name || classData?.course_name || 'N/A',
+      section: entry.section_code || classData?.section || 'N/A',
+      year_level: entry.year_level || classData?.year_level || parseInt(classData?.section?.charAt(0) || '1') || 1,
       schedule_day: entry.day_of_week,
-      schedule_time: entry.time_slot_name || entry.start_time,
-      campus: roomData?.campus || 'N/A',
-      building: roomData?.building || 'N/A',
-      room: roomData?.room || 'N/A',
-      capacity: roomData?.capacity || 0,
-      department: classData?.department || 'N/A',
-      lec_hours: classData?.lec_hours || 0,
-      lab_hours: classData?.lab_hours || 0
+      schedule_time: `${entry.start_time || ''} - ${entry.end_time || ''}`,
+      campus: entry.campus || roomData?.campus || 'N/A',
+      building: entry.building || roomData?.building || 'N/A',
+      room: entry.room_code || entry.room_name || roomData?.room || 'N/A',
+      capacity: entry.capacity || roomData?.capacity || 0,
+      department: entry.department || classData?.department || 'N/A',
+      lec_hours: entry.lec_hours || classData?.lec_hours || 0,
+      lab_hours: entry.lab_hours || classData?.lab_hours || 0
     }
   }) || []
 
+  // Calculate success rate
+  const successRate = backendResult.total_sections > 0 
+    ? (backendResult.scheduled_sections / backendResult.total_sections * 100) 
+    : 0
+
   return {
-    success: backendResult.success,
+    success: backendResult.success || (successRate >= 50), // Consider success if at least 50% scheduled
     schedule_id: backendResult.schedule_id,
     saved_to_database: true,
-    message: backendResult.message,
+    message: backendResult.message || `QIA completed: ${backendResult.scheduled_sections}/${backendResult.total_sections} sections scheduled (${successRate.toFixed(1)}% success rate)`,
     total_classes: backendResult.total_sections,
     scheduled_classes: backendResult.scheduled_sections,
     unscheduled_classes: backendResult.unscheduled_sections,
     unscheduled_list: backendResult.unscheduled_list || [],
     conflicts: backendResult.conflicts || [],
+    success_rate: successRate,
     optimization_stats: {
       initial_cost: backendResult.optimization_stats?.initial_cost || 0,
       final_cost: backendResult.optimization_stats?.final_cost || 0,

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS Medical Technology CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        
+        .program-title {
+            color: #1e3c72;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #1e3c72;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #1e3c72;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 60, 114, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BS Medical Technology Curriculum CSV Generator</h1>
+        <p class="program-title">Bachelor of Science in Medical Technology/Medical Laboratory Science</p>
+        <p class="subtitle">AY 2022-2023 - Convert curriculum data to CSV format</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 10 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // First Year - First Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "STS 101", title: "Science, Technology and Society", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "AAH 101a", title: "Great Books", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "SSP 101a", title: "Religions, Religious Experiences and Spirituality", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "PE 10", title: "Physical Education 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "NSTP 10", title: "National Service Training Program 1", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "MLSCH 102", title: "Inorganic and Organic Chemistry for Medical Laboratory Science", labUnits: "2", labHours: "6", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "First Semester", grade: "", code: "MLSP 102", title: "Principles of Medical Laboratory Science Practice 1 (Introduction to MLS, Lab Safety and Waste Management)", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // First Year - Second Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "MST 101d", title: "Living in the IT Era", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "MLSHAP 102", title: "Human Anatomy and Physiology with Pathophysiology", labUnits: "2", labHours: "6", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "MLSCH 103", title: "Analytical Chemistry for Medical Laboratory Sciences", labUnits: "2", labHours: "6", lecHours: "3", prereq: "MLSCH 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "MLSP 103", title: "Principles of Medical Laboratory Science Practice 2 (Clinical Laboratory Assistance and Phlebotomy)", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MLSP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "PE 11", title: "Physical Education 2", labUnits: "", labHours: "", lecHours: "2", prereq: "PE 10"},
+            {degree: "Bachelor of Science in Medical Technology", year: "First Year", semester: "Second Semester", grade: "", code: "NSTP 11", title: "National Service Training Program 2", labUnits: "", labHours: "", lecHours: "3", prereq: "NSTP 10"},
+            
+            // Second Year - First Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "RLW 101", title: "Life and Works of Rizal", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MLSBE 201", title: "Biostatistics and Epidemiology", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MLSCH 201", title: "Biochemistry for Medical Laboratory Science", labUnits: "2", labHours: "6", lecHours: "3", prereq: "MLSCH 103"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MLSPARA 201", title: "Clinical Parasitology", labUnits: "1", labHours: "3", lecHours: "3", prereq: "MLSHAP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MLSHH 201", title: "Human Histology", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MLSHAP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "MLSLM 201", title: "Laboratory Management", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "First Semester", grade: "", code: "PE 12", title: "Physical Education 3", labUnits: "", labHours: "", lecHours: "2", prereq: "PE 11"},
+            
+            // Second Year - Second Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "PID 101", title: "Pagsasalin Sa Iba't Ibang Disiplina", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSPST 201", title: "Principles and Strategies of Teaching in Medical Laboratory Science", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSHIS 202", title: "Health Information System for Medical Laboratory Science", labUnits: "1", labHours: "3", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSCY 201", title: "Cytogenetics", labUnits: "", labHours: "", lecHours: "2", prereq: "MLSHAP 102, MLSCH 201"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSCM 201", title: "Analysis of Urine and Body Fluids", labUnits: "1", labHours: "3", lecHours: "3", prereq: "MLSHAP 102, MLSCH 201"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSCPH 201", title: "Community and Public Health for Medical Laboratory Science", labUnits: "2", labHours: "6", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "MLSMTL 201", title: "Medical Technology Laws and Bioethics", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Second Year", semester: "Second Semester", grade: "", code: "PE 13", title: "Physical Education 4", labUnits: "", labHours: "", lecHours: "2", prereq: "PE 12"},
+            
+            // Third Year - First Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSIS 301", title: "Immunology and Serology", labUnits: "1", labHours: "3", lecHours: "3", prereq: "MLSCH 201"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSCC 301", title: "Clinical Chemistry 1", labUnits: "2", labHours: "6", lecHours: "3", prereq: "MLSCH 201, MLSHAP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSCB 301", title: "Clinical Bacteriology", labUnits: "2", labHours: "6", lecHours: "3", prereq: "MLSCH 201, MLSHAP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSHEMA 301", title: "Hematology 1", labUnits: "1", labHours: "3", lecHours: "3", prereq: "MLSHAP 102"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSHCT 301", title: "Histopathologic and Cytologic Techniques", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MLSHH 201"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "First Semester", grade: "", code: "MLSRES 301", title: "Introduction to Medical Laboratory Science Research", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            
+            // Third Year - Second Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSMBD 301", title: "Molecular Biology and Diagnostics", labUnits: "2", labHours: "6", lecHours: "2", prereq: "MLSCH 201"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSCC 302", title: "Clinical Chemistry 2", labUnits: "2", labHours: "6", lecHours: "3", prereq: "MLSCC 301"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSHEMA 302", title: "Hematology 2", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MLSHEMA 301"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSMV 301", title: "Mycology and Virology", labUnits: "", labHours: "", lecHours: "2", prereq: "MLSCB 301"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSIH 301", title: "Immunohematology", labUnits: "1", labHours: "3", lecHours: "3", prereq: "MLSCH 201, MLSHEMA 301"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Third Year", semester: "Second Semester", grade: "", code: "MLSRES 302", title: "Medical Laboratory Science Research Paper Writing and Presentation", labUnits: "1", labHours: "3", lecHours: "2", prereq: "MLSRES 301"},
+            
+            // Fourth Year - First Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "MLSCI 401", title: "Clinical Internship 1", labUnits: "12", labHours: "36", lecHours: "", prereq: "4th year standing"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "MLSAP 401", title: "Medical Laboratory Assessment Program 1", labUnits: "", labHours: "", lecHours: "2", prereq: ""},
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "First Semester", grade: "", code: "MLSS 401", title: "Seminar 1", labUnits: "", labHours: "", lecHours: "3", prereq: ""},
+            
+            // Fourth Year - Second Semester
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "MLSCI 402", title: "Clinical Internship 2", labUnits: "12", labHours: "36", lecHours: "", prereq: "MLSCI 401"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "MLSAP 402", title: "Medical Laboratory Assessment Program 2", labUnits: "", labHours: "", lecHours: "2", prereq: "MLSAP 401"},
+            {degree: "Bachelor of Science in Medical Technology", year: "Fourth Year", semester: "Second Semester", grade: "", code: "MLSS 402", title: "Seminar 2", labUnits: "", labHours: "", lecHours: "3", prereq: "MLSS 401"}
+        ];
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            curriculumData.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Calculate stats
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 11).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "BS_Medical_Technology_Curriculum_2022-2023.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Calculate initial stats
+        window.onload = function() {
+            const totalCourses = curriculumData.length;
+            let totalUnits = 0;
+            curriculumData.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0;
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+        };
+    </script>
+</body>
+</html>

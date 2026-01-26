@@ -6,38 +6,48 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { 
-  FaCalendar,
-  FaSearch,
-  FaGraduationCap,
-  FaBuilding,
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaTimes,
-  FaSave
-} from 'react-icons/fa'
-import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2 } from 'lucide-react'
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  FileSpreadsheet,
+  AlertTriangle,
+  Trash2,
+  Plus,
+  Edit3,
+  X,
+  Save,
+  Calendar,
+  GraduationCap,
+  Clock,
+  Layers,
+  BookMarked,
+  Filter,
+  Users,
+  ArrowLeft,
+  Search
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 // ==================== Interfaces ====================
-interface ClassSchedule {
+interface Course {
   id: number
   upload_group_id: number
   course_code: string
   course_name: string
-  section: string
   lec_units: number
   lab_units: number
   credit_units: number
-  schedule_day: string
-  schedule_time: string
-  start_time: string | null
-  end_time: string | null
+  lec_hours: number
+  lab_hours: number
   semester: string
   academic_year: string
   department: string
   college: string
-  status: string
+  degree_program: string | null
+  prerequisite: string | null
+  grade: string | null
+  year_level: number
   file_name: string
   created_at: string
 }
@@ -46,47 +56,49 @@ interface UploadGroup {
   upload_group_id: number
   file_name: string
   college: string
-  department: string
   semester: string
   academic_year: string
-  total_classes: number
+  total_courses: number
   created_at: string
+  degree_programs: string[]
 }
 
 interface Stats {
-  totalClasses: number
-  totalDepartments: number
-  totalSections: number
-  totalUnits: number
+  totalCourses: number
+  totalDegreePrograms: number
+  firstYearCourses: number
+  secondYearCourses: number
+  thirdYearCourses: number
+  fourthYearCourses: number
 }
 
 // Form data for creating/editing
-interface ClassFormData {
+interface CourseFormData {
   course_code: string
   course_name: string
-  section: string
-  credit_units: number
-  schedule_day: string
-  schedule_time: string
+  lec_units: number
+  lab_units: number
+  lec_hours: number
+  lab_hours: number
   semester: string
-  academic_year: string
+  year_level: number
   department: string
   college: string
-  status: string
+  prerequisite: string
 }
 
-const emptyFormData: ClassFormData = {
+const emptyFormData: CourseFormData = {
   course_code: '',
   course_name: '',
-  section: '',
-  credit_units: 0,
-  schedule_day: 'Monday',
-  schedule_time: '',
-  semester: '1st Semester',
-  academic_year: '2025-2026',
+  lec_units: 3,
+  lab_units: 0,
+  lec_hours: 3,
+  lab_hours: 0,
+  semester: 'First Semester',
+  year_level: 1,
   department: '',
   college: '',
-  status: 'active'
+  prerequisite: 'None'
 }
 
 // ==================== Helper Functions ====================
@@ -132,44 +144,43 @@ async function fetchAllRows<T = Record<string, unknown>>(
 }
 
 // ==================== Main Component ====================
-function ClassSchedulesContent() {
+function CoursesManagementContent() {
   const router = useRouter()
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
-  const [classSchedules, setClassSchedules] = useState<ClassSchedule[]>([])
-  const [filteredSchedules, setFilteredSchedules] = useState<ClassSchedule[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [viewMode, setViewMode] = useState<'selection' | 'list'>('selection')
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterDay, setFilterDay] = useState<string>('all')
-  const [filterDepartment, setFilterDepartment] = useState<string>('all')
-  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set())
+  const [filterSemester, setFilterSemester] = useState<string>('all')
+  const [filterYearLevel, setFilterYearLevel] = useState<string>('all')
+  const [filterDegreeProgram, setFilterDegreeProgram] = useState<string>('all')
+  const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set())
+  const [expandedYearLevels, setExpandedYearLevels] = useState<Set<string>>(new Set())
   const [stats, setStats] = useState<Stats>({
-    totalClasses: 0,
-    totalDepartments: 0,
-    totalSections: 0,
-    totalUnits: 0
+    totalCourses: 0,
+    totalDegreePrograms: 0,
+    firstYearCourses: 0,
+    secondYearCourses: 0,
+    thirdYearCourses: 0,
+    fourthYearCourses: 0
   })
 
   // CRUD Modal States
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
-  const [formData, setFormData] = useState<ClassFormData>(emptyFormData)
+  const [formData, setFormData] = useState<CourseFormData>(emptyFormData)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<number | null>(null)
 
-  // Days of the week
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  const timeSlots = [
-    '7:00-8:30', '8:30-10:00', '10:00-11:30', '11:30-13:00',
-    '13:00-14:30', '14:30-16:00', '16:00-17:30', '17:30-19:00', '19:00-20:30'
-  ]
-  const statuses = ['active', 'pending', 'cancelled', 'completed']
-  const semesters = ['1st Semester', '2nd Semester', 'Summer']
+  // Options
+  const semesters = ['First Semester', 'Second Semester', 'Summer']
+  const yearLevels = [1, 2, 3, 4]
 
   // Effects
   useEffect(() => {
@@ -198,34 +209,39 @@ function ClassSchedulesContent() {
   }
 
   useEffect(() => {
-    filterSchedules()
+    filterCourses()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterDay, filterDepartment, classSchedules])
+  }, [searchTerm, filterSemester, filterYearLevel, filterDegreeProgram, courses])
 
   // Fetch upload groups
   const fetchUploadGroups = async () => {
     setLoading(true)
     try {
-      const schedules = await fetchAllRows<ClassSchedule>('class_schedules', {}, 'created_at')
+      const coursesList = await fetchAllRows<Course>('class_schedules', {}, 'created_at')
       
       // Group by upload_group_id
       const groupMap = new Map<number, UploadGroup>()
       
-      schedules.forEach(schedule => {
-        if (!groupMap.has(schedule.upload_group_id)) {
-          groupMap.set(schedule.upload_group_id, {
-            upload_group_id: schedule.upload_group_id,
-            file_name: schedule.file_name || '',
-            college: schedule.college || '', // Shows exact name from UploadCSV batch name input
-            department: schedule.department || '',
-            semester: schedule.semester || '',
-            academic_year: schedule.academic_year || '',
-            total_classes: 0,
-            created_at: schedule.created_at
+      coursesList.forEach(course => {
+        if (!groupMap.has(course.upload_group_id)) {
+          groupMap.set(course.upload_group_id, {
+            upload_group_id: course.upload_group_id,
+            file_name: course.file_name || '',
+            college: course.college || '',
+            semester: course.semester || '',
+            academic_year: course.academic_year || '',
+            total_courses: 0,
+            created_at: course.created_at,
+            degree_programs: []
           })
         }
-        const group = groupMap.get(schedule.upload_group_id)!
-        group.total_classes++
+        const group = groupMap.get(course.upload_group_id)!
+        group.total_courses++
+        
+        // Collect unique degree programs
+        if (course.degree_program && !group.degree_programs.includes(course.degree_program)) {
+          group.degree_programs.push(course.degree_program)
+        }
       })
 
       const groups = Array.from(groupMap.values()).sort((a, b) => 
@@ -240,155 +256,169 @@ function ClassSchedulesContent() {
     }
   }
 
-  // Fetch class schedules for a group
-  const fetchClassSchedules = async (groupId: number) => {
+  // Fetch courses for a group
+  const fetchCourses = async (groupId: number) => {
     setLoading(true)
     try {
-      const schedules = await fetchAllRows<ClassSchedule>('class_schedules', {
+      const coursesList = await fetchAllRows<Course>('class_schedules', {
         upload_group_id: groupId
       }, 'course_code')
 
-      setClassSchedules(schedules)
-      setFilteredSchedules(schedules)
-      calculateStats(schedules)
+      setCourses(coursesList)
+      setFilteredCourses(coursesList)
+      calculateStats(coursesList)
       setViewMode('list')
     } catch (error) {
-      console.error('Error fetching class schedules:', error)
+      console.error('Error fetching courses:', error)
     } finally {
       setLoading(false)
     }
   }
 
   // Calculate stats
-  const calculateStats = (schedules: ClassSchedule[]) => {
-    const departments = new Set(schedules.map(s => s.department).filter(Boolean))
-    const sections = new Set(schedules.map(s => `${s.course_code}-${s.section}`))
-    const totalUnits = schedules.reduce((sum, s) => sum + (s.credit_units || 0), 0)
+  const calculateStats = (coursesList: Course[]) => {
+    const degreePrograms = new Set(coursesList.map(c => c.degree_program).filter(Boolean))
+    const firstYear = coursesList.filter(c => c.year_level === 1).length
+    const secondYear = coursesList.filter(c => c.year_level === 2).length
+    const thirdYear = coursesList.filter(c => c.year_level === 3).length
+    const fourthYear = coursesList.filter(c => c.year_level === 4).length
 
     setStats({
-      totalClasses: schedules.length,
-      totalDepartments: departments.size,
-      totalSections: sections.size,
-      totalUnits
+      totalCourses: coursesList.length,
+      totalDegreePrograms: degreePrograms.size,
+      firstYearCourses: firstYear,
+      secondYearCourses: secondYear,
+      thirdYearCourses: thirdYear,
+      fourthYearCourses: fourthYear
     })
 
-    // Expand all departments by default
-    setExpandedDepartments(departments)
+    // Expand all programs by default
+    setExpandedPrograms(degreePrograms as Set<string>)
+    
+    // Expand all year levels by default
+    const yearLevelKeys = new Set(['1st Year', '2nd Year', '3rd Year', '4th Year'])
+    setExpandedYearLevels(yearLevelKeys)
   }
 
-  // Filter schedules
-  const filterSchedules = () => {
-    let filtered = [...classSchedules]
+  // Filter courses
+  const filterCourses = () => {
+    let filtered = [...courses]
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s =>
-        s.course_code?.toLowerCase().includes(term) ||
-        s.course_name?.toLowerCase().includes(term) ||
-        s.section?.toLowerCase().includes(term) ||
-        s.department?.toLowerCase().includes(term)
+      filtered = filtered.filter(c =>
+        c.course_code?.toLowerCase().includes(term) ||
+        c.course_name?.toLowerCase().includes(term) ||
+        c.degree_program?.toLowerCase().includes(term)
       )
     }
 
-    if (filterDay !== 'all') {
-      filtered = filtered.filter(s => 
-        s.schedule_day?.toLowerCase().includes(filterDay.toLowerCase())
-      )
+    if (filterSemester !== 'all') {
+      filtered = filtered.filter(c => c.semester === filterSemester)
     }
 
-    if (filterDepartment !== 'all') {
-      filtered = filtered.filter(s => s.department === filterDepartment)
+    if (filterYearLevel !== 'all') {
+      filtered = filtered.filter(c => c.year_level === parseInt(filterYearLevel))
     }
 
-    setFilteredSchedules(filtered)
+    if (filterDegreeProgram !== 'all') {
+      filtered = filtered.filter(c => c.degree_program === filterDegreeProgram)
+    }
+
+    setFilteredCourses(filtered)
   }
 
-  // Toggle department expansion
-  const toggleDepartment = (dept: string) => {
-    setExpandedDepartments(prev => {
+  // Toggle program expansion
+  const toggleProgram = (program: string) => {
+    setExpandedPrograms(prev => {
       const next = new Set(prev)
-      if (next.has(dept)) {
-        next.delete(dept)
+      if (next.has(program)) {
+        next.delete(program)
       } else {
-        next.add(dept)
+        next.add(program)
       }
       return next
     })
   }
 
-  // Get unique departments
-  const getDepartments = () => {
-    return [...new Set(classSchedules.map(s => s.department).filter(Boolean))]
-  }
-
-  // Format time from 24-hour to 12-hour AM/PM format
-  const formatTimeToAMPM = (time24: string): string => {
-    if (!time24) return time24
-    
-    // Handle time ranges like "10:00-11:30" or "13:00-14:30"
-    if (time24.includes('-')) {
-      const [start, end] = time24.split('-')
-      return `${convertTo12Hour(start.trim())} - ${convertTo12Hour(end.trim())}`
-    }
-    
-    return convertTo12Hour(time24)
-  }
-
-  const convertTo12Hour = (time: string): string => {
-    const [hourStr, minuteStr] = time.split(':')
-    let hour = parseInt(hourStr)
-    const minute = minuteStr || '00'
-    
-    if (isNaN(hour)) return time
-    
-    const period = hour >= 12 ? 'PM' : 'AM'
-    hour = hour % 12 || 12 // Convert 0 to 12 for midnight, keep 12 for noon
-    
-    return `${hour}:${minute} ${period}`
-  }
-
-  // Group schedules by department
-  const getSchedulesByDepartment = () => {
-    const grouped = new Map<string, ClassSchedule[]>()
-    
-    filteredSchedules.forEach(schedule => {
-      const dept = schedule.department || 'Unassigned'
-      if (!grouped.has(dept)) {
-        grouped.set(dept, [])
+  // Toggle year level expansion
+  const toggleYearLevel = (yearKey: string) => {
+    setExpandedYearLevels(prev => {
+      const next = new Set(prev)
+      if (next.has(yearKey)) {
+        next.delete(yearKey)
+      } else {
+        next.add(yearKey)
       }
-      grouped.get(dept)!.push(schedule)
+      return next
+    })
+  }
+
+  // Get unique degree programs
+  const getDegreePrograms = () => {
+    return [...new Set(courses.map(c => c.degree_program).filter(Boolean))] as string[]
+  }
+
+  // Get year level label
+  const getYearLevelLabel = (year: number): string => {
+    const labels: Record<number, string> = {
+      1: '1st Year',
+      2: '2nd Year',
+      3: '3rd Year',
+      4: '4th Year'
+    }
+    return labels[year] || `Year ${year}`
+  }
+
+  // Group courses by degree program and year level
+  const getCoursesByProgramAndYear = () => {
+    const grouped = new Map<string, Map<number, Course[]>>()
+    
+    filteredCourses.forEach(course => {
+      const program = course.degree_program || 'Unassigned'
+      const year = course.year_level || 1
+      
+      if (!grouped.has(program)) {
+        grouped.set(program, new Map())
+      }
+      const programMap = grouped.get(program)!
+      
+      if (!programMap.has(year)) {
+        programMap.set(year, [])
+      }
+      programMap.get(year)!.push(course)
     })
 
     return grouped
+  }
+
+  // Format date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   // Handle back to selection
   const handleBackToSelection = () => {
     setViewMode('selection')
     setSelectedGroupId(null)
-    setClassSchedules([])
-    setFilteredSchedules([])
+    setCourses([])
+    setFilteredCourses([])
     setSearchTerm('')
-    setFilterDay('all')
-    setFilterDepartment('all')
+    setFilterSemester('all')
+    setFilterYearLevel('all')
+    setFilterDegreeProgram('all')
     fetchUploadGroups() // Refresh groups
   }
 
   // Handle group select
   const handleGroupSelect = (groupId: number) => {
     setSelectedGroupId(groupId)
-    fetchClassSchedules(groupId)
-  }
-
-  // Get status badge color
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'active': return '#38a169'
-      case 'pending': return '#dd6b20'
-      case 'cancelled': return '#e53e3e'
-      case 'completed': return '#3182ce'
-      default: return '#718096'
-    }
+    fetchCourses(groupId)
   }
 
   // ==================== CRUD Operations ====================
@@ -399,9 +429,8 @@ function ClassSchedulesContent() {
     setFormData({
       ...emptyFormData,
       college: selectedGroup?.college || '',
-      department: selectedGroup?.department || '',
-      semester: selectedGroup?.semester || '1st Semester',
-      academic_year: selectedGroup?.academic_year || '2025-2026'
+      semester: selectedGroup?.semester || 'First Semester',
+      department: ''
     })
     setModalMode('create')
     setEditingId(null)
@@ -409,22 +438,22 @@ function ClassSchedulesContent() {
   }
 
   // Open edit modal
-  const openEditModal = (schedule: ClassSchedule) => {
+  const openEditModal = (course: Course) => {
     setFormData({
-      course_code: schedule.course_code || '',
-      course_name: schedule.course_name || '',
-      section: schedule.section || '',
-      credit_units: schedule.credit_units || 0,
-      schedule_day: schedule.schedule_day || 'Monday',
-      schedule_time: schedule.schedule_time || '',
-      semester: schedule.semester || '1st Semester',
-      academic_year: schedule.academic_year || '2025-2026',
-      department: schedule.department || '',
-      college: schedule.college || '',
-      status: schedule.status || 'active'
+      course_code: course.course_code || '',
+      course_name: course.course_name || '',
+      lec_units: course.lec_units || 0,
+      lab_units: course.lab_units || 0,
+      lec_hours: course.lec_hours || 0,
+      lab_hours: course.lab_hours || 0,
+      semester: course.semester || 'First Semester',
+      year_level: course.year_level || 1,
+      department: course.department || '',
+      college: course.college || '',
+      prerequisite: course.prerequisite || 'None'
     })
     setModalMode('edit')
-    setEditingId(schedule.id)
+    setEditingId(course.id)
     setShowModal(true)
   }
 
@@ -436,7 +465,7 @@ function ClassSchedulesContent() {
   }
 
   // Handle form input change
-  const handleInputChange = (field: keyof ClassFormData, value: string | number) => {
+  const handleInputChange = (field: keyof CourseFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -449,11 +478,14 @@ function ClassSchedulesContent() {
 
     setSaving(true)
     try {
+      const credit_units = formData.lec_units + formData.lab_units
+
       if (modalMode === 'create') {
-        // Create new class schedule
+        // Create new course
         const newData = {
           upload_group_id: selectedGroupId,
           ...formData,
+          credit_units,
           file_name: 'Manual Entry'
         }
 
@@ -466,56 +498,56 @@ function ClassSchedulesContent() {
 
         // Refresh data
         if (selectedGroupId) {
-          await fetchClassSchedules(selectedGroupId)
+          await fetchCourses(selectedGroupId)
         }
       } else {
-        // Update existing class schedule
+        // Update existing course
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('class_schedules')
-          .update(formData)
+          .update({ ...formData, credit_units })
           .eq('id', editingId)
 
         if (error) throw error
 
         // Update local state
-        setClassSchedules(prev => 
-          prev.map(s => s.id === editingId ? { ...s, ...formData } : s)
+        setCourses(prev => 
+          prev.map(c => c.id === editingId ? { ...c, ...formData, credit_units } : c)
         )
       }
 
       closeModal()
     } catch (error) {
-      console.error('Error saving class schedule:', error)
+      console.error('Error saving course:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  // Delete single class schedule
+  // Delete single course
   const handleDelete = async (id: number) => {
     try {
-      // Find the schedule to archive
-      const scheduleToDelete = classSchedules.find(s => s.id === id)
+      // Find the course to archive
+      const courseToDelete = courses.find(c => c.id === id)
       
-      if (scheduleToDelete) {
-        // Archive the schedule before deleting
+      if (courseToDelete) {
+        // Archive the course before deleting
         try {
           const { data: { user } } = await supabase.auth.getUser()
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any)
             .from('archived_items')
             .insert({
-              item_type: 'schedule',
-              item_name: `${scheduleToDelete.course_code} - ${scheduleToDelete.section}`,
-              item_data: scheduleToDelete,
+              item_type: 'course',
+              item_name: `${courseToDelete.course_code} - ${courseToDelete.course_name}`,
+              item_data: courseToDelete,
               deleted_by: user?.id || null,
               original_table: 'class_schedules',
               original_id: String(id)
             })
         } catch (archiveError) {
-          console.warn('Could not archive schedule (table may not exist):', archiveError)
+          console.warn('Could not archive course (table may not exist):', archiveError)
           // Continue with deletion even if archiving fails
         }
       }
@@ -529,12 +561,12 @@ function ClassSchedulesContent() {
       if (error) throw error
 
       // Update local state
-      const updated = classSchedules.filter(s => s.id !== id)
-      setClassSchedules(updated)
+      const updated = courses.filter(c => c.id !== id)
+      setCourses(updated)
       calculateStats(updated)
       setDeleteConfirm(null)
     } catch (error) {
-      console.error('Error deleting class schedule:', error)
+      console.error('Error deleting course:', error)
       alert('Failed to delete. Please try again.')
     }
   }
@@ -545,10 +577,10 @@ function ClassSchedulesContent() {
       // Find the group info for archiving
       const groupToDelete = uploadGroups.find(g => g.upload_group_id === groupId)
       
-      // Get all schedules for this group for archiving
-      const schedulesToArchive = await fetchAllRows<ClassSchedule>('class_schedules', { upload_group_id: groupId })
+      // Get all courses for this group for archiving
+      const coursesToArchive = await fetchAllRows<Course>('class_schedules', { upload_group_id: groupId })
       
-      if (groupToDelete && schedulesToArchive.length > 0) {
+      if (groupToDelete && coursesToArchive.length > 0) {
         // Archive the group before deleting
         try {
           const { data: { user } } = await supabase.auth.getUser()
@@ -560,7 +592,7 @@ function ClassSchedulesContent() {
               item_name: groupToDelete.file_name || `Upload Group ${groupId}`,
               item_data: {
                 group_info: groupToDelete,
-                schedules: schedulesToArchive
+                courses: coursesToArchive
               },
               deleted_by: user?.id || null,
               original_table: 'class_schedules',
@@ -600,7 +632,7 @@ function ClassSchedulesContent() {
         <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
-            <p>Loading class schedules...</p>
+            <p>Loading courses...</p>
           </div>
         </main>
       </div>
@@ -618,19 +650,64 @@ function ClassSchedulesContent() {
           {/* ==================== Upload Group Selection View ==================== */}
           {viewMode === 'selection' && (
             <>
+              {/* Header with Title and Navigation Tabs */}
               <div className={styles.welcomeSection}>
-                <h1 className={styles.welcomeTitle}>📚 Class Schedules Management</h1>
+                <h1 className={styles.welcomeTitle}>
+                  <BookOpen size={32} style={{ marginRight: '12px' }} />
+                  Courses Management
+                </h1>
                 <p className={styles.welcomeSubtitle}>
-                  View, edit, and manage uploaded class schedules from CSV files
+                  View and manage uploaded course curricula from CSV files
                 </p>
               </div>
 
+              {/* Navigation Tabs */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '24px',
+                borderBottom: '2px solid var(--border-color, #e2e8f0)',
+                paddingBottom: '0'
+              }}>
+                <div style={{
+                  padding: '12px 24px',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  color: 'var(--primary-dark, #276749)',
+                  borderBottom: '3px solid var(--primary-medium, #38a169)',
+                  marginBottom: '-2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <BookMarked size={18} />
+                  Courses
+                </div>
+                <Link href="/LandingPages/CoursesManagement/ClassSectionAssigning" style={{
+                  padding: '12px 24px',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  color: 'var(--text-secondary, #718096)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s ease'
+                }}>
+                  <Users size={18} />
+                  Class & Section Assigning
+                </Link>
+              </div>
+
+              {/* Search Section */}
               <div className={styles.searchSection}>
                 <div className={styles.searchBox}>
-                  <FaSearch className={styles.searchIcon} />
+                  <Search className={styles.searchIcon} size={18} />
                   <input
                     type="text"
-                    placeholder="Search by college, department, or file name..."
+                    placeholder="Search by college, degree program, or file name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={styles.searchInput}
@@ -638,12 +715,13 @@ function ClassSchedulesContent() {
                 </div>
               </div>
 
+              {/* Upload Groups Grid */}
               <div className={styles.schedulesGrid}>
                 {uploadGroups
                   .filter(group => 
                     !searchTerm || 
                     group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    group.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    group.degree_programs?.some(dp => dp.toLowerCase().includes(searchTerm.toLowerCase())) ||
                     group.file_name?.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((group) => (
@@ -657,25 +735,20 @@ function ClassSchedulesContent() {
                         {group.college || `Upload Group #${group.upload_group_id}`}
                       </h3>
                       <span className={styles.scheduleType}>
-                        {group.total_classes} Classes
+                        {group.total_courses} Courses
                       </span>
                     </div>
                     <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
-                      {group.department && (
+                      {group.degree_programs && group.degree_programs.length > 0 && (
                         <div className={styles.scheduleInfo}>
-                          <FaGraduationCap />
-                          <span>{group.department}</span>
+                          <GraduationCap size={16} />
+                          <span>{group.degree_programs.length} Degree Program(s)</span>
                         </div>
                       )}
-                      {(group.semester || group.academic_year) && (
-                        <div className={styles.scheduleInfo}>
-                          <FaCalendar />
-                          <span>{[group.semester, group.academic_year].filter(Boolean).join(' - ')}</span>
-                        </div>
-                      )}
+
                       <div className={styles.scheduleInfo}>
-                        <FileSpreadsheet size={16} />
-                        <span style={{ fontSize: '12px', opacity: 0.8 }}>File: {group.file_name || 'N/A'}</span>
+                        <Clock size={16} />
+                        <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>
                       </div>
                     </div>
                     <div className={styles.scheduleCardFooter}>
@@ -721,7 +794,7 @@ function ClassSchedulesContent() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                             <AlertTriangle size={16} color="#c53030" />
                             <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
-                              Delete all {group.total_classes} classes?
+                              Delete all {group.total_courses} courses?
                             </span>
                           </div>
                           <div style={{ display: 'flex', gap: '8px' }}>
@@ -768,14 +841,14 @@ function ClassSchedulesContent() {
               {uploadGroups.length === 0 && (
                 <div className={styles.emptyState}>
                   <FileSpreadsheet size={64} />
-                  <h3>No Class Schedules Found</h3>
-                  <p>Upload class schedule CSV files from the Upload CSV page to see them here.</p>
+                  <h3>No Courses Found</h3>
+                  <p>Upload course curriculum CSV files from the Upload CSV page to see them here.</p>
                 </div>
               )}
             </>
           )}
 
-          {/* ==================== Class Schedules List View ==================== */}
+          {/* ==================== Courses List View ==================== */}
           {viewMode === 'list' && (
             <>
               {/* Header */}
@@ -784,19 +857,21 @@ function ClassSchedulesContent() {
                   <button 
                     className={styles.backButton}
                     onClick={handleBackToSelection}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
-                    ← Back to Groups
+                    <ArrowLeft size={18} />
+                    Back to Groups
                   </button>
                   <div className={styles.headerInfo}>
                     <h1 className={styles.pageTitle}>
                       <BookOpen size={28} />
-                      {uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.college || 'Class Schedules'}
+                      {uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.college || 'Courses'}
                     </h1>
                     <p className={styles.pageSubtitle}>
                       {[
                         uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.semester,
                         uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.academic_year
-                      ].filter(Boolean).join(' - ')}{stats.totalClasses > 0 ? ` • ${stats.totalClasses} Classes` : ''}
+                      ].filter(Boolean).join(' - ')}{stats.totalCourses > 0 ? ` • ${stats.totalCourses} Courses` : ''}
                     </p>
                   </div>
                 </div>
@@ -817,44 +892,105 @@ function ClassSchedulesContent() {
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  <FaPlus />
-                  Add New Class
+                  <Plus size={18} />
+                  Add New Course
                 </button>
               </div>
 
-              {/* Stats Grid */}
+              {/* Stats Grid - Updated with SVG icons and Year Level Stats */}
               <div className={styles.statsGrid}>
                 <div className={`${styles.statCard} ${styles.blue}`}>
-                  <span className={styles.statIcon}>📚</span>
+                  <div className={styles.statIcon}>
+                    <BookOpen size={24} />
+                  </div>
                   <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Total Classes</span>
-                    <span className={styles.statValue}>{stats.totalClasses}</span>
+                    <span className={styles.statLabel}>Total Courses</span>
+                    <span className={styles.statValue}>{stats.totalCourses}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.green}`}>
-                  <span className={styles.statIcon}>🏢</span>
+                  <div className={styles.statIcon}>
+                    <GraduationCap size={24} />
+                  </div>
                   <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Departments</span>
-                    <span className={styles.statValue}>{stats.totalDepartments}</span>
+                    <span className={styles.statLabel}>Degree Programs</span>
+                    <span className={styles.statValue}>{stats.totalDegreePrograms}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.purple}`}>
-                  <span className={styles.statIcon}>📖</span>
+                  <div className={styles.statIcon}>
+                    <Layers size={24} />
+                  </div>
                   <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Sections</span>
-                    <span className={styles.statValue}>{stats.totalSections}</span>
+                    <span className={styles.statLabel}>1st Year</span>
+                    <span className={styles.statValue}>{stats.firstYearCourses}</span>
                   </div>
                 </div>
                 <div className={`${styles.statCard} ${styles.orange}`}>
-                  <span className={styles.statIcon}>⭐</span>
+                  <div className={styles.statIcon}>
+                    <Layers size={24} />
+                  </div>
                   <div className={styles.statContent}>
-                    <span className={styles.statLabel}>Total Units</span>
-                    <span className={styles.statValue}>{stats.totalUnits}</span>
+                    <span className={styles.statLabel}>2nd Year</span>
+                    <span className={styles.statValue}>{stats.secondYearCourses}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Filters */}
+              {/* Secondary Stats Row */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(2, 1fr)', 
+                gap: '16px', 
+                marginBottom: '24px' 
+              }}>
+                <div style={{
+                  background: 'var(--card-bg, #fff)',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color, #e2e8f0)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{ 
+                    padding: '10px', 
+                    background: 'rgba(99, 102, 241, 0.1)', 
+                    borderRadius: '10px',
+                    color: '#6366f1'
+                  }}>
+                    <Layers size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', fontWeight: 500 }}>3rd Year Courses</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-dark, #1a202c)' }}>{stats.thirdYearCourses}</div>
+                  </div>
+                </div>
+                <div style={{
+                  background: 'var(--card-bg, #fff)',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color, #e2e8f0)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div style={{ 
+                    padding: '10px', 
+                    background: 'rgba(236, 72, 153, 0.1)', 
+                    borderRadius: '10px',
+                    color: '#ec4899'
+                  }}>
+                    <Layers size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', fontWeight: 500 }}>4th Year Courses</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-dark, #1a202c)' }}>{stats.fourthYearCourses}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters - Updated with Semester, Year Level, Degree Program */}
               <div style={{ 
                 display: 'flex', 
                 gap: '16px', 
@@ -863,19 +999,23 @@ function ClassSchedulesContent() {
                 alignItems: 'center'
               }}>
                 <div className={styles.searchBox} style={{ flex: '1', minWidth: '250px' }}>
-                  <FaSearch className={styles.searchIcon} />
+                  <Search className={styles.searchIcon} size={18} />
                   <input
                     type="text"
-                    placeholder="Search by course code, name, or section..."
+                    placeholder="Search by course code or name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={styles.searchInput}
                   />
                 </div>
                 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} style={{ color: 'var(--text-secondary, #718096)' }} />
+                </div>
+
                 <select
-                  value={filterDay}
-                  onChange={(e) => setFilterDay(e.target.value)}
+                  value={filterSemester}
+                  onChange={(e) => setFilterSemester(e.target.value)}
                   style={{
                     padding: '12px 16px',
                     borderRadius: '10px',
@@ -884,18 +1024,19 @@ function ClassSchedulesContent() {
                     fontSize: '14px',
                     fontWeight: 500,
                     cursor: 'pointer',
-                    minWidth: '150px'
+                    minWidth: '150px',
+                    color: 'var(--text-dark, #1a202c)'
                   }}
                 >
-                  <option value="all">All Days</option>
-                  {daysOfWeek.map(day => (
-                    <option key={day} value={day}>{day}</option>
+                  <option value="all">All Semesters</option>
+                  {semesters.map(sem => (
+                    <option key={sem} value={sem}>{sem}</option>
                   ))}
                 </select>
 
                 <select
-                  value={filterDepartment}
-                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  value={filterYearLevel}
+                  onChange={(e) => setFilterYearLevel(e.target.value)}
                   style={{
                     padding: '12px 16px',
                     borderRadius: '10px',
@@ -904,12 +1045,34 @@ function ClassSchedulesContent() {
                     fontSize: '14px',
                     fontWeight: 500,
                     cursor: 'pointer',
-                    minWidth: '180px'
+                    minWidth: '140px',
+                    color: 'var(--text-dark, #1a202c)'
                   }}
                 >
-                  <option value="all">All Departments</option>
-                  {getDepartments().map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
+                  <option value="all">All Year Levels</option>
+                  {yearLevels.map(year => (
+                    <option key={year} value={year}>{getYearLevelLabel(year)}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterDegreeProgram}
+                  onChange={(e) => setFilterDegreeProgram(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--bg-white, #fff)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    minWidth: '200px',
+                    color: 'var(--text-dark, #1a202c)'
+                  }}
+                >
+                  <option value="all">All Degree Programs</option>
+                  {getDegreePrograms().map(program => (
+                    <option key={program} value={program}>{program}</option>
                   ))}
                 </select>
               </div>
@@ -918,24 +1081,28 @@ function ClassSchedulesContent() {
               {loading && (
                 <div className={styles.loadingState}>
                   <div className={styles.spinner}></div>
-                  <p>Loading class schedules...</p>
+                  <p>Loading courses...</p>
                 </div>
               )}
 
-              {/* Schedules by Department */}
+              {/* Courses Grouped by Degree Program and Year Level */}
               {!loading && (
                 <div className={styles.campusView}>
-                  {Array.from(getSchedulesByDepartment().entries()).map(([department, schedules]) => (
-                    <div key={department} className={styles.campusSection}>
+                  {Array.from(getCoursesByProgramAndYear().entries()).map(([program, yearMap]) => (
+                    <div key={program} className={styles.campusSection}>
+                      {/* Degree Program Header */}
                       <div 
                         className={styles.campusHeaderRow}
-                        onClick={() => toggleDepartment(department)}
+                        onClick={() => toggleProgram(program)}
+                        style={{ marginBottom: '12px' }}
                       >
-                        <FaGraduationCap />
-                        <span>{department}</span>
-                        <span className={styles.roomCount}>{schedules.length} classes</span>
+                        <GraduationCap size={20} />
+                        <span style={{ fontWeight: 700, fontSize: '16px' }}>{program}</span>
+                        <span className={styles.roomCount}>
+                          {Array.from(yearMap.values()).reduce((sum, arr) => sum + arr.length, 0)} courses
+                        </span>
                         <button className={styles.toggleBtn}>
-                          {expandedDepartments.has(department) ? (
+                          {expandedPrograms.has(program) ? (
                             <ChevronDown size={20} />
                           ) : (
                             <ChevronRight size={20} />
@@ -943,197 +1110,237 @@ function ClassSchedulesContent() {
                         </button>
                       </div>
 
-                      {expandedDepartments.has(department) && (
-                        <div style={{ marginTop: '16px' }}>
-                          {/* Table Header */}
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '100px 1fr 70px 70px 110px 80px 100px',
-                            gap: '10px',
-                            padding: '12px 16px',
-                            background: 'var(--bg-gray-100, #edf2f7)',
-                            borderRadius: '10px',
-                            fontWeight: 700,
-                            fontSize: '11px',
-                            color: 'var(--text-medium, #718096)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
-                            marginBottom: '8px'
-                          }}>
-                            <span>Code</span>
-                            <span>Course Name</span>
-                            <span>Section</span>
-                            <span>Units</span>
-                            <span>Schedule</span>
-                            <span>Status</span>
-                            <span style={{ textAlign: 'center' }}>Actions</span>
-                          </div>
-
-                          {/* Schedule Rows */}
-                          {schedules.map((schedule) => (
-                            <div 
-                              key={schedule.id}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '100px 1fr 70px 70px 110px 80px 100px',
-                                gap: '10px',
-                                padding: '14px 16px',
-                                background: 'var(--bg-white, #fff)',
-                                borderRadius: '10px',
-                                marginBottom: '8px',
-                                border: '1px solid var(--border-color, #e2e8f0)',
-                                alignItems: 'center',
-                                transition: 'all 0.2s ease'
-                              }}
-                            >
-                              <span style={{ 
-                                fontWeight: 700, 
-                                color: 'var(--primary-medium, #2c5282)',
-                                fontSize: '13px'
-                              }}>
-                                {schedule.course_code}
-                              </span>
-                              <span style={{ 
-                                fontWeight: 500,
-                                color: 'var(--text-dark, #1a202c)',
-                                fontSize: '13px',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}>
-                                {schedule.course_name || 'N/A'}
-                              </span>
-                              <span style={{
-                                background: 'rgba(44, 82, 130, 0.1)',
-                                color: 'var(--primary-medium, #2c5282)',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                textAlign: 'center'
-                              }}>
-                                {schedule.section}
-                              </span>
-                              <span style={{ 
-                                fontSize: '12px',
-                                color: 'var(--text-medium, #718096)',
-                                fontWeight: 600
-                              }}>
-                                {schedule.credit_units || 0}
-                              </span>
-                              <span style={{ 
-                                fontSize: '11px',
-                                color: 'var(--text-dark, #1a202c)',
-                                fontWeight: 500
-                              }}>
-                                {schedule.schedule_day ? (
-                                  <>
-                                    {schedule.schedule_day.substring(0, 3)}
-                                    {schedule.schedule_time && (
-                                      <span style={{ 
-                                        display: 'block', 
-                                        fontSize: '10px',
-                                        color: 'var(--text-medium, #718096)'
-                                      }}>
-                                        {schedule.schedule_time}
-                                      </span>
-                                    )}
-                                  </>
-                                ) : 'TBA'}
-                              </span>
-                              <span style={{
-                                background: `${getStatusColor(schedule.status)}20`,
-                                color: getStatusColor(schedule.status),
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                fontSize: '10px',
-                                fontWeight: 600,
-                                textTransform: 'capitalize'
-                              }}>
-                                {schedule.status || 'pending'}
-                              </span>
+                      {expandedPrograms.has(program) && (
+                        <div style={{ marginLeft: '20px' }}>
+                          {/* Year Level Groups */}
+                          {Array.from(yearMap.entries())
+                            .sort((a, b) => a[0] - b[0])
+                            .map(([year, yearCourses]) => {
+                              const yearKey = `${program}-${year}`
+                              const yearLabel = getYearLevelLabel(year)
                               
-                              {/* Action Buttons */}
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                <button
-                                  onClick={() => openEditModal(schedule)}
-                                  style={{
-                                    padding: '6px 10px',
-                                    background: '#edf2f7',
-                                    color: '#4a5568',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  title="Edit"
-                                >
-                                  <FaEdit size={12} />
-                                </button>
-                                
-                                {deleteConfirm === schedule.id ? (
-                                  <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button
-                                      onClick={() => handleDelete(schedule.id)}
-                                      style={{
-                                        padding: '6px 8px',
-                                        background: '#c53030',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '10px',
-                                        fontWeight: 600
-                                      }}
-                                    >
-                                      Yes
-                                    </button>
-                                    <button
-                                      onClick={() => setDeleteConfirm(null)}
-                                      style={{
-                                        padding: '6px 8px',
-                                        background: '#e2e8f0',
-                                        color: '#4a5568',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '10px',
-                                        fontWeight: 600
-                                      }}
-                                    >
-                                      No
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => setDeleteConfirm(schedule.id)}
+                              return (
+                                <div key={yearKey} style={{ marginBottom: '16px' }}>
+                                  {/* Year Level Header */}
+                                  <div 
+                                    onClick={() => toggleYearLevel(yearKey)}
                                     style={{
-                                      padding: '6px 10px',
-                                      background: '#fed7d7',
-                                      color: '#c53030',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      cursor: 'pointer',
                                       display: 'flex',
                                       alignItems: 'center',
-                                      gap: '4px',
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      transition: 'all 0.2s ease'
+                                      gap: '10px',
+                                      padding: '10px 16px',
+                                      background: 'var(--bg-gray-50, #f7fafc)',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      marginBottom: '8px'
                                     }}
-                                    title="Delete"
                                   >
-                                    <FaTrash size={12} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                                    <Layers size={16} style={{ color: 'var(--primary-medium, #38a169)' }} />
+                                    <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-dark, #1a202c)' }}>
+                                      {yearLabel}
+                                    </span>
+                                    <span style={{ 
+                                      fontSize: '12px', 
+                                      color: 'var(--text-secondary, #718096)',
+                                      background: 'var(--bg-gray-100, #edf2f7)',
+                                      padding: '2px 8px',
+                                      borderRadius: '10px'
+                                    }}>
+                                      {yearCourses.length} courses
+                                    </span>
+                                    <div style={{ marginLeft: 'auto' }}>
+                                      {expandedYearLevels.has(yearKey) ? (
+                                        <ChevronDown size={16} />
+                                      ) : (
+                                        <ChevronRight size={16} />
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Course Cards for this Year Level */}
+                                  {expandedYearLevels.has(yearKey) && (
+                                    <div style={{ 
+                                      display: 'grid', 
+                                      gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+                                      gap: '12px',
+                                      marginLeft: '16px'
+                                    }}>
+                                      {yearCourses.map((course) => (
+                                        <div 
+                                          key={course.id}
+                                          style={{
+                                            background: 'var(--card-bg, #fff)',
+                                            borderRadius: '12px',
+                                            border: '1px solid var(--border-color, #e2e8f0)',
+                                            padding: '16px',
+                                            transition: 'all 0.2s ease',
+                                            position: 'relative'
+                                          }}
+                                        >
+                                          {/* Course Header */}
+                                          <div style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'flex-start',
+                                            marginBottom: '12px'
+                                          }}>
+                                            <div>
+                                              <span style={{ 
+                                                fontWeight: 700, 
+                                                color: 'var(--primary-dark, #276749)',
+                                                fontSize: '15px',
+                                                display: 'block',
+                                                marginBottom: '4px'
+                                              }}>
+                                                {course.course_code}
+                                              </span>
+                                              <span style={{ 
+                                                fontWeight: 500,
+                                                color: 'var(--text-dark, #1a202c)',
+                                                fontSize: '13px',
+                                                lineHeight: '1.4'
+                                              }}>
+                                                {course.course_name || 'N/A'}
+                                              </span>
+                                            </div>
+                                            
+                                            {/* Actions */}
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                              <button
+                                                onClick={() => openEditModal(course)}
+                                                style={{
+                                                  padding: '6px',
+                                                  background: 'var(--bg-gray-100, #edf2f7)',
+                                                  color: 'var(--text-secondary, #718096)',
+                                                  border: 'none',
+                                                  borderRadius: '6px',
+                                                  cursor: 'pointer',
+                                                  display: 'flex',
+                                                  alignItems: 'center'
+                                                }}
+                                                title="Edit"
+                                              >
+                                                <Edit3 size={14} />
+                                              </button>
+                                              
+                                              {deleteConfirm === course.id ? (
+                                                <div style={{ display: 'flex', gap: '2px' }}>
+                                                  <button
+                                                    onClick={() => handleDelete(course.id)}
+                                                    style={{
+                                                      padding: '6px 8px',
+                                                      background: '#c53030',
+                                                      color: 'white',
+                                                      border: 'none',
+                                                      borderRadius: '6px',
+                                                      cursor: 'pointer',
+                                                      fontSize: '10px',
+                                                      fontWeight: 600
+                                                    }}
+                                                  >
+                                                    Yes
+                                                  </button>
+                                                  <button
+                                                    onClick={() => setDeleteConfirm(null)}
+                                                    style={{
+                                                      padding: '6px 8px',
+                                                      background: '#e2e8f0',
+                                                      color: '#4a5568',
+                                                      border: 'none',
+                                                      borderRadius: '6px',
+                                                      cursor: 'pointer',
+                                                      fontSize: '10px',
+                                                      fontWeight: 600
+                                                    }}
+                                                  >
+                                                    No
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <button
+                                                  onClick={() => setDeleteConfirm(course.id)}
+                                                  style={{
+                                                    padding: '6px',
+                                                    background: '#fed7d7',
+                                                    color: '#c53030',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center'
+                                                  }}
+                                                  title="Delete"
+                                                >
+                                                  <Trash2 size={14} />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Course Details */}
+                                          <div style={{ 
+                                            display: 'grid', 
+                                            gridTemplateColumns: '1fr 1fr', 
+                                            gap: '8px',
+                                            fontSize: '12px',
+                                            color: 'var(--text-secondary, #718096)'
+                                          }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <Clock size={12} />
+                                              <span>Lec: {course.lec_hours || 0}hrs ({course.lec_units || 0} units)</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <Clock size={12} />
+                                              <span>Lab: {course.lab_hours || 0}hrs ({course.lab_units || 0} units)</span>
+                                            </div>
+                                            {course.prerequisite && course.prerequisite !== 'None' && (
+                                              <div style={{ 
+                                                gridColumn: '1 / -1',
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '6px',
+                                                marginTop: '4px'
+                                              }}>
+                                                <BookMarked size={12} />
+                                                <span>Pre-req: {course.prerequisite}</span>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Semester Badge */}
+                                          <div style={{ 
+                                            marginTop: '12px',
+                                            display: 'flex',
+                                            gap: '6px'
+                                          }}>
+                                            <span style={{
+                                              background: 'rgba(56, 161, 105, 0.1)',
+                                              color: 'var(--primary-medium, #38a169)',
+                                              padding: '4px 10px',
+                                              borderRadius: '6px',
+                                              fontSize: '11px',
+                                              fontWeight: 600
+                                            }}>
+                                              {course.semester || 'N/A'}
+                                            </span>
+                                            <span style={{
+                                              background: 'rgba(66, 153, 225, 0.1)',
+                                              color: '#4299e1',
+                                              padding: '4px 10px',
+                                              borderRadius: '6px',
+                                              fontSize: '11px',
+                                              fontWeight: 600
+                                            }}>
+                                              {course.credit_units || 0} Total Units
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
                         </div>
                       )}
                     </div>
@@ -1142,11 +1349,11 @@ function ClassSchedulesContent() {
               )}
 
               {/* Empty State */}
-              {!loading && filteredSchedules.length === 0 && (
+              {!loading && filteredCourses.length === 0 && (
                 <div className={styles.emptyState}>
                   <BookOpen size={64} />
-                  <h3>No Classes Found</h3>
-                  <p>Try adjusting your search or filter criteria, or add a new class.</p>
+                  <h3>No Courses Found</h3>
+                  <p>Try adjusting your search or filter criteria, or add a new course.</p>
                 </div>
               )}
             </>
@@ -1190,8 +1397,8 @@ function ClassSchedulesContent() {
               borderRadius: '16px 16px 0 0'
             }}>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {modalMode === 'create' ? <FaPlus /> : <FaEdit />}
-                {modalMode === 'create' ? 'Add New Class Schedule' : 'Edit Class Schedule'}
+                {modalMode === 'create' ? <Plus size={20} /> : <Edit3 size={20} />}
+                {modalMode === 'create' ? 'Add New Course' : 'Edit Course'}
               </h2>
               <button
                 onClick={closeModal}
@@ -1206,7 +1413,7 @@ function ClassSchedulesContent() {
                   alignItems: 'center'
                 }}
               >
-                <FaTimes size={18} />
+                <X size={18} />
               </button>
             </div>
 
@@ -1257,17 +1464,17 @@ function ClassSchedulesContent() {
                 </div>
               </div>
 
-              {/* Section & Units Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              {/* Units Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Section
+                    Lec Units
                   </label>
                   <input
-                    type="text"
-                    value={formData.section}
-                    onChange={(e) => handleInputChange('section', e.target.value)}
-                    placeholder="e.g., A"
+                    type="number"
+                    value={formData.lec_units}
+                    onChange={(e) => handleInputChange('lec_units', parseInt(e.target.value) || 0)}
+                    min="0"
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -1281,12 +1488,52 @@ function ClassSchedulesContent() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Units
+                    Lec Hours
                   </label>
                   <input
                     type="number"
-                    value={formData.credit_units}
-                    onChange={(e) => handleInputChange('credit_units', parseInt(e.target.value) || 0)}
+                    value={formData.lec_hours}
+                    onChange={(e) => handleInputChange('lec_hours', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid var(--input-border)',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
+                    Lab Units
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lab_units}
+                    onChange={(e) => handleInputChange('lab_units', parseInt(e.target.value) || 0)}
+                    min="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      border: '2px solid var(--input-border)',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: 'var(--input-text)',
+                      background: 'var(--input-bg)'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
+                    Lab Hours
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.lab_hours}
+                    onChange={(e) => handleInputChange('lab_hours', parseInt(e.target.value) || 0)}
                     min="0"
                     style={{
                       width: '100%',
@@ -1301,62 +1548,11 @@ function ClassSchedulesContent() {
                 </div>
               </div>
 
-              {/* Schedule Row */}
+              {/* Semester & Year Level Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    <FaCalendar style={{ marginRight: '6px' }} />
-                    Schedule Day
-                  </label>
-                  <select
-                    value={formData.schedule_day}
-                    onChange={(e) => handleInputChange('schedule_day', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {daysOfWeek.map(day => (
-                      <option key={day} value={day}>{day}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Schedule Time
-                  </label>
-                  <select
-                    value={formData.schedule_time}
-                    onChange={(e) => handleInputChange('schedule_time', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="">Select Time</option>
-                    {timeSlots.map(time => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Semester & Year Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
+                    <Calendar size={14} style={{ marginRight: '6px' }} />
                     Semester
                   </label>
                   <select
@@ -1380,13 +1576,12 @@ function ClassSchedulesContent() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Academic Year
+                    <Layers size={14} style={{ marginRight: '6px' }} />
+                    Year Level
                   </label>
-                  <input
-                    type="text"
-                    value={formData.academic_year}
-                    onChange={(e) => handleInputChange('academic_year', e.target.value)}
-                    placeholder="e.g., 2025-2026"
+                  <select
+                    value={formData.year_level}
+                    onChange={(e) => handleInputChange('year_level', parseInt(e.target.value))}
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -1394,17 +1589,22 @@ function ClassSchedulesContent() {
                       borderRadius: '10px',
                       fontSize: '14px',
                       color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
+                      background: 'var(--input-bg)',
+                      cursor: 'pointer'
                     }}
-                  />
+                  >
+                    {yearLevels.map(year => (
+                      <option key={year} value={year}>{getYearLevelLabel(year)}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* Department & College Row */}
+              {/* Department & Prerequisite Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    <FaGraduationCap style={{ marginRight: '6px' }} />
+                    <GraduationCap size={14} style={{ marginRight: '6px' }} />
                     Department
                   </label>
                   <input
@@ -1425,14 +1625,14 @@ function ClassSchedulesContent() {
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    <FaBuilding style={{ marginRight: '6px' }} />
-                    College
+                    <BookMarked size={14} style={{ marginRight: '6px' }} />
+                    Pre-requisite
                   </label>
                   <input
                     type="text"
-                    value={formData.college}
-                    onChange={(e) => handleInputChange('college', e.target.value)}
-                    placeholder="e.g., College of Engineering"
+                    value={formData.prerequisite}
+                    onChange={(e) => handleInputChange('prerequisite', e.target.value)}
+                    placeholder="e.g., CS100 or None"
                     style={{
                       width: '100%',
                       padding: '12px 14px',
@@ -1444,31 +1644,6 @@ function ClassSchedulesContent() {
                     }}
                   />
                 </div>
-              </div>
-
-              {/* Status Row */}
-              <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    border: '2px solid var(--input-border)',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    color: 'var(--input-text)',
-                    background: 'var(--input-bg)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {statuses.map(status => (
-                    <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
-                  ))}
-                </select>
               </div>
 
               {/* Action Buttons */}
@@ -1506,8 +1681,8 @@ function ClassSchedulesContent() {
                     boxShadow: saving ? 'none' : 'var(--shadow-sm)'
                   }}
                 >
-                  <FaSave />
-                  {saving ? 'Saving...' : (modalMode === 'create' ? 'Create Class' : 'Save Changes')}
+                  <Save size={16} />
+                  {saving ? 'Saving...' : (modalMode === 'create' ? 'Create Course' : 'Save Changes')}
                 </button>
               </div>
             </div>
@@ -1532,21 +1707,21 @@ function LoadingFallback() {
       <div style={{
         width: '48px',
         height: '48px',
-        border: '4px solid rgba(44, 82, 130, 0.1)',
-        borderTopColor: '#2c5282',
+        border: '4px solid rgba(56, 161, 105, 0.1)',
+        borderTopColor: '#38a169',
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite'
       }}></div>
-      <p style={{ color: '#718096', fontWeight: 500 }}>Loading Class Schedules...</p>
+      <p style={{ color: '#718096', fontWeight: 500 }}>Loading Courses...</p>
     </div>
   )
 }
 
 // Main export wrapped in Suspense
-export default function ClassSchedulesPage() {
+export default function CoursesManagementPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <ClassSchedulesContent />
+      <CoursesManagementContent />
     </Suspense>
   )
 }

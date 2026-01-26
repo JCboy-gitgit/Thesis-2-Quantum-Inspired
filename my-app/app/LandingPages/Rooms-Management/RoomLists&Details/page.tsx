@@ -22,16 +22,51 @@ import {
   ChevronDown,
   ChevronRight,
   MapPin,
-  Hash,
   AlertTriangle,
-  School,
-  Home,
-  Landmark,
+  University,
   Hotel,
-  University
+  Landmark,
+  Wind,
+  Tv,
+  PresentationIcon,
+  CheckCircle2,
+  XCircle,
+  Wrench,
+  Eye
 } from 'lucide-react'
 import { RiBuilding3Fill } from 'react-icons/ri'
 import styles from './styles.module.css'
+
+// Helper function to display "None" for null/undefined values
+const displayValue = (value: any, defaultVal: string = 'None'): string => {
+  if (value === null || value === undefined || value === '') return defaultVal
+  return String(value)
+}
+
+// Helper function to display boolean values
+const displayBool = (value: boolean | null | undefined): string => {
+  if (value === null || value === undefined) return 'None'
+  return value ? 'Yes' : 'No'
+}
+
+// Helper function to get room status info
+const getRoomStatusInfo = (status: string | null | undefined): { label: string; color: string; bgColor: string; icon: 'check' | 'x' | 'wrench' } => {
+  switch (status?.toLowerCase()) {
+    case 'usable':
+    case 'available':
+    case 'active':
+      return { label: 'Usable', color: '#059669', bgColor: '#d1fae5', icon: 'check' }
+    case 'not_usable':
+    case 'unavailable':
+    case 'inactive':
+      return { label: 'Not Usable', color: '#dc2626', bgColor: '#fee2e2', icon: 'x' }
+    case 'maintenance':
+    case 'under_maintenance':
+      return { label: 'Maintenance', color: '#d97706', bgColor: '#fef3c7', icon: 'wrench' }
+    default:
+      return { label: 'Usable', color: '#059669', bgColor: '#d1fae5', icon: 'check' } // Default to usable
+  }
+}
 
 interface CampusFile {
   upload_group_id: number
@@ -46,10 +81,21 @@ interface CampusRoom {
   campus: string
   building: string
   room: string
+  room_code?: string | null
   capacity: number
+  floor_number?: number | null
+  room_type?: string
+  specific_classification?: string | null
+  has_ac?: boolean | null
+  has_whiteboard?: boolean | null
+  has_tv?: boolean | null
+  has_projector?: boolean | null
+  status?: string | null  // 'usable', 'not_usable', 'maintenance'
+  notes?: string | null
   upload_group_id?: number
   school_name?: string
   file_name?: string
+  college?: string | null
 }
 
 interface CampusStats {
@@ -728,17 +774,29 @@ export default function SchoolCapacityPage() {
     let totalBuildings = 0
     let totalRooms = 0
     let totalCapacity = 0
+    let usableRooms = 0
+    let notUsableRooms = 0
 
     campusGroups.forEach((rooms, campusName) => {
       const buildings = getBuildingsForCampus(campusName)
       totalBuildings += buildings.size
       totalRooms += rooms.length
       totalCapacity += rooms.reduce((sum, room) => sum + room.capacity, 0)
+      
+      // Count usable/not usable rooms
+      rooms.forEach(room => {
+        const status = room.status?.toLowerCase()
+        if (status === 'not_usable' || status === 'unavailable' || status === 'inactive') {
+          notUsableRooms++
+        } else {
+          usableRooms++ // Default to usable if no status or usable status
+        }
+      })
     })
 
     const avgCapacity = totalRooms > 0 ? Math.round(totalCapacity / totalRooms) : 0
 
-    return { totalCampuses, totalBuildings, totalRooms, totalCapacity, avgCapacity }
+    return { totalCampuses, totalBuildings, totalRooms, totalCapacity, avgCapacity, usableRooms, notUsableRooms }
   }
 
   return (
@@ -771,7 +829,7 @@ export default function SchoolCapacityPage() {
                 <University className={styles.headerLargeIcon} size={48} />
               </div>
               <div className={styles.headerText}>
-                <h1 className={styles.headerTitle}>School Capacity Overview</h1>
+                <h1 className={styles.headerTitle}>Room Lists & Details</h1>
                 <p className={styles.headerSubtitle}>Select a school to view and manage room information</p>
               </div>
             </div>
@@ -903,6 +961,24 @@ export default function SchoolCapacityPage() {
                               <h3 className={styles.statValue}>{getFileStats().avgCapacity}</h3>
                             </div>
                           </div>
+                          <div className={styles.statCard} style={{ borderLeftColor: '#22c55e' }}>
+                            <div className={styles.statIcon} style={{ background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', color: '#059669' }}>
+                              <CheckCircle2 size={28} />
+                            </div>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Usable Rooms</p>
+                              <h3 className={styles.statValue} style={{ color: '#059669' }}>{getFileStats().usableRooms}</h3>
+                            </div>
+                          </div>
+                          <div className={styles.statCard} style={{ borderLeftColor: '#ef4444' }}>
+                            <div className={styles.statIcon} style={{ background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', color: '#dc2626' }}>
+                              <XCircle size={28} />
+                            </div>
+                            <div className={styles.statContent}>
+                              <p className={styles.statLabel}>Not Usable</p>
+                              <h3 className={styles.statValue} style={{ color: '#dc2626' }}>{getFileStats().notUsableRooms}</h3>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -1010,10 +1086,13 @@ export default function SchoolCapacityPage() {
                                                       const isEditing = editingRoom === room.id
                                                       const showActions = showActionsFor === room.id
                                                       const usage = roomUsage.get(room.room)
+                                                      const statusInfo = getRoomStatusInfo(room.status)
+                                                      const statusClass = statusInfo.icon === 'check' ? styles.usable : 
+                                                                         statusInfo.icon === 'x' ? styles.notUsable : styles.maintenance
                                                       return (
                                                         <div
                                                           key={room.id}
-                                                          className={`${styles.roomCard} ${isEditing ? styles.editing : ''}`}
+                                                          className={`${styles.roomCard} ${isEditing ? styles.editing : ''} ${statusClass}`}
                                                           onMouseLeave={() => {
                                                             // Only close if the popup is open for this room
                                                             if (showActionsFor === room.id) setShowActionsFor(null)
@@ -1068,20 +1147,98 @@ export default function SchoolCapacityPage() {
                                                             </div>
                                                           ) : (
                                                             <>
-                                                              <div className={styles.roomIcon}>
+                                                              {/* Room Status Badge - Top Right Corner */}
+                                                              {(() => {
+                                                                const statusInfo = getRoomStatusInfo(room.status)
+                                                                return (
+                                                                  <div className={styles.roomStatusBadge} style={{
+                                                                    position: 'absolute',
+                                                                    top: '10px',
+                                                                    right: '50px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: '20px',
+                                                                    fontSize: '11px',
+                                                                    fontWeight: '700',
+                                                                    background: statusInfo.bgColor,
+                                                                    color: statusInfo.color,
+                                                                    border: `1px solid ${statusInfo.color}40`
+                                                                  }}>
+                                                                    {statusInfo.icon === 'check' && <CheckCircle2 size={12} />}
+                                                                    {statusInfo.icon === 'x' && <XCircle size={12} />}
+                                                                    {statusInfo.icon === 'wrench' && <Wrench size={12} />}
+                                                                    {statusInfo.label}
+                                                                  </div>
+                                                                )
+                                                              })()}
+                                                              
+                                                              <div className={styles.roomIcon} style={{
+                                                                background: getRoomStatusInfo(room.status).icon === 'check' 
+                                                                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                                                                  : getRoomStatusInfo(room.status).icon === 'x'
+                                                                    ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                                                                    : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                                                color: 'white',
+                                                                width: '48px',
+                                                                height: '48px',
+                                                                borderRadius: '12px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                flexShrink: 0
+                                                              }}>
                                                                 <DoorOpen size={24} />
                                                               </div>
                                                               <div className={styles.roomInfo}>
                                                                 <h4 className={styles.roomName}>{room.room}</h4>
-                                                                <p className={styles.roomParsed}>{parsed.displayName}</p>
+                                                                <p className={styles.roomParsed}>
+                                                                  {room.room_code ? `ID: ${room.room_code}` : parsed.displayName}
+                                                                </p>
                                                                 <p className={styles.roomCampus}>
                                                                   <Building2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                                                                   {room.campus}
                                                                 </p>
                                                                 <p className={styles.roomSeats}>
                                                                   <Users size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                                                                  Seats: {room.capacity}
+                                                                  Capacity: {room.capacity}
                                                                 </p>
+                                                                <p className={styles.roomType} style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+                                                                  Type: {displayValue(room.room_type, 'Classroom')}
+                                                                </p>
+                                                                <div className={styles.roomAmenities} style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                                                  <span className={styles.amenityBadge} title="Air Conditioning" style={{ 
+                                                                    padding: '2px 6px', 
+                                                                    borderRadius: '4px', 
+                                                                    fontSize: '10px',
+                                                                    background: room.has_ac ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
+                                                                    color: room.has_ac ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
+                                                                  }}>
+                                                                    <Wind size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    AC: {displayBool(room.has_ac)}
+                                                                  </span>
+                                                                  <span className={styles.amenityBadge} title="Whiteboard" style={{ 
+                                                                    padding: '2px 6px', 
+                                                                    borderRadius: '4px', 
+                                                                    fontSize: '10px',
+                                                                    background: room.has_whiteboard ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
+                                                                    color: room.has_whiteboard ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
+                                                                  }}>
+                                                                    <PresentationIcon size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    Board: {displayBool(room.has_whiteboard)}
+                                                                  </span>
+                                                                  <span className={styles.amenityBadge} title="TV" style={{ 
+                                                                    padding: '2px 6px', 
+                                                                    borderRadius: '4px', 
+                                                                    fontSize: '10px',
+                                                                    background: room.has_tv ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
+                                                                    color: room.has_tv ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
+                                                                  }}>
+                                                                    <Tv size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    TV: {displayBool(room.has_tv)}
+                                                                  </span>
+                                                                </div>
                                                               </div>
                                                               <div className={styles.roomCapacityBadge}>
                                                                 {room.capacity}
@@ -1114,6 +1271,17 @@ export default function SchoolCapacityPage() {
                                                                     >
                                                                       <Trash2 size={16} />
                                                                       {deletingRoom === room.id ? 'Deleting...' : 'Delete Room'}
+                                                                    </button>
+                                                                    <button 
+                                                                      className={`${styles.actionOption} ${styles.viewScheduleOption}`}
+                                                                      onClick={() => {
+                                                                        // Future: Navigate to ViewSchedule with room filter
+                                                                        router.push(`/LandingPages/RoomSchedule?room=${encodeURIComponent(room.room)}&building=${encodeURIComponent(room.building)}`)
+                                                                      }}
+                                                                      title="View this room's schedule"
+                                                                    >
+                                                                      <Eye size={16} />
+                                                                      View Schedule
                                                                     </button>
                                                                   </div>
                                                                 )}

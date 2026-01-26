@@ -8,24 +8,35 @@ import {
   Clock, 
   MapPin, 
   User, 
-  LogOut,
-  Settings,
   Bell,
   BookOpen,
   ChevronRight,
   Building2,
   GraduationCap,
-  RefreshCw,
-  ChevronDown
+  Sun,
+  Moon,
+  Palette,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Settings,
+  LogOut,
+  RefreshCw
 } from 'lucide-react'
 import styles from './styles.module.css'
+import FacultySidebar from '@/app/components/FacultySidebar'
 import RoomViewer2D from '@/app/components/RoomViewer2D'
+import FacultySettingsModal from '@/app/components/FacultySettingsModal'
+import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 
 interface UserProfile {
   id: string
   email: string
   full_name: string
   department_id?: number
+  department?: string
+  college?: string
   role: string
   is_active: boolean
   avatar_url?: string
@@ -45,13 +56,18 @@ interface ScheduleItem {
 
 export default function FacultyHomePage() {
   const router = useRouter()
+  const { theme, collegeTheme, setTheme, setCollegeTheme } = useTheme()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
   const [currentClass, setCurrentClass] = useState<ScheduleItem | null>(null)
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const [greeting, setGreeting] = useState('')
+  const [todayClassCount, setTodayClassCount] = useState(0)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -64,21 +80,20 @@ export default function FacultyHomePage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Close profile menu when clicking outside
+  // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element
-      // Don't close if clicking on the profile button or menu items
-      if (!target.closest('.profileSection') && !target.closest('.profileMenuItem')) {
-        setShowProfileMenu(false)
+      if (!target.closest(`.${styles.userSection}`)) {
+        setShowUserMenu(false)
       }
     }
 
-    if (showProfileMenu) {
+    if (showUserMenu) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showProfileMenu])
+  }, [showUserMenu])
 
   const updateGreeting = () => {
     const hour = new Date().getHours()
@@ -116,6 +131,15 @@ export default function FacultyHomePage() {
       }
 
       setUser(userData)
+      
+      // Set college theme based on user's college/department
+      if (userData.college) {
+        const collegeLower = userData.college.toLowerCase()
+        const matchedTheme = COLLEGE_THEME_MAP[collegeLower]
+        if (matchedTheme) {
+          setCollegeTheme(matchedTheme)
+        }
+      }
 
       // Fetch schedules for this faculty (mock data for now)
       await fetchSchedules(userData.email)
@@ -157,6 +181,7 @@ export default function FacultyHomePage() {
     const currentTime = now.getHours() * 60 + now.getMinutes()
 
     const todaySchedules = scheduleList.filter(s => s.day === currentDay)
+    setTodayClassCount(todaySchedules.length)
 
     for (const schedule of todaySchedules) {
       const [startHour, startMin] = schedule.start_time.split(':').map(Number)
@@ -175,18 +200,10 @@ export default function FacultyHomePage() {
 
   const handleLogout = async () => {
     try {
-      console.log('Logging out...')
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('Logout error:', error)
-      } else {
-        console.log('Logout successful')
-      }
-      // Force redirect to login page
+      await supabase.auth.signOut()
       router.push('/faculty/login')
     } catch (error) {
       console.error('Logout failed:', error)
-      // Even if logout fails, redirect to login
       router.push('/faculty/login')
     }
   }
@@ -218,200 +235,313 @@ export default function FacultyHomePage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.logo}>
-            <span className={styles.logoIcon}>Q</span>
-            <span className={styles.logoText}>Qtime Faculty</span>
-          </div>
-        </div>
-        <div className={styles.headerRight}>
-          <button className={styles.iconBtn} title="Notifications">
-            <Bell size={20} />
-          </button>
-          
-          {/* Profile Icon with Dropdown */}
-          <div className={`${styles.profileSection} profileSection`}>
+    <div className={styles.pageContainer} data-college-theme={collegeTheme}>
+      {/* Sidebar */}
+      <FacultySidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        menuBarHidden={isMenuBarHidden}
+      />
+
+      {/* Main Layout */}
+      <div className={`${styles.mainLayout} ${sidebarOpen ? styles.withSidebar : styles.fullWidth}`}>
+        {/* Top Header */}
+        <header className={`${styles.topHeader} ${isMenuBarHidden ? styles.hidden : ''}`}>
+          <div className={styles.headerLeft}>
+            {/* Sidebar Toggle Button */}
             <button 
-              className={styles.profileBtn}
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              title="Profile Menu"
+              className={styles.sidebarToggle}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
             >
-              <div className={styles.profileAvatar}>
-                <User size={20} />
-              </div>
-              <ChevronDown size={14} className={`${styles.profileChevron} ${showProfileMenu ? styles.rotated : ''}`} />
+              <Menu size={24} />
             </button>
             
-            {showProfileMenu && (
-              <div className={styles.profileMenu}>
-                <div 
-                  className={styles.profileMenuItem}
-                  onClick={() => {
-                    setShowProfileMenu(false)
-                    router.push('/faculty/profile')
-                  }}
-                >
-                  <Settings size={16} />
-                  <span>Profile</span>
+            {/* Logo/Branding */}
+            <div className={styles.logo}>
+              <span className={styles.logoIcon}>Q</span>
+              <span className={styles.logoText}>Qtime Faculty</span>
+            </div>
+          </div>
+          <div className={styles.headerRight}>
+            {/* Notifications */}
+            <button className={styles.iconBtn} title="Notifications">
+              <Bell size={20} />
+            </button>
+
+            {/* User Dropdown */}
+            <div className={styles.userSection}>
+              <button 
+                className={styles.userIconBtn}
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                title="Account Menu"
+              >
+                <User size={20} />
+              </button>
+              
+              {showUserMenu && (
+                <div className={styles.userMenu}>
+                  {user?.email && (
+                    <>
+                      <div className={styles.userMenuEmail}>
+                        <User size={16} />
+                        {user.email}
+                      </div>
+                      <div className={styles.menuDivider} />
+                    </>
+                  )}
+                  <button
+                    className={styles.userMenuItem}
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      router.push('/faculty/profile')
+                    }}
+                  >
+                    <User size={16} />
+                    Profile
+                  </button>
+                  <button
+                    className={styles.userMenuItem}
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      setShowSettingsModal(true)
+                    }}
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </button>
+                  <div className={styles.menuDivider} />
+                  <button
+                    className={`${styles.userMenuItem} ${styles.logoutItem}`}
+                    onClick={async () => {
+                      setShowUserMenu(false)
+                      await supabase.auth.signOut()
+                      router.push('/faculty/login')
+                    }}
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </button>
                 </div>
-                <div className={styles.profileMenuDivider}></div>
-                <div 
-                  className={styles.profileMenuItem}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleLogout()
-                  }}
-                >
-                  <LogOut size={16} />
-                  <span>Logout</span>
+              )}
+            </div>
+          </div>
+
+          {/* Toggle Arrow Button - inside header */}
+          <button 
+            className={styles.menuBarToggle}
+            onClick={() => setIsMenuBarHidden(!isMenuBarHidden)}
+            title={isMenuBarHidden ? 'Show Header' : 'Hide Header'}
+          >
+            <ChevronUp size={18} />
+          </button>
+        </header>
+
+        {/* Floating Show Button when header is hidden */}
+        {isMenuBarHidden && (
+          <button 
+            className={styles.menuBarShowBtn}
+            onClick={() => setIsMenuBarHidden(false)}
+            title="Show Header"
+          >
+            <ChevronDown size={18} />
+          </button>
+        )}
+
+        {/* Main Content */}
+        <main className={styles.mainContent}>
+          {/* Welcome Banner */}
+          <section className={styles.welcomeBanner}>
+            <div>
+              <h2>{greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!</h2>
+              <p>{getCurrentDate()}</p>
+            </div>
+            {user?.department && (
+              <div className={styles.bannerInfo}>
+                <div className={styles.infoBadge}>
+                  <Building2 size={16} />
+                  <span>{user.department}</span>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      </header>
+          </section>
 
-      {/* Main Content */}
-      <main className={styles.mainContent}>
-        {/* Welcome Section */}
-        <section className={styles.welcomeSection}>
-          <div className={styles.welcomeContent}>
-            <div className={styles.userAvatar}>
-              <User size={40} />
+          {/* Quick Stats */}
+          <section className={styles.statsGrid}>
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <Calendar size={24} />
+              </div>
+              <div className={styles.statContent}>
+                <div className={styles.statValue}>{todayClassCount}</div>
+                <div className={styles.statLabel}>Classes Today</div>
+              </div>
             </div>
-            <div className={styles.welcomeText}>
-              <h1>{greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!</h1>
-              <p>{getCurrentDate()}</p>
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <BookOpen size={24} />
+              </div>
+              <div className={styles.statContent}>
+                <div className={styles.statValue}>{schedules.length}</div>
+                <div className={styles.statLabel}>Total Classes This Week</div>
+              </div>
             </div>
-          </div>
-          <div className={styles.userInfo}>
-            <div className={styles.infoBadge}>
-              <Building2 size={16} />
-              <span>{user?.full_name ? 'Faculty' : 'Department'}</span>
+            <div className={styles.statCard}>
+              <div className={styles.statIcon}>
+                <Clock size={24} />
+              </div>
+              <div className={styles.statContent}>
+                <div className={styles.statValue}>{currentClass ? 'In Progress' : 'Free'}</div>
+                <div className={styles.statLabel}>Current Status</div>
+              </div>
             </div>
-            <div className={styles.infoBadge}>
-              <GraduationCap size={16} />
-              <span>Faculty Member</span>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Current/Next Class Cards */}
-        <section className={styles.classCards}>
-          {currentClass ? (
-            <div className={`${styles.classCard} ${styles.currentClass}`}>
-              <div className={styles.classCardHeader}>
-                <span className={styles.liveIndicator}>
-                  <span className={styles.liveDot}></span>
-                  NOW
-                </span>
-                <span className={styles.classTime}>
-                  {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
-                </span>
+          {/* Current & Next Class */}
+          <section className={styles.classSection}>
+            <h3 className={styles.sectionTitle}>My Classes</h3>
+            <div className={styles.classCards}>
+              <div className={`${styles.classCard} ${currentClass ? styles.active : ''}`}>
+                <div className={styles.classCardHeader}>
+                  {currentClass ? (
+                    <>
+                      <span className={styles.liveIndicator}>
+                        <span className={styles.liveDot}></span>
+                        NOW
+                      </span>
+                      <span className={styles.classTime}>
+                        {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className={styles.statusBadge}>NO CLASS</span>
+                  )}
+                </div>
+                <div className={styles.classBody}>
+                  {currentClass ? (
+                    <>
+                      <h4>{currentClass.course_code}</h4>
+                      <p className={styles.courseName}>{currentClass.course_name}</p>
+                      <div className={styles.classDetails}>
+                        <span><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
+                        <span><BookOpen size={14} /> {currentClass.section}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h4>Free Time</h4>
+                      <p className={styles.courseName}>No ongoing class at the moment</p>
+                    </>
+                  )}
+                </div>
               </div>
-              <h3>{currentClass.course_code}</h3>
-              <p className={styles.courseName}>{currentClass.course_name}</p>
-              <div className={styles.classDetails}>
-                <span><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
-                <span><BookOpen size={14} /> {currentClass.section}</span>
-              </div>
-            </div>
-          ) : (
-            <div className={`${styles.classCard} ${styles.noClass}`}>
-              <div className={styles.classCardHeader}>
-                <span className={styles.statusBadge}>FREE TIME</span>
-              </div>
-              <h3>No Current Class</h3>
-              <p className={styles.courseName}>Enjoy your break!</p>
-            </div>
-          )}
 
-          {nextClass ? (
-            <div className={`${styles.classCard} ${styles.nextClass}`}>
-              <div className={styles.classCardHeader}>
-                <span className={styles.statusBadge}>NEXT UP</span>
-                <span className={styles.classTime}>
-                  {formatTime(nextClass.start_time)}
-                </span>
-              </div>
-              <h3>{nextClass.course_code}</h3>
-              <p className={styles.courseName}>{nextClass.course_name}</p>
-              <div className={styles.classDetails}>
-                <span><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
+              <div className={`${styles.classCard} ${nextClass ? styles.upcoming : ''}`}>
+                <div className={styles.classCardHeader}>
+                  {nextClass ? (
+                    <>
+                      <span className={styles.statusBadge}>NEXT UP</span>
+                      <span className={styles.classTime}>
+                        {formatTime(nextClass.start_time)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className={styles.statusBadge}>FINISHED</span>
+                  )}
+                </div>
+                <div className={styles.classBody}>
+                  {nextClass ? (
+                    <>
+                      <h4>{nextClass.course_code}</h4>
+                      <p className={styles.courseName}>{nextClass.course_name}</p>
+                      <div className={styles.classDetails}>
+                        <span><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
+                        <span><BookOpen size={14} /> {nextClass.section}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h4>All Done!</h4>
+                      <p className={styles.courseName}>No more classes for today</p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          ) : (
-            <div className={`${styles.classCard} ${styles.noClass}`}>
-              <div className={styles.classCardHeader}>
-                <span className={styles.statusBadge}>TODAY</span>
-              </div>
-              <h3>No More Classes</h3>
-              <p className={styles.courseName}>You're done for today!</p>
+          </section>
+
+          {/* Today's Schedule */}
+          <section className={styles.scheduleSection}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>
+                <Calendar size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                Today's Schedule
+              </h3>
+              <button className={styles.iconBtn} onClick={checkAuthAndLoad} title="Refresh">
+                <RefreshCw size={18} />
+              </button>
             </div>
-          )}
-        </section>
-
-        {/* Today's Schedule */}
-        <section className={styles.scheduleSection}>
-          <div className={styles.sectionHeader}>
-            <h2><Calendar size={22} /> Today's Schedule</h2>
-            <button className={styles.refreshBtn} onClick={() => fetchSchedules(user?.email || '')}>
-              <RefreshCw size={16} />
-            </button>
-          </div>
-
-          {schedules.length > 0 ? (
-            <div className={styles.scheduleList}>
-              {schedules
-                .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
-                .map((schedule, index) => (
-                  <div key={index} className={styles.scheduleItem}>
-                    <div className={styles.scheduleTime}>
-                      <Clock size={14} />
-                      <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
+            {schedules.filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]).length > 0 ? (
+              <div className={styles.scheduleList}>
+                {schedules
+                  .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
+                  .map((schedule, index) => (
+                    <div key={index} className={styles.scheduleItem}>
+                      <div className={styles.scheduleTime}>
+                        <Clock size={16} />
+                        <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
+                      </div>
+                      <div className={styles.scheduleInfo}>
+                        <h4>{schedule.course_code} - {schedule.course_name}</h4>
+                        <p>
+                          <MapPin size={12} /> {schedule.room}, {schedule.building}
+                          <span className={styles.separator}>•</span>
+                          <BookOpen size={12} /> {schedule.section}
+                        </p>
+                      </div>
+                      <ChevronRight size={18} className={styles.chevron} />
                     </div>
-                    <div className={styles.scheduleInfo}>
-                      <h4>{schedule.course_code} - {schedule.course_name}</h4>
-                      <p>
-                        <MapPin size={12} /> {schedule.room}, {schedule.building}
-                        <span className={styles.separator}>•</span>
-                        <BookOpen size={12} /> {schedule.section}
-                      </p>
-                    </div>
-                    <ChevronRight size={18} className={styles.chevron} />
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <div className={styles.emptySchedule}>
-              <Calendar size={48} />
-              <h3>No Schedule Today</h3>
-              <p>Your schedule will appear here once assigned by the admin.</p>
-            </div>
-          )}
-        </section>
+                  ))}
+              </div>
+            ) : (
+              <div className={styles.emptySchedule}>
+                <Calendar size={64} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <h3>No Schedule Today</h3>
+                <p>Your schedule will appear here once assigned by the admin.</p>
+              </div>
+            )}
+          </section>
 
-        {/* Room Viewer 2D */}
-        <RoomViewer2D />
+          {/* Room Viewer 2D */}
+          <section className={styles.roomViewerSection}>
+            <div className={styles.sectionHeader}>
+              <h3 className={styles.sectionTitle}>Campus Map</h3>
+              <span className={styles.viewOnlyBadge}>View Only</span>
+            </div>
+            <div className={styles.roomViewerContainer}>
+              <RoomViewer2D />
+            </div>
+          </section>
 
-        {/* Quick Actions */}
-        <section className={styles.quickActions}>
-          <h2>Quick Actions</h2>
-          <div className={styles.actionGrid}>
-            <button className={styles.actionCard} onClick={() => router.push('/faculty/profile')}>
-              <User size={24} />
-              <span>Edit Profile</span>
-            </button>
-            <button className={styles.actionCard} onClick={() => router.push('/faculty/schedule')}>
-              <Calendar size={24} />
-              <span>Full Schedule</span>
-            </button>
-          </div>
-        </section>
-      </main>
+          {/* Department Announcements Placeholder */}
+          <section className={styles.announcementsSection}>
+            <h3 className={styles.sectionTitle}>Department Announcements</h3>
+            <div className={styles.announcementCard}>
+              <TrendingUp size={20} />
+              <div>
+                <h4>Welcome to QTime Faculty Portal</h4>
+                <p>Stay updated with your schedule, faculty directory, and department information all in one place.</p>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      {/* Settings Modal */}
+      <FacultySettingsModal 
+        isOpen={showSettingsModal} 
+        onClose={() => setShowSettingsModal(false)} 
+      />
     </div>
   )
 }

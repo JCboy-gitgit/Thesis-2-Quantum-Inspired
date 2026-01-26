@@ -17,6 +17,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  margin-left: 7px;
+  margin-right: 7px;
 }
 
 .notification-bell-btn:hover,

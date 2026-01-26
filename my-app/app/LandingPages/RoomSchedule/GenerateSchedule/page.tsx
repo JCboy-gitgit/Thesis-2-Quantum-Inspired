@@ -45,6 +45,7 @@ interface CampusGroup {
 }
 
 interface ClassGroup {
+  id: string
   upload_group_id: number
   college: string
   file_name: string
@@ -228,7 +229,7 @@ export default function GenerateSchedulePage() {
   
   // Selected data
   const [selectedCampusGroup, setSelectedCampusGroup] = useState<number | null>(null)
-  const [selectedClassGroup, setSelectedClassGroup] = useState<number | null>(null)
+  const [selectedClassGroup, setSelectedClassGroup] = useState<string | null>(null)
   const [selectedTeacherGroup, setSelectedTeacherGroup] = useState<number | null>(null)
   
   // Loaded detailed data
@@ -282,6 +283,11 @@ export default function GenerateSchedulePage() {
   const [showTeacherFileViewer, setShowTeacherFileViewer] = useState(false)
   const [viewerData, setViewerData] = useState<any[]>([])
   const [viewerLoading, setViewerLoading] = useState(false)
+  
+  // Auto-generate toggle state
+  const [autoGenerateEnabled, setAutoGenerateEnabled] = useState(false)
+  const [lastDataHash, setLastDataHash] = useState<string>('')
+  const [autoGenerateCountdown, setAutoGenerateCountdown] = useState(0)
 
   // Load initial data
   useEffect(() => {
@@ -361,11 +367,13 @@ export default function GenerateSchedulePage() {
 
       if (!classError && classData) {
         const grouped = classData.reduce((acc: ClassGroup[], curr: any) => {
-          const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
+          const key = `${curr.college || ''}|${curr.semester || ''}|${curr.academic_year || ''}`
+          const existing = acc.find(item => item.id === key)
           if (existing) {
             existing.class_count++
           } else {
             acc.push({
+              id: key,
               upload_group_id: curr.upload_group_id,
               college: curr.college || 'Unnamed Batch',
               file_name: curr.file_name,
@@ -436,11 +444,13 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const loadClassData = async (groupId: number) => {
+  const loadClassData = async (college: string, semester: string, academicYear: string) => {
     const { data, error } = await (supabase
       .from('class_schedules') as any)
       .select('*')
-      .eq('upload_group_id', groupId)
+      .eq('college', college)
+      .eq('semester', semester)
+      .eq('academic_year', academicYear)
       .order('course_code', { ascending: true })
 
     if (!error && data) {
@@ -507,13 +517,16 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const handleSelectClassGroup = (groupId: number) => {
+  const handleSelectClassGroup = (groupId: string) => {
     if (selectedClassGroup === groupId) {
       setSelectedClassGroup(null)
       setClasses([])
     } else {
       setSelectedClassGroup(groupId)
-      loadClassData(groupId)
+      const group = classGroups.find(g => g.id === groupId)
+      if (group) {
+        loadClassData(group.college, group.semester, group.academic_year)
+      }
     }
   }
 
@@ -551,19 +564,24 @@ export default function GenerateSchedulePage() {
     )
   }
   
-  // Select all rooms in a building
+  // Select all rooms in a building OR toggle to show individual room selection
   const handleSelectAllRoomsInBuilding = (building: string) => {
     const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
-    setSelectedRooms(prev => {
-      const allSelected = buildingRoomIds.every(id => prev.includes(id))
-      if (allSelected) {
-        // Deselect all
-        return prev.filter(id => !buildingRoomIds.includes(id))
-      } else {
-        // Select all
-        return [...new Set([...prev, ...buildingRoomIds])]
-      }
-    })
+    const buildingSelected = selectedBuildings.includes(building)
+    const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
+    
+    if (buildingSelected) {
+      // If building is selected, switch to individual room selection mode
+      // Deselect the building and select all its rooms instead
+      setSelectedBuildings(prev => prev.filter(b => b !== building))
+      setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
+    } else if (allRoomsSelected) {
+      // All rooms are selected, deselect all
+      setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
+    } else {
+      // Select all rooms in this building
+      setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
+    }
   }
   
   // Get filtered rooms based on selection
@@ -593,10 +611,15 @@ export default function GenerateSchedulePage() {
     setShowClassFileViewer(true)
     
     try {
+      const group = classGroups.find(g => g.id === selectedClassGroup)
+      if (!group) return
+
       const { data, error } = await (supabase
         .from('class_schedules') as any)
         .select('*')
-        .eq('upload_group_id', selectedClassGroup)
+        .eq('college', group.college)
+        .eq('semester', group.semester)
+        .eq('academic_year', group.academic_year)
         .order('course_code', { ascending: true })
       
       if (!error && data) {
@@ -645,7 +668,7 @@ export default function GenerateSchedulePage() {
 
   // Get selected group info
   const selectedCampusInfo = campusGroups.find(g => g.upload_group_id === selectedCampusGroup)
-  const selectedClassInfo = classGroups.find(g => g.upload_group_id === selectedClassGroup)
+  const selectedClassInfo = classGroups.find(g => g.id === selectedClassGroup)
   const selectedTeacherInfo = teacherGroups.find(g => g.upload_group_id === selectedTeacherGroup)
 
   // Calculate stats
@@ -687,7 +710,7 @@ export default function GenerateSchedulePage() {
         semester: config.semester,
         academic_year: config.academicYear,
         campus_group_id: selectedCampusGroup,
-        class_group_id: selectedClassGroup,
+        class_group_id: selectedClassInfo?.upload_group_id || null,
         teacher_group_id: selectedTeacherGroup,
         rooms: filteredRooms, // Use filtered rooms instead of all rooms
         classes: classes,
@@ -1116,7 +1139,7 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
 
-                  {/* Class Schedules Selection */}
+                  {/* Courses & Sections Selection */}
                   <div className={styles.dataSourceCard}>
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedClass(!expandedClass)}>
                       <div className={styles.dataSourceTitle}>
@@ -1124,8 +1147,8 @@ export default function GenerateSchedulePage() {
                           <BookOpen size={24} />
                         </div>
                         <div>
-                          <h3>Class Schedules</h3>
-                          <p>Select the class schedule CSV file with courses and sections</p>
+                          <h3>Courses & Sections</h3>
+                          <p>Select curriculum data with academic year, semester, sections and assigned courses</p>
                         </div>
                       </div>
                       <div className={styles.dataSourceStatus}>
@@ -1145,7 +1168,7 @@ export default function GenerateSchedulePage() {
                         {classGroups.length === 0 ? (
                           <div className={styles.emptyDataSource}>
                             <FileSpreadsheet size={40} />
-                            <p>No class schedule data found. Upload a Class Schedule CSV first.</p>
+                            <p>No course data found. Upload a Curriculum/Courses CSV first.</p>
                             <button onClick={() => router.push('/LandingPages/UploadCSV')}>
                               Upload CSV
                             </button>
@@ -1154,17 +1177,21 @@ export default function GenerateSchedulePage() {
                           <div className={styles.dataSourceGrid}>
                             {classGroups.map(group => (
                               <div
-                                key={group.upload_group_id}
-                                className={`${styles.dataCard} ${selectedClassGroup === group.upload_group_id ? styles.selected : ''}`}
-                                onClick={() => handleSelectClassGroup(group.upload_group_id)}
+                                key={group.id}
+                                className={`${styles.dataCard} ${selectedClassGroup === group.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectClassGroup(group.id)}
                               >
                                 <div className={styles.dataCardHeader}>
                                   <GraduationCap size={20} />
                                   <h4>{group.college}</h4>
                                 </div>
                                 <div className={styles.dataCardStats}>
-                                  <span><BookOpen size={14} /> {group.class_count} classes</span>
-                                  {group.semester && <span>{group.semester}</span>}
+                                  <span><BookOpen size={14} /> {group.class_count} courses</span>
+                                </div>
+                                <div className={styles.dataCardAcademic}>
+                                  <span className={styles.academicBadge}>
+                                    {group.academic_year || 'N/A'} • {group.semester || 'N/A'}
+                                  </span>
                                 </div>
                                 <div className={styles.dataCardFile}>
                                   <FileSpreadsheet size={14} /> {group.file_name}
@@ -1172,7 +1199,7 @@ export default function GenerateSchedulePage() {
                                 <div className={styles.dataCardDate}>
                                   {new Date(group.created_at).toLocaleDateString()}
                                 </div>
-                                {selectedClassGroup === group.upload_group_id && (
+                                {selectedClassGroup === group.id && (
                                   <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
                                 )}
                               </div>
@@ -1392,8 +1419,11 @@ export default function GenerateSchedulePage() {
                                   <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
                                 </div>
                                 
-                                {/* Show individual room checkboxes if some are selected */}
-                                {(someRoomsSelected && !buildingSelected) && (
+                                {/* Show individual room checkboxes when:
+                                    - Some rooms in this building are individually selected, OR
+                                    - All rooms are selected (to allow deselecting specific ones)
+                                    But NOT when the entire building is selected (as a whole) */}
+                                {((someRoomsSelected || allRoomsSelected) && !buildingSelected) && (
                                   <div className={styles.roomList}>
                                     {buildingRooms.map(room => (
                                       <label key={room.id} className={styles.roomCheckbox}>
@@ -1876,6 +1906,33 @@ export default function GenerateSchedulePage() {
                     </button>
                   </div>
 
+                  {/* Auto-Generate Toggle */}
+                  <div className={styles.autoGenerateSection}>
+                    <div className={styles.autoGenerateHeader}>
+                      <div className={styles.autoGenerateInfo}>
+                        <FaSync className={autoGenerateEnabled ? styles.autoSyncActive : ''} />
+                        <div>
+                          <h4>Auto-Generate Schedules</h4>
+                          <p>Automatically regenerate schedules when data changes (30 min interval)</p>
+                        </div>
+                      </div>
+                      <label className={styles.toggleSwitch}>
+                        <input
+                          type="checkbox"
+                          checked={autoGenerateEnabled}
+                          onChange={(e) => setAutoGenerateEnabled(e.target.checked)}
+                        />
+                        <span className={styles.toggleSlider}></span>
+                      </label>
+                    </div>
+                    {autoGenerateEnabled && (
+                      <div className={styles.autoGenerateStatus}>
+                        <FaClock />
+                        <span>Auto-generate is active. System will check for data changes every 30 minutes.</span>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Generate Button */}
                   <div className={styles.generateSection}>
                     <button
@@ -1902,7 +1959,7 @@ export default function GenerateSchedulePage() {
                     {canGenerate && !scheduling && (
                       <p className={styles.generateInfo}>
                         <Zap size={16} />
-                        Will process {classes.length} classes across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
+                        Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
                       </p>
                     )}
                   </div>

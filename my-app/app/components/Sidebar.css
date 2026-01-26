@@ -44,6 +44,15 @@
   padding: 1rem 0;
 }
 
+.sidebar.open .sidebar-nav {
+  padding-top: 9px;
+}
+
+.sidebar.closed .sidebar-nav {
+  margin-top: -5px;
+  margin-bottom: -5px;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;

@@ -6,11 +6,11 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import { 
-  FaChevronLeft, 
-  FaChevronRight, 
-  FaUser, 
-  FaEnvelope, 
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaUser,
+  FaEnvelope,
   FaCalendar,
   FaClock,
   FaBuilding,
@@ -114,54 +114,73 @@ const ROLE_ORDER: Record<string, number> = {
   'staff': 6
 }
 
+// Position priority for sorting within roles (lower = higher priority)
+function getPositionPriority(position: string | null | undefined): number {
+  if (!position) return 99
+  const pos = position.toLowerCase().trim()
+
+  // Dean positions - higher priority
+  if (pos === 'dean' || pos.match(/^dean$/i)) return 1
+  if (pos.includes('dean') && !pos.includes('associate') && !pos.includes('assistant')) return 2
+
+  // Associate Dean - second priority
+  if (pos.includes('associate dean')) return 3
+
+  // Assistant Dean - third priority
+  if (pos.includes('assistant dean')) return 4
+
+  // Other positions
+  return 10
+}
+
 // Get role display info with icons and colors
 function getRoleInfo(role: string) {
   switch (role) {
     case 'administrator':
-      return { 
-        icon: <FaCrown />, 
-        label: 'Administrator / Dean', 
-        color: '#f59e0b', 
+      return {
+        icon: <FaCrown />,
+        label: 'Administrator / Dean',
+        color: '#f59e0b',
         bgColor: 'rgba(245, 158, 11, 0.15)',
         description: 'College/University Administration'
       }
     case 'department_head':
-      return { 
-        icon: <FaUserShield />, 
-        label: 'Department Head', 
-        color: '#8b5cf6', 
+      return {
+        icon: <FaUserShield />,
+        label: 'Department Head',
+        color: '#8b5cf6',
         bgColor: 'rgba(139, 92, 246, 0.15)',
         description: 'Department Leadership'
       }
     case 'program_chair':
-      return { 
-        icon: <FaStar />, 
-        label: 'Program Chair', 
-        color: '#ec4899', 
+      return {
+        icon: <FaStar />,
+        label: 'Program Chair',
+        color: '#ec4899',
         bgColor: 'rgba(236, 72, 153, 0.15)',
         description: 'Program Management'
       }
     case 'coordinator':
-      return { 
-        icon: <FaUserCog />, 
-        label: 'Coordinator', 
-        color: '#06b6d4', 
+      return {
+        icon: <FaUserCog />,
+        label: 'Coordinator',
+        color: '#06b6d4',
         bgColor: 'rgba(6, 182, 212, 0.15)',
         description: 'Program/Area Coordination'
       }
     case 'staff':
-      return { 
-        icon: <FaBriefcase />, 
-        label: 'Staff', 
-        color: '#64748b', 
+      return {
+        icon: <FaBriefcase />,
+        label: 'Staff',
+        color: '#64748b',
         bgColor: 'rgba(100, 116, 139, 0.15)',
         description: 'Administrative Staff'
       }
     default: // faculty
-      return { 
-        icon: <FaChalkboardTeacher />, 
-        label: 'Faculty Member', 
-        color: '#22c55e', 
+      return {
+        icon: <FaChalkboardTeacher />,
+        label: 'Faculty Member',
+        color: '#22c55e',
         bgColor: 'rgba(34, 197, 94, 0.15)',
         description: 'Teaching Faculty'
       }
@@ -225,7 +244,7 @@ function FacultyProfilesContent() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -246,14 +265,19 @@ function FacultyProfilesContent() {
     setLoading(true)
     try {
       const data = await fetchAllRows('faculty_profiles')
-      
-      // Sort by role hierarchy, then by name
+
+      // Sort by role hierarchy, then by position priority, then by name
       data.sort((a, b) => {
         const roleCompare = (ROLE_ORDER[a.role] || 99) - (ROLE_ORDER[b.role] || 99)
         if (roleCompare !== 0) return roleCompare
+
+        // Within the same role, sort by position priority (Dean before Associate Dean, etc.)
+        const positionCompare = getPositionPriority(a.position) - getPositionPriority(b.position)
+        if (positionCompare !== 0) return positionCompare
+
         return (a.full_name || '').localeCompare(b.full_name || '')
       })
-      
+
       setAllFaculty(data)
 
       // Extract unique colleges and departments for filters
@@ -310,7 +334,7 @@ function FacultyProfilesContent() {
 
     setFilteredFaculty(filtered)
     setCurrentIndex(0)
-    
+
     // Update selected profile
     if (filtered.length > 0 && (!selectedProfile || !filtered.find(f => f.id === selectedProfile.id))) {
       setSelectedProfile(filtered[0])
@@ -375,7 +399,7 @@ function FacultyProfilesContent() {
 
       // Update local state
       setAllFaculty(prev => prev.filter(f => f.id !== profile.id))
-      
+
       alert(`"${profile.full_name}" deleted successfully`)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -404,8 +428,8 @@ function FacultyProfilesContent() {
 
   return (
     <div className={styles.layout}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
@@ -415,8 +439,8 @@ function FacultyProfilesContent() {
         <div className={styles.container}>
           {/* Header */}
           <div className={styles.header}>
-            <button 
-              className={styles.backButton} 
+            <button
+              className={styles.backButton}
               onClick={() => router.back()}
             >
               <FaArrowLeft /> Back
@@ -465,8 +489,8 @@ function FacultyProfilesContent() {
                 <div className={styles.filterRow}>
                   <div className={styles.filterGroup}>
                     <label><FaBuilding /> College</label>
-                    <select 
-                      value={selectedCollege} 
+                    <select
+                      value={selectedCollege}
                       onChange={(e) => setSelectedCollege(e.target.value)}
                       className={styles.filterSelect}
                     >
@@ -479,8 +503,8 @@ function FacultyProfilesContent() {
 
                   <div className={styles.filterGroup}>
                     <label><FaUsers /> Department</label>
-                    <select 
-                      value={selectedDepartment} 
+                    <select
+                      value={selectedDepartment}
                       onChange={(e) => setSelectedDepartment(e.target.value)}
                       className={styles.filterSelect}
                     >
@@ -493,8 +517,8 @@ function FacultyProfilesContent() {
 
                   <div className={styles.filterGroup}>
                     <label><FaUserTie /> Role</label>
-                    <select 
-                      value={selectedRole} 
+                    <select
+                      value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value)}
                       className={styles.filterSelect}
                     >
@@ -510,8 +534,8 @@ function FacultyProfilesContent() {
 
                   <div className={styles.filterGroup}>
                     <label><FaBriefcase /> Employment</label>
-                    <select 
-                      value={selectedEmploymentType} 
+                    <select
+                      value={selectedEmploymentType}
                       onChange={(e) => setSelectedEmploymentType(e.target.value)}
                       className={styles.filterSelect}
                     >
@@ -541,12 +565,12 @@ function FacultyProfilesContent() {
                   <FaUsers className={styles.emptyIcon} />
                   <h3>No Faculty Profiles Found</h3>
                   <p>
-                    {allFaculty.length === 0 
+                    {allFaculty.length === 0
                       ? 'Upload faculty profiles from the Upload CSV page to get started.'
                       : 'No profiles match your current filters. Try adjusting your search criteria.'}
                   </p>
                   {allFaculty.length === 0 && (
-                    <button 
+                    <button
                       className={styles.uploadButton}
                       onClick={() => router.push('/LandingPages/UploadCSV')}
                     >
@@ -561,7 +585,7 @@ function FacultyProfilesContent() {
                     <h2 className={styles.pyramidTitle}>
                       <FaCrown /> Organizational Hierarchy
                     </h2>
-                    
+
                     {/* Administrator Level (Top) */}
                     {administrators.length > 0 && (
                       <div className={styles.pyramidLevel}>
@@ -727,9 +751,9 @@ function FacultyProfilesContent() {
                   {selectedProfile && (
                     <div className={styles.carouselSection}>
                       <h2 className={styles.carouselTitle}>Profile Details</h2>
-                      
+
                       <div className={styles.carouselContainer}>
-                        <button 
+                        <button
                           className={`${styles.carouselButton} ${styles.prevButton}`}
                           onClick={handlePrevious}
                           disabled={currentIndex === 0}
@@ -810,7 +834,7 @@ function FacultyProfilesContent() {
                               </div>
 
                               <div className={styles.profileActions}>
-                                <button 
+                                <button
                                   className={styles.deleteProfileButton}
                                   onClick={() => handleDeleteProfile(selectedProfile)}
                                   disabled={deleting === selectedProfile.id}
@@ -827,7 +851,7 @@ function FacultyProfilesContent() {
                           </div>
                         </div>
 
-                        <button 
+                        <button
                           className={`${styles.carouselButton} ${styles.nextButton}`}
                           onClick={handleNext}
                           disabled={currentIndex >= filteredFaculty.length - 1}
