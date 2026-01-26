@@ -233,7 +233,8 @@
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   border-radius: 14px;
-  padding: 24px;
+  padding: 28px;
+  padding-left: 13px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;

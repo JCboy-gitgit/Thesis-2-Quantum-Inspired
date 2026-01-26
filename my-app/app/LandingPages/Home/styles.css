@@ -469,7 +469,7 @@
 .view-button .view-subtitle {
   display: block;
   font-size: 12px;
-  color: var(--text-light);
+  color: var(--text-dark);
   font-weight: 400;
   margin-left: 4px;
   opacity: 0.8;
@@ -479,7 +479,7 @@
   content: attr(title);
   position: absolute;
   left: 50%;
-  top: 100%;
+  top: 83%;
   transform: translateX(-50%);
   background: var(--bg-gray-900);
   color: #fff;
