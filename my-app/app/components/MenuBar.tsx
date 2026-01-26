@@ -74,6 +74,21 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
     }
   }, [isAdmin])
 
+  // Close account menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.account-section')) {
+        setShowAccountMenu(false)
+      }
+    }
+
+    if (showAccountMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showAccountMenu])
+
   const fetchPendingCount = async () => {
     try {
       const response = await fetch('/api/faculty-registration?status=pending')
@@ -128,10 +143,12 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
             <button 
               className="account-button"
               onClick={() => setShowAccountMenu(!showAccountMenu)}
+              title="Account Menu"
             >
               <div className="account-avatar">
                 <User size={20} />
               </div>
+              <ChevronDown size={14} className={`account-chevron ${showAccountMenu ? 'rotated' : ''}`} />
             </button>
             
             {showAccountMenu && (
@@ -178,7 +195,14 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                   Settings
                 </div>
                 <div className="account-menu-divider"></div>
-                <div className="account-menu-item" onClick={handleLogout}>
+                <div 
+                  className="account-menu-item logout-item"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowAccountMenu(false)
+                    handleLogout()
+                  }}
+                >
                   <LogOut size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Logout
                 </div>

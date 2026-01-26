@@ -17,28 +17,66 @@ export default function FacultyLoginPage(): JSX.Element {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [existingSession, setExistingSession] = useState<{ user: any; isActive: boolean } | null>(null)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
   // Check if already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user && session.user.email !== ADMIN_EMAIL) {
-        // Check if user is approved (is_active = true)
-        const { data: userData } = await supabase
-          .from('users')
-          .select('is_active')
-          .eq('id', session.user.id)
-          .single() as { data: { is_active: boolean } | null }
-
-        if (userData?.is_active) {
-          router.push('/faculty/home')
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Session check error:', error)
+          return
         }
+
+        if (session?.user && session.user.email !== ADMIN_EMAIL) {
+          console.log('Found existing session for:', session.user.email)
+          
+          // Check if user is approved (is_active = true)
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('is_active, full_name')
+            .eq('id', session.user.id)
+            .single()
+
+          if (userError) {
+            console.error('User data check error:', userError)
+            // If there's an error checking user data, sign out
+            await supabase.auth.signOut()
+            return
+          }
+
+          if (userData?.is_active) {
+            console.log('User is active, showing continue option')
+            setExistingSession({ user: session.user, isActive: true })
+          } else {
+            console.log('User is not active, staying on login page')
+          }
+        } else {
+          console.log('No valid session found')
+        }
+      } catch (error) {
+        console.error('Session check failed:', error)
       }
     }
     checkSession()
-  }, [router])
+  }, [])
+
+  const handleContinueToDashboard = () => {
+    router.push('/faculty/home')
+  }
+
+  const handleLoginDifferentAccount = async () => {
+    await supabase.auth.signOut()
+    setExistingSession(null)
+    setEmail('')
+    setPassword('')
+    setMessage(null)
+    setError(null)
+  }
 
   const validate = (): boolean => {
     setError(null)
@@ -150,11 +188,52 @@ export default function FacultyLoginPage(): JSX.Element {
       <main className="container">
         <div className="card">
           <div className="card-header">
-            <h1 className="title">Faculty Login</h1>
-            <p className="subtitle">Access your faculty dashboard</p>
+            <h1 className="title">
+              {existingSession ? 'Welcome Back!' : 'Faculty Login'}
+            </h1>
+            <p className="subtitle">
+              {existingSession 
+                ? `You are already logged in as ${existingSession.user.email}`
+                : 'Access your faculty dashboard'
+              }
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="form">
+          {existingSession ? (
+            /* Existing Session UI */
+            <div className="form">
+              <div className="existing-session-message">
+                <div className="session-info">
+                  <div className="session-icon">✅</div>
+                  <div className="session-details">
+                    <p><strong>Logged in as:</strong> {existingSession.user.email}</p>
+                    <p><strong>Status:</strong> Active Faculty Member</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleContinueToDashboard}
+                className="button"
+              >
+                Continue to Dashboard
+              </button>
+
+              <div className="switch-row">
+                <span className="switch-text">Want to login with different account?</span>
+                <button
+                  type="button"
+                  onClick={handleLoginDifferentAccount}
+                  className="link-button"
+                >
+                  Login Different Account
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Login Form */
+            <form onSubmit={handleSubmit} className="form">
             {/* Email Field */}
             <div className="form-group">
               <label className="label">
@@ -238,6 +317,7 @@ export default function FacultyLoginPage(): JSX.Element {
             {message && <div className="message success">{message}</div>}
             {error && <div className="message error">{error}</div>}
           </form>
+          )}
 
           {/* Footer */}
           <div className="card-footer">

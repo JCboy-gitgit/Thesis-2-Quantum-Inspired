@@ -16,7 +16,8 @@ import {
   Camera,
   Briefcase,
   BookOpen,
-  LogOut
+  LogOut,
+  ChevronDown
 } from 'lucide-react'
 import styles from './styles.module.css'
 
@@ -47,6 +48,7 @@ export default function FacultyProfilePage() {
   const [editing, setEditing] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState<UserProfile | null>(null)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -56,6 +58,22 @@ export default function FacultyProfilePage() {
     checkAuthAndLoad()
     fetchDepartments()
   }, [])
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Don't close if clicking on the profile button, menu, or menu items
+      if (!target.closest('.profileSection') && !target.closest('.profileMenu')) {
+        setShowProfileMenu(false)
+      }
+    }
+
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileMenu])
 
   const fetchDepartments = async () => {
     try {
@@ -179,8 +197,24 @@ export default function FacultyProfilePage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/faculty/login')
+    try {
+      console.log('Logging out from profile page...')
+      // Close the menu immediately for better UX
+      setShowProfileMenu(false)
+      
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Logout error:', error)
+      } else {
+        console.log('Logout successful')
+      }
+      // Force redirect to login page
+      router.push('/faculty/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Even if logout fails, redirect to login
+      router.push('/faculty/login')
+    }
   }
 
   if (loading) {
@@ -200,10 +234,37 @@ export default function FacultyProfilePage() {
           <ArrowLeft size={20} />
           <span>Back to Dashboard</span>
         </button>
-        <button className={styles.logoutBtn} onClick={handleLogout}>
-          <LogOut size={18} />
-          <span>Logout</span>
-        </button>
+        
+        {/* Profile Icon with Dropdown */}
+        <div className={styles.profileSection}>
+          <button 
+            className={styles.profileBtn}
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            title="Profile Menu"
+          >
+            <div className={styles.profileAvatar}>
+              <User size={20} />
+            </div>
+            <ChevronDown size={14} className={`${styles.profileChevron} ${showProfileMenu ? styles.rotated : ''}`} />
+          </button>
+          
+          {showProfileMenu && (
+            <div className={styles.profileMenu}>
+              <button 
+                className={styles.profileMenuItem} 
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleLogout()
+                }}
+                type="button"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
