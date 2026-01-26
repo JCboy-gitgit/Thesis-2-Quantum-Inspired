@@ -25,12 +25,16 @@ interface FacultyProfile {
   bio: string | null
   specialization: string | null
   education: string | null
+  upload_group_id: number | null
+  file_name: string | null
   created_at: string
   updated_at: string
 }
 
-// College group interface
-interface CollegeGroup {
+// File group interface (replaces CollegeGroup - now tracks by uploaded file)
+interface FileGroup {
+  upload_group_id: number
+  file_name: string
   college: string
   faculty_count: number
   departments: string[]
@@ -54,7 +58,7 @@ interface FacultyFormData {
 
 interface FacultyStats {
   totalFaculty: number
-  totalColleges: number
+  totalFiles: number
   administrators: number
   fullTime: number
   partTime: number
@@ -222,8 +226,8 @@ function FacultyListsContent() {
   const [loading, setLoading] = useState(true)
   const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
   const [filteredData, setFilteredData] = useState<FacultyProfile[]>([])
-  const [collegeGroups, setCollegeGroups] = useState<CollegeGroup[]>([])
-  const [selectedCollege, setSelectedCollege] = useState<string | null>(null)
+  const [fileGroups, setFileGroups] = useState<FileGroup[]>([])
+  const [selectedFile, setSelectedFile] = useState<FileGroup | null>(null)
   const [stats, setStats] = useState<FacultyStats | null>(null)
 
   // Search and filters
@@ -237,7 +241,10 @@ function FacultyListsContent() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showRenameModal, setShowRenameModal] = useState(false)
+  const [showDeleteFileConfirm, setShowDeleteFileConfirm] = useState(false)
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
+  const [renameFileName, setRenameFileName] = useState('')
   const [formData, setFormData] = useState<FacultyFormData>({
     faculty_id: '',
     full_name: '',
@@ -266,7 +273,7 @@ function FacultyListsContent() {
 
   useEffect(() => {
     applyFilters()
-  }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedCollege])
+  }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedFile])
 
   const checkAuth = async () => {
     try {
@@ -293,27 +300,38 @@ function FacultyListsContent() {
       const data = await fetchAllRows('faculty_profiles')
       setAllFaculty(data)
 
-      // Group by college
-      const collegeMap = new Map<string, { faculty: FacultyProfile[], departments: Set<string> }>()
+      // Group by upload_group_id (each CSV file is a separate group)
+      const fileMap = new Map<number, { faculty: FacultyProfile[], departments: Set<string>, file_name: string, college: string }>()
+      
       data.forEach(f => {
-        const college = f.college || 'Unassigned'
-        if (!collegeMap.has(college)) {
-          collegeMap.set(college, { faculty: [], departments: new Set() })
+        // Use upload_group_id if available, otherwise use 0 for legacy data
+        const groupId = f.upload_group_id || 0
+        const fileName = f.file_name || f.college || 'Legacy Import'
+        
+        if (!fileMap.has(groupId)) {
+          fileMap.set(groupId, { 
+            faculty: [], 
+            departments: new Set(), 
+            file_name: fileName,
+            college: f.college || 'Unassigned'
+          })
         }
-        collegeMap.get(college)!.faculty.push(f)
+        fileMap.get(groupId)!.faculty.push(f)
         if (f.department) {
-          collegeMap.get(college)!.departments.add(f.department)
+          fileMap.get(groupId)!.departments.add(f.department)
         }
       })
 
-      const groups: CollegeGroup[] = Array.from(collegeMap.entries()).map(([college, info]) => ({
-        college,
+      const groups: FileGroup[] = Array.from(fileMap.entries()).map(([groupId, info]) => ({
+        upload_group_id: groupId,
+        file_name: info.file_name,
+        college: info.college,
         faculty_count: info.faculty.length,
         departments: Array.from(info.departments),
         created_at: info.faculty[0]?.created_at || ''
-      })).sort((a, b) => b.faculty_count - a.faculty_count)
+      })).sort((a, b) => b.upload_group_id - a.upload_group_id) // Most recent first
 
-      setCollegeGroups(groups)
+      setFileGroups(groups)
 
       // Extract unique departments
       const uniqueDepts = [...new Set(data.map(f => f.department).filter(Boolean))] as string[]
@@ -322,7 +340,7 @@ function FacultyListsContent() {
       // Calculate stats
       setStats({
         totalFaculty: data.length,
-        totalColleges: groups.length,
+        totalFiles: groups.length,
         administrators: data.filter(f => f.role === 'administrator' || f.role === 'department_head').length,
         fullTime: data.filter(f => f.employment_type === 'full-time').length,
         partTime: data.filter(f => f.employment_type !== 'full-time').length
@@ -330,7 +348,7 @@ function FacultyListsContent() {
     } catch (error) {
       console.error('Error fetching faculty data:', error)
       setAllFaculty([])
-      setCollegeGroups([])
+      setFileGroups([])
     } finally {
       setLoading(false)
     }
@@ -339,9 +357,9 @@ function FacultyListsContent() {
   const applyFilters = () => {
     let filtered = [...allFaculty]
 
-    // Filter by selected college
-    if (selectedCollege) {
-      filtered = filtered.filter(f => (f.college || 'Unassigned') === selectedCollege)
+    // Filter by selected file (upload_group_id)
+    if (selectedFile) {
+      filtered = filtered.filter(f => (f.upload_group_id || 0) === selectedFile.upload_group_id)
     }
 
     // Search filter
@@ -521,6 +539,111 @@ function FacultyListsContent() {
     }
   }
 
+  // RENAME FILE - Update file_name for all faculty in the group
+  const handleRenameFile = async () => {
+    if (!selectedFile || !renameFileName.trim()) {
+      alert('Please enter a new file name')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Update all faculty records with this upload_group_id
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('faculty_profiles')
+        .update({ 
+          file_name: renameFileName.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('upload_group_id', selectedFile.upload_group_id)
+
+      if (error) throw error
+
+      setSuccessMessage(`File renamed to "${renameFileName.trim()}" successfully!`)
+      setShowRenameModal(false)
+      setRenameFileName('')
+      fetchFacultyData()
+
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error renaming file:', error)
+      alert(`Failed to rename file: ${errorMessage}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // DELETE FILE - Delete all faculty from this file
+  const handleDeleteFile = async () => {
+    if (!selectedFile) return
+
+    setDeleting(true)
+    try {
+      // Get all faculty in this file for archiving
+      const facultyInFile = allFaculty.filter(f => (f.upload_group_id || 0) === selectedFile.upload_group_id)
+
+      // Archive all faculty before deleting
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('archived_items')
+          .insert({
+            item_type: 'faculty_file',
+            item_name: selectedFile.file_name,
+            item_data: { 
+              file_name: selectedFile.file_name,
+              college: selectedFile.college,
+              faculty_count: selectedFile.faculty_count,
+              faculty: facultyInFile
+            },
+            deleted_by: user?.id || null,
+            original_table: 'faculty_profiles',
+            original_id: `file_${selectedFile.upload_group_id}`
+          })
+      } catch (archiveError) {
+        console.warn('Could not archive file:', archiveError)
+      }
+
+      // Delete all faculty from this file
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('faculty_profiles')
+        .delete()
+        .eq('upload_group_id', selectedFile.upload_group_id)
+
+      if (error) throw error
+
+      setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived and deleted`)
+      setShowDeleteFileConfirm(false)
+      setSelectedFile(null)
+      fetchFacultyData()
+
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error deleting file:', error)
+      alert(`Failed to delete file: ${errorMessage}`)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Open rename modal
+  const openRenameModal = (file: FileGroup) => {
+    setSelectedFile(file)
+    setRenameFileName(file.file_name)
+    setShowRenameModal(true)
+  }
+
+  // Open delete file confirmation
+  const openDeleteFileConfirm = (file: FileGroup) => {
+    setSelectedFile(file)
+    setShowDeleteFileConfirm(true)
+  }
+
   const resetForm = () => {
     setFormData({
       faculty_id: '',
@@ -528,7 +651,7 @@ function FacultyListsContent() {
       position: '',
       role: 'faculty',
       department: '',
-      college: selectedCollege || '',
+      college: selectedFile?.college || '',
       email: '',
       phone: '',
       office_location: '',
@@ -586,17 +709,25 @@ function FacultyListsContent() {
       <Sidebar isOpen={sidebarOpen} />
       <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.facultyContainer}>
-          {/* College Selection Bar */}
+          {/* File Selection Bar */}
           <div className={styles.selectedFileBar}>
-            {selectedCollege ? (
+            {selectedFile ? (
               <>
-                <span>🏫 College: <b>{selectedCollege}</b> ({filteredData.length} faculty members)</span>
-                <button className={styles.changeFileBtn} onClick={() => setSelectedCollege(null)}>
-                  View All Colleges
-                </button>
+                <span>📄 File: <b>{selectedFile.file_name}</b> ({filteredData.length} faculty members) | College: {selectedFile.college}</span>
+                <div className={styles.fileActions}>
+                  <button className={styles.renameFileBtn} onClick={() => openRenameModal(selectedFile)}>
+                    ✏️ Rename
+                  </button>
+                  <button className={styles.deleteFileBtn} onClick={() => openDeleteFileConfirm(selectedFile)}>
+                    🗑️ Delete File
+                  </button>
+                  <button className={styles.changeFileBtn} onClick={() => setSelectedFile(null)}>
+                    View All Files
+                  </button>
+                </div>
               </>
             ) : (
-              <span>👥 Viewing: <b>All Faculty Profiles</b> ({allFaculty.length} total from {collegeGroups.length} colleges)</span>
+              <span>👥 Viewing: <b>All Faculty Profiles</b> ({allFaculty.length} total from {fileGroups.length} CSV files)</span>
             )}
           </div>
 
@@ -639,8 +770,8 @@ function FacultyListsContent() {
                   <FolderIcon />
                 </div>
                 <div className={styles.statContent}>
-                  <p className={styles.statLabel}>Colleges</p>
-                  <p className={styles.statValue}>{stats.totalColleges}</p>
+                  <p className={styles.statLabel}>CSV Files</p>
+                  <p className={styles.statValue}>{stats.totalFiles}</p>
                 </div>
               </div>
               <div className={styles.statCard}>
@@ -668,29 +799,50 @@ function FacultyListsContent() {
             </div>
           )}
 
-          {/* College Groups (if no college selected) */}
-          {!selectedCollege && collegeGroups.length > 0 && (
+          {/* CSV File Groups (if no file selected) */}
+          {!selectedFile && fileGroups.length > 0 && (
             <div className={styles.collegeGroupsSection}>
-              <h3 className={styles.sectionTitle}>📁 Faculty by College (from CSV Uploads)</h3>
+              <h3 className={styles.sectionTitle}>📁 Uploaded CSV Files</h3>
               <div className={styles.collegeGrid}>
-                {collegeGroups.map(group => (
+                {fileGroups.map(group => (
                   <div
-                    key={group.college}
+                    key={group.upload_group_id}
                     className={styles.collegeCard}
-                    onClick={() => setSelectedCollege(group.college)}
                   >
-                    <div className={styles.collegeIcon}>
-                      <FolderIcon />
+                    <div 
+                      className={styles.collegeCardContent}
+                      onClick={() => setSelectedFile(group)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, cursor: 'pointer' }}
+                    >
+                      <div className={styles.collegeIcon}>
+                        <FolderIcon />
+                      </div>
+                      <div className={styles.collegeInfo}>
+                        <h4>{group.file_name}</h4>
+                        <p>{group.faculty_count} faculty members • {group.college}</p>
+                        <p className={styles.collegeDepts}>
+                          {group.departments.slice(0, 3).join(', ')}
+                          {group.departments.length > 3 && ` +${group.departments.length - 3} more`}
+                        </p>
+                      </div>
                     </div>
-                    <div className={styles.collegeInfo}>
-                      <h4>{group.college}</h4>
-                      <p>{group.faculty_count} faculty members</p>
-                      <p className={styles.collegeDepts}>
-                        {group.departments.slice(0, 3).join(', ')}
-                        {group.departments.length > 3 && ` +${group.departments.length - 3} more`}
-                      </p>
+                    <div className={styles.fileCardActions}>
+                      <button 
+                        className={styles.fileEditBtn}
+                        onClick={(e) => { e.stopPropagation(); openRenameModal(group); }}
+                        title="Rename file"
+                      >
+                        <EditIcon />
+                      </button>
+                      <button 
+                        className={styles.fileDeleteBtn}
+                        onClick={(e) => { e.stopPropagation(); openDeleteFileConfirm(group); }}
+                        title="Delete file"
+                      >
+                        <TrashIcon />
+                      </button>
                     </div>
-                    <span className={styles.collegeArrow}>→</span>
+                    <span className={styles.collegeArrow} onClick={() => setSelectedFile(group)}>→</span>
                   </div>
                 ))}
               </div>
@@ -1258,6 +1410,92 @@ function FacultyListsContent() {
                 }}
               >
                 {deleting ? 'Deleting...' : 'Delete & Archive'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename File Modal */}
+      {showRenameModal && selectedFile && (
+        <div className={styles.modalOverlay} onClick={() => setShowRenameModal(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className={styles.modalHeader}>
+              <h3>✏️ Rename CSV File</h3>
+              <button className={styles.modalClose} onClick={() => setShowRenameModal(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p style={{ marginBottom: '16px', color: 'var(--text-light)', fontSize: '14px' }}>
+                Current file: <strong>{selectedFile.file_name}</strong> ({selectedFile.faculty_count} faculty members)
+              </p>
+              <div className={styles.formGroup}>
+                <label>New File Name</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={renameFileName}
+                  onChange={e => setRenameFileName(e.target.value)}
+                  placeholder="Enter new file name..."
+                />
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowRenameModal(false)}>
+                Cancel
+              </button>
+              <button className={styles.btnSave} onClick={handleRenameFile} disabled={saving}>
+                {saving ? 'Renaming...' : 'Rename File'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete File Confirmation Modal */}
+      {showDeleteFileConfirm && selectedFile && (
+        <div className={styles.modalOverlay} onClick={() => setShowDeleteFileConfirm(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className={styles.modalHeader}>
+              <h3>⚠️ Delete Entire CSV File</h3>
+              <button className={styles.modalClose} onClick={() => setShowDeleteFileConfirm(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p style={{ marginBottom: '16px' }}>
+                Are you sure you want to delete the file <strong>&quot;{selectedFile.file_name}&quot;</strong>?
+              </p>
+              <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '12px' }}>
+                ⚠️ This will delete <strong>{selectedFile.faculty_count} faculty members</strong> from the database!
+              </p>
+              <p style={{ color: 'var(--text-light)', fontSize: '14px' }}>
+                All faculty members from this file will be archived and can be restored later if needed.
+              </p>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowDeleteFileConfirm(false)}>
+                Cancel
+              </button>
+              <button
+                className={styles.btnDelete}
+                onClick={handleDeleteFile}
+                disabled={deleting}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {deleting ? 'Deleting...' : `Delete ${selectedFile.faculty_count} Faculty Members`}
               </button>
             </div>
           </div>

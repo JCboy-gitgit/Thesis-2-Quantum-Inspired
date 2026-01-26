@@ -287,6 +287,44 @@
   margin: 0 auto;
 }
 
+/* ==================== Selected File Bar ==================== */
+.selectedFileBar {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.selectedFileBar span {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.selectedFileBar span b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+[data-theme="green"] .selectedFileBar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .selectedFileBar span {
+  color: #166534;
+}
+
+[data-theme="green"] .selectedFileBar span b {
+  color: #02353C;
+}
+
 /* ==================== Header ==================== */
 .facultyHeader {
   margin-bottom: 30px;
@@ -1271,6 +1309,105 @@
   height: 18px;
 }
 
+/* ==================== File Actions in Selection Bar ==================== */
+.fileActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.renameFileBtn,
+.deleteFileBtn,
+.changeFileBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.renameFileBtn {
+  background: var(--primary-light, #e0f2fe);
+  color: var(--primary, #0284c7);
+  border: 1px solid var(--primary, #0284c7);
+}
+
+.renameFileBtn:hover {
+  background: var(--primary, #0284c7);
+  color: white;
+}
+
+.deleteFileBtn {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.deleteFileBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.changeFileBtn {
+  background: var(--bg-gray-100, #f3f4f6);
+  color: var(--text-medium, #4b5563);
+  border: 1px solid var(--border-gray, #d1d5db);
+}
+
+.changeFileBtn:hover {
+  background: var(--bg-gray-200, #e5e7eb);
+}
+
+/* ==================== File Card Actions ==================== */
+.fileCardActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 12px;
+}
+
+.fileEditBtn,
+.fileDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fileEditBtn {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.fileEditBtn:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.fileDeleteBtn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.fileDeleteBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.fileEditBtn svg,
+.fileDeleteBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ==================== Green Theme for New Elements ==================== */
 [data-theme="green"] .collegeCard {
   background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
@@ -1292,4 +1429,45 @@
 
 [data-theme="green"] .sectionTitle {
   color: #ffffff;
+}
+
+[data-theme="green"] .fileEditBtn {
+  background: rgba(46, 175, 125, 0.15);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .fileEditBtn:hover {
+  background: #2EAF7D;
+  color: white;
+}
+
+[data-theme="green"] .fileDeleteBtn {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+[data-theme="green"] .fileDeleteBtn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+[data-theme="green"] .renameFileBtn {
+  background: rgba(46, 175, 125, 0.15);
+  color: #2EAF7D;
+  border-color: #2EAF7D;
+}
+
+[data-theme="green"] .renameFileBtn:hover {
+  background: #2EAF7D;
+  color: white;
+}
+
+[data-theme="green"] .changeFileBtn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="green"] .changeFileBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

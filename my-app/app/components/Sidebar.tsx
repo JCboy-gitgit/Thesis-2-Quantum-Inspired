@@ -45,11 +45,11 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
         if (item.hasSubmenu) {
           if (item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
             newOpen[idx] = true
-          } else if (item.label === 'Rooms Management' && pathname.includes('/Rooms-Management')) {
+          } else if (item.label === 'Rooms Management' && (pathname.includes('/Rooms-Management') || pathname.includes('/RoomsManagement'))) {
             newOpen[idx] = true
-          } else if (item.label === 'Faculty Management' && pathname.includes('/FacultyManagement')) {
+          } else if (item.label === 'Faculty Management' && (pathname.includes('/FacultyManagement') || pathname.includes('/FacultyColleges'))) {
             newOpen[idx] = true
-          } else if (item.label === 'Courses Management' && pathname.includes('/CoursesManagement')) {
+          } else if (item.label === 'Courses Management' && (pathname.includes('/CoursesManagement') || pathname.includes('/CourseManagement'))) {
             newOpen[idx] = true
           }
         }
@@ -65,31 +65,20 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     {
       icon: Building2,
       label: 'Rooms Management',
-      path: '/LandingPages/Rooms-Management',
+      path: '/LandingPages/RoomsManagement',
       hasSubmenu: true,
       submenu: [
+        {
+          label: 'All Rooms', 
+          path: '/LandingPages/RoomsManagement',
+          icon: List,
+          exact: true
+        },
         {
           label: '2D / 3D Map Viewer', 
           path: '/LandingPages/Rooms-Management/MapViewer',
           icon: Map,
           exact: true
-        },
-        {
-          label: 'Room List & Details',
-          path: '/LandingPages/Rooms-Management/RoomLists&Details',
-          icon: List,
-          exact: true
-        },
-        {
-          label: 'Add / Edit Rooms',
-          path: '/LandingPages/Rooms-Management/Add-EditRooms',
-          icon: PenSquare,
-          exact: true
-        },
-        {
-          label: 'Search / Filter Rooms',
-          path: '/LandingPages/Rooms-Management/Search-FilterRooms',
-          icon: Search,
         },
       ]
     },
@@ -106,21 +95,10 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           exact: true
         },
         {
-          label: 'Faculty Lists',
-          path: '/LandingPages/FacultyManagement/FacultyLists',
-          icon: List,
-          exact: true
-        },
-        {
-          label: 'Faculty Profiles',
-          path: '/LandingPages/FacultyManagement/FacultyProfiles',
-          icon: UserCircle,
-          exact: true
-        },
-        {
-          label: 'Faculty Departments',
-          path: '/LandingPages/FacultyManagement/FacultyDepartments',
+          label: 'Faculty Colleges',
+          path: '/LandingPages/FacultyColleges',
           icon: Building,
+          exact: true
         },
       ]
     },
@@ -130,7 +108,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
       hasSubmenu: true,
       submenu: [
         {
-          label: 'Courses & Sections',
+          label: 'All Courses',
           path: '/LandingPages/CoursesManagement',
           icon: BookOpen,
           exact: true

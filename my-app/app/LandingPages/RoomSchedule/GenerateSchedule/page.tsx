@@ -388,30 +388,8 @@ export default function GenerateSchedulePage() {
         setClassGroups(grouped)
       }
 
-      // Fetch teacher groups
-      const { data: teacherData, error: teacherError } = await (supabase
-        .from('teacher_schedules') as any)
-        .select('upload_group_id, college, file_name, created_at')
-        .order('created_at', { ascending: false })
-
-      if (!teacherError && teacherData) {
-        const grouped = teacherData.reduce((acc: TeacherGroup[], curr: any) => {
-          const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
-          if (existing) {
-            existing.teacher_count++
-          } else {
-            acc.push({
-              upload_group_id: curr.upload_group_id,
-              college: curr.college || 'Unnamed',
-              file_name: curr.file_name,
-              created_at: curr.created_at,
-              teacher_count: 1
-            })
-          }
-          return acc
-        }, [])
-        setTeacherGroups(grouped)
-      }
+      // Teacher schedules are deprecated
+      setTeacherGroups([])
     } catch (error) {
       console.error('Error fetching groups:', error)
     } finally {
@@ -482,24 +460,9 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const loadTeacherData = async (groupId: number) => {
-    const { data, error } = await (supabase
-      .from('teacher_schedules') as any)
-      .select('*')
-      .eq('upload_group_id', groupId)
-      .order('name', { ascending: true })
-
-    if (!error && data) {
-      setTeachers(data.map((t: any) => ({
-        id: t.id,
-        teacher_id: t.teacher_id || '',
-        name: t.name || t.teacher_name || '',
-        schedule_day: t.schedule_day || '',
-        schedule_time: t.schedule_time || '',
-        department: t.department || '',
-        email: t.email || ''
-      })))
-    }
+  const loadTeacherData = async () => {
+    // Teacher schedules are deprecated; keep teachers empty
+    setTeachers([])
   }
 
   // Handle group selection
@@ -531,13 +494,8 @@ export default function GenerateSchedulePage() {
   }
 
   const handleSelectTeacherGroup = (groupId: number) => {
-    if (selectedTeacherGroup === groupId) {
-      setSelectedTeacherGroup(null)
-      setTeachers([])
-    } else {
-      setSelectedTeacherGroup(groupId)
-      loadTeacherData(groupId)
-    }
+    setSelectedTeacherGroup(null)
+    setTeachers([])
   }
 
   // Get unique buildings from loaded rooms
@@ -633,26 +591,9 @@ export default function GenerateSchedulePage() {
   }
 
   const handleViewTeacherFile = async () => {
-    if (!selectedTeacherGroup) return
-
-    setViewerLoading(true)
-    setShowTeacherFileViewer(true)
-
-    try {
-      const { data, error } = await (supabase
-        .from('teacher_schedules') as any)
-        .select('*')
-        .eq('upload_group_id', selectedTeacherGroup)
-        .order('name', { ascending: true })
-
-      if (!error && data) {
-        setViewerData(data)
-      }
-    } catch (error) {
-      console.error('Error loading teacher file data:', error)
-    } finally {
-      setViewerLoading(false)
-    }
+    // Teacher schedules removed; nothing to view
+    setShowTeacherFileViewer(false)
+    setViewerData([])
   }
 
   const closeFileViewer = () => {
@@ -669,7 +610,7 @@ export default function GenerateSchedulePage() {
   // Get selected group info
   const selectedCampusInfo = campusGroups.find(g => g.upload_group_id === selectedCampusGroup)
   const selectedClassInfo = classGroups.find(g => g.id === selectedClassGroup)
-  const selectedTeacherInfo = teacherGroups.find(g => g.upload_group_id === selectedTeacherGroup)
+  const selectedTeacherInfo = undefined
 
   // Calculate stats
   const totalRoomCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
@@ -711,10 +652,10 @@ export default function GenerateSchedulePage() {
         academic_year: config.academicYear,
         campus_group_id: selectedCampusGroup,
         class_group_id: selectedClassInfo?.upload_group_id || null,
-        teacher_group_id: selectedTeacherGroup,
+        teacher_group_id: null,
         rooms: filteredRooms, // Use filtered rooms instead of all rooms
         classes: classes,
-        teachers: teachers,
+        teachers: [],
         time_slots: timeSlots,
         active_days: activeDays,
         time_settings: timeSettings,

@@ -261,38 +261,6 @@ export interface ClassScheduleFile {
 }
 
 // ============================================================================
-// TEACHER SCHEDULES (from CSV uploads)
-// ============================================================================
-
-export interface TeacherSchedule {
-  id: number;
-  upload_group_id: number;
-  teacher_id: string;
-  teacher_name: string;
-  department?: string;
-  email?: string;
-  schedule_day?: string;
-  schedule_time?: string;
-  start_time?: string;
-  end_time?: string;
-  is_available: boolean;
-  schedule_type: string;
-  college?: string;
-  file_name?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TeacherScheduleFile {
-  upload_group_id: number;
-  file_name: string;
-  college?: string;
-  uploaded_at: string;
-  total_entries: number;
-  unique_teachers: number;
-}
-
-// ============================================================================
 // SCHEDULE GENERATION
 // ============================================================================
 
@@ -302,7 +270,6 @@ export interface ScheduleGeneration {
   academic_year?: string;
   semester?: string;
   class_schedule_group_id: number;
-  teacher_schedule_group_id?: number;
   total_classes: number;
   scheduled_count: number;
   unscheduled_count: number;
@@ -318,7 +285,6 @@ export interface ScheduleGeneration {
 
 export interface GenerationConfig {
   classScheduleGroupId: number;
-  teacherScheduleGroupId?: number;
   generationName: string;
   academicYear: string;
   semester: string;
@@ -484,7 +450,6 @@ export const TABLE_NAMES = {
   FACULTY_AVAILABILITY: 'faculty_availability',
   COURSES: 'courses',
   CLASS_SCHEDULES: 'class_schedules',
-  TEACHER_SCHEDULES: 'teacher_schedules',
   SCHEDULE_GENERATIONS: 'schedule_generations',
   ROOM_ALLOCATIONS: 'room_allocations',
   TIME_SLOTS: 'time_slots',
@@ -571,7 +536,6 @@ export interface Database {
       faculty_profiles: TableDefinition<FacultyProfile>;
       courses: TableDefinition<Course>;
       class_schedules: TableDefinition<ClassSchedule>;
-      teacher_schedules: TableDefinition<TeacherSchedule>;
       schedule_generations: TableDefinition<ScheduleGeneration>;
       room_allocations: TableDefinition<RoomAllocation>;
       time_slots: TableDefinition<TimeSlot>;
@@ -584,7 +548,6 @@ export interface Database {
     Views: {
       room_schedule_view: { Row: RoomAllocation };
       class_schedule_summary: { Row: ClassScheduleFile };
-      teacher_schedule_summary: { Row: TeacherScheduleFile };
       room_utilization_view: { Row: { room_id: number; room_code: string; building: string; capacity: number; room_type: RoomType; allocated_slots: number; total_hours_used: number } };
     };
     Enums: {

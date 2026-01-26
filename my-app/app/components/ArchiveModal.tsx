@@ -110,18 +110,8 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
           }
         }
       } else if (item.item_type === 'faculty') {
-        // Restore teacher schedules
-        const data = item.item_data
-        if (data.teachers && Array.isArray(data.teachers)) {
-          for (const teacher of data.teachers) {
-            const { id, ...teacherWithoutId } = teacher
-            const { error } = await supabase.from('teacher_schedules').insert(teacherWithoutId)
-            if (error && !error.message?.includes('duplicate')) {
-              console.error('Error restoring teacher:', error)
-              throw error
-            }
-          }
-        }
+        // Teacher schedules table removed; skip restore for legacy teacher payloads
+        console.info('Teacher schedules are deprecated; skipping restore for item', item.id)
       } else if (item.item_type === 'schedule') {
         // Restore generated schedule and its allocations
         const data = item.item_data
@@ -274,13 +264,8 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
               }
             }
           } else if (item.item_type === 'faculty') {
-            const data = item.item_data
-            if (data.teachers && Array.isArray(data.teachers)) {
-              for (const teacher of data.teachers) {
-                const { id: teacherId, ...teacherWithoutId } = teacher
-                await supabase.from('teacher_schedules').insert(teacherWithoutId)
-              }
-            }
+            // Teacher schedules table removed; skip restore for legacy teacher payloads
+            console.info('Teacher schedules are deprecated; skipping restore for item', item.id)
           } else if (item.item_type === 'schedule') {
             const data = item.item_data
             if (data.schedule) {
