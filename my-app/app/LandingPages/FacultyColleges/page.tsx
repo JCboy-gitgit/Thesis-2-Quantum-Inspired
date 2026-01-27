@@ -225,6 +225,8 @@ function FacultyCollegesContent() {
   const [showDeleteCollegeConfirm, setShowDeleteCollegeConfirm] = useState(false)
   const [showRenameFileModal, setShowRenameFileModal] = useState(false)
   const [showDeleteFileConfirm, setShowDeleteFileConfirm] = useState(false)
+  const [showEditFacultyModal, setShowEditFacultyModal] = useState(false)
+  const [deleteFacultyTarget, setDeleteFacultyTarget] = useState<string | null>(null)
   const [renameFileName, setRenameFileName] = useState('')
   const [collegeFormData, setCollegeFormData] = useState<CollegeFormData>({
     department_code: '',
@@ -237,6 +239,19 @@ function FacultyCollegesContent() {
     description: '',
     is_active: true
   })
+
+  const [facultyFormData, setFacultyFormData] = useState({
+    full_name: '',
+    email: '',
+    position: '',
+    role: 'faculty' as FacultyProfile['role'],
+    employment_type: 'full-time' as FacultyProfile['employment_type'],
+    department: '',
+    college: '',
+    phone: '',
+    office_location: ''
+  })
+  const [selectedFacultyProfile, setSelectedFacultyProfile] = useState<FacultyProfile | null>(null)
 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -688,9 +703,93 @@ function FacultyCollegesContent() {
     setShowRenameFileModal(true)
   }
 
+  const openEditFacultyModal = (faculty: FacultyProfile) => {
+    setSelectedFacultyProfile(faculty)
+    setFacultyFormData({
+      full_name: faculty.full_name || '',
+      email: faculty.email || '',
+      position: faculty.position || '',
+      role: faculty.role || 'faculty',
+      employment_type: faculty.employment_type || 'full-time',
+      department: faculty.department || '',
+      college: faculty.college || '',
+      phone: faculty.phone || '',
+      office_location: faculty.office_location || ''
+    })
+    setShowEditFacultyModal(true)
+  }
+
+  const openDeleteFacultyConfirm = (faculty: FacultyProfile) => {
+    setSelectedFacultyProfile(faculty)
+    setDeleteFacultyTarget(faculty.id)
+  }
+
   const openDeleteFileConfirmModal = (file: FileGroup) => {
     setSelectedFile(file)
     setShowDeleteFileConfirm(true)
+  }
+
+  const handleUpdateFaculty = async () => {
+    if (!selectedFacultyProfile) return
+    if (!facultyFormData.full_name.trim()) {
+      alert('Name is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { error } = await db
+        .from('faculty_profiles')
+        .update({
+          full_name: facultyFormData.full_name.trim(),
+          email: facultyFormData.email.trim() || null,
+          position: facultyFormData.position.trim() || null,
+          role: facultyFormData.role,
+          employment_type: facultyFormData.employment_type,
+          department: facultyFormData.department.trim() || null,
+          college: facultyFormData.college.trim() || null,
+          phone: facultyFormData.phone.trim() || null,
+          office_location: facultyFormData.office_location.trim() || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedFacultyProfile.id)
+
+      if (error) throw error
+
+      setSuccessMessage('Faculty updated successfully!')
+      setShowEditFacultyModal(false)
+      if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
+      setTimeout(() => setSuccessMessage(''), 2500)
+    } catch (error: any) {
+      console.error('Error updating faculty:', error)
+      alert(`Failed to update faculty: ${error.message || error}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteFaculty = async () => {
+    if (!selectedFacultyProfile) return
+    setDeleting(true)
+    try {
+      const { error } = await db
+        .from('faculty_profiles')
+        .delete()
+        .eq('id', selectedFacultyProfile.id)
+
+      if (error) throw error
+
+      setSuccessMessage('Faculty deleted successfully')
+      setDeleteFacultyTarget(null)
+      setSelectedFacultyProfile(null)
+      if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
+      setTimeout(() => setSuccessMessage(''), 2500)
+    } catch (error: any) {
+      console.error('Error deleting faculty:', error)
+      alert(`Failed to delete faculty: ${error.message || error}`)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   // Filter faculty
@@ -1050,7 +1149,32 @@ function FacultyCollegesContent() {
                           const roleInfo = getRoleInfo(faculty.role)
                           const empBadge = getEmploymentBadge(faculty.employment_type)
                           return (
-                            <div key={faculty.id} className={styles.hierarchyCard}>
+                            <div key={faculty.id} className={`${styles.hierarchyCard} ${styles.cardWithActions}`}>
+                              <div className={styles.cardActions}>
+                                <button
+                                  className={styles.iconBtn}
+                                  title="Edit"
+                                  onClick={(e) => { e.stopPropagation(); openEditFacultyModal(faculty) }}
+                                >
+                                  <EditIcon />
+                                </button>
+                                <button
+                                  className={`${styles.iconBtn} ${styles.danger}`}
+                                  title="Delete"
+                                  onClick={(e) => { e.stopPropagation(); openDeleteFacultyConfirm(faculty) }}
+                                >
+                                  <TrashIcon />
+                                </button>
+                                {deleteFacultyTarget === faculty.id && (
+                                  <div className={styles.inlineConfirm}>
+                                    <p>Delete this faculty?</p>
+                                    <div className={styles.inlineConfirmActions}>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Yes</button>
+                                      <button onClick={(e) => { e.stopPropagation(); setDeleteFacultyTarget(null); setSelectedFacultyProfile(null) }}>Cancel</button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                               <div className={styles.hierarchyAvatar} style={{ borderColor: roleInfo.color }}>
                                 {faculty.profile_image ? (
                                   <img src={faculty.profile_image} alt={faculty.full_name} />
@@ -1087,7 +1211,32 @@ function FacultyCollegesContent() {
                         {paginatedFaculty.filter(f => f.role === 'faculty').map(faculty => {
                           const empBadge = getEmploymentBadge(faculty.employment_type)
                           return (
-                            <div key={faculty.id} className={styles.facultyCard}>
+                            <div key={faculty.id} className={`${styles.facultyCard} ${styles.cardWithActions}`}>
+                              <div className={styles.cardActions}>
+                                <button
+                                  className={styles.iconBtn}
+                                  title="Edit"
+                                  onClick={(e) => { e.stopPropagation(); openEditFacultyModal(faculty) }}
+                                >
+                                  <EditIcon />
+                                </button>
+                                <button
+                                  className={`${styles.iconBtn} ${styles.danger}`}
+                                  title="Delete"
+                                  onClick={(e) => { e.stopPropagation(); openDeleteFacultyConfirm(faculty) }}
+                                >
+                                  <TrashIcon />
+                                </button>
+                                {deleteFacultyTarget === faculty.id && (
+                                  <div className={styles.inlineConfirm}>
+                                    <p>Delete this faculty?</p>
+                                    <div className={styles.inlineConfirmActions}>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Yes</button>
+                                      <button onClick={(e) => { e.stopPropagation(); setDeleteFacultyTarget(null); setSelectedFacultyProfile(null) }}>Cancel</button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                               <div className={styles.facultyAvatar}>
                                 {faculty.profile_image ? (
                                   <img src={faculty.profile_image} alt={faculty.full_name} />
@@ -1229,6 +1378,123 @@ function FacultyCollegesContent() {
               <button className={styles.btnSave} onClick={handleAddCollege} disabled={saving}>
                 {saving ? 'Saving...' : 'Add College'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Faculty Modal */}
+      {showEditFacultyModal && selectedFacultyProfile && (
+        <div className={styles.modalOverlay} onClick={() => setShowEditFacultyModal(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Edit Faculty</h3>
+              <button className={styles.modalClose} onClick={() => setShowEditFacultyModal(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.full_name}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, full_name: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    className={styles.formInput}
+                    value={facultyFormData.email}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Position</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.position}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, position: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Role</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.role}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, role: e.target.value as FacultyProfile['role'] })}
+                  >
+                    <option value="administrator">Administrator</option>
+                    <option value="department_head">Department Head</option>
+                    <option value="program_chair">Program Chair</option>
+                    <option value="coordinator">Coordinator</option>
+                    <option value="faculty">Faculty</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Employment Type</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.employment_type}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
+                  >
+                    <option value="full-time">Full-Time</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="adjunct">Adjunct</option>
+                    <option value="guest">Guest</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Department</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.department}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, department: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>College</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.college}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, college: e.target.value })}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.phone}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className={styles.formGroup}>
+                <label>Office Location</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={facultyFormData.office_location}
+                  onChange={e => setFacultyFormData({ ...facultyFormData, office_location: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.secondaryBtn} onClick={() => setShowEditFacultyModal(false)} disabled={saving}>Cancel</button>
+              <button className={styles.addBtn} onClick={handleUpdateFaculty} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>

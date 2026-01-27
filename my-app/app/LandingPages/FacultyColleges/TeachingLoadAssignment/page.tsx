@@ -24,7 +24,8 @@ import {
   AlertCircle,
   Download,
   Upload,
-  BookMarked
+  BookMarked,
+  Layers
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -32,19 +33,22 @@ import Link from 'next/link'
 // ==================== Interfaces ====================
 interface Course {
   id: number
+  upload_group_id?: number
   course_code: string
   course_name: string
-  lec_units: number
-  lab_units: number
-  credit_units: number
+  section?: string
   lec_hours: number
   lab_hours: number
+  total_hours?: number // Computed: lec_hours + lab_hours
   semester: string
   academic_year: string
   department: string
   college: string
   degree_program: string | null
   year_level: number
+  prerequisite?: string
+  file_name?: string
+  status?: string
 }
 
 interface FacultyProfile {
@@ -77,15 +81,47 @@ interface TeachingLoadWithDetails extends TeachingLoad {
   course?: Course
 }
 
+interface Section {
+  id: number
+  section_name: string
+  year_batch_id: number
+  year_level: number
+  degree_program: string
+  department?: string | null
+  college?: string | null
+  student_count: number
+  max_capacity: number
+  is_active?: boolean
+  created_at: string
+}
+
+interface SectionCourseAssignment {
+  id: number
+  section_id: number
+  course_id: number
+  created_at: string
+}
+
 // ==================== Main Component ====================
 function TeachingLoadAssignmentContent() {
   const router = useRouter()
+
+  // Options
+  const semesters = ['First Semester', 'Second Semester', 'Summer']
+  const currentYear = new Date().getFullYear()
+  const academicYears = [
+    `${currentYear}-${currentYear + 1}`,
+    `${currentYear + 1}-${currentYear + 2}`,
+    `${currentYear - 1}-${currentYear}`
+  ]
 
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const [faculties, setFaculties] = useState<FacultyProfile[]>([])
   const [courses, setCourses] = useState<Course[]>([])
+  const [sections, setSections] = useState<Section[]>([])
+  const [sectionCourseAssignments, setSectionCourseAssignments] = useState<SectionCourseAssignment[]>([])
   const [teachingLoads, setTeachingLoads] = useState<TeachingLoadWithDetails[]>([])
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
   const [expandedFaculties, setExpandedFaculties] = useState<Set<string>>(new Set())
@@ -106,9 +142,16 @@ function TeachingLoadAssignmentContent() {
   // Assignment form
   const [selectedCourses, setSelectedCourses] = useState<number[]>([])
   const [assignmentSemester, setAssignmentSemester] = useState<string>('First Semester')
-  const [assignmentAcademicYear, setAssignmentAcademicYear] = useState<string>('2025-2026')
+  const [assignmentAcademicYear, setAssignmentAcademicYear] = useState<string>(academicYears[0])
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null)
   const [assignmentSection, setAssignmentSection] = useState<string>('')
   const [assignmentNotes, setAssignmentNotes] = useState<string>('')
+  
+  // Course filter states for modal
+  const [courseFilterDegreeProgram, setCourseFilterDegreeProgram] = useState<string>('all')
+  const [courseFilterYearLevel, setCourseFilterYearLevel] = useState<string>('all')
+  const [courseFilterSemester, setCourseFilterSemester] = useState<string>('all')
+  const [courseSearchTerm, setCourseSearchTerm] = useState<string>('')
 
   // CSV upload
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -116,15 +159,6 @@ function TeachingLoadAssignmentContent() {
 
   // Notification
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
-
-  // Options
-  const semesters = ['First Semester', 'Second Semester', 'Summer']
-  const currentYear = new Date().getFullYear()
-  const academicYears = [
-    `${currentYear}-${currentYear + 1}`,
-    `${currentYear + 1}-${currentYear + 2}`,
-    `${currentYear - 1}-${currentYear}`
-  ]
 
   // Effects
   useEffect(() => {
@@ -139,6 +173,20 @@ function TeachingLoadAssignmentContent() {
       return () => clearTimeout(timer)
     }
   }, [notification])
+
+  // Lock background scroll when any modal is open
+  const anyModalOpen = showAssignCoursesModal || showUploadCSVModal || showDeleteConfirm !== null
+  useEffect(() => {
+    const body = document.body
+    if (anyModalOpen) {
+      body.style.overflow = 'hidden'
+    } else {
+      body.style.overflow = ''
+    }
+    return () => {
+      body.style.overflow = ''
+    }
+  }, [anyModalOpen])
 
   const checkAuth = async () => {
     try {
@@ -174,14 +222,59 @@ function TeachingLoadAssignmentContent() {
       setFaculties(facultyData || [])
 
       // Fetch courses from class_schedules
+      // Get unique courses (deduplicate by course_code + semester + academic_year)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: coursesData, error: coursesError } = await (supabase as any)
         .from('class_schedules')
         .select('*')
+        .not('course_code', 'is', null)
+        .not('course_name', 'is', null)
         .order('course_code', { ascending: true })
 
-      if (coursesError) throw coursesError
-      setCourses(coursesData || [])
+      if (coursesError) {
+        console.error('Error fetching courses:', coursesError)
+        throw coursesError
+      }
+
+      // Deduplicate courses by course_code + degree_program + year_level + semester
+      const uniqueCourses = new Map<string, Course>()
+      coursesData?.forEach((course: Course) => {
+        const key = `${course.course_code}-${course.degree_program || 'unknown'}-${course.year_level}-${course.semester}`
+        if (!uniqueCourses.has(key)) {
+          uniqueCourses.set(key, course)
+        }
+      })
+
+      const deduplicatedCourses = Array.from(uniqueCourses.values())
+      console.log('Fetched courses:', deduplicatedCourses.length, 'unique courses from', coursesData?.length || 0, 'total records')
+      setCourses(deduplicatedCourses)
+
+      // Fetch sections
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: sectionsData, error: sectionsError } = await (supabase as any)
+        .from('sections')
+        .select('*')
+        .order('section_name', { ascending: true })
+
+      if (sectionsError) {
+        console.log('sections table may not exist:', sectionsError)
+        setSections([])
+      } else {
+        setSections(sectionsData || [])
+      }
+
+      // Fetch section course assignments
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: assignmentsData, error: assignmentsError } = await (supabase as any)
+        .from('section_course_assignments')
+        .select('*')
+
+      if (assignmentsError) {
+        console.log('section_course_assignments table may not exist:', assignmentsError)
+        setSectionCourseAssignments([])
+      } else {
+        setSectionCourseAssignments(assignmentsData || [])
+      }
 
       // Fetch teaching loads
       await fetchTeachingLoads()
@@ -196,10 +289,27 @@ function TeachingLoadAssignmentContent() {
 
   const fetchTeachingLoads = async () => {
     try {
+      // Fetch teaching loads with joined course data from class_schedules
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: loadsData, error: loadsError } = await (supabase as any)
         .from('teaching_loads')
-        .select('*')
+        .select(`
+          *,
+          class_schedules:course_id (
+            id,
+            course_code,
+            course_name,
+            section,
+            lec_hours,
+            lab_hours,
+            semester,
+            academic_year,
+            department,
+            college,
+            degree_program,
+            year_level
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (loadsError) {
@@ -208,10 +318,11 @@ function TeachingLoadAssignmentContent() {
         return
       }
 
-      // Combine with faculty and course data
-      const enrichedLoads = loadsData?.map((load: TeachingLoad) => {
+      // Combine with faculty data and use joined course data
+      const enrichedLoads = loadsData?.map((load: any) => {
         const faculty = faculties.find(f => f.id === load.faculty_id)
-        const course = courses.find(c => c.id === load.course_id)
+        // Use the joined class_schedules data as course, or fallback to finding in courses array
+        const course = load.class_schedules || courses.find(c => c.id === load.course_id)
         return { ...load, faculty, course }
       }) || []
 
@@ -224,6 +335,19 @@ function TeachingLoadAssignmentContent() {
   // Get unique colleges
   const getColleges = () => {
     return [...new Set(faculties.map(f => f.college).filter(Boolean))] as string[]
+  }
+
+  // Include prior academic years from this faculty's history
+  const getAcademicYearOptionsForFaculty = (faculty: FacultyProfile | null) => {
+    const years = new Set(academicYears)
+    if (faculty) {
+      getTeachingLoadsForFaculty(faculty.id).forEach(load => years.add(load.academic_year))
+    }
+    return Array.from(years).sort((a, b) => {
+      const startA = parseInt(a.split('-')[0] || '0', 10)
+      const startB = parseInt(b.split('-')[0] || '0', 10)
+      return startB - startA
+    })
   }
 
   // Get unique departments
@@ -253,7 +377,7 @@ function TeachingLoadAssignmentContent() {
     return loads
   }
 
-  // Calculate total units for faculty
+  // Calculate total hours for faculty
   const getTotalUnits = (facultyId: string): { total: number, lec: number, lab: number } => {
     const loads = getTeachingLoadsForFaculty(facultyId)
     let totalLec = 0
@@ -261,8 +385,8 @@ function TeachingLoadAssignmentContent() {
 
     loads.forEach(load => {
       if (load.course) {
-        totalLec += load.course.lec_units || 0
-        totalLab += load.course.lab_units || 0
+        totalLec += load.course.lec_hours || 0
+        totalLab += load.course.lab_hours || 0
       }
     })
 
@@ -311,10 +435,143 @@ function TeachingLoadAssignmentContent() {
     setSelectedFaculty(faculty)
     setSelectedCourses([])
     setAssignmentSemester('First Semester')
-    setAssignmentAcademicYear(academicYears[0])
+    setAssignmentAcademicYear(getAcademicYearOptionsForFaculty(faculty)[0] || academicYears[0])
+    setSelectedSectionId(null)
     setAssignmentSection('')
     setAssignmentNotes('')
+    setCourseFilterDegreeProgram('all')
+    setCourseFilterYearLevel('all')
+    setCourseFilterSemester('all')  // Changed from 'First Semester' to 'all'
+    setCourseSearchTerm('')
     setShowAssignCoursesModal(true)
+  }
+
+  // Get filtered sections for dropdown
+  const getAvailableSections = () => {
+    if (!selectedFaculty) return []
+    
+    return sections.filter(s => 
+      (s.college === selectedFaculty.college || s.department === selectedFaculty.department) &&
+      s.is_active !== false
+    )
+  }
+
+  // Get courses assigned to a section
+  const getCoursesForSection = (sectionId: number): number[] => {
+    return sectionCourseAssignments
+      .filter(a => a.section_id === sectionId)
+      .map(a => a.course_id)
+  }
+
+  // When section is selected, auto-populate courses
+  const handleSectionChange = (sectionId: number | null) => {
+    setSelectedSectionId(sectionId)
+    
+    if (sectionId) {
+      const section = sections.find(s => s.id === sectionId)
+      if (section) {
+        setAssignmentSection(section.section_name)
+        // Auto-select courses assigned to this section
+        const sectionCourses = getCoursesForSection(sectionId)
+        setSelectedCourses(sectionCourses)
+        
+        // Auto-set filters based on section
+        setCourseFilterDegreeProgram(section.degree_program)
+        setCourseFilterYearLevel(section.year_level.toString())
+      }
+    } else {
+      setAssignmentSection('')
+    }
+  }
+
+  // Get degree programs from courses
+  const getDegreePrograms = () => {
+    const programs = new Set<string>()
+    courses.forEach(c => {
+      if (c.degree_program) programs.add(c.degree_program)
+    })
+    return Array.from(programs).sort()
+  }
+
+  // Get filtered courses for assignment modal
+  const getFilteredCoursesForAssignment = () => {
+    let filtered = [...courses]
+
+    console.log('Total courses before filtering:', filtered.length)
+    console.log('Selected faculty:', selectedFaculty?.college, selectedFaculty?.department)
+
+    // Filter by faculty's college/department (more lenient - show all if college/dept match OR are in same general area)
+    if (selectedFaculty) {
+      // If faculty has college or department, try to match, otherwise show all
+      if (selectedFaculty.college || selectedFaculty.department) {
+        filtered = filtered.filter(c => {
+          const collegeMatch = selectedFaculty.college && c.college && c.college.toLowerCase().includes(selectedFaculty.college.toLowerCase())
+          const deptMatch = selectedFaculty.department && c.department && c.department.toLowerCase().includes(selectedFaculty.department.toLowerCase())
+          const reverseCollegeMatch = selectedFaculty.college && c.college && selectedFaculty.college.toLowerCase().includes(c.college.toLowerCase())
+          const reverseDeptMatch = selectedFaculty.department && c.department && selectedFaculty.department.toLowerCase().includes(c.department.toLowerCase())
+          
+          return collegeMatch || deptMatch || reverseCollegeMatch || reverseDeptMatch
+        })
+      }
+    }
+
+    console.log('After college/dept filter:', filtered.length)
+
+    // Apply degree program filter
+    if (courseFilterDegreeProgram !== 'all') {
+      filtered = filtered.filter(c => c.degree_program === courseFilterDegreeProgram)
+      console.log('After degree program filter:', filtered.length)
+    }
+
+    // Apply year level filter
+    if (courseFilterYearLevel !== 'all') {
+      filtered = filtered.filter(c => c.year_level === parseInt(courseFilterYearLevel))
+      console.log('After year level filter:', filtered.length)
+    }
+
+    // Apply semester filter
+    if (courseFilterSemester !== 'all') {
+      filtered = filtered.filter(c => c.semester === courseFilterSemester)
+      console.log('After semester filter:', filtered.length)
+    }
+
+    // Apply search filter
+    if (courseSearchTerm) {
+      const term = courseSearchTerm.toLowerCase()
+      filtered = filtered.filter(c => 
+        c.course_code.toLowerCase().includes(term) ||
+        c.course_name.toLowerCase().includes(term)
+      )
+    }
+
+    return filtered.sort((a, b) => {
+      // Sort by year level, then semester, then course code
+      if (a.year_level !== b.year_level) return a.year_level - b.year_level
+      if (a.semester !== b.semester) return a.semester.localeCompare(b.semester)
+      return a.course_code.localeCompare(b.course_code)
+    })
+  }
+
+  // Group courses by degree program and year level
+  const getGroupedCourses = () => {
+    const filtered = getFilteredCoursesForAssignment()
+    const grouped = new Map<string, Map<number, Course[]>>()
+
+    filtered.forEach(course => {
+      const program = course.degree_program || 'Unknown Program'
+      
+      if (!grouped.has(program)) {
+        grouped.set(program, new Map())
+      }
+      const programMap = grouped.get(program)!
+      
+      if (!programMap.has(course.year_level)) {
+        programMap.set(course.year_level, [])
+      }
+      programMap.get(course.year_level)!.push(course)
+    })
+
+    return grouped
   }
 
   // Toggle course selection
@@ -337,6 +594,9 @@ function TeachingLoadAssignmentContent() {
 
     setSaving(true)
     try {
+      const existingLoads = getTeachingLoadsForFaculty(selectedFaculty.id)
+      const existingKeys = new Set(existingLoads.map(load => buildAssignmentKey(load.course_id, load.academic_year, load.semester, load.section)))
+
       // Create teaching load entries
       const assignments = selectedCourses.map(courseId => ({
         faculty_id: selectedFaculty.id,
@@ -347,19 +607,30 @@ function TeachingLoadAssignmentContent() {
         notes: assignmentNotes || null
       }))
 
+      const dedupedAssignments = assignments.filter(a => !existingKeys.has(buildAssignmentKey(a.course_id, a.academic_year, a.semester, a.section)))
+
+      if (dedupedAssignments.length === 0) {
+        setNotification({ type: 'error', message: 'These courses are already assigned for this academic year and semester.' })
+        return
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('teaching_loads')
-        .insert(assignments)
+        .insert(dedupedAssignments)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error saving assignments:', error?.message || error)
+        throw error
+      }
 
-      setNotification({ type: 'success', message: `Assigned ${selectedCourses.length} course(s) successfully!` })
+      setNotification({ type: 'success', message: `Assigned ${dedupedAssignments.length} course(s) successfully!` })
       setShowAssignCoursesModal(false)
       await fetchTeachingLoads()
-    } catch (error) {
+    } catch (error: any) {
+      const message = error?.message || 'Failed to save assignments. Please try again.'
       console.error('Error saving assignments:', error)
-      setNotification({ type: 'error', message: 'Failed to save assignments. Please try again.' })
+      setNotification({ type: 'error', message })
     } finally {
       setSaving(false)
     }
@@ -498,7 +769,7 @@ function TeachingLoadAssignmentContent() {
         csvContent += `"${load.faculty.email || ''}",`
         csvContent += `${load.course.course_code},`
         csvContent += `"${load.course.course_name}",`
-        csvContent += `${load.course.credit_units},`
+        csvContent += `${(load.course.lec_hours || 0) + (load.course.lab_hours || 0)},`
         csvContent += `${load.academic_year},`
         csvContent += `"${load.semester}",`
         csvContent += `"${load.section || ''}",`
@@ -538,6 +809,9 @@ function TeachingLoadAssignmentContent() {
       default: return '#64748b'
     }
   }
+
+  const buildAssignmentKey = (courseId: number, ay: string, sem: string, section?: string | null) =>
+    `${courseId}::${ay}::${sem}::${section || ''}`
 
   return (
     <div className={styles.pageLayout} data-page="admin">
@@ -812,16 +1086,46 @@ function TeachingLoadAssignmentContent() {
                           facultyLoads.map(load => (
                             <div key={load.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 12, background: 'var(--bg-gray-50, #f7fafc)', borderRadius: 10, marginBottom: 8 }}>
                               <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                  <strong>{load.course?.course_code}</strong>
-                                  <span style={{ fontSize: 12, color: 'var(--text-medium, #718096)', background: 'white', padding: '2px 8px', borderRadius: 6 }}>{load.course?.credit_units} units</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <strong style={{ fontSize: 15 }}>{load.course?.course_code}</strong>
+                                    {load.course?.degree_program && (
+                                      <span style={{ 
+                                        fontSize: 11, 
+                                        padding: '2px 6px', 
+                                        background: 'var(--primary-gradient)', 
+                                        color: 'white',
+                                        borderRadius: 4,
+                                        fontWeight: 600
+                                      }}>
+                                        {load.course.degree_program}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: 12, color: 'var(--text-medium, #718096)', background: 'white', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
+                                    {(load.course?.lec_hours || 0) + (load.course?.lab_hours || 0)} hrs
+                                  </span>
                                 </div>
-                                <div style={{ fontSize: 14, color: 'var(--text-medium, #718096)' }}>{load.course?.course_name}</div>
-                                <div style={{ fontSize: 12, color: 'var(--text-light, #a0aec0)' }}>
-                                  {load.academic_year} • {load.semester}{load.section ? ` • ${load.section}` : ''}
+                                <div style={{ fontSize: 14, color: 'var(--text-medium, #718096)', marginBottom: 6 }}>
+                                  {load.course?.course_name}
+                                </div>
+                                <div style={{ fontSize: 12, color: 'var(--text-light, #a0aec0)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                  <span>Year {load.course?.year_level}</span>
+                                  <span>•</span>
+                                  <span>{load.academic_year}</span>
+                                  <span>•</span>
+                                  <span>{load.semester}</span>
+                                  {load.section && (
+                                    <>
+                                      <span>•</span>
+                                      <span style={{ fontWeight: 600, color: 'var(--text-medium, #718096)' }}>{load.section}</span>
+                                    </>
+                                  )}
                                 </div>
                                 {load.notes && (
-                                  <div style={{ fontSize: 12, color: 'var(--text-medium, #718096)', fontStyle: 'italic' }}>{load.notes}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--text-medium, #718096)', fontStyle: 'italic', marginTop: 4 }}>
+                                    Note: {load.notes}
+                                  </div>
                                 )}
                               </div>
                               <button onClick={() => setShowDeleteConfirm(load.id)} title="Remove" style={{ background: 'transparent', border: 'none', color: '#ef4444', padding: 8, cursor: 'pointer' }}>
@@ -850,6 +1154,35 @@ function TeachingLoadAssignmentContent() {
                 </div>
 
                 <div className={stylesLocal.modalBody}>
+                  <div className={stylesLocal.facultyInfoBar}>
+                    <div><strong>Department:</strong> {selectedFaculty.department || 'N/A'}</div>
+                    <div><strong>College:</strong> {selectedFaculty.college || 'N/A'}</div>
+                    <div><strong>Email:</strong> {selectedFaculty.email || 'N/A'}</div>
+                    <div><strong>Employment:</strong> {selectedFaculty.employment_type}</div>
+                  </div>
+
+                  <div className={stylesLocal.historySection}>
+                    <div className={stylesLocal.historyHeader}>Teaching History</div>
+                    {getTeachingLoadsForFaculty(selectedFaculty.id).length === 0 ? (
+                      <div className={stylesLocal.historyEmpty}>No previous assignments yet.</div>
+                    ) : (
+                      <div className={stylesLocal.historyList}>
+                        {getTeachingLoadsForFaculty(selectedFaculty.id)
+                          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                          .map(load => (
+                            <div key={load.id} className={stylesLocal.historyItem}>
+                              <div className={stylesLocal.historyTop}>
+                                <span className={stylesLocal.historyCourse}>{load.course?.course_code || 'Course'}</span>
+                                <span className={stylesLocal.historyMeta}>{load.academic_year} • {load.semester}</span>
+                              </div>
+                              <div className={stylesLocal.historyName}>{load.course?.course_name || 'Untitled course'}</div>
+                              <div className={stylesLocal.historyMetaSmall}>Section: {load.section || 'N/A'}</div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Assignment Details */}
                   <div className={stylesLocal.formGrid}>
                     <div className={stylesLocal.formGroup}>
@@ -858,7 +1191,7 @@ function TeachingLoadAssignmentContent() {
                         value={assignmentAcademicYear}
                         onChange={(e) => setAssignmentAcademicYear(e.target.value)}
                       >
-                        {academicYears.map(year => (
+                        {getAcademicYearOptionsForFaculty(selectedFaculty).map(year => (
                           <option key={year} value={year}>{year}</option>
                         ))}
                       </select>
@@ -868,7 +1201,10 @@ function TeachingLoadAssignmentContent() {
                       <label>Semester</label>
                       <select
                         value={assignmentSemester}
-                        onChange={(e) => setAssignmentSemester(e.target.value)}
+                        onChange={(e) => {
+                          setAssignmentSemester(e.target.value)
+                          setCourseFilterSemester(e.target.value)
+                        }}
                       >
                         {semesters.map(sem => (
                           <option key={sem} value={sem}>{sem}</option>
@@ -877,16 +1213,35 @@ function TeachingLoadAssignmentContent() {
                     </div>
 
                     <div className={stylesLocal.formGroup}>
-                      <label>Section (Optional)</label>
+                      <label>Select Section (Optional)</label>
+                      <select
+                        value={selectedSectionId || ''}
+                        onChange={(e) => handleSectionChange(e.target.value ? parseInt(e.target.value) : null)}
+                      >
+                        <option value="">-- None / Enter Manually --</option>
+                        {getAvailableSections().map(section => (
+                          <option key={section.id} value={section.id}>
+                            {section.section_name} ({section.degree_program} - Year {section.year_level})
+                          </option>
+                        ))}
+                      </select>
+                      <small style={{ fontSize: '12px', color: 'var(--text-light, #a0aec0)', marginTop: '4px', display: 'block' }}>
+                        {selectedSectionId ? 'Courses auto-populated from section' : 'Or enter section name manually below'}
+                      </small>
+                    </div>
+
+                    <div className={stylesLocal.formGroup}>
+                      <label>Section Name (Manual Entry)</label>
                       <input
                         type="text"
                         placeholder="e.g., BSCS 1A"
                         value={assignmentSection}
                         onChange={(e) => setAssignmentSection(e.target.value)}
+                        disabled={selectedSectionId !== null}
                       />
                     </div>
 
-                    <div className={stylesLocal.formGroup}>
+                    <div className={stylesLocal.formGroup} style={{ gridColumn: '1 / -1' }}>
                       <label>Notes (Optional)</label>
                       <input
                         type="text"
@@ -897,33 +1252,249 @@ function TeachingLoadAssignmentContent() {
                     </div>
                   </div>
 
-                  {/* Course Selection */}
-                  <div className={stylesLocal.courseSelection}>
-                    <h3>Select Courses ({selectedCourses.length} selected)</h3>
-                    <div className={stylesLocal.courseCheckboxList}>
-                      {courses
-                        .filter(c => 
-                          c.college === selectedFaculty.college ||
-                          c.department === selectedFaculty.department
-                        )
-                        .map(course => (
-                          <label key={course.id} className={stylesLocal.courseCheckbox}>
-                            <input
-                              type="checkbox"
-                              checked={selectedCourses.includes(course.id)}
-                              onChange={() => toggleCourseSelection(course.id)}
-                            />
-                            <div className={stylesLocal.courseDetails}>
-                              <div className={stylesLocal.courseCodeName}>
-                                <strong>{course.course_code}</strong>
-                                <span>{course.course_name}</span>
-                              </div>
-                              <div className={stylesLocal.courseMetaSmall}>
-                                Year {course.year_level} • {course.credit_units} units • {course.semester}
-                              </div>
-                            </div>
-                          </label>
+                  {/* Course Filters */}
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                    gap: '12px',
+                    marginTop: '20px',
+                    marginBottom: '16px',
+                    padding: '16px',
+                    background: 'var(--bg-gray-50, #f7fafc)',
+                    borderRadius: '10px'
+                  }}>
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-medium, #718096)', marginBottom: '6px', display: 'block' }}>
+                        Search Courses
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Search by code or name..."
+                        value={courseSearchTerm}
+                        onChange={(e) => setCourseSearchTerm(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color, #e2e8f0)',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-medium, #718096)', marginBottom: '6px', display: 'block' }}>
+                        Degree Program
+                      </label>
+                      <select
+                        value={courseFilterDegreeProgram}
+                        onChange={(e) => setCourseFilterDegreeProgram(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color, #e2e8f0)',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="all">All Programs</option>
+                        {getDegreePrograms().map(program => (
+                          <option key={program} value={program}>{program}</option>
                         ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-medium, #718096)', marginBottom: '6px', display: 'block' }}>
+                        Year Level
+                      </label>
+                      <select
+                        value={courseFilterYearLevel}
+                        onChange={(e) => setCourseFilterYearLevel(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color, #e2e8f0)',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="all">All Years</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-medium, #718096)', marginBottom: '6px', display: 'block' }}>
+                        Semester
+                      </label>
+                      <select
+                        value={courseFilterSemester}
+                        onChange={(e) => setCourseFilterSemester(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color, #e2e8f0)',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="all">All Semesters</option>
+                        {semesters.map(sem => (
+                          <option key={sem} value={sem}>{sem}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Course Selection - Grouped by Program and Year */}
+                  <div className={stylesLocal.courseSelection}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <h3>Select Courses ({selectedCourses.length} selected)</h3>
+                      <button
+                        onClick={() => setSelectedCourses([])}
+                        style={{
+                          padding: '6px 12px',
+                          background: 'var(--bg-gray-100, #edf2f7)',
+                          border: '1px solid var(--border-color, #e2e8f0)',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          color: 'var(--text-medium, #718096)'
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+
+                    <div style={{ maxHeight: '450px', overflowY: 'auto', border: '1px solid var(--border-color, #e2e8f0)', borderRadius: '10px', padding: '12px' }}>
+                      {getGroupedCourses().size === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-light, #a0aec0)' }}>
+                          <BookOpen size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                          <p style={{ marginBottom: '8px', fontSize: '15px', fontWeight: 600 }}>No courses found matching your filters</p>
+                          {courses.length === 0 ? (
+                            <p style={{ fontSize: '13px', color: 'var(--text-light, #a0aec0)' }}>
+                              No courses available in the database. Please add courses in Course Management.
+                            </p>
+                          ) : (
+                            <p style={{ fontSize: '13px', color: 'var(--text-light, #a0aec0)' }}>
+                              Try adjusting your filters above or check the browser console for details.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        Array.from(getGroupedCourses()).map(([program, yearMap]) => (
+                          <div key={program} style={{ marginBottom: '20px' }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '8px',
+                              padding: '8px 12px',
+                              background: 'var(--primary-gradient)',
+                              color: 'white',
+                              borderRadius: '8px',
+                              fontWeight: 700,
+                              fontSize: '15px',
+                              marginBottom: '12px'
+                            }}>
+                              <GraduationCap size={20} />
+                              {program}
+                            </div>
+
+                            {Array.from(yearMap).sort(([a], [b]) => a - b).map(([yearLevel, coursesInYear]) => (
+                              <div key={yearLevel} style={{ marginBottom: '16px', marginLeft: '12px' }}>
+                                <div style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '6px',
+                                  padding: '6px 10px',
+                                  background: 'var(--bg-gray-100, #edf2f7)',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  fontSize: '14px',
+                                  color: 'var(--text-dark, #1a202c)',
+                                  marginBottom: '8px'
+                                }}>
+                                  <Layers size={16} />
+                                  Year {yearLevel} - {coursesInYear.length} course(s)
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '8px' }}>
+                                  {coursesInYear.map(course => (
+                                    <label 
+                                      key={course.id} 
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: '10px',
+                                        padding: '10px 12px',
+                                        background: selectedCourses.includes(course.id) 
+                                          ? 'rgba(99, 102, 241, 0.1)' 
+                                          : 'var(--bg-white, #fff)',
+                                        border: selectedCourses.includes(course.id)
+                                          ? '2px solid rgba(99, 102, 241, 0.5)'
+                                          : '1px solid var(--border-color, #e2e8f0)',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedCourses.includes(course.id)}
+                                        onChange={() => toggleCourseSelection(course.id)}
+                                        style={{ marginTop: '2px', cursor: 'pointer' }}
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                          <strong style={{ color: 'var(--text-dark, #1a202c)', fontSize: '14px' }}>
+                                          {course.course_code}
+                                          </strong>
+                                          <span style={{ 
+                                            padding: '2px 8px', 
+                                            background: 'var(--bg-gray-100, #edf2f7)', 
+                                            borderRadius: '4px', 
+                                            fontSize: '12px',
+                                            color: 'var(--text-medium, #718096)',
+                                            fontWeight: 600
+                                          }}>
+                                            {(course.lec_hours || 0) + (course.lab_hours || 0)} hrs
+                                          </span>
+                                          <span style={{ 
+                                            fontSize: '12px',
+                                            color: 'var(--text-light, #a0aec0)'
+                                          }}>
+                                            {course.semester}
+                                          </span>
+                                        </div>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-medium, #718096)' }}>
+                                          {course.course_name}
+                                        </div>
+                                        <div style={{ 
+                                          fontSize: '12px', 
+                                          color: 'var(--text-light, #a0aec0)',
+                                          marginTop: '4px',
+                                          display: 'flex',
+                                          gap: '12px'
+                                        }}>
+                                          <span>Lec: {course.lec_hours}hrs</span>
+                                          {course.lab_hours > 0 && (
+                                            <span>Lab: {course.lab_hours}hrs</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

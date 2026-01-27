@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import {
@@ -24,7 +25,9 @@ import {
   Filter,
   Users,
   ArrowLeft,
-  Search
+  Search,
+  Tag,
+  Beaker
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -35,11 +38,9 @@ interface Course {
   upload_group_id: number
   course_code: string
   course_name: string
-  lec_units: number
-  lab_units: number
-  credit_units: number
   lec_hours: number
   lab_hours: number
+  total_hours?: number // Computed: lec_hours + lab_hours
   semester: string
   academic_year: string
   department: string
@@ -76,8 +77,6 @@ interface Stats {
 interface CourseFormData {
   course_code: string
   course_name: string
-  lec_units: number
-  lab_units: number
   lec_hours: number
   lab_hours: number
   semester: string
@@ -90,8 +89,6 @@ interface CourseFormData {
 const emptyFormData: CourseFormData = {
   course_code: '',
   course_name: '',
-  lec_units: 3,
-  lab_units: 0,
   lec_hours: 3,
   lab_hours: 0,
   semester: 'First Semester',
@@ -158,6 +155,7 @@ function CoursesManagementContent() {
   const [filterSemester, setFilterSemester] = useState<string>('all')
   const [filterYearLevel, setFilterYearLevel] = useState<string>('all')
   const [filterDegreeProgram, setFilterDegreeProgram] = useState<string>('all')
+  const [filterCourseType, setFilterCourseType] = useState<string>('all') // 'all', 'lec', 'lab', 'lec_lab'
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set())
   const [expandedYearLevels, setExpandedYearLevels] = useState<Set<string>>(new Set())
   const [stats, setStats] = useState<Stats>({
@@ -211,7 +209,7 @@ function CoursesManagementContent() {
   useEffect(() => {
     filterCourses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterSemester, filterYearLevel, filterDegreeProgram, courses])
+  }, [searchTerm, filterSemester, filterYearLevel, filterDegreeProgram, filterCourseType, courses])
 
   // Fetch upload groups
   const fetchUploadGroups = async () => {
@@ -325,6 +323,20 @@ function CoursesManagementContent() {
       filtered = filtered.filter(c => c.degree_program === filterDegreeProgram)
     }
 
+    // Filter by course type (lec/lab)
+    if (filterCourseType !== 'all') {
+      filtered = filtered.filter(c => {
+        const hasLec = (c.lec_hours || 0) > 0
+        const hasLab = (c.lab_hours || 0) > 0
+        switch (filterCourseType) {
+          case 'lec': return hasLec && !hasLab
+          case 'lab': return hasLab && !hasLec
+          case 'lec_lab': return hasLec && hasLab
+          default: return true
+        }
+      })
+    }
+
     setFilteredCourses(filtered)
   }
 
@@ -412,6 +424,7 @@ function CoursesManagementContent() {
     setFilterSemester('all')
     setFilterYearLevel('all')
     setFilterDegreeProgram('all')
+    setFilterCourseType('all')
     fetchUploadGroups() // Refresh groups
   }
 
@@ -442,8 +455,6 @@ function CoursesManagementContent() {
     setFormData({
       course_code: course.course_code || '',
       course_name: course.course_name || '',
-      lec_units: course.lec_units || 0,
-      lab_units: course.lab_units || 0,
       lec_hours: course.lec_hours || 0,
       lab_hours: course.lab_hours || 0,
       semester: course.semester || 'First Semester',
@@ -478,14 +489,15 @@ function CoursesManagementContent() {
 
     setSaving(true)
     try {
-      const credit_units = formData.lec_units + formData.lab_units
+      // Total hours = lec_hours + lab_hours
+      const total_hours = formData.lec_hours + formData.lab_hours
 
       if (modalMode === 'create') {
         // Create new course
         const newData = {
           upload_group_id: selectedGroupId,
           ...formData,
-          credit_units,
+          total_hours: total_hours,
           file_name: 'Manual Entry'
         }
 
@@ -505,14 +517,14 @@ function CoursesManagementContent() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('class_schedules')
-          .update({ ...formData, credit_units })
+          .update({ ...formData, total_hours: total_hours })
           .eq('id', editingId)
 
         if (error) throw error
 
         // Update local state
         setCourses(prev =>
-          prev.map(c => c.id === editingId ? { ...c, ...formData, credit_units } : c)
+          prev.map(c => c.id === editingId ? { ...c, ...formData, total_hours: total_hours } : c)
         )
       }
 
@@ -1075,6 +1087,27 @@ function CoursesManagementContent() {
                     <option key={program} value={program}>{program}</option>
                   ))}
                 </select>
+
+                <select
+                  value={filterCourseType}
+                  onChange={(e) => setFilterCourseType(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    background: 'var(--bg-white, #fff)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    minWidth: '140px',
+                    color: 'var(--text-dark, #1a202c)'
+                  }}
+                >
+                  <option value="all">All Types</option>
+                  <option value="lec">Lecture Only</option>
+                  <option value="lab">Lab Only</option>
+                  <option value="lec_lab">Lec + Lab</option>
+                </select>
               </div>
 
               {/* Loading */}
@@ -1287,11 +1320,11 @@ function CoursesManagementContent() {
                                           }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                               <Clock size={12} />
-                                              <span>Lec: {course.lec_hours || 0}hrs ({course.lec_units || 0} units)</span>
+                                              <span>Lec: {course.lec_hours || 0} hrs</span>
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                               <Clock size={12} />
-                                              <span>Lab: {course.lab_hours || 0}hrs ({course.lab_units || 0} units)</span>
+                                              <span>Lab: {course.lab_hours || 0} hrs</span>
                                             </div>
                                             {course.prerequisite && course.prerequisite !== 'None' && (
                                               <div style={{
@@ -1331,7 +1364,7 @@ function CoursesManagementContent() {
                                               fontSize: '11px',
                                               fontWeight: 600
                                             }}>
-                                              {course.credit_units || 0} Total Units
+                                              {(course.lec_hours || 0) + (course.lab_hours || 0)} Total Hours
                                             </span>
                                           </div>
                                         </div>
@@ -1464,56 +1497,16 @@ function CoursesManagementContent() {
                 </div>
               </div>
 
-              {/* Units Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              {/* Hours Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Lec Units
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lec_units}
-                    onChange={(e) => handleInputChange('lec_units', parseInt(e.target.value) || 0)}
-                    min="0"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Lec Hours
+                    Lecture Hours
                   </label>
                   <input
                     type="number"
                     value={formData.lec_hours}
                     onChange={(e) => handleInputChange('lec_hours', parseInt(e.target.value) || 0)}
-                    min="0"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '2px solid var(--input-border)',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      color: 'var(--input-text)',
-                      background: 'var(--input-bg)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
-                    Lab Units
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.lab_units}
-                    onChange={(e) => handleInputChange('lab_units', parseInt(e.target.value) || 0)}
                     min="0"
                     style={{
                       width: '100%',
@@ -1645,6 +1638,40 @@ function CoursesManagementContent() {
                   />
                 </div>
               </div>
+
+              {/* Room Requirements Section - Only show in Edit mode when we have an ID */}
+              {modalMode === 'edit' && editingId && (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    marginBottom: '12px',
+                    padding: '10px 14px',
+                    background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(139, 92, 246, 0.2)'
+                  }}>
+                    <Beaker size={18} style={{ color: '#8b5cf6' }} />
+                    <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
+                      Required Room Equipment
+                    </span>
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: 'var(--text-secondary)',
+                      fontStyle: 'italic',
+                      marginLeft: 'auto'
+                    }}>
+                      (Scheduler will only assign rooms with these features)
+                    </span>
+                  </div>
+                  <FeatureTagsManager
+                    mode="course"
+                    entityId={editingId}
+                    entityName={formData.course_code}
+                  />
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

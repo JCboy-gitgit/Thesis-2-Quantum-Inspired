@@ -11,7 +11,7 @@
   --primary-light: #4ade80;
   --primary-alpha: rgba(34, 197, 94, 0.15);
   --primary-medium: #22c55e;
-  --primary-gradient: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  --primary-gradient: linear-gradient(135deg, #8fe6af 0%, #22c55e 100%);
   
   /* Background Colors - Consistent dark green */
   --background: #00331a;
@@ -27,7 +27,7 @@
   --text-primary: #d1fae5;
   --text-secondary: #a7f3d0;
   --text-dark: #d1fae5;
-  --text-medium: #a7f3d0;
+  --text-medium: #50866d;
   --text-light: #86efac;
   /* Content text for cards */
   --content-text: #d1fae5;

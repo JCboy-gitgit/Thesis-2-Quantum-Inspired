@@ -198,6 +198,9 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  /* Prevent scroll chaining to the background */
+  overscroll-behavior: contain;
+  overflow: auto;
 }
 
 .modalContent {
@@ -206,7 +209,10 @@
   width: 100%;
   max-width: 820px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  overflow: hidden;
+  /* Constrain height to viewport and allow internal scrolling */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .modalHeader {
@@ -221,6 +227,84 @@
 
 .modalBody {
   padding: 20px;
+  /* Make the body area scroll when content overflows */
+  overflow-y: auto;
+}
+
+.facultyInfoBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: var(--bg-gray-50, #f7fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-medium, #718096);
+}
+
+.facultyInfoBar strong {
+  color: var(--text-dark, #1a202c);
+  margin-right: 6px;
+}
+
+.historySection {
+  margin-bottom: 16px;
+}
+
+.historyHeader {
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.historyList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.historyItem {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg-white, #ffffff);
+}
+
+.historyTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-medium, #718096);
+  margin-bottom: 4px;
+}
+
+.historyCourse {
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+}
+
+.historyName {
+  font-size: 13px;
+  color: var(--text-medium, #718096);
+  margin-bottom: 4px;
+}
+
+.historyMeta,
+.historyMetaSmall {
+  font-size: 12px;
+  color: var(--text-light, #a0aec0);
+}
+
+.historyEmpty {
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--text-light, #a0aec0);
+  font-size: 13px;
 }
 
 .modalFooter {

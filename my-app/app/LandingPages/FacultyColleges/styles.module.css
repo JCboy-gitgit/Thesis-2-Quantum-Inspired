@@ -1,5 +1,50 @@
 /* Faculty Colleges Styles - Supporting Green, Dark, and Light themes */
 
+/* ==================== Green Theme Alignment (match Home) ==================== */
+:global([data-theme="green"]) .layout {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
+}
+
+:global([data-theme="green"]) .main {
+  background: transparent;
+  --card-bg: #ffffff;
+  --card-border: rgba(46, 175, 125, 0.25);
+  --bg-white: #ffffff;
+  --bg-gray-50: rgba(240, 253, 244, 0.95);
+  --bg-gray-100: rgba(193, 246, 237, 0.4);
+  --border-color: rgba(46, 175, 125, 0.25);
+  --text-dark: #02353c;
+  --text-secondary: #166534;
+  --text-light: #166534;
+  --primary: #2eaf7d;
+  --primary-gradient: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
+  --glow-color: rgba(46, 175, 125, 0.35);
+}
+
+:global([data-theme="green"]) .headerIconWrapper,
+:global([data-theme="green"]) .addBtn,
+:global([data-theme="green"]) .statIcon,
+:global([data-theme="green"]) .collegeIcon,
+:global([data-theme="green"]) .fileIcon {
+  background: var(--primary-gradient);
+  color: #ffffff;
+}
+
+:global([data-theme="green"]) .statIcon svg,
+:global([data-theme="green"]) .collegeIcon svg,
+:global([data-theme="green"]) .fileIcon svg {
+  color: #ffffff;
+}
+
+:global([data-theme="green"]) .collegeCard {
+  background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
+  box-shadow: 0 10px 30px rgba(46, 175, 125, 0.25);
+}
+
+:global([data-theme="green"]) .collegeCard:hover {
+  box-shadow: 0 14px 40px rgba(46, 175, 125, 0.35);
+}
+
 /* ==================== Layout ==================== */
 .layout {
   display: flex;
@@ -43,6 +88,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
   padding: 8px 16px;
   background: var(--bg-gray-100, #f3f4f6);
   border: 1px solid var(--border-gray, #d1d5db);
@@ -191,12 +237,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--bg-white, #ffffff);
 }
 
 .statIcon svg {
   width: 24px;
   height: 24px;
+  color: var(--bg-white, #ffffff);
 }
 
 .statContent {
@@ -253,18 +300,19 @@
 .collegeIcon {
   width: 50px;
   height: 50px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--bg-white, #ffffff);
   flex-shrink: 0;
 }
 
 .collegeIcon svg {
   width: 24px;
   height: 24px;
+  color: var(--bg-white, #ffffff);
 }
 
 .collegeInfo {
@@ -304,8 +352,8 @@
 }
 
 .statusActive {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(140, 250, 180, 0.2);
+  color: #ffffff;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
@@ -386,18 +434,19 @@
 .fileIcon {
   width: 50px;
   height: 50px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary-gradient);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--bg-white, #ffffff);
   flex-shrink: 0;
 }
 
 .fileIcon svg {
   width: 24px;
   height: 24px;
+  color: var(--bg-white, #ffffff);
 }
 
 .fileInfo {
@@ -474,6 +523,89 @@
   background: var(--background);
   color: var(--text-primary);
   transition: border-color 0.2s;
+}
+
+.cardWithActions {
+  padding-top: 40px;
+}
+
+.cardActions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(0,0,0,0.08));
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.iconBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.iconBtn:hover {
+  transform: translateY(-1px);
+  background: var(--bg-gray-100, #f3f4f6);
+}
+
+.iconBtn.danger {
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.inlineConfirm {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: var(--bg-white, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px;
+  width: 200px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  z-index: 3;
+}
+
+.inlineConfirm p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--text-dark, #1f2937);
+}
+
+.inlineConfirmActions {
+  display: flex;
+  gap: 8px;
+}
+
+.inlineConfirmActions button {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-gray-100, #f3f4f6);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inlineConfirmActions button:first-child {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
 }
 
 .searchInput:focus {
@@ -785,10 +917,11 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* prevent tall modals from being clipped at the top */
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 80px 20px 40px; /* push content down below the header and keep bottom breathing room */
+  overflow-y: auto; /* allow scrolling when content exceeds viewport */
 }
 
 .modalContent {
@@ -798,6 +931,7 @@
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  margin-top: 0; /* rely on overlay padding instead for consistent spacing */
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 

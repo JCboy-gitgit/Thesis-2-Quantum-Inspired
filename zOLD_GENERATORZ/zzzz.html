@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BulSU QSA Rules Downloader</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f4; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        button { background-color: #761515; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #a01d1d; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>BulSU Scheduling Logic</h2>
+    <p>Click below to download the strict rules for your AI Copilot.</p>
+    <button onclick="downloadRules()">Download Rules (.txt)</button>
+</div>
+
+<script>
+function downloadRules() {
+    const rulesText = `BULSU QUANTUM-INSPIRED SCHEDULING RULES (QSA)
+================================================
+
+1. THE "ONLINE DAY" RULE (STRICT):
+- The User must be able to toggle any day (Mon-Sun) as a "Full Online Day".
+- IF (Day == OnlineDay) THEN (Room_ID = NULL) AND (Energy_Penalty = 0).
+- IF (Day == OnlineDay) AND (Room_ID != NULL) THEN (Energy_Penalty = INFINITY).
+- IF (Day != OnlineDay) AND (Subject = Lecture) THEN (Room_ID MUST be Physical).
+
+2. QUANTUM TUNNELING LOGIC:
+- Move Operator: The algorithm must prioritize "Block Swaps" over single class swaps.
+- A "Tunneling Move" involves swapping an entire Department's schedule for one day with another day.
+- This allows the solver to escape local minima by shifting high-density F2F demand to an Online Day.
+
+3. PHYSICAL CONSTRAINTS:
+- Day Classes: 07:00 - 18:00.
+- Night Classes: 18:00 - 21:00 (Hard Boundary).
+- Room Capacity: Student_Count <= Room_Capacity (10% tolerance for lectures only).
+- Lab Consistency: Engineering labs cannot be placed in non-engineering rooms.
+
+4. FRONTEND REQUIREMENTS:
+- Provide a "Heatmap" visualization of conflicts.
+- Include a "Pin" feature to freeze specific classes so the QSA algorithm cannot move them.
+- Multi-select toggle for global Online Days.
+
+5. BACKEND REQUIREMENTS:
+- Calculate Energy (E) based on weighted constraints.
+- Weighted Penalty: Hard Constraints (1,000,000), Soft Constraints (10-100).
+- Implement Transverse Field (Quantum Probability) to allow "bad moves" initially to explore the solution space.`;
+
+    const element = document.createElement('a');
+    const file = new Blob([rulesText], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = "BulSU_Scheduling_Rules.txt";
+    document.body.appendChild(element);
+    element.click();
+}
+</script>
+
+</body>
+</html>

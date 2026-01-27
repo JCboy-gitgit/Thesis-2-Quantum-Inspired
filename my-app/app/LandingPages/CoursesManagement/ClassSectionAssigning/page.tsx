@@ -36,11 +36,9 @@ interface Course {
   upload_group_id: number
   course_code: string
   course_name: string
-  lec_units: number
-  lab_units: number
-  credit_units: number
   lec_hours: number
   lab_hours: number
+  total_hours?: number // Computed: lec_hours + lab_hours
   semester: string
   academic_year: string
   department: string
@@ -2159,7 +2157,7 @@ function ClassSectionAssigningContent() {
                               fontSize: '11px',
                               color: 'var(--text-secondary, #718096)'
                             }}>
-                              {course.credit_units || 0} units
+                              {(course.lec_hours || 0) + (course.lab_hours || 0)} hrs
                             </div>
                             <div style={{
                               fontSize: '10px',

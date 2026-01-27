@@ -32,7 +32,7 @@ interface ClassData {
   schedule_time: string
   lec_hours: number
   lab_hours: number
-  credit_units: number
+  total_hours: number
   department: string
   semester: string
   academic_year: string

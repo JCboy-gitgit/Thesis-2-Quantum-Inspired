@@ -361,6 +361,11 @@
   --primary-medium: #2EAF7D;
 }
 
+/* Match Home green background to avoid dark flash on load */
+:global([data-theme="green"]) .pageLayout {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
+}
+
 /* ==================== Layout ==================== */
 .pageLayout {
   min-height: 100vh;

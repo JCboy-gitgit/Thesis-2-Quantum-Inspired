@@ -200,9 +200,6 @@ export interface Course {
   course_name: string;
   description?: string;
   department_id?: number;
-  lecture_units: number;
-  lab_units: number;
-  total_units: number;
   lecture_hours: number;
   lab_hours: number;
   total_hours: number;
@@ -224,11 +221,9 @@ export interface ClassSchedule {
   course_code: string;
   course_name?: string;
   section: string;
-  lec_units: number;
-  lab_units: number;
-  credit_units: number;
   lec_hours: number;
   lab_hours: number;
+  total_hours?: number; // Computed: lec_hours + lab_hours
   schedule_day?: string;
   schedule_time?: string;
   start_time?: string;

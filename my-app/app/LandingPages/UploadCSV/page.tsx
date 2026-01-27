@@ -539,11 +539,9 @@ export default function UploadCSVPage(): JSX.Element {
             section: `${yearLevel}A`, // Default section based on year level
             year_level: yearLevel,
             student_count: 30, // Default
-            lec_units: lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3,
-            lab_units: labUnits,
-            credit_units: (lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3) + labUnits,
             lec_hours: lecHours,
             lab_hours: labHours,
+            total_hours: lecHours + labHours,
             schedule_day: '', // Will be assigned by scheduler
             schedule_time: '', // Will be assigned by scheduler
             semester: semester,
@@ -573,11 +571,9 @@ export default function UploadCSVPage(): JSX.Element {
               section: row[2] || '',
               year_level: parseInt(row[3]) || 1,
               student_count: parseInt(row[4]) || 30,
-              lec_units: parseInt(row[5]) || 0,
-              lab_units: parseInt(row[6]) || 0,
-              credit_units: parseInt(row[7]) || 0,
               lec_hours: parseInt(row[8]) || 0,
               lab_hours: parseInt(row[9]) || 0,
+              total_hours: (parseInt(row[8]) || 0) + (parseInt(row[9]) || 0),
               schedule_day: row[10] || '',
               schedule_time: row[11] || '',
               semester: row[12] || '1st Semester',
@@ -596,11 +592,9 @@ export default function UploadCSVPage(): JSX.Element {
               section: row[2] || '',
               year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section (e.g., "1A" -> 1)
               student_count: parseInt(row[3]) || 30,
-              lec_units: parseInt(row[4]) || 0,
-              lab_units: parseInt(row[5]) || 0,
-              credit_units: parseInt(row[6]) || 0,
               lec_hours: parseInt(row[7]) || 0,
               lab_hours: parseInt(row[8]) || 0,
+              total_hours: (parseInt(row[7]) || 0) + (parseInt(row[8]) || 0),
               schedule_day: row[9] || '',
               schedule_time: row[10] || '',
               semester: row[11] || '1st Semester',
@@ -618,11 +612,9 @@ export default function UploadCSVPage(): JSX.Element {
               course_name: row[1] || '',
               section: row[2] || '',
               year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section
-              lec_units: parseInt(row[3]) || 0,
-              lab_units: parseInt(row[4]) || 0,
-              credit_units: parseInt(row[5]) || 0,
               lec_hours: parseInt(row[6]) || 0,
               lab_hours: parseInt(row[7]) || 0,
+              total_hours: (parseInt(row[6]) || 0) + (parseInt(row[7]) || 0),
               schedule_day: row[8] || '',
               schedule_time: row[9] || '',
               semester: row[10] || '1st Semester',

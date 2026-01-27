@@ -25,8 +25,7 @@ from database import (
     get_supabase_client, get_all_rooms, get_sections_for_scheduling, get_all_sections,
     get_all_teachers, get_time_slots, save_schedule_entries,
     check_room_conflicts, check_teacher_conflicts, get_room_utilization,
-    create_schedule_record, update_schedule_status, get_schedule_by_id,
-    delete_schedule, get_all_schedules,
+    get_schedule_by_id, delete_schedule, get_all_schedules,
     create_generated_schedule, update_generated_schedule, save_room_allocations,
     get_generated_schedules, get_generated_schedule_by_id, delete_generated_schedule,
     get_room_allocations_by_schedule
@@ -262,25 +261,27 @@ class SectionDataModel(BaseModel):
     department: str
     college: Optional[str] = None  # New: College name
     semester: Optional[str] = "1st Semester"
+    required_features: Optional[List[str]] = None  # NEW: Required equipment tags
 
 class RoomDataModel(BaseModel):
     """Room data from frontend - Enhanced with equipment"""
     id: int
     room_code: str
-    room_name: str
+    room_name: str = ""  # Default empty string if not provided
     building: str
     campus: str
     capacity: int
     room_type: str
-    floor: int
-    is_accessible: bool
+    floor: int = 1  # Default to first floor
+    is_accessible: bool = False  # Default to False for PWD accessibility
     has_projector: bool = False
     has_ac: bool = False
     has_computers: int = 0
     has_lab_equipment: bool = False
+    feature_tags: Optional[List[str]] = None  # NEW: Equipment tags like "Desktop_PC", "DC_Power_Supply"
 
 class ScheduleGenerationRequest(BaseModel):
-    """Request model for schedule generation - Enhanced v2 with 30-min slots"""
+    """Request model for schedule generation - Enhanced v2 with 30-min slots and BulSU QSA"""
     schedule_name: str
     semester: str
     academic_year: str
@@ -290,6 +291,9 @@ class ScheduleGenerationRequest(BaseModel):
     active_days: Optional[List[str]] = None
     sections_data: Optional[List[SectionDataModel]] = None
     rooms_data: Optional[List[RoomDataModel]] = None
+    
+    # BulSU QSA: Online Day Support
+    online_days: Optional[List[str]] = None  # Days designated for online classes (e.g., ['saturday'])
     
     # Time configuration - Now supports 30-minute intervals
     start_time: str = "07:00"
@@ -308,12 +312,23 @@ class ScheduleGenerationRequest(BaseModel):
     lunch_start: str = "12:00"
     lunch_end: str = "13:00"
     
+    # NEW: Constraint settings for BulSU rules
+    lunch_mode: str = "flexible"  # 'strict', 'flexible', or 'none'
+    lunch_start_hour: int = 12
+    lunch_end_hour: int = 13
+    strict_lab_room_matching: bool = True  # Lab classes MUST be in lab rooms
+    strict_lecture_room_matching: bool = True  # Lectures should NOT be in lab rooms
+    
+    # Split session settings - allow classes to be split into multiple sessions
+    # e.g., a 3hr class can become 1.5hr on Monday + 1.5hr on Thursday
+    allow_split_sessions: bool = True  # Default: enabled
+    
     # Use enhanced scheduler
     use_enhanced_scheduler: bool = True
 
 
 class ScheduleGenerationResponse(BaseModel):
-    """Response model for schedule generation"""
+    """Response model for schedule generation with BulSU QSA stats"""
     success: bool
     schedule_id: int
     message: str
@@ -323,6 +338,11 @@ class ScheduleGenerationResponse(BaseModel):
     optimization_stats: Dict[str, Any]
     conflicts: List[Dict[str, Any]]
     schedule_entries: Optional[List[Dict[str, Any]]] = None  # Include entries for frontend
+    online_days: Optional[List[str]] = None  # BulSU QSA: Online days used
+    online_class_count: Optional[int] = 0  # BulSU QSA: Count of online classes
+    physical_class_count: Optional[int] = 0  # BulSU QSA: Count of physical classes
+    # Split session stats
+    split_session_stats: Optional[Dict[str, Any]] = None  # Info about split sessions
 
 
 @app.post("/api/schedules/generate", response_model=ScheduleGenerationResponse)
@@ -413,22 +433,6 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         active_days = request.active_days if request.active_days else ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         print(f"📅 Active days: {', '.join(active_days)}")
         
-        # Create schedule record first
-        current_date = datetime.utcnow().date()
-        schedule_record = await create_schedule_record({
-            "event_name": f"{request.schedule_name} - {request.semester} {request.academic_year}",
-            "event_type": "Custom",
-            "schedule_date": current_date.isoformat(),
-            "start_time": f"{request.start_time}:00",
-            "end_time": f"{request.end_time}:00",
-            "campus_group_id": 1,
-            "participant_group_id": 1,
-            "status": "generating"
-        })
-        
-        schedule_id = schedule_record.get("id")
-        print(f"✅ Schedule record created with ID: {schedule_id}")
-        
         # Configuration for enhanced scheduler
         config = {
             "max_iterations": request.max_iterations,
@@ -440,7 +444,15 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "avoid_lunch_conflicts": request.avoid_lunch_conflicts,
             "active_days": active_days,
             "start_time": request.start_time,
-            "end_time": request.end_time
+            "end_time": request.end_time,
+            # NEW: Constraint settings for BulSU rules
+            "lunch_mode": request.lunch_mode,
+            "lunch_start_hour": request.lunch_start_hour,
+            "lunch_end_hour": request.lunch_end_hour,
+            "strict_lab_room_matching": request.strict_lab_room_matching,
+            "strict_lecture_room_matching": request.strict_lecture_room_matching,
+            # Split session settings
+            "allow_split_sessions": request.allow_split_sessions
         }
         
         print("🎯 Running Enhanced Quantum-Inspired Annealing Algorithm...")
@@ -448,18 +460,26 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         print(f"   Initial Temperature: {config['initial_temperature']}")
         print(f"   Cooling Rate: {config['cooling_rate']}")
         print(f"   30-min Slot Support: Enabled")
+        print(f"   🍽️ Lunch Mode: {config['lunch_mode']} ({config['lunch_start_hour']}:00-{config['lunch_end_hour']}:00)")
+        print(f"   🔬 Strict Lab Matching: {config['strict_lab_room_matching']}")
+        print(f"   ✂️ Allow Split Sessions: {config['allow_split_sessions']}")
+        if request.online_days:
+            print(f"   🌐 Online Days: {', '.join(request.online_days)}")
         
-        # Run the enhanced scheduler with 30-minute slots
+        # Run the enhanced scheduler with 30-minute slots and BulSU QSA
         if request.use_enhanced_scheduler:
             result = run_enhanced_scheduler(
                 sections_data=sections,
                 rooms_data=rooms,
                 time_slots_data=time_slots,
-                config=config
+                config=config,
+                online_days=request.online_days  # BulSU QSA: Pass online days
             )
             # Map result to expected format
             result["schedule_entries"] = result.get("allocations", [])
-            result["message"] = f"Enhanced scheduler completed. Scheduled {result['scheduled_sections']}/{result['total_sections']} sections with 30-minute time slots."
+            online_count = result.get("online_class_count", 0)
+            physical_count = result.get("physical_class_count", 0)
+            result["message"] = f"Enhanced scheduler completed. Scheduled {result['scheduled_sections']}/{result['total_sections']} sections with 30-minute time slots. ({online_count} online, {physical_count} physical)"
             result["conflicts"] = []  # Enhanced scheduler handles conflicts internally
         else:
             # Fallback to original scheduler
@@ -515,18 +535,17 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                     "department": entry.get("department", ""),
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
-                    "status": "scheduled"
+                    "status": "scheduled",
+                    # Split session info
+                    "is_split_session": entry.get("is_split_session", False),
+                    "session_number": entry.get("session_number", 1),
+                    "total_sessions": entry.get("total_sessions", 1),
+                    "session_label": entry.get("session_label")  # e.g., "1 of 2"
                 }
                 room_allocations.append(allocation)
             
             saved_allocations = await save_room_allocations(room_allocations)
             print(f"✅ Saved {len(saved_allocations)} room allocations to database")
-        
-        # Also update the old schedule_summary table for backward compatibility
-        if result["success"]:
-            await update_schedule_status(schedule_id, "completed")
-        else:
-            await update_schedule_status(schedule_id, "failed")
         
         print("=" * 60)
         print("🎉 SCHEDULE GENERATION COMPLETED")
@@ -534,14 +553,18 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         
         return ScheduleGenerationResponse(
             success=result["success"],
-            schedule_id=generated_schedule_id if generated_schedule_id else schedule_id,
+            schedule_id=generated_schedule_id if generated_schedule_id else 0,
             message=result["message"],
             total_sections=result["total_sections"],
             scheduled_sections=result["scheduled_sections"],
             unscheduled_sections=result["unscheduled_sections"],
             optimization_stats=result["optimization_stats"],
             conflicts=result["conflicts"],
-            schedule_entries=result["schedule_entries"]  # Include for frontend
+            schedule_entries=result["schedule_entries"],  # Include for frontend
+            online_days=result.get("online_days", []),  # BulSU QSA
+            online_class_count=result.get("online_class_count", 0),  # BulSU QSA
+            physical_class_count=result.get("physical_class_count", 0),  # BulSU QSA
+            split_session_stats=result.get("split_session_stats")  # Split session info
         )
         
     except HTTPException:

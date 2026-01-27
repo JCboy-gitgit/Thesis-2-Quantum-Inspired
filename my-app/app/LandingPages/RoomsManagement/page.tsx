@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import {
   Building2,
   ArrowLeft,
@@ -33,7 +34,12 @@ import {
   Save,
   FileSpreadsheet,
   Layers,
-  Filter
+  Filter,
+  Info,
+  Image as ImageIcon,
+  Upload,
+  Palette,
+  Tag
 } from 'lucide-react'
 import styles from './styles.module.css'
 
@@ -78,6 +84,24 @@ interface CampusStats {
   usableRooms: number
   notUsableRooms: number
 }
+
+interface RoomImage {
+  id: number
+  room_id: number
+  image_url: string
+  caption?: string | null
+  uploaded_at: string
+}
+
+// Color presets for folder customization
+const FOLDER_COLORS = [
+  { name: 'Green', gradient: 'linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%)' },
+  { name: 'Blue', gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)' },
+  { name: 'Purple', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)' },
+  { name: 'Orange', gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)' },
+  { name: 'Pink', gradient: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)' },
+  { name: 'Teal', gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%)' }
+]
 
 // ==================== HELPERS ====================
 
@@ -145,6 +169,19 @@ export default function RoomsManagementPage() {
   const [showDeleteFileModal, setShowDeleteFileModal] = useState(false)
   const [fileToDelete, setFileToDelete] = useState<CampusFile | null>(null)
   const [deletingFile, setDeletingFile] = useState(false)
+
+  // Color customization states
+  const [folderColors, setFolderColors] = useState<Record<string, string>>({})
+  const [showColorPicker, setShowColorPicker] = useState<string | null>(null)
+
+  // Room detail modal states
+  const [showRoomDetail, setShowRoomDetail] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState<CampusRoom | null>(null)
+  const [roomImages, setRoomImages] = useState<RoomImage[]>([])
+  const [loadingImages, setLoadingImages] = useState(false)
+
+  // Room features count map (room_id -> feature count)
+  const [roomFeatureCounts, setRoomFeatureCounts] = useState<Record<number, number>>({})
 
   // Form state
   const [formData, setFormData] = useState({
@@ -236,6 +273,23 @@ export default function RoomsManagementPage() {
 
       if (error) throw error
       setAllRooms(data || [])
+      
+      // Fetch feature counts for all rooms
+      const roomIds = (data || []).map((r: CampusRoom) => r.id).filter(Boolean)
+      if (roomIds.length > 0) {
+        const { data: features } = await supabase
+          .from('room_features')
+          .select('room_id')
+          .in('room_id', roomIds)
+        
+        if (features) {
+          const counts: Record<number, number> = {}
+          features.forEach((f: { room_id: number }) => {
+            counts[f.room_id] = (counts[f.room_id] || 0) + 1
+          })
+          setRoomFeatureCounts(counts)
+        }
+      }
     } catch (error) {
       console.error('Error fetching rooms:', error)
     } finally {
@@ -273,6 +327,79 @@ export default function RoomsManagementPage() {
       setSelectedFile(null)
       setAllRooms([])
     }
+  }
+
+  // ==================== COLOR CUSTOMIZATION ====================
+
+  const getFolderColor = (key: string): string => {
+    return folderColors[key] || FOLDER_COLORS[0].gradient
+  }
+
+  const handleColorSelect = (key: string, color: string) => {
+    setFolderColors(prev => ({ ...prev, [key]: color }))
+    setShowColorPicker(null)
+    // Store in localStorage for persistence
+    try {
+      const stored = JSON.parse(localStorage.getItem('roomFolderColors') || '{}')
+      stored[key] = color
+      localStorage.setItem('roomFolderColors', JSON.stringify(stored))
+    } catch (e) {
+      console.error('Error saving folder colors:', e)
+    }
+  }
+
+  // Load saved colors on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('roomFolderColors')
+      if (stored) {
+        setFolderColors(JSON.parse(stored))
+      }
+    } catch (e) {
+      console.error('Error loading folder colors:', e)
+    }
+  }, [])
+
+  // ==================== ROOM DETAIL & IMAGES ====================
+
+  const handleShowRoomDetail = async (room: CampusRoom) => {
+    setSelectedRoom(room)
+    setShowRoomDetail(true)
+    if (room.id) {
+      await fetchRoomImages(room.id)
+    }
+  }
+
+  const fetchRoomImages = async (roomId: number) => {
+    setLoadingImages(true)
+    try {
+      const { data, error } = await supabase
+        .from('room_images')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('uploaded_at', { ascending: false })
+
+      if (error) {
+        // Table might not exist yet - this is okay
+        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+          setRoomImages([])
+          return
+        }
+        throw error
+      }
+      setRoomImages(data || [])
+    } catch (error) {
+      // Silently handle - table may not be created yet
+      setRoomImages([])
+    } finally {
+      setLoadingImages(false)
+    }
+  }
+
+  const handleCloseRoomDetail = () => {
+    setShowRoomDetail(false)
+    setSelectedRoom(null)
+    setRoomImages([])
   }
 
   // ==================== COMPUTED DATA ====================
@@ -386,8 +513,8 @@ export default function RoomsManagementPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('campuses')
+      const { error } = await (supabase
+        .from('campuses') as any)
         .insert({
           upload_group_id: selectedFile.upload_group_id,
           school_name: selectedFile.school_name,
@@ -425,8 +552,8 @@ export default function RoomsManagementPage() {
     if (!editingRoom || !editingRoom.id) return
 
     try {
-      const { error } = await supabase
-        .from('campuses')
+      const { error } = await (supabase
+        .from('campuses') as any)
         .update({
           campus: formData.campus,
           building: formData.building,
@@ -463,8 +590,8 @@ export default function RoomsManagementPage() {
     try {
       // Archive first
       const { data: { user } } = await supabase.auth.getUser()
-      await supabase
-        .from('archived_items')
+      await (supabase
+        .from('archived_items') as any)
         .insert({
           item_type: 'room',
           item_name: `${room.building} - ${room.room}`,
@@ -504,8 +631,8 @@ export default function RoomsManagementPage() {
 
       // Archive the file data
       const { data: { user } } = await supabase.auth.getUser()
-      await supabase
-        .from('archived_items')
+      await (supabase
+        .from('archived_items') as any)
         .insert({
           item_type: 'csv_file',
           item_name: fileToDelete.file_name || fileToDelete.school_name,
@@ -793,31 +920,63 @@ export default function RoomsManagementPage() {
                 </div>
               ) : (
                 <div className={styles.fileGrid}>
-                  {campusFiles.map(file => (
-                    <div key={file.upload_group_id} className={styles.fileCard} onClick={() => handleSelectFile(file)}>
-                      <div className={styles.fileCardContent}>
-                        <div className={styles.fileIcon}>
-                          <University size={24} />
+                  {campusFiles.map(file => {
+                    const fileKey = `file-${file.upload_group_id}`
+                    return (
+                      <div 
+                        key={file.upload_group_id} 
+                        className={styles.fileCard} 
+                        style={{ background: getFolderColor(fileKey) }}
+                        onClick={() => handleSelectFile(file)}
+                      >
+                        {/* Color Picker */}
+                        <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            className={styles.colorPickerBtn}
+                            style={{ background: getFolderColor(fileKey) }}
+                            onClick={() => setShowColorPicker(showColorPicker === fileKey ? null : fileKey)}
+                          >
+                            <Palette size={16} color="white" />
+                          </button>
+                          {showColorPicker === fileKey && (
+                            <div className={styles.colorPickerMenu}>
+                              {FOLDER_COLORS.map(c => (
+                                <div
+                                  key={c.name}
+                                  className={`${styles.colorOption} ${getFolderColor(fileKey) === c.gradient ? styles.selected : ''}`}
+                                  style={{ background: c.gradient }}
+                                  onClick={() => handleColorSelect(fileKey, c.gradient)}
+                                  title={c.name}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className={styles.fileInfo}>
-                          <h4>{file.school_name}</h4>
-                          <p><DoorOpen size={14} /> {file.row_count} rooms</p>
-                          <p className={styles.fileMeta}>
-                            <FileSpreadsheet size={12} /> {file.file_name}
-                          </p>
-                          <p className={styles.fileMeta}>
-                            <Calendar size={12} /> {new Date(file.created_at).toLocaleDateString()}
-                          </p>
+
+                        <div className={styles.fileCardContent}>
+                          <div className={styles.fileIcon}>
+                            <University size={24} />
+                          </div>
+                          <div className={styles.fileInfo}>
+                            <h4>{file.school_name}</h4>
+                            <p><DoorOpen size={14} /> {file.row_count} rooms</p>
+                            <p className={styles.fileMeta}>
+                              <FileSpreadsheet size={12} /> {file.file_name}
+                            </p>
+                            <p className={styles.fileMeta}>
+                              <Calendar size={12} /> {new Date(file.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
+                        <div className={styles.fileActions}>
+                          <button className={styles.deleteBtn} onClick={(e) => { e.stopPropagation(); setFileToDelete(file); setShowDeleteFileModal(true); }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <span className={styles.fileArrow}>→</span>
                       </div>
-                      <div className={styles.fileActions}>
-                        <button className={styles.deleteBtn} onClick={(e) => { e.stopPropagation(); setFileToDelete(file); setShowDeleteFileModal(true); }}>
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      <span className={styles.fileArrow}>→</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </>
@@ -829,8 +988,38 @@ export default function RoomsManagementPage() {
               {Array.from(campusGroups.entries()).map(([campusName, rooms]) => {
                 const buildings = new Set(rooms.map(r => r.building)).size
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
+                const campusKey = `campus-${campusName}`
                 return (
-                  <div key={campusName} className={styles.campusCard} onClick={() => handleSelectCampus(campusName)}>
+                  <div 
+                    key={campusName} 
+                    className={styles.campusCard}
+                    style={{ background: getFolderColor(campusKey) }}
+                    onClick={() => handleSelectCampus(campusName)}
+                  >
+                    {/* Color Picker */}
+                    <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className={styles.colorPickerBtn}
+                        style={{ background: getFolderColor(campusKey) }}
+                        onClick={() => setShowColorPicker(showColorPicker === campusKey ? null : campusKey)}
+                      >
+                        <Palette size={16} color="white" />
+                      </button>
+                      {showColorPicker === campusKey && (
+                        <div className={styles.colorPickerMenu}>
+                          {FOLDER_COLORS.map(c => (
+                            <div
+                              key={c.name}
+                              className={`${styles.colorOption} ${getFolderColor(campusKey) === c.gradient ? styles.selected : ''}`}
+                              style={{ background: c.gradient }}
+                              onClick={() => handleColorSelect(campusKey, c.gradient)}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className={styles.campusCardContent}>
                       <div className={styles.campusIcon}>
                         <Landmark size={24} />
@@ -855,8 +1044,38 @@ export default function RoomsManagementPage() {
               {Array.from(buildingsForCampus.entries()).map(([buildingName, rooms]) => {
                 const floors = new Set(rooms.map(r => r.floor_number).filter(f => f !== null)).size
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
+                const buildingKey = `building-${selectedCampusName}-${buildingName}`
                 return (
-                  <div key={buildingName} className={styles.buildingCard} onClick={() => handleSelectBuilding(buildingName)}>
+                  <div 
+                    key={buildingName} 
+                    className={styles.buildingCard}
+                    style={{ background: getFolderColor(buildingKey) }}
+                    onClick={() => handleSelectBuilding(buildingName)}
+                  >
+                    {/* Color Picker */}
+                    <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className={styles.colorPickerBtn}
+                        style={{ background: getFolderColor(buildingKey) }}
+                        onClick={() => setShowColorPicker(showColorPicker === buildingKey ? null : buildingKey)}
+                      >
+                        <Palette size={16} color="white" />
+                      </button>
+                      {showColorPicker === buildingKey && (
+                        <div className={styles.colorPickerMenu}>
+                          {FOLDER_COLORS.map(c => (
+                            <div
+                              key={c.name}
+                              className={`${styles.colorOption} ${getFolderColor(buildingKey) === c.gradient ? styles.selected : ''}`}
+                              style={{ background: c.gradient }}
+                              onClick={() => handleColorSelect(buildingKey, c.gradient)}
+                              title={c.name}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className={styles.buildingCardContent}>
                       <div className={styles.buildingIcon}>
                         <Hotel size={24} />
@@ -899,16 +1118,40 @@ export default function RoomsManagementPage() {
                       <div className={styles.roomCardInfo}>
                         <h4>{room.room}</h4>
                         {room.room_code && <span className={styles.roomCode}>{room.room_code}</span>}
-                        <p><Users size={12} /> Capacity: {room.capacity}</p>
-                        <p><MapPin size={12} /> Floor {displayValue(room.floor_number, 'G')}</p>
+                        <div className={styles.roomInfoRow}>
+                          <p><Users size={11} /> Capacity: {room.capacity}</p>
+                          <p><MapPin size={11} /> Floor {displayValue(room.floor_number, 'G')}</p>
+                        </div>
                         <p className={styles.roomType}>{room.room_type || 'Classroom'}</p>
                       </div>
                       <div className={styles.roomAmenities}>
                         <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><Wind size={14} /></span>
                         <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
                         <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
+                        {room.id && roomFeatureCounts[room.id] && (
+                          <span 
+                            className={styles.hasAmenity} 
+                            title={`${roomFeatureCounts[room.id]} equipment tags`}
+                            style={{ 
+                              background: 'rgba(16, 185, 129, 0.2)', 
+                              color: '#10b981',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Tag size={10} /> {roomFeatureCounts[room.id]}
+                          </span>
+                        )}
                       </div>
                       <div className={styles.roomActions}>
+                        <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
+                          <Info size={14} />
+                        </button>
                         <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit2 size={14} /></button>
                         <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
                       </div>
@@ -943,7 +1186,34 @@ export default function RoomsManagementPage() {
                         {room.room_code && <span className={styles.roomCode}>{room.room_code}</span>}
                         <p><Users size={12} /> Capacity: {room.capacity}</p>
                       </div>
+                      <div className={styles.roomAmenities}>
+                        <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><Wind size={14} /></span>
+                        <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
+                        <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
+                        {room.id && roomFeatureCounts[room.id] && (
+                          <span 
+                            className={styles.hasAmenity} 
+                            title={`${roomFeatureCounts[room.id]} equipment tags`}
+                            style={{ 
+                              background: 'rgba(16, 185, 129, 0.2)', 
+                              color: '#10b981',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Tag size={10} /> {roomFeatureCounts[room.id]}
+                          </span>
+                        )}
+                      </div>
                       <div className={styles.roomActions}>
+                        <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
+                          <Info size={14} />
+                        </button>
                         <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit2 size={14} /></button>
                         <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
                       </div>
@@ -1071,7 +1341,7 @@ export default function RoomsManagementPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Room Features</label>
+                <label>Basic Amenities</label>
                 <div className={styles.featuresGrid}>
                   <label className={styles.featureCheckbox}>
                     <input
@@ -1099,6 +1369,56 @@ export default function RoomsManagementPage() {
                   </label>
                 </div>
               </div>
+
+              {/* Equipment & Feature Tags - Only for existing rooms */}
+              {editingRoom?.id && (
+                <div className={styles.formGroup}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Tag size={16} /> Equipment & Feature Tags
+                    <span style={{ 
+                      fontSize: '11px', 
+                      color: 'var(--emerald-500)', 
+                      background: 'rgba(16, 185, 129, 0.1)', 
+                      padding: '2px 8px', 
+                      borderRadius: '4px' 
+                    }}>
+                      Used for course matching
+                    </span>
+                  </label>
+                  <div style={{ 
+                    background: 'var(--bg-tertiary)', 
+                    borderRadius: '12px', 
+                    padding: '16px',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <FeatureTagsManager
+                      mode="room"
+                      entityId={editingRoom.id}
+                      entityName={editingRoom.room}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Show hint for new rooms */}
+              {!editingRoom && (
+                <div style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '16px'
+                }}>
+                  <Info size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    <strong>Equipment & Feature Tags</strong> can be added after the room is created. 
+                    These tags are used by the scheduler to match courses with compatible rooms.
+                  </span>
+                </div>
+              )}
 
               <div className={styles.formGroup}>
                 <label>Notes</label>
@@ -1143,6 +1463,127 @@ export default function RoomsManagementPage() {
               <button className={styles.btnDelete} onClick={handleDeleteFile} disabled={deletingFile}>
                 {deletingFile ? 'Deleting...' : 'Delete File'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Room Detail Modal with Images */}
+      {showRoomDetail && selectedRoom && (
+        <div className={styles.roomDetailOverlay} onClick={handleCloseRoomDetail}>
+          <div className={styles.roomDetailModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.roomDetailHeader}>
+              <h3><DoorOpen size={20} /> {selectedRoom.room}</h3>
+              <button className={styles.roomDetailClose} onClick={handleCloseRoomDetail}>×</button>
+            </div>
+            <div className={styles.roomDetailBody}>
+              {/* Room Information */}
+              <div className={styles.roomDetailSection}>
+                <h4><Building2 size={16} /> Room Information</h4>
+                <div className={styles.roomDetailInfo}>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Campus</span>
+                    <span className={styles.roomDetailValue}>{selectedRoom.campus}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Building</span>
+                    <span className={styles.roomDetailValue}>{selectedRoom.building}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Room Code</span>
+                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.room_code)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Capacity</span>
+                    <span className={styles.roomDetailValue}>{selectedRoom.capacity} seats</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Floor</span>
+                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.floor_number, 'Ground')}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Room Type</span>
+                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.room_type)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Status</span>
+                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.status)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Classification</span>
+                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.specific_classification)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Amenities */}
+              <div className={styles.roomDetailSection}>
+                <h4><Wind size={16} /> Amenities</h4>
+                <div className={styles.roomDetailInfo}>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Air Conditioning</span>
+                    <span className={styles.roomDetailValue}>{displayBool(selectedRoom.has_ac)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Television</span>
+                    <span className={styles.roomDetailValue}>{displayBool(selectedRoom.has_tv)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Whiteboard</span>
+                    <span className={styles.roomDetailValue}>{displayBool(selectedRoom.has_whiteboard)}</span>
+                  </div>
+                  <div className={styles.roomDetailItem}>
+                    <span className={styles.roomDetailLabel}>Projector</span>
+                    <span className={styles.roomDetailValue}>{displayBool(selectedRoom.has_projector)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Equipment & Features Tags */}
+              {selectedRoom.id && (
+                <div className={styles.roomDetailSection}>
+                  <h4><Tag size={16} /> Equipment & Features</h4>
+                  <div style={{ marginTop: '12px' }}>
+                    <FeatureTagsManager
+                      mode="room"
+                      entityId={selectedRoom.id}
+                      entityName={selectedRoom.room}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedRoom.notes && (
+                <div className={styles.roomDetailSection}>
+                  <h4>Notes</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{selectedRoom.notes}</p>
+                </div>
+              )}
+
+              {/* Room Images */}
+              <div className={styles.roomDetailSection}>
+                <h4><ImageIcon size={16} /> Room Images</h4>
+                {loadingImages ? (
+                  <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Loading images...</p>
+                ) : roomImages.length > 0 ? (
+                  <div className={styles.imageGallery}>
+                    {roomImages.map(img => (
+                      <div key={img.id} className={styles.imageItem}>
+                        <img src={img.image_url} alt={img.caption || 'Room image'} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.noImages}>
+                    <ImageIcon size={48} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
+                    <p>No images available for this room</p>
+                    <button className={styles.uploadImageBtn} onClick={() => alert('Image upload feature coming soon!')}>
+                      <Upload size={16} /> Upload Images
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
