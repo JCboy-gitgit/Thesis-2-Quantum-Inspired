@@ -417,7 +417,7 @@ function FacultyListsContent() {
         position: formData.position,
         role: formData.role || 'faculty',
         department: formData.department,
-        college: formData.college || selectedCollege || '',
+        college: formData.college || selectedFile?.college || '',
         email: formData.email || null,
         phone: formData.phone || null,
         office_location: formData.office_location || null,
