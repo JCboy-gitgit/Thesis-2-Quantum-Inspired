@@ -9,7 +9,6 @@ IMPLEMENTS BulSU QSA (Quantum-Inspired Scheduling Algorithm) with:
 5. 100% CONFLICT-FREE GUARANTEE: Uses infinite penalty for conflicts
 """
 
-import numpy as np
 from typing import List, Dict, Tuple, Optional, Set, Any
 from dataclasses import dataclass, field
 from enum import Enum

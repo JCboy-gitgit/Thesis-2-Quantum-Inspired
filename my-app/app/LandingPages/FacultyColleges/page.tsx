@@ -241,6 +241,7 @@ function FacultyCollegesContent() {
   })
 
   const [facultyFormData, setFacultyFormData] = useState({
+    faculty_id: '',
     full_name: '',
     email: '',
     position: '',
@@ -706,6 +707,7 @@ function FacultyCollegesContent() {
   const openEditFacultyModal = (faculty: FacultyProfile) => {
     setSelectedFacultyProfile(faculty)
     setFacultyFormData({
+      faculty_id: faculty.faculty_id || '',
       full_name: faculty.full_name || '',
       email: faculty.email || '',
       position: faculty.position || '',
@@ -741,6 +743,7 @@ function FacultyCollegesContent() {
       const { error } = await db
         .from('faculty_profiles')
         .update({
+          faculty_id: facultyFormData.faculty_id.trim() || null,
           full_name: facultyFormData.full_name.trim(),
           email: facultyFormData.email.trim() || null,
           position: facultyFormData.position.trim() || null,
@@ -1185,6 +1188,16 @@ function FacultyCollegesContent() {
                               <div className={styles.hierarchyInfo}>
                                 <span className={styles.roleIcon}>{roleInfo.icon}</span>
                                 <h4>{faculty.full_name}</h4>
+                                <p className={styles.facultyIdBadge} style={{ 
+                                  fontSize: '11px', 
+                                  fontWeight: 600, 
+                                  padding: '2px 8px', 
+                                  background: 'linear-gradient(135deg, #667eea, #764ba2)', 
+                                  color: 'white', 
+                                  borderRadius: '6px',
+                                  display: 'inline-block',
+                                  marginBottom: '4px'
+                                }}>ID: {faculty.faculty_id}</p>
                                 <p className={styles.hierarchyPosition}>{faculty.position}</p>
                                 <span className={styles.roleBadge} style={{ backgroundColor: roleInfo.bgColor, color: roleInfo.color }}>
                                   {roleInfo.label}
@@ -1246,6 +1259,16 @@ function FacultyCollegesContent() {
                               </div>
                               <div className={styles.facultyInfo}>
                                 <h4>{faculty.full_name}</h4>
+                                <p style={{ 
+                                  fontSize: '11px', 
+                                  fontWeight: 600, 
+                                  padding: '2px 8px', 
+                                  background: 'linear-gradient(135deg, #667eea, #764ba2)', 
+                                  color: 'white', 
+                                  borderRadius: '6px',
+                                  display: 'inline-block',
+                                  marginBottom: '4px'
+                                }}>ID: {faculty.faculty_id}</p>
                                 <p>{faculty.department || 'No Department'}</p>
                                 <span className={styles.empBadge} style={{ backgroundColor: empBadge.color }}>
                                   {empBadge.label}
@@ -1394,6 +1417,16 @@ function FacultyCollegesContent() {
             <div className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
+                  <label>Faculty ID</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.faculty_id}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, faculty_id: e.target.value })}
+                    placeholder="e.g., FAC-2025-001"
+                  />
+                </div>
+                <div className={styles.formGroup}>
                   <label>Full Name *</label>
                   <input
                     type="text"
@@ -1402,6 +1435,8 @@ function FacultyCollegesContent() {
                     onChange={e => setFacultyFormData({ ...facultyFormData, full_name: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Email</label>
                   <input

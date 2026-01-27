@@ -8,7 +8,6 @@ This module implements a quantum-inspired optimization algorithm that combines:
 4. Soft constraint optimization (preferences, utilization)
 """
 
-import numpy as np
 from typing import List, Dict, Tuple, Optional, Set
 from dataclasses import dataclass, field
 from enum import Enum

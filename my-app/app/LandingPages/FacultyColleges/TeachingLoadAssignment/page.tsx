@@ -760,20 +760,72 @@ function TeachingLoadAssignmentContent() {
 
   // Download current assignments as CSV
   const downloadAssignments = () => {
-    let csvContent = 'Faculty Name,Faculty ID,Email,Course Code,Course Name,Units,Academic Year,Semester,Section,Notes\n'
+    // Comprehensive CSV header with all relevant data
+    let csvContent = 'Faculty ID,Faculty Name,Email,Position,Employment Type,Department,College,Specialization,Course Code,Course Name,Lec Hours,Lab Hours,Total Units,Degree Program,Year Level,Academic Year,Semester,Section,Notes\n'
 
+    // Group loads by faculty for better organization
+    const facultyMap = new Map<string, TeachingLoadWithDetails[]>()
     teachingLoads.forEach(load => {
-      if (load.faculty && load.course) {
-        csvContent += `"${load.faculty.full_name}",`
-        csvContent += `${load.faculty.faculty_id},`
-        csvContent += `"${load.faculty.email || ''}",`
-        csvContent += `${load.course.course_code},`
-        csvContent += `"${load.course.course_name}",`
-        csvContent += `${(load.course.lec_hours || 0) + (load.course.lab_hours || 0)},`
-        csvContent += `${load.academic_year},`
-        csvContent += `"${load.semester}",`
-        csvContent += `"${load.section || ''}",`
-        csvContent += `"${load.notes || ''}"\n`
+      if (load.faculty) {
+        const existing = facultyMap.get(load.faculty.id) || []
+        existing.push(load)
+        facultyMap.set(load.faculty.id, existing)
+      }
+    })
+
+    // Export all assignments grouped by faculty
+    facultyMap.forEach((loads) => {
+      loads.forEach(load => {
+        if (load.faculty && load.course) {
+          const lecHours = load.course.lec_hours || 0
+          const labHours = load.course.lab_hours || 0
+          const totalUnits = lecHours + labHours
+          
+          csvContent += `"${load.faculty.faculty_id}",`
+          csvContent += `"${load.faculty.full_name}",`
+          csvContent += `"${load.faculty.email || ''}",`
+          csvContent += `"${load.faculty.position || ''}",`
+          csvContent += `"${load.faculty.employment_type || ''}",`
+          csvContent += `"${load.faculty.department || ''}",`
+          csvContent += `"${load.faculty.college || ''}",`
+          csvContent += `"${load.faculty.specialization || ''}",`
+          csvContent += `"${load.course.course_code}",`
+          csvContent += `"${load.course.course_name}",`
+          csvContent += `${lecHours},`
+          csvContent += `${labHours},`
+          csvContent += `${totalUnits},`
+          csvContent += `"${load.course.degree_program || ''}",`
+          csvContent += `${load.course.year_level || ''},`
+          csvContent += `"${load.academic_year}",`
+          csvContent += `"${load.semester}",`
+          csvContent += `"${load.section || ''}",`
+          csvContent += `"${load.notes || ''}"\n`
+        }
+      })
+    })
+
+    // Also include faculty with no assignments for completeness
+    faculties.forEach(faculty => {
+      if (!facultyMap.has(faculty.id)) {
+        csvContent += `"${faculty.faculty_id}",`
+        csvContent += `"${faculty.full_name}",`
+        csvContent += `"${faculty.email || ''}",`
+        csvContent += `"${faculty.position || ''}",`
+        csvContent += `"${faculty.employment_type || ''}",`
+        csvContent += `"${faculty.department || ''}",`
+        csvContent += `"${faculty.college || ''}",`
+        csvContent += `"${faculty.specialization || ''}",`
+        csvContent += `"(No courses assigned)",`
+        csvContent += `"",`
+        csvContent += `0,`
+        csvContent += `0,`
+        csvContent += `0,`
+        csvContent += `"",`
+        csvContent += `"",`
+        csvContent += `"",`
+        csvContent += `"",`
+        csvContent += `"",`
+        csvContent += `""\n`
       }
     })
 
@@ -781,13 +833,14 @@ function TeachingLoadAssignmentContent() {
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `teaching_loads_${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute('download', `teaching_load_assignments_${new Date().toISOString().split('T')[0]}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
 
-    setNotification({ type: 'success', message: 'Teaching loads exported!' })
+    const totalAssignments = teachingLoads.filter(l => l.faculty && l.course).length
+    setNotification({ type: 'success', message: `Exported ${totalAssignments} assignments for ${faculties.length} faculty members!` })
   }
 
   // Get initials for avatar
@@ -1043,7 +1096,20 @@ function TeachingLoadAssignmentContent() {
                           {getInitials(faculty.full_name)}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, color: 'var(--text-dark, #1a202c)' }}>{faculty.full_name}</div>
+                          <div style={{ fontWeight: 700, color: 'var(--text-dark, #1a202c)' }}>
+                            {faculty.full_name}
+                            <span style={{ 
+                              marginLeft: 8, 
+                              fontSize: 12, 
+                              fontWeight: 600, 
+                              padding: '2px 8px', 
+                              background: 'var(--primary-gradient, linear-gradient(135deg, #667eea, #764ba2))', 
+                              color: 'white', 
+                              borderRadius: 6 
+                            }}>
+                              ID: {faculty.faculty_id}
+                            </span>
+                          </div>
                           <div style={{ fontSize: 13, color: 'var(--text-medium, #718096)' }}>{faculty.department} • {faculty.position}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-light, #a0aec0)' }}>{faculty.email}</div>
                         </div>

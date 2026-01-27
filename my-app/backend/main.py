@@ -535,12 +535,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                     "department": entry.get("department", ""),
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
-                    "status": "scheduled",
-                    # Split session info
-                    "is_split_session": entry.get("is_split_session", False),
-                    "session_number": entry.get("session_number", 1),
-                    "total_sessions": entry.get("total_sessions", 1),
-                    "session_label": entry.get("session_label")  # e.g., "1 of 2"
+                    "status": "scheduled"
+                    # Note: Split session info (is_split_session, session_number, total_sessions, session_label) 
+                    # is available in schedule_entries response but not saved to DB (columns don't exist yet)
                 }
                 room_allocations.append(allocation)
             
