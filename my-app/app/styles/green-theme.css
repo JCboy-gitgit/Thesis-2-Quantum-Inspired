@@ -1,0 +1,1247 @@
+/* ==================== Shared Green Theme - Nature Inspired Light Mode ==================== */
+/* Color Palette: #C1F6ED (light mint), #02353C (dark teal text), #449342 (olive green), #2EAF7D (bright emerald), #3FD0C9 (cyan accent) */
+
+/* ==================== Nature Background Decorations ==================== */
+/* These should be applied to the page container with position: relative */
+
+[data-theme="green"] {
+    /* Light mode green theme base colors */
+    --green-bg-light: #f0fdf4;
+    --green-bg-mid: #dcfce7;
+    --green-bg-dark: #bbf7d0;
+    --green-primary: #2EAF7D;
+    --green-accent: #449342;
+    --green-text-dark: #02353C;
+    --green-text-secondary: #166534;
+    --green-text-light: #16a34a;
+    --green-card-bg: rgba(255, 255, 255, 0.95);
+    --green-card-border: rgba(46, 175, 125, 0.3);
+    --green-mint: #C1F6ED;
+    --green-cyan: #3FD0C9;
+}
+
+/* ==================== Page Container Styles ==================== */
+/* Make page containers transparent so leafy background shows through */
+[data-theme="green"] .pageContainer,
+[data-theme="green"] .page-layout,
+[data-theme="green"] .qtime-layout {
+    background: transparent !important;
+    min-height: 100vh;
+}
+
+/* For data-page="admin" pages - transparent background */
+[data-theme="green"] [data-page="admin"] {
+    background: transparent !important;
+}
+
+/* Main content areas - semi-transparent for readability while showing background */
+[data-theme="green"] .mainContent,
+[data-theme="green"] .qtime-main,
+[data-theme="green"] .main-content {
+    background: transparent !important;
+}
+
+/* Body styling for green theme - enable pseudo-element backgrounds */
+[data-theme="green"] body {
+    position: relative;
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
+}
+
+/* Nature Background Layer - Floating Leaves - Apply to body only */
+[data-theme="green"] body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath d='M20 35c-5-8 5-25 15-20s15 20 5 28c-8 6-15-2-20 8' fill='none' stroke='%232EAF7D' stroke-width='0.5' opacity='0.12'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cellipse cx='30' cy='25' rx='12' ry='18' fill='%23449342' opacity='0.05' transform='rotate(25 30 25)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10c20 15 25 40 10 55s-40 5-50-15c5 25 35 35 55 20s15-45-15-60z' fill='%232EAF7D' opacity='0.03'/%3E%3C/svg%3E");
+    background-size: 200px 200px, 150px 150px, 300px 300px;
+    background-position: 0 0, 100px 50px, 50px 100px;
+    pointer-events: none;
+    z-index: 0;
+    animation: floatLeaves 30s ease-in-out infinite;
+}
+
+/* Tree Silhouette Decoration - Bottom Right - Apply to body only */
+[data-theme="green"] body::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    right: -50px;
+    width: 350px;
+    height: 450px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 250'%3E%3Cpath d='M100 250v-80M100 170c-30-20-50-50-40-80s40-50 40-80c0 30 30 50 40 80s-10 60-40 80z' fill='%23449342' opacity='0.06'/%3E%3Ccircle cx='60' cy='100' r='35' fill='%232EAF7D' opacity='0.04'/%3E%3Ccircle cx='140' cy='90' r='30' fill='%232EAF7D' opacity='0.04'/%3E%3Ccircle cx='100' cy='60' r='40' fill='%23449342' opacity='0.05'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+@keyframes floatLeaves {
+
+    0%,
+    100% {
+        background-position: 0 0, 100px 50px, 50px 100px;
+    }
+
+    25% {
+        background-position: 20px 10px, 120px 60px, 70px 90px;
+    }
+
+    50% {
+        background-position: 10px 20px, 90px 70px, 60px 110px;
+    }
+
+    75% {
+        background-position: -10px 5px, 110px 40px, 40px 95px;
+    }
+}
+
+/* ==================== Content Layer - Always Above Background ==================== */
+/* Ensure all page containers and content are above the body::before/after decorations */
+[data-theme="green"] .pageContainer,
+[data-theme="green"] .page-layout,
+[data-theme="green"] .qtime-layout,
+[data-theme="green"] [data-page="admin"] {
+    position: relative;
+    z-index: 1;
+}
+
+[data-theme="green"] .mainContent,
+[data-theme="green"] .qtime-main,
+[data-theme="green"] .contentWrapper,
+[data-theme="green"] .upload-container {
+    position: relative;
+    z-index: 1;
+}
+
+/* ==================== Card Styles ==================== */
+[data-theme="green"] .headerCard,
+[data-theme="green"] .contentCard,
+[data-theme="green"] .searchCard,
+[data-theme="green"] .filterCard,
+[data-theme="green"] .resultsCard,
+[data-theme="green"] .tableCard,
+[data-theme="green"] .formCard,
+[data-theme="green"] .upload-card,
+[data-theme="green"] .file-section,
+[data-theme="green"] .welcome-section,
+[data-theme="green"] .action-section,
+[data-theme="green"] .selectionSection,
+[data-theme="green"] .dataSection,
+[data-theme="green"] .roomsSection {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12) !important;
+    position: relative;
+    z-index: 1;
+}
+
+[data-theme="green"] .headerCard:hover,
+[data-theme="green"] .contentCard:hover,
+[data-theme="green"] .searchCard:hover,
+[data-theme="green"] .filterCard:hover,
+[data-theme="green"] .resultsCard:hover,
+[data-theme="green"] .tableCard:hover,
+[data-theme="green"] .formCard:hover,
+[data-theme="green"] .upload-card:hover,
+[data-theme="green"] .file-section:hover,
+[data-theme="green"] .selectionSection:hover,
+[data-theme="green"] .dataSection:hover,
+[data-theme="green"] .roomsSection:hover {
+    border-color: rgba(46, 175, 125, 0.5) !important;
+    box-shadow: 0 12px 40px rgba(46, 175, 125, 0.2) !important;
+}
+
+/* ==================== Room/Item Cards ==================== */
+[data-theme="green"] .roomCard,
+[data-theme="green"] .campusSelectCard,
+[data-theme="green"] .campusCard,
+[data-theme="green"] .file-card,
+[data-theme="green"] .statCard,
+[data-theme="green"] .buildingSection {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.25) !important;
+    box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1) !important;
+    position: relative;
+    z-index: 1;
+}
+
+[data-theme="green"] .roomCard:hover,
+[data-theme="green"] .campusSelectCard:hover,
+[data-theme="green"] .campusCard:hover,
+[data-theme="green"] .file-card:hover,
+[data-theme="green"] .statCard:hover {
+    border-color: #2EAF7D !important;
+    box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25) !important;
+    transform: translateY(-4px);
+}
+
+/* ==================== Text Colors ==================== */
+[data-theme="green"] .headerTitle,
+[data-theme="green"] .page-title,
+[data-theme="green"] .section-title,
+[data-theme="green"] .sectionHeading,
+[data-theme="green"] .title,
+[data-theme="green"] .campusCardName,
+[data-theme="green"] .roomCode,
+[data-theme="green"] .buildingName,
+[data-theme="green"] .floorName,
+[data-theme="green"] .roomName,
+[data-theme="green"] .file-name,
+[data-theme="green"] .statValue,
+[data-theme="green"] h1,
+[data-theme="green"] h2,
+[data-theme="green"] h3 {
+    color: #02353C !important;
+}
+
+[data-theme="green"] .headerSubtitle,
+[data-theme="green"] .page-subtitle,
+[data-theme="green"] .description,
+[data-theme="green"] .details,
+[data-theme="green"] .file-details,
+[data-theme="green"] .file-date,
+[data-theme="green"] .campusCardMeta,
+[data-theme="green"] .campusCardDate,
+[data-theme="green"] .roomDetailRow,
+[data-theme="green"] .floorInfo,
+[data-theme="green"] .statLabel,
+[data-theme="green"] .text-secondary,
+[data-theme="green"] p {
+    color: #166534 !important;
+}
+
+/* ==================== Icon Wrappers ==================== */
+[data-theme="green"] .headerIcon,
+[data-theme="green"] .headerIconWrapper,
+[data-theme="green"] .campusCardIcon,
+[data-theme="green"] .roomIcon,
+[data-theme="green"] .file-icon,
+[data-theme="green"] .statIcon,
+[data-theme="green"] .logo-icon {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35) !important;
+    color: #ffffff !important;
+}
+
+/* ==================== Buttons ==================== */
+[data-theme="green"] .primaryButton,
+[data-theme="green"] .primary-button,
+[data-theme="green"] .submitButton,
+[data-theme="green"] .saveButton,
+[data-theme="green"] .addButton,
+[data-theme="green"] .addRoomButton,
+[data-theme="green"] .searchButton,
+[data-theme="green"] .filterButton,
+[data-theme="green"] .upload-button,
+[data-theme="green"] .generate-schedule-button,
+[data-theme="green"] .view-button,
+[data-theme="green"] .expandButton {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="green"] .primaryButton:hover,
+[data-theme="green"] .primary-button:hover,
+[data-theme="green"] .submitButton:hover,
+[data-theme="green"] .saveButton:hover,
+[data-theme="green"] .addButton:hover,
+[data-theme="green"] .addRoomButton:hover,
+[data-theme="green"] .searchButton:hover,
+[data-theme="green"] .filterButton:hover,
+[data-theme="green"] .upload-button:hover,
+[data-theme="green"] .generate-schedule-button:hover,
+[data-theme="green"] .view-button:hover,
+[data-theme="green"] .expandButton:hover {
+    background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%) !important;
+    box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+[data-theme="green"] .cancelButton,
+[data-theme="green"] .backButton,
+[data-theme="green"] .skip-button {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] .cancelButton:hover,
+[data-theme="green"] .backButton:hover,
+[data-theme="green"] .skip-button:hover {
+    background: #2EAF7D !important;
+    border-color: #2EAF7D !important;
+    color: #ffffff !important;
+}
+
+/* ==================== Form Elements ==================== */
+[data-theme="green"] .input,
+[data-theme="green"] .formInput,
+[data-theme="green"] .searchInput,
+[data-theme="green"] .capacityInput,
+[data-theme="green"] .formSelect,
+[data-theme="green"] .filterSelect,
+[data-theme="green"] .formTextarea,
+[data-theme="green"] .file-input,
+[data-theme="green"] select,
+[data-theme="green"] textarea {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid rgba(46, 175, 125, 0.25) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] .input:focus,
+[data-theme="green"] .formInput:focus,
+[data-theme="green"] .searchInput:focus,
+[data-theme="green"] .capacityInput:focus,
+[data-theme="green"] .formSelect:focus,
+[data-theme="green"] .filterSelect:focus,
+[data-theme="green"] .formTextarea:focus,
+[data-theme="green"] .file-input:focus {
+    border-color: #2EAF7D !important;
+    box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .input::placeholder,
+[data-theme="green"] .formInput::placeholder,
+[data-theme="green"] .searchInput::placeholder,
+[data-theme="green"] .formTextarea::placeholder {
+    color: #166534 !important;
+    opacity: 0.6;
+}
+
+[data-theme="green"] .label,
+[data-theme="green"] .formLabel,
+[data-theme="green"] .filterLabel,
+[data-theme="green"] .featuresLabel {
+    color: #02353C !important;
+}
+
+/* ==================== Badges ==================== */
+[data-theme="green"] .roomBadge,
+[data-theme="green"] .capacityBadge,
+[data-theme="green"] .capacityBadgeSmall,
+[data-theme="green"] .file-id,
+[data-theme="green"] .filterBadge,
+[data-theme="green"] .roomCountBadge {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .selectedIndicator,
+[data-theme="green"] .selectedBadge {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    color: #ffffff !important;
+}
+
+/* ==================== Building/Floor Sections ==================== */
+[data-theme="green"] .buildingHeader {
+    background: rgba(193, 246, 237, 0.3) !important;
+    border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .buildingHeader.clickable:hover {
+    background: rgba(193, 246, 237, 0.5) !important;
+}
+
+[data-theme="green"] .buildingContent {
+    background: rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="green"] .floorHeader {
+    border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+/* ==================== Loading States ==================== */
+[data-theme="green"] .loadingState,
+[data-theme="green"] .loading-state,
+[data-theme="green"] .emptyState,
+[data-theme="green"] .empty-state {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    color: #166534 !important;
+    position: relative;
+    z-index: 1;
+}
+
+[data-theme="green"] .spinner {
+    border-color: rgba(46, 175, 125, 0.2) !important;
+    border-top-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .emptyIcon,
+[data-theme="green"] .empty-icon {
+    color: #2EAF7D !important;
+}
+
+/* ==================== Modals ==================== */
+[data-theme="green"] .modalContent {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.2) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .modalHeader {
+    border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .modalTitle {
+    color: #02353C !important;
+}
+
+[data-theme="green"] .modalFooter {
+    border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+/* ==================== Tables ==================== */
+[data-theme="green"] .tableHeader {
+    background: rgba(193, 246, 237, 0.3) !important;
+}
+
+[data-theme="green"] .tableHeaderCell {
+    color: #02353C !important;
+    border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .tableRow:hover {
+    background: rgba(193, 246, 237, 0.2) !important;
+}
+
+[data-theme="green"] .tableCell {
+    border-bottom-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+/* ==================== Format Info ==================== */
+[data-theme="green"] .format-info {
+    background: rgba(46, 175, 125, 0.1) !important;
+    border-left-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .format-info h3 {
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] .format-info p {
+    color: #166534 !important;
+    background: rgba(2, 53, 60, 0.05) !important;
+}
+
+/* ==================== Messages ==================== */
+[data-theme="green"] .message.success,
+[data-theme="green"] .successMessage {
+    background: rgba(34, 197, 94, 0.1) !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+    color: #16a34a !important;
+}
+
+[data-theme="green"] .message.error,
+[data-theme="green"] .errorMessage {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #dc2626 !important;
+}
+
+/* ==================== Feature Buttons/Checkboxes ==================== */
+[data-theme="green"] .featureButton,
+[data-theme="green"] .featureCheckbox,
+[data-theme="green"] .filtersButton {
+    background: rgba(46, 175, 125, 0.08) !important;
+    color: #166534 !important;
+}
+
+[data-theme="green"] .featureButton:hover,
+[data-theme="green"] .featureCheckbox:hover,
+[data-theme="green"] .filtersButton:hover {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] .featureButtonActive,
+[data-theme="green"] .filtersButtonActive {
+    background: rgba(46, 175, 125, 0.2) !important;
+    color: #2EAF7D !important;
+}
+
+/* ==================== Scrollbars ==================== */
+[data-theme="green"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+[data-theme="green"] ::-webkit-scrollbar-track {
+    background: rgba(46, 175, 125, 0.1);
+    border-radius: 4px;
+}
+
+[data-theme="green"] ::-webkit-scrollbar-thumb {
+    background: rgba(46, 175, 125, 0.3);
+    border-radius: 4px;
+}
+
+[data-theme="green"] ::-webkit-scrollbar-thumb:hover {
+    background: #2EAF7D;
+}
+
+/* ==================== Mobile Responsive ==================== */
+@media (max-width: 1024px) {
+
+    [data-theme="green"] body::after {
+        width: 200px;
+        height: 250px;
+        right: -30px;
+        opacity: 0.4;
+    }
+}
+
+@media (max-width: 768px) {
+
+    [data-theme="green"] body::before {
+        background-size: 150px 150px, 100px 100px, 200px 200px;
+    }
+
+    [data-theme="green"] body::after {
+        display: none;
+    }
+}
+
+/* ==================== UploadCSV Page Specific Overrides ==================== */
+/* These override the CSS module styles for consistent green theming */
+
+[data-theme="green"] [data-page="admin"] .upload-container,
+[data-theme="green"] [data-page="admin"] main[class*="upload"] {
+    background: transparent !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="upload-card"],
+[data-theme="green"] [data-page="admin"] div[class*="uploadCard"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12) !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="upload-card"]:hover,
+[data-theme="green"] [data-page="admin"] div[class*="uploadCard"]:hover {
+    border-color: rgba(46, 175, 125, 0.5) !important;
+    box-shadow: 0 12px 40px rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] [data-page="admin"] h2[class*="section-title"],
+[data-theme="green"] [data-page="admin"] h2[class*="sectionTitle"] {
+    color: #02353C !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="format-info"],
+[data-theme="green"] [data-page="admin"] div[class*="formatInfo"] {
+    background: rgba(46, 175, 125, 0.1) !important;
+    border-left-color: #2EAF7D !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="format-info"] h3,
+[data-theme="green"] [data-page="admin"] div[class*="formatInfo"] h3 {
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="format-info"] p,
+[data-theme="green"] [data-page="admin"] div[class*="formatInfo"] p {
+    color: #166534 !important;
+    background: rgba(2, 53, 60, 0.05) !important;
+}
+
+[data-theme="green"] [data-page="admin"] label[class*="label"] {
+    color: #02353C !important;
+}
+
+[data-theme="green"] [data-page="admin"] input[class*="input"],
+[data-theme="green"] [data-page="admin"] input[class*="file-input"],
+[data-theme="green"] [data-page="admin"] input[class*="fileInput"] {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid rgba(46, 175, 125, 0.25) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] [data-page="admin"] input[class*="input"]:focus,
+[data-theme="green"] [data-page="admin"] input[class*="file-input"]:focus {
+    border-color: #2EAF7D !important;
+    box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] [data-page="admin"] button[class*="upload-button"],
+[data-theme="green"] [data-page="admin"] button[class*="uploadButton"] {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] [data-page="admin"] button[class*="upload-button"]:hover,
+[data-theme="green"] [data-page="admin"] button[class*="uploadButton"]:hover {
+    background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%) !important;
+    box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5) !important;
+}
+
+[data-theme="green"] [data-page="admin"] button[class*="skip-button"],
+[data-theme="green"] [data-page="admin"] button[class*="skipButton"] {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] [data-page="admin"] button[class*="skip-button"]:hover,
+[data-theme="green"] [data-page="admin"] button[class*="skipButton"]:hover {
+    background: #2EAF7D !important;
+    border-color: #2EAF7D !important;
+    color: #ffffff !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="message"][class*="success"] {
+    background: rgba(34, 197, 94, 0.1) !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+    color: #16a34a !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="message"][class*="error"] {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #dc2626 !important;
+}
+
+/* Page header content for UploadCSV */
+[data-theme="green"] [data-page="admin"] div[class*="page-header-content"],
+[data-theme="green"] [data-page="admin"] div[class*="pageHeaderContent"] {
+    background: transparent !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="page-header-content"] h1,
+[data-theme="green"] [data-page="admin"] div[class*="pageHeaderContent"] h1 {
+    color: #02353C !important;
+}
+
+[data-theme="green"] [data-page="admin"] div[class*="page-header-content"] h2,
+[data-theme="green"] [data-page="admin"] div[class*="pageHeaderContent"] h2 {
+    color: #166534 !important;
+}
+
+/* ==================== Faculty Management & Courses Management Styles ==================== */
+/* Faculty Cards and Items */
+[data-theme="green"] .facultyCard,
+[data-theme="green"] .courseCard,
+[data-theme="green"] .sectionCard,
+[data-theme="green"] .scheduleCard,
+[data-theme="green"] .profileCard,
+[data-theme="green"] .departmentCard {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12) !important;
+}
+
+[data-theme="green"] .facultyCard:hover,
+[data-theme="green"] .courseCard:hover,
+[data-theme="green"] .sectionCard:hover,
+[data-theme="green"] .scheduleCard:hover,
+[data-theme="green"] .profileCard:hover,
+[data-theme="green"] .departmentCard:hover {
+    border-color: #2EAF7D !important;
+    box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Icon Wrappers - Standard green gradient */
+[data-theme="green"] .iconWrapper,
+[data-theme="green"] .iconContainer,
+[data-theme="green"] .iconBox,
+[data-theme="green"] [class*="Icon"]:not([class*="lucide"]) {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Lucide icons - green color */
+[data-theme="green"] .lucide,
+[data-theme="green"] [class*="icon"] svg,
+[data-theme="green"] .headerIcon svg,
+[data-theme="green"] .statIcon svg,
+[data-theme="green"] .cardIcon svg {
+    color: #2EAF7D !important;
+}
+
+/* White icons inside colored containers */
+[data-theme="green"] .headerIconWrapper svg,
+[data-theme="green"] .campusCardIcon svg,
+[data-theme="green"] .roomIcon svg,
+[data-theme="green"] .statIcon svg {
+    color: #ffffff !important;
+}
+
+/* Tab and filter elements */
+[data-theme="green"] .tab,
+[data-theme="green"] .filterTab,
+[data-theme="green"] .tabButton {
+    color: #166534 !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .tab:hover,
+[data-theme="green"] .filterTab:hover,
+[data-theme="green"] .tabButton:hover {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] .tab.active,
+[data-theme="green"] .filterTab.active,
+[data-theme="green"] .tabButton.active,
+[data-theme="green"] .tabActive {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+    color: #ffffff !important;
+    border-color: #2EAF7D !important;
+}
+
+/* Schedule generation page specific */
+[data-theme="green"] .scheduleHeader,
+[data-theme="green"] .generateHeader {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .scheduleSection,
+[data-theme="green"] .parameterSection,
+[data-theme="green"] .settingsSection {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(193, 246, 237, 0.25) 100%) !important;
+    border: 2px solid rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Dropdown and Select elements */
+[data-theme="green"] select,
+[data-theme="green"] .select,
+[data-theme="green"] .dropdown {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] select:focus,
+[data-theme="green"] .select:focus,
+[data-theme="green"] .dropdown:focus {
+    border-color: #2EAF7D !important;
+    box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.2) !important;
+}
+
+/* Table styles for Faculty Lists */
+[data-theme="green"] table,
+[data-theme="green"] .dataTable {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="green"] th,
+[data-theme="green"] .tableHeader th {
+    background: rgba(193, 246, 237, 0.4) !important;
+    color: #02353C !important;
+    border-bottom: 2px solid rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] td,
+[data-theme="green"] .tableCell {
+    color: #166534 !important;
+    border-bottom: 1px solid rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] tr:hover,
+[data-theme="green"] .tableRow:hover {
+    background: rgba(193, 246, 237, 0.3) !important;
+}
+
+/* Action buttons in tables/cards */
+[data-theme="green"] .actionButton,
+[data-theme="green"] .editBtn,
+[data-theme="green"] .viewBtn,
+[data-theme="green"] .deleteBtn {
+    background: rgba(46, 175, 125, 0.1) !important;
+    color: #2EAF7D !important;
+    border: 1px solid rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .actionButton:hover,
+[data-theme="green"] .editBtn:hover,
+[data-theme="green"] .viewBtn:hover {
+    background: #2EAF7D !important;
+    color: #ffffff !important;
+}
+
+[data-theme="green"] .deleteBtn:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+}
+
+/* ==================== Print Styles ==================== */
+@media print {
+
+    [data-theme="green"] body::before,
+    [data-theme="green"] body::after {
+        display: none !important;
+    }
+}
+
+/* ==================== Rooms-Management Green Theme Overrides ==================== */
+/* Fix visibility issues for elements with green colors that blend with green theme background */
+
+/* Room Type Badges - Change lecture type from green to dark teal for visibility */
+[data-theme="green"] .typeLecture {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Feature Icons - Change green computer icon to dark teal */
+[data-theme="green"] .featureComputer {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Success Messages - Improve contrast */
+[data-theme="green"] .successMessage {
+    background: rgba(2, 53, 60, 0.1) !important;
+    border-color: rgba(2, 53, 60, 0.3) !important;
+    color: #02353C !important;
+    border-left-color: #02353C !important;
+}
+
+/* Room card usable status - use dark teal instead of green */
+[data-theme="green"] .roomCard.usable {
+    border-left-color: #02353C !important;
+}
+
+/* View Schedule option hover */
+[data-theme="green"] .viewScheduleOption:hover {
+    background: rgba(2, 53, 60, 0.1) !important;
+    color: #02353C !important;
+}
+
+/* Capacity Badge - make visible on green background */
+[data-theme="green"] .capacityBadge {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Add Room Button and Save buttons - ensure they stand out */
+[data-theme="green"] .saveBtnSmall {
+    background: linear-gradient(135deg, #02353C 0%, #044a54 100%) !important;
+    box-shadow: 0 2px 8px rgba(2, 53, 60, 0.3) !important;
+}
+
+[data-theme="green"] .saveBtnSmall:hover {
+    box-shadow: 0 4px 12px rgba(2, 53, 60, 0.4) !important;
+}
+
+/* Room Icon in room cards */
+[data-theme="green"] .roomIcon {
+    background: linear-gradient(135deg, #02353C 0%, #044a54 100%) !important;
+    box-shadow: 0 4px 8px rgba(2, 53, 60, 0.3) !important;
+    color: #ffffff !important;
+}
+
+/* Room status badges for usable rooms */
+[data-theme="green"] .roomStatusBadge,
+[data-theme="green"] .roomStatusBadge.usable,
+[data-theme="green"] [class*="usable"] .roomStatusBadge {
+    background: rgba(2, 53, 60, 0.15) !important;
+    color: #02353C !important;
+}
+
+/* Building icon and related icons */
+[data-theme="green"] .buildingIcon {
+    color: #02353C !important;
+}
+
+/* Capacity icon */
+[data-theme="green"] .capacityIcon {
+    color: #02353C !important;
+}
+
+/* Empty state icon */
+[data-theme="green"] .emptyIcon {
+    color: #02353C !important;
+}
+
+/* Room parsed text */
+[data-theme="green"] .roomParsed {
+    color: #02353C !important;
+}
+
+/* Map Viewer specific overrides */
+[data-theme="green"] .notification.success {
+    background: #02353C !important;
+    color: white !important;
+}
+
+[data-theme="green"] .primaryButton,
+[data-theme="green"] .toolbarButton.saveButton {
+    background: #02353C !important;
+}
+
+[data-theme="green"] .primaryButton:hover,
+[data-theme="green"] .toolbarButton.saveButton:hover {
+    background: #044a54 !important;
+}
+
+/* Resize handles and primary colored elements */
+[data-theme="green"] .resizeHandle {
+    background: #02353C !important;
+}
+
+/* Panel Header icons */
+[data-theme="green"] .panelHeader svg {
+    color: #02353C !important;
+}
+
+/* Add button in panels - keep gradient for main add buttons */
+[data-theme="green"] .addButton:not(.panelAddBtn) {
+    background: linear-gradient(135deg, #02353C 0%, #044a54 100%) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="green"] .addButton:not(.panelAddBtn):hover {
+    background: linear-gradient(135deg, #044a54 0%, #066 100%) !important;
+}
+
+/* Building/Floor item selected states */
+[data-theme="green"] .buildingItem.selected,
+[data-theme="green"] .floorItem.selected {
+    background: rgba(2, 53, 60, 0.15) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] .buildingItem.selected svg,
+[data-theme="green"] .floorItem.selected svg {
+    color: #02353C !important;
+}
+
+/* Shape and Icon buttons active state */
+[data-theme="green"] .shapeButton.active,
+[data-theme="green"] .iconButton.active,
+[data-theme="green"] .iconButton.selected {
+    border-color: #02353C !important;
+    color: #02353C !important;
+    box-shadow: 0 0 0 3px rgba(2, 53, 60, 0.2) !important;
+}
+
+/* Canvas placeholder icon */
+[data-theme="green"] .canvasPlaceholder svg {
+    color: #02353C !important;
+}
+
+/* Empty state buttons */
+[data-theme="green"] .emptyState button {
+    background: #02353C !important;
+}
+
+[data-theme="green"] .emptyState button:hover {
+    background: #044a54 !important;
+}
+
+/* Search Box focus state */
+[data-theme="green"] .searchBox:focus-within {
+    border-color: #02353C !important;
+}
+
+/* Toolbar button active state */
+[data-theme="green"] .toolbarButton.active {
+    background: rgba(2, 53, 60, 0.15) !important;
+    color: #02353C !important;
+}
+
+/* ==================== RoomLists&Details Specific Overrides ==================== */
+
+/* Campus Header - "Main Campus" text with building icon */
+[data-theme="green"] .campusHeader {
+    color: #02353C !important;
+}
+
+[data-theme="green"] .campusHeader svg {
+    color: #02353C !important;
+}
+
+/* Campus section labels and counts (e.g., "1 buildings") */
+[data-theme="green"] .campusSection span,
+[data-theme="green"] .campusSection .buildingCount {
+    color: #02353C !important;
+}
+
+/* Floor name (e.g., "0th Floor") */
+[data-theme="green"] .floorName {
+    color: #02353C !important;
+}
+
+[data-theme="green"] .floorName svg {
+    color: #02353C !important;
+}
+
+/* Floor info (e.g., "23 rooms · Capacity: 848") */
+[data-theme="green"] .floorInfo {
+    color: #02353C !important;
+}
+
+/* Room name in cards (e.g., "Accreditation Room") */
+[data-theme="green"] .roomName {
+    color: #02353C !important;
+}
+
+/* Room info labels */
+[data-theme="green"] .roomCampus,
+[data-theme="green"] .roomSeats,
+[data-theme="green"] .roomInfo span {
+    color: #02353C !important;
+}
+
+/* Toggle buttons - "Hide Campuses", "Hide Rooms", "Hide" */
+[data-theme="green"] .toggleCampusesBtn,
+[data-theme="green"] .toggleCampusBtn {
+    background: rgba(2, 53, 60, 0.1) !important;
+    color: #02353C !important;
+    border-color: rgba(2, 53, 60, 0.3) !important;
+}
+
+[data-theme="green"] .toggleCampusesBtn:hover,
+[data-theme="green"] .toggleCampusBtn:hover {
+    background: rgba(2, 53, 60, 0.2) !important;
+    border-color: #02353C !important;
+}
+
+/* Room/Capacity badges (e.g., "43 ROOMS", "TOTAL: 1813") */
+[data-theme="green"] .roomBadge {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] .capacityBadgeSmall {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Room capacity badge in cards */
+[data-theme="green"] .roomCapacityBadge {
+    background: linear-gradient(135deg, rgba(2, 53, 60, 0.15) 0%, rgba(2, 53, 60, 0.1) 100%) !important;
+    color: #02353C !important;
+}
+
+/* Feature icons and badges in room cards (AC, Board, TV, etc.) */
+[data-theme="green"] .roomFeatures span,
+[data-theme="green"] .featureTag,
+[data-theme="green"] [class*="feature"] {
+    color: #02353C !important;
+}
+
+/* Room usage indicator */
+[data-theme="green"] .roomUsage {
+    background: rgba(2, 53, 60, 0.1) !important;
+    color: #02353C !important;
+    border-color: rgba(2, 53, 60, 0.3) !important;
+}
+
+/* Expand icon in building headers */
+[data-theme="green"] .expandIcon {
+    color: #02353C !important;
+}
+
+/* Location/MapPin icons */
+[data-theme="green"] .floorHeader svg,
+[data-theme="green"] [class*="MapPin"],
+[data-theme="green"] [class*="Location"] {
+    color: #02353C !important;
+}
+
+/* Usable status text and icons */
+[data-theme="green"] [class*="Usable"],
+[data-theme="green"] [class*="usable"] span,
+[data-theme="green"] .statusUsable {
+    color: #02353C !important;
+}
+
+/* Check circle icon for usable status */
+[data-theme="green"] .roomStatusBadge svg {
+    color: #02353C !important;
+}
+
+/* Feature badges with specific feature types */
+[data-theme="green"] .featureAc,
+[data-theme="green"] .featureTv,
+[data-theme="green"] .featureWhiteboard,
+[data-theme="green"] .featureAccessible,
+[data-theme="green"] .featureLab {
+    color: #02353C !important;
+}
+
+/* Building header left section */
+[data-theme="green"] .buildingHeaderLeft span,
+[data-theme="green"] .buildingHeaderLeft h3 {
+    color: #02353C !important;
+}
+
+/* All SVG icons within room cards to ensure visibility */
+[data-theme="green"] .roomCard svg {
+    color: #02353C !important;
+}
+
+/* Exception: icons inside gradient backgrounds should remain white */
+[data-theme="green"] .roomIcon svg,
+[data-theme="green"] .headerIconWrapper svg,
+[data-theme="green"] .campusCardIcon svg {
+    color: #ffffff !important;
+}
+
+/* Stat card icons and values */
+[data-theme="green"] .statIcon svg {
+    color: #02353C !important;
+}
+
+/* Fix inline styles that may use green colors */
+[data-theme="green"] [style*="color: #059669"],
+[data-theme="green"] [style*="color: #16a34a"],
+[data-theme="green"] [style*="color: #22c55e"],
+[data-theme="green"] [style*="color:#059669"],
+[data-theme="green"] [style*="color:#16a34a"],
+[data-theme="green"] [style*="color:#22c55e"] {
+    color: #02353C !important;
+}
+
+/* ==================== Courses Management Green Theme Overrides ==================== */
+/* Fix visibility issues for inline-styled elements in CoursesManagement page */
+
+/* Course Cards - Override inline card-bg backgrounds */
+[data-theme="green"] div[style*="var(--card-bg"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%) !important;
+    border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Course Card Course Codes - Fix dark primary color for visibility */
+[data-theme="green"] span[style*="primary-dark"],
+[data-theme="green"] span[style*="#276749"] {
+    color: #02353C !important;
+}
+
+/* Course Card Course Names - Dark text for visibility */
+[data-theme="green"] span[style*="var(--text-dark"] {
+    color: #02353C !important;
+}
+
+/* Course Card Details (Lec/Lab hours, Pre-req) - Use forest green for secondary text */
+[data-theme="green"] div[style*="var(--text-secondary"] {
+    color: #166534 !important;
+}
+
+/* Year Level Headers with inline bg-gray backgrounds */
+[data-theme="green"] div[style*="var(--bg-gray-50"] {
+    background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+}
+
+/* Semester Badges */
+[data-theme="green"] span[style*="rgba(56, 161, 105"] {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #02353C !important;
+}
+
+/* Primary Medium Color Elements (Icons, labels) */
+[data-theme="green"] [style*="var(--primary-medium"] {
+    color: #2EAF7D !important;
+}
+
+[data-theme="green"] svg[style*="var(--primary-medium"] {
+    color: #2EAF7D !important;
+}
+
+/* Edit Button Backgrounds */
+[data-theme="green"] button[style*="var(--bg-gray-100"] {
+    background: rgba(193, 246, 237, 0.4) !important;
+    color: #166534 !important;
+}
+
+/* Stats Grid - 3rd/4th Year Course Cards with inline styles */
+[data-theme="green"] div[style*="var(--card-bg, #fff)"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%) !important;
+    border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Text in inline-styled elements */
+[data-theme="green"] div[style*="var(--text-dark, #1a202c)"] {
+    color: #02353C !important;
+}
+
+[data-theme="green"] div[style*="var(--text-secondary, #718096)"] {
+    color: #166534 !important;
+}
+
+/* Filter Select Dropdowns with inline styles */
+[data-theme="green"] select[style*="var(--bg-white, #fff)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] select[style*="var(--border-color"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+/* Course Count badge in Year Level headers */
+[data-theme="green"] span[style*="var(--bg-gray-100, #edf2f7)"] {
+    background: rgba(46, 175, 125, 0.15) !important;
+    color: #166534 !important;
+}
+
+/* Clock and Book icons in course details */
+[data-theme="green"] .campusView svg,
+[data-theme="green"] .campusSection svg:not(.campusHeaderRow svg) {
+    color: #2EAF7D !important;
+}
+
+/* Total Units badge in courses */
+[data-theme="green"] span[style*="rgba(66, 153, 225"] {
+    background: rgba(2, 53, 60, 0.12) !important;
+    color: #02353C !important;
+}
+
+/* Modal header for Create/Edit Course */
+[data-theme="green"] div[style*="var(--primary-gradient)"] {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+}
+
+/* Modal save button - ensure white text */
+[data-theme="green"] button[style*="primary-gradient"] {
+    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+    color: #ffffff !important;
+}
+
+/* Label colors in modal forms */
+[data-theme="green"] label[style*="var(--label-color)"] {
+    color: #02353C !important;
+}
+
+/* Input fields in modal forms */
+[data-theme="green"] input[style*="var(--input-border)"],
+[data-theme="green"] input[style*="var(--input-bg)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+[data-theme="green"] select[style*="var(--input-border)"],
+[data-theme="green"] select[style*="var(--input-bg)"] {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-color: rgba(46, 175, 125, 0.3) !important;
+    color: #02353C !important;
+}
+
+/* Cancel button in modal */
+[data-theme="green"] button[style*="var(--bg-gray-100)"] {
+    background: rgba(193, 246, 237, 0.4) !important;
+    color: #166534 !important;
+}
+
+/* Chevron icons in year level headers */
+[data-theme="green"] div[style*="marginLeft: 'auto'"] svg {
+    color: #2EAF7D !important;
+}

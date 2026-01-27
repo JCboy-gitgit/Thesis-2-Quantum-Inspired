@@ -92,7 +92,7 @@ export async function deleteInBatches(
  * Get the next upload group ID for a table
  */
 export async function getNextUploadGroupId(
-  table: 'rooms' | 'class_schedules' | 'teacher_schedules' | 'faculty'
+  table: 'rooms' | 'class_schedules' | 'faculty'
 ): Promise<number> {
   const { data, error } = await supabase
     .from(table)

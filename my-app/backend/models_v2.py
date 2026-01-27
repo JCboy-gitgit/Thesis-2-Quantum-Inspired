@@ -166,8 +166,9 @@ class CourseCSV(BaseModel):
     academic_year: str = Field(default="2025-2026")
     department: Optional[str] = None
     college: Optional[str] = None
-    lec_units: int = Field(default=3)
-    lab_units: int = Field(default=0)
+    lec_hours: int = Field(default=3)
+    lab_hours: int = Field(default=0)
+    total_hours: int = Field(default=3)  # Computed: lec_hours + lab_hours
     
     @validator('year_level', pre=True)
     def extract_year_level(cls, v, values):

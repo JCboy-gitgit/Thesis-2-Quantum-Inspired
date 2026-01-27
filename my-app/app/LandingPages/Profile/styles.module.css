@@ -64,7 +64,7 @@
   border-radius: 20px;
   padding: 32px;
   margin-bottom: 24px;
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
     0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
     inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
@@ -285,6 +285,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -301,7 +302,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
     0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
     inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
@@ -314,6 +315,7 @@
     opacity: 0;
     transform: translateY(20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);

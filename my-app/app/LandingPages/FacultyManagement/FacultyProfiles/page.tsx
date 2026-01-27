@@ -427,7 +427,7 @@ function FacultyProfilesContent() {
   const staffMembers = filteredFaculty.filter(f => f.role === 'staff')
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} data-page="admin">
       <MenuBar
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}

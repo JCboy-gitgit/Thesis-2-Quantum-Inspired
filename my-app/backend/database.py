@@ -198,68 +198,68 @@ async def create_default_time_slots() -> List[Dict]:
     return response.data or []
 
 
-# ==================== Schedule Operations ====================
+# ==================== Schedule Operations (Legacy - Now uses generated_schedules) ====================
 async def save_schedule_summary(summary_data: Dict) -> Dict:
-    """Save schedule summary"""
-    response = _db().table("schedule_summary").insert(summary_data).execute()
+    """Save schedule summary - DEPRECATED: Use create_generated_schedule instead"""
+    response = _db().table("generated_schedules").insert(summary_data).execute()
     return response.data[0] if response.data else {}
 
 
 async def save_schedule_entries(entries: List[Dict]) -> List[Dict]:
-    """Save schedule entries/batches"""
+    """Save schedule entries/batches - DEPRECATED: Use save_room_allocations instead"""
     if not entries:
         return []
-    response = _db().table("schedule_batches").insert(entries).execute()
+    response = _db().table("room_allocations").insert(entries).execute()
     return response.data or []
 
 
 async def get_schedule_entries(schedule_id: int) -> List[Dict]:
     """Get all entries for a schedule"""
-    response = _db().table("schedule_batches").select("*").eq(
-        "schedule_summary_id", schedule_id
+    response = _db().table("room_allocations").select("*").eq(
+        "schedule_id", schedule_id
     ).execute()
     return response.data or []
 
 
 async def get_all_schedules() -> List[Dict]:
-    """Get all schedule summaries"""
-    response = _db().table("schedule_summary").select("*").order(
+    """Get all schedules - Now uses generated_schedules table"""
+    response = _db().table("generated_schedules").select("*").order(
         "created_at", desc=True
     ).execute()
     return response.data or []
 
 
 async def get_schedule_by_id(schedule_id: int) -> Optional[Dict]:
-    """Get a specific schedule by ID"""
-    response = _db().table("schedule_summary").select("*").eq(
+    """Get a specific schedule by ID - Now uses generated_schedules table"""
+    response = _db().table("generated_schedules").select("*").eq(
         "id", schedule_id
     ).execute()
     return response.data[0] if response.data else None
 
 
 async def create_schedule_record(schedule_data: Dict) -> Dict:
-    """Create a new schedule summary record"""
-    response = _db().table("schedule_summary").insert(schedule_data).execute()
+    """Create a new schedule record - Now uses generated_schedules table"""
+    response = _db().table("generated_schedules").insert(schedule_data).execute()
     return response.data[0] if response.data else {}
 
 
 async def update_schedule_status(schedule_id: int, status: str, message: str = "") -> Dict:
-    """Update the status of a schedule"""
+    """Update the status of a schedule - Now uses generated_schedules table"""
     update_data = {"status": status}
     if message:
         update_data["notes"] = message
-    response = _db().table("schedule_summary").update(update_data).eq(
+    response = _db().table("generated_schedules").update(update_data).eq(
         "id", schedule_id
     ).execute()
     return response.data[0] if response.data else {}
 
 
 async def delete_schedule(schedule_id: int) -> bool:
-    """Delete a schedule and its entries"""
-    # Delete batches first
-    _db().table("schedule_batches").delete().eq("schedule_summary_id", schedule_id).execute()
-    # Delete summary
-    _db().table("schedule_summary").delete().eq("id", schedule_id).execute()
+    """Delete a schedule and its entries - Now uses generated_schedules and room_allocations"""
+    # Delete allocations first (foreign key)
+    _db().table("room_allocations").delete().eq("schedule_id", schedule_id).execute()
+    # Delete schedule
+    _db().table("generated_schedules").delete().eq("id", schedule_id).execute()
     return True
 
 
@@ -270,11 +270,11 @@ async def check_room_conflicts(
     time_slot_id: int,
     schedule_id: int
 ) -> List[Dict]:
-    """Check if room is already booked at this time"""
-    response = _db().table("schedule_batches").select("*").eq(
-        "room", room_id
-    ).eq("batch_date", day_of_week).eq(
-        "schedule_summary_id", schedule_id
+    """Check if room is already booked at this time - Now uses room_allocations"""
+    response = _db().table("room_allocations").select("*").eq(
+        "room_id", room_id
+    ).eq("schedule_day", day_of_week).eq(
+        "schedule_id", schedule_id
     ).execute()
     return response.data or []
 
@@ -285,10 +285,10 @@ async def check_teacher_conflicts(
     time_slot_id: int,
     schedule_id: int
 ) -> List[Dict]:
-    """Check if teacher is already scheduled at this time"""
-    response = _db().table("schedule_batches").select("*").eq(
-        "schedule_summary_id", schedule_id
-    ).eq("batch_date", day_of_week).execute()
+    """Check if teacher is already scheduled at this time - Now uses room_allocations"""
+    response = _db().table("room_allocations").select("*").eq(
+        "schedule_id", schedule_id
+    ).eq("schedule_day", day_of_week).execute()
     return response.data or []
 
 

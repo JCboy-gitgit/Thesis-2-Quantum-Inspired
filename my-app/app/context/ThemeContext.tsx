@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 // Base themes
-type BaseTheme = 'light' | 'dark'
+// NOTE: include "green" so stored selections don't get forced back to dark
+type BaseTheme = 'light' | 'dark' | 'green'
 
 // College-specific color themes
 type CollegeTheme = 'science' | 'arts-letters' | 'architecture' | 'default'
@@ -83,7 +84,7 @@ export const COLLEGE_THEME_MAP: Record<string, CollegeTheme> = {
 
 // Provide a default value so hooks don't throw during initial render
 const defaultContext: ThemeContextType = {
-  theme: 'dark',
+  theme: 'green',
   collegeTheme: 'default',
   setTheme: () => { },
   setCollegeTheme: () => { },
@@ -94,7 +95,7 @@ const defaultContext: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContext)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<BaseTheme>('dark')
+  const [theme, setThemeState] = useState<BaseTheme>('green')
   const [collegeTheme, setCollegeThemeState] = useState<CollegeTheme>('default')
   const [mounted, setMounted] = useState(false)
 
@@ -104,11 +105,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem('app-base-theme') as BaseTheme
     const savedCollegeTheme = localStorage.getItem('app-college-theme') as CollegeTheme
 
-    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+    const allowedThemes: BaseTheme[] = ['light', 'dark', 'green']
+
+    if (savedTheme && allowedThemes.includes(savedTheme)) {
       setThemeState(savedTheme)
       document.documentElement.setAttribute('data-theme', savedTheme)
     } else {
-      document.documentElement.setAttribute('data-theme', 'dark')
+      // default to green to match base styling
+      document.documentElement.setAttribute('data-theme', 'green')
     }
 
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {
@@ -143,8 +147,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
+    // Cycle through green -> dark -> light for simplicity
+    const order: BaseTheme[] = ['green', 'dark', 'light']
+    const idx = order.indexOf(theme)
+    const nextTheme = order[(idx + 1) % order.length]
+    setTheme(nextTheme)
   }
 
   const getCollegeColors = (): CollegeColors => {

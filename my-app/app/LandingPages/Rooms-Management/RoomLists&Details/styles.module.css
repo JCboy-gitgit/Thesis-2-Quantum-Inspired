@@ -1,110 +1,6 @@
-/* ==================== Green Theme Enhancements ==================== */
-[data-theme="green"] .pageContainer {
-  background: linear-gradient(135deg, #001a0f 0%, #004d26 50%, #001a0f 100%);
-}
-
-[data-theme="green"] .headerCard {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.98) 0%, rgba(0, 119, 59, 0.95) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.2);
-  color: #ffffff;
-}
-
-[data-theme="green"] .backButton {
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 119, 59, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.15);
-  color: #ffffff;
-}
-
-[data-theme="green"] .backButton:hover {
-  border-color: #00d96f;
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.4);
-  transform: translateY(-2px);
-}
-
-[data-theme="green"] .searchCard,
-[data-theme="green"] .contentCard,
-[data-theme="green"] .roomCard {
-  background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
-  border: 2px solid rgba(0, 217, 111, 0.35);
-  box-shadow: 0 4px 20px rgba(0, 217, 111, 0.15);
-}
-
-[data-theme="green"] .searchCard:hover,
-[data-theme="green"] .contentCard:hover,
-[data-theme="green"] .roomCard:hover {
-  border-color: #00d96f;
-  box-shadow: 0 8px 32px rgba(0, 217, 111, 0.3);
-  transform: translateY(-4px);
-}
-
-[data-theme="green"] .primaryButton,
-[data-theme="green"] .actionButton {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%);
-  box-shadow: 0 4px 16px rgba(0, 217, 111, 0.4);
-}
-
-[data-theme="green"] .primaryButton:hover,
-[data-theme="green"] .actionButton:hover {
-  background: linear-gradient(135deg, #00d96f 0%, #5dffa7 100%);
-  box-shadow: 0 6px 24px rgba(0, 217, 111, 0.6);
-  transform: translateY(-2px);
-}
-
-[data-theme="green"] .headerCard,
-[data-theme="green"] .contentCard,
-[data-theme="green"] .roomCard,
-[data-theme="green"] .title,
-[data-theme="green"] .text,
-[data-theme="green"] .name,
-[data-theme="green"] .info {
-  color: #ffffff;
-}
-
-[data-theme="green"] .secondaryText,
-[data-theme="green"] .description,
-[data-theme="green"] .caption,
-[data-theme="green"] .details {
-  color: #b3ffdb !important;
-}
-
-[data-theme="green"] .icon {
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .headerIconWrapper,
-[data-theme="green"] .campusCardIcon {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .campusCardIcon.schoolIcon {
-  background: linear-gradient(135deg, #00a651 0%, #00d96f 100%) !important;
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .headerLargeIcon {
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .heading,
-[data-theme="green"] .subheading {
-  color: #ffffff !important;
-}
-
-[data-theme="green"] .label,
-[data-theme="green"] .input,
-[data-theme="green"] .select,
-[data-theme="green"] .textarea {
-  color: #ffffff;
-}
-
-[data-theme="green"] .input::placeholder,
-[data-theme="green"] .textarea::placeholder {
-  color: #b3ffdb;
-  opacity: 0.7;
-}
+/* ==================== Green Theme Styles ==================== */
+/* Green theme styles are now handled globally via green-theme.css imported in layout.tsx */
+/* This includes nature-inspired light mode backgrounds, proper z-indexing, and consistent styling */
 
 /* ==================== Layout ==================== */
 /* Theme variables are inherited from globals.css */
@@ -243,7 +139,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingState p {
@@ -1004,6 +902,7 @@
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1205,10 +1104,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.05);
@@ -1296,6 +1198,7 @@
     opacity: 0;
     transform: translateY(-15px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1413,10 +1316,13 @@
 }
 
 @keyframes pulseWarning {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.9;
     transform: scale(1.02);
@@ -1454,9 +1360,12 @@
 }
 
 @keyframes pulseBadge {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
+
   50% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
   }
@@ -1530,7 +1439,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .buildingHeader {
     flex-wrap: wrap;
   }

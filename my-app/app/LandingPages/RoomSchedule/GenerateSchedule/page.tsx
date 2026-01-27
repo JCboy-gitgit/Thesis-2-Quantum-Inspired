@@ -5,18 +5,18 @@ import styles from './GenerateSchedule.module.css'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  FaCalendarPlus, FaArrowLeft, FaBuilding, FaDoorOpen, 
+import {
+  FaCalendarPlus, FaArrowLeft, FaBuilding, FaDoorOpen,
   FaUserGraduate, FaChalkboardTeacher, FaCog, FaPlay,
   FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock,
   FaSync, FaDownload, FaChartBar, FaLayerGroup, FaUsers,
   FaBolt, FaAtom, FaFileAlt, FaCalendar, FaChevronDown, FaChevronRight,
   FaEye, FaTimes, FaFilter
 } from 'react-icons/fa'
-import { 
-  University, 
-  FileSpreadsheet, 
-  GraduationCap, 
+import {
+  University,
+  FileSpreadsheet,
+  GraduationCap,
   BookOpen,
   Users,
   Settings,
@@ -31,7 +31,8 @@ import {
   Play,
   RotateCcw,
   Eye,
-  X
+  X,
+  Upload
 } from 'lucide-react'
 
 // ==================== Types ====================
@@ -44,15 +45,42 @@ interface CampusGroup {
   total_capacity: number
 }
 
-interface ClassGroup {
-  id: string
-  upload_group_id: number
-  college: string
-  file_name: string
+interface YearBatch {
+  id: number
+  year_batch: string
+  academic_year: string
+  is_active?: boolean
   created_at: string
-  class_count: number
+}
+
+interface Section {
+  id: number
+  section_name: string
+  year_batch_id: number
+  year_batch?: string
+  year_level: number
+  degree_program: string
+  department?: string | null
+  college?: string | null
+  student_count: number
+  max_capacity: number
+  is_active?: boolean
+  created_at: string
+}
+
+interface SectionCourse {
+  id: number
+  course_code: string
+  course_name: string
+  lec_hours: number
+  lab_hours: number
+  total_hours: number
   semester: string
   academic_year: string
+  department: string
+  college: string
+  degree_program: string | null
+  year_level: number
 }
 
 interface TeacherGroup {
@@ -87,10 +115,11 @@ interface ClassSchedule {
   schedule_time: string
   lec_hours: number
   lab_hours: number
-  credit_units: number
+  total_hours: number
   department: string
   semester: string
   academic_year: string
+  teacher_name?: string  // Assigned professor/teacher
 }
 
 interface TeacherSchedule {
@@ -112,8 +141,8 @@ interface ScheduleConfig {
   coolingRate: number
   quantumTunnelingProbability: number
   maxTeacherHoursPerDay: number
-  prioritizeAccessibility: boolean
   avoidConflicts: boolean
+  onlineDays: string[] // Days when all classes are online
 }
 
 interface TimeSettings {
@@ -148,6 +177,8 @@ interface RoomAllocation {
   department: string
   lec_hours: number
   lab_hours: number
+  teacher_name?: string  // BulSU QSA: Teacher/faculty name
+  is_online?: boolean    // BulSU QSA: Online class flag
 }
 
 interface UnscheduledItem {
@@ -177,9 +208,15 @@ interface ScheduleResult {
     iterations: number
     improvements: number
     quantumTunnels: number
+    blockSwaps: number  // BulSU QSA: Block swap count
+    conflictCount: number  // BulSU QSA: Hard constraint violations detected
     timeElapsedMs: number
   }
   allocations: RoomAllocation[]
+  // BulSU QSA: Online class stats
+  onlineDays?: string[]
+  onlineClassCount?: number
+  physicalClassCount?: number
 }
 
 // Days for timetable
@@ -190,18 +227,18 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
   const slots: TimeSlot[] = []
   const [startHour, startMin] = settings.startTime.split(':').map(Number)
   const [endHour, endMin] = settings.endTime.split(':').map(Number)
-  
+
   let currentTime = startHour * 60 + startMin // Convert to minutes
   const endTimeMinutes = endHour * 60 + endMin
   let slotId = 1
-  
+
   while (currentTime < endTimeMinutes) {
     const hour = Math.floor(currentTime / 60)
     const min = currentTime % 60
     const nextTime = currentTime + settings.slotDuration
     const nextHour = Math.floor(nextTime / 60)
     const nextMin = nextTime % 60
-    
+
     slots.push({
       id: slotId++,
       slot_name: `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')} - ${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
@@ -209,10 +246,10 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
       end_time: `${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`,
       duration_minutes: settings.slotDuration
     })
-    
+
     currentTime = nextTime
   }
-  
+
   return slots
 }
 
@@ -221,22 +258,22 @@ export default function GenerateSchedulePage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
-  
+
   // Data source states
   const [campusGroups, setCampusGroups] = useState<CampusGroup[]>([])
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([])
-  const [teacherGroups, setTeacherGroups] = useState<TeacherGroup[]>([])
-  
-  // Selected data
-  const [selectedCampusGroup, setSelectedCampusGroup] = useState<number | null>(null)
-  const [selectedClassGroup, setSelectedClassGroup] = useState<string | null>(null)
-  const [selectedTeacherGroup, setSelectedTeacherGroup] = useState<number | null>(null)
-  
+  const [yearBatches, setYearBatches] = useState<YearBatch[]>([])
+  const [sections, setSections] = useState<Section[]>([])
+  const [courses, setCourses] = useState<SectionCourse[]>([])
+
+  // Selected data - support multiple campus groups
+  const [selectedCampusGroups, setSelectedCampusGroups] = useState<number[]>([])
+  const [selectedYearBatch, setSelectedYearBatch] = useState<number | null>(null)
+
   // Loaded detailed data
   const [rooms, setRooms] = useState<CampusRoom[]>([])
   const [classes, setClasses] = useState<ClassSchedule[]>([])
   const [teachers, setTeachers] = useState<TeacherSchedule[]>([])
-  
+
   // Configuration
   const [config, setConfig] = useState<ScheduleConfig>({
     scheduleName: '',
@@ -247,10 +284,10 @@ export default function GenerateSchedulePage() {
     coolingRate: 0.999,
     quantumTunnelingProbability: 0.15,
     maxTeacherHoursPerDay: 8,
-    prioritizeAccessibility: true,
-    avoidConflicts: true
+    avoidConflicts: true,
+    onlineDays: [] // Days where all classes are online
   })
-  
+
   // Time Configuration
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
@@ -259,7 +296,7 @@ export default function GenerateSchedulePage() {
     includeSaturday: true,
     includeSunday: false
   })
-  
+
   // UI states
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1)
@@ -267,27 +304,43 @@ export default function GenerateSchedulePage() {
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [showTimetable, setShowTimetable] = useState(false)
-  
+  const [timetableView, setTimetableView] = useState<'room' | 'section' | 'teacher'>('room') // NEW: Toggle between views
+  const [selectedTimetableRoom, setSelectedTimetableRoom] = useState<string>('all') // NEW: Filter by specific room
+  const [selectedTimetableSection, setSelectedTimetableSection] = useState<string>('all') // NEW: Filter by specific section
+  const [selectedTimetableTeacher, setSelectedTimetableTeacher] = useState<string>('all') // NEW: Filter by specific teacher
+
   // Expanded sections
   const [expandedCampus, setExpandedCampus] = useState(false)
-  const [expandedClass, setExpandedClass] = useState(false)
-  const [expandedTeacher, setExpandedTeacher] = useState(false)
-  
+  const [expandedSections, setExpandedSections] = useState(false)
+
   // Building and room filters
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([])
   const [selectedRooms, setSelectedRooms] = useState<number[]>([])
   const [showBuildingFilter, setShowBuildingFilter] = useState(false)
-  
+  const [roomSearchQuery, setRoomSearchQuery] = useState('') // NEW: Room search functionality
+  const [roomFilterCapacity, setRoomFilterCapacity] = useState<number | null>(null) // NEW: Filter by capacity
+  const [roomFilterType, setRoomFilterType] = useState<string>('') // NEW: Filter by room type
+
   // File viewer states
   const [showClassFileViewer, setShowClassFileViewer] = useState(false)
-  const [showTeacherFileViewer, setShowTeacherFileViewer] = useState(false)
   const [viewerData, setViewerData] = useState<any[]>([])
   const [viewerLoading, setViewerLoading] = useState(false)
-  
+
   // Auto-generate toggle state
   const [autoGenerateEnabled, setAutoGenerateEnabled] = useState(false)
   const [lastDataHash, setLastDataHash] = useState<string>('')
   const [autoGenerateCountdown, setAutoGenerateCountdown] = useState(0)
+
+  // Unassigned courses/teacher warning states
+  const [unassignedCourses, setUnassignedCourses] = useState<{
+    course_code: string;
+    course_name: string;
+    section: string;
+    semester: string;
+    department: string;
+  }[]>([])
+  const [showUnassignedWarning, setShowUnassignedWarning] = useState(false)
+  const [bypassTeacherCheck, setBypassTeacherCheck] = useState(false)
 
   // Load initial data
   useEffect(() => {
@@ -298,7 +351,7 @@ export default function GenerateSchedulePage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -359,59 +412,32 @@ export default function GenerateSchedulePage() {
         setCampusGroups(grouped)
       }
 
-      // Fetch class groups
-      const { data: classData, error: classError } = await (supabase
-        .from('class_schedules') as any)
-        .select('upload_group_id, college, file_name, created_at, semester, academic_year')
-        .order('created_at', { ascending: false })
+      // Fetch year batches from sections system
+      const { data: batchesData, error: batchesError } = await (supabase
+        .from('year_batches') as any)
+        .select('*')
+        .order('year_batch', { ascending: false })
 
-      if (!classError && classData) {
-        const grouped = classData.reduce((acc: ClassGroup[], curr: any) => {
-          const key = `${curr.college || ''}|${curr.semester || ''}|${curr.academic_year || ''}`
-          const existing = acc.find(item => item.id === key)
-          if (existing) {
-            existing.class_count++
-          } else {
-            acc.push({
-              id: key,
-              upload_group_id: curr.upload_group_id,
-              college: curr.college || 'Unnamed Batch',
-              file_name: curr.file_name,
-              created_at: curr.created_at,
-              class_count: 1,
-              semester: curr.semester || '',
-              academic_year: curr.academic_year || ''
-            })
-          }
-          return acc
-        }, [])
-        setClassGroups(grouped)
+      if (!batchesError && batchesData) {
+        setYearBatches(batchesData)
+      } else {
+        console.error('Error fetching year batches:', batchesError)
+        setYearBatches([])
       }
 
-      // Fetch teacher groups
-      const { data: teacherData, error: teacherError } = await (supabase
-        .from('teacher_schedules') as any)
-        .select('upload_group_id, college, file_name, created_at')
-        .order('created_at', { ascending: false })
+      // Fetch sections
+      const { data: sectionsData, error: sectionsError } = await (supabase
+        .from('sections') as any)
+        .select('*')
+        .order('section_name', { ascending: true })
 
-      if (!teacherError && teacherData) {
-        const grouped = teacherData.reduce((acc: TeacherGroup[], curr: any) => {
-          const existing = acc.find(item => item.upload_group_id === curr.upload_group_id)
-          if (existing) {
-            existing.teacher_count++
-          } else {
-            acc.push({
-              upload_group_id: curr.upload_group_id,
-              college: curr.college || 'Unnamed',
-              file_name: curr.file_name,
-              created_at: curr.created_at,
-              teacher_count: 1
-            })
-          }
-          return acc
-        }, [])
-        setTeacherGroups(grouped)
+      if (!sectionsError && sectionsData) {
+        setSections(sectionsData)
+      } else {
+        console.error('Error fetching sections:', sectionsError)
+        setSections([])
       }
+
     } catch (error) {
       console.error('Error fetching groups:', error)
     } finally {
@@ -444,105 +470,246 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const loadClassData = async (college: string, semester: string, academicYear: string) => {
-    const { data, error } = await (supabase
-      .from('class_schedules') as any)
-      .select('*')
-      .eq('college', college)
-      .eq('semester', semester)
-      .eq('academic_year', academicYear)
-      .order('course_code', { ascending: true })
-
-    if (!error && data) {
-      setClasses(data.map((c: any) => ({
-        id: c.id,
-        course_code: c.course_code || '',
-        course_name: c.course_name || '',
-        section: c.section || '',
-        year_level: c.year_level || parseInt(c.section?.charAt(0)) || 1, // Extract from section if not available
-        student_count: c.student_count || 30, // Default 30 if not available
-        schedule_day: c.schedule_day || '',
-        schedule_time: c.schedule_time || '',
-        lec_hours: c.lec_hr || c.lec_hours || 0,
-        lab_hours: c.lab_hr || c.lab_hours || 0,
-        credit_units: c.credit_unit || c.credit_units || 0,
-        department: c.department || '',
-        semester: c.semester || '',
-        academic_year: c.academic_year || ''
-      })))
+  const loadClassData = async (yearBatchId: number) => {
+    try {
+      // Get sections for this year batch
+      const batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
       
-      // Auto-fill semester and academic year from class data
-      if (data.length > 0) {
+      if (batchSections.length === 0) {
+        setClasses([])
+        setCourses([])
+        setUnassignedCourses([])
+        return
+      }
+
+      // Determine semester from year batch
+      const batch = yearBatches.find(b => b.id === yearBatchId)
+      let targetSemester = ''
+      if (batch) {
+        if (batch.year_batch.toLowerCase().includes('first') || batch.year_batch.includes('1st')) {
+          targetSemester = '1st Semester'
+        } else if (batch.year_batch.toLowerCase().includes('second') || batch.year_batch.includes('2nd')) {
+          targetSemester = '2nd Semester'
+        } else if (batch.year_batch.toLowerCase().includes('summer')) {
+          targetSemester = 'Summer'
+        }
+      }
+
+      // Get all course assignments for these sections
+      const { data: assignments, error: assignmentsError } = await (supabase
+        .from('section_course_assignments') as any)
+        .select('*')
+        .in('section_id', batchSections.map(s => s.id))
+
+      if (assignmentsError) {
+        console.error('Error fetching assignments:', assignmentsError)
+        setClasses([])
+        setCourses([])
+        setUnassignedCourses([])
+        return
+      }
+
+      // Get all courses that are assigned
+      const courseIds = assignments.map((a: any) => a.course_id)
+      const { data: coursesData, error: coursesError } = await (supabase
+        .from('class_schedules') as any)
+        .select('*')
+        .in('id', courseIds)
+
+      if (coursesError) {
+        console.error('Error fetching courses:', coursesError)
+        setClasses([])
+        setCourses([])
+        setUnassignedCourses([])
+        return
+      }
+
+      // Filter courses by semester if target semester is determined
+      let filteredCourses = coursesData || []
+      if (targetSemester) {
+        filteredCourses = filteredCourses.filter((c: any) => {
+          const courseSem = (c.semester || '').toLowerCase()
+          const targetSemLower = targetSemester.toLowerCase()
+          // Match various semester formats
+          if (targetSemLower.includes('1st') || targetSemLower.includes('first')) {
+            return courseSem.includes('1st') || courseSem.includes('first') || courseSem === '1'
+          } else if (targetSemLower.includes('2nd') || targetSemLower.includes('second')) {
+            return courseSem.includes('2nd') || courseSem.includes('second') || courseSem === '2'
+          } else if (targetSemLower.includes('summer')) {
+            return courseSem.includes('summer')
+          }
+          return true // Include if no specific match
+        })
+      }
+
+      setCourses(filteredCourses)
+
+      // Fetch teaching loads to check for assigned teachers
+      const { data: teachingLoads, error: teachingLoadsError } = await (supabase
+        .from('teaching_loads') as any)
+        .select('*, faculty_profiles(*)')
+        .in('course_id', filteredCourses.map((c: any) => c.id))
+
+      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+      if (!teachingLoadsError && teachingLoads) {
+        teachingLoads.forEach((load: any) => {
+          const key = `${load.course_id}-${load.section || ''}`
+          teachingLoadsMap.set(key, {
+            faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
+            section: load.section || ''
+          })
+        })
+      }
+
+      // Build class schedules from sections and their assigned courses
+      const classSchedules: ClassSchedule[] = []
+      const unassigned: typeof unassignedCourses = []
+      let autoId = 1 // Generate unique numeric IDs
+      
+      for (const section of batchSections) {
+        const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
+        const sectionCourses = filteredCourses.filter((c: any) => 
+          sectionAssignments.some((a: any) => a.course_id === c.id)
+        )
+
+        for (const course of sectionCourses) {
+          // Check if this course-section has an assigned teacher
+          const teacherKey = `${course.id}-${section.section_name}`
+          const teacherKeyNoSection = `${course.id}-`
+          const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+          
+          if (!assignedTeacher) {
+            unassigned.push({
+              course_code: course.course_code || '',
+              course_name: course.course_name || '',
+              section: section.section_name || '',
+              semester: course.semester || targetSemester || '',
+              department: course.department || section.department || ''
+            })
+          }
+
+          classSchedules.push({
+            id: autoId++, // Use auto-incrementing numeric ID
+            course_code: course.course_code || '',
+            course_name: course.course_name || '',
+            section: section.section_name || '',
+            year_level: section.year_level || 1,
+            student_count: section.student_count || 30,
+            schedule_day: '',
+            schedule_time: '',
+            lec_hours: course.lec_hours || 0,
+            lab_hours: course.lab_hours || 0,
+            total_hours: (course.lec_hours || 0) + (course.lab_hours || 0),
+            department: course.department || section.department || '',
+            semester: course.semester || '',
+            academic_year: course.academic_year || '',
+            teacher_name: assignedTeacher?.faculty_name || ''  // Include assigned teacher
+          })
+        }
+      }
+
+      setClasses(classSchedules)
+      setUnassignedCourses(unassigned)
+
+      // Auto-fill semester and academic year from batch
+      if (batch) {
         setConfig(prev => ({
           ...prev,
-          semester: data[0].semester || prev.semester,
-          academicYear: data[0].academic_year || prev.academicYear
+          semester: batch.year_batch.includes('First') || batch.year_batch.includes('1st') ? '1st Semester' : 
+                    batch.year_batch.includes('Second') || batch.year_batch.includes('2nd') ? '2nd Semester' : 
+                    batch.year_batch.includes('Summer') ? 'Summer' : prev.semester,
+          academicYear: batch.academic_year || prev.academicYear
         }))
       }
-    }
-  }
-
-  const loadTeacherData = async (groupId: number) => {
-    const { data, error } = await (supabase
-      .from('teacher_schedules') as any)
-      .select('*')
-      .eq('upload_group_id', groupId)
-      .order('name', { ascending: true })
-
-    if (!error && data) {
-      setTeachers(data.map((t: any) => ({
-        id: t.id,
-        teacher_id: t.teacher_id || '',
-        name: t.name || t.teacher_name || '',
-        schedule_day: t.schedule_day || '',
-        schedule_time: t.schedule_time || '',
-        department: t.department || '',
-        email: t.email || ''
-      })))
-    }
-  }
-
-  // Handle group selection
-  const handleSelectCampusGroup = (groupId: number) => {
-    if (selectedCampusGroup === groupId) {
-      setSelectedCampusGroup(null)
-      setRooms([])
-      setSelectedBuildings([])
-      setSelectedRooms([])
-    } else {
-      setSelectedCampusGroup(groupId)
-      loadCampusData(groupId)
-      setSelectedBuildings([])
-      setSelectedRooms([])
-    }
-  }
-
-  const handleSelectClassGroup = (groupId: string) => {
-    if (selectedClassGroup === groupId) {
-      setSelectedClassGroup(null)
+    } catch (error) {
+      console.error('Error loading class data:', error)
       setClasses([])
-    } else {
-      setSelectedClassGroup(groupId)
-      const group = classGroups.find(g => g.id === groupId)
-      if (group) {
-        loadClassData(group.college, group.semester, group.academic_year)
+      setCourses([])
+      setUnassignedCourses([])
+    }
+  }
+
+  const loadTeacherData = async () => {
+    // Teacher schedules are deprecated; keep teachers empty
+    setTeachers([])
+  }
+
+  // Handle group selection - now supports multiple campus groups
+  const handleSelectCampusGroup = async (groupId: number) => {
+    if (selectedCampusGroups.includes(groupId)) {
+      // Deselect - remove from array
+      const newSelected = selectedCampusGroups.filter(id => id !== groupId)
+      setSelectedCampusGroups(newSelected)
+      
+      // Reload rooms from remaining selected groups
+      if (newSelected.length > 0) {
+        await loadMultipleCampusData(newSelected)
+      } else {
+        setRooms([])
+        setSelectedBuildings([])
+        setSelectedRooms([])
       }
+    } else {
+      // Add to selection
+      const newSelected = [...selectedCampusGroups, groupId]
+      setSelectedCampusGroups(newSelected)
+      await loadMultipleCampusData(newSelected)
+      setSelectedBuildings([])
+      setSelectedRooms([])
+    }
+  }
+
+  // Load rooms from multiple campus groups
+  const loadMultipleCampusData = async (groupIds: number[]) => {
+    const allRooms: CampusRoom[] = []
+    
+    for (const groupId of groupIds) {
+      const { data, error } = await (supabase
+        .from('campuses') as any)
+        .select('*')
+        .eq('upload_group_id', groupId)
+        .order('campus', { ascending: true })
+        .order('building', { ascending: true })
+
+      if (!error && data) {
+        const mappedRooms = data.map((r: any) => ({
+          id: r.id,
+          campus: r.campus || '',
+          building: r.building || '',
+          room: r.room || '',
+          capacity: r.capacity || 30,
+          room_type: r.room_type || 'Classroom',
+          floor_number: r.floor_number || 1,
+          has_ac: r.has_ac || false,
+          has_projector: r.has_projector || false,
+          is_pwd_accessible: r.is_pwd_accessible || r.is_first_floor || false
+        }))
+        allRooms.push(...mappedRooms)
+      }
+    }
+    
+    setRooms(allRooms)
+  }
+
+  const handleSelectClassGroup = (batchId: number) => {
+    if (selectedYearBatch === batchId) {
+      setSelectedYearBatch(null)
+      setClasses([])
+      setCourses([])
+    } else {
+      setSelectedYearBatch(batchId)
+      loadClassData(batchId)
     }
   }
 
   const handleSelectTeacherGroup = (groupId: number) => {
-    if (selectedTeacherGroup === groupId) {
-      setSelectedTeacherGroup(null)
-      setTeachers([])
-    } else {
-      setSelectedTeacherGroup(groupId)
-      loadTeacherData(groupId)
-    }
+    // Teacher schedules deprecated
+    setTeachers([])
   }
-  
+
   // Get unique buildings from loaded rooms
   const uniqueBuildings = [...new Set(rooms.map(r => r.building).filter(Boolean))]
-  
+
   // Toggle building selection
   const handleToggleBuilding = (building: string) => {
     setSelectedBuildings(prev => {
@@ -556,20 +723,20 @@ export default function GenerateSchedulePage() {
       }
     })
   }
-  
+
   // Toggle room selection
   const handleToggleRoom = (roomId: number) => {
-    setSelectedRooms(prev => 
+    setSelectedRooms(prev =>
       prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]
     )
   }
-  
+
   // Select all rooms in a building OR toggle to show individual room selection
   const handleSelectAllRoomsInBuilding = (building: string) => {
     const buildingRoomIds = rooms.filter(r => r.building === building).map(r => r.id)
     const buildingSelected = selectedBuildings.includes(building)
     const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
-    
+
     if (buildingSelected) {
       // If building is selected, switch to individual room selection mode
       // Deselect the building and select all its rooms instead
@@ -583,93 +750,105 @@ export default function GenerateSchedulePage() {
       setSelectedRooms(prev => [...new Set([...prev, ...buildingRoomIds])])
     }
   }
-  
+
+  // Download CSV of unassigned courses (courses without teachers)
+  const downloadUnassignedCoursesCSV = () => {
+    if (unassignedCourses.length === 0) return
+
+    const headers = ['Course Code', 'Course Name', 'Section', 'Semester', 'Department']
+    const csvContent = [
+      headers.join(','),
+      ...unassignedCourses.map(c => 
+        [
+          `"${c.course_code}"`,
+          `"${c.course_name}"`,
+          `"${c.section}"`,
+          `"${c.semester}"`,
+          `"${c.department}"`
+        ].join(',')
+      )
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `unassigned_courses_${config.semester.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   // Get filtered rooms based on selection
   const getFilteredRooms = () => {
     if (selectedBuildings.length === 0 && selectedRooms.length === 0) {
       return rooms // No filter applied
     }
-    
+
     if (selectedRooms.length > 0) {
       // Specific rooms selected
       return rooms.filter(r => selectedRooms.includes(r.id))
     }
-    
+
     if (selectedBuildings.length > 0) {
       // Buildings selected but no specific rooms
       return rooms.filter(r => selectedBuildings.includes(r.building))
     }
-    
+
     return rooms
   }
-  
-  // File viewer functions
-  const handleViewClassFile = async () => {
-    if (!selectedClassGroup) return
-    
-    setViewerLoading(true)
-    setShowClassFileViewer(true)
-    
-    try {
-      const group = classGroups.find(g => g.id === selectedClassGroup)
-      if (!group) return
 
-      const { data, error } = await (supabase
-        .from('class_schedules') as any)
-        .select('*')
-        .eq('college', group.college)
-        .eq('semester', group.semester)
-        .eq('academic_year', group.academic_year)
-        .order('course_code', { ascending: true })
-      
-      if (!error && data) {
-        setViewerData(data)
-      }
-    } catch (error) {
-      console.error('Error loading class file data:', error)
-    } finally {
-      setViewerLoading(false)
-    }
+  // NEW: Filter rooms by search query, capacity, and type for the room selection UI
+  const getSearchFilteredRooms = (building: string) => {
+    return rooms
+      .filter(r => r.building === building)
+      .filter(r => {
+        // Search filter
+        if (roomSearchQuery.trim()) {
+          const query = roomSearchQuery.toLowerCase()
+          return r.room.toLowerCase().includes(query) || 
+                 r.room_type?.toLowerCase().includes(query)
+        }
+        return true
+      })
+      .filter(r => {
+        // Capacity filter
+        if (roomFilterCapacity !== null) {
+          return r.capacity >= roomFilterCapacity
+        }
+        return true
+      })
+      .filter(r => {
+        // Room type filter
+        if (roomFilterType) {
+          return r.room_type === roomFilterType
+        }
+        return true
+      })
   }
-  
-  const handleViewTeacherFile = async () => {
-    if (!selectedTeacherGroup) return
-    
-    setViewerLoading(true)
-    setShowTeacherFileViewer(true)
-    
-    try {
-      const { data, error } = await (supabase
-        .from('teacher_schedules') as any)
-        .select('*')
-        .eq('upload_group_id', selectedTeacherGroup)
-        .order('name', { ascending: true })
-      
-      if (!error && data) {
-        setViewerData(data)
-      }
-    } catch (error) {
-      console.error('Error loading teacher file data:', error)
-    } finally {
-      setViewerLoading(false)
-    }
+
+  // Get unique room types for filter dropdown
+  const uniqueRoomTypes = [...new Set(rooms.map(r => r.room_type).filter(Boolean))]
+
+  // File viewer functions - deprecated (class groups no longer used)
+  const handleViewClassFile = async () => {
+    // This function is deprecated - we now use year batches instead of class groups
+    console.warn('handleViewClassFile is deprecated')
   }
-  
+
   const closeFileViewer = () => {
     setShowClassFileViewer(false)
-    setShowTeacherFileViewer(false)
     setViewerData([])
   }
 
-  // Validation
-  const canProceedToStep2 = selectedCampusGroup !== null && selectedClassGroup !== null
+  // Validation - now checks for array length
+  const canProceedToStep2 = selectedCampusGroups.length > 0 && selectedYearBatch !== null
   const canProceedToStep3 = canProceedToStep2 && rooms.length > 0 && classes.length > 0
   const canGenerate = canProceedToStep3 && config.scheduleName.trim() !== ''
 
-  // Get selected group info
-  const selectedCampusInfo = campusGroups.find(g => g.upload_group_id === selectedCampusGroup)
-  const selectedClassInfo = classGroups.find(g => g.id === selectedClassGroup)
-  const selectedTeacherInfo = teacherGroups.find(g => g.upload_group_id === selectedTeacherGroup)
+  // Get selected group info - for multiple groups, show combined info
+  const selectedCampusInfoList = campusGroups.filter(g => selectedCampusGroups.includes(g.upload_group_id))
+  const selectedBatchInfo = yearBatches.find(b => b.id === selectedYearBatch)
+  const selectedTeacherInfo = undefined
 
   // Calculate stats
   const totalRoomCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
@@ -684,6 +863,18 @@ export default function GenerateSchedulePage() {
       return
     }
 
+    // Check for unassigned courses (without teachers)
+    if (unassignedCourses.length > 0 && !bypassTeacherCheck) {
+      setShowUnassignedWarning(true)
+      return
+    }
+
+    await executeScheduleGeneration()
+  }
+
+  // Proceed with schedule generation after bypass confirmation
+  const executeScheduleGeneration = async () => {
+    setShowUnassignedWarning(false)
     setScheduling(true)
     setTimer(0)
     setShowResults(false)
@@ -691,32 +882,33 @@ export default function GenerateSchedulePage() {
     try {
       // Get filtered rooms based on user selection
       const filteredRooms = getFilteredRooms()
-      
+
       if (filteredRooms.length === 0) {
         alert('No rooms selected. Please select at least one building or room.')
         setScheduling(false)
         return
       }
-      
+
       // Generate time slots from settings
       const timeSlots = generateTimeSlots(timeSettings)
       const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       if (timeSettings.includeSaturday) activeDays.push('Saturday')
       if (timeSettings.includeSunday) activeDays.push('Sunday')
-      
+
       // Prepare data for QIA algorithm - will be sent to Python backend
       const scheduleData = {
         schedule_name: config.scheduleName,
         semester: config.semester,
         academic_year: config.academicYear,
-        campus_group_id: selectedCampusGroup,
-        class_group_id: selectedClassInfo?.upload_group_id || null,
-        teacher_group_id: selectedTeacherGroup,
+        campus_group_ids: selectedCampusGroups, // Now supports multiple campus groups
+        year_batch_id: selectedYearBatch,
+        teacher_group_id: null,
         rooms: filteredRooms, // Use filtered rooms instead of all rooms
         classes: classes,
-        teachers: teachers,
+        teachers: [],
         time_slots: timeSlots,
         active_days: activeDays,
+        online_days: config.onlineDays, // NEW: Days where all classes are online
         time_settings: timeSettings,
         config: {
           max_iterations: config.maxIterations,
@@ -724,18 +916,27 @@ export default function GenerateSchedulePage() {
           cooling_rate: config.coolingRate,
           quantum_tunneling_probability: config.quantumTunnelingProbability,
           max_teacher_hours_per_day: config.maxTeacherHoursPerDay,
-          prioritize_accessibility: config.prioritizeAccessibility,
-          avoid_conflicts: config.avoidConflicts
+          avoid_conflicts: config.avoidConflicts,
+          online_days: config.onlineDays // REMOVED: prioritize_accessibility
         }
       }
 
-      console.log('[GenerateSchedule] Sending to Python backend:', {
+      console.log('[GenerateSchedule] Sending to Python backend:', JSON.stringify({
         rooms: filteredRooms.length,
         classes: classes.length,
         teachers: teachers.length,
         timeSlots: timeSlots.length,
-        activeDays
-      })
+        activeDays,
+        onlineDays: config.onlineDays
+      }, null, 2))
+
+      // Validate data before sending
+      if (classes.length === 0) {
+        throw new Error('No classes to schedule. Please select a year batch with assigned courses.')
+      }
+      if (filteredRooms.length === 0) {
+        throw new Error('No rooms available. Please select a campus group with rooms.')
+      }
 
       // Call the new API that connects to Python backend
       const response = await fetch('/api/schedule/qia-backend', {
@@ -746,11 +947,22 @@ export default function GenerateSchedulePage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate schedule')
+        // Handle error - could be string, object, or array
+        let errorMsg = 'Failed to generate schedule'
+        if (typeof errorData.error === 'string') {
+          errorMsg = errorData.error
+        } else if (errorData.error) {
+          errorMsg = JSON.stringify(errorData.error)
+        } else if (errorData.detail) {
+          errorMsg = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
+        } else if (errorData.message) {
+          errorMsg = errorData.message
+        }
+        throw new Error(errorMsg)
       }
 
       const result = await response.json()
-      console.log('[GenerateSchedule] API Response:', result)
+      console.log('[GenerateSchedule] API Response:', JSON.stringify(result, null, 2))
 
       setScheduleResult({
         success: result.success,
@@ -768,15 +980,25 @@ export default function GenerateSchedulePage() {
           iterations: result.optimization_stats?.iterations || config.maxIterations,
           improvements: result.optimization_stats?.improvements || 0,
           quantumTunnels: result.optimization_stats?.quantum_tunnels || 0,
+          blockSwaps: result.optimization_stats?.block_swaps || 0,  // BulSU QSA
+          conflictCount: result.optimization_stats?.conflict_count || 0,  // BulSU QSA
           timeElapsedMs: result.optimization_stats?.time_elapsed_ms || timer
         },
-        allocations: result.allocations || []
+        allocations: result.allocations || [],
+        // BulSU QSA: Online class stats
+        onlineDays: result.online_days || [],
+        onlineClassCount: result.online_class_count || 0,
+        physicalClassCount: result.physical_class_count || 0
       })
       setShowResults(true)
       setShowTimetable(true)
     } catch (error: any) {
       console.error('Schedule generation failed:', error)
-      alert(`Schedule generation failed: ${error.message || 'Unknown error'}`)
+      // Handle error properly - stringify if it's an object
+      const errorMessage = typeof error === 'object' 
+        ? (error.message || JSON.stringify(error, null, 2))
+        : String(error)
+      alert(`Schedule generation failed: ${errorMessage}`)
     } finally {
       setScheduling(false)
     }
@@ -798,9 +1020,9 @@ export default function GenerateSchedulePage() {
   }
 
   return (
-    <div className={styles.scheduleLayout}>
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className={styles.scheduleLayout} data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
@@ -810,8 +1032,8 @@ export default function GenerateSchedulePage() {
         <div className={styles.scheduleContainer}>
           {/* Header */}
           <header className={styles.scheduleHeader}>
-            <button 
-              className={styles.backButton} 
+            <button
+              className={styles.backButton}
               onClick={() => router.push('/LandingPages/RoomSchedule/ViewSchedule')}
             >
               <FaArrowLeft className={styles.iconBack} />
@@ -920,7 +1142,35 @@ export default function GenerateSchedulePage() {
                     <span className={styles.optimizationLabel}>Quantum Tunnels</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.quantumTunnels.toLocaleString()}</span>
                   </div>
+                  <div className={styles.optimizationStat}>
+                    <span className={styles.optimizationLabel}>Block Swaps</span>
+                    <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.blockSwaps.toLocaleString()}</span>
+                  </div>
                 </div>
+                
+                {/* BulSU QSA: Online Class Statistics */}
+                {(scheduleResult.onlineClassCount ?? 0) > 0 && (
+                  <div className={styles.onlineStatsCard}>
+                    <h4 className={styles.onlineStatsTitle}>
+                      <Zap size={16} /> Online Class Distribution
+                    </h4>
+                    <div className={styles.onlineStatsGrid}>
+                      <div className={styles.onlineStatItem}>
+                        <span className={styles.onlineStatValue}>{scheduleResult.onlineClassCount}</span>
+                        <span className={styles.onlineStatLabel}>Online Classes</span>
+                      </div>
+                      <div className={styles.onlineStatItem}>
+                        <span className={styles.onlineStatValue}>{scheduleResult.physicalClassCount}</span>
+                        <span className={styles.onlineStatLabel}>Physical Classes</span>
+                      </div>
+                    </div>
+                    {scheduleResult.onlineDays && scheduleResult.onlineDays.length > 0 && (
+                      <p className={styles.onlineDaysNote}>
+                        📅 Online Days: {scheduleResult.onlineDays.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Unscheduled Classes Section */}
@@ -970,78 +1220,312 @@ export default function GenerateSchedulePage() {
                 </button>
               </div>
 
-              {/* Timetable Preview */}
+              {/* Timetable Preview - 3 Views: Room, Section, Teacher */}
               {showTimetable && scheduleResult.allocations && scheduleResult.allocations.length > 0 && (
                 <div className={styles.timetableSection}>
                   <h3 className={styles.formSectionTitle}>
                     <FaCalendar /> Generated Schedule Timetable
                   </h3>
+                  
+                  {/* View Toggle Buttons */}
+                  <div className={styles.timetableViewToggle}>
+                    <button 
+                      className={`${styles.viewToggleBtn} ${timetableView === 'room' ? styles.active : ''}`}
+                      onClick={() => setTimetableView('room')}
+                    >
+                      <FaBuilding /> Room Schedule
+                    </button>
+                    <button 
+                      className={`${styles.viewToggleBtn} ${timetableView === 'section' ? styles.active : ''}`}
+                      onClick={() => setTimetableView('section')}
+                    >
+                      <FaUsers /> Section Schedule
+                    </button>
+                    <button 
+                      className={`${styles.viewToggleBtn} ${timetableView === 'teacher' ? styles.active : ''}`}
+                      onClick={() => setTimetableView('teacher')}
+                    >
+                      <FaChalkboardTeacher /> Teacher Schedule
+                    </button>
+                  </div>
+
+                  {/* Filter Selector */}
+                  <div className={styles.timetableFilter}>
+                    {timetableView === 'room' && (
+                      <select 
+                        value={selectedTimetableRoom} 
+                        onChange={(e) => setSelectedTimetableRoom(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Rooms</option>
+                        {[...new Set(scheduleResult.allocations.map(a => a.room).filter(Boolean))].map(room => (
+                          <option key={room} value={room}>{room}</option>
+                        ))}
+                      </select>
+                    )}
+                    {timetableView === 'section' && (
+                      <select 
+                        value={selectedTimetableSection} 
+                        onChange={(e) => setSelectedTimetableSection(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Sections</option>
+                        {[...new Set(scheduleResult.allocations.map(a => a.section).filter(Boolean))].map(section => (
+                          <option key={section} value={section}>{section}</option>
+                        ))}
+                      </select>
+                    )}
+                    {timetableView === 'teacher' && (
+                      <select 
+                        value={selectedTimetableTeacher} 
+                        onChange={(e) => setSelectedTimetableTeacher(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Teachers</option>
+                        {[...new Set(scheduleResult.allocations.map(a => a.teacher_name).filter(Boolean))].map(teacher => (
+                          <option key={teacher} value={teacher}>{teacher}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
                   <div className={styles.timetableContainer}>
                     <div className={styles.timetableWrapper}>
-                      <table className={styles.timetable}>
-                        <thead>
-                          <tr>
-                            <th className={styles.timeColumn}>Time</th>
-                            {DAYS.map(day => (
-                              <th key={day} className={styles.dayColumn}>{day}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Generate time slots from 7:00 to 21:00 */}
-                          {Array.from({ length: 14 }, (_, i) => {
-                            const hour = 7 + i;
-                            const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-                            return (
-                              <tr key={timeSlot}>
-                                <td className={styles.timeCell}>{timeSlot}</td>
-                                {DAYS.map(day => {
-                                  const dayAllocations = scheduleResult.allocations.filter(a => {
-                                    const dayMatch = a.schedule_day?.toLowerCase() === day.toLowerCase();
-                                    const timeMatch = a.schedule_time?.startsWith(timeSlot.split(':')[0]);
-                                    return dayMatch && timeMatch;
-                                  });
-                                  return (
-                                    <td key={`${day}-${timeSlot}`} className={styles.scheduleCell}>
-                                      {dayAllocations.map((allocation, idx) => (
-                                        <div 
-                                          key={idx} 
-                                          className={styles.allocationCard}
-                                          style={{
-                                            backgroundColor: allocation.building === 'GLE' ? '#e3f2fd' :
-                                                           allocation.building === 'RGR' ? '#f3e5f5' :
-                                                           allocation.building === 'RTL' ? '#e8f5e9' :
-                                                           allocation.building === 'SAL' ? '#fff3e0' :
-                                                           allocation.building === 'NGE' ? '#fce4ec' : '#f5f5f5'
-                                          }}
-                                        >
-                                          <div className={styles.allocationCourse}>
-                                            {allocation.course_code || 'N/A'}
-                                          </div>
-                                          <div className={styles.allocationRoom}>
-                                            {allocation.room || `${allocation.building}-${allocation.room_id}`}
-                                          </div>
-                                          <div className={styles.allocationSection}>
-                                            {allocation.section || 'N/A'}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </td>
-                                  );
-                                })}
+                      {(() => {
+                        // Helper: Convert 24h to 12h AM/PM format
+                        const formatTimeAMPM = (hour: number, minute: number): string => {
+                          const period = hour >= 12 ? 'PM' : 'AM';
+                          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                          return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+                        };
+
+                        // Helper: Parse time string to minutes
+                        const parseTimeToMinutes = (timeStr: string): number => {
+                          const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+                          if (!match) return 0;
+                          return parseInt(match[1]) * 60 + parseInt(match[2]);
+                        };
+
+                        // Pre-process allocations: Group consecutive slots into combined blocks
+                        type CombinedBlock = {
+                          course_code: string;
+                          course_name: string;
+                          section: string;
+                          room: string;
+                          teacher_name: string;
+                          day: string;
+                          startMinutes: number;
+                          endMinutes: number;
+                          is_online: boolean;
+                        };
+
+                        const combinedBlocks: CombinedBlock[] = [];
+                        
+                        // Filter allocations based on view
+                        let viewFilteredAllocations = scheduleResult.allocations.filter(a => {
+                          if (timetableView === 'room') {
+                            if (selectedTimetableRoom !== 'all' && a.room !== selectedTimetableRoom) return false;
+                          } else if (timetableView === 'section') {
+                            if (selectedTimetableSection !== 'all' && a.section !== selectedTimetableSection) return false;
+                          } else if (timetableView === 'teacher') {
+                            if (selectedTimetableTeacher !== 'all' && a.teacher_name !== selectedTimetableTeacher) return false;
+                          }
+                          return true;
+                        });
+
+                        // Group by course+section+room+day+teacher to find consecutive slots
+                        const groupedMap = new Map<string, typeof viewFilteredAllocations>();
+                        viewFilteredAllocations.forEach(alloc => {
+                          const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${alloc.schedule_day}|${alloc.teacher_name || ''}|${alloc.is_online || false}`;
+                          if (!groupedMap.has(key)) {
+                            groupedMap.set(key, []);
+                          }
+                          groupedMap.get(key)!.push(alloc);
+                        });
+
+                        // For each group, combine consecutive time slots
+                        groupedMap.forEach((allocations, key) => {
+                          // Sort by start time
+                          const sorted = allocations.sort((a, b) => {
+                            return parseTimeToMinutes(a.schedule_time || '') - parseTimeToMinutes(b.schedule_time || '');
+                          });
+
+                          // Merge consecutive slots
+                          let currentBlock: CombinedBlock | null = null;
+                          
+                          sorted.forEach(alloc => {
+                            const timeStr = alloc.schedule_time || '';
+                            const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+                            if (!timeMatch) return;
+                            
+                            const startMins = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
+                            const endMins = parseInt(timeMatch[3]) * 60 + parseInt(timeMatch[4]);
+
+                            if (currentBlock && currentBlock.endMinutes === startMins) {
+                              // Extend current block
+                              currentBlock.endMinutes = endMins;
+                            } else {
+                              // Start new block
+                              if (currentBlock) {
+                                combinedBlocks.push(currentBlock);
+                              }
+                              currentBlock = {
+                                course_code: alloc.course_code || '',
+                                course_name: alloc.course_name || '',
+                                section: alloc.section || '',
+                                room: alloc.room || '',
+                                teacher_name: alloc.teacher_name || '',
+                                day: (alloc.schedule_day || '').toLowerCase(),
+                                startMinutes: startMins,
+                                endMinutes: endMins,
+                                is_online: alloc.is_online || false
+                              };
+                            }
+                          });
+                          
+                          if (currentBlock) {
+                            combinedBlocks.push(currentBlock);
+                          }
+                        });
+
+                        const ROW_HEIGHT = 40;
+                        const START_HOUR = 7;
+
+                        return (
+                          <table className={styles.timetable}>
+                            <thead>
+                              <tr>
+                                <th className={styles.timeColumn}>Time</th>
+                                {DAYS.map(day => (
+                                  <th key={day} className={styles.dayColumn}>{day}</th>
+                                ))}
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {/* Generate 30-minute time slots from 7:00 AM to 9:00 PM */}
+                              {Array.from({ length: 28 }, (_, i) => {
+                                const totalMinutes = (START_HOUR * 60) + (i * 30);
+                                const hour = Math.floor(totalMinutes / 60);
+                                const minute = totalMinutes % 60;
+                                const displayTime = formatTimeAMPM(hour, minute);
+                                const isHourMark = minute === 0;
+                                
+                                return (
+                                  <tr key={i} className={isHourMark ? styles.hourRow : styles.halfHourRow}>
+                                    <td className={`${styles.timeCell} ${isHourMark ? styles.hourMark : styles.halfHourMark}`}>
+                                      {displayTime}
+                                    </td>
+                                    {DAYS.map(day => {
+                                      // Find blocks that START at this exact time slot for this day
+                                      const blocksStartingHere = combinedBlocks.filter(block => {
+                                        const blockStartHour = Math.floor(block.startMinutes / 60);
+                                        const blockStartMin = block.startMinutes % 60;
+                                        return block.day === day.toLowerCase() && 
+                                               blockStartHour === hour && 
+                                               blockStartMin === minute;
+                                      });
+                                      
+                                      return (
+                                        <td key={`${day}-${i}`} className={styles.scheduleCell} style={{ position: 'relative', height: `${ROW_HEIGHT}px` }}>
+                                          {blocksStartingHere.map((block, idx) => {
+                                            // Calculate duration in 30-min slots
+                                            const durationMinutes = block.endMinutes - block.startMinutes;
+                                            const durationSlots = Math.ceil(durationMinutes / 30);
+                                            const spanHeight = durationSlots * ROW_HEIGHT;
+                                            
+                                            // Format display time as AM/PM
+                                            const startH = Math.floor(block.startMinutes / 60);
+                                            const startM = block.startMinutes % 60;
+                                            const endH = Math.floor(block.endMinutes / 60);
+                                            const endM = block.endMinutes % 60;
+                                            const displayTimeRange = `${formatTimeAMPM(startH, startM)} - ${formatTimeAMPM(endH, endM)}`;
+                                            
+                                            // Get color based on view type
+                                            const getColor = () => {
+                                              if (block.is_online) return '#9c27b0';
+                                              if (timetableView === 'room') {
+                                                const hash = (block.section || '').split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+                                                const colors = ['#1976d2', '#388e3c', '#f57c00', '#7b1fa2', '#00796b', '#c2185b', '#5d4037', '#455a64'];
+                                                return colors[Math.abs(hash) % colors.length];
+                                              } else if (timetableView === 'section') {
+                                                const hash = (block.room || '').split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+                                                const colors = ['#00796b', '#1976d2', '#388e3c', '#f57c00', '#7b1fa2', '#c2185b'];
+                                                return colors[Math.abs(hash) % colors.length];
+                                              } else {
+                                                return '#1976d2';
+                                              }
+                                            };
+                                            
+                                            return (
+                                              <div
+                                                key={idx}
+                                                className={`${styles.allocationCard} ${block.is_online ? styles.onlineClass : ''}`}
+                                                style={{
+                                                  backgroundColor: getColor(),
+                                                  color: '#fff',
+                                                  position: 'absolute',
+                                                  top: 0,
+                                                  left: '2px',
+                                                  right: '2px',
+                                                  height: `${spanHeight - 2}px`,
+                                                  zIndex: 10,
+                                                  overflow: 'hidden',
+                                                  borderRadius: '6px',
+                                                  padding: '6px 8px',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  justifyContent: 'flex-start',
+                                                  boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
+                                                }}
+                                                title={`${block.course_code} - ${block.course_name}\nSection: ${block.section}\nRoom: ${block.room}\nTime: ${displayTimeRange}\nTeacher: ${block.teacher_name || 'TBD'}`}
+                                              >
+                                                <div style={{ fontWeight: 700, fontSize: '12px', marginBottom: '3px' }}>
+                                                  {block.course_code || 'N/A'}
+                                                </div>
+                                                <div style={{ fontSize: '10px', opacity: 0.95, marginBottom: '2px' }}>
+                                                  {block.course_name || ''}
+                                                </div>
+                                                {/* Show different info based on view */}
+                                                {timetableView === 'room' && (
+                                                  <>
+                                                    <div style={{ fontSize: '10px', opacity: 0.9 }}>{block.section || 'N/A'}</div>
+                                                    <div style={{ fontSize: '10px', opacity: 0.8 }}>{block.teacher_name || 'TBD'}</div>
+                                                  </>
+                                                )}
+                                                {timetableView === 'section' && (
+                                                  <>
+                                                    <div style={{ fontSize: '10px', opacity: 0.9 }}>{block.is_online ? '🌐 Online' : block.room}</div>
+                                                    <div style={{ fontSize: '10px', opacity: 0.8 }}>{block.teacher_name || 'TBD'}</div>
+                                                  </>
+                                                )}
+                                                {timetableView === 'teacher' && (
+                                                  <>
+                                                    <div style={{ fontSize: '10px', opacity: 0.9 }}>{block.section || 'N/A'}</div>
+                                                    <div style={{ fontSize: '10px', opacity: 0.8 }}>{block.is_online ? '🌐 Online' : block.room}</div>
+                                                  </>
+                                                )}
+                                                <div style={{ fontSize: '9px', opacity: 0.7, marginTop: 'auto' }}>{displayTimeRange}</div>
+                                              </div>
+                                            );
+                                          })}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        );
+                      })()}
                     </div>
                   </div>
-                  
+
                   {/* Allocation Summary */}
                   <div className={styles.allocationSummary}>
                     <p><strong>Total Allocations:</strong> {scheduleResult.allocations.length}</p>
-                    <p><strong>Database Status:</strong> {scheduleResult.savedToDatabase ? 
-                      <span className={styles.successText}>✓ Saved to database</span> : 
+                    <p><strong>Database Status:</strong> {scheduleResult.savedToDatabase ?
+                      <span className={styles.successText}>✓ Saved to database</span> :
                       <span className={styles.warningText}>⚠ Not saved (check console for errors)</span>}
                     </p>
                   </div>
@@ -1081,13 +1565,13 @@ export default function GenerateSchedulePage() {
                         </div>
                         <div>
                           <h3>Campus / Building / Rooms</h3>
-                          <p>Select the room data CSV file to use for room allocation</p>
+                          <p>Select one or more room data CSV files to use for room allocation</p>
                         </div>
                       </div>
                       <div className={styles.dataSourceStatus}>
-                        {selectedCampusGroup ? (
+                        {selectedCampusGroups.length > 0 ? (
                           <span className={styles.selectedBadge}>
-                            <CheckCircle2 size={16} /> Selected
+                            <CheckCircle2 size={16} /> {selectedCampusGroups.length} Selected
                           </span>
                         ) : (
                           <span className={styles.requiredBadge}>Required</span>
@@ -1095,7 +1579,7 @@ export default function GenerateSchedulePage() {
                         {expandedCampus ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {expandedCampus && (
                       <div className={styles.dataSourceContent}>
                         {campusGroups.length === 0 ? (
@@ -1108,31 +1592,42 @@ export default function GenerateSchedulePage() {
                           </div>
                         ) : (
                           <div className={styles.dataSourceGrid}>
-                            {campusGroups.map(group => (
-                              <div
-                                key={group.upload_group_id}
-                                className={`${styles.dataCard} ${selectedCampusGroup === group.upload_group_id ? styles.selected : ''}`}
-                                onClick={() => handleSelectCampusGroup(group.upload_group_id)}
-                              >
-                                <div className={styles.dataCardHeader}>
-                                  <University size={20} />
-                                  <h4>{group.school_name}</h4>
+                            {campusGroups.map(group => {
+                              const isSelected = selectedCampusGroups.includes(group.upload_group_id)
+                              return (
+                                <div
+                                  key={group.upload_group_id}
+                                  className={`${styles.dataCard} ${isSelected ? styles.selected : ''}`}
+                                  onClick={() => handleSelectCampusGroup(group.upload_group_id)}
+                                >
+                                  <div className={styles.dataCardCheckbox}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isSelected}
+                                      onChange={() => {}}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                  <div className={styles.dataCardHeader}>
+                                    <University size={20} />
+                                    <h4>{group.school_name}</h4>
+                                  </div>
+                                  <div className={styles.dataCardStats}>
+                                    <span><DoorOpen size={14} /> {group.room_count} rooms</span>
+                                    <span><Users size={14} /> {group.total_capacity} capacity</span>
+                                  </div>
+                                  <div className={styles.dataCardFile}>
+                                    <FileSpreadsheet size={14} /> {group.file_name}
+                                  </div>
+                                  <div className={styles.dataCardDate}>
+                                    {new Date(group.created_at).toLocaleDateString()}
+                                  </div>
+                                  {isSelected && (
+                                    <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
+                                  )}
                                 </div>
-                                <div className={styles.dataCardStats}>
-                                  <span><DoorOpen size={14} /> {group.room_count} rooms</span>
-                                  <span><Users size={14} /> {group.total_capacity} capacity</span>
-                                </div>
-                                <div className={styles.dataCardFile}>
-                                  <FileSpreadsheet size={14} /> {group.file_name}
-                                </div>
-                                <div className={styles.dataCardDate}>
-                                  {new Date(group.created_at).toLocaleDateString()}
-                                </div>
-                                {selectedCampusGroup === group.upload_group_id && (
-                                  <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
-                                )}
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -1141,135 +1636,72 @@ export default function GenerateSchedulePage() {
 
                   {/* Courses & Sections Selection */}
                   <div className={styles.dataSourceCard}>
-                    <div className={styles.dataSourceHeader} onClick={() => setExpandedClass(!expandedClass)}>
+                    <div className={styles.dataSourceHeader} onClick={() => setExpandedSections(!expandedSections)}>
                       <div className={styles.dataSourceTitle}>
                         <div className={`${styles.dataSourceIcon} ${styles.classIcon}`}>
                           <BookOpen size={24} />
                         </div>
                         <div>
-                          <h3>Courses & Sections</h3>
-                          <p>Select curriculum data with academic year, semester, sections and assigned courses</p>
+                          <h3>Sections & Assigned Courses</h3>
+                          <p>Select year batch with sections and their assigned courses from Class & Section Assigning page</p>
                         </div>
                       </div>
                       <div className={styles.dataSourceStatus}>
-                        {selectedClassGroup ? (
+                        {selectedYearBatch ? (
                           <span className={styles.selectedBadge}>
                             <CheckCircle2 size={16} /> Selected
                           </span>
                         ) : (
                           <span className={styles.requiredBadge}>Required</span>
                         )}
-                        {expandedClass ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        {expandedSections ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
-                    {expandedClass && (
-                      <div className={styles.dataSourceContent}>
-                        {classGroups.length === 0 ? (
-                          <div className={styles.emptyDataSource}>
-                            <FileSpreadsheet size={40} />
-                            <p>No course data found. Upload a Curriculum/Courses CSV first.</p>
-                            <button onClick={() => router.push('/LandingPages/UploadCSV')}>
-                              Upload CSV
-                            </button>
-                          </div>
-                        ) : (
-                          <div className={styles.dataSourceGrid}>
-                            {classGroups.map(group => (
-                              <div
-                                key={group.id}
-                                className={`${styles.dataCard} ${selectedClassGroup === group.id ? styles.selected : ''}`}
-                                onClick={() => handleSelectClassGroup(group.id)}
-                              >
-                                <div className={styles.dataCardHeader}>
-                                  <GraduationCap size={20} />
-                                  <h4>{group.college}</h4>
-                                </div>
-                                <div className={styles.dataCardStats}>
-                                  <span><BookOpen size={14} /> {group.class_count} courses</span>
-                                </div>
-                                <div className={styles.dataCardAcademic}>
-                                  <span className={styles.academicBadge}>
-                                    {group.academic_year || 'N/A'} • {group.semester || 'N/A'}
-                                  </span>
-                                </div>
-                                <div className={styles.dataCardFile}>
-                                  <FileSpreadsheet size={14} /> {group.file_name}
-                                </div>
-                                <div className={styles.dataCardDate}>
-                                  {new Date(group.created_at).toLocaleDateString()}
-                                </div>
-                                {selectedClassGroup === group.id && (
-                                  <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Teacher Schedules Selection (Optional) */}
-                  <div className={styles.dataSourceCard}>
-                    <div className={styles.dataSourceHeader} onClick={() => setExpandedTeacher(!expandedTeacher)}>
-                      <div className={styles.dataSourceTitle}>
-                        <div className={`${styles.dataSourceIcon} ${styles.teacherIcon}`}>
-                          <FaChalkboardTeacher size={24} />
-                        </div>
-                        <div>
-                          <h3>Teacher Schedules</h3>
-                          <p>Optional: Select teacher availability data for conflict checking</p>
-                        </div>
-                      </div>
-                      <div className={styles.dataSourceStatus}>
-                        {selectedTeacherGroup ? (
-                          <span className={styles.selectedBadge}>
-                            <CheckCircle2 size={16} /> Selected
-                          </span>
-                        ) : (
-                          <span className={styles.optionalBadge}>Optional</span>
-                        )}
-                        {expandedTeacher ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                      </div>
-                    </div>
-                    
-                    {expandedTeacher && (
+                    {expandedSections && (
                       <div className={styles.dataSourceContent}>
-                        {teacherGroups.length === 0 ? (
+                        {yearBatches.length === 0 ? (
                           <div className={styles.emptyDataSource}>
                             <FileSpreadsheet size={40} />
-                            <p>No teacher schedule data found. This is optional.</p>
-                            <button onClick={() => router.push('/LandingPages/UploadCSV')}>
-                              Upload CSV
+                            <p>No year batches found. Please create year batches and sections first.</p>
+                            <button onClick={() => router.push('/LandingPages/CoursesManagement/ClassSectionAssigning')}>
+                              Go to Class & Section Assigning
                             </button>
                           </div>
                         ) : (
                           <div className={styles.dataSourceGrid}>
-                            {teacherGroups.map(group => (
-                              <div
-                                key={group.upload_group_id}
-                                className={`${styles.dataCard} ${selectedTeacherGroup === group.upload_group_id ? styles.selected : ''}`}
-                                onClick={() => handleSelectTeacherGroup(group.upload_group_id)}
-                              >
-                                <div className={styles.dataCardHeader}>
-                                  <FaChalkboardTeacher size={20} />
-                                  <h4>{group.college}</h4>
+                            {yearBatches.map(batch => {
+                              const batchSections = sections.filter(s => s.year_batch_id === batch.id)
+                              const totalStudents = batchSections.reduce((sum, s) => sum + (s.student_count || 0), 0)
+                              
+                              return (
+                                <div
+                                  key={batch.id}
+                                  className={`${styles.dataCard} ${selectedYearBatch === batch.id ? styles.selected : ''}`}
+                                  onClick={() => handleSelectClassGroup(batch.id)}
+                                >
+                                  <div className={styles.dataCardHeader}>
+                                    <GraduationCap size={20} />
+                                    <h4>{batch.year_batch}</h4>
+                                  </div>
+                                  <div className={styles.dataCardStats}>
+                                    <span><Users size={14} /> {batchSections.length} sections</span>
+                                    <span><FaUserGraduate size={14} /> {totalStudents} students</span>
+                                  </div>
+                                  <div className={styles.dataCardAcademic}>
+                                    <span className={styles.academicBadge}>
+                                      {batch.academic_year}
+                                    </span>
+                                  </div>
+                                  <div className={styles.dataCardDate}>
+                                    {new Date(batch.created_at).toLocaleDateString()}
+                                  </div>
+                                  {selectedYearBatch === batch.id && (
+                                    <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
+                                  )}
                                 </div>
-                                <div className={styles.dataCardStats}>
-                                  <span><Users size={14} /> {group.teacher_count} teachers</span>
-                                </div>
-                                <div className={styles.dataCardFile}>
-                                  <FileSpreadsheet size={14} /> {group.file_name}
-                                </div>
-                                <div className={styles.dataCardDate}>
-                                  {new Date(group.created_at).toLocaleDateString()}
-                                </div>
-                                {selectedTeacherGroup === group.upload_group_id && (
-                                  <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
-                                )}
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
                       </div>
@@ -1305,8 +1737,17 @@ export default function GenerateSchedulePage() {
                         <University size={24} />
                       </div>
                       <div className={styles.summaryInfo}>
-                        <h4>{selectedCampusInfo?.school_name}</h4>
+                        <h4>
+                          {selectedCampusInfoList.length === 1 
+                            ? selectedCampusInfoList[0]?.school_name 
+                            : `${selectedCampusInfoList.length} Campus Files`}
+                        </h4>
                         <p>{rooms.length} rooms • {totalRoomCapacity} total capacity</p>
+                        {selectedCampusInfoList.length > 1 && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
+                            {selectedCampusInfoList.map(c => c.school_name).join(', ')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className={styles.summaryCard}>
@@ -1314,37 +1755,23 @@ export default function GenerateSchedulePage() {
                         <BookOpen size={24} />
                       </div>
                       <div className={styles.summaryInfo}>
-                        <h4>{selectedClassInfo?.college}</h4>
-                        <p>{classes.length} classes • {uniqueDays.length} days • {uniqueTimeSlots.length} time slots</p>
-                        <button 
-                          className={styles.viewFileButton}
-                          onClick={handleViewClassFile}
-                          title="View class schedule file"
-                        >
-                          <FaEye size={14} /> View File
-                        </button>
+                        <h4>{selectedBatchInfo?.year_batch}</h4>
+                        <p>{classes.length} classes • {sections.filter(s => s.year_batch_id === selectedYearBatch).length} sections</p>
                       </div>
                     </div>
-                    {selectedTeacherInfo && (
+                    {selectedTeacherInfo && teachers.length > 0 && (
                       <div className={styles.summaryCard}>
                         <div className={`${styles.summaryIcon} ${styles.teacherIcon}`}>
                           <FaChalkboardTeacher size={24} />
                         </div>
                         <div className={styles.summaryInfo}>
-                          <h4>{selectedTeacherInfo.college}</h4>
+                          <h4>Faculty</h4>
                           <p>{teachers.length} teachers available</p>
-                          <button 
-                            className={styles.viewFileButton}
-                            onClick={handleViewTeacherFile}
-                            title="View teacher schedule file"
-                          >
-                            <FaEye size={14} /> View File
-                          </button>
                         </div>
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Building and Room Filter */}
                   <div className={styles.filterSection}>
                     <div className={styles.filterHeader} onClick={() => setShowBuildingFilter(!showBuildingFilter)}>
@@ -1355,8 +1782,8 @@ export default function GenerateSchedulePage() {
                       <div className={styles.filterStatus}>
                         {selectedBuildings.length > 0 || selectedRooms.length > 0 ? (
                           <span className={styles.filterActiveBadge}>
-                            {selectedRooms.length > 0 
-                              ? `${selectedRooms.length} rooms selected` 
+                            {selectedRooms.length > 0
+                              ? `${selectedRooms.length} rooms selected`
                               : `${selectedBuildings.length} building(s) selected`}
                           </span>
                         ) : (
@@ -1365,93 +1792,233 @@ export default function GenerateSchedulePage() {
                         {showBuildingFilter ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                       </div>
                     </div>
-                    
+
                     {showBuildingFilter && (
                       <div className={styles.filterContent}>
                         <p className={styles.filterDescription}>
                           Select specific buildings or rooms to use for scheduling. If no selection is made, all rooms will be used.
                         </p>
-                        
+
+                        {/* Quick Action Buttons */}
+                        <div className={styles.quickActionsBox}>
+                          <div className={styles.quickActionsContent}>
+                            <span className={styles.quickActionsLabel}>Quick Actions:</span>
+                            <button
+                              onClick={() => {
+                                setSelectedBuildings(uniqueBuildings)
+                                setSelectedRooms([])
+                              }}
+                              className={`${styles.quickActionBtn} ${styles.selectAllBuildings}`}
+                            >
+                              ✓ Select All Buildings
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedRooms(rooms.map(r => r.id))
+                                setSelectedBuildings([])
+                              }}
+                              className={`${styles.quickActionBtn} ${styles.selectAllRooms}`}
+                            >
+                              ✓ Select All Rooms
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedBuildings([])
+                                setSelectedRooms([])
+                                setRoomSearchQuery('')
+                                setRoomFilterCapacity(null)
+                                setRoomFilterType('')
+                              }}
+                              className={`${styles.quickActionBtn} ${styles.clearAll}`}
+                            >
+                              ✕ Clear All
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Search and Filter Controls */}
+                        <div className={styles.filterControlsBox}>
+                          <div className={styles.filterControlsRow}>
+                            <div className={styles.filterControlGroup}>
+                              <label className={`${styles.formLabel} ${styles.filterControlLabel}`}>Search Rooms</label>
+                              <input
+                                type="text"
+                                placeholder="Search room name or type..."
+                                value={roomSearchQuery}
+                                onChange={(e) => setRoomSearchQuery(e.target.value)}
+                                className={styles.formInput}
+                              />
+                            </div>
+                            <div className={styles.filterControlGroup}>
+                              <label className={`${styles.formLabel} ${styles.filterControlLabel}`}>Min. Capacity</label>
+                              <input
+                                type="number"
+                                placeholder="Minimum capacity..."
+                                value={roomFilterCapacity || ''}
+                                onChange={(e) => setRoomFilterCapacity(e.target.value ? parseInt(e.target.value) : null)}
+                                className={styles.formInput}
+                                min="0"
+                              />
+                            </div>
+                            <div className={styles.filterControlGroup}>
+                              <label className={`${styles.formLabel} ${styles.filterControlLabel}`}>Room Type</label>
+                              <select
+                                value={roomFilterType}
+                                onChange={(e) => setRoomFilterType(e.target.value)}
+                                className={styles.formSelect}
+                              >
+                                <option value="">All Types</option>
+                                {uniqueRoomTypes.map(type => (
+                                  <option key={type} value={type}>{type}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {(roomSearchQuery || roomFilterCapacity !== null || roomFilterType) && (
+                              <div style={{ alignSelf: 'flex-end' }}>
+                                <button
+                                  onClick={() => {
+                                    setRoomSearchQuery('')
+                                    setRoomFilterCapacity(null)
+                                    setRoomFilterType('')
+                                  }}
+                                  className={styles.secondaryButton}
+                                >
+                                  Clear Filters
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         <div className={styles.buildingGrid}>
                           {uniqueBuildings.map(building => {
-                            const buildingRooms = rooms.filter(r => r.building === building)
+                            const buildingRooms = getSearchFilteredRooms(building)
                             const buildingRoomIds = buildingRooms.map(r => r.id)
-                            const allRoomsSelected = buildingRoomIds.every(id => selectedRooms.includes(id))
+                            const allRoomsSelected = buildingRoomIds.length > 0 && buildingRoomIds.every(id => selectedRooms.includes(id))
                             const someRoomsSelected = buildingRoomIds.some(id => selectedRooms.includes(id))
                             const buildingSelected = selectedBuildings.includes(building)
-                            
+                            const isActive = buildingSelected || allRoomsSelected
+
                             return (
-                              <div key={building} className={styles.buildingCard}>
-                                <div className={styles.buildingHeader}>
-                                  <label className={styles.buildingCheckbox}>
+                              <div key={building} className={`${styles.buildingCard} ${isActive ? styles.selected : ''}`}>
+                                <div className={styles.buildingHeader} style={{ marginBottom: '8px' }}>
+                                  <label className={styles.buildingCheckbox} style={{ width: '100%' }}>
                                     <input
                                       type="checkbox"
-                                      checked={buildingSelected || allRoomsSelected}
+                                      checked={isActive}
                                       onChange={() => {
-                                        if (buildingSelected || allRoomsSelected) {
-                                          // Deselect building and all its rooms
+                                        if (isActive) {
                                           setSelectedBuildings(prev => prev.filter(b => b !== building))
                                           setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
                                         } else {
-                                          // Select building
                                           setSelectedBuildings(prev => [...prev, building])
-                                          // Deselect individual rooms from this building
                                           setSelectedRooms(prev => prev.filter(id => !buildingRoomIds.includes(id)))
                                         }
                                       }}
                                       style={{
-                                        opacity: someRoomsSelected && !allRoomsSelected ? 0.5 : 1
+                                        opacity: someRoomsSelected && !allRoomsSelected ? 0.5 : 1,
+                                        cursor: 'pointer',
+                                        width: '18px',
+                                        height: '18px',
+                                        accentColor: '#16a34a'
                                       }}
                                     />
-                                    <Building2 size={18} />
-                                    <strong>{building}</strong>
+                                    <Building2 size={16} />
+                                    <strong style={{ flex: 1 }}>{building}</strong>
+                                    {isActive && (
+                                      <span style={{ 
+                                        fontSize: '11px', 
+                                        backgroundColor: '#16a34a', 
+                                        color: 'white', 
+                                        padding: '2px 8px', 
+                                        borderRadius: '4px',
+                                        fontWeight: 600
+                                      }}>
+                                        ✓ Selected
+                                      </span>
+                                    )}
                                   </label>
-                                  <button
-                                    className={styles.selectAllRoomsBtn}
-                                    onClick={() => handleSelectAllRoomsInBuilding(building)}
-                                  >
-                                    {allRoomsSelected ? 'Deselect All' : 'Select Specific Rooms'}
-                                  </button>
                                 </div>
-                                
-                                <div className={styles.buildingStats}>
+
+                                <div className={styles.buildingStats} style={{ marginBottom: '0' }}>
                                   <span><DoorOpen size={14} /> {buildingRooms.length} rooms</span>
                                   <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
                                 </div>
-                                
-                                {/* Show individual room checkboxes when:
-                                    - Some rooms in this building are individually selected, OR
-                                    - All rooms are selected (to allow deselecting specific ones)
-                                    But NOT when the entire building is selected (as a whole) */}
-                                {((someRoomsSelected || allRoomsSelected) && !buildingSelected) && (
-                                  <div className={styles.roomList}>
-                                    {buildingRooms.map(room => (
-                                      <label key={room.id} className={styles.roomCheckbox}>
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedRooms.includes(room.id)}
-                                          onChange={() => handleToggleRoom(room.id)}
-                                        />
-                                        <span>{room.room} (Cap: {room.capacity})</span>
-                                      </label>
-                                    ))}
-                                  </div>
+
+                                {/* Collapsible room list for individual selection */}
+                                {buildingRooms.length > 0 && (
+                                  <details style={{ marginTop: '10px', cursor: 'pointer' }}>
+                                    <summary style={{ 
+                                      fontWeight: '500', 
+                                      color: 'var(--text-medium)', 
+                                      fontSize: '12px',
+                                      userSelect: 'none',
+                                      padding: '4px 0',
+                                      opacity: 0.8
+                                    }}>
+                                      {allRoomsSelected 
+                                        ? `✓ All ${buildingRooms.length} rooms` 
+                                        : someRoomsSelected 
+                                          ? `${buildingRoomIds.filter(id => selectedRooms.includes(id)).length}/${buildingRooms.length} rooms`
+                                          : `View ${buildingRooms.length} rooms`}
+                                    </summary>
+                                    <div className={styles.roomList} style={{ marginTop: '8px', maxHeight: '150px' }}>
+                                      {buildingRooms.map(room => (
+                                        <label key={room.id} className={styles.roomCheckbox} style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          padding: '6px 8px',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          backgroundColor: selectedRooms.includes(room.id) ? 'rgba(22, 163, 74, 0.1)' : 'transparent',
+                                          marginBottom: '4px',
+                                          fontSize: '12px'
+                                        }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedRooms.includes(room.id)}
+                                            onChange={() => handleToggleRoom(room.id)}
+                                            style={{ marginRight: '6px', cursor: 'pointer', width: '14px', height: '14px' }}
+                                          />
+                                          <span style={{ flex: 1, color: 'var(--text-dark)' }}>
+                                            {room.room}
+                                          </span>
+                                          <span style={{ fontSize: '11px', color: 'var(--text-light)', marginLeft: '6px' }}>
+                                            {room.capacity}
+                                          </span>
+                                          <span style={{ 
+                                            fontSize: '10px', 
+                                            color: 'var(--text-light)', 
+                                            marginLeft: '6px', 
+                                            backgroundColor: 'var(--bg-gray-100)', 
+                                            padding: '1px 5px', 
+                                            borderRadius: '3px' 
+                                          }}>
+                                            {room.room_type}
+                                          </span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </details>
                                 )}
                               </div>
                             )
                           })}
                         </div>
-                        
+
                         {(selectedBuildings.length > 0 || selectedRooms.length > 0) && (
                           <div className={styles.filterSummary}>
                             <p>
                               <strong>Filtered Selection:</strong> {getFilteredRooms().length} out of {rooms.length} rooms will be used for scheduling
                             </p>
-                            <button 
+                            <button
                               className={styles.clearFilterBtn}
                               onClick={() => {
                                 setSelectedBuildings([])
                                 setSelectedRooms([])
+                                setRoomSearchQuery('')
+                                setRoomFilterCapacity(null)
+                                setRoomFilterType('')
                               }}
                             >
                               Clear All Filters
@@ -1624,35 +2191,104 @@ export default function GenerateSchedulePage() {
                       <label className={styles.checkboxLabel}>
                         <input
                           type="checkbox"
-                          checked={config.prioritizeAccessibility}
-                          onChange={(e) => setConfig(prev => ({ ...prev, prioritizeAccessibility: e.target.checked }))}
-                        />
-                        <span>Prioritize PWD-accessible rooms (ground floor, wheelchair accessible)</span>
-                      </label>
-                      <label className={styles.checkboxLabel}>
-                        <input
-                          type="checkbox"
                           checked={config.avoidConflicts}
                           onChange={(e) => setConfig(prev => ({ ...prev, avoidConflicts: e.target.checked }))}
                         />
-                        <span>Strictly avoid teacher/room conflicts</span>
+                        <span>Automatically avoid all teacher/room/section conflicts (strict enforcement)</span>
                       </label>
                     </div>
+
+                    {/* Unassigned Courses Warning */}
+                    {unassignedCourses.length > 0 && (
+                      <div style={{ 
+                        marginTop: '16px', 
+                        padding: '16px', 
+                        background: 'linear-gradient(135deg, rgba(245, 124, 0, 0.1), rgba(255, 167, 38, 0.05))', 
+                        borderRadius: '10px',
+                        border: '1px solid rgba(245, 124, 0, 0.3)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                          <FaExclamationTriangle style={{ color: '#f57c00', fontSize: '20px' }} />
+                          <span style={{ fontWeight: 600, color: '#f57c00' }}>
+                            {unassignedCourses.length} Course(s) Without Assigned Professors
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '13px', margin: '0 0 12px 0', opacity: 0.85 }}>
+                          Some courses for {config.semester} do not have professors assigned yet. 
+                          You can assign them or bypass this check.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <button 
+                            onClick={() => setShowUnassignedWarning(true)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              background: 'linear-gradient(135deg, #f57c00, #ef6c00)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              fontSize: '13px'
+                            }}
+                          >
+                            <FaEye /> View Unassigned Courses
+                          </button>
+                          <label style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 500
+                          }}>
+                            <input 
+                              type="checkbox" 
+                              checked={bypassTeacherCheck}
+                              onChange={(e) => setBypassTeacherCheck(e.target.checked)}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                            <span>Bypass teacher check (show "TBD" in schedule)</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* All courses have professors assigned */}
+                    {unassignedCourses.length === 0 && classes.length > 0 && (
+                      <div style={{ 
+                        marginTop: '16px', 
+                        padding: '12px 16px', 
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))', 
+                        borderRadius: '10px',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                      }}>
+                        <FaCheckCircle style={{ color: '#10b981', fontSize: '18px' }} />
+                        <span style={{ fontWeight: 500, color: '#10b981' }}>
+                          ✓ All {classes.length} courses have assigned professors
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Time Configuration */}
                   <div className={styles.formCard}>
                     <h3 className={styles.formSectionTitle}>
-                      <FaClock /> Time Configuration
+                      <FaClock /> Campus Schedule Times (Room/Building Operating Hours)
                     </h3>
                     <div className={styles.timeConfigInfo}>
                       <Clock size={20} />
-                      <p>Configure the daily schedule time range and slot duration. The system will generate time slots automatically.</p>
+                      <p>Set the campus operating hours for room allocation. Classes scheduled on "Online Days" will not require rooms, regardless of these times.</p>
                     </div>
-                    
+
                     <div className={styles.formRow}>
                       <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Start Time</label>
+                        <label className={styles.formLabel}>Campus Opening Time (Classes can start from)</label>
                         <input
                           type="time"
                           className={styles.formInput}
@@ -1661,7 +2297,7 @@ export default function GenerateSchedulePage() {
                         />
                       </div>
                       <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>End Time</label>
+                        <label className={styles.formLabel}>Campus Closing Time (Last class must end by)</label>
                         <input
                           type="time"
                           className={styles.formInput}
@@ -1670,7 +2306,7 @@ export default function GenerateSchedulePage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className={styles.slotDurationInfo}>
                       <Clock size={18} />
                       <div>
@@ -1731,6 +2367,57 @@ export default function GenerateSchedulePage() {
                     </div>
                   </div>
 
+                  {/* Online Days Configuration (Quantum Rule: The "Online Day" Rule) */}
+                  <div className={styles.formCard}>
+                    <h3 className={styles.formSectionTitle}>
+                      <Zap /> Online Days Configuration (Quantum-Inspired Rule)
+                    </h3>
+                    <div className={styles.timeConfigInfo}>
+                      <Zap size={20} />
+                      <p>
+                        Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations, 
+                        allowing the quantum algorithm to "tunnel" through problem spaces by shifting F2F demand to available days.
+                      </p>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Select Online Days (All-Day Asynchronous)</label>
+                      <div className={styles.checkboxGroup}>
+                        {DAYS.map(day => (
+                          <label key={day} className={styles.checkboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={config.onlineDays.includes(day)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setConfig(prev => ({
+                                    ...prev,
+                                    onlineDays: [...prev.onlineDays, day]
+                                  }))
+                                } else {
+                                  setConfig(prev => ({
+                                    ...prev,
+                                    onlineDays: prev.onlineDays.filter(d => d !== day)
+                                  }))
+                                }
+                              }}
+                            />
+                            <span>{day}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {config.onlineDays.length > 0 && (
+                      <div className={styles.onlineDaysSummary}>
+                        <strong>Online Days Selected:</strong> {config.onlineDays.join(', ')}
+                        <p className={styles.onlineDaysNote}>
+                          ⚡ Classes on these days will NOT require room allocations. The algorithm will prioritize F2F classes on remaining days.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Advanced Settings Toggle */}
                   <div className={styles.advancedToggle}>
                     <button
@@ -1749,12 +2436,12 @@ export default function GenerateSchedulePage() {
                       <h3 className={styles.formSectionTitle}>
                         <FaAtom /> Quantum-Inspired Algorithm Parameters
                       </h3>
-                      
+
                       <div className={styles.algorithmInfo}>
                         <Zap size={20} />
                         <p>
-                          The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation 
-                          to escape local minima and find globally optimal room allocations. Default settings 
+                          The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation
+                          to escape local minima and find globally optimal room allocations. Default settings
                           are optimized for thorough optimization.
                         </p>
                       </div>
@@ -1772,9 +2459,9 @@ export default function GenerateSchedulePage() {
                             max={50000}
                             step={1000}
                             value={config.maxIterations}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              maxIterations: parseInt(e.target.value) || 10000 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              maxIterations: parseInt(e.target.value) || 10000
                             }))}
                           />
                         </div>
@@ -1790,9 +2477,9 @@ export default function GenerateSchedulePage() {
                             max={500}
                             step={10}
                             value={config.initialTemperature}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              initialTemperature: parseFloat(e.target.value) || 200 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              initialTemperature: parseFloat(e.target.value) || 200
                             }))}
                           />
                         </div>
@@ -1811,9 +2498,9 @@ export default function GenerateSchedulePage() {
                             max={0.9999}
                             step={0.001}
                             value={config.coolingRate}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              coolingRate: parseFloat(e.target.value) || 0.999 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              coolingRate: parseFloat(e.target.value) || 0.999
                             }))}
                           />
                         </div>
@@ -1829,9 +2516,9 @@ export default function GenerateSchedulePage() {
                             max={0.30}
                             step={0.01}
                             value={config.quantumTunnelingProbability}
-                            onChange={(e) => setConfig(prev => ({ 
-                              ...prev, 
-                              quantumTunnelingProbability: parseFloat(e.target.value) || 0.15 
+                            onChange={(e) => setConfig(prev => ({
+                              ...prev,
+                              quantumTunnelingProbability: parseFloat(e.target.value) || 0.15
                             }))}
                           />
                         </div>
@@ -1848,9 +2535,9 @@ export default function GenerateSchedulePage() {
                           min={4}
                           max={12}
                           value={config.maxTeacherHoursPerDay}
-                          onChange={(e) => setConfig(prev => ({ 
-                            ...prev, 
-                            maxTeacherHoursPerDay: parseInt(e.target.value) || 8 
+                          onChange={(e) => setConfig(prev => ({
+                            ...prev,
+                            maxTeacherHoursPerDay: parseInt(e.target.value) || 8
                           }))}
                         />
                       </div>
@@ -1858,7 +2545,7 @@ export default function GenerateSchedulePage() {
                       {/* Presets */}
                       <div className={styles.presetSection}>
                         <span className={styles.presetLabel}>Quick Presets:</span>
-                        <button 
+                        <button
                           className={styles.presetButton}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1870,7 +2557,7 @@ export default function GenerateSchedulePage() {
                         >
                           Fast (2k iterations)
                         </button>
-                        <button 
+                        <button
                           className={styles.presetButton}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1882,7 +2569,7 @@ export default function GenerateSchedulePage() {
                         >
                           Balanced (5k iterations)
                         </button>
-                        <button 
+                        <button
                           className={`${styles.presetButton} ${styles.activePreset}`}
                           onClick={() => setConfig(prev => ({
                             ...prev,
@@ -1969,39 +2656,31 @@ export default function GenerateSchedulePage() {
           )}
         </div>
       </main>
-      
+
       {/* File Viewer Modal */}
-      {(showClassFileViewer || showTeacherFileViewer) && (
+      {showClassFileViewer && (
         <div className={styles.modalOverlay} onClick={closeFileViewer}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>
-                {showClassFileViewer ? (
-                  <>
-                    <BookOpen size={24} /> Class Schedule File: {selectedClassInfo?.file_name}
-                  </>
-                ) : (
-                  <>
-                    <FaChalkboardTeacher size={24} /> Teacher Schedule File: {selectedTeacherInfo?.file_name}
-                  </>
-                )}
+                <BookOpen size={24} /> Sections & Assigned Courses: {selectedBatchInfo?.year_batch}
               </h2>
               <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               {viewerLoading ? (
                 <div className={styles.modalLoading}>
                   <FaSpinner className={styles.spinnerIcon} />
-                  <p>Loading file data...</p>
+                  <p>Loading data...</p>
                 </div>
               ) : viewerData.length === 0 ? (
                 <div className={styles.modalEmpty}>
-                  <p>No data found in this file.</p>
+                  <p>No data found.</p>
                 </div>
-              ) : showClassFileViewer ? (
+              ) : (
                 <div className={styles.tableWrapper}>
                   <table className={styles.viewerTable}>
                     <thead>
@@ -2009,8 +2688,8 @@ export default function GenerateSchedulePage() {
                         <th>Course Code</th>
                         <th>Course Name</th>
                         <th>Section</th>
-                        <th>Day</th>
-                        <th>Time</th>
+                        <th>Year Level</th>
+                        <th>Students</th>
                         <th>Lec Hours</th>
                         <th>Lab Hours</th>
                         <th>Department</th>
@@ -2023,10 +2702,10 @@ export default function GenerateSchedulePage() {
                           <td>{item.course_code || 'N/A'}</td>
                           <td>{item.course_name || 'N/A'}</td>
                           <td>{item.section || 'N/A'}</td>
-                          <td>{item.schedule_day || 'N/A'}</td>
-                          <td>{item.schedule_time || 'N/A'}</td>
-                          <td>{item.lec_hr || item.lec_hours || 0}</td>
-                          <td>{item.lab_hr || item.lab_hours || 0}</td>
+                          <td>{item.year_level || 'N/A'}</td>
+                          <td>{item.student_count || 'N/A'}</td>
+                          <td>{item.lec_hours || 0}</td>
+                          <td>{item.lab_hours || 0}</td>
                           <td>{item.department || 'N/A'}</td>
                           <td>{item.semester || 'N/A'}</td>
                         </tr>
@@ -2034,37 +2713,113 @@ export default function GenerateSchedulePage() {
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.viewerTable}>
-                    <thead>
-                      <tr>
-                        <th>Teacher ID</th>
-                        <th>Name</th>
-                        <th>Day</th>
-                        <th>Time</th>
-                        <th>Department</th>
-                        <th>Email</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewerData.map((item: any, idx: number) => (
-                        <tr key={idx}>
-                          <td>{item.teacher_id || 'N/A'}</td>
-                          <td>{item.name || item.teacher_name || 'N/A'}</td>
-                          <td>{item.schedule_day || 'N/A'}</td>
-                          <td>{item.schedule_time || 'N/A'}</td>
-                          <td>{item.department || 'N/A'}</td>
-                          <td>{item.email || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               )}
-              
+
               <div className={styles.modalFooter}>
                 <p><strong>Total Records:</strong> {viewerData.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned Courses Warning Modal */}
+      {showUnassignedWarning && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.unassignedModal}>
+            <div className={styles.warningModalHeader}>
+              <h3 className={styles.warningModalTitle}>
+                <FaExclamationTriangle /> Courses Without Assigned Professors
+              </h3>
+              <button className={styles.closeModalButton} onClick={() => setShowUnassignedWarning(false)}>
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className={styles.warningModalBody}>
+              <div className={styles.warningBox}>
+                <p className={styles.warningTitle}>
+                  ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
+                </p>
+                <p className={styles.warningDescription}>
+                  Please assign professors to these courses in the Teaching Load Assignment page, 
+                  or you can bypass this check and schedule them without professors (TBD will be shown).
+                </p>
+              </div>
+
+              <div className={styles.warningActions}>
+                <button 
+                  onClick={downloadUnassignedCoursesCSV}
+                  className={`${styles.warningActionBtn} ${styles.download}`}
+                >
+                  <FaDownload /> Download CSV of Unassigned Courses
+                </button>
+                <button 
+                  onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
+                  className={`${styles.warningActionBtn} ${styles.teaching}`}
+                >
+                  <FaChalkboardTeacher /> Go to Teaching Load Assignment
+                </button>
+              </div>
+
+              <div className={styles.tableScrollContainer}>
+                <table className={styles.viewerTable}>
+                  <thead>
+                    <tr>
+                      <th>Course Code</th>
+                      <th>Course Name</th>
+                      <th>Section</th>
+                      <th>Department</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unassignedCourses.map((course, idx) => (
+                      <tr key={idx}>
+                        <td>{course.course_code}</td>
+                        <td>{course.course_name}</td>
+                        <td>{course.section}</td>
+                        <td>{course.department}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={styles.bypassSection}>
+                <label className={styles.bypassLabel}>
+                  <input 
+                    type="checkbox" 
+                    checked={bypassTeacherCheck}
+                    onChange={(e) => setBypassTeacherCheck(e.target.checked)}
+                  />
+                  <span>
+                    Bypass teacher check (Professors will be shown as "TBD" in schedule)
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.warningModalFooter}>
+              <div className={styles.modalActions}>
+                <button 
+                  onClick={() => setShowUnassignedWarning(false)}
+                  className={styles.cancelBtn}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    if (bypassTeacherCheck) {
+                      executeScheduleGeneration()
+                    } else {
+                      alert('Please enable the bypass option to proceed without assigned professors.')
+                    }
+                  }}
+                  disabled={!bypassTeacherCheck}
+                  className={styles.proceedBtn}
+                >
+                  <FaPlay /> Proceed with Scheduling
+                </button>
               </div>
             </div>
           </div>

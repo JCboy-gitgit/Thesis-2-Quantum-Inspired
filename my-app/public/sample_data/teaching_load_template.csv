@@ -1,0 +1,11 @@
+faculty_id,course_code,academic_year,semester,section,notes
+FAC001,CS101,2025-2026,First Semester,BSCS 1A,Main instructor
+FAC001,CS102,2025-2026,First Semester,BSCS 1B,Lab coordinator
+FAC002,MATH101,2025-2026,First Semester,BSCS 1A,
+FAC002,MATH102,2025-2026,First Semester,BSCS 1B,
+FAC003,ENGL101,2025-2026,First Semester,BSCS 1A,Guest lecturer
+FAC004,PHYS101,2025-2026,First Semester,BSCS 1A,
+FAC005,CHEM101,2025-2026,First Semester,BSCS 1A,Main instructor with lab
+FAC001,CS201,2025-2026,Second Semester,BSCS 2A,Advanced topics
+FAC002,MATH201,2025-2026,Second Semester,BSCS 2A,
+FAC006,HIST101,2025-2026,Summer,BSCS 1A,Summer offering

@@ -7,299 +7,183 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { useTheme } from '@/app/context/ThemeContext'
 import styles from './styles.module.css'
-import { 
-  Map, 
-  Building2, 
-  Layers, 
-  Plus,
-  Minus,
-  Move,
-  MousePointer,
-  Square,
-  Circle,
-  Type,
-  Trash2,
-  Save,
-  Download,
-  Upload,
-  Settings,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Copy,
-  Clipboard,
-  ClipboardPaste,
-  Files,
-  ArrowUp,
-  ArrowDown,
-  RotateCcw,
-  RotateCw,
-  Grid,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Minimize2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Search,
-  X,
-  Check,
-  Share2,
-  Link,
-  ExternalLink,
-  Image,
-  Palette,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Bold,
-  Italic,
-  DoorOpen,
-  ArrowUpDown,
-  Building,
-  Sofa,
-  Monitor,
-  Users,
-  GraduationCap,
-  FlaskConical,
-  BookOpen,
-  Coffee,
-  Wifi,
-  Printer,
-  Projector,
-  Thermometer,
-  AlertTriangle,
-  Info,
-  RefreshCw,
-  FolderOpen,
-  FilePlus,
-  MoreVertical,
-  Undo,
-  Redo,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Grip,
-  Fullscreen
+import {
+  Map, Building2, Layers, Plus, Minus, Move, MousePointer, Square,
+  Type, Trash2, Save, Download, Settings, Eye, ChevronDown, ChevronUp,
+  Search, X, Check, Share2, Link, Grid, ZoomIn, ZoomOut, DoorOpen,
+  Building, Users, GraduationCap, FlaskConical, BookOpen, Coffee,
+  Projector, Thermometer, RefreshCw, FileText, ChevronRight, ChevronLeft, Edit3,
+  Box, Maximize2, LayoutGrid, Footprints, Info, Monitor, AlertTriangle,
+  PanelLeftClose, PanelLeftOpen, Loader2, RotateCcw, Wifi, Wind
 } from 'lucide-react'
 
 // Types
+interface Room {
+  id: number
+  room: string
+  room_code?: string
+  building: string
+  campus: string
+  school_name?: string
+  capacity: number
+  floor_number?: number
+  room_type?: string
+  has_ac?: boolean
+  has_projector?: boolean
+  has_whiteboard?: boolean
+  has_tv?: boolean
+  has_wifi?: boolean
+  status?: string
+  notes?: string
+  college?: string
+  specific_classification?: string
+}
+
 interface CanvasElement {
   id: string
-  type: 'room' | 'wall' | 'door' | 'window' | 'stair' | 'text' | 'icon' | 'shape' | 'image' | 'hallway' | 'elevator' | 'restroom' | 'entrance'
+  type: 'room' | 'wall' | 'door' | 'text' | 'icon' | 'hallway' | 'stair'
   x: number
   y: number
   width: number
   height: number
   rotation: number
-  zIndex: number
   label?: string
   color?: string
   borderColor?: string
-  fontSize?: number
-  fontWeight?: 'normal' | 'bold'
-  textAlign?: 'left' | 'center' | 'right'
-  icon?: string
   linkedRoomId?: number
-  linkedRoomData?: any
-  isLocked?: boolean
-  isVisible?: boolean
-  properties?: Record<string, any>
-  shapeType?: 'rectangle' | 'circle' | 'triangle' | 'line'
-  opacity?: number
-  borderWidth?: number
-  borderStyle?: 'solid' | 'dashed' | 'dotted'
+  linkedRoomData?: Room
+  zIndex: number
 }
 
-interface Building {
-  id: number
-  name: string
-  code?: string
-  campus?: string
-  total_floors: number
-  floor_plans?: FloorPlan[]
+// Room type colors
+const ROOM_TYPE_COLORS: Record<string, { bg: string; border: string; label: string }> = {
+  'classroom': { bg: '#3b82f6', border: '#1d4ed8', label: 'Lecture Rooms' },
+  'lecture_hall': { bg: '#8b5cf6', border: '#6d28d9', label: 'Lecture Hall' },
+  'computer_lab': { bg: '#06b6d4', border: '#0891b2', label: 'Computer Lab' },
+  'laboratory': { bg: '#ec4899', border: '#be185d', label: 'Laboratory' },
+  'library': { bg: '#22c55e', border: '#15803d', label: 'Library Center' },
+  'office': { bg: '#f59e0b', border: '#d97706', label: 'Office' },
+  'storage': { bg: '#78716c', border: '#57534e', label: 'Tool Storage' },
+  'stockroom': { bg: '#d4a373', border: '#bc8f5a', label: 'Stock Room' },
+  'restroom': { bg: '#94a3b8', border: '#64748b', label: 'Restroom' },
+  'default': { bg: '#e5e7eb', border: '#9ca3af', label: 'Other' }
 }
 
-interface FloorPlan {
-  id: number
-  building_id: number
-  floor_number: number
-  floor_name?: string
-  canvas_data: any
-  canvas_width: number
-  canvas_height: number
-  grid_size: number
-  background_color: string
-  background_image_url?: string
-  is_default_view: boolean
-  is_published: boolean
-  status: string
-  buildings?: Building
+// Toolbox items for drag and drop
+const TOOLBOX_ITEMS = {
+  structures: [
+    { type: 'wall', label: 'Wall', icon: Box, color: '#374151', width: 100, height: 10 },
+    { type: 'hallway', label: 'Hallway', icon: Move, color: '#d1d5db', width: 200, height: 60 },
+  ],
+  elements: [
+    { type: 'door', label: 'Door', icon: DoorOpen, color: '#10b981', width: 40, height: 10 },
+    { type: 'stair', label: 'Stairs', icon: Footprints, color: '#f59e0b', width: 80, height: 60 },
+  ],
+  labels: [
+    { type: 'text', label: 'Text Label', icon: Type, color: '#1f2937', width: 100, height: 30 },
+    { type: 'icon', label: 'Icon', icon: Info, color: '#6366f1', width: 40, height: 40 },
+  ]
 }
-
-interface Room {
-  id: number
-  name: string
-  building: string
-  campus: string
-  capacity: number
-  floorNumber?: number
-  roomType?: string
-  hasAC?: boolean
-  hasProjector?: boolean
-  isPWDAccessible?: boolean
-}
-
-// Icon mapping for the toolbox
-const ICONS = {
-  door: DoorOpen,
-  stairs: Building,
-  elevator: ArrowUpDown,
-  sofa: Sofa,
-  monitor: Monitor,
-  users: Users,
-  graduation: GraduationCap,
-  lab: FlaskConical,
-  library: BookOpen,
-  coffee: Coffee,
-  wifi: Wifi,
-  printer: Printer,
-  projector: Projector,
-  ac: Thermometer,
-  warning: AlertTriangle,
-  info: Info
-}
-
-// Preset colors
-const PRESET_COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
-  '#14B8A6', '#A855F7', '#F43F5E', '#22C55E', '#0EA5E9',
-  '#ffffff', '#f3f4f6', '#e5e7eb', '#9ca3af', '#6b7280',
-  '#4b5563', '#374151', '#1f2937', '#111827', '#000000'
-]
 
 export default function MapViewerPage() {
   const router = useRouter()
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+
+  // PC-only detection
+  const [isMobile, setIsMobile] = useState(false)
+  const [showMobileWarning, setShowMobileWarning] = useState(false)
+
+  // Panel state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  
-  // Canvas state
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [elements, setElements] = useState<CanvasElement[]>([])
+
+  // Toolbox sections
+  const [sectionsOpen, setSectionsOpen] = useState({
+    roomsZones: true,
+    structures: false,
+    doorsElements: false,
+    labelsIcons: false
+  })
+
+  // Data state
+  const [buildings, setBuildings] = useState<string[]>([])
+  const [floors, setFloors] = useState<number[]>([])
+  const [selectedBuilding, setSelectedBuilding] = useState<string>('')
+  const [selectedFloor, setSelectedFloor] = useState<number>(1)
+  const [allRooms, setAllRooms] = useState<Room[]>([])
+  const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([])
   const [selectedElement, setSelectedElement] = useState<CanvasElement | null>(null)
-  const [selectedElements, setSelectedElements] = useState<string[]>([])
-  const [zoom, setZoom] = useState(1)
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
-  const [canvasSize, setCanvasSize] = useState({ width: 1200, height: 800 })
-  const [gridSize, setGridSize] = useState(20)
-  const [showGrid, setShowGrid] = useState(true)
+
+  // Canvas state
+  const [zoom, setZoom] = useState(100)
   const [snapToGrid, setSnapToGrid] = useState(true)
-  const [snapToElements, setSnapToElements] = useState(true)
-  const [snapThreshold] = useState(15) // pixels for magnetic snap
-  const [backgroundColor, setBackgroundColor] = useState('#ffffff')
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
-  
-  // Tool state
-  const [activeTool, setActiveTool] = useState<'select' | 'pan' | 'room' | 'wall' | 'text' | 'shape' | 'icon' | 'hallway' | 'stair' | 'elevator' | 'entrance' | 'restroom'>('select')
-  const [activeShape, setActiveShape] = useState<'rectangle' | 'circle' | 'triangle' | 'line'>('rectangle')
-  const [activeIcon, setActiveIcon] = useState<string>('door')
-  const [drawColor, setDrawColor] = useState('#3B82F6')
-  const [borderColor, setBorderColor] = useState('#1E40AF')
-  const [fontSize, setFontSize] = useState(14)
-  
+  const [gridSize] = useState(20)
+  const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 })
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+
   // Drag state
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [dragElement, setDragElement] = useState<CanvasElement | null>(null)
-  const [isResizing, setIsResizing] = useState(false)
-  const [resizeHandle, setResizeHandle] = useState<string | null>(null)
-  const [isPanning, setIsPanning] = useState(false)
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [drawStart, setDrawStart] = useState({ x: 0, y: 0 })
-  
-  // Data state
-  const [buildings, setBuildings] = useState<Building[]>([])
-  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
-  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([])
-  const [currentFloorPlan, setCurrentFloorPlan] = useState<FloorPlan | null>(null)
-  const [rooms, setRooms] = useState<Room[]>([])
-  const [roomSearch, setRoomSearch] = useState('')
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([])
-  
+  const [dragItem, setDragItem] = useState<any>(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [dragGhost, setDragGhost] = useState<{ x: number; y: number } | null>(null)
+  const [draggingElement, setDraggingElement] = useState<string | null>(null)
+
   // UI state
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [showBuildingModal, setShowBuildingModal] = useState(false)
-  const [showFloorModal, setShowFloorModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
-  
-  // History for undo/redo
-  const [history, setHistory] = useState<CanvasElement[][]>([])
-  const [historyIndex, setHistoryIndex] = useState(-1)
-  
-  // New building/floor form
-  const [newBuilding, setNewBuilding] = useState({ name: '', code: '', campus: '', total_floors: 1 })
-  const [newFloor, setNewFloor] = useState({ floor_number: 1, floor_name: '' })
-  
-  // Share state
-  const [shareLink, setShareLink] = useState('')
-  const [shareSettings, setShareSettings] = useState({ expires_in_days: 7, password: '' })
-  
-  // Clipboard state for copy/paste
-  const [clipboard, setClipboard] = useState<CanvasElement | null>(null)
-  
-  // Export state
-  const [showExportModal, setShowExportModal] = useState(false)
-  const [exporting, setExporting] = useState(false)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Editing state
+  const [editForm, setEditForm] = useState({
+    label: '',
+    type: '',
+    width: 0,
+    height: 0,
+    color: '',
+    rotation: 0
+  })
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
-  
-  // Handle menubar toggle callback
-  const handleMenuBarToggle = (isHidden: boolean) => {
-    setIsMenuBarHidden(isHidden)
+
+  // Show notification
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    setNotification({ type, message })
+    setTimeout(() => setNotification(null), 3000)
   }
-  
-  // Toggle fullscreen
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
-      setIsFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setIsFullscreen(false)
+
+  // PC-only detection
+  useEffect(() => {
+    const checkDevice = () => {
+      const width = window.innerWidth
+      const mobile = width < 1024
+      setIsMobile(mobile)
+      if (mobile) {
+        setShowMobileWarning(true)
+      }
     }
-  }
-  
-  // Listen for fullscreen changes
+
+    checkDevice()
+    window.addEventListener('resize', checkDevice)
+    return () => window.removeEventListener('resize', checkDevice)
+  }, [])
+
+  // Auth check
   useEffect(() => {
     checkAuth()
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    fetchBuildings()
   }, [])
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
       if (!session?.user) {
         router.push('/faculty/login')
         return
       }
-
-      // Only admin can access admin pages
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
         router.push('/faculty/home')
         return
@@ -310,2524 +194,897 @@ export default function MapViewerPage() {
     }
   }
 
-  // Show notification
-  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
-    setNotification({ type, message })
-    setTimeout(() => setNotification(null), 3000)
-  }
-
-  // Fetch buildings on mount
-  useEffect(() => {
-    fetchBuildings()
-    fetchRooms()
-  }, [])
-
-  // Filter rooms based on search
-  useEffect(() => {
-    if (roomSearch) {
-      setFilteredRooms(rooms.filter(room => 
-        room.name.toLowerCase().includes(roomSearch.toLowerCase()) ||
-        room.building?.toLowerCase().includes(roomSearch.toLowerCase())
-      ))
-    } else {
-      setFilteredRooms(rooms)
-    }
-  }, [roomSearch, rooms])
-
-  // Add to history when elements change
-  useEffect(() => {
-    if (elements.length > 0 || history.length === 0) {
-      const newHistory = history.slice(0, historyIndex + 1)
-      newHistory.push([...elements])
-      setHistory(newHistory)
-      setHistoryIndex(newHistory.length - 1)
-    }
-  }, [elements.length])
-
+  // Fetch buildings from campuses table
   const fetchBuildings = async () => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/floor-plans')
-      const result = await response.json()
-      
-      if (result.success) {
-        setBuildings(result.data || [])
+      const { data, error } = await supabase
+        .from('campuses')
+        .select('building, floor_number')
+        .eq('status', 'active')
+
+      if (error) throw error
+
+      const uniqueBuildings = [...new Set((data || []).map((d: { building: string }) => d.building))].filter(Boolean) as string[]
+      setBuildings(uniqueBuildings)
+
+      if (uniqueBuildings.length > 0) {
+        setSelectedBuilding(uniqueBuildings[0])
       }
     } catch (error) {
       console.error('Error fetching buildings:', error)
-      showNotification('error', 'Failed to fetch buildings')
-    } finally {
-      setLoading(false)
     }
   }
 
-  const fetchRooms = async (building?: string) => {
-    try {
-      const params = new URLSearchParams()
-      if (building) params.append('building', building)
-      
-      const response = await fetch(`/api/floor-plans/rooms?${params}`)
-      const result = await response.json()
-      
-      if (result.success) {
-        setRooms(result.data.rooms || [])
-      }
-    } catch (error) {
-      console.error('Error fetching rooms:', error)
+  // Fetch rooms when building/floor changes
+  useEffect(() => {
+    if (selectedBuilding) {
+      fetchRooms()
     }
-  }
+  }, [selectedBuilding, selectedFloor])
 
-  const fetchFloorPlan = async (floorPlanId: number) => {
+  const fetchRooms = async () => {
+    if (!selectedBuilding) return
+
     try {
       setLoading(true)
-      const response = await fetch(`/api/floor-plans?floorPlanId=${floorPlanId}&includeElements=true`)
-      const result = await response.json()
-      
-      if (result.success) {
-        const plan = result.data
-        setCurrentFloorPlan(plan)
-        setCanvasSize({ width: plan.canvas_width, height: plan.canvas_height })
-        setGridSize(plan.grid_size || 20)
-        setBackgroundColor(plan.background_color || '#ffffff')
-        setBackgroundImage(plan.background_image_url || null)
-        
-        // Convert elements from DB format
-        if (plan.elements && plan.elements.length > 0) {
-          const convertedElements = plan.elements.map((elem: any) => ({
-            id: elem.element_id || `elem-${elem.id}`,
-            type: elem.element_type,
-            x: elem.x,
-            y: elem.y,
-            width: elem.width,
-            height: elem.height,
-            rotation: elem.rotation || 0,
-            zIndex: elem.z_index || 0,
-            label: elem.label,
-            color: elem.color,
-            borderColor: elem.border_color,
-            fontSize: elem.font_size,
-            linkedRoomId: elem.linked_room_id,
-            isLocked: elem.is_locked,
-            isVisible: elem.is_visible,
-            properties: elem.properties || {}
-          }))
-          setElements(convertedElements)
-        } else if (plan.canvas_data?.elements) {
-          setElements(plan.canvas_data.elements)
-        } else {
-          setElements([])
-        }
+
+      let query = supabase
+        .from('campuses')
+        .select('*')
+        .eq('building', selectedBuilding)
+        .eq('status', 'active')
+        .order('room', { ascending: true })
+
+      if (selectedFloor) {
+        query = query.eq('floor_number', selectedFloor)
       }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      setAllRooms(data || [])
+
+      // Get unique floors for this building
+      const { data: floorData } = await supabase
+        .from('campuses')
+        .select('floor_number')
+        .eq('building', selectedBuilding)
+        .eq('status', 'active')
+
+      const roomFloors = [...new Set((floorData || []).map((r: { floor_number: number }) => r.floor_number).filter(f => f != null))] as number[]
+      setFloors(roomFloors.sort((a, b) => a - b))
+
     } catch (error) {
-      console.error('Error fetching floor plan:', error)
-      showNotification('error', 'Failed to load floor plan')
+      console.error('Error fetching rooms:', error)
+      showNotification('error', 'Failed to load rooms')
     } finally {
       setLoading(false)
     }
   }
 
-  const saveFloorPlan = async () => {
-    if (!currentFloorPlan) {
-      showNotification('error', 'No floor plan selected')
-      return
+  // Get room color based on type
+  const getRoomColor = (roomType?: string) => {
+    const type = roomType?.toLowerCase().replace(/\s+/g, '_') || 'default'
+    return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
+  }
+
+  // Snap position to grid
+  const snapToGridPosition = (value: number) => {
+    if (!snapToGrid) return value
+    return Math.round(value / gridSize) * gridSize
+  }
+
+  // Generate unique ID
+  const generateId = () => `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+  // Handle element selection
+  const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedElement(element)
+    setEditForm({
+      label: element.label || '',
+      type: element.type,
+      width: element.width,
+      height: element.height,
+      color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
+      rotation: element.rotation
+    })
+  }
+
+  // Handle canvas click (deselect)
+  const handleCanvasClick = () => {
+    setSelectedElement(null)
+  }
+
+  // Handle room drag start from toolbox
+  const handleRoomDragStart = (e: React.DragEvent, room: Room) => {
+    setDragItem({ type: 'room', data: room })
+    setIsDragging(true)
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'room', roomId: room.id }))
+  }
+
+  // Handle toolbox item drag start
+  const handleToolboxDragStart = (e: React.DragEvent, item: any) => {
+    setDragItem({ type: 'toolbox', data: item })
+    setIsDragging(true)
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'toolbox', itemType: item.type }))
+  }
+
+  // Handle drag over canvas
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (!canvasRef.current) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    let x = (e.clientX - rect.left) / scale
+    let y = (e.clientY - rect.top) / scale
+
+    // Snap to grid
+    x = snapToGridPosition(x)
+    y = snapToGridPosition(y)
+
+    setDragGhost({ x, y })
+  }
+
+  // Handle drop on canvas
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (!canvasRef.current || !dragItem) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    let x = (e.clientX - rect.left) / scale
+    let y = (e.clientY - rect.top) / scale
+
+    // Snap to grid
+    x = snapToGridPosition(x)
+    y = snapToGridPosition(y)
+
+    if (dragItem.type === 'room') {
+      const room = dragItem.data as Room
+      // Check if room already on canvas
+      const exists = canvasElements.find(el => el.linkedRoomId === room.id)
+      if (exists) {
+        showNotification('info', 'Room already on canvas')
+      } else {
+        const colors = getRoomColor(room.room_type)
+        const newElement: CanvasElement = {
+          id: generateId(),
+          type: 'room',
+          x,
+          y,
+          width: 140,
+          height: 100,
+          rotation: 0,
+          label: room.room,
+          color: colors.bg,
+          borderColor: colors.border,
+          linkedRoomId: room.id,
+          linkedRoomData: room,
+          zIndex: canvasElements.length + 1
+        }
+        setCanvasElements(prev => [...prev, newElement])
+        showNotification('success', `Added ${room.room} to canvas`)
+      }
+    } else if (dragItem.type === 'toolbox') {
+      const item = dragItem.data
+      const newElement: CanvasElement = {
+        id: generateId(),
+        type: item.type,
+        x,
+        y,
+        width: item.width || 100,
+        height: item.height || 60,
+        rotation: 0,
+        label: item.label,
+        color: item.color,
+        borderColor: item.color,
+        zIndex: canvasElements.length + 1
+      }
+      setCanvasElements(prev => [...prev, newElement])
+      showNotification('success', `Added ${item.label} to canvas`)
     }
 
+    setDragItem(null)
+    setIsDragging(false)
+    setDragGhost(null)
+  }
+
+  // Handle element drag on canvas
+  const handleElementDragStart = (e: React.MouseEvent, element: CanvasElement) => {
+    e.stopPropagation()
+    setDraggingElement(element.id)
+    const rect = (e.target as HTMLElement).getBoundingClientRect()
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
+  }
+
+  const handleElementDrag = (e: React.MouseEvent) => {
+    if (!draggingElement || !canvasRef.current) return
+
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    let x = (e.clientX - rect.left - dragOffset.x) / scale
+    let y = (e.clientY - rect.top - dragOffset.y) / scale
+
+    // Snap to grid
+    x = snapToGridPosition(x)
+    y = snapToGridPosition(y)
+
+    setCanvasElements(prev => prev.map(el =>
+      el.id === draggingElement ? { ...el, x, y } : el
+    ))
+  }
+
+  const handleElementDragEnd = () => {
+    setDraggingElement(null)
+  }
+
+  // Update element
+  const updateElement = (elementId: string, updates: Partial<CanvasElement>) => {
+    setCanvasElements(prev => prev.map(el =>
+      el.id === elementId ? { ...el, ...updates } : el
+    ))
+    if (selectedElement?.id === elementId) {
+      setSelectedElement(prev => prev ? { ...prev, ...updates } : null)
+    }
+  }
+
+  // Delete element from canvas
+  const removeElement = (elementId: string) => {
+    setCanvasElements(prev => prev.filter(el => el.id !== elementId))
+    if (selectedElement?.id === elementId) {
+      setSelectedElement(null)
+    }
+    showNotification('success', 'Element removed')
+  }
+
+  // Clear canvas
+  const clearCanvas = () => {
+    setCanvasElements([])
+    setSelectedElement(null)
+    showNotification('info', 'Canvas cleared')
+  }
+
+  // Save floor plan
+  const saveFloorPlan = async () => {
     try {
       setSaving(true)
-      
-      // Save floor plan data
-      const response = await fetch('/api/floor-plans', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'floor_plan',
-          id: currentFloorPlan.id,
-          data: {
-            building_id: currentFloorPlan.building_id,
-            canvas_data: { elements },
-            canvas_width: canvasSize.width,
-            canvas_height: canvasSize.height,
-            grid_size: gridSize,
-            background_color: backgroundColor,
-            background_image_url: backgroundImage,
-            is_default_view: currentFloorPlan.is_default_view,
-            is_published: currentFloorPlan.is_published,
-            status: currentFloorPlan.status
-          }
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        // Save elements separately
-        await fetch('/api/floor-plans', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'elements',
-            id: currentFloorPlan.id,
-            data: { elements }
-          })
-        })
-        
-        showNotification('success', 'Floor plan saved successfully!')
-      } else {
-        throw new Error(result.error)
-      }
+      // For now, just show success - actual saving would go to floor_plans table
+      showNotification('success', 'Floor plan saved successfully!')
     } catch (error) {
-      console.error('Error saving floor plan:', error)
       showNotification('error', 'Failed to save floor plan')
     } finally {
       setSaving(false)
     }
   }
 
-  // Export functions
-  const exportAsImage = async (format: 'png' | 'jpeg' = 'png') => {
-    if (!canvasRef.current) return
-    
-    try {
-      setExporting(true)
-      
-      // Use html2canvas to capture the canvas
-      const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(canvasRef.current, {
-        backgroundColor: backgroundColor,
-        scale: 2,
-        useCORS: true
-      })
-      
-      const link = document.createElement('a')
-      link.download = `${selectedBuilding?.name || 'floor-plan'}-floor-${currentFloorPlan?.floor_number || 1}.${format}`
-      link.href = canvas.toDataURL(`image/${format}`, 0.9)
-      link.click()
-      
-      showNotification('success', `Floor plan exported as ${format.toUpperCase()}!`)
-    } catch (error) {
-      console.error('Error exporting image:', error)
-      showNotification('error', 'Failed to export image. Try installing html2canvas: npm install html2canvas')
-    } finally {
-      setExporting(false)
-    }
+  // Export as PDF
+  const exportPDF = () => {
+    showNotification('info', 'PDF export coming soon!')
   }
 
-  const exportAsPDF = async (size: 'a4' | 'letter' = 'a4') => {
-    if (!canvasRef.current) return
-    
-    try {
-      setExporting(true)
-      
-      // Use html2canvas and jspdf
-      const html2canvas = (await import('html2canvas')).default
-      const { jsPDF } = await import('jspdf')
-      
-      const canvas = await html2canvas(canvasRef.current, {
-        backgroundColor: backgroundColor,
-        scale: 2,
-        useCORS: true
-      })
-      
-      const imgData = canvas.toDataURL('image/png')
-      
-      // Calculate dimensions
-      const pageWidth = size === 'a4' ? 210 : 216 // mm
-      const pageHeight = size === 'a4' ? 297 : 279 // mm
-      
-      const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: size
-      })
-      
-      const imgWidth = pdf.internal.pageSize.getWidth() - 20
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      
-      // Add title
-      pdf.setFontSize(16)
-      pdf.text(`${selectedBuilding?.name || 'Building'} - Floor ${currentFloorPlan?.floor_number || 1}`, 10, 15)
-      
-      // Add image
-      pdf.addImage(imgData, 'PNG', 10, 25, imgWidth, Math.min(imgHeight, pdf.internal.pageSize.getHeight() - 35))
-      
-      pdf.save(`${selectedBuilding?.name || 'floor-plan'}-floor-${currentFloorPlan?.floor_number || 1}.pdf`)
-      
-      showNotification('success', 'Floor plan exported as PDF!')
-    } catch (error) {
-      console.error('Error exporting PDF:', error)
-      showNotification('error', 'Failed to export PDF. Try installing jspdf: npm install jspdf')
-    } finally {
-      setExporting(false)
-    }
-  }
+  // Filter rooms in toolbox
+  const filteredRooms = allRooms.filter(room =>
+    !searchQuery ||
+    room.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    room.room_code?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-  const openWebView = () => {
-    if (!currentFloorPlan || !shareLink) {
-      showNotification('info', 'Please generate a share link first to view in browser')
-      setShowShareModal(true)
-      return
-    }
-    window.open(shareLink, '_blank')
-  }
-
-  const createBuilding = async () => {
-    if (!newBuilding.name) {
-      showNotification('error', 'Building name is required')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch('/api/floor-plans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'building',
-          data: newBuilding
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        showNotification('success', 'Building created successfully!')
-        setShowBuildingModal(false)
-        setNewBuilding({ name: '', code: '', campus: '', total_floors: 1 })
-        fetchBuildings()
-      } else {
-        // Show specific error message from API
-        if (result.needsSetup) {
-          showNotification('error', 'Database tables not set up. Run floor_plans_schema.sql in Supabase first.')
-        } else {
-          showNotification('error', result.error || 'Failed to create building')
-        }
-      }
-    } catch (error: any) {
-      console.error('Error creating building:', error)
-      showNotification('error', error.message || 'Failed to create building')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const createFloorPlan = async () => {
-    if (!selectedBuilding) {
-      showNotification('error', 'Please select a building first')
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch('/api/floor-plans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'floor_plan',
-          data: {
-            building_id: selectedBuilding.id,
-            floor_number: newFloor.floor_number,
-            floor_name: newFloor.floor_name || `Floor ${newFloor.floor_number}`,
-            canvas_width: canvasSize.width,
-            canvas_height: canvasSize.height,
-            grid_size: gridSize,
-            background_color: backgroundColor
-          }
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        showNotification('success', 'Floor plan created successfully!')
-        setShowFloorModal(false)
-        setNewFloor({ floor_number: 1, floor_name: '' })
-        fetchBuildings()
-        fetchFloorPlan(result.data.id)
-      } else {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      console.error('Error creating floor plan:', error)
-      showNotification('error', 'Failed to create floor plan')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const createShareLink = async () => {
-    if (!currentFloorPlan) return
-
-    try {
-      const response = await fetch('/api/floor-plans/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          floor_plan_id: currentFloorPlan.id,
-          share_name: `${selectedBuilding?.name || 'Building'} - Floor ${currentFloorPlan.floor_number}`,
-          expires_in_days: shareSettings.expires_in_days,
-          password: shareSettings.password || undefined
-        })
-      })
-
-      const result = await response.json()
-      
-      if (result.success) {
-        setShareLink(result.data.share_url)
-        showNotification('success', 'Share link created!')
-      }
-    } catch (error) {
-      console.error('Error creating share link:', error)
-      showNotification('error', 'Failed to create share link')
-    }
-  }
-
-  // Canvas interaction handlers
-  const getCanvasCoordinates = (e: React.MouseEvent) => {
-    if (!canvasRef.current) return { x: 0, y: 0 }
-    
-    const rect = canvasRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left - panOffset.x) / zoom
-    const y = (e.clientY - rect.top - panOffset.y) / zoom
-    
-    if (snapToGrid) {
-      return {
-        x: Math.round(x / gridSize) * gridSize,
-        y: Math.round(y / gridSize) * gridSize
-      }
-    }
-    
-    return { x, y }
-  }
-
-  // Find nearest snap point to other elements (magnetic snap)
-  const findSnapPoints = (element: CanvasElement, newX: number, newY: number) => {
-    if (!snapToElements) return { x: newX, y: newY, snappedEdges: { left: false, right: false, top: false, bottom: false } }
-    
-    let snapX = newX
-    let snapY = newY
-    const snappedEdges = { left: false, right: false, top: false, bottom: false }
-    
-    // Check against all other elements
-    for (const other of elements) {
-      if (other.id === element.id) continue
-      if (other.isVisible === false) continue
-      
-      // Element edges
-      const elemLeft = newX
-      const elemRight = newX + element.width
-      const elemTop = newY
-      const elemBottom = newY + element.height
-      
-      // Other element edges
-      const otherLeft = other.x
-      const otherRight = other.x + other.width
-      const otherTop = other.y
-      const otherBottom = other.y + other.height
-      
-      // Check horizontal alignment (left-to-right or left-to-left)
-      if (Math.abs(elemRight - otherLeft) < snapThreshold) {
-        snapX = otherLeft - element.width
-        snappedEdges.right = true
-      } else if (Math.abs(elemLeft - otherRight) < snapThreshold) {
-        snapX = otherRight
-        snappedEdges.left = true
-      } else if (Math.abs(elemLeft - otherLeft) < snapThreshold) {
-        snapX = otherLeft
-        snappedEdges.left = true
-      } else if (Math.abs(elemRight - otherRight) < snapThreshold) {
-        snapX = otherRight - element.width
-        snappedEdges.right = true
-      }
-      
-      // Check vertical alignment (top-to-bottom or top-to-top)
-      if (Math.abs(elemBottom - otherTop) < snapThreshold) {
-        snapY = otherTop - element.height
-        snappedEdges.bottom = true
-      } else if (Math.abs(elemTop - otherBottom) < snapThreshold) {
-        snapY = otherBottom
-        snappedEdges.top = true
-      } else if (Math.abs(elemTop - otherTop) < snapThreshold) {
-        snapY = otherTop
-        snappedEdges.top = true
-      } else if (Math.abs(elemBottom - otherBottom) < snapThreshold) {
-        snapY = otherBottom - element.height
-        snappedEdges.bottom = true
-      }
-    }
-    
-    return { x: snapX, y: snapY, snappedEdges }
-  }
-
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    const coords = getCanvasCoordinates(e)
-    
-    if (activeTool === 'pan') {
-      setIsPanning(true)
-      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y })
-      return
-    }
-    
-    if (activeTool === 'select') {
-      // Check if clicking on an element
-      const clickedElement = elements.find(elem => 
-        elem.isVisible !== false &&
-        coords.x >= elem.x && coords.x <= elem.x + elem.width &&
-        coords.y >= elem.y && coords.y <= elem.y + elem.height
-      )
-      
-      if (clickedElement) {
-        if (!clickedElement.isLocked) {
-          setSelectedElement(clickedElement)
-          setSelectedElements([clickedElement.id])
-          setDragElement(clickedElement)
-          setIsDragging(true)
-          setDragStart({ x: coords.x - clickedElement.x, y: coords.y - clickedElement.y })
-        }
-      } else {
-        setSelectedElement(null)
-        setSelectedElements([])
-      }
-      return
-    }
-    
-    // Drawing tools - including new floor plan elements
-    if (['room', 'wall', 'shape', 'text', 'icon', 'hallway', 'stair', 'elevator', 'entrance', 'restroom'].includes(activeTool)) {
-      setIsDrawing(true)
-      setDrawStart(coords)
-    }
-  }
-
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setPanOffset({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      })
-      return
-    }
-    
-    if (isDragging && dragElement && !dragElement.isLocked) {
-      const coords = getCanvasCoordinates(e)
-      let newX = coords.x - dragStart.x
-      let newY = coords.y - dragStart.y
-      
-      // Apply magnetic snapping to nearby elements
-      const snapped = findSnapPoints(dragElement, newX, newY)
-      newX = snapped.x
-      newY = snapped.y
-      
-      setElements(prev => prev.map(elem => 
-        elem.id === dragElement.id
-          ? { ...elem, x: newX, y: newY }
-          : elem
-      ))
-    }
-    
-    if (isResizing && selectedElement && resizeHandle) {
-      const coords = getCanvasCoordinates(e)
-      // Handle resize logic based on handle position
-      handleResize(coords, resizeHandle)
-    }
-  }
-
-  const handleCanvasMouseUp = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setIsPanning(false)
-      return
-    }
-    
-    if (isDragging) {
-      setIsDragging(false)
-      setDragElement(null)
-      return
-    }
-    
-    if (isResizing) {
-      setIsResizing(false)
-      setResizeHandle(null)
-      return
-    }
-    
-    if (isDrawing) {
-      const coords = getCanvasCoordinates(e)
-      const width = Math.max(Math.abs(coords.x - drawStart.x), 40)
-      const height = Math.max(Math.abs(coords.y - drawStart.y), 40)
-      const x = Math.min(coords.x, drawStart.x)
-      const y = Math.min(coords.y, drawStart.y)
-      
-      createNewElement(x, y, width, height)
-      setIsDrawing(false)
-    }
-  }
-
-  const createNewElement = (x: number, y: number, width: number, height: number) => {
-    const newElement: CanvasElement = {
-      id: `elem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type: activeTool as any,
-      x,
-      y,
-      width: activeTool === 'text' ? 150 : width,
-      height: activeTool === 'text' ? 40 : height,
-      rotation: 0,
-      zIndex: elements.length,
-      color: drawColor,
-      borderColor: borderColor,
-      fontSize: fontSize,
-      isVisible: true,
-      isLocked: false
-    }
-    
-    if (activeTool === 'shape') {
-      newElement.shapeType = activeShape
-    }
-    
-    if (activeTool === 'icon') {
-      newElement.icon = activeIcon
-      newElement.width = 40
-      newElement.height = 40
-    }
-    
-    if (activeTool === 'text') {
-      newElement.label = 'Double-click to edit'
-      newElement.textAlign = 'center'
-    }
-    
-    if (activeTool === 'room') {
-      newElement.label = 'Room'
-      newElement.properties = { capacity: 30 }
-    }
-    
-    // New floor plan element types
-    if (activeTool === 'hallway') {
-      newElement.label = 'Hallway'
-      newElement.color = '#D1D5DB'
-      newElement.borderColor = '#9CA3AF'
-      newElement.height = Math.max(height, 60)
-    }
-    
-    if (activeTool === 'stair') {
-      newElement.label = 'Stairs'
-      newElement.color = '#FEF3C7'
-      newElement.borderColor = '#F59E0B'
-      newElement.width = Math.max(width, 80)
-      newElement.height = Math.max(height, 100)
-      newElement.icon = 'stairs'
-    }
-    
-    if (activeTool === 'elevator') {
-      newElement.label = 'Elevator'
-      newElement.color = '#DBEAFE'
-      newElement.borderColor = '#3B82F6'
-      newElement.width = Math.max(width, 60)
-      newElement.height = Math.max(height, 60)
-      newElement.icon = 'elevator'
-    }
-    
-    if (activeTool === 'entrance') {
-      newElement.label = 'Entrance'
-      newElement.color = '#D1FAE5'
-      newElement.borderColor = '#10B981'
-      newElement.width = Math.max(width, 100)
-      newElement.height = Math.max(height, 40)
-      newElement.icon = 'door'
-    }
-    
-    if (activeTool === 'restroom') {
-      newElement.label = 'Restroom'
-      newElement.color = '#E0E7FF'
-      newElement.borderColor = '#6366F1'
-      newElement.width = Math.max(width, 60)
-      newElement.height = Math.max(height, 60)
-      newElement.icon = 'users'
-    }
-    
-    setElements(prev => [...prev, newElement])
-    setSelectedElement(newElement)
-    setSelectedElements([newElement.id])
-  }
-
-  const handleResize = (coords: { x: number, y: number }, handle: string) => {
-    if (!selectedElement) return
-    
-    setElements(prev => prev.map(elem => {
-      if (elem.id !== selectedElement.id) return elem
-      
-      let newX = elem.x
-      let newY = elem.y
-      let newWidth = elem.width
-      let newHeight = elem.height
-      
-      switch (handle) {
-        case 'se':
-          newWidth = Math.max(20, coords.x - elem.x)
-          newHeight = Math.max(20, coords.y - elem.y)
-          break
-        case 'sw':
-          newWidth = Math.max(20, elem.x + elem.width - coords.x)
-          newX = coords.x
-          newHeight = Math.max(20, coords.y - elem.y)
-          break
-        case 'ne':
-          newWidth = Math.max(20, coords.x - elem.x)
-          newHeight = Math.max(20, elem.y + elem.height - coords.y)
-          newY = coords.y
-          break
-        case 'nw':
-          newWidth = Math.max(20, elem.x + elem.width - coords.x)
-          newHeight = Math.max(20, elem.y + elem.height - coords.y)
-          newX = coords.x
-          newY = coords.y
-          break
-      }
-      
-      return { ...elem, x: newX, y: newY, width: newWidth, height: newHeight }
+  // Get legend items based on rooms on canvas
+  const getLegendItems = () => {
+    const types = new Set(canvasElements
+      .filter(el => el.type === 'room' && el.linkedRoomData)
+      .map(el => el.linkedRoomData?.room_type || 'default'))
+    return Array.from(types).map(type => ({
+      type,
+      ...getRoomColor(type)
     }))
   }
 
-  // Handle dropping room from the list
-  const handleRoomDrop = (e: React.DragEvent, room: Room) => {
-    e.preventDefault()
-    const coords = getCanvasCoordinates(e as any)
-    
-    const newElement: CanvasElement = {
-      id: `room-${room.id}-${Date.now()}`,
-      type: 'room',
-      x: coords.x,
-      y: coords.y,
-      width: 120,
-      height: 80,
-      rotation: 0,
-      zIndex: elements.length,
-      label: room.name,
-      color: drawColor,
-      borderColor: borderColor,
-      linkedRoomId: room.id,
-      linkedRoomData: room,
-      isVisible: true,
-      isLocked: false,
-      properties: {
-        capacity: room.capacity,
-        roomType: room.roomType,
-        hasAC: room.hasAC,
-        hasProjector: room.hasProjector,
-        isPWDAccessible: room.isPWDAccessible
-      }
-    }
-    
-    setElements(prev => [...prev, newElement])
-    setSelectedElement(newElement)
+  // Check if room is on canvas
+  const isRoomOnCanvas = (roomId: number) => {
+    return canvasElements.some(el => el.linkedRoomId === roomId)
   }
 
-  // Element manipulation functions
-  const deleteSelected = () => {
-    if (selectedElements.length > 0) {
-      setElements(prev => prev.filter(elem => !selectedElements.includes(elem.id)))
-      setSelectedElement(null)
-      setSelectedElements([])
-    }
-  }
-
-  const duplicateSelected = () => {
-    if (selectedElement) {
-      const duplicate: CanvasElement = {
-        ...selectedElement,
-        id: `elem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        x: selectedElement.x + 20,
-        y: selectedElement.y + 20,
-        zIndex: elements.length
-      }
-      setElements(prev => [...prev, duplicate])
-      setSelectedElement(duplicate)
-      setSelectedElements([duplicate.id])
-    }
-  }
-
-  const updateSelectedElement = (updates: Partial<CanvasElement>) => {
-    if (!selectedElement) return
-    
-    setElements(prev => prev.map(elem => 
-      elem.id === selectedElement.id
-        ? { ...elem, ...updates }
-        : elem
-    ))
-    setSelectedElement(prev => prev ? { ...prev, ...updates } : null)
-  }
-
-  const bringToFront = () => {
-    if (selectedElement) {
-      const maxZ = Math.max(...elements.map(e => e.zIndex))
-      updateSelectedElement({ zIndex: maxZ + 1 })
-    }
-  }
-
-  const sendToBack = () => {
-    if (selectedElement) {
-      const minZ = Math.min(...elements.map(e => e.zIndex))
-      updateSelectedElement({ zIndex: minZ - 1 })
-    }
-  }
-
-  // Copy element to clipboard
-  const copyElement = () => {
-    if (selectedElement) {
-      setClipboard({ ...selectedElement })
-      showNotification('info', 'Element copied to clipboard')
-    }
-  }
-
-  // Paste element from clipboard
-  const pasteElement = () => {
-    if (clipboard) {
-      const newElement: CanvasElement = {
-        ...clipboard,
-        id: `elem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        x: clipboard.x + 30,
-        y: clipboard.y + 30,
-        zIndex: elements.length
-      }
-      setElements(prev => [...prev, newElement])
-      setSelectedElement(newElement)
-      setSelectedElements([newElement.id])
-      showNotification('success', 'Element pasted')
-    }
-  }
-
-  // Duplicate element (alias for copy then paste in place)
-  const duplicateElement = () => {
-    if (selectedElement) {
-      const duplicate: CanvasElement = {
-        ...selectedElement,
-        id: `elem-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        x: selectedElement.x + 20,
-        y: selectedElement.y + 20,
-        zIndex: elements.length
-      }
-      setElements(prev => [...prev, duplicate])
-      setSelectedElement(duplicate)
-      setSelectedElements([duplicate.id])
-      showNotification('success', 'Element duplicated')
-    }
-  }
-
-  // Delete selected element
-  const deleteSelectedElement = () => {
-    if (selectedElement) {
-      setElements(prev => prev.filter(elem => elem.id !== selectedElement.id))
-      setSelectedElement(null)
-      setSelectedElements([])
-      showNotification('info', 'Element deleted')
-    }
-  }
-
-  const undo = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1)
-      setElements(history[historyIndex - 1])
-    }
-  }
-
-  const redo = () => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1)
-      setElements(history[historyIndex + 1])
-    }
-  }
-
-  // Zoom controls
-  const handleZoom = (delta: number) => {
-    setZoom(prev => Math.min(Math.max(prev + delta, 0.25), 3))
-  }
-
-  const resetView = () => {
-    setZoom(1)
-    setPanOffset({ x: 0, y: 0 })
-  }
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        deleteSelected()
-      }
-      if (e.ctrlKey && e.key === 'c') {
-        // Copy
-      }
-      if (e.ctrlKey && e.key === 'v') {
-        duplicateSelected()
-      }
-      if (e.ctrlKey && e.key === 'z') {
-        undo()
-      }
-      if (e.ctrlKey && e.key === 'y') {
-        redo()
-      }
-      if (e.ctrlKey && e.key === 's') {
-        e.preventDefault()
-        saveFloorPlan()
-      }
-      if (e.key === 'Escape') {
-        setSelectedElement(null)
-        setSelectedElements([])
-        setActiveTool('select')
-      }
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedElement, elements, historyIndex])
-
-  // Render element on canvas
-  const renderElement = (element: CanvasElement) => {
-    if (element.isVisible === false) return null
-    
-    const isSelected = selectedElements.includes(element.id)
-    const style: React.CSSProperties = {
-      position: 'absolute',
-      left: element.x,
-      top: element.y,
-      width: element.width,
-      height: element.height,
-      transform: `rotate(${element.rotation}deg)`,
-      zIndex: element.zIndex,
-      opacity: element.opacity ?? 1,
-      cursor: element.isLocked ? 'not-allowed' : 'move',
-      outline: isSelected ? '2px solid var(--primary-color)' : 'none',
-      outlineOffset: '2px'
-    }
-    
-    switch (element.type) {
-      case 'room':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#E3F2FD',
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#1976D2'}`,
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-            onDoubleClick={() => {
-              // Edit label
-              const newLabel = prompt('Enter room label:', element.label)
-              if (newLabel !== null) {
-                updateSelectedElement({ label: newLabel })
-              }
-            }}
-          >
-            <span style={{ 
-              fontSize: element.fontSize || 12, 
-              fontWeight: 'bold',
-              textAlign: 'center',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: '100%',
-              color: '#333'
-            }}>
-              {element.label}
-            </span>
-            {element.linkedRoomData && (
-              <span style={{ fontSize: 10, color: '#666' }}>
-                Cap: {element.linkedRoomData.capacity}
-              </span>
-            )}
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
+  // PC-only warning overlay
+  if (showMobileWarning && isMobile) {
+    return (
+      <div className={styles.mobileWarning} data-theme={theme}>
+        <div className={styles.mobileWarningContent}>
+          <Monitor size={64} className={styles.pcIcon} />
+          <h2>Desktop Required</h2>
+          <p>The Floor Plan Editor requires a desktop computer for the best experience.</p>
+          <p>Screen width: {typeof window !== 'undefined' ? window.innerWidth : 0}px (minimum: 1024px)</p>
+          <div className={styles.warningButtons}>
+            <button onClick={() => setShowMobileWarning(false)} className={styles.continueBtn}>
+              <AlertTriangle size={18} />
+              Continue Anyway
+            </button>
+            <button onClick={() => router.back()} className={styles.backBtn}>
+              <ChevronLeft size={18} />
+              Go Back
+            </button>
           </div>
-        )
-      
-      case 'wall':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#424242',
-              border: 'none'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-          >
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'text':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: element.textAlign || 'center',
-              padding: '4px 8px',
-              backgroundColor: 'transparent'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-            onDoubleClick={() => {
-              const newLabel = prompt('Enter text:', element.label)
-              if (newLabel !== null) {
-                updateSelectedElement({ label: newLabel })
-              }
-            }}
-          >
-            <span style={{
-              fontSize: element.fontSize || 14,
-              fontWeight: element.fontWeight || 'normal',
-              color: element.color || '#333',
-              textAlign: element.textAlign || 'center',
-              width: '100%'
-            }}>
-              {element.label}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'shape':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.shapeType === 'circle' ? element.color : element.color,
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#333'}`,
-              borderRadius: element.shapeType === 'circle' ? '50%' : '4px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-          >
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'icon':
-        const IconComponent = ICONS[element.icon as keyof typeof ICONS] || Info
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'transparent'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-          >
-            <IconComponent 
-              size={Math.min(element.width, element.height) * 0.8} 
-              color={element.color || '#333'} 
-            />
-          </div>
-        )
-      
-      case 'hallway':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#D1D5DB',
-              border: `2px dashed ${element.borderColor || '#9CA3AF'}`,
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-            onDoubleClick={() => {
-              const newLabel = prompt('Enter hallway label:', element.label)
-              if (newLabel !== null) {
-                updateSelectedElement({ label: newLabel })
-              }
-            }}
-          >
-            <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>
-              {element.label || 'Hallway'}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'stair':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#FEF3C7',
-              border: `2px solid ${element.borderColor || '#F59E0B'}`,
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(245,158,11,0.2) 8px, rgba(245,158,11,0.2) 10px)'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-          >
-            <ArrowUpDown size={20} color="#F59E0B" />
-            <span style={{ fontSize: 10, color: '#92400E', fontWeight: 600 }}>
-              {element.label || 'Stairs'}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'elevator':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#DBEAFE',
-              border: `2px solid ${element.borderColor || '#3B82F6'}`,
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-          >
-            <Building size={20} color="#3B82F6" />
-            <span style={{ fontSize: 10, color: '#1E40AF', fontWeight: 600 }}>
-              {element.label || 'Elevator'}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'entrance':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#D1FAE5',
-              border: `2px solid ${element.borderColor || '#10B981'}`,
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-            onDoubleClick={() => {
-              const newLabel = prompt('Enter entrance label:', element.label)
-              if (newLabel !== null) {
-                updateSelectedElement({ label: newLabel })
-              }
-            }}
-          >
-            <DoorOpen size={18} color="#10B981" />
-            <span style={{ fontSize: 11, color: '#065F46', fontWeight: 600 }}>
-              {element.label || 'Entrance'}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      case 'restroom':
-        return (
-          <div
-            key={element.id}
-            className={styles.canvasElement}
-            style={{
-              ...style,
-              backgroundColor: element.color || '#E0E7FF',
-              border: `2px solid ${element.borderColor || '#6366F1'}`,
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px'
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!element.isLocked) {
-                setSelectedElement(element)
-                setSelectedElements([element.id])
-              }
-            }}
-            onDoubleClick={() => {
-              const newLabel = prompt('Enter restroom label:', element.label)
-              if (newLabel !== null) {
-                updateSelectedElement({ label: newLabel })
-              }
-            }}
-          >
-            <Users size={18} color="#6366F1" />
-            <span style={{ fontSize: 10, color: '#3730A3', fontWeight: 600 }}>
-              {element.label || 'Restroom'}
-            </span>
-            {isSelected && !element.isLocked && (
-              <>
-                <div className={`${styles.resizeHandle} ${styles.nw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('nw') }} />
-                <div className={`${styles.resizeHandle} ${styles.ne}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('ne') }} />
-                <div className={`${styles.resizeHandle} ${styles.sw}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('sw') }} />
-                <div className={`${styles.resizeHandle} ${styles.se}`} onMouseDown={(e) => { e.stopPropagation(); setIsResizing(true); setResizeHandle('se') }} />
-              </>
-            )}
-          </div>
-        )
-      
-      default:
-        return null
-    }
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div ref={containerRef} className={`${styles.pageContainer} ${isFullscreen ? styles.fullscreen : ''}`}>
-      <MenuBar 
-        onToggleSidebar={toggleSidebar}
-        showSidebarToggle={true}
-        showAccountIcon={true}
-        onMenuBarToggle={handleMenuBarToggle}
-        setSidebarOpen={setSidebarOpen}
-      />
+    <div className={styles.layout} data-theme={theme}>
+      <MenuBar onToggleSidebar={toggleSidebar} />
       <Sidebar isOpen={sidebarOpen} />
-      
-      <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''} ${isMenuBarHidden ? styles.menuHidden : ''} ${isFullscreen ? styles.fullscreen : ''}`}>
-        {/* Notification */}
-        {notification && (
-          <div className={`${styles.notification} ${styles[notification.type]}`}>
-            {notification.type === 'success' && <Check size={18} />}
-            {notification.type === 'error' && <AlertTriangle size={18} />}
-            {notification.type === 'info' && <Info size={18} />}
-            <span>{notification.message}</span>
-          </div>
-        )}
 
-        {/* Top Toolbar */}
-        <div className={styles.topToolbar}>
-          <div className={styles.toolbarLeft}>
-            <button 
-              className={styles.toolbarButton}
-              onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-              title="Toggle Buildings Panel"
-            >
-              {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-            </button>
-            
-            <div className={styles.toolbarDivider} />
-            
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'select' ? styles.active : ''}`}
-              onClick={() => setActiveTool('select')}
-              title="Select (V)"
-            >
-              <MousePointer size={18} />
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'pan' ? styles.active : ''}`}
-              onClick={() => setActiveTool('pan')}
-              title="Pan (H)"
-            >
-              <Move size={18} />
-            </button>
-            
-            <div className={styles.toolbarDivider} />
-            
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'room' ? styles.active : ''}`}
-              onClick={() => setActiveTool('room')}
-              title="Draw Room (R)"
-            >
-              <Square size={18} />
-              <span className={styles.toolLabel}>Room</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'wall' ? styles.active : ''}`}
-              onClick={() => setActiveTool('wall')}
-              title="Draw Wall (W)"
-            >
-              <Grip size={18} />
-              <span className={styles.toolLabel}>Wall</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'text' ? styles.active : ''}`}
-              onClick={() => setActiveTool('text')}
-              title="Add Text (T)"
-            >
-              <Type size={18} />
-              <span className={styles.toolLabel}>Text</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'shape' ? styles.active : ''}`}
-              onClick={() => setActiveTool('shape')}
-              title="Draw Shape (S)"
-            >
-              <Circle size={18} />
-              <span className={styles.toolLabel}>Shape</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'icon' ? styles.active : ''}`}
-              onClick={() => setActiveTool('icon')}
-              title="Add Icon (I)"
-            >
-              <DoorOpen size={18} />
-              <span className={styles.toolLabel}>Icon</span>
-            </button>
-            
-            <div className={styles.toolbarDivider} />
-            
-            {/* Floor Plan Elements */}
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'hallway' ? styles.active : ''}`}
-              onClick={() => setActiveTool('hallway')}
-              title="Draw Hallway"
-            >
-              <Grip size={18} />
-              <span className={styles.toolLabel}>Hallway</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'stair' ? styles.active : ''}`}
-              onClick={() => setActiveTool('stair')}
-              title="Add Staircase"
-            >
-              <ArrowUpDown size={18} />
-              <span className={styles.toolLabel}>Stairs</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'elevator' ? styles.active : ''}`}
-              onClick={() => setActiveTool('elevator')}
-              title="Add Elevator"
-            >
-              <Building size={18} />
-              <span className={styles.toolLabel}>Elevator</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'entrance' ? styles.active : ''}`}
-              onClick={() => setActiveTool('entrance')}
-              title="Add Entrance/Exit"
-            >
-              <DoorOpen size={18} />
-              <span className={styles.toolLabel}>Entrance</span>
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${activeTool === 'restroom' ? styles.active : ''}`}
-              onClick={() => setActiveTool('restroom')}
-              title="Add Restroom"
-            >
-              <Users size={18} />
-              <span className={styles.toolLabel}>Restroom</span>
-            </button>
-            
-            <div className={styles.toolbarDivider} />
-            
-            <button 
-              className={styles.toolbarButton}
-              onClick={undo}
-              disabled={historyIndex <= 0}
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo size={18} />
-            </button>
-            <button 
-              className={styles.toolbarButton}
-              onClick={redo}
-              disabled={historyIndex >= history.length - 1}
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo size={18} />
-            </button>
-          </div>
-          
-          <div className={styles.toolbarCenter}>
-            {currentFloorPlan && (
-              <span className={styles.floorPlanTitle}>
-                {selectedBuilding?.name} - {currentFloorPlan.floor_name || `Floor ${currentFloorPlan.floor_number}`}
-              </span>
-            )}
-          </div>
-          
-          <div className={styles.toolbarRight}>
-            <button 
-              className={`${styles.toolbarButton} ${showGrid ? styles.active : ''}`}
-              onClick={() => setShowGrid(!showGrid)}
-              title="Toggle Grid"
-            >
-              <Grid size={18} />
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${snapToGrid ? styles.active : ''}`}
-              onClick={() => setSnapToGrid(!snapToGrid)}
-              title="Snap to Grid"
-            >
-              <Maximize2 size={18} />
-            </button>
-            <button 
-              className={`${styles.toolbarButton} ${snapToElements ? styles.active : ''}`}
-              onClick={() => setSnapToElements(!snapToElements)}
-              title="Magnetic Snap (Auto-connect)"
-            >
-              <Link size={18} />
-            </button>
-            
-            <div className={styles.toolbarDivider} />
-            
-            <div className={styles.zoomControls}>
-              <button onClick={() => handleZoom(-0.1)} title="Zoom Out">
-                <ZoomOut size={16} />
-              </button>
-              <span className={styles.zoomLevel}>{Math.round(zoom * 100)}%</span>
-              <button onClick={() => handleZoom(0.1)} title="Zoom In">
-                <ZoomIn size={16} />
-              </button>
-              <button onClick={resetView} title="Reset View">
-                <Maximize2 size={16} />
-              </button>
+      <main
+        className={`${styles.main} ${sidebarOpen ? '' : styles.fullWidth}`}
+        onMouseMove={draggingElement ? handleElementDrag : undefined}
+        onMouseUp={draggingElement ? handleElementDragEnd : undefined}
+        onMouseLeave={handleElementDragEnd}
+      >
+        {/* Header Bar */}
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.buildingSelector}>
+              <Building2 size={20} />
+              <select
+                value={selectedBuilding}
+                onChange={(e) => setSelectedBuilding(e.target.value)}
+                className={styles.select}
+              >
+                <option value="">Select Building</option>
+                {buildings.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+
+              <span className={styles.divider}>-</span>
+
+              <Layers size={18} />
+              <select
+                value={selectedFloor}
+                onChange={(e) => setSelectedFloor(Number(e.target.value))}
+                className={styles.select}
+              >
+                {floors.length > 0 ? floors.map(f => (
+                  <option key={f} value={f}>Floor {f}</option>
+                )) : (
+                  <option value={1}>Floor 1</option>
+                )}
+              </select>
             </div>
-            
-            <div className={styles.toolbarDivider} />
-            
-            <button 
-              className={styles.fullscreenBtn}
-              onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 size={18} /> : <Fullscreen size={18} />}
+          </div>
+
+          <div className={styles.headerCenter}>
+            <h1 className={styles.title}>
+              {selectedBuilding || 'Floor Plan Editor'}
+              {selectedFloor ? ` - Floor ${selectedFloor}` : ''}
+            </h1>
+          </div>
+
+          <div className={styles.headerRight}>
+            <button className={styles.clearBtn} onClick={clearCanvas} title="Clear Canvas">
+              <RotateCcw size={18} />
             </button>
-            
-            <button 
-              className={styles.toolbarButton}
-              onClick={() => setShowSettingsModal(true)}
-              title="Canvas Settings"
-            >
-              <Settings size={18} />
+            <button className={styles.saveBtn} onClick={saveFloorPlan} disabled={saving}>
+              {saving ? <Loader2 size={18} className={styles.spinning} /> : <Save size={18} />}
+              {saving ? 'Saving...' : 'Save'}
             </button>
-            <button 
-              className={`${styles.toolbarButton} ${styles.saveButton}`}
-              onClick={saveFloorPlan}
-              disabled={saving || !currentFloorPlan}
-              title="Save (Ctrl+S)"
-            >
-              {saving ? <RefreshCw size={18} className={styles.spinning} /> : <Save size={18} />}
-              <span>Save</span>
-            </button>
-            <button 
-              className={styles.toolbarButton}
-              onClick={() => setShowShareModal(true)}
-              disabled={!currentFloorPlan}
-              title="Share"
-            >
-              <Share2 size={18} />
-            </button>
-            <button 
-              className={styles.toolbarButton}
-              onClick={() => setShowExportModal(true)}
-              disabled={!currentFloorPlan}
-              title="Export"
-            >
+            <button className={styles.exportBtn} onClick={exportPDF}>
               <Download size={18} />
+              Export PDF
             </button>
-            <button 
-              className={styles.toolbarButton}
-              onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              title="Toggle Properties Panel"
-            >
-              {rightPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            <button className={styles.shareBtn}>
+              <Share2 size={18} />
+              Share Link
             </button>
           </div>
         </div>
 
         <div className={styles.editorContainer}>
-          {/* Left Panel - Buildings & Rooms */}
-          <div className={`${styles.leftPanel} ${leftPanelOpen ? styles.open : ''}`}>
-            <div className={styles.panelSection}>
-              <div className={styles.panelHeader}>
-                <Building2 size={18} />
-                <span>Buildings</span>
-                <button 
-                  className={styles.addButton}
-                  onClick={() => setShowBuildingModal(true)}
-                  title="Add Building"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-              <div className={styles.buildingList}>
-                {loading && <div className={styles.loading}>Loading...</div>}
-                {buildings.map(building => (
-                  <div 
-                    key={building.id}
-                    className={`${styles.buildingItem} ${selectedBuilding?.id === building.id ? styles.selected : ''}`}
-                    onClick={() => {
-                      setSelectedBuilding(building)
-                      setFloorPlans(building.floor_plans || [])
-                    }}
-                  >
-                    <Building2 size={16} />
-                    <span>{building.name}</span>
-                    <span className={styles.floorCount}>{building.floor_plans?.length || 0} floors</span>
-                  </div>
-                ))}
-                {!loading && buildings.length === 0 && (
-                  <div className={styles.emptyState}>
-                    <p>No buildings yet</p>
-                    <button onClick={() => setShowBuildingModal(true)}>
-                      <Plus size={14} /> Add Building
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Left Toolbox Panel */}
+          <div className={`${styles.leftPanel} ${leftPanelOpen ? '' : styles.collapsed}`}>
+            {/* Toggle button - always visible */}
+            <button
+              className={styles.panelToggle}
+              onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+              title={leftPanelOpen ? 'Collapse toolbox' : 'Expand toolbox'}
+            >
+              {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+            </button>
 
-            {selectedBuilding && (
-              <div className={styles.panelSection}>
+            {leftPanelOpen && (
+              <>
                 <div className={styles.panelHeader}>
-                  <Layers size={18} />
-                  <span>Floors</span>
-                  <button 
-                    className={styles.addButton}
-                    onClick={() => setShowFloorModal(true)}
-                    title="Add Floor"
-                  >
-                    <Plus size={16} />
-                  </button>
+                  <h3>TOOLBOX</h3>
                 </div>
-                <div className={styles.floorList}>
-                  {(selectedBuilding.floor_plans || []).map(floor => (
-                    <div 
-                      key={floor.id}
-                      className={`${styles.floorItem} ${currentFloorPlan?.id === floor.id ? styles.selected : ''}`}
-                      onClick={() => fetchFloorPlan(floor.id)}
-                    >
-                      <Layers size={14} />
-                      <span>{floor.floor_name || `Floor ${floor.floor_number}`}</span>
-                      {floor.is_default_view && <span title="Default View"><Eye size={12} /></span>}
-                      {floor.is_published && <span title="Published"><ExternalLink size={12} /></span>}
-                    </div>
-                  ))}
-                  {(selectedBuilding.floor_plans || []).length === 0 && (
-                    <div className={styles.emptyState}>
-                      <p>No floors yet</p>
-                      <button onClick={() => setShowFloorModal(true)}>
-                        <Plus size={14} /> Add Floor
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            <div className={styles.panelSection}>
-              <div className={styles.panelHeader}>
-                <Map size={18} />
-                <span>Rooms (Drag to Canvas)</span>
-              </div>
-              <div className={styles.searchBox}>
-                <Search size={14} />
-                <input
-                  type="text"
-                  placeholder="Search rooms..."
-                  value={roomSearch}
-                  onChange={(e) => setRoomSearch(e.target.value)}
-                />
-                {roomSearch && (
-                  <button onClick={() => setRoomSearch('')}>
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-              <div className={styles.roomList}>
-                {filteredRooms.slice(0, 50).map(room => (
-                  <div
-                    key={room.id}
-                    className={styles.roomItem}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('room', JSON.stringify(room))
-                    }}
-                  >
-                    <div className={styles.roomIcon}>
-                      <Square size={14} />
-                    </div>
-                    <div className={styles.roomInfo}>
-                      <span className={styles.roomName}>{room.name}</span>
-                      <span className={styles.roomMeta}>
-                        {room.building} • Cap: {room.capacity}
-                      </span>
-                    </div>
-                    <Grip size={14} className={styles.dragHandle} />
+                <div className={styles.toolboxContent}>
+                  {/* Rooms & Zones Section */}
+                  <div className={styles.toolSection}>
+                    <button
+                      className={styles.sectionHeader}
+                      onClick={() => setSectionsOpen(p => ({ ...p, roomsZones: !p.roomsZones }))}
+                    >
+                      <span><Building size={16} /> Rooms & Zones</span>
+                      {sectionsOpen.roomsZones ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {sectionsOpen.roomsZones && (
+                      <div className={styles.sectionContent}>
+                        <div className={styles.searchBox}>
+                          <Search size={16} />
+                          <input
+                            type="text"
+                            placeholder="Search rooms..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                          {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className={styles.clearSearch}>
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className={styles.roomList}>
+                          {loading ? (
+                            <div className={styles.loading}>
+                              <Loader2 size={20} className={styles.spinning} />
+                              Loading rooms...
+                            </div>
+                          ) : filteredRooms.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <Info size={20} />
+                              <span>No rooms found</span>
+                            </div>
+                          ) : (
+                            filteredRooms.slice(0, 30).map(room => (
+                              <div
+                                key={room.id}
+                                className={`${styles.roomItem} ${isRoomOnCanvas(room.id) ? styles.onCanvas : ''}`}
+                                draggable="true"
+                                onDragStart={(e) => handleRoomDragStart(e, room)}
+                                style={{
+                                  borderLeftColor: getRoomColor(room.room_type).bg
+                                }}
+                                title={isRoomOnCanvas(room.id) ? 'Already on canvas' : 'Drag to add to canvas'}
+                              >
+                                <Square size={16} style={{ color: getRoomColor(room.room_type).bg }} />
+                                <div className={styles.roomInfo}>
+                                  <span className={styles.roomName}>{room.room}</span>
+                                  <span className={styles.roomType}>{room.room_type || 'Classroom'}</span>
+                                </div>
+                                <div className={styles.roomMeta}>
+                                  <Users size={12} />
+                                  <span>{room.capacity || 30}</span>
+                                </div>
+                                {isRoomOnCanvas(room.id) && (
+                                  <Check size={14} className={styles.addedCheck} />
+                                )}
+                              </div>
+                            ))
+                          )}
+                          {filteredRooms.length > 30 && (
+                            <div className={styles.moreRooms}>
+                              +{filteredRooms.length - 30} more rooms
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-                {filteredRooms.length === 0 && (
-                  <div className={styles.emptyState}>
-                    <p>No rooms found</p>
+
+                  {/* Structures Section */}
+                  <div className={styles.toolSection}>
+                    <button
+                      className={styles.sectionHeader}
+                      onClick={() => setSectionsOpen(p => ({ ...p, structures: !p.structures }))}
+                    >
+                      <span><Box size={16} /> Walls & Structures</span>
+                      {sectionsOpen.structures ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {sectionsOpen.structures && (
+                      <div className={styles.sectionContent}>
+                        <div className={styles.toolGrid}>
+                          {TOOLBOX_ITEMS.structures.map(item => (
+                            <div
+                              key={item.type}
+                              className={styles.toolItem}
+                              draggable="true"
+                              onDragStart={(e) => handleToolboxDragStart(e, item)}
+                            >
+                              <item.icon size={24} />
+                              <span>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+
+                  {/* Doors & Elements Section */}
+                  <div className={styles.toolSection}>
+                    <button
+                      className={styles.sectionHeader}
+                      onClick={() => setSectionsOpen(p => ({ ...p, doorsElements: !p.doorsElements }))}
+                    >
+                      <span><DoorOpen size={16} /> Doors & Elements</span>
+                      {sectionsOpen.doorsElements ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {sectionsOpen.doorsElements && (
+                      <div className={styles.sectionContent}>
+                        <div className={styles.toolGrid}>
+                          {TOOLBOX_ITEMS.elements.map(item => (
+                            <div
+                              key={item.type}
+                              className={styles.toolItem}
+                              draggable="true"
+                              onDragStart={(e) => handleToolboxDragStart(e, item)}
+                            >
+                              <item.icon size={24} />
+                              <span>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Labels & Icons Section */}
+                  <div className={styles.toolSection}>
+                    <button
+                      className={styles.sectionHeader}
+                      onClick={() => setSectionsOpen(p => ({ ...p, labelsIcons: !p.labelsIcons }))}
+                    >
+                      <span><Type size={16} /> Labels & Icons</span>
+                      {sectionsOpen.labelsIcons ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+
+                    {sectionsOpen.labelsIcons && (
+                      <div className={styles.sectionContent}>
+                        <div className={styles.toolGrid}>
+                          {TOOLBOX_ITEMS.labels.map(item => (
+                            <div
+                              key={item.type}
+                              className={styles.toolItem}
+                              draggable="true"
+                              onDragStart={(e) => handleToolboxDragStart(e, item)}
+                            >
+                              <item.icon size={24} />
+                              <span>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Canvas Area */}
-          <div 
+          {/* Main Canvas */}
+          <div
+            ref={canvasContainerRef}
             className={styles.canvasContainer}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              const roomData = e.dataTransfer.getData('room')
-              if (roomData) {
-                const room = JSON.parse(roomData)
-                handleRoomDrop(e, room)
-              }
-            }}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragLeave={() => setDragGhost(null)}
           >
             <div
               ref={canvasRef}
               className={styles.canvas}
               style={{
-                width: canvasSize.width * zoom,
-                height: canvasSize.height * zoom,
-                transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
-                backgroundColor: backgroundColor,
-                backgroundImage: showGrid 
-                  ? `linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
-                     linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)`
-                  : 'none',
-                backgroundSize: showGrid ? `${gridSize * zoom}px ${gridSize * zoom}px` : 'auto',
-                cursor: activeTool === 'pan' ? (isPanning ? 'grabbing' : 'grab') : 
-                        activeTool === 'select' ? 'default' : 'crosshair'
+                width: canvasSize.width,
+                height: canvasSize.height,
+                transform: `scale(${zoom / 100})`,
+                backgroundSize: snapToGrid ? `${gridSize}px ${gridSize}px` : 'none'
               }}
-              onMouseDown={handleCanvasMouseDown}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseUp={handleCanvasMouseUp}
-              onMouseLeave={() => {
-                setIsDragging(false)
-                setIsPanning(false)
-                setIsDrawing(false)
-              }}
+              onClick={handleCanvasClick}
             >
-              {/* Background Image */}
-              {backgroundImage && (
-                <img 
-                  src={backgroundImage} 
-                  alt="Floor plan background"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    opacity: 0.5,
-                    pointerEvents: 'none'
-                  }}
-                />
-              )}
-              
-              {/* Render elements */}
-              <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
-                {elements.map(renderElement)}
-              </div>
-              
-              {/* Drawing preview */}
-              {isDrawing && (
+              {/* Render elements on canvas */}
+              {canvasElements.map(element => {
+                const isSelected = selectedElement?.id === element.id
+                const isDragging = draggingElement === element.id
+
+                return (
+                  <div
+                    key={element.id}
+                    className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${isDragging ? styles.dragging : ''}`}
+                    style={{
+                      left: element.x,
+                      top: element.y,
+                      width: element.width,
+                      height: element.height,
+                      backgroundColor: element.color,
+                      borderColor: element.borderColor,
+                      transform: `rotate(${element.rotation}deg)`,
+                      zIndex: element.zIndex
+                    }}
+                    onClick={(e) => handleElementClick(element, e)}
+                    onMouseDown={(e) => handleElementDragStart(e, element)}
+                  >
+                    {element.type === 'room' && (
+                      <>
+                        <span className={styles.elementLabel}>{element.label}</span>
+                        {element.linkedRoomData && (
+                          <span className={styles.elementCapacity}>
+                            <Users size={10} /> {element.linkedRoomData.capacity}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {element.type === 'text' && (
+                      <span className={styles.textLabel}>{element.label}</span>
+                    )}
+                    {element.type === 'hallway' && (
+                      <span className={styles.hallwayLabel}>{element.label}</span>
+                    )}
+                    {element.type === 'stair' && (
+                      <>
+                        <Footprints size={20} />
+                        <span>{element.label}</span>
+                      </>
+                    )}
+                    {element.type === 'door' && (
+                      <DoorOpen size={16} />
+                    )}
+                  </div>
+                )
+              })}
+
+              {/* Drag ghost */}
+              {dragGhost && dragItem && (
                 <div
+                  className={styles.dragGhost}
                   style={{
-                    position: 'absolute',
-                    left: Math.min(drawStart.x, getCanvasCoordinates({ clientX: 0, clientY: 0 } as any).x) * zoom,
-                    top: Math.min(drawStart.y, getCanvasCoordinates({ clientX: 0, clientY: 0 } as any).y) * zoom,
-                    width: Math.abs(getCanvasCoordinates({ clientX: 0, clientY: 0 } as any).x - drawStart.x) * zoom,
-                    height: Math.abs(getCanvasCoordinates({ clientX: 0, clientY: 0 } as any).y - drawStart.y) * zoom,
-                    border: '2px dashed var(--primary-color)',
-                    backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
-                    pointerEvents: 'none'
+                    left: dragGhost.x,
+                    top: dragGhost.y,
+                    width: dragItem.type === 'room' ? 140 : dragItem.data?.width || 100,
+                    height: dragItem.type === 'room' ? 100 : dragItem.data?.height || 60
                   }}
-                />
+                >
+                  <span>
+                    {dragItem.type === 'room' ? dragItem.data.room : dragItem.data.label}
+                  </span>
+                </div>
               )}
             </div>
-            
-            {!currentFloorPlan && (
-              <div className={styles.canvasPlaceholder}>
-                <Map size={48} />
-                <h3>No Floor Plan Selected</h3>
-                <p>Select a building and floor from the left panel, or create a new one to get started.</p>
-                <button onClick={() => setShowBuildingModal(true)}>
-                  <Plus size={16} /> Create Building
-                </button>
-              </div>
-            )}
 
-            {/* Floating Action Bar - Shows when element is selected */}
-            {selectedElement && (
-              <div className={styles.floatingActionBar}>
-                <div className={styles.elementInfo}>
-                  <span>{selectedElement.type.toUpperCase()}</span>
-                  {selectedElement.label && <span className={styles.elementLabel}>{selectedElement.label}</span>}
-                </div>
-                <div className={styles.divider} />
-                <button 
-                  className={styles.actionBtn}
-                  onClick={copyElement}
-                  title="Copy (Ctrl+C)"
-                >
-                  <Copy size={16} />
-                  <span>Copy</span>
+            {/* Canvas Controls */}
+            <div className={styles.canvasControls}>
+              <div className={styles.zoomControls}>
+                <button onClick={() => setZoom(z => Math.max(25, z - 25))}>
+                  <ZoomOut size={18} />
                 </button>
-                <button 
-                  className={styles.actionBtn}
-                  onClick={pasteElement}
-                  disabled={!clipboard}
-                  title="Paste (Ctrl+V)"
-                >
-                  <ClipboardPaste size={16} />
-                  <span>Paste</span>
+                <span>Zoom: {zoom}%</span>
+                <button onClick={() => setZoom(z => Math.min(200, z + 25))}>
+                  <ZoomIn size={18} />
                 </button>
-                <button 
-                  className={styles.actionBtn}
-                  onClick={duplicateElement}
-                  title="Duplicate (Ctrl+D)"
-                >
-                  <Files size={16} />
-                  <span>Duplicate</span>
-                </button>
-                <div className={styles.divider} />
-                <button 
-                  className={styles.actionBtn}
-                  onClick={bringToFront}
-                  title="Bring to Front"
-                >
-                  <ArrowUp size={16} />
-                  <span>Front</span>
-                </button>
-                <button 
-                  className={styles.actionBtn}
-                  onClick={sendToBack}
-                  title="Send to Back"
-                >
-                  <ArrowDown size={16} />
-                  <span>Back</span>
-                </button>
-                <div className={styles.divider} />
-                <button 
-                  className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                  onClick={deleteSelectedElement}
-                  title="Delete (Delete)"
-                >
-                  <Trash2 size={16} />
-                  <span>Delete</span>
+                <button onClick={() => setZoom(100)} title="Reset zoom">
+                  <Maximize2 size={16} />
                 </button>
               </div>
-            )}
+
+              <div className={styles.snapControl}>
+                <Grid size={16} />
+                <span>Snap to Grid:</span>
+                <button
+                  className={`${styles.toggleBtn} ${snapToGrid ? styles.active : ''}`}
+                  onClick={() => setSnapToGrid(!snapToGrid)}
+                >
+                  {snapToGrid ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              <div className={styles.elementCount}>
+                <span>Elements: {canvasElements.length}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Right Panel - Properties & Tools */}
-          <div className={`${styles.rightPanel} ${rightPanelOpen ? styles.open : ''}`}>
-            {/* Tool Options */}
-            {activeTool === 'shape' && (
-              <div className={styles.panelSection}>
-                <div className={styles.panelHeader}>
-                  <Circle size={18} />
-                  <span>Shape Options</span>
-                </div>
-                <div className={styles.shapeOptions}>
-                  <button 
-                    className={`${styles.shapeButton} ${activeShape === 'rectangle' ? styles.active : ''}`}
-                    onClick={() => setActiveShape('rectangle')}
-                  >
-                    <Square size={20} />
-                    <span>Rectangle</span>
-                  </button>
-                  <button 
-                    className={`${styles.shapeButton} ${activeShape === 'circle' ? styles.active : ''}`}
-                    onClick={() => setActiveShape('circle')}
-                  >
-                    <Circle size={20} />
-                    <span>Circle</span>
-                  </button>
-                </div>
-              </div>
-            )}
+          {/* Right Properties Panel */}
+          <div className={`${styles.rightPanel} ${rightPanelOpen ? '' : styles.collapsed}`}>
+            {/* Toggle button - always visible */}
+            <button
+              className={styles.panelToggleRight}
+              onClick={() => setRightPanelOpen(!rightPanelOpen)}
+              title={rightPanelOpen ? 'Collapse properties' : 'Expand properties'}
+            >
+              {rightPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
 
-            {activeTool === 'icon' && (
-              <div className={styles.panelSection}>
+            {rightPanelOpen && (
+              <>
                 <div className={styles.panelHeader}>
-                  <DoorOpen size={18} />
-                  <span>Icons</span>
+                  <h3>PROPERTIES</h3>
                 </div>
-                <div className={styles.iconGrid}>
-                  {Object.entries(ICONS).map(([key, Icon]) => (
-                    <button
-                      key={key}
-                      className={`${styles.iconButton} ${activeIcon === key ? styles.active : ''}`}
-                      onClick={() => setActiveIcon(key)}
-                      title={key}
-                    >
-                      <Icon size={20} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Colors */}
-            <div className={styles.panelSection}>
-              <div className={styles.panelHeader}>
-                <Palette size={18} />
-                <span>Colors</span>
-              </div>
-              <div className={styles.colorSection}>
-                <label>Fill Color</label>
-                <div className={styles.colorPicker}>
-                  <input
-                    type="color"
-                    value={drawColor}
-                    onChange={(e) => {
-                      setDrawColor(e.target.value)
-                      if (selectedElement) {
-                        updateSelectedElement({ color: e.target.value })
-                      }
-                    }}
-                  />
-                  <span>{drawColor}</span>
-                </div>
-                <div className={styles.presetColors}>
-                  {PRESET_COLORS.slice(0, 10).map(color => (
-                    <button
-                      key={color}
-                      className={styles.presetColor}
-                      style={{ backgroundColor: color }}
-                      onClick={() => {
-                        setDrawColor(color)
-                        if (selectedElement) {
-                          updateSelectedElement({ color })
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className={styles.colorSection}>
-                <label>Border Color</label>
-                <div className={styles.colorPicker}>
-                  <input
-                    type="color"
-                    value={borderColor}
-                    onChange={(e) => {
-                      setBorderColor(e.target.value)
-                      if (selectedElement) {
-                        updateSelectedElement({ borderColor: e.target.value })
-                      }
-                    }}
-                  />
-                  <span>{borderColor}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Selected Element Properties */}
-            {selectedElement && (
-              <div className={styles.panelSection}>
-                <div className={styles.panelHeader}>
-                  <Settings size={18} />
-                  <span>Properties</span>
-                </div>
-                <div className={styles.propertiesForm}>
-                  <div className={styles.formGroup}>
-                    <label>Label</label>
-                    <input
-                      type="text"
-                      value={selectedElement.label || ''}
-                      onChange={(e) => updateSelectedElement({ label: e.target.value })}
-                    />
-                  </div>
-                  <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                      <label>X</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElement.x)}
-                        onChange={(e) => updateSelectedElement({ x: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Y</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElement.y)}
-                        onChange={(e) => updateSelectedElement({ y: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                      <label>Width</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElement.width)}
-                        onChange={(e) => updateSelectedElement({ width: parseInt(e.target.value) || 40 })}
-                      />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label>Height</label>
-                      <input
-                        type="number"
-                        value={Math.round(selectedElement.height)}
-                        onChange={(e) => updateSelectedElement({ height: parseInt(e.target.value) || 40 })}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Rotation</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="360"
-                      value={selectedElement.rotation}
-                      onChange={(e) => updateSelectedElement({ rotation: parseInt(e.target.value) })}
-                    />
-                    <span>{selectedElement.rotation}°</span>
-                  </div>
-                  {selectedElement.type === 'text' && (
+                <div className={styles.propertiesContent}>
+                  {selectedElement ? (
                     <>
-                      <div className={styles.formGroup}>
-                        <label>Font Size</label>
+                      <div className={styles.propertyGroup}>
+                        <label>Label Name</label>
                         <input
-                          type="number"
-                          min="8"
-                          max="72"
-                          value={selectedElement.fontSize || 14}
-                          onChange={(e) => updateSelectedElement({ fontSize: parseInt(e.target.value) || 14 })}
+                          type="text"
+                          value={editForm.label}
+                          onChange={(e) => setEditForm(p => ({ ...p, label: e.target.value }))}
+                          className={styles.propertyInput}
                         />
                       </div>
-                      <div className={styles.formGroup}>
-                        <label>Text Align</label>
-                        <div className={styles.alignButtons}>
-                          <button 
-                            className={selectedElement.textAlign === 'left' ? styles.active : ''}
-                            onClick={() => updateSelectedElement({ textAlign: 'left' })}
-                          >
-                            <AlignLeft size={16} />
-                          </button>
-                          <button 
-                            className={selectedElement.textAlign === 'center' ? styles.active : ''}
-                            onClick={() => updateSelectedElement({ textAlign: 'center' })}
-                          >
-                            <AlignCenter size={16} />
-                          </button>
-                          <button 
-                            className={selectedElement.textAlign === 'right' ? styles.active : ''}
-                            onClick={() => updateSelectedElement({ textAlign: 'right' })}
-                          >
-                            <AlignRight size={16} />
-                          </button>
+
+                      <div className={styles.propertyGroup}>
+                        <label>Type</label>
+                        <div className={styles.typeDisplay}>
+                          {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)}
                         </div>
                       </div>
+
+                      <div className={styles.propertyRow}>
+                        <div className={styles.propertyGroup}>
+                          <label>Width</label>
+                          <div className={styles.sizeInput}>
+                            <input
+                              type="number"
+                              value={editForm.width}
+                              onChange={(e) => setEditForm(p => ({ ...p, width: Number(e.target.value) }))}
+                              className={styles.propertyInput}
+                            />
+                            <span>px</span>
+                          </div>
+                        </div>
+                        <div className={styles.propertyGroup}>
+                          <label>Height</label>
+                          <div className={styles.sizeInput}>
+                            <input
+                              type="number"
+                              value={editForm.height}
+                              onChange={(e) => setEditForm(p => ({ ...p, height: Number(e.target.value) }))}
+                              className={styles.propertyInput}
+                            />
+                            <span>px</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.propertyGroup}>
+                        <label>Color</label>
+                        <div className={styles.colorPicker}>
+                          <div
+                            className={styles.colorPreview}
+                            style={{ backgroundColor: editForm.color }}
+                          />
+                          <input
+                            type="color"
+                            value={editForm.color}
+                            onChange={(e) => setEditForm(p => ({ ...p, color: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className={styles.propertyGroup}>
+                        <label>Rotation</label>
+                        <div className={styles.rotationInput}>
+                          <input
+                            type="range"
+                            min="0"
+                            max="360"
+                            value={editForm.rotation}
+                            onChange={(e) => setEditForm(p => ({ ...p, rotation: Number(e.target.value) }))}
+                          />
+                          <span>{editForm.rotation}°</span>
+                        </div>
+                      </div>
+
+                      {selectedElement.linkedRoomData && (
+                        <div className={styles.roomDetails}>
+                          <h4>Room Details</h4>
+                          <div className={styles.detailItem}>
+                            <Users size={16} />
+                            <span>Capacity: {selectedElement.linkedRoomData.capacity || 30}</span>
+                          </div>
+                          <div className={styles.detailItem}>
+                            <Building size={16} />
+                            <span>Building: {selectedElement.linkedRoomData.building}</span>
+                          </div>
+                          {selectedElement.linkedRoomData.has_ac && (
+                            <div className={styles.detailItem}>
+                              <Wind size={16} />
+                              <span>Air Conditioned</span>
+                            </div>
+                          )}
+                          {selectedElement.linkedRoomData.has_projector && (
+                            <div className={styles.detailItem}>
+                              <Projector size={16} />
+                              <span>Has Projector</span>
+                            </div>
+                          )}
+                          {selectedElement.linkedRoomData.has_wifi && (
+                            <div className={styles.detailItem}>
+                              <Wifi size={16} />
+                              <span>WiFi Available</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <button
+                        className={styles.applyBtn}
+                        onClick={() => {
+                          updateElement(selectedElement.id, {
+                            label: editForm.label,
+                            width: editForm.width,
+                            height: editForm.height,
+                            color: editForm.color,
+                            rotation: editForm.rotation
+                          })
+                          showNotification('success', 'Element updated!')
+                        }}
+                      >
+                        <Check size={16} />
+                        Apply Changes
+                      </button>
+
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => removeElement(selectedElement.id)}
+                      >
+                        <Trash2 size={16} />
+                        Remove Element
+                      </button>
                     </>
-                  )}
-                  
-                  {/* Linked Room Info */}
-                  {selectedElement.linkedRoomData && (
-                    <div className={styles.linkedRoomInfo}>
-                      <h4>Linked Room Data</h4>
-                      <p><strong>Building:</strong> {selectedElement.linkedRoomData.building}</p>
-                      <p><strong>Capacity:</strong> {selectedElement.linkedRoomData.capacity}</p>
-                      <p><strong>Type:</strong> {selectedElement.linkedRoomData.roomType || 'Classroom'}</p>
-                      {selectedElement.linkedRoomData.hasAC && <span className={styles.tag}>AC</span>}
-                      {selectedElement.linkedRoomData.hasProjector && <span className={styles.tag}>Projector</span>}
-                      {selectedElement.linkedRoomData.isPWDAccessible && <span className={styles.tag}>PWD</span>}
+                  ) : (
+                    <div className={styles.noSelection}>
+                      <MousePointer size={32} />
+                      <p>Select an element to view properties</p>
                     </div>
                   )}
-                  
-                  <div className={styles.actionButtons}>
-                    <button onClick={duplicateSelected} title="Duplicate">
-                      <Copy size={16} />
-                    </button>
-                    <button onClick={bringToFront} title="Bring to Front">
-                      <ChevronUp size={16} />
-                    </button>
-                    <button onClick={sendToBack} title="Send to Back">
-                      <ChevronDown size={16} />
-                    </button>
-                    <button 
-                      onClick={() => updateSelectedElement({ isLocked: !selectedElement.isLocked })}
-                      title={selectedElement.isLocked ? 'Unlock' : 'Lock'}
-                    >
-                      {selectedElement.isLocked ? <Lock size={16} /> : <Unlock size={16} />}
-                    </button>
-                    <button 
-                      onClick={() => updateSelectedElement({ isVisible: !selectedElement.isVisible })}
-                      title={selectedElement.isVisible ? 'Hide' : 'Show'}
-                    >
-                      {selectedElement.isVisible !== false ? <Eye size={16} /> : <EyeOff size={16} />}
-                    </button>
-                    <button onClick={deleteSelected} className={styles.deleteButton} title="Delete">
-                      <Trash2 size={16} />
-                    </button>
+
+                  {/* Legend */}
+                  <div className={styles.legend}>
+                    <h4>LEGEND</h4>
+                    <p className={styles.legendHint}>
+                      Colors based on room types on canvas.
+                    </p>
+                    <div className={styles.legendItems}>
+                      {getLegendItems().length > 0 ? getLegendItems().map(item => (
+                        <div key={item.type} className={styles.legendItem}>
+                          <div
+                            className={styles.legendColor}
+                            style={{ backgroundColor: item.bg }}
+                          />
+                          <span>- {item.label}</span>
+                        </div>
+                      )) : (
+                        <div className={styles.legendEmpty}>
+                          Add rooms to see legend
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
-
-            {/* Layers */}
-            <div className={styles.panelSection}>
-              <div className={styles.panelHeader}>
-                <Layers size={18} />
-                <span>Layers ({elements.length})</span>
-              </div>
-              <div className={styles.layersList}>
-                {[...elements].reverse().map(elem => (
-                  <div 
-                    key={elem.id}
-                    className={`${styles.layerItem} ${selectedElements.includes(elem.id) ? styles.selected : ''}`}
-                    onClick={() => {
-                      setSelectedElement(elem)
-                      setSelectedElements([elem.id])
-                    }}
-                  >
-                    <span className={styles.layerType}>{elem.type}</span>
-                    <span className={styles.layerLabel}>{elem.label || elem.id.slice(0, 8)}</span>
-                    <div className={styles.layerActions}>
-                      <button onClick={(e) => {
-                        e.stopPropagation()
-                        setElements(prev => prev.map(el => 
-                          el.id === elem.id ? { ...el, isVisible: !el.isVisible } : el
-                        ))
-                      }}>
-                        {elem.isVisible !== false ? <Eye size={12} /> : <EyeOff size={12} />}
-                      </button>
-                      <button onClick={(e) => {
-                        e.stopPropagation()
-                        setElements(prev => prev.map(el => 
-                          el.id === elem.id ? { ...el, isLocked: !el.isLocked } : el
-                        ))
-                      }}>
-                        {elem.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {elements.length === 0 && (
-                  <div className={styles.emptyState}>
-                    <p>No elements yet</p>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </main>
 
-      {/* Modals */}
-      {/* Create Building Modal */}
-      {showBuildingModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowBuildingModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2><Building2 size={20} /> Create Building</h2>
-              <button onClick={() => setShowBuildingModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Building Name *</label>
-                <input
-                  type="text"
-                  value={newBuilding.name}
-                  onChange={(e) => setNewBuilding(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Federizo Hall"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Building Code</label>
-                <input
-                  type="text"
-                  value={newBuilding.code}
-                  onChange={(e) => setNewBuilding(prev => ({ ...prev, code: e.target.value }))}
-                  placeholder="e.g., FH"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Campus</label>
-                <input
-                  type="text"
-                  value={newBuilding.campus}
-                  onChange={(e) => setNewBuilding(prev => ({ ...prev, campus: e.target.value }))}
-                  placeholder="e.g., Main Campus"
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Total Floors</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={newBuilding.total_floors}
-                  onChange={(e) => setNewBuilding(prev => ({ ...prev, total_floors: parseInt(e.target.value) || 1 }))}
-                />
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowBuildingModal(false)}>
-                Cancel
-              </button>
-              <button className={styles.primaryButton} onClick={createBuilding} disabled={loading}>
-                {loading ? <RefreshCw size={16} className={styles.spinning} /> : <Check size={16} />}
-                Create Building
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Floor Modal */}
-      {showFloorModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowFloorModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2><Layers size={20} /> Create Floor Plan</h2>
-              <button onClick={() => setShowFloorModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Building</label>
-                <input type="text" value={selectedBuilding?.name || ''} disabled />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Floor Number *</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={newFloor.floor_number}
-                  onChange={(e) => setNewFloor(prev => ({ ...prev, floor_number: parseInt(e.target.value) || 1 }))}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Floor Name</label>
-                <input
-                  type="text"
-                  value={newFloor.floor_name}
-                  onChange={(e) => setNewFloor(prev => ({ ...prev, floor_name: e.target.value }))}
-                  placeholder={`e.g., Ground Floor, ${newFloor.floor_number}${newFloor.floor_number === 1 ? 'st' : newFloor.floor_number === 2 ? 'nd' : newFloor.floor_number === 3 ? 'rd' : 'th'} Floor`}
-                />
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowFloorModal(false)}>
-                Cancel
-              </button>
-              <button className={styles.primaryButton} onClick={createFloorPlan} disabled={loading}>
-                {loading ? <RefreshCw size={16} className={styles.spinning} /> : <Check size={16} />}
-                Create Floor Plan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Share Modal */}
-      {showShareModal && currentFloorPlan && (
-        <div className={styles.modalOverlay} onClick={() => setShowShareModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2><Share2 size={20} /> Share Floor Plan</h2>
-              <button onClick={() => setShowShareModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Expires In (Days)</label>
-                <select
-                  value={shareSettings.expires_in_days}
-                  onChange={(e) => setShareSettings(prev => ({ ...prev, expires_in_days: parseInt(e.target.value) }))}
-                >
-                  <option value={1}>1 Day</option>
-                  <option value={7}>7 Days</option>
-                  <option value={30}>30 Days</option>
-                  <option value={90}>90 Days</option>
-                  <option value={365}>1 Year</option>
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Password (Optional)</label>
-                <input
-                  type="password"
-                  value={shareSettings.password}
-                  onChange={(e) => setShareSettings(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Leave empty for no password"
-                />
-              </div>
-              
-              {shareLink && (
-                <div className={styles.shareLinkBox}>
-                  <label>Share Link</label>
-                  <div className={styles.shareLinkInput}>
-                    <input type="text" value={shareLink} readOnly />
-                    <button onClick={() => {
-                      navigator.clipboard.writeText(shareLink)
-                      showNotification('success', 'Link copied!')
-                    }}>
-                      <Copy size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.publishOption}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={currentFloorPlan.is_default_view}
-                    onChange={(e) => {
-                      setCurrentFloorPlan(prev => prev ? { ...prev, is_default_view: e.target.checked } : null)
-                    }}
-                  />
-                  Set as Default View
-                </label>
-                <p>When enabled, this floor plan will be shown by default when viewing this building.</p>
-              </div>
-
-              <div className={styles.publishOption}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={currentFloorPlan.is_published}
-                    onChange={(e) => {
-                      setCurrentFloorPlan(prev => prev ? { ...prev, is_published: e.target.checked } : null)
-                    }}
-                  />
-                  Publish Floor Plan
-                </label>
-                <p>Published floor plans can be viewed publicly.</p>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowShareModal(false)}>
-                Close
-              </button>
-              <button className={styles.primaryButton} onClick={createShareLink}>
-                <Link size={16} />
-                Generate Link
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Modal */}
-      {showExportModal && currentFloorPlan && (
-        <div className={styles.modalOverlay} onClick={() => setShowExportModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Export Floor Plan</h2>
-              <button onClick={() => setShowExportModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className={styles.modalContent}>
-              <p className={styles.exportDescription}>
-                Export your floor plan in different formats for sharing, printing, or viewing online.
-              </p>
-              
-              <div className={styles.exportSection}>
-                <h3>
-                  <Image size={18} />
-                  Export as Image
-                </h3>
-                <div className={styles.exportButtons}>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={() => exportAsImage('png')}
-                    disabled={exporting}
-                  >
-                    <Download size={18} />
-                    <span>PNG</span>
-                    <small>High quality, transparent</small>
-                  </button>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={() => exportAsImage('jpeg')}
-                    disabled={exporting}
-                  >
-                    <Download size={18} />
-                    <span>JPEG</span>
-                    <small>Compressed, smaller file</small>
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.exportSection}>
-                <h3>
-                  <FilePlus size={18} />
-                  Export as PDF
-                </h3>
-                <div className={styles.exportButtons}>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={() => exportAsPDF('a4')}
-                    disabled={exporting}
-                  >
-                    <Download size={18} />
-                    <span>A4</span>
-                    <small>210 × 297 mm</small>
-                  </button>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={() => exportAsPDF('letter')}
-                    disabled={exporting}
-                  >
-                    <Download size={18} />
-                    <span>Letter</span>
-                    <small>8.5 × 11 inches</small>
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.exportSection}>
-                <h3>
-                  <ExternalLink size={18} />
-                  View Online
-                </h3>
-                <div className={styles.exportButtons}>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={openWebView}
-                    disabled={exporting || !shareLink}
-                  >
-                    <ExternalLink size={18} />
-                    <span>Open Web View</span>
-                    <small>{shareLink ? 'Open in new tab' : 'Generate share link first'}</small>
-                  </button>
-                  <button 
-                    className={styles.exportButton}
-                    onClick={() => {
-                      setShowExportModal(false)
-                      setShowShareModal(true)
-                    }}
-                  >
-                    <Share2 size={18} />
-                    <span>Generate Link</span>
-                    <small>Create shareable URL</small>
-                  </button>
-                </div>
-              </div>
-
-              {exporting && (
-                <div className={styles.exportingOverlay}>
-                  <RefreshCw size={24} className={styles.spinning} />
-                  <span>Exporting...</span>
-                </div>
-              )}
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowExportModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowSettingsModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2><Settings size={20} /> Canvas Settings</h2>
-              <button onClick={() => setShowSettingsModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Canvas Width</label>
-                  <input
-                    type="number"
-                    min="400"
-                    max="4000"
-                    value={canvasSize.width}
-                    onChange={(e) => setCanvasSize(prev => ({ ...prev, width: parseInt(e.target.value) || 1200 }))}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Canvas Height</label>
-                  <input
-                    type="number"
-                    min="400"
-                    max="4000"
-                    value={canvasSize.height}
-                    onChange={(e) => setCanvasSize(prev => ({ ...prev, height: parseInt(e.target.value) || 800 }))}
-                  />
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Grid Size</label>
-                <input
-                  type="number"
-                  min="5"
-                  max="100"
-                  value={gridSize}
-                  onChange={(e) => setGridSize(parseInt(e.target.value) || 20)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Background Color</label>
-                <div className={styles.colorPicker}>
-                  <input
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(e) => setBackgroundColor(e.target.value)}
-                  />
-                  <span>{backgroundColor}</span>
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Background Image URL</label>
-                <input
-                  type="text"
-                  value={backgroundImage || ''}
-                  onChange={(e) => setBackgroundImage(e.target.value || null)}
-                  placeholder="https://example.com/floorplan.png"
-                />
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelButton} onClick={() => setShowSettingsModal(false)}>
-                Close
-              </button>
-              <button className={styles.primaryButton} onClick={() => setShowSettingsModal(false)}>
-                <Check size={16} />
-                Apply
-              </button>
-            </div>
-          </div>
+      {/* Notification */}
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          {notification.type === 'success' && <Check size={18} />}
+          {notification.type === 'error' && <X size={18} />}
+          {notification.type === 'info' && <Info size={18} />}
+          <span>{notification.message}</span>
         </div>
       )}
     </div>

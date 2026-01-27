@@ -1,6 +1,211 @@
 /* ==================== Room Allocation Schedule Details Modal ==================== */
 /* Uses global theme variables from globals.css for dynamic theme switching */
 
+/* ==================== Green Theme - Nature Inspired Light Mode ==================== */
+/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+
+:global([data-theme="green"]) .modalOverlay {
+  background: rgba(2, 53, 60, 0.5);
+}
+
+:global([data-theme="green"]) .modalContainer {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .modalHeader {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98) 0%, rgba(193, 246, 237, 0.4) 100%);
+  border-color: rgba(46, 175, 125, 0.25);
+}
+
+:global([data-theme="green"]) .modalTitle {
+  color: #02353C;
+  text-shadow: none;
+}
+
+:global([data-theme="green"]) .modalSubtitle {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .tabs {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border-color: rgba(46, 175, 125, 0.25);
+}
+
+:global([data-theme="green"]) .tab {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .tab:hover {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .activeTab {
+  color: #2EAF7D;
+  border-bottom-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .modalContent {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+}
+
+:global([data-theme="green"]) .statCard,
+:global([data-theme="green"]) .summarySection,
+:global([data-theme="green"]) .timeSlotsSection,
+:global([data-theme="green"]) .campusSection,
+:global([data-theme="green"]) .buildingSection {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .statCard:hover,
+:global([data-theme="green"]) .timeSlotsSection:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .statValue,
+:global([data-theme="green"]) .summarySection h3,
+:global([data-theme="green"]) .timeSlotsSectionHeader h3,
+:global([data-theme="green"]) .campusTitle,
+:global([data-theme="green"]) .buildingTitle,
+:global([data-theme="green"]) .roomTitle {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .statLabel,
+:global([data-theme="green"]) .statMeta,
+:global([data-theme="green"]) .summaryLabel,
+:global([data-theme="green"]) .timeSlotsDescription,
+:global([data-theme="green"]) .timeSlotLabel {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .summaryValue,
+:global([data-theme="green"]) .timeSlotRange,
+:global([data-theme="green"]) .timeSlotStat {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .statIcon {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .iconButton {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .iconButton:hover {
+  background: rgba(46, 175, 125, 0.15);
+  border-color: #2EAF7D;
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .closeButton {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+:global([data-theme="green"]) .campusHeader,
+:global([data-theme="green"]) .buildingHeader,
+:global([data-theme="green"]) .batchHeader {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(193, 246, 237, 0.3) 100%);
+}
+
+:global([data-theme="green"]) .campusHeader:hover,
+:global([data-theme="green"]) .buildingHeader:hover,
+:global([data-theme="green"]) .batchHeader:hover {
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.5) 0%, rgba(187, 247, 208, 0.4) 100%);
+}
+
+:global([data-theme="green"]) .roomHeader {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:global([data-theme="green"]) .roomHeader:hover {
+  background: rgba(193, 246, 237, 0.3);
+}
+
+:global([data-theme="green"]) .participantsTable thead {
+  background: rgba(46, 175, 125, 0.12);
+}
+
+:global([data-theme="green"]) .participantsTable th {
+  color: #02353C;
+  border-bottom-color: rgba(46, 175, 125, 0.25);
+}
+
+:global([data-theme="green"]) .participantsTable td {
+  color: #02353C;
+  border-bottom-color: rgba(46, 175, 125, 0.15);
+}
+
+:global([data-theme="green"]) .participantsTable tbody tr:hover {
+  background: rgba(193, 246, 237, 0.3);
+}
+
+:global([data-theme="green"]) .seatNo {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .nameCell {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .emailCell {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .badge {
+  background: rgba(46, 175, 125, 0.15);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .summaryItem {
+  background: rgba(240, 253, 244, 0.95);
+}
+
+:global([data-theme="green"]) .timeSlotCard.activeSlot {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border-color: rgba(46, 175, 125, 0.4);
+}
+
+:global([data-theme="green"]) .timeSlotCard.emptySlot {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0.05) 100%);
+}
+
+:global([data-theme="green"]) .activeSlot .timeSlotIcon {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+}
+
+:global([data-theme="green"]) .activeSlot .timeSlotStat {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .activeSlot .timeSlotStat svg {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .spinner {
+  border-color: rgba(46, 175, 125, 0.15);
+  border-top-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .loadingState {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .batchTitle,
+:global([data-theme="green"]) .batchStat,
+:global([data-theme="green"]) .roomStats,
+:global([data-theme="green"]) .roomStat {
+  color: #166534;
+}
+
+
 /* ==================== Modal Overlay ==================== */
 .modalOverlay {
   position: fixed;
@@ -19,8 +224,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ==================== Modal Container ==================== */
@@ -43,6 +253,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -197,7 +408,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==================== Overview Tab ==================== */

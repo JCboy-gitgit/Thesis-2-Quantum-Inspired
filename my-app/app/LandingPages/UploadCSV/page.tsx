@@ -1,11 +1,11 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { 
-  FileText, 
-  Upload, 
-  Building2, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  FileText,
+  Upload,
+  Building2,
+  CheckCircle2,
+  XCircle,
   ArrowRight,
   FileSpreadsheet,
   Info,
@@ -14,8 +14,6 @@ import {
   GraduationCap,
   DoorOpen,
   Tv,
-  Wind,
-  PresentationIcon,
   Landmark
 } from 'lucide-react'
 import styles from './styles/bQtime.module.css'
@@ -26,7 +24,7 @@ import MenuBar from '@/app/components/MenuBar'
 
 export default function UploadCSVPage(): JSX.Element {
   const router = useRouter()
-  
+
   // ==================== Room/Campus Upload States ====================
   const [roomFile, setRoomFile] = useState<File | null>(null)
   const [roomSchoolName, setRoomSchoolName] = useState('')
@@ -34,21 +32,13 @@ export default function UploadCSVPage(): JSX.Element {
   const [roomLoading, setRoomLoading] = useState(false)
   const [roomMessage, setRoomMessage] = useState<string | null>(null)
   const [roomError, setRoomError] = useState<string | null>(null)
-  
+
   // ==================== Degree Program Upload States ====================
   const [classFile, setClassFile] = useState<File | null>(null)
   const [degreeProgramName, setDegreeProgramName] = useState('')
   const [classLoading, setClassLoading] = useState(false)
   const [classMessage, setClassMessage] = useState<string | null>(null)
   const [classError, setClassError] = useState<string | null>(null)
-  
-  // ==================== Teacher Schedule Upload States ====================
-  const [teacherFile, setTeacherFile] = useState<File | null>(null)
-  const [teacherCollegeName, setTeacherCollegeName] = useState('')
-  const [teacherLoading, setTeacherLoading] = useState(false)
-  const [teacherMessage, setTeacherMessage] = useState<string | null>(null)
-  const [teacherError, setTeacherError] = useState<string | null>(null)
-  
   // ==================== Faculty Profiles Upload States ====================
   const [facultyFile, setFacultyFile] = useState<File | null>(null)
   const [facultyCollegeName, setFacultyCollegeName] = useState('')
@@ -64,7 +54,7 @@ export default function UploadCSVPage(): JSX.Element {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -89,16 +79,16 @@ export default function UploadCSVPage(): JSX.Element {
       if (line.includes('|')) {
         return line.split('|').map(cell => cell.trim().replace(/^["']|["']$/g, ''))
       }
-      
+
       // Parse comma-separated with proper quote handling
       const cells: string[] = []
       let current = ''
       let inQuotes = false
       let quoteChar = ''
-      
+
       for (let i = 0; i < line.length; i++) {
         const char = line[i]
-        
+
         if ((char === '"' || char === "'") && !inQuotes) {
           // Start of quoted field
           inQuotes = true
@@ -123,28 +113,28 @@ export default function UploadCSVPage(): JSX.Element {
       }
       // Push the last field
       cells.push(current.trim())
-      
+
       return cells
     })
   }
 
   // ==================== Validation Functions ====================
-  
+
   // ==================== NEW v2 CSV Format Validation ====================
-  
+
   // Validate Room/Campus CSV headers
   // NEW format: Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
   const validateRoomHeaders = (headers: string[]): boolean => {
     if (headers.length < 6) return false
     const headerStr = headers.map(h => h.toLowerCase().replace(/[_\s-]/g, '')).join(' ')
-    
+
     // NEW format check - must have room_name, building, and capacity
     const hasRoomName = headerStr.includes('roomname') || headerStr.includes('roomid')
     const hasBuilding = headerStr.includes('building')
     const hasCapacity = headerStr.includes('capacity')
     const hasCollege = headerStr.includes('college')
     const hasPrimaryType = headerStr.includes('primarytype') || headerStr.includes('type')
-    
+
     return hasRoomName && hasBuilding && hasCapacity && (hasCollege || hasPrimaryType)
   }
 
@@ -152,18 +142,18 @@ export default function UploadCSVPage(): JSX.Element {
   const validateClassHeaders = (headers: string[]): boolean => {
     if (headers.length < 4) return false
     const headerStr = headers.map(h => h.toLowerCase().replace(/[_\s-]/g, '')).join(' ')
-    
+
     // NEW Degree Program format: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite
     const hasDegreeProgram = headerStr.includes('degreeprogram') || headerStr.includes('program')
     const hasCourseCode = headerStr.includes('coursecode') || headerStr.includes('code')
     const hasYearLevel = headerStr.includes('yearlevel') || headerStr.includes('year')
     const hasSemester = headerStr.includes('semester')
     const hasDescriptiveTitle = headerStr.includes('descriptivetitle') || headerStr.includes('title') || headerStr.includes('coursename')
-    
+
     // OLD format fallback: class section | course code | course name
     const hasClassOrSection = headerStr.includes('class') || headerStr.includes('section')
     const hasSchedule = headerStr.includes('schedule') || headerStr.includes('day') || headerStr.includes('time')
-    
+
     return (hasDegreeProgram && hasCourseCode) || (hasYearLevel && hasCourseCode && hasDescriptiveTitle) || (hasClassOrSection || hasSchedule)
   }
 
@@ -171,14 +161,14 @@ export default function UploadCSVPage(): JSX.Element {
   const validateFacultyHeaders = (headers: string[]): boolean => {
     if (headers.length < 3) return false
     const headerStr = headers.map(h => h.toLowerCase()).join(' ')
-    
+
     // NEW v2 format: faculty_id | first_name | last_name | email | department | max_units | employment_type | home_bldg
     const isNewFacultyFormat = headerStr.includes('faculty_id') && (headerStr.includes('first_name') || headerStr.includes('department'))
-    
+
     // OLD teacher format
     const hasTeacherId = headerStr.includes('teacher') || headerStr.includes('id')
     const hasName = headerStr.includes('name')
-    
+
     return isNewFacultyFormat || (hasTeacherId && hasName)
   }
 
@@ -186,45 +176,29 @@ export default function UploadCSVPage(): JSX.Element {
   const validateAssignmentHeaders = (headers: string[]): boolean => {
     if (headers.length < 4) return false
     const headerStr = headers.map(h => h.toLowerCase()).join(' ')
-    
+
     // NEW v2 format: assignment_id | faculty_id | section_id | subject_code | subject_name | units_type | weekly_hours
-    return headerStr.includes('assignment_id') || 
-           (headerStr.includes('faculty_id') && headerStr.includes('section_id')) ||
-           (headerStr.includes('subject_code') && headerStr.includes('weekly_hours'))
+    return headerStr.includes('assignment_id') ||
+      (headerStr.includes('faculty_id') && headerStr.includes('section_id')) ||
+      (headerStr.includes('subject_code') && headerStr.includes('weekly_hours'))
   }
 
   // Validate Faculty Profiles CSV headers (Name, Position, Department, Type format)
   const validateFacultyProfilesHeaders = (headers: string[]): boolean => {
     if (headers.length < 4) return false
     const headerStr = headers.map(h => h.toLowerCase()).join(' ')
-    
+
     // Expected format: Name | Position | Department | Type
     const hasName = headerStr.includes('name')
     const hasPosition = headerStr.includes('position')
     const hasDepartment = headerStr.includes('department')
     const hasType = headerStr.includes('type')
-    
+
     return hasName && hasPosition && hasDepartment && hasType
   }
 
   // LEGACY: Validate Teacher Schedule CSV headers (kept for backwards compatibility)
-  const validateTeacherHeaders = (headers: string[]): boolean => {
-    if (headers.length < 3) return false
-    const headerStr = headers.map(h => h.toLowerCase()).join(' ')
-    const hasTeacherId = headerStr.includes('teacher') || headerStr.includes('id') || headerStr.includes('faculty')
-    const hasName = headerStr.includes('name')
-    const hasSchedule = headerStr.includes('schedule') || headerStr.includes('day') || headerStr.includes('time') || headerStr.includes('department')
-    return (hasTeacherId || hasName) && hasSchedule
-  }
-  
-  // Detect CSV format version
-  const detectCSVVersion = (headers: string[]): 'v1' | 'v2' => {
-    const headerStr = headers.map(h => h.toLowerCase()).join(' ')
-    if (headerStr.includes('_id') || headerStr.includes('bitmask') || headerStr.includes('subject_code')) {
-      return 'v2'
-    }
-    return 'v1'
-  }
+  // Teacher schedules removed
 
   // ==================== File Change Handlers ====================
 
@@ -305,45 +279,7 @@ export default function UploadCSVPage(): JSX.Element {
     }
   }
 
-  // Teacher schedule file validation
-  const handleTeacherFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setTeacherError(null)
-    setTeacherMessage(null)
-
-    try {
-      const text = await file.text()
-      const rows = parseCSV(text)
-
-      if (rows.length < 1) {
-        throw new Error('CSV file is empty or invalid.')
-      }
-
-      const headers = rows[0]
-      if (!validateTeacherHeaders(headers) && !validateFacultyHeaders(headers)) {
-        e.target.value = ''
-        throw new Error(
-          '❌ INVALID CSV FORMAT DETECTED!\n\n' +
-          '📋 Expected headers (NEW v2 Faculty format - pipe-separated):\n' +
-          'faculty_id | first_name | last_name | email | department | max_units | employment_type | home_bldg\n\n' +
-          '📋 OR Legacy Teacher format:\n' +
-          "teacher_id | name | schedule_day | schedule_time | department\n\n" +
-          `❗ Found headers:\n${headers.join(' | ')}\n\n` +
-          '⚠️ Please fix the format and try again.'
-        )
-      }
-
-      const version = detectCSVVersion(headers)
-      setTeacherFile(file)
-      setTeacherMessage(`✅ CSV format validated successfully! (${version === 'v2' ? 'NEW v2 Faculty' : 'Legacy Teacher'} format)`)
-    } catch (err: any) {
-      console.error('Teacher file validation error:', err)
-      setTeacherFile(null)
-      setTeacherError(err?.message ?? String(err))
-    }
-  }
+  // Teacher schedules removed
 
   // Faculty Profiles file validation (Name, Position, Department, Type format)
   const handleFacultyFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,7 +353,7 @@ export default function UploadCSVPage(): JSX.Element {
         .select('upload_group_id')
         .order('upload_group_id', { ascending: false })
         .limit(1)
-      
+
       const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
 
       // Map headers to indices
@@ -452,14 +388,14 @@ export default function UploadCSVPage(): JSX.Element {
         const specificClass = specificClassIdx >= 0 ? (row[specificClassIdx]?.trim() || '') : ''
         const capacityStr = capacityIdx >= 0 ? row[capacityIdx]?.trim() : '30'
         const capacity = parseInt(capacityStr) || 30
-        
+
         // Handle boolean fields - empty means null/none
         const acStr = acIdx >= 0 ? row[acIdx]?.trim().toLowerCase() : ''
         const hasAc = acStr === '' ? null : (acStr === 'true' || acStr === 'yes' || acStr === '1')
-        
+
         const whiteboardStr = whiteboardIdx >= 0 ? row[whiteboardIdx]?.trim().toLowerCase() : 'true'
         const hasWhiteboard = whiteboardStr === '' ? null : (whiteboardStr === 'true' || whiteboardStr === 'yes' || whiteboardStr === '1')
-        
+
         const tvStr = tvIdx >= 0 ? row[tvIdx]?.trim().toLowerCase() : ''
         const hasTv = tvStr === '' ? null : (tvStr === 'true' || tvStr === 'yes' || tvStr === '1')
 
@@ -501,7 +437,7 @@ export default function UploadCSVPage(): JSX.Element {
         `File: ${roomFile.name}\n` +
         `Rooms: ${roomData.length}`
       )
-      
+
       setRoomFile(null)
       setRoomSchoolName('')
       setRoomCampusName('')
@@ -543,7 +479,7 @@ export default function UploadCSVPage(): JSX.Element {
         .select('upload_group_id')
         .order('upload_group_id', { ascending: false })
         .limit(1)
-      
+
       const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
 
       // Map headers to indices for new Degree Program format
@@ -566,7 +502,7 @@ export default function UploadCSVPage(): JSX.Element {
       const isDegreeProgramFormat = degreeProgramIdx >= 0 || (courseCodeIdx >= 0 && descriptiveTitleIdx >= 0)
 
       let classData: any[] = []
-      
+
       // Helper function to convert text year level to integer
       const parseYearLevel = (yearStr: string): number => {
         if (!yearStr) return 1
@@ -603,11 +539,9 @@ export default function UploadCSVPage(): JSX.Element {
             section: `${yearLevel}A`, // Default section based on year level
             year_level: yearLevel,
             student_count: 30, // Default
-            lec_units: lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3,
-            lab_units: labUnits,
-            credit_units: (lecHours > 0 ? Math.ceil(lecHours / 1.5) : 3) + labUnits,
             lec_hours: lecHours,
             lab_hours: labHours,
+            total_hours: lecHours + labHours,
             schedule_day: '', // Will be assigned by scheduler
             schedule_time: '', // Will be assigned by scheduler
             semester: semester,
@@ -627,7 +561,7 @@ export default function UploadCSVPage(): JSX.Element {
         classData = dataRows.map(row => {
           // Check if this is the new format with year_level and student_count (17 columns)
           const hasYearLevelAndStudentCount = row.length >= 17;
-          
+
           if (hasYearLevelAndStudentCount) {
             // New format with year_level at position 3 and student_count at position 4
             return {
@@ -637,11 +571,9 @@ export default function UploadCSVPage(): JSX.Element {
               section: row[2] || '',
               year_level: parseInt(row[3]) || 1,
               student_count: parseInt(row[4]) || 30,
-              lec_units: parseInt(row[5]) || 0,
-              lab_units: parseInt(row[6]) || 0,
-              credit_units: parseInt(row[7]) || 0,
               lec_hours: parseInt(row[8]) || 0,
               lab_hours: parseInt(row[9]) || 0,
+              total_hours: (parseInt(row[8]) || 0) + (parseInt(row[9]) || 0),
               schedule_day: row[10] || '',
               schedule_time: row[11] || '',
               semester: row[12] || '1st Semester',
@@ -660,11 +592,9 @@ export default function UploadCSVPage(): JSX.Element {
               section: row[2] || '',
               year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section (e.g., "1A" -> 1)
               student_count: parseInt(row[3]) || 30,
-              lec_units: parseInt(row[4]) || 0,
-              lab_units: parseInt(row[5]) || 0,
-              credit_units: parseInt(row[6]) || 0,
               lec_hours: parseInt(row[7]) || 0,
               lab_hours: parseInt(row[8]) || 0,
+              total_hours: (parseInt(row[7]) || 0) + (parseInt(row[8]) || 0),
               schedule_day: row[9] || '',
               schedule_time: row[10] || '',
               semester: row[11] || '1st Semester',
@@ -682,11 +612,9 @@ export default function UploadCSVPage(): JSX.Element {
               course_name: row[1] || '',
               section: row[2] || '',
               year_level: parseInt(row[2]?.charAt(0)) || 1, // Extract year from section
-              lec_units: parseInt(row[3]) || 0,
-              lab_units: parseInt(row[4]) || 0,
-              credit_units: parseInt(row[5]) || 0,
               lec_hours: parseInt(row[6]) || 0,
               lab_hours: parseInt(row[7]) || 0,
+              total_hours: (parseInt(row[6]) || 0) + (parseInt(row[7]) || 0),
               schedule_day: row[8] || '',
               schedule_time: row[9] || '',
               semester: row[10] || '1st Semester',
@@ -717,7 +645,7 @@ export default function UploadCSVPage(): JSX.Element {
         `File: ${classFile.name}\n` +
         `Courses: ${classData.length}`
       )
-      
+
       setClassFile(null)
       setDegreeProgramName('')
       const fileInput = document.getElementById('classFile') as HTMLInputElement
@@ -730,109 +658,7 @@ export default function UploadCSVPage(): JSX.Element {
     }
   }
 
-  // Upload Teacher Schedules
-  const handleTeacherUpload = async () => {
-    if (!teacherFile || !teacherCollegeName) {
-      setTeacherError('Please provide college name and choose a file.')
-      return
-    }
-
-    setTeacherLoading(true)
-    setTeacherError(null)
-    setTeacherMessage(null)
-
-    try {
-      const text = await teacherFile.text()
-      const rows = parseCSV(text)
-
-      if (rows.length < 2) {
-        throw new Error('CSV file must contain at least one data row.')
-      }
-
-      const dataRows = rows.slice(1)
-      const headers = rows[0]
-      const version = detectCSVVersion(headers)
-
-      // Get the next upload_group_id for teacher schedules
-      const { data: maxGroupData } = await supabase
-        .from('teacher_schedules')
-        .select('upload_group_id')
-        .order('upload_group_id', { ascending: false })
-        .limit(1)
-      
-      const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
-
-      // Parse based on detected format version
-      let teacherData: any[] = []
-      
-      if (version === 'v2') {
-        // NEW v2 Faculty format: faculty_id | first_name | last_name | email | department | max_units | employment_type | home_bldg
-        teacherData = dataRows.map(row => ({
-          upload_group_id: nextGroupId,
-          teacher_id: row[0] || '',
-          teacher_name: `${row[1] || ''} ${row[2] || ''}`.trim(),
-          schedule_day: '', // Faculty availability will be set separately
-          schedule_time: '', // Faculty availability will be set separately
-          department: row[4] || '',
-          email: row[3] || '',
-          college: teacherCollegeName,
-          is_available: true,
-          schedule_type: row[6] || 'full-time',
-          file_name: teacherFile.name,
-          // NEW v2 fields
-          faculty_id: row[0] || '',
-          first_name: row[1] || '',
-          last_name: row[2] || '',
-          max_units: parseInt(row[5]) || 24,
-          employment_type: row[6] || 'full-time',
-          home_bldg: row[7] || ''
-        }))
-      } else {
-        // LEGACY Teacher format: teacher_id | teacher_name | schedule_day | schedule_time | department | email | college
-        teacherData = dataRows.map(row => ({
-          upload_group_id: nextGroupId,
-          teacher_id: row[0] || '',
-          teacher_name: row[1] || '',
-          schedule_day: row[2] || '',
-          schedule_time: row[3] || '',
-          department: row[4] || '',
-          email: row[5] || '',
-          college: row[6] || teacherCollegeName,
-          is_available: true,
-          schedule_type: 'teaching',
-          file_name: teacherFile.name
-        }))
-      }
-
-      console.log('Inserting teacher schedule data:', teacherData.length, 'rows')
-
-      const { error: insertError } = await supabase
-        .from('teacher_schedules')
-        .insert(teacherData as any)
-
-      if (insertError) {
-        console.error('Teacher schedule insert error:', insertError)
-        throw insertError
-      }
-
-      setTeacherMessage(
-        `✅ Teacher Schedule uploaded successfully!\n` +
-        `Department: ${teacherCollegeName}\n` +
-        `File: ${teacherFile.name}\n` +
-        `Rows: ${teacherData.length}`
-      )
-      
-      setTeacherFile(null)
-      setTeacherCollegeName('')
-      const fileInput = document.getElementById('teacherFile') as HTMLInputElement
-      if (fileInput) fileInput.value = ''
-    } catch (err: any) {
-      console.error('Teacher upload error:', err)
-      setTeacherError(err?.message ?? String(err))
-    } finally {
-      setTeacherLoading(false)
-    }
-  }
+  // Teacher schedules removed
 
   // Upload Faculty Profiles (Name, Position, Department, Type format)
   const handleFacultyUpload = async () => {
@@ -855,11 +681,20 @@ export default function UploadCSVPage(): JSX.Element {
 
       const dataRows = rows.slice(1)
 
-      // Generate faculty_id based on name
+      // Get the next upload_group_id for faculty_profiles
+      const { data: maxGroupData } = await supabase
+        .from('faculty_profiles' as any)
+        .select('upload_group_id')
+        .order('upload_group_id', { ascending: false })
+        .limit(1)
+
+      const nextGroupId = ((maxGroupData as any)?.[0]?.upload_group_id || 0) + 1
+
+      // Generate faculty_id based on name with unique group prefix
       const generateFacultyId = (name: string, index: number) => {
         const nameParts = name.split(/[,\s]+/).filter(p => p.length > 0)
         const initials = nameParts.map(p => p.charAt(0).toUpperCase()).join('')
-        return `FAC-${initials}-${String(index + 1).padStart(4, '0')}`
+        return `FAC-G${nextGroupId}-${initials}-${String(index + 1).padStart(4, '0')}`
       }
 
       // Parse the Name, Position, Department, Type format
@@ -884,25 +719,24 @@ export default function UploadCSVPage(): JSX.Element {
           role: role,
           department: department,
           college: facultyCollegeName,
-          employment_type: type.toLowerCase().includes('part-time') ? 'part-time' 
+          employment_type: type.toLowerCase().includes('part-time') ? 'part-time'
             : type.toLowerCase().includes('adjunct') ? 'adjunct'
-            : type.toLowerCase().includes('guest') ? 'guest'
-            : 'full-time',
+              : type.toLowerCase().includes('guest') ? 'guest'
+                : 'full-time',
           is_active: true,
+          upload_group_id: nextGroupId,
+          file_name: facultyFile.name,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
       })
 
-      console.log('Upserting faculty profiles data:', facultyData.length, 'rows')
+      console.log('Inserting faculty profiles data:', facultyData.length, 'rows with upload_group_id:', nextGroupId)
 
-      // Upsert into faculty_profiles table (insert or update on conflict)
+      // Insert into faculty_profiles table (each upload is a separate group)
       const { error: insertError } = await supabase
         .from('faculty_profiles')
-        .upsert(facultyData as any, { 
-          onConflict: 'faculty_id',
-          ignoreDuplicates: false 
-        })
+        .insert(facultyData as any)
 
       if (insertError) {
         console.error('Faculty profiles insert error:', insertError)
@@ -919,11 +753,12 @@ export default function UploadCSVPage(): JSX.Element {
         `Faculty Profiles uploaded successfully!\n` +
         `College: ${facultyCollegeName}\n` +
         `File: ${facultyFile.name}\n` +
+        `Upload Group ID: ${nextGroupId}\n` +
         `Total: ${facultyData.length} profiles\n` +
         `Breakdown:\n` +
         Object.entries(typeCounts).map(([role, count]) => `  - ${role}: ${count}`).join('\n')
       )
-      
+
       setFacultyFile(null)
       setFacultyCollegeName('')
       const fileInput = document.getElementById('facultyFile') as HTMLInputElement
@@ -941,27 +776,27 @@ export default function UploadCSVPage(): JSX.Element {
   }
 
   return (
-    <div className={styles['page-layout']}>
-      <MenuBar onToggleSidebar={() => {}} showSidebarToggle={false} showAccountIcon={false} />
-      
+    <div className={styles['page-layout']} data-page="admin">
+      <MenuBar onToggleSidebar={() => { }} showSidebarToggle={false} showAccountIcon={false} />
+
       <div className={styles['page-header-content']}>
         <h1>
           <Upload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
           Upload CSV Data
         </h1>
-        <h2>Upload Rooms, Class Schedules, and Teacher Schedules for Room Allocation</h2>
+        <h2>Upload Rooms and Degree Program data for Room Allocation</h2>
       </div>
 
       <main className={styles['upload-container']}>
         <div className={styles['upload-wrapper']}>
-          
+
           {/* ==================== ROOMS/CAMPUSES UPLOAD ==================== */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
               <DoorOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Rooms & Buildings
             </h2>
-            
+
             <div className={styles['format-info']}>
               <h3>
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
@@ -1066,7 +901,7 @@ export default function UploadCSVPage(): JSX.Element {
               <BookOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Degree Program Section
             </h2>
-            
+
             <div className={styles['format-info']}>
               <h3>
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
@@ -1142,83 +977,7 @@ export default function UploadCSVPage(): JSX.Element {
             )}
           </div>
 
-          {/* ==================== TEACHER SCHEDULES UPLOAD ==================== */}
-          <div className={styles['upload-card']}>
-            <h2 className={styles['section-title']}>
-              <GraduationCap size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
-              Teacher Schedules
-            </h2>
-            
-            <div className={styles['format-info']}>
-              <h3>
-                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Expected CSV Format:
-              </h3>
-              <p style={{ fontSize: '11px', wordBreak: 'break-word' }}>teacher_id | teacher_name | schedule_day | schedule_time | department | email | college</p>
-              <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: T-0001 | Prof. Juan Santos | Monday | 7:00-8:30 | Computer Science | juan.santos@faculty.edu.ph | College of Science
-              </small>
-            </div>
-
-            <div className={styles['form-group']}>
-              <label className={styles['label']}>
-                <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                College Name
-                <input
-                  type="text"
-                  value={teacherCollegeName}
-                  onChange={(e) => setTeacherCollegeName(e.target.value)}
-                  className={styles['input']}
-                  placeholder="e.g., College of Science"
-                  required
-                />
-              </label>
-            </div>
-
-            <div className={styles['form-group']}>
-              <label className={styles['label']}>
-                <FileText size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                Select CSV File
-                <input
-                  id="teacherFile"
-                  type="file"
-                  accept=".csv"
-                  onChange={handleTeacherFileChange}
-                  className={styles['file-input']}
-                  required
-                />
-              </label>
-              {teacherFile && (
-                <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                  Selected: {teacherFile.name}
-                </small>
-              )}
-            </div>
-
-            <button
-              onClick={handleTeacherUpload}
-              disabled={teacherLoading || !teacherFile || !teacherCollegeName}
-              className={styles['upload-button']}
-            >
-              <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-              {teacherLoading ? 'Uploading...' : 'Upload Teacher Schedule CSV'}
-            </button>
-
-            {teacherMessage && (
-              <div className={`${styles['message']} ${styles['success']}`} style={{ whiteSpace: 'pre-line' }}>
-                <CheckCircle2 size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                {teacherMessage}
-              </div>
-            )}
-            {teacherError && (
-              <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
-                <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
-                {teacherError}
-              </div>
-            )}
-          </div>
+          {/* Teacher schedules removed */}
 
           {/* ==================== FACULTY PROFILES UPLOAD ==================== */}
           <div className={styles['upload-card']}>
@@ -1226,7 +985,7 @@ export default function UploadCSVPage(): JSX.Element {
               <GraduationCap size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Faculty Profiles (Officials & Staff)
             </h2>
-            
+
             <div className={styles['format-info']}>
               <h3>
                 <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
@@ -1238,11 +997,11 @@ export default function UploadCSVPage(): JSX.Element {
                 Examples:
               </small>
               <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace' }}>
-                "Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"<br/>
-                "Benedict M. Estrella" | "Associate Dean" | "Administration" | "Official"<br/>
-                "Harris R. Dela Cruz" | "Faculty" | "Mathematics" | "Faculty"<br/>
-                "Joshua P. Valeroso" | "Faculty (Part-Time)" | "Mathematics" | "Faculty (Part-Time)"<br/>
-                "Aubrey Rose T. Gan" | "Faculty (Adjunct)" | "Mathematics" | "Faculty (Adjunct)"<br/>
+                "Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"<br />
+                "Benedict M. Estrella" | "Associate Dean" | "Administration" | "Official"<br />
+                "Harris R. Dela Cruz" | "Faculty" | "Mathematics" | "Faculty"<br />
+                "Joshua P. Valeroso" | "Faculty (Part-Time)" | "Mathematics" | "Faculty (Part-Time)"<br />
+                "Aubrey Rose T. Gan" | "Faculty (Adjunct)" | "Mathematics" | "Faculty (Adjunct)"<br />
                 "Karl Kenneth R. Santos" | "Guest Lecturer" | "Science" | "Guest Lecturer"
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>

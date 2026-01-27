@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { 
-  Calendar, 
-  FileText, 
-  Users, 
-  Eye, 
+import {
+  Calendar,
+  FileText,
+  Users,
+  Eye,
   Sparkles,
   FolderOpen,
   Clock,
@@ -59,11 +59,11 @@ async function fetchAllRows(table: string, selectFields: string = '*') {
     }
 
     allData = [...allData, ...data]
-    
+
     if (data.length < PAGE_SIZE) {
       hasMore = false
     }
-    
+
     page++
   }
 
@@ -85,7 +85,7 @@ export default function QtimeHomePage() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -149,7 +149,7 @@ export default function QtimeHomePage() {
 
       setCampusFiles(campusGrouped || [])
       setParticipantFiles(participantGrouped || [])
-      
+
       console.log('✅ Files grouped successfully')
       console.log('Campus groups:', campusGrouped)
       console.log('Participant groups:', participantGrouped)
@@ -173,14 +173,14 @@ export default function QtimeHomePage() {
   }
 
   return (
-    <div className="qtime-layout">
-      <MenuBar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+    <div className="qtime-layout" data-page="admin">
+      <MenuBar
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         showSidebarToggle={true}
         showAccountIcon={true}
       />
       <Sidebar isOpen={sidebarOpen} />
-      
+
       <main className={`qtime-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
         <div className="qtime-container">
           <div className="welcome-section">
@@ -210,7 +210,7 @@ export default function QtimeHomePage() {
                   </div>
                   <h2>No CSV Files Uploaded Yet</h2>
                   <p>Start by uploading your campus and participant CSV files</p>
-                  <button 
+                  <button
                     className="primary-button"
                     onClick={() => router.push('/LandingPages/BeforeQtimeHomePage')}
                   >
@@ -249,7 +249,7 @@ export default function QtimeHomePage() {
                               <Clock size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                               {new Date(file.created_at).toLocaleDateString()}
                             </p>
-                            <button 
+                            <button
                               className="view-button"
                               title="View campus file details and room list"
                               onClick={() => handleGenerateCampusUI(file.upload_group_id)}
@@ -293,7 +293,7 @@ export default function QtimeHomePage() {
                               <Clock size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                               {new Date(file.created_at).toLocaleDateString()}
                             </p>
-                            <button 
+                            <button
                               className="view-button"
                               title="View teacher file details and participant list"
                               onClick={() => handleGenerateParticipantUI(file.upload_group_id)}
@@ -313,7 +313,7 @@ export default function QtimeHomePage() {
               {/* Generate Schedule Button */}
               {campusFiles.length > 0 && participantFiles.length > 0 && (
                 <div className="action-section">
-                  <button 
+                  <button
                     className="generate-schedule-button"
                     onClick={handleGenerateSchedule}
                   >
