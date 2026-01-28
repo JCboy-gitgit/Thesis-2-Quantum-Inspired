@@ -283,24 +283,26 @@ export default function FacultyProfilePage() {
       }
 
       // Try to upsert user_profiles
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert(profileData, { onConflict: 'user_id' }) as { error: any }
+      const profileResult = await (supabase
+        .from('user_profiles') as any)
+        .upsert(profileData, { onConflict: 'user_id' })
 
+      const profileError = profileResult?.error
       if (profileError) {
         console.error('Profile update error:', profileError)
       }
 
       // Update phone in users table (this is allowed)
       if (editForm.phone !== user.phone) {
-        const { error: phoneError } = await supabase
-          .from('users')
+        const phoneUpdateResult = await (supabase
+          .from('users') as any)
           .update({
             phone: editForm.phone,
             updated_at: new Date().toISOString()
           })
-          .eq('id', user.id) as { error: any }
+          .eq('id', user.id)
 
+        const phoneError = phoneUpdateResult?.error
         if (phoneError) {
           console.error('Phone update error:', phoneError)
         }
