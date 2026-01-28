@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
             newOpen[idx] = true
           } else if (item.label === 'Faculty Management' && (pathname.includes('/FacultyManagement') || pathname.includes('/FacultyColleges'))) {
             newOpen[idx] = true
-          } else if (item.label === 'Courses Management' && (pathname.includes('/CoursesManagement') || pathname.includes('/CourseManagement'))) {
+          } else if (item.label === 'Course Management' && (pathname.includes('/CoursesManagement') || pathname.includes('/CourseManagement'))) {
             newOpen[idx] = true
           }
         }
@@ -111,11 +111,11 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     },
     {
       icon: GraduationCap,
-      label: 'Courses Management',
+      label: 'Course Management',
       hasSubmenu: true,
       submenu: [
         {
-          label: 'All Courses',
+          label: 'All Course',
           path: '/LandingPages/CoursesManagement',
           icon: BookOpen,
           exact: true
