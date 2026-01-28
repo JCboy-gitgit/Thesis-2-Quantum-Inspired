@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  User, 
-  Mail, 
-  Building2, 
-  Phone, 
+import {
+  User,
+  Mail,
+  Building2,
+  Phone,
   MapPin,
   Edit3,
   Save,
@@ -113,10 +113,10 @@ export default function FacultyProfilePage() {
     setLoadingSchedule(true)
     try {
       const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
-      
+
       if (response.ok) {
         const data = await response.json()
-        
+
         if (data.schedule) {
           setAssignedSchedule({
             schedule_id: data.schedule.id,
@@ -138,7 +138,7 @@ export default function FacultyProfilePage() {
   const checkAuthAndLoad = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -173,16 +173,18 @@ export default function FacultyProfilePage() {
       const { data: facultyProfileData } = await supabase
         .from('faculty_profiles')
         .select('*')
-        .eq('email', session.user.email)
-        .single() as { data: { 
-          full_name?: string; 
-          department?: string; 
-          college?: string; 
-          phone?: string; 
-          office_location?: string;
-          position?: string;
-          specialization?: string;
-        } | null; error: any }
+        .eq('email', session.user.email || '')
+        .single() as {
+          data: {
+            full_name?: string;
+            department?: string;
+            college?: string;
+            phone?: string;
+            office_location?: string;
+            position?: string;
+            specialization?: string;
+          } | null; error: any
+        }
 
       // Merge data - faculty_profiles (admin-assigned) takes priority for certain fields
       const fullProfile: UserProfile = {
@@ -217,7 +219,7 @@ export default function FacultyProfilePage() {
     try {
       const response = await fetch(`/api/profile-change-requests?userId=${userId}&status=pending`)
       const data = await response.json()
-      
+
       if (data.requests && data.requests.length > 0) {
         const nameRequest = data.requests.find((r: any) => r.field_name === 'full_name')
         if (nameRequest) {
@@ -260,13 +262,13 @@ export default function FacultyProfilePage() {
         }
 
         setPendingNameRequest({ requested_value: editForm.full_name })
-        
+
         // Revert name in form since it's pending approval
         setEditForm({ ...editForm, full_name: user.full_name })
-        
-        setMessage({ 
-          type: 'info', 
-          text: '📋 Name change request submitted! Waiting for admin approval. Other changes saved.' 
+
+        setMessage({
+          type: 'info',
+          text: '📋 Name change request submitted! Waiting for admin approval. Other changes saved.'
         })
       }
 
@@ -293,7 +295,7 @@ export default function FacultyProfilePage() {
       if (editForm.phone !== user.phone) {
         const { error: phoneError } = await supabase
           .from('users')
-          .update({ 
+          .update({
             phone: editForm.phone,
             updated_at: new Date().toISOString()
           })
@@ -312,9 +314,9 @@ export default function FacultyProfilePage() {
         bio: editForm.bio,
         specialization: editForm.specialization
       })
-      
+
       setEditing(false)
-      
+
       if (!nameChanged) {
         setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
       }
@@ -337,7 +339,7 @@ export default function FacultyProfilePage() {
       console.log('Logging out from profile page...')
       // Close the menu immediately for better UX
       setShowProfileMenu(false)
-      
+
       const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('Logout error:', error)
@@ -370,10 +372,10 @@ export default function FacultyProfilePage() {
           <ArrowLeft size={20} />
           <span>Back to Dashboard</span>
         </button>
-        
+
         {/* Profile Icon with Dropdown */}
         <div className={styles.profileSection}>
-          <button 
+          <button
             className={styles.profileBtn}
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             title="Profile Menu"
@@ -383,11 +385,11 @@ export default function FacultyProfilePage() {
             </div>
             <ChevronDown size={14} className={`${styles.profileChevron} ${showProfileMenu ? styles.rotated : ''}`} />
           </button>
-          
+
           {showProfileMenu && (
             <div className={styles.profileMenu}>
-              <button 
-                className={styles.profileMenuItem} 
+              <button
+                className={styles.profileMenuItem}
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -577,7 +579,7 @@ export default function FacultyProfilePage() {
               <Calendar size={20} />
               Assigned Schedule
             </h2>
-            
+
             {loadingSchedule ? (
               <div className={styles.scheduleLoading}>
                 <div className={styles.miniSpinner}></div>
@@ -609,7 +611,7 @@ export default function FacultyProfilePage() {
                     </div>
                   )}
                 </div>
-                <button 
+                <button
                   className={styles.viewScheduleBtn}
                   onClick={() => router.push('/faculty/schedules')}
                 >
