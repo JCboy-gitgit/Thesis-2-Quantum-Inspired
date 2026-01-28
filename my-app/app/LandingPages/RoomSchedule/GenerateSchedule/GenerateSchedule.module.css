@@ -5381,3 +5381,882 @@
 [data-theme="green"] .formGroup span {
   color: #02353C !important;
 }
+
+/* ==================== Green Theme - Additional Component Fixes ==================== */
+
+/* Slot Duration Info Box */
+[data-theme="green"] .slotDurationInfo {
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(46, 175, 125, 0.15) 100%) !important;
+  border: 2px solid #2EAF7D !important;
+  border-radius: 12px;
+}
+
+[data-theme="green"] .slotDurationInfo strong {
+  color: #02353C !important;
+  font-weight: 700;
+}
+
+[data-theme="green"] .slotDurationInfo svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .slotDurationNote {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .slotAllocationNote {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-left-color: #2EAF7D !important;
+  color: #166534 !important;
+}
+
+/* Time Slot Preview */
+[data-theme="green"] .timeSlotPreview {
+  background: rgba(193, 246, 237, 0.25) !important;
+  border: 2px dashed rgba(46, 175, 125, 0.4) !important;
+}
+
+[data-theme="green"] .timeSlotPreview strong {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .timeSlotChip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.35) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .timeSlotChip:hover {
+  border-color: #2EAF7D !important;
+  color: #2EAF7D !important;
+  background: rgba(46, 175, 125, 0.08) !important;
+}
+
+[data-theme="green"] .timeSlotMore {
+  background: rgba(46, 175, 125, 0.15) !important;
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .timeSlotCount {
+  color: #166534 !important;
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+/* Form Hints */
+[data-theme="green"] .formHint {
+  color: #166534 !important;
+}
+
+/* Time Config Info */
+[data-theme="green"] .timeConfigInfo {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, transparent 100%) !important;
+  border-left-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .timeConfigInfo svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .timeConfigInfo p {
+  color: #166534 !important;
+}
+
+/* Building Card Elements */
+[data-theme="green"] .buildingCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .buildingCard:hover {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .buildingCard.selected {
+  border-color: #2EAF7D !important;
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+}
+
+[data-theme="green"] .buildingHeader {
+  border-bottom-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .buildingCheckbox {
+  color: #02353C !important;
+  font-weight: 600;
+}
+
+[data-theme="green"] .buildingCheckbox input[type="checkbox"] {
+  accent-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .buildingStats {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .buildingStats span {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .selectAllRoomsBtn {
+  background: rgba(46, 175, 125, 0.12) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .selectAllRoomsBtn:hover {
+  background: linear-gradient(135deg, #449342, #2EAF7D) !important;
+  color: white !important;
+  border-color: #2EAF7D !important;
+}
+
+/* Room List and Checkboxes */
+[data-theme="green"] .roomList {
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .roomCheckbox {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .roomCheckbox:hover {
+  background: rgba(46, 175, 125, 0.08) !important;
+}
+
+[data-theme="green"] .roomCheckbox input[type="checkbox"] {
+  accent-color: #2EAF7D !important;
+}
+
+/* Filter Summary */
+[data-theme="green"] .filterSummary {
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(46, 175, 125, 0.15) 100%) !important;
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .filterSummary p {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .filterActiveBadge {
+  background: linear-gradient(135deg, #449342, #2EAF7D) !important;
+  color: white !important;
+}
+
+[data-theme="green"] .filterInactiveBadge {
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .clearFilterBtn {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .clearFilterBtn:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+/* Filter Header and Title */
+[data-theme="green"] .filterHeader {
+  background: transparent !important;
+}
+
+[data-theme="green"] .filterHeader:hover {
+  background: rgba(46, 175, 125, 0.05) !important;
+}
+
+[data-theme="green"] .filterTitle h3 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .filterTitle svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .filterDescription {
+  color: #166534 !important;
+}
+
+/* Filter Status Icons */
+[data-theme="green"] .filterStatus svg {
+  color: #166534 !important;
+}
+
+/* Building Grid */
+[data-theme="green"] .buildingGrid {
+  gap: 12px;
+}
+
+/* Data Source Cards */
+[data-theme="green"] .dataSourceCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .dataSourceCard:hover {
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .dataSourceHeader {
+  background: transparent !important;
+}
+
+[data-theme="green"] .dataSourceHeader:hover {
+  background: rgba(46, 175, 125, 0.05) !important;
+}
+
+[data-theme="green"] .dataSourceTitle h3 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .dataSourceTitle p {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .dataSourceStatus svg {
+  color: #166534 !important;
+}
+
+/* Selected and Required Badges */
+[data-theme="green"] .selectedBadge {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+}
+
+[data-theme="green"] .requiredBadge {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #d97706 !important;
+}
+
+[data-theme="green"] .optionalBadge {
+  background: rgba(46, 175, 125, 0.1) !important;
+  color: #166534 !important;
+}
+
+/* Data Card Enhancements */
+[data-theme="green"] .dataCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .dataCard:hover {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 8px 20px rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .dataCard.selected {
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.35) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .dataCardHeader h4 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .dataCardHeader svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .dataCardStats {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .dataCardFile {
+  color: #449342 !important;
+}
+
+[data-theme="green"] .dataCardDate {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .dataCardCheckbox input[type="checkbox"] {
+  accent-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .selectedCheck {
+  color: #2EAF7D !important;
+}
+
+/* Empty Data Source */
+[data-theme="green"] .emptyDataSource {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .emptyDataSource svg {
+  color: #2EAF7D !important;
+  opacity: 0.5;
+}
+
+[data-theme="green"] .emptyDataSource button {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+}
+
+[data-theme="green"] .emptyDataSource button:hover {
+  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%) !important;
+}
+
+/* Modal Styles for Green Theme */
+[data-theme="green"] .modalContent {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.2) 100%) !important;
+  border: 1px solid rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .modalHeader {
+  border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .modalHeader h2 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .modalCloseBtn {
+  background: rgba(46, 175, 125, 0.1) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .modalCloseBtn:hover {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+[data-theme="green"] .modalBody {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .modalFooter {
+  background: rgba(193, 246, 237, 0.2) !important;
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .modalFooter p {
+  color: #166534 !important;
+}
+
+/* Table Wrapper in Modal */
+[data-theme="green"] .tableWrapper {
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+/* Preset Section */
+[data-theme="green"] .presetSection {
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .presetLabel {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .presetButton {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .presetButton:hover {
+  border-color: #2EAF7D !important;
+  color: #2EAF7D !important;
+  background: rgba(46, 175, 125, 0.1) !important;
+}
+
+[data-theme="green"] .presetButton.activePreset {
+  border-color: #2EAF7D !important;
+  color: white !important;
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+}
+
+/* Checkbox Group */
+[data-theme="green"] .checkboxGroup {
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .checkboxLabel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .checkboxLabel:hover {
+  background: rgba(46, 175, 125, 0.08) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .checkboxLabel input[type="checkbox"] {
+  accent-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .checkboxText {
+  color: #02353C !important;
+}
+
+/* Generate Section */
+[data-theme="green"] .generateSection {
+  background: transparent !important;
+}
+
+[data-theme="green"] .generateButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.4) !important;
+}
+
+[data-theme="green"] .generateButton:hover:not(:disabled) {
+  box-shadow: 0 12px 32px rgba(46, 175, 125, 0.5) !important;
+}
+
+[data-theme="green"] .generateHint {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .generateInfo {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .generateInfo svg {
+  color: #2EAF7D !important;
+}
+
+/* Step Navigation */
+[data-theme="green"] .stepNavigation {
+  background: transparent !important;
+}
+
+[data-theme="green"] .nextButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] .nextButton:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.45) !important;
+}
+
+[data-theme="green"] .backStepButton {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .backStepButton:hover {
+  border-color: #2EAF7D !important;
+  background: rgba(46, 175, 125, 0.1) !important;
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .navigationHint {
+  color: #166534 !important;
+}
+
+/* Step Progress */
+[data-theme="green"] .stepProgress {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .step {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .step.active {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .step.completed {
+  color: #059669 !important;
+}
+
+[data-theme="green"] .stepNumber {
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .step.active .stepNumber {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] .step.completed .stepNumber {
+  background: #059669 !important;
+  color: white !important;
+}
+
+[data-theme="green"] .stepLine {
+  background: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Selection Cards */
+[data-theme="green"] .selectionCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .selectionCard:hover {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 8px 20px rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .selectionCard.selected {
+  border-color: #2EAF7D !important;
+  background: linear-gradient(135deg, rgba(193, 246, 237, 0.35) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+}
+
+[data-theme="green"] .selectionTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .selectionSubtitle {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .selectionDetail {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .selectionDetail svg {
+  color: #449342 !important;
+}
+
+[data-theme="green"] .selectionCheckbox {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+}
+
+/* Filter Row and Stats */
+[data-theme="green"] .filterRow {
+  background: transparent !important;
+}
+
+[data-theme="green"] .filterSelect {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .filterSelect:focus {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .selectAllButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+}
+
+[data-theme="green"] .selectAllButton:hover {
+  box-shadow: 0 6px 16px rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] .filterStats {
+  background: rgba(46, 175, 125, 0.08) !important;
+  color: #166534 !important;
+}
+
+/* Selection Grid Scrollbar */
+[data-theme="green"] .selectionGrid::-webkit-scrollbar-track {
+  background: rgba(46, 175, 125, 0.08) !important;
+}
+
+[data-theme="green"] .selectionGrid::-webkit-scrollbar-thumb {
+  background: rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] .selectionGrid::-webkit-scrollbar-thumb:hover {
+  background: #2EAF7D !important;
+}
+
+/* Room Type Badges */
+[data-theme="green"] .roomTypeBadge {
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .roomTypeBadge.classroom {
+  background: rgba(46, 175, 125, 0.15) !important;
+  color: #059669 !important;
+}
+
+[data-theme="green"] .roomTypeBadge.laboratory,
+[data-theme="green"] .roomTypeBadge.computer_lab {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #4f46e5 !important;
+}
+
+[data-theme="green"] .roomTypeBadge.lecture_hall {
+  background: rgba(46, 175, 125, 0.2) !important;
+  color: #047857 !important;
+}
+
+[data-theme="green"] .labBadge {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #d97706 !important;
+}
+
+/* Timetable Section for Green Theme */
+[data-theme="green"] .timetableSection {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .timetableContainer {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .timetable th {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: white !important;
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .timeCell {
+  background: rgba(193, 246, 237, 0.3) !important;
+  color: #02353C !important;
+  border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .scheduleCell {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(46, 175, 125, 0.12) !important;
+}
+
+[data-theme="green"] .hourRow {
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="green"] .halfHourRow {
+  background: rgba(193, 246, 237, 0.15) !important;
+}
+
+[data-theme="green"] .hourMark {
+  background: rgba(193, 246, 237, 0.25) !important;
+  border-top-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .halfHourMark {
+  background: rgba(193, 246, 237, 0.1) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .allocationSummary {
+  background: rgba(193, 246, 237, 0.25) !important;
+}
+
+[data-theme="green"] .allocationSummary p {
+  color: #166534 !important;
+}
+
+/* View Toggle Buttons */
+[data-theme="green"] .viewToggleBtn {
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .viewToggleBtn:hover {
+  border-color: #2EAF7D !important;
+  color: #2EAF7D !important;
+  background: rgba(46, 175, 125, 0.08) !important;
+}
+
+[data-theme="green"] .viewToggleBtn.active {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: white !important;
+  border-color: #2EAF7D !important;
+}
+
+/* Unscheduled List */
+[data-theme="green"] .unscheduledItem {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="green"] .unscheduledItem:hover {
+  background: rgba(193, 246, 237, 0.2) !important;
+}
+
+[data-theme="green"] .unscheduledCourse {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .unscheduledName {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .unscheduledTeacher {
+  color: #449342 !important;
+}
+
+/* Stats Grid and Result Cards */
+[data-theme="green"] .statsGrid {
+  background: transparent !important;
+}
+
+[data-theme="green"] .statCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .statIcon {
+  background: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .statIcon svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .statValue {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .statLabel {
+  color: #166534 !important;
+}
+
+/* Optimization Stats */
+[data-theme="green"] .optimizationStats {
+  background: transparent !important;
+}
+
+[data-theme="green"] .optimizationStat {
+  background: rgba(193, 246, 237, 0.2) !important;
+}
+
+[data-theme="green"] .optimizationLabel {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .optimizationValue {
+  color: #2EAF7D !important;
+}
+
+/* Result Card */
+[data-theme="green"] .resultCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="green"] .resultCard.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+}
+
+[data-theme="green"] .resultContent h2 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .resultContent p {
+  color: #166534 !important;
+}
+
+/* Action Buttons */
+[data-theme="green"] .primaryButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35) !important;
+}
+
+[data-theme="green"] .primaryButton:hover {
+  box-shadow: 0 6px 20px rgba(46, 175, 125, 0.45) !important;
+}
+
+[data-theme="green"] .secondaryButton {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .secondaryButton:hover {
+  border-color: #2EAF7D !important;
+  background: rgba(46, 175, 125, 0.1) !important;
+  color: #2EAF7D !important;
+}
+
+/* Online Days Section */
+[data-theme="green"] .onlineDaysSection {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.08) 0%, rgba(193, 246, 237, 0.15) 100%) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .onlineDaysTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .onlineDaysTitle svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .onlineDayCheckbox {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .onlineDayCheckbox:hover {
+  border-color: rgba(46, 175, 125, 0.5) !important;
+  background: rgba(46, 175, 125, 0.1) !important;
+}
+
+[data-theme="green"] .onlineDayCheckbox.active {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.2) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .onlineDayCheckbox input {
+  accent-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .onlineDaysSummary {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .onlineDaysSummary strong {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .onlineDaysNote {
+  color: #166534 !important;
+}
+
+/* Academic Badge */
+[data-theme="green"] .academicBadge {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  color: white !important;
+}
+
+/* Auto Generate Section */
+[data-theme="green"] .autoGenerateSection {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .autoGenerateSection:hover {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .autoGenerateInfo h4 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .autoGenerateInfo p {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .autoGenerateInfo svg {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .autoGenerateInfo svg.autoSyncActive {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .toggleSlider {
+  background-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .toggleSwitch input:checked+.toggleSlider {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
+  box-shadow: 0 0 12px rgba(46, 175, 125, 0.4) !important;
+}
+
+[data-theme="green"] .autoGenerateStatus {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #059669 !important;
+}

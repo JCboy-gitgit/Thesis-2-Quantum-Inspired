@@ -228,6 +228,18 @@ function FacultyCollegesContent() {
   const [showEditFacultyModal, setShowEditFacultyModal] = useState(false)
   const [deleteFacultyTarget, setDeleteFacultyTarget] = useState<string | null>(null)
   const [renameFileName, setRenameFileName] = useState('')
+
+  // Add Faculty and Export modal states
+  const [showAddFacultyModal, setShowAddFacultyModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportOptions, setExportOptions] = useState({
+    format: 'csv' as 'csv' | 'pdf' | 'png',
+    includeId: true,
+    includeType: true,
+    onlyNames: false,
+    sortByDepartment: true
+  })
+  const [exporting, setExporting] = useState(false)
   const [collegeFormData, setCollegeFormData] = useState<CollegeFormData>({
     department_code: '',
     department_name: '',
@@ -795,6 +807,180 @@ function FacultyCollegesContent() {
     }
   }
 
+  // ==================== ADD NEW FACULTY ====================
+  const resetFacultyForm = () => {
+    setFacultyFormData({
+      faculty_id: '',
+      full_name: '',
+      email: '',
+      position: '',
+      role: 'faculty',
+      employment_type: 'full-time',
+      department: '',
+      college: selectedCollege?.department_name || '',
+      phone: '',
+      office_location: ''
+    })
+  }
+
+  const handleAddNewFaculty = async () => {
+    if (!facultyFormData.full_name.trim()) {
+      alert('Full Name is required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const newFaculty = {
+        faculty_id: facultyFormData.faculty_id.trim() || `FAC-${Date.now()}`,
+        full_name: facultyFormData.full_name.trim(),
+        email: facultyFormData.email.trim() || null,
+        position: facultyFormData.position.trim() || 'Faculty',
+        role: facultyFormData.role,
+        employment_type: facultyFormData.employment_type,
+        department: facultyFormData.department.trim() || null,
+        college: facultyFormData.college.trim() || selectedCollege?.department_name || null,
+        phone: facultyFormData.phone.trim() || null,
+        office_location: facultyFormData.office_location.trim() || null,
+        upload_group_id: selectedFile?.isLegacy ? null : selectedFile?.upload_group_id,
+        file_name: selectedFile?.file_name || 'Manual Entry',
+        is_active: true
+      }
+
+      const { error } = await db
+        .from('faculty_profiles')
+        .insert([newFaculty])
+
+      if (error) throw error
+
+      setSuccessMessage('Faculty added successfully!')
+      setShowAddFacultyModal(false)
+      resetFacultyForm()
+      if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Error adding faculty:', error)
+      alert(`Failed to add faculty: ${error.message || error}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ==================== EXPORT FUNCTIONS ====================
+  const getSortedFacultyForExport = () => {
+    const faculty = [...facultyProfiles]
+    if (exportOptions.sortByDepartment) {
+      faculty.sort((a, b) => {
+        const deptA = (a.department || 'ZZZ').toLowerCase()
+        const deptB = (b.department || 'ZZZ').toLowerCase()
+        if (deptA !== deptB) return deptA.localeCompare(deptB)
+        return (a.full_name || '').localeCompare(b.full_name || '')
+      })
+    } else {
+      faculty.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+    }
+    return faculty
+  }
+
+  const generateCSV = () => {
+    const faculty = getSortedFacultyForExport()
+    const headers: string[] = []
+
+    if (exportOptions.onlyNames) {
+      headers.push('Full Name')
+    } else {
+      if (exportOptions.sortByDepartment) headers.push('Department')
+      headers.push('Full Name')
+      if (exportOptions.includeId) headers.push('Faculty ID')
+      if (exportOptions.includeType) headers.push('Employment Type')
+    }
+
+    const rows = faculty.map(f => {
+      const row: string[] = []
+      if (exportOptions.onlyNames) {
+        row.push(f.full_name || '')
+      } else {
+        if (exportOptions.sortByDepartment) row.push(f.department || 'N/A')
+        row.push(f.full_name || '')
+        if (exportOptions.includeId) row.push(f.faculty_id || 'N/A')
+        if (exportOptions.includeType) row.push(f.employment_type || 'N/A')
+      }
+      return row.join(',')
+    })
+
+    return [headers.join(','), ...rows].join('\n')
+  }
+
+  const handleExportCSV = () => {
+    const csv = generateCSV()
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${selectedFile?.file_name || 'faculty'}_export_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    setSuccessMessage('CSV exported successfully!')
+    setShowExportModal(false)
+    setTimeout(() => setSuccessMessage(''), 3000)
+  }
+
+  const handleExportPDFPNG = async () => {
+    setExporting(true)
+    try {
+      // Dynamically import the libraries
+      const html2canvas = (await import('html2canvas')).default
+      const jsPDFModule = await import('jspdf')
+      const jsPDF = jsPDFModule.default
+
+      const previewElement = document.getElementById('export-preview-content')
+      if (!previewElement) {
+        alert('Preview content not found')
+        return
+      }
+
+      const canvas = await html2canvas(previewElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      })
+
+      if (exportOptions.format === 'png') {
+        const link = document.createElement('a')
+        link.download = `${selectedFile?.file_name || 'faculty'}_export_${new Date().toISOString().split('T')[0]}.png`
+        link.href = canvas.toDataURL('image/png')
+        link.click()
+      } else {
+        // PDF export
+        const imgData = canvas.toDataURL('image/png')
+        const pdf = new jsPDF({
+          orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        })
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+        pdf.save(`${selectedFile?.file_name || 'faculty'}_export_${new Date().toISOString().split('T')[0]}.pdf`)
+      }
+
+      setSuccessMessage(`${exportOptions.format.toUpperCase()} exported successfully!`)
+      setShowExportModal(false)
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Export error:', error)
+      alert(`Export failed: ${error.message || error}`)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleExport = () => {
+    if (exportOptions.format === 'csv') {
+      handleExportCSV()
+    } else {
+      handleExportPDFPNG()
+    }
+  }
+
   // Filter faculty
   const filteredFaculty = facultyProfiles.filter(f => {
     if (searchTerm) {
@@ -1093,6 +1279,26 @@ function FacultyCollegesContent() {
                       {facultyProfiles.length} faculty members • {selectedCollege?.department_name}
                     </p>
                   </div>
+                </div>
+                <div className={styles.headerActions}>
+                  <button
+                    className={styles.exportBtn}
+                    onClick={() => setShowExportModal(true)}
+                    title="Export faculty list"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                    </svg>
+                    Export
+                  </button>
+                  <button
+                    className={styles.addBtn}
+                    onClick={() => { resetFacultyForm(); setShowAddFacultyModal(true); }}
+                    title="Add new faculty member"
+                  >
+                    <PlusIcon />
+                    Add Faculty
+                  </button>
                 </div>
               </div>
 
@@ -1667,6 +1873,295 @@ function FacultyCollegesContent() {
               <button className={styles.btnCancel} onClick={() => setShowDeleteFileConfirm(false)}>Cancel</button>
               <button className={styles.btnDelete} onClick={handleDeleteFile} disabled={deleting}>
                 {deleting ? 'Deleting...' : `Delete ${selectedFile.faculty_count} Faculty`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Faculty Modal */}
+      {showAddFacultyModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowAddFacultyModal(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>➕ Add New Faculty</h3>
+              <button className={styles.modalClose} onClick={() => setShowAddFacultyModal(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Faculty ID</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.faculty_id}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, faculty_id: e.target.value })}
+                    placeholder="e.g., FAC-2025-001 (auto-generated if empty)"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.full_name}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, full_name: e.target.value })}
+                    placeholder="Dela Cruz, Juan A."
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    className={styles.formInput}
+                    value={facultyFormData.email}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, email: e.target.value })}
+                    placeholder="juan.delacruz@bulsu.edu.ph"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Position</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.position}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, position: e.target.value })}
+                    placeholder="e.g., Instructor I"
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Role</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.role}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, role: e.target.value as FacultyProfile['role'] })}
+                  >
+                    <option value="faculty">Faculty</option>
+                    <option value="administrator">Administrator</option>
+                    <option value="department_head">Department Head</option>
+                    <option value="program_chair">Program Chair</option>
+                    <option value="coordinator">Coordinator</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Employment Type</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.employment_type}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
+                  >
+                    <option value="full-time">Full-Time</option>
+                    <option value="part-time">Part-Time</option>
+                    <option value="adjunct">Adjunct</option>
+                    <option value="guest">Guest</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Department</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.department}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, department: e.target.value })}
+                    placeholder="e.g., Mathematics"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>College</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.college}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, college: e.target.value })}
+                    placeholder={selectedCollege?.department_name || 'College of Science'}
+                  />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.phone}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, phone: e.target.value })}
+                    placeholder="09XX-XXX-XXXX"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Office Location</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.office_location}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, office_location: e.target.value })}
+                    placeholder="Room 101, Science Building"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowAddFacultyModal(false)}>Cancel</button>
+              <button className={styles.btnSave} onClick={handleAddNewFaculty} disabled={saving}>
+                {saving ? 'Adding...' : 'Add Faculty'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowExportModal(false)}>
+          <div className={`${styles.modalContent} ${styles.exportModal}`} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>📥 Export Faculty List</h3>
+              <button className={styles.modalClose} onClick={() => setShowExportModal(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.exportInfo}>
+                Export <strong>{facultyProfiles.length}</strong> faculty members from <strong>{selectedFile?.file_name}</strong>
+              </p>
+
+              {/* Format Selection */}
+              <div className={styles.exportSection}>
+                <label className={styles.exportSectionLabel}>Export Format</label>
+                <div className={styles.formatButtons}>
+                  <button
+                    className={`${styles.formatBtn} ${exportOptions.format === 'csv' ? styles.active : ''}`}
+                    onClick={() => setExportOptions({ ...exportOptions, format: 'csv' })}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                    </svg>
+                    CSV
+                  </button>
+                  <button
+                    className={`${styles.formatBtn} ${exportOptions.format === 'pdf' ? styles.active : ''}`}
+                    onClick={() => setExportOptions({ ...exportOptions, format: 'pdf' })}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" />
+                    </svg>
+                    PDF
+                  </button>
+                  <button
+                    className={`${styles.formatBtn} ${exportOptions.format === 'png' ? styles.active : ''}`}
+                    onClick={() => setExportOptions({ ...exportOptions, format: 'png' })}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                    </svg>
+                    PNG
+                  </button>
+                </div>
+              </div>
+
+              {/* Export Options */}
+              <div className={styles.exportSection}>
+                <label className={styles.exportSectionLabel}>Include in Export</label>
+                <div className={styles.exportCheckboxes}>
+                  <label className={styles.exportCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={exportOptions.onlyNames}
+                      onChange={e => setExportOptions({
+                        ...exportOptions,
+                        onlyNames: e.target.checked,
+                        includeId: e.target.checked ? false : exportOptions.includeId,
+                        includeType: e.target.checked ? false : exportOptions.includeType
+                      })}
+                    />
+                    <span>Only Names (minimal export)</span>
+                  </label>
+                  <label className={`${styles.exportCheckbox} ${exportOptions.onlyNames ? styles.disabled : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={exportOptions.includeId}
+                      onChange={e => setExportOptions({ ...exportOptions, includeId: e.target.checked })}
+                      disabled={exportOptions.onlyNames}
+                    />
+                    <span>Include Faculty ID</span>
+                  </label>
+                  <label className={`${styles.exportCheckbox} ${exportOptions.onlyNames ? styles.disabled : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={exportOptions.includeType}
+                      onChange={e => setExportOptions({ ...exportOptions, includeType: e.target.checked })}
+                      disabled={exportOptions.onlyNames}
+                    />
+                    <span>Include Employment Type</span>
+                  </label>
+                  <label className={styles.exportCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={exportOptions.sortByDepartment}
+                      onChange={e => setExportOptions({ ...exportOptions, sortByDepartment: e.target.checked })}
+                    />
+                    <span>Group by Department (alphabetically)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Preview for PDF/PNG */}
+              {(exportOptions.format === 'pdf' || exportOptions.format === 'png') && (
+                <div className={styles.exportSection}>
+                  <label className={styles.exportSectionLabel}>Preview (Black & White)</label>
+                  <div className={styles.exportPreviewWrapper}>
+                    <div id="export-preview-content" className={styles.exportPreviewContent}>
+                      <div className={styles.exportPreviewHeader}>
+                        <h2>{selectedFile?.file_name || 'Faculty List'}</h2>
+                        <p>{selectedCollege?.department_name} • {new Date().toLocaleDateString()}</p>
+                      </div>
+                      <div className={styles.exportPreviewBody}>
+                        {getSortedFacultyForExport().slice(0, 15).map((f, idx, arr) => {
+                          const prevDept = idx > 0 ? arr[idx - 1].department : null
+                          const showDeptHeader = exportOptions.sortByDepartment && f.department !== prevDept
+                          return (
+                            <React.Fragment key={f.id}>
+                              {showDeptHeader && (
+                                <div className={styles.exportDeptHeader}>
+                                  {f.department || 'No Department'}
+                                </div>
+                              )}
+                              <div className={styles.exportPreviewRow}>
+                                <span className={styles.exportRowNum}>{idx + 1}.</span>
+                                <span className={styles.exportRowName}>{f.full_name}</span>
+                                {!exportOptions.onlyNames && exportOptions.includeId && (
+                                  <span className={styles.exportRowId}>{f.faculty_id}</span>
+                                )}
+                                {!exportOptions.onlyNames && exportOptions.includeType && (
+                                  <span className={styles.exportRowType}>{f.employment_type}</span>
+                                )}
+                              </div>
+                            </React.Fragment>
+                          )
+                        })}
+                        {facultyProfiles.length > 15 && (
+                          <div className={styles.exportPreviewMore}>
+                            ... and {facultyProfiles.length - 15} more faculty members
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.exportPreviewFooter}>
+                        Total: {facultyProfiles.length} faculty members
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowExportModal(false)}>Cancel</button>
+              <button className={styles.btnSave} onClick={handleExport} disabled={exporting}>
+                {exporting ? 'Exporting...' : `Export as ${exportOptions.format.toUpperCase()}`}
               </button>
             </div>
           </div>
