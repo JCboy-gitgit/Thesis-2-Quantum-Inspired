@@ -54,9 +54,21 @@ import {
   X,
   CheckCircle2,
   Image as ImageIcon,
-  Archive
+  Archive,
+  UserPlus,
+  Check,
+  Loader2
 } from 'lucide-react'
 import ArchiveModal from '@/app/components/ArchiveModal'
+
+// Interface for approved faculty
+interface ApprovedFaculty {
+  id: string
+  email: string
+  full_name: string
+  department_id?: number
+  is_active: boolean
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -216,6 +228,15 @@ function ViewSchedulePage() {
   // Archive modal state
   const [showArchiveModal, setShowArchiveModal] = useState(false)
 
+  // Faculty assignment modal state
+  const [showFacultyAssignModal, setShowFacultyAssignModal] = useState(false)
+  const [approvedFaculty, setApprovedFaculty] = useState<ApprovedFaculty[]>([])
+  const [selectedFacultyIds, setSelectedFacultyIds] = useState<string[]>([])
+  const [loadingFaculty, setLoadingFaculty] = useState(false)
+  const [assigningSchedule, setAssigningSchedule] = useState(false)
+  const [facultySearchQuery, setFacultySearchQuery] = useState('')
+  const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
   useEffect(() => {
     checkAuth()
     fetchSchedules()
@@ -240,6 +261,90 @@ function ViewSchedulePage() {
       router.push('/faculty/login')
     }
   }
+
+  // Fetch approved faculty for assignment modal
+  const fetchApprovedFaculty = async () => {
+    setLoadingFaculty(true)
+    try {
+      const response = await fetch('/api/faculty-default-schedule?action=approved-faculty')
+      const data = await response.json()
+      
+      if (data.success && data.approvedFaculty) {
+        setApprovedFaculty(data.approvedFaculty)
+      } else {
+        console.error('Error fetching approved faculty:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching approved faculty:', error)
+    } finally {
+      setLoadingFaculty(false)
+    }
+  }
+
+  // Open faculty assignment modal
+  const handleOpenFacultyAssignModal = () => {
+    setShowFacultyAssignModal(true)
+    setSelectedFacultyIds([])
+    setFacultySearchQuery('')
+    setAssignmentMessage(null)
+    fetchApprovedFaculty()
+  }
+
+  // Toggle faculty selection
+  const toggleFacultySelection = (facultyId: string) => {
+    setSelectedFacultyIds(prev => 
+      prev.includes(facultyId)
+        ? prev.filter(id => id !== facultyId)
+        : [...prev, facultyId]
+    )
+  }
+
+  // Assign schedule to selected faculty
+  const handleAssignScheduleToFaculty = async () => {
+    if (!selectedSchedule || selectedFacultyIds.length === 0) {
+      setAssignmentMessage({ type: 'error', text: 'Please select at least one faculty member' })
+      return
+    }
+
+    setAssigningSchedule(true)
+    try {
+      const response = await fetch('/api/faculty-default-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          facultyUserIds: selectedFacultyIds,
+          scheduleId: selectedSchedule.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setAssignmentMessage({ 
+          type: 'success', 
+          text: `✅ ${data.message}` 
+        })
+        setTimeout(() => {
+          setShowFacultyAssignModal(false)
+          setAssignmentMessage(null)
+        }, 2000)
+      } else {
+        setAssignmentMessage({ type: 'error', text: data.error || 'Failed to assign schedule' })
+      }
+    } catch (error: any) {
+      setAssignmentMessage({ type: 'error', text: error.message || 'Failed to assign schedule' })
+    } finally {
+      setAssigningSchedule(false)
+    }
+  }
+
+  // Filter faculty by search query
+  const filteredApprovedFaculty = approvedFaculty.filter(f => {
+    if (!facultySearchQuery) return true
+    const query = facultySearchQuery.toLowerCase()
+    return f.full_name?.toLowerCase().includes(query) || 
+           f.email?.toLowerCase().includes(query)
+  })
 
   // Filter and sort schedules when filters change
   useEffect(() => {
@@ -1181,6 +1286,13 @@ function ViewSchedulePage() {
                     <span className={`${styles.statNumber} ${styles.warning}`}>{selectedSchedule.unscheduled_classes}</span>
                     <span className={styles.statText}>Unscheduled</span>
                   </div>
+                  <button
+                    className={styles.assignFacultyBtn}
+                    onClick={handleOpenFacultyAssignModal}
+                    title="Assign this schedule as default for faculty members"
+                  >
+                    <UserPlus size={18} /> Assign to Faculty
+                  </button>
                 </div>
               </div>
 
@@ -1493,6 +1605,24 @@ function ViewSchedulePage() {
                         }
                       });
 
+                      // SAFEGUARD: Limit blocks to maximum 4 hours (240 minutes)
+                      // This prevents display of absurdly long blocks from bad data
+                      const MAX_BLOCK_DURATION = 240; // 4 hours
+                      const sanitizedBlocks = combinedBlocks.map(block => {
+                        const duration = block.endMinutes - block.startMinutes;
+                        if (duration > MAX_BLOCK_DURATION) {
+                          console.warn(`⚠️ Block ${block.course_code} ${block.section} is ${duration} mins, limiting to ${MAX_BLOCK_DURATION}`);
+                          return {
+                            ...block,
+                            endMinutes: block.startMinutes + MAX_BLOCK_DURATION
+                          };
+                        }
+                        return block;
+                      });
+                      
+                      // Replace combinedBlocks with sanitized version for rendering
+                      const finalBlocks = sanitizedBlocks;
+
                       const ROW_HEIGHT = 40;
                       const START_HOUR = 7;
 
@@ -1518,7 +1648,7 @@ function ViewSchedulePage() {
                       
                       // Build a map of unique course codes to colors for consistency
                       const courseColorMap = new Map<string, string>();
-                      const uniqueCourseCodes = [...new Set(combinedBlocks.map(b => b.course_code))];
+                      const uniqueCourseCodes = [...new Set(finalBlocks.map(b => b.course_code))];
                       uniqueCourseCodes.forEach((code, idx) => {
                         courseColorMap.set(code, COURSE_COLORS[idx % COURSE_COLORS.length]);
                       });
@@ -1558,7 +1688,7 @@ function ViewSchedulePage() {
                                   </td>
                                   {activeDays.map(day => {
                                     // Find blocks that START at this exact time slot for this day
-                                    const blocksStartingHere = combinedBlocks.filter(block => {
+                                    const blocksStartingHere = finalBlocks.filter(block => {
                                       const blockStartHour = Math.floor(block.startMinutes / 60);
                                       const blockStartMin = block.startMinutes % 60;
                                       return block.day === day.toLowerCase() && 
@@ -1566,8 +1696,23 @@ function ViewSchedulePage() {
                                              blockStartMin === minute;
                                     });
                                     
+                                    // Check if this cell is COVERED by a block that started earlier
+                                    // This prevents the "striped" background showing through
+                                    const isCoveredByBlock = finalBlocks.some(block => {
+                                      if (block.day !== day.toLowerCase()) return false;
+                                      const currentMinutes = hour * 60 + minute;
+                                      // Block covers this cell if: startMinutes <= currentMinutes < endMinutes
+                                      // AND the block didn't start at this exact time (we'll render it separately)
+                                      return block.startMinutes < currentMinutes && currentMinutes < block.endMinutes;
+                                    });
+                                    
+                                    // If covered by a block, make cell transparent
+                                    const cellStyle = isCoveredByBlock 
+                                      ? { position: 'relative' as const, height: `${ROW_HEIGHT}px`, background: 'transparent' }
+                                      : { position: 'relative' as const, height: `${ROW_HEIGHT}px` };
+                                    
                                     return (
-                                      <td key={`${day}-${i}`} className={styles.dataCell} style={{ position: 'relative', height: `${ROW_HEIGHT}px` }}>
+                                      <td key={`${day}-${i}`} className={styles.dataCell} style={cellStyle}>
                                         {blocksStartingHere.map((block, idx) => {
                                           // Calculate duration in 30-min slots
                                           const durationMinutes = block.endMinutes - block.startMinutes;
@@ -1608,8 +1753,12 @@ function ViewSchedulePage() {
                                               <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
                                                 {block.course_code || 'N/A'}
                                               </div>
-                                              <div style={{ fontSize: '12px', opacity: 0.95, marginBottom: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                                              <div style={{ fontSize: '12px', opacity: 0.95, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                                                 {block.course_name || ''}
+                                              </div>
+                                              {/* Time display - shown for all views */}
+                                              <div style={{ fontSize: '10px', opacity: 0.85, marginBottom: '4px', fontWeight: 600, backgroundColor: 'rgba(0,0,0,0.15)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
+                                                {displayTimeRange}
                                               </div>
                                               {/* Show different info based on view */}
                                               {timetableViewMode === 'room' && (
@@ -1620,14 +1769,14 @@ function ViewSchedulePage() {
                                               )}
                                               {timetableViewMode === 'section' && (
                                                 <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.building} - {block.room}</div>
+                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.room}</div>
                                                   <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.teacher_name || 'TBD'}</div>
                                                 </>
                                               )}
                                               {timetableViewMode === 'teacher' && (
                                                 <>
                                                   <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.building} - {block.room}</div>
+                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.room}</div>
                                                 </>
                                               )}
                                               {timetableViewMode === 'course' && (
@@ -1700,6 +1849,120 @@ function ViewSchedulePage() {
           setShowArchiveModal(false)
         }}
       />
+
+      {/* Faculty Assignment Modal */}
+      {showFacultyAssignModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowFacultyAssignModal(false)}>
+          <div className={styles.facultyAssignModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>
+                <UserPlus size={24} style={{ marginRight: '10px', verticalAlign: 'middle' }} />
+                Assign Schedule to Faculty
+              </h3>
+              <button 
+                className={styles.modalCloseBtn}
+                onClick={() => setShowFacultyAssignModal(false)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {assignmentMessage && (
+                <div className={`${styles.assignmentMessage} ${styles[assignmentMessage.type]}`}>
+                  {assignmentMessage.type === 'success' ? <CheckCircle2 size={18} /> : <X size={18} />}
+                  {assignmentMessage.text}
+                </div>
+              )}
+
+              <p className={styles.modalDescription}>
+                Select approved faculty members to assign <strong>&quot;{selectedSchedule?.schedule_name}&quot;</strong> as their default schedule. 
+                Faculty will see this schedule on their home page.
+              </p>
+
+              {/* Search */}
+              <div className={styles.facultySearchBox}>
+                <Search size={18} />
+                <input
+                  type="text"
+                  placeholder="Search faculty by name or email..."
+                  value={facultySearchQuery}
+                  onChange={(e) => setFacultySearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Faculty List */}
+              <div className={styles.facultyList}>
+                {loadingFaculty ? (
+                  <div className={styles.loadingFaculty}>
+                    <Loader2 size={32} className={styles.spinning} />
+                    <p>Loading approved faculty...</p>
+                  </div>
+                ) : filteredApprovedFaculty.length === 0 ? (
+                  <div className={styles.noFaculty}>
+                    <Users size={48} />
+                    <p>{facultySearchQuery ? 'No faculty found matching your search.' : 'No approved faculty found. Approve faculty registrations first.'}</p>
+                  </div>
+                ) : (
+                  filteredApprovedFaculty.map(faculty => (
+                    <div 
+                      key={faculty.id}
+                      className={`${styles.facultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.selected : ''}`}
+                      onClick={() => toggleFacultySelection(faculty.id)}
+                    >
+                      <div className={styles.facultyCheckbox}>
+                        {selectedFacultyIds.includes(faculty.id) ? (
+                          <Check size={18} />
+                        ) : (
+                          <div className={styles.emptyCheckbox}></div>
+                        )}
+                      </div>
+                      <div className={styles.facultyInfo}>
+                        <span className={styles.facultyName}>{faculty.full_name}</span>
+                        <span className={styles.facultyEmail}>{faculty.email}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Selection Summary */}
+              {selectedFacultyIds.length > 0 && (
+                <div className={styles.selectionSummary}>
+                  <CheckCircle2 size={16} />
+                  <span>{selectedFacultyIds.length} faculty member{selectedFacultyIds.length > 1 ? 's' : ''} selected</span>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelBtn}
+                onClick={() => setShowFacultyAssignModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.assignBtn}
+                onClick={handleAssignScheduleToFaculty}
+                disabled={selectedFacultyIds.length === 0 || assigningSchedule}
+              >
+                {assigningSchedule ? (
+                  <>
+                    <Loader2 size={18} className={styles.spinning} />
+                    Assigning...
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    Assign Schedule
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

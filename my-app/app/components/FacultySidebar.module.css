@@ -206,3 +206,58 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: var(--college-primary, rgba(0, 212, 255, 0.5));
 }
+
+/* Green Theme Support */
+[data-theme="green"] .sidebar {
+  background: rgba(6, 78, 59, 0.98);
+  border-right-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="green"] .menuItem {
+  color: rgba(167, 243, 208, 0.8);
+}
+
+[data-theme="green"] .menuItem:hover {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+[data-theme="green"] .menuItem.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+[data-theme="green"] .sidebarHeader {
+  border-bottom-color: rgba(34, 197, 94, 0.2);
+}
+
+[data-theme="green"] .sidebarFooter {
+  border-top-color: rgba(34, 197, 94, 0.2);
+}
+
+/* Mobile Improvements */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+    z-index: 1000;
+  }
+
+  .sidebar.open {
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .menuItem {
+    padding: 14px 18px;
+    font-size: 15px;
+  }
+
+  .sidebarNav {
+    padding: 16px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 260px;
+  }
+}

@@ -360,6 +360,30 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
  * Convert backend results back to frontend format
  */
 function convertBackendResultToFrontend(backendResult: any, originalClasses: ClassData[], originalRooms: RoomData[]): any {
+  // Handle validation errors from backend
+  if (backendResult.validation_errors && backendResult.validation_errors.length > 0) {
+    return {
+      success: false,
+      error: 'Data validation failed',
+      validation_errors: backendResult.validation_errors,
+      message: 'Data validation failed. Please fix the errors and try again.',
+      total_classes: backendResult.total_sections || originalClasses.length,
+      scheduled_classes: 0,
+      unscheduled_classes: originalClasses.length,
+      allocations: [],
+      optimization_stats: {
+        initial_cost: 0,
+        final_cost: 0,
+        iterations: 0,
+        improvements: 0,
+        quantum_tunnels: 0,
+        block_swaps: 0,
+        conflict_count: 0,
+        time_elapsed_ms: 0
+      }
+    }
+  }
+
   const allocations = backendResult.schedule_entries?.map((entry: any) => {
     const classData = originalClasses.find(c => c.id === entry.section_id)
     const roomData = originalRooms.find(r => r.id === entry.room_id)

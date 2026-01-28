@@ -450,9 +450,176 @@
   color: #a0aec0;
 }
 
+/* Admin Approval Hint */
+.adminApprovalHint {
+  font-size: 11px;
+  color: #ffa500;
+  font-weight: 400;
+  margin-left: 8px;
+  background: rgba(255, 165, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Name with Pending Request */
+.nameWithPending {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #ffa500;
+  background: rgba(255, 165, 0, 0.15);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.pendingBadge svg {
+  flex-shrink: 0;
+}
+
 .bioText {
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+/* Schedule Section */
+.scheduleSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #00d4ff;
+  margin: 0 0 1.5rem 0;
+}
+
+.scheduleLoading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: rgba(0, 212, 255, 0.05);
+  border-radius: 12px;
+  color: #a0aec0;
+}
+
+.miniSpinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 212, 255, 0.2);
+  border-top-color: #00d4ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.scheduleCard {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.02));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.scheduleStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+  color: #10b981;
+}
+
+.statusActive {
+  color: #10b981;
+}
+
+.scheduleDetails {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.scheduleItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.scheduleItem strong {
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.scheduleItem span {
+  color: white;
+  font-weight: 600;
+}
+
+.viewScheduleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewScheduleBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+}
+
+.noSchedule {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 159, 64, 0.05);
+  border: 1px solid rgba(255, 159, 64, 0.2);
+  border-radius: 12px;
+  color: #ff9f40;
+}
+
+.noSchedule svg {
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.noSchedule h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.noSchedule p {
+  font-size: 0.875rem;
+  color: #a0aec0;
+  margin: 0.25rem 0;
 }
 
 /* Responsive */
@@ -483,4 +650,319 @@
   .logoutBtn {
     padding: 10px;
   }
+
+  .scheduleSection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+
+  .scheduleCard {
+    padding: 1rem;
+  }
+
+  .scheduleItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContent {
+    padding: 15px;
+  }
+
+  .avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .avatar svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .avatarInfo h1 {
+    font-size: 1.25rem;
+  }
+
+  .actionBtns {
+    flex-direction: column;
+  }
+
+  .actionBtns button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==================== LIGHT THEME SUPPORT ==================== */
+:global([data-theme="light"]) .loadingScreen {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .spinner {
+  border-color: rgba(0, 212, 255, 0.2);
+  border-top-color: #0099cc;
+}
+
+:global([data-theme="light"]) .pageContainer {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .backBtn {
+  background: rgba(0, 153, 204, 0.1);
+  border-color: rgba(0, 153, 204, 0.3);
+  color: #0099cc;
+}
+
+:global([data-theme="light"]) .backBtn:hover {
+  background: rgba(0, 153, 204, 0.2);
+}
+
+:global([data-theme="light"]) .profileAvatar {
+  background: linear-gradient(135deg, rgba(0, 153, 204, 0.15), rgba(0, 153, 204, 0.05));
+  border-color: rgba(0, 153, 204, 0.3);
+  color: #0099cc;
+}
+
+:global([data-theme="light"]) .profileMenu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="light"]) .profileMenuItem {
+  color: #475569;
+  border-bottom-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .profileMenuItem:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+:global([data-theme="light"]) .toast {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .profileCard {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .avatar {
+  background: linear-gradient(135deg, rgba(0, 153, 204, 0.15), rgba(0, 153, 204, 0.05));
+  border-color: rgba(0, 153, 204, 0.3);
+  color: #0099cc;
+}
+
+:global([data-theme="light"]) .avatarInfo h1 {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .email {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .roleBadge {
+  background: rgba(0, 153, 204, 0.15);
+  color: #0099cc;
+}
+
+:global([data-theme="light"]) .editBtn {
+  background: linear-gradient(135deg, #0099cc, #006699);
+}
+
+:global([data-theme="light"]) .formGroup label {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .formGroup input,
+:global([data-theme="light"]) .formGroup textarea,
+:global([data-theme="light"]) .formGroup select {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .formGroup input:focus,
+:global([data-theme="light"]) .formGroup textarea:focus,
+:global([data-theme="light"]) .formGroup select:focus {
+  border-color: #0099cc;
+  box-shadow: 0 0 0 3px rgba(0, 153, 204, 0.15);
+}
+
+:global([data-theme="light"]) .formGroup p {
+  color: #334155;
+}
+
+:global([data-theme="light"]) .readOnly {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .scheduleSection {
+  border-top-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .sectionTitle {
+  color: #0099cc;
+}
+
+:global([data-theme="light"]) .scheduleLoading {
+  background: rgba(0, 153, 204, 0.05);
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .miniSpinner {
+  border-color: rgba(0, 153, 204, 0.2);
+  border-top-color: #0099cc;
+}
+
+:global([data-theme="light"]) .scheduleCard {
+  background: linear-gradient(135deg, rgba(0, 153, 204, 0.05), rgba(0, 153, 204, 0.02));
+  border-color: rgba(0, 153, 204, 0.2);
+}
+
+:global([data-theme="light"]) .scheduleStatus {
+  border-bottom-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .scheduleItem strong {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .scheduleItem span {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .viewScheduleBtn {
+  background: linear-gradient(135deg, #0099cc, #006699);
+}
+
+:global([data-theme="light"]) .noSchedule {
+  background: rgba(245, 158, 11, 0.05);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #d97706;
+}
+
+:global([data-theme="light"]) .noSchedule p {
+  color: #64748b;
+}
+
+/* ==================== GREEN THEME SUPPORT ==================== */
+:global([data-theme="green"]) .loadingScreen {
+  background: linear-gradient(135deg, #042f2e 0%, #065f46 50%, #064e3b 100%);
+}
+
+:global([data-theme="green"]) .spinner {
+  border-color: rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+}
+
+:global([data-theme="green"]) .pageContainer {
+  background: linear-gradient(135deg, #042f2e 0%, #065f46 50%, #064e3b 100%);
+}
+
+:global([data-theme="green"]) .header {
+  background: rgba(6, 78, 59, 0.95);
+  border-bottom-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .backBtn {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .backBtn:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .profileAvatar {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .profileMenu {
+  background: rgba(6, 78, 59, 0.98);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .profileMenuItem {
+  border-bottom-color: rgba(16, 185, 129, 0.1);
+}
+
+:global([data-theme="green"]) .profileCard {
+  background: rgba(6, 78, 59, 0.8);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .avatar {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .roleBadge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .editBtn,
+:global([data-theme="green"]) .saveBtn {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+:global([data-theme="green"]) .formGroup input:focus,
+:global([data-theme="green"]) .formGroup textarea:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+:global([data-theme="green"]) .sectionTitle {
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .scheduleCard {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02));
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .viewScheduleBtn {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Light theme - admin approval hint and pending badge */
+:global([data-theme="light"]) .adminApprovalHint {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+:global([data-theme="light"]) .pendingBadge {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+/* Green theme - admin approval hint and pending badge */
+:global([data-theme="green"]) .adminApprovalHint {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+:global([data-theme="green"]) .pendingBadge {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
 }

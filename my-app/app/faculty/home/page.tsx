@@ -130,19 +130,34 @@ export default function FacultyHomePage() {
         return
       }
 
-      setUser(userData)
+      // Also fetch from faculty_profiles for more complete data
+      const { data: facultyProfile } = await supabase
+        .from('faculty_profiles')
+        .select('full_name, department, college')
+        .eq('email', session.user.email)
+        .single()
+
+      // Merge the data - faculty_profiles takes priority
+      const mergedUser: UserProfile = {
+        ...userData,
+        full_name: facultyProfile?.full_name || userData.full_name || '',
+        department: facultyProfile?.department || userData.department || '',
+        college: facultyProfile?.college || userData.college || ''
+      }
+
+      setUser(mergedUser)
       
       // Set college theme based on user's college/department
-      if (userData.college) {
-        const collegeLower = userData.college.toLowerCase()
+      if (mergedUser.college) {
+        const collegeLower = mergedUser.college.toLowerCase()
         const matchedTheme = COLLEGE_THEME_MAP[collegeLower]
         if (matchedTheme) {
           setCollegeTheme(matchedTheme)
         }
       }
 
-      // Fetch schedules for this faculty (mock data for now)
-      await fetchSchedules(userData.email)
+      // Fetch schedules for this faculty
+      await fetchSchedules(userData.email, mergedUser.full_name)
 
     } catch (error) {
       console.error('Auth check error:', error)
@@ -152,9 +167,50 @@ export default function FacultyHomePage() {
     }
   }
 
-  const fetchSchedules = async (email: string) => {
+  const fetchSchedules = async (email: string, facultyName?: string) => {
     try {
-      // Try to fetch from schedule_assignments if available
+      // First, try to fetch the default schedule assigned by admin
+      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      const data = await response.json()
+
+      if (data.success && data.defaultSchedule && data.allocations && data.allocations.length > 0) {
+        // The API now filters by teacher_name, so we get only this faculty's classes
+        // Transform room allocations to schedule items
+        const transformedSchedules: ScheduleItem[] = data.allocations.map((alloc: any) => {
+          // Parse schedule_time like "8:00-9:30" or "08:00 - 09:30"
+          let startTime = '08:00'
+          let endTime = '09:00'
+          if (alloc.schedule_time) {
+            const timeParts = alloc.schedule_time.split('-').map((t: string) => t.trim())
+            if (timeParts.length === 2) {
+              // Convert to 24-hour format if needed
+              startTime = convertTo24Hour(timeParts[0])
+              endTime = convertTo24Hour(timeParts[1])
+            }
+          }
+
+          // Normalize day
+          const normalizedDay = normalizeDay(alloc.schedule_day || '')
+
+          return {
+            id: alloc.id,
+            course_code: alloc.course_code || 'N/A',
+            course_name: alloc.course_name || '',
+            room: alloc.room || 'TBA',
+            building: alloc.building || '',
+            day: normalizedDay,
+            start_time: startTime,
+            end_time: endTime,
+            section: alloc.section || ''
+          }
+        })
+
+        setSchedules(transformedSchedules)
+        findCurrentAndNextClass(transformedSchedules)
+        return
+      }
+
+      // Fallback: Try to fetch from schedule_assignments (old method)
       const { data: scheduleData, error } = await supabase
         .from('schedule_assignments')
         .select('*')
@@ -173,6 +229,36 @@ export default function FacultyHomePage() {
       console.error('Error fetching schedules:', error)
       setSchedules([])
     }
+  }
+
+  // Helper to convert 12-hour to 24-hour time
+  const convertTo24Hour = (time: string): string => {
+    const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
+    if (!match) return time.replace(/\s/g, '')
+    
+    let [, hourStr, minute, period] = match
+    let hour = parseInt(hourStr)
+    
+    if (period) {
+      if (period.toUpperCase() === 'PM' && hour !== 12) hour += 12
+      if (period.toUpperCase() === 'AM' && hour === 12) hour = 0
+    }
+    
+    return `${hour.toString().padStart(2, '0')}:${minute}`
+  }
+
+  // Normalize day names
+  const normalizeDay = (day: string): string => {
+    const dayMap: { [key: string]: string } = {
+      'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+      'T': 'Tuesday', 'TUE': 'Tuesday', 'TUESDAY': 'Tuesday',
+      'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+      'TH': 'Thursday', 'THU': 'Thursday', 'THURSDAY': 'Thursday',
+      'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+      'S': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+      'SU': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+    }
+    return dayMap[day.toUpperCase().trim()] || day
   }
 
   const findCurrentAndNextClass = (scheduleList: ScheduleItem[]) => {

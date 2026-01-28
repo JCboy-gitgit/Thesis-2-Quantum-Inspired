@@ -1485,6 +1485,10 @@ export default function GenerateSchedulePage() {
                                                 <div style={{ fontSize: '10px', opacity: 0.95, marginBottom: '2px' }}>
                                                   {block.course_name || ''}
                                                 </div>
+                                                {/* Time display - shown for all views */}
+                                                <div style={{ fontSize: '9px', opacity: 0.85, marginBottom: '3px', fontWeight: 600, backgroundColor: 'rgba(0,0,0,0.15)', padding: '1px 4px', borderRadius: '3px', display: 'inline-block', width: 'fit-content' }}>
+                                                  {displayTimeRange}
+                                                </div>
                                                 {/* Show different info based on view */}
                                                 {timetableView === 'room' && (
                                                   <>
@@ -1504,7 +1508,6 @@ export default function GenerateSchedulePage() {
                                                     <div style={{ fontSize: '10px', opacity: 0.8 }}>{block.is_online ? '🌐 Online' : block.room}</div>
                                                   </>
                                                 )}
-                                                <div style={{ fontSize: '9px', opacity: 0.7, marginTop: 'auto' }}>{displayTimeRange}</div>
                                               </div>
                                             );
                                           })}

@@ -20,7 +20,8 @@ import {
   Building,
   GraduationCap,
   BookOpen,
-  UserCheck
+  UserCheck,
+  UserCog
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -92,6 +93,12 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           label: 'Faculty Approval',
           path: '/LandingPages/FacultyManagement/FacultyApproval',
           icon: UserCheck,
+          exact: true
+        },
+        {
+          label: 'Profile Requests',
+          path: '/LandingPages/FacultyManagement/ProfileChangeRequests',
+          icon: UserCog,
           exact: true
         },
         {

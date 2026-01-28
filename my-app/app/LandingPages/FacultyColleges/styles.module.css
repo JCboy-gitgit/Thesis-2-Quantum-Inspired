@@ -1880,3 +1880,98 @@
 :global([data-theme="light"]) .exportPreviewWrapper {
   border-color: rgba(0, 166, 81, 0.2);
 }
+
+/* ==================== Email Suggestions Autocomplete ==================== */
+.emailSuggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.suggestionsHeader {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.suggestionItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+.suggestionName {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+}
+
+.suggestionEmail {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  font-size: 12px;
+}
+
+.emailHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+/* Light Theme Email Suggestions */
+:global([data-theme="light"]) .emailSuggestions,
+:global([data-theme="green"]) .emailSuggestions {
+  background: #fff;
+  border-color: #e0e0e0;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="light"]) .suggestionsHeader,
+:global([data-theme="green"]) .suggestionsHeader {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+}
+
+:global([data-theme="light"]) .suggestionItem:hover,
+:global([data-theme="green"]) .suggestionItem:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+:global([data-theme="light"]) .suggestionName,
+:global([data-theme="green"]) .suggestionName {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .suggestionEmail,
+:global([data-theme="green"]) .suggestionEmail {
+  color: #666;
+}
+
+:global([data-theme="light"]) .emailHint,
+:global([data-theme="green"]) .emailHint {
+  color: #888;
+}

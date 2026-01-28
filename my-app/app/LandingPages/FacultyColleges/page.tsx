@@ -240,6 +240,18 @@ function FacultyCollegesContent() {
     sortByDepartment: true
   })
   const [exporting, setExporting] = useState(false)
+
+  // Approved faculty emails for autocomplete
+  interface ApprovedFacultyUser {
+    id: string
+    email: string
+    full_name: string
+    is_active: boolean
+  }
+  const [approvedFacultyUsers, setApprovedFacultyUsers] = useState<ApprovedFacultyUser[]>([])
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false)
+  const [filteredEmailSuggestions, setFilteredEmailSuggestions] = useState<ApprovedFacultyUser[]>([])
+
   const [collegeFormData, setCollegeFormData] = useState<CollegeFormData>({
     department_code: '',
     department_name: '',
@@ -285,6 +297,7 @@ function FacultyCollegesContent() {
     checkAuth()
     fetchColleges()
     fetchAllFaculty()
+    fetchApprovedFacultyUsers()
   }, [])
 
   // Parse URL params for deep linking
@@ -355,6 +368,46 @@ function FacultyCollegesContent() {
     } catch (error) {
       console.error('Error fetching faculty:', error)
     }
+  }
+
+  // Fetch approved faculty users for email autocomplete
+  const fetchApprovedFacultyUsers = async () => {
+    try {
+      const response = await fetch('/api/faculty-default-schedule?action=approved-faculty')
+      const data = await response.json()
+      
+      if (data.success && data.approvedFaculty) {
+        setApprovedFacultyUsers(data.approvedFaculty)
+      }
+    } catch (error) {
+      console.error('Error fetching approved faculty users:', error)
+    }
+  }
+
+  // Handle email input change with suggestions
+  const handleEmailInputChange = (email: string) => {
+    setFacultyFormData({ ...facultyFormData, email })
+    
+    if (email.length >= 2) {
+      const filtered = approvedFacultyUsers.filter(u => 
+        u.email.toLowerCase().includes(email.toLowerCase()) ||
+        u.full_name.toLowerCase().includes(email.toLowerCase())
+      )
+      setFilteredEmailSuggestions(filtered)
+      setShowEmailSuggestions(filtered.length > 0)
+    } else {
+      setShowEmailSuggestions(false)
+    }
+  }
+
+  // Select email from suggestions
+  const selectEmailSuggestion = (user: ApprovedFacultyUser) => {
+    setFacultyFormData({ 
+      ...facultyFormData, 
+      email: user.email,
+      full_name: facultyFormData.full_name || user.full_name
+    })
+    setShowEmailSuggestions(false)
   }
 
   const fetchFilesForCollege = async (collegeName: string) => {
@@ -771,6 +824,31 @@ function FacultyCollegesContent() {
 
       if (error) throw error
 
+      // If email is provided, sync this data to the users table (for approved faculty)
+      if (facultyFormData.email.trim()) {
+        const { data: existingUser } = await db
+          .from('users')
+          .select('id')
+          .eq('email', facultyFormData.email.trim())
+          .single()
+
+        if (existingUser) {
+          // Update the user's profile with faculty data
+          await db
+            .from('users')
+            .update({
+              full_name: facultyFormData.full_name.trim(),
+              phone: facultyFormData.phone.trim() || null,
+              department: facultyFormData.department.trim() || null,
+              college: facultyFormData.college.trim() || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingUser.id)
+          
+          console.log('Synced faculty profile data to user account')
+        }
+      }
+
       setSuccessMessage('Faculty updated successfully!')
       setShowEditFacultyModal(false)
       if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
@@ -852,6 +930,31 @@ function FacultyCollegesContent() {
         .insert([newFaculty])
 
       if (error) throw error
+
+      // If email is provided, sync this data to the users table (for approved faculty)
+      if (facultyFormData.email.trim()) {
+        const { data: existingUser } = await db
+          .from('users')
+          .select('id')
+          .eq('email', facultyFormData.email.trim())
+          .single()
+
+        if (existingUser) {
+          // Update the user's profile with faculty data
+          await db
+            .from('users')
+            .update({
+              full_name: facultyFormData.full_name.trim(),
+              phone: facultyFormData.phone.trim() || null,
+              department: facultyFormData.department.trim() || null,
+              college: facultyFormData.college.trim() || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingUser.id)
+          
+          console.log('Synced new faculty profile data to user account')
+        }
+      }
 
       setSuccessMessage('Faculty added successfully!')
       setShowAddFacultyModal(false)
@@ -1911,15 +2014,48 @@ function FacultyCollegesContent() {
                 </div>
               </div>
               <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Email</label>
+                <div className={styles.formGroup} style={{ position: 'relative' }}>
+                  <label>Email (Approved Faculty Only)</label>
                   <input
                     type="email"
                     className={styles.formInput}
                     value={facultyFormData.email}
-                    onChange={e => setFacultyFormData({ ...facultyFormData, email: e.target.value })}
-                    placeholder="juan.delacruz@bulsu.edu.ph"
+                    onChange={e => handleEmailInputChange(e.target.value)}
+                    onFocus={() => {
+                      if (facultyFormData.email.length >= 2) {
+                        const filtered = approvedFacultyUsers.filter(u => 
+                          u.email.toLowerCase().includes(facultyFormData.email.toLowerCase()) ||
+                          u.full_name.toLowerCase().includes(facultyFormData.email.toLowerCase())
+                        )
+                        setFilteredEmailSuggestions(filtered)
+                        setShowEmailSuggestions(filtered.length > 0)
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 200)}
+                    placeholder="Type to search approved faculty emails..."
                   />
+                  {showEmailSuggestions && filteredEmailSuggestions.length > 0 && (
+                    <div className={styles.emailSuggestions}>
+                      <div className={styles.suggestionsHeader}>
+                        ✅ Approved Faculty ({filteredEmailSuggestions.length})
+                      </div>
+                      {filteredEmailSuggestions.map(user => (
+                        <div 
+                          key={user.id}
+                          className={styles.suggestionItem}
+                          onClick={() => selectEmailSuggestion(user)}
+                        >
+                          <span className={styles.suggestionName}>{user.full_name}</span>
+                          <span className={styles.suggestionEmail}>{user.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {approvedFacultyUsers.length > 0 && (
+                    <span className={styles.emailHint}>
+                      💡 Only approved faculty emails will sync with the faculty portal
+                    </span>
+                  )}
                 </div>
                 <div className={styles.formGroup}>
                   <label>Position</label>

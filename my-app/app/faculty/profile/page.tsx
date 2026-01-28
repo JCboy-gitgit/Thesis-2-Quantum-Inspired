@@ -20,7 +20,11 @@ import {
   ChevronDown,
   Sun,
   Moon,
-  Palette
+  Palette,
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react'
 import styles from './styles.module.css'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
@@ -45,6 +49,15 @@ interface Department {
   college: string | null
 }
 
+interface AssignedScheduleInfo {
+  schedule_id: number
+  schedule_name: string
+  semester: string
+  academic_year: string
+  assigned_at: string
+  total_classes: number
+}
+
 export default function FacultyProfilePage() {
   const router = useRouter()
   const { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme } = useTheme()
@@ -56,7 +69,10 @@ export default function FacultyProfilePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showThemeSettings, setShowThemeSettings] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
+  const [assignedSchedule, setAssignedSchedule] = useState<AssignedScheduleInfo | null>(null)
+  const [loadingSchedule, setLoadingSchedule] = useState(false)
+  const [pendingNameRequest, setPendingNameRequest] = useState<{ requested_value: string } | null>(null)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -93,6 +109,32 @@ export default function FacultyProfilePage() {
     }
   }
 
+  const fetchAssignedSchedule = async (email: string) => {
+    setLoadingSchedule(true)
+    try {
+      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.schedule) {
+          setAssignedSchedule({
+            schedule_id: data.schedule.id,
+            schedule_name: data.schedule.schedule_name || 'Unnamed Schedule',
+            semester: data.schedule.semester || '',
+            academic_year: data.schedule.academic_year || '',
+            assigned_at: data.assignment?.assigned_at || '',
+            total_classes: data.allocations?.length || 0
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching assigned schedule:', error)
+    } finally {
+      setLoadingSchedule(false)
+    }
+  }
+
   const checkAuthAndLoad = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -120,29 +162,70 @@ export default function FacultyProfilePage() {
         return
       }
 
-      // Get additional profile data if exists
+      // Get additional profile data from user_profiles if exists
       const { data: profileData } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .single() as { data: { contact_phone?: string; office_location?: string; bio?: string; specialization?: string } | null; error: any }
 
+      // Also check faculty_profiles for admin-assigned data
+      const { data: facultyProfileData } = await supabase
+        .from('faculty_profiles')
+        .select('*')
+        .eq('email', session.user.email)
+        .single() as { data: { 
+          full_name?: string; 
+          department?: string; 
+          college?: string; 
+          phone?: string; 
+          office_location?: string;
+          position?: string;
+          specialization?: string;
+        } | null; error: any }
+
+      // Merge data - faculty_profiles (admin-assigned) takes priority for certain fields
       const fullProfile: UserProfile = {
         ...userData,
-        phone: profileData?.contact_phone || userData.phone || '',
-        office_location: profileData?.office_location || '',
+        full_name: facultyProfileData?.full_name || userData.full_name || '',
+        phone: facultyProfileData?.phone || profileData?.contact_phone || userData.phone || '',
+        office_location: facultyProfileData?.office_location || profileData?.office_location || '',
         bio: profileData?.bio || '',
-        specialization: profileData?.specialization || ''
+        specialization: facultyProfileData?.specialization || profileData?.specialization || ''
       }
 
       setUser(fullProfile)
       setEditForm(fullProfile)
+
+      // Fetch assigned schedule
+      if (session.user.email) {
+        fetchAssignedSchedule(session.user.email)
+      }
+
+      // Check for pending name change requests
+      await fetchPendingNameRequest(session.user.id)
 
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/faculty/login')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPendingNameRequest = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/profile-change-requests?userId=${userId}&status=pending`)
+      const data = await response.json()
+      
+      if (data.requests && data.requests.length > 0) {
+        const nameRequest = data.requests.find((r: any) => r.field_name === 'full_name')
+        if (nameRequest) {
+          setPendingNameRequest({ requested_value: nameRequest.requested_value })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching pending requests:', error)
     }
   }
 
@@ -153,21 +236,42 @@ export default function FacultyProfilePage() {
     setMessage(null)
 
     try {
-      // Update users table (only columns that exist: full_name, phone)
-      const updateData = {
-        full_name: editForm.full_name,
-        phone: editForm.phone,
-        updated_at: new Date().toISOString()
+      // Check if name was changed - this requires admin approval
+      const nameChanged = editForm.full_name !== user.full_name
+
+      if (nameChanged) {
+        // Submit name change request to admin
+        const response = await fetch('/api/profile-change-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            email: user.email,
+            fieldName: 'full_name',
+            currentValue: user.full_name,
+            requestedValue: editForm.full_name
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to submit name change request')
+        }
+
+        setPendingNameRequest({ requested_value: editForm.full_name })
+        
+        // Revert name in form since it's pending approval
+        setEditForm({ ...editForm, full_name: user.full_name })
+        
+        setMessage({ 
+          type: 'info', 
+          text: '📋 Name change request submitted! Waiting for admin approval. Other changes saved.' 
+        })
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: userError } = await (supabase as any)
-        .from('users')
-        .update(updateData)
-        .eq('id', user.id)
 
-      if (userError) throw userError
-
-      // Upsert user_profiles table for extended profile data
+      // Update other fields directly (phone, office_location, bio, specialization)
+      // These don't require admin approval
       const profileData = {
         user_id: user.id,
         office_location: editForm.office_location,
@@ -175,23 +279,49 @@ export default function FacultyProfilePage() {
         specialization: editForm.specialization,
         updated_at: new Date().toISOString()
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: profileError } = await (supabase as any)
+
+      // Try to upsert user_profiles
+      const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert(profileData, { onConflict: 'user_id' })
+        .upsert(profileData, { onConflict: 'user_id' }) as { error: any }
 
       if (profileError) {
         console.error('Profile update error:', profileError)
-        // Don't fail if user_profiles doesn't exist
       }
 
-      setUser(editForm)
+      // Update phone in users table (this is allowed)
+      if (editForm.phone !== user.phone) {
+        const { error: phoneError } = await supabase
+          .from('users')
+          .update({ 
+            phone: editForm.phone,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id) as { error: any }
+
+        if (phoneError) {
+          console.error('Phone update error:', phoneError)
+        }
+      }
+
+      // Update local state with allowed changes (not name if pending)
+      setUser({
+        ...user,
+        phone: editForm.phone,
+        office_location: editForm.office_location,
+        bio: editForm.bio,
+        specialization: editForm.specialization
+      })
+      
       setEditing(false)
-      setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
+      
+      if (!nameChanged) {
+        setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
+      }
 
     } catch (error: any) {
       console.error('Save error:', error)
-      setMessage({ type: 'error', text: '❌ Failed to update profile: ' + error.message })
+      setMessage({ type: 'error', text: '❌ ' + (error.message || 'Failed to update profile') })
     } finally {
       setSaving(false)
     }
@@ -328,6 +458,7 @@ export default function FacultyProfilePage() {
               <label>
                 <User size={16} />
                 Full Name
+                {editing && <span className={styles.adminApprovalHint}>(Requires admin approval)</span>}
               </label>
               {editing ? (
                 <input
@@ -337,7 +468,15 @@ export default function FacultyProfilePage() {
                   placeholder="Your full name"
                 />
               ) : (
-                <p>{user?.full_name || 'Not set'}</p>
+                <div className={styles.nameWithPending}>
+                  <p>{user?.full_name || 'Not set'}</p>
+                  {pendingNameRequest && (
+                    <span className={styles.pendingBadge}>
+                      <Clock size={12} />
+                      Pending: &quot;{pendingNameRequest.requested_value}&quot;
+                    </span>
+                  )}
+                </div>
               )}
             </div>
 
@@ -430,6 +569,62 @@ export default function FacultyProfilePage() {
                 <p className={styles.bioText}>{user?.bio || 'No bio added yet.'}</p>
               )}
             </div>
+          </div>
+
+          {/* Assigned Schedule Section */}
+          <div className={styles.scheduleSection}>
+            <h2 className={styles.sectionTitle}>
+              <Calendar size={20} />
+              Assigned Schedule
+            </h2>
+            
+            {loadingSchedule ? (
+              <div className={styles.scheduleLoading}>
+                <div className={styles.miniSpinner}></div>
+                <span>Loading schedule...</span>
+              </div>
+            ) : assignedSchedule ? (
+              <div className={styles.scheduleCard}>
+                <div className={styles.scheduleStatus}>
+                  <CheckCircle size={20} className={styles.statusActive} />
+                  <span>Schedule Assigned</span>
+                </div>
+                <div className={styles.scheduleDetails}>
+                  <div className={styles.scheduleItem}>
+                    <strong>Schedule Name:</strong>
+                    <span>{assignedSchedule.schedule_name}</span>
+                  </div>
+                  <div className={styles.scheduleItem}>
+                    <strong>Semester:</strong>
+                    <span>{assignedSchedule.semester} {assignedSchedule.academic_year}</span>
+                  </div>
+                  <div className={styles.scheduleItem}>
+                    <strong>Total Classes:</strong>
+                    <span>{assignedSchedule.total_classes} classes assigned</span>
+                  </div>
+                  {assignedSchedule.assigned_at && (
+                    <div className={styles.scheduleItem}>
+                      <strong>Assigned On:</strong>
+                      <span>{new Date(assignedSchedule.assigned_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+                <button 
+                  className={styles.viewScheduleBtn}
+                  onClick={() => router.push('/faculty/schedules')}
+                >
+                  <Clock size={16} />
+                  View Full Schedule
+                </button>
+              </div>
+            ) : (
+              <div className={styles.noSchedule}>
+                <AlertCircle size={40} />
+                <h3>No Schedule Assigned</h3>
+                <p>The administrator has not assigned a schedule to your account yet.</p>
+                <p>Please contact your department administrator for assistance.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -49,6 +49,49 @@
   margin: 0;
 }
 
+/* View Mode Tabs */
+.viewTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.viewTab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewTab:hover {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.viewTab.activeTab {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.viewTab svg {
+  flex-shrink: 0;
+}
+
 .loadingContainer {
   display: flex;
   flex-direction: column;
@@ -427,8 +470,52 @@
     padding: 1rem;
   }
   
+  .pageTitle {
+    font-size: 1.5rem;
+    gap: 0.5rem;
+  }
+
+  .pageTitle svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .viewTabs {
+    gap: 0.25rem;
+    padding: 0.375rem;
+  }
+
+  .viewTab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+
+  .viewTab svg {
+    width: 14px;
+    height: 14px;
+  }
+  
   .scheduleInfo {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .infoCard {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .infoValue {
+    font-size: 1.25rem;
+  }
+  
+  .filterSection {
+    padding: 1rem;
+  }
+
+  .searchBar input {
+    font-size: 0.875rem;
   }
   
   .filters {
@@ -438,8 +525,628 @@
   .filters select {
     width: 100%;
   }
+
+  .scheduleSelector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
   
   .allocationsList {
     grid-template-columns: 1fr;
+  }
+
+  .allocationCard {
+    padding: 1rem;
+  }
+
+  .dayTitle {
+    font-size: 1rem;
+  }
+
+  .modal {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .pageContainer {
+    padding: 0.75rem;
+  }
+
+  .backButton {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .viewTabs {
+    flex-direction: column;
+  }
+
+  .viewTab {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .scheduleInfo {
+    grid-template-columns: 1fr;
+  }
+
+  .infoCard {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .emptyState {
+    padding: 2rem 1rem;
+  }
+
+  .emptyState svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .emptyState h3 {
+    font-size: 1rem;
+  }
+
+  .emptyState p {
+    font-size: 0.875rem;
+  }
+}
+
+/* ==================== Timetable Gallery Styles ==================== */
+
+.timetableSection {
+  margin-top: 1.5rem;
+}
+
+.timetableControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.timetableTypeTabs {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.typeTab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typeTab:hover {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.typeTab.activeTypeTab {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-color: transparent;
+}
+
+.timetableNavigation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.navButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.navButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.timetableSelector {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timetableSelect {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timetableSelect:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.navCounter {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Export Buttons */
+.exportButtons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border: 2px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exportBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.exportBtn svg {
+  flex-shrink: 0;
+}
+
+/* Timetable Container */
+.timetableContainer {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.timetableHeader {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+  border-bottom: 2px solid var(--card-border);
+  padding: 1.5rem 2rem;
+}
+
+.timetableTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.timetableTitle svg {
+  color: var(--primary);
+}
+
+.timetableSubtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Timetable Grid Wrapper */
+.timetableGridWrapper {
+  overflow-x: auto;
+  padding: 0;
+}
+
+/* Timetable Table */
+.timetableTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 900px;
+}
+
+.timetableTable th,
+.timetableTable td {
+  border: 1px solid var(--card-border);
+  vertical-align: top;
+}
+
+.timeColumnHeader {
+  width: 90px;
+  padding: 1rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.dayColumnHeader {
+  padding: 1rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+  color: var(--text-primary);
+  font-size: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.timeRow {
+  height: 50px;
+  min-height: 50px;
+  max-height: 50px;
+}
+
+.timeCellLabel {
+  width: 90px;
+  padding: 0.5rem;
+  background: rgba(99, 102, 241, 0.05);
+  vertical-align: middle;
+  text-align: center;
+  height: 50px;
+}
+
+.timeText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.scheduleTableCell {
+  padding: 4px;
+  background: var(--background);
+  height: 50px;
+  vertical-align: top;
+  position: relative;
+}
+
+/* Timetable Class Card - Redesigned */
+.timetableClassCard {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all 0.2s ease;
+  border-left: 4px solid;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.timetableClassCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.classCardCode {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.classCardName {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #334155;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.classCardTime {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.classCardTime svg {
+  flex-shrink: 0;
+}
+
+.classCardRoom,
+.classCardTeacher,
+.classCardSection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.classCardRoom svg,
+.classCardTeacher svg,
+.classCardSection svg {
+  flex-shrink: 0;
+}
+
+/* ==================== Theme Adjustments ==================== */
+
+/* Dark theme for timetable */
+:global([data-theme="dark"]) .timetableClassCard {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="dark"]) .classCardCode {
+  color: #1e293b !important;
+}
+
+:global([data-theme="dark"]) .classCardName {
+  color: #334155 !important;
+}
+
+:global([data-theme="dark"]) .classCardTime {
+  color: #475569 !important;
+}
+
+:global([data-theme="dark"]) .classCardRoom,
+:global([data-theme="dark"]) .classCardTeacher,
+:global([data-theme="dark"]) .classCardSection {
+  color: #64748b !important;
+}
+
+:global([data-theme="dark"]) .timeCellLabel {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+:global([data-theme="dark"]) .scheduleTableCell {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+/* Green theme for timetable */
+:global([data-theme="green"]) .typeTab.activeTypeTab {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+:global([data-theme="green"]) .timetableHeader {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
+}
+
+:global([data-theme="green"]) .timetableTitle svg {
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .timeColumnHeader,
+:global([data-theme="green"]) .dayColumnHeader {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+}
+
+:global([data-theme="green"]) .timeCellLabel {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+:global([data-theme="green"]) .navButton:hover:not(:disabled),
+:global([data-theme="green"]) .exportBtn:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Light theme for timetable */
+:global([data-theme="light"]) .timetableClassCard {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="light"]) .scheduleTableCell {
+  background: #ffffff;
+}
+
+:global([data-theme="light"]) .timeCellLabel {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* ==================== Print Styles ==================== */
+@media print {
+  .timetableControls,
+  .exportButtons,
+  .header,
+  .viewTabs {
+    display: none !important;
+  }
+  
+  .timetableContainer {
+    border: none;
+    box-shadow: none;
+  }
+  
+  .timetableClassCard {
+    page-break-inside: avoid;
+  }
+}
+
+/* ==================== Responsive Timetable ==================== */
+@media (max-width: 1024px) {
+  .timetableTable {
+    min-width: 800px;
+  }
+  
+  .timeColumnHeader {
+    width: 80px;
+  }
+  
+  .timeCellLabel {
+    width: 80px;
+  }
+  
+  .classCardCode {
+    font-size: 0.9rem;
+  }
+  
+  .classCardName {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .timetableTypeTabs {
+    flex-direction: column;
+  }
+  
+  .typeTab {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .timetableNavigation {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .timetableSelector {
+    order: -1;
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .exportButtons {
+    justify-content: center;
+  }
+  
+  .exportBtn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  
+  .timetableHeader {
+    padding: 1rem;
+  }
+  
+  .timetableTitle {
+    font-size: 1.25rem;
+  }
+  
+  .timetableTable {
+    min-width: 700px;
+  }
+  
+  .timeColumnHeader,
+  .timeCellLabel {
+    width: 70px;
+  }
+  
+  .dayColumnHeader {
+    font-size: 0.85rem;
+    padding: 0.75rem 0.25rem;
+  }
+  
+  .timeText {
+    font-size: 0.75rem;
+  }
+  
+  .timetableClassCard {
+    padding: 0.5rem;
+  }
+  
+  .classCardCode {
+    font-size: 0.85rem;
+  }
+  
+  .classCardName {
+    font-size: 0.75rem;
+    -webkit-line-clamp: 1;
+  }
+  
+  .classCardTime,
+  .classCardRoom,
+  .classCardTeacher,
+  .classCardSection {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .timetableTable {
+    min-width: 600px;
+  }
+  
+  .timeColumnHeader,
+  .timeCellLabel {
+    width: 55px;
+  }
+  
+  .dayColumnHeader {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.15rem;
+  }
+  
+  .timeRow {
+    height: 45px;
+  }
+  
+  .timetableClassCard {
+    padding: 0.35rem;
+    gap: 2px;
+  }
+  
+  .classCardCode {
+    font-size: 0.75rem;
+  }
+  
+  .classCardName,
+  .classCardTime,
+  .classCardRoom,
+  .classCardTeacher,
+  .classCardSection {
+    font-size: 0.65rem;
   }
 }

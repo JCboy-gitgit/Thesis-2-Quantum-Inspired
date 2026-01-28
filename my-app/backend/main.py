@@ -31,8 +31,8 @@ from database import (
     get_room_allocations_by_schedule
 )
 from scheduler import run_scheduler
-# Import enhanced v2 scheduler with 30-min slots
-from scheduler_v2 import run_enhanced_scheduler, generate_30min_slots
+# Import enhanced v2 scheduler with 30-min slots and validation
+from scheduler_v2 import run_enhanced_scheduler, generate_30min_slots, generate_time_slots, validate_scheduling_data
 
 # Load environment variables
 load_dotenv()
@@ -295,10 +295,10 @@ class ScheduleGenerationRequest(BaseModel):
     # BulSU QSA: Online Day Support
     online_days: Optional[List[str]] = None  # Days designated for online classes (e.g., ['saturday'])
     
-    # Time configuration - Now supports 30-minute intervals
+    # Time configuration - USE FRONTEND'S SLOT DURATION
     start_time: str = "07:00"
-    end_time: str = "21:00"
-    slot_duration: int = 30  # Default to 30 minutes
+    end_time: str = "20:00"  # Default 8PM closing
+    slot_duration: int = 90  # Default to 90 minutes (1.5 hours) - standard academic period
     
     # Enhanced optimization parameters
     max_iterations: int = 5000  # Increased default
@@ -355,11 +355,12 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     """
     try:
         print("=" * 60)
-        print("🚀 SCHEDULE GENERATION STARTED (Enhanced v2 - 30min slots)")
+        print("🚀 SCHEDULE GENERATION STARTED (Enhanced v2)")
         print("=" * 60)
         print(f"📋 Schedule Name: {request.schedule_name}")
         print(f"📅 Semester: {request.semester} | Year: {request.academic_year}")
         print(f"⏰ Slot Duration: {request.slot_duration} minutes")
+        print(f"🏫 Campus Hours: {request.start_time} - {request.end_time}")
         
         # Use direct data from frontend if provided, otherwise fetch from database
         if request.sections_data and request.rooms_data:
@@ -367,12 +368,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             sections = [s.dict() for s in request.sections_data]
             rooms = [r.dict() for r in request.rooms_data]
             
-            # Generate 30-minute time slots if not provided
-            if request.time_slots:
-                time_slots = [t.dict() for t in request.time_slots]
-                print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
-            elif request.use_enhanced_scheduler:
-                # Generate 30-minute slots
+            # Generate time slots using frontend's slot duration
+            if request.use_enhanced_scheduler:
+                # Use frontend's slot_duration (e.g., 90 minutes)
                 time_slots = [
                     {
                         'id': s.id,
@@ -381,9 +379,12 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                         'end_time': s.end_time,
                         'duration_minutes': s.duration_minutes
                     }
-                    for s in generate_30min_slots(request.start_time, request.end_time)
+                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration)
                 ]
-                print(f"⏰ Generated {len(time_slots)} 30-minute time slots")
+                print(f"⏰ Generated {len(time_slots)} time slots of {request.slot_duration} minutes ({request.start_time} - {request.end_time})")
+            elif request.time_slots:
+                time_slots = [t.dict() for t in request.time_slots]
+                print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
             else:
                 time_slots = await get_time_slots()
                 print(f"⏰ Using {len(time_slots)} time slots from database")
@@ -401,7 +402,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                         'end_time': s.end_time,
                         'duration_minutes': s.duration_minutes
                     }
-                    for s in generate_30min_slots(request.start_time, request.end_time)
+                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration)
                 ]
             else:
                 time_slots = await get_time_slots()
@@ -445,6 +446,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "active_days": active_days,
             "start_time": request.start_time,
             "end_time": request.end_time,
+            "slot_duration": request.slot_duration,  # Add slot duration to config
             # NEW: Constraint settings for BulSU rules
             "lunch_mode": request.lunch_mode,
             "lunch_start_hour": request.lunch_start_hour,
@@ -459,7 +461,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         print(f"   Max Iterations: {config['max_iterations']}")
         print(f"   Initial Temperature: {config['initial_temperature']}")
         print(f"   Cooling Rate: {config['cooling_rate']}")
-        print(f"   30-min Slot Support: Enabled")
+        print(f"   ⏰ Slot Duration: {config['slot_duration']} minutes")
         print(f"   🍽️ Lunch Mode: {config['lunch_mode']} ({config['lunch_start_hour']}:00-{config['lunch_end_hour']}:00)")
         print(f"   🔬 Strict Lab Matching: {config['strict_lab_room_matching']}")
         print(f"   ✂️ Allow Split Sessions: {config['allow_split_sessions']}")
@@ -567,10 +569,16 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_msg = str(e) if str(e) else repr(e)
+        error_type = type(e).__name__
         print("=" * 60)
-        print(f"❌ ERROR: {str(e)}")
+        print(f"❌ ERROR: {error_msg}")
+        print(f"❌ ERROR TYPE: {error_type}")
+        print("❌ TRACEBACK:")
+        traceback.print_exc()
         print("=" * 60)
-        raise HTTPException(status_code=500, detail=f"Schedule generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Schedule generation failed: {error_type}: {error_msg}")
 
 
 @app.get("/api/schedules")
