@@ -1,0 +1,134 @@
+# Adding Lunch Break Settings to Schedule Generation
+
+## Goal
+
+Add frontend UI controls for lunch break period settings (default 1:00 PM to 2:00 PM) and ensure the backend scheduler respects these constraints when generating schedules, preventing any classes from being scheduled during the lunch break period.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The default lunch break time will be **1:00 PM to 2:00 PM** (13:00-14:00). The backend currently has it set at **12:00 PM to 1:00 PM** (720-780 minutes). Confirm if you want to change the default to 1:00-2:00 PM.
+
+## Proposed Changes
+
+### Frontend: GenerateSchedule Page
+
+#### [MODIFY] [page.tsx](file:///c:/AntiGravity_Repo/Thesis-2-Quantum-Inspired/my-app/app/LandingPages/RoomSchedule/GenerateSchedule/page.tsx)
+
+1. **Add Lunch Break Settings to TimeSettings Interface** (around line 148):
+   ```typescript
+   interface TimeSettings {
+     startTime: string
+     endTime: string
+     slotDuration: number
+     includeSaturday: boolean
+     includeSunday: boolean
+     // NEW: Lunch break settings
+     lunchBreakEnabled: boolean
+     lunchBreakStart: string  // "13:00"
+     lunchBreakEnd: string    // "14:00"
+     lunchBreakStrict: boolean // true = hard constraint, false = soft constraint
+   }
+   ```
+
+2. **Update Default TimeSettings State** (around line 292):
+   ```typescript
+   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
+     startTime: '07:00',
+     endTime: '20:00',
+     slotDuration: 90,
+     includeSaturday: true,
+     includeSunday: false,
+     // NEW defaults
+     lunchBreakEnabled: true,
+     lunchBreakStart: '13:00',
+     lunchBreakEnd: '14:00',
+     lunchBreakStrict: true
+   })
+   ```
+
+3. **Update executeScheduleGeneration to pass lunch settings** (around line 913):
+   ```typescript
+   config: {
+     ...existing config...
+     lunch_break_enabled: timeSettings.lunchBreakEnabled,
+     lunch_start_time: timeSettings.lunchBreakStart,
+     lunch_end_time: timeSettings.lunchBreakEnd,
+     lunch_mode: timeSettings.lunchBreakStrict ? 'strict' : 'flexible'
+   }
+   ```
+
+4. **Add UI Controls for Lunch Break** - Add a new section in the Time Configuration area with:
+   - Toggle switch: "Enable Lunch Break" 
+   - Start time picker: "Lunch Start Time" (default 13:00)
+   - End time picker: "Lunch End Time" (default 14:00)
+   - Toggle: "Strict Mode" (Hard constraint vs Soft constraint)
+   - Apply admin themes (light, dark, green)
+
+---
+
+### Frontend: CSS Styling
+
+#### [MODIFY] [GenerateSchedule.module.css](file:///c:/AntiGravity_Repo/Thesis-2-Quantum-Inspired/my-app/app/LandingPages/RoomSchedule/GenerateSchedule/GenerateSchedule.module.css)
+
+- Add styles for the lunch break settings section
+- Apply the 3 admin themes (light, dark, green) consistently
+
+---
+
+### Backend: API Endpoint
+
+#### [MODIFY] [route.ts](file:///c:/AntiGravity_Repo/Thesis-2-Quantum-Inspired/my-app/app/api/schedule/qia-backend/route.ts)
+
+- Pass `lunch_start_time`, `lunch_end_time`, and `lunch_mode` to the Python backend
+
+---
+
+### Backend: Python Scheduler
+
+#### [MODIFY] [main.py](file:///c:/AntiGravity_Repo/Thesis-2-Quantum-Inspired/my-app/backend/main.py)
+
+- Extract lunch break settings from request config
+- Convert time strings to minutes
+- Pass to SchedulingConstraints
+
+#### [MODIFY] [scheduler_v2.py](file:///c:/AntiGravity_Repo/Thesis-2-Quantum-Inspired/my-app/backend/scheduler_v2.py)
+
+- Update SchedulingConstraints default values to use 13:00-14:00 (780-840 minutes)
+- Ensure the scheduling algorithm respects lunch_mode properly
+
+---
+
+## Verification Plan
+
+### Manual Testing
+
+1. **Start the development servers**:
+   ```bash
+   # Terminal 1 - Frontend
+   cd my-app && npm run dev
+   
+   # Terminal 2 - Backend
+   cd my-app/backend && python main.py
+   ```
+
+2. **Navigate to Generate Schedule page**:
+   - Go to `http://localhost:3000/LandingPages/RoomSchedule/GenerateSchedule`
+   - Verify the new "Lunch Break Settings" section appears in the Time Configuration area
+
+3. **Test UI controls**:
+   - Toggle "Enable Lunch Break" on/off
+   - Change lunch start/end times
+   - Toggle strict mode on/off
+   - Verify theme styling works in all 3 themes (light, dark, green)
+
+4. **Generate a schedule**:
+   - Select campus group, year batch
+   - Configure lunch break to 13:00-14:00 with strict mode enabled
+   - Generate schedule
+   - **Verify**: No classes scheduled between 13:00-14:00 in the timetable view
+
+5. **Test flexible mode**:
+   - Set lunch mode to flexible
+   - Generate schedule
+   - **Verify**: Algorithm avoids but may place classes during lunch if necessary
