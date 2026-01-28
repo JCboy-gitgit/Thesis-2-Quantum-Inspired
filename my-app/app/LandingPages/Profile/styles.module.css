@@ -528,3 +528,103 @@
     max-width: 100%;
   }
 }
+
+/* ==================== Light Theme Support ==================== */
+[data-theme="light"] .profile-card {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .card-header {
+  background: rgba(0, 166, 81, 0.06);
+  border-bottom-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .card-header h2 {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .profile-title {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .profile-subtitle {
+  color: #4a5568;
+}
+
+[data-theme="light"] .info-value {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a1a;
+  border-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .info-value:hover {
+  background: rgba(0, 166, 81, 0.06);
+}
+
+[data-theme="light"] .back-button {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a1a;
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .back-button:hover {
+  background: rgba(0, 166, 81, 0.08);
+}
+
+[data-theme="light"] .security-description {
+  color: #4a5568;
+}
+
+[data-theme="light"] .floating-modal {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .floating-modal-header {
+  background: rgba(0, 166, 81, 0.06);
+  border-bottom-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .floating-modal-header h2 {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .modal-close-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: #4a5568;
+}
+
+[data-theme="light"] .form-group label {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .password-input-wrapper input {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a1a;
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .password-input-wrapper input:focus {
+  background: rgba(0, 166, 81, 0.06);
+}
+
+[data-theme="light"] .password-toggle {
+  color: #4a5568;
+}
+
+[data-theme="light"] .floating-modal-footer {
+  border-top-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .btn-cancel {
+  background: rgba(0, 0, 0, 0.03);
+  color: #4a5568;
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .btn-cancel:hover {
+  background: rgba(0, 0, 0, 0.06);
+}

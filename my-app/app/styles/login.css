@@ -4,12 +4,24 @@
   --primary-dark: #0099cc;
   --secondary: #ffd700;
   --dark-bg: #0a0e27;
-  --card-bg: rgba(20, 26, 50, 0.95);
+  --card-bg: rgba(15, 20, 40, 0.65);
   --card-border: rgba(0, 212, 255, 0.2);
   --text-primary: #ffffff;
   --text-secondary: #a0aec0;
   --success: #10b981;
   --error: #ef4444;
+}
+
+/* Hide green theme leaf decorations on login page */
+body:has(.login-page)::before,
+body:has(.login-page)::after {
+  display: none !important;
+}
+
+/* Fallback for browsers without :has() support */
+.login-page~body::before,
+.login-page~body::after {
+  display: none !important;
 }
 
 /* ==================== Global Styles ==================== */
@@ -30,11 +42,11 @@ body {
 .login-page {
   position: relative;
   width: 100vw;
-  min-height: 100vh; 
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;   
+  overflow-y: auto;
   padding: 40px 0;
   animation: fadeIn 1s ease-out 0.5s;
 }
@@ -51,86 +63,17 @@ body {
   overflow: hidden;
 }
 
-/* Deep Space Grid Effect */
+/* Deep Space Grid Effect - Hidden for clean look */
 .background-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 200%;
-  background-image: 
-    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-  background-size: 100px 100px;
-  animation: grid-move 30s linear infinite;
-  transform: perspective(500px) rotateX(60deg);
-  transform-origin: center top;
+  display: none;
 }
 
-@keyframes grid-move {
-  0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
-  100% { transform: perspective(500px) rotateX(60deg) translateY(100px); }
-}
-
-/* Quantum Rotating Cube - Much Larger */
+/* Quantum Logo - Hidden (removed rotating cube) */
 .quantum-logo {
-  position: absolute;
-  width: 800px;
-  height: 800px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  transform-style: preserve-3d;
-  animation: quantum-rotate 25s linear infinite;
+  display: none;
 }
 
-.quantum-logo::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 2px solid rgba(0, 212, 255, 0.15);
-  border-radius: 20px;
-  transform: rotateX(45deg) rotateY(45deg);
-  box-shadow: 
-    0 0 60px rgba(0, 212, 255, 0.2),
-    inset 0 0 60px rgba(0, 212, 255, 0.1);
-  animation: cube-pulse 4s ease-in-out infinite;
-}
-
-.quantum-logo::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border: 2px solid rgba(255, 215, 0, 0.1);
-  border-radius: 20px;
-  transform: rotateX(-45deg) rotateY(-45deg);
-  box-shadow: 
-    0 0 60px rgba(255, 215, 0, 0.15),
-    inset 0 0 60px rgba(255, 215, 0, 0.05);
-  animation: cube-pulse 4s ease-in-out infinite 2s;
-}
-
-@keyframes quantum-rotate {
-  0% { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-  100% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
-}
-
-@keyframes cube-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
-/* Second Quantum Cube - Even Larger */
-.background-container .quantum-logo ~ .quantum-logo {
-  width: 1200px;
-  height: 1200px;
-  animation: quantum-rotate-reverse 35s linear infinite;
-}
-
-/* Animated Stars - Enhanced */
+/* Realistic Animated Stars */
 .stars {
   position: absolute;
   width: 100%;
@@ -138,53 +81,93 @@ body {
   overflow: hidden;
 }
 
+/* Main star layer - small distant stars */
 .stars::before {
   content: '';
   position: absolute;
-  width: 200%;
-  height: 200%;
-  background-image: 
-    radial-gradient(3px 3px at 50px 100px, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(2px 2px at 150px 200px, rgba(0, 212, 255, 0.8), transparent),
-    radial-gradient(2px 2px at 250px 50px, rgba(255, 215, 0, 0.7), transparent),
-    radial-gradient(1px 1px at 350px 150px, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(2px 2px at 100px 300px, rgba(0, 212, 255, 0.7), transparent),
-    radial-gradient(3px 3px at 400px 250px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 200px 400px, rgba(255, 215, 0, 0.6), transparent),
-    radial-gradient(2px 2px at 450px 100px, rgba(0, 212, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 300px 350px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(2px 2px at 500px 300px, rgba(255, 215, 0, 0.8), transparent);
+  width: 300%;
+  height: 300%;
+  top: -100%;
+  left: -100%;
+  background-image:
+    /* Bright white stars */
+    radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(1px 1px at 50px 80px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 120px 40px, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1px 1px at 180px 120px, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(2px 2px at 250px 60px, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(1px 1px at 320px 150px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 400px 90px, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1px 1px at 480px 180px, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 550px 30px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 620px 160px, rgba(255, 255, 255, 0.95), transparent),
+    /* Blue-tinted stars */
+    radial-gradient(1.5px 1.5px at 80px 160px, rgba(200, 220, 255, 0.95), transparent),
+    radial-gradient(1px 1px at 220px 200px, rgba(180, 200, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 380px 220px, rgba(190, 210, 255, 1), transparent),
+    radial-gradient(1px 1px at 520px 100px, rgba(200, 220, 255, 0.85), transparent),
+    /* Warm-tinted stars */
+    radial-gradient(1.5px 1.5px at 150px 280px, rgba(255, 240, 220, 0.9), transparent),
+    radial-gradient(1px 1px at 350px 50px, rgba(255, 235, 210, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 450px 260px, rgba(255, 245, 225, 0.95), transparent);
   background-repeat: repeat;
-  background-size: 600px 500px;
-  animation: drift-stars 100s linear infinite;
-  opacity: 0.8;
+  background-size: 700px 350px;
+  animation: drift-stars 150s linear infinite;
+  opacity: 1;
 }
 
+/* Secondary star layer - brighter stars with twinkle */
 .stars::after {
   content: '';
   position: absolute;
-  width: 200%;
-  height: 200%;
-  background-image: 
-    radial-gradient(2px 2px at 80px 180px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 180px 80px, rgba(0, 212, 255, 0.9), transparent),
-    radial-gradient(3px 3px at 280px 280px, rgba(255, 215, 0, 0.7), transparent),
-    radial-gradient(2px 2px at 380px 180px, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 480px 380px, rgba(0, 212, 255, 0.8), transparent);
+  width: 300%;
+  height: 300%;
+  top: -100%;
+  left: -100%;
+  background-image:
+    /* Bright twinkling stars */
+    radial-gradient(2.5px 2.5px at 100px 50px, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 200px 180px, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(3px 3px at 350px 120px, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 500px 200px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2.5px 2.5px at 150px 300px, rgba(230, 240, 255, 1), transparent),
+    radial-gradient(2px 2px at 420px 280px, rgba(255, 250, 240, 0.95), transparent);
   background-repeat: repeat;
-  background-size: 500px 400px;
-  animation: drift-stars-reverse 80s linear infinite;
-  opacity: 0.6;
+  background-size: 600px 400px;
+  animation: drift-stars-twinkle 120s linear infinite, star-twinkle 4s ease-in-out infinite;
+  opacity: 0.9;
 }
 
 @keyframes drift-stars {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-300px, -250px); }
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(-350px, -175px);
+  }
 }
 
-@keyframes drift-stars-reverse {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(250px, 200px); }
+@keyframes drift-stars-twinkle {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(200px, 150px);
+  }
+}
+
+@keyframes star-twinkle {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* Quantum Energy Glow Effect */
@@ -195,7 +178,7 @@ body {
   width: 150vmax;
   height: 150vmax;
   transform: translate(-50%, -50%);
-  background: 
+  background:
     radial-gradient(ellipse at 30% 30%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at 70% 70%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 50%, rgba(138, 43, 226, 0.08) 0%, transparent 60%);
@@ -203,139 +186,135 @@ body {
 }
 
 @keyframes energy-pulse {
-  0%, 100% { 
-    transform: translate(-50%, -50%) scale(1); 
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
     opacity: 0.6;
   }
-  50% { 
-    transform: translate(-50%, -50%) scale(1.1); 
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
     opacity: 1;
   }
 }
 
-/* Additional Quantum Cubes - Different sizes and positions */
-.quantum-cube {
-  position: absolute;
-  transform-style: preserve-3d;
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 15px;
-  box-shadow: 
-    0 0 40px rgba(0, 212, 255, 0.1),
-    inset 0 0 40px rgba(0, 212, 255, 0.05);
-}
-
-.quantum-cube::before,
-.quantum-cube::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: 1px solid rgba(0, 212, 255, 0.15);
-  border-radius: 15px;
-}
-
-.quantum-cube::before {
-  transform: rotateX(60deg) rotateZ(45deg);
-}
-
-.quantum-cube::after {
-  transform: rotateY(60deg) rotateZ(-45deg);
-}
-
-.quantum-cube-1 {
-  width: 1000px;
-  height: 1000px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: quantum-rotate 40s linear infinite;
-  opacity: 0.4;
-}
-
-.quantum-cube-2 {
-  width: 1400px;
-  height: 1400px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: quantum-rotate-reverse 55s linear infinite;
-  border-color: rgba(255, 215, 0, 0.12);
-  opacity: 0.3;
-}
-
-.quantum-cube-2::before,
-.quantum-cube-2::after {
-  border-color: rgba(255, 215, 0, 0.1);
-}
-
+/* Quantum Cubes - Hidden (removed rotating squares) */
+.quantum-cube,
+.quantum-cube-1,
+.quantum-cube-2,
 .quantum-cube-3 {
-  width: 1800px;
-  height: 1800px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: quantum-rotate 70s linear infinite reverse;
-  border-color: rgba(138, 43, 226, 0.1);
-  opacity: 0.25;
+  display: none;
 }
 
-.quantum-cube-3::before,
-.quantum-cube-3::after {
-  border-color: rgba(138, 43, 226, 0.08);
-}
-
-@keyframes quantum-rotate-reverse {
-  0% { transform: translate(-50%, -50%) rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
-  100% { transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-}
-
-/* Quantum Orbs - Floating spheres */
+/* Realistic Glowing Orbs - Celestial bodies */
 .quantum-orb {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.3), transparent 70%);
-  box-shadow: 
-    0 0 60px rgba(0, 212, 255, 0.3),
-    0 0 120px rgba(0, 212, 255, 0.2),
-    inset 0 0 30px rgba(255, 255, 255, 0.1);
-  filter: blur(1px);
+  filter: blur(0.5px);
 }
 
+/* Primary orb - Large distant star/nebula */
 .quantum-orb-1 {
-  width: 300px;
-  height: 300px;
-  top: 10%;
-  left: 5%;
-  animation: orb-float-1 20s ease-in-out infinite;
-  opacity: 0.5;
+  width: 350px;
+  height: 350px;
+  top: 8%;
+  left: 3%;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.15) 0%, transparent 20%),
+    radial-gradient(circle at 40% 40%, rgba(100, 180, 255, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(60, 140, 220, 0.25) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(30, 100, 180, 0.15) 0%, transparent 80%);
+  box-shadow:
+    0 0 80px rgba(80, 160, 255, 0.4),
+    0 0 150px rgba(60, 140, 220, 0.25),
+    0 0 250px rgba(40, 120, 200, 0.15),
+    inset 0 0 40px rgba(255, 255, 255, 0.05);
+  animation: orb-float-1 25s ease-in-out infinite, orb-pulse-1 8s ease-in-out infinite;
+  opacity: 0.7;
 }
 
+/* Secondary orb - Warm distant star */
 .quantum-orb-2 {
-  width: 200px;
-  height: 200px;
-  bottom: 15%;
-  right: 10%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.25), transparent 70%);
-  box-shadow: 
-    0 0 60px rgba(255, 215, 0, 0.2),
-    0 0 120px rgba(255, 215, 0, 0.15);
-  animation: orb-float-2 25s ease-in-out infinite;
-  opacity: 0.4;
+  width: 250px;
+  height: 250px;
+  bottom: 12%;
+  right: 8%;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.12) 0%, transparent 15%),
+    radial-gradient(circle at 40% 40%, rgba(255, 200, 150, 0.35) 0%, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(255, 160, 100, 0.2) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(200, 120, 80, 0.1) 0%, transparent 75%);
+  box-shadow:
+    0 0 70px rgba(255, 180, 120, 0.35),
+    0 0 130px rgba(255, 150, 100, 0.2),
+    0 0 200px rgba(200, 120, 80, 0.1);
+  animation: orb-float-2 30s ease-in-out infinite, orb-pulse-2 10s ease-in-out infinite;
+  opacity: 0.6;
 }
 
 @keyframes orb-float-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(50px, 30px) scale(1.1); }
-  50% { transform: translate(20px, 60px) scale(0.95); }
-  75% { transform: translate(-30px, 20px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate(30px, 20px) scale(1.03);
+  }
+
+  50% {
+    transform: translate(15px, 40px) scale(0.98);
+  }
+
+  75% {
+    transform: translate(-20px, 15px) scale(1.02);
+  }
 }
 
 @keyframes orb-float-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-40px, -30px) scale(1.15); }
-  66% { transform: translate(30px, -50px) scale(0.9); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate(-25px, -20px) scale(1.05);
+  }
+
+  66% {
+    transform: translate(20px, -35px) scale(0.95);
+  }
+}
+
+@keyframes orb-pulse-1 {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    filter: blur(0.5px);
+  }
+
+  50% {
+    opacity: 0.8;
+    filter: blur(0px);
+  }
+}
+
+@keyframes orb-pulse-2 {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    filter: blur(0.5px);
+  }
+
+  50% {
+    opacity: 0.7;
+    filter: blur(0px);
+  }
 }
 
 /* Floating Particles */
@@ -376,17 +355,21 @@ body {
     transform: translateY(100vh) translateX(0) scale(0);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
     transform: translateY(80vh) translateX(10px) scale(1);
   }
+
   50% {
     transform: translateY(40vh) translateX(-20px) scale(1.2);
   }
+
   90% {
     opacity: 1;
     transform: translateY(10vh) translateX(15px) scale(0.8);
   }
+
   100% {
     transform: translateY(-10vh) translateX(0) scale(0);
     opacity: 0;
@@ -409,13 +392,15 @@ body {
   max-width: 500px;
   padding: 40px;
   background: var(--card-bg);
-  border: 3px solid var(--card-border);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 212, 255, 0.1),
-    inset 0 0 30px rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 40px rgba(0, 212, 255, 0.03);
   animation: slide-up 0.6s ease-out, bounceIn 0.8s ease-out;
 }
 
@@ -736,18 +721,24 @@ body {
 
 /* ==================== Animations ==================== */
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 60px rgba(0, 212, 255, 0.3), 0 0 100px rgba(255, 215, 0, 0.1);
   }
+
   50% {
     box-shadow: 0 0 100px rgba(0, 212, 255, 0.5), 0 0 150px rgba(255, 215, 0, 0.2);
   }
 }
 
 @keyframes twinkle {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 0.8;
   }
@@ -757,6 +748,7 @@ body {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -767,6 +759,7 @@ body {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -778,9 +771,11 @@ body {
     transform: translateX(-100%) scale(0.8);
     opacity: 0;
   }
+
   60% {
     transform: translateX(10%) scale(1.02);
   }
+
   100% {
     transform: translateX(0) scale(1);
     opacity: 1;
@@ -788,9 +783,12 @@ body {
 }
 
 @keyframes glow-text {
-  0%, 100% {
+
+  0%,
+  100% {
     text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
   }
+
   50% {
     text-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
   }
@@ -806,6 +804,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -829,10 +828,21 @@ body {
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Rocket Animation for Login Success */
@@ -844,7 +854,8 @@ body {
   position: relative;
   font-size: 5rem;
   animation: realisticRocketFlight 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  transform-origin: 50% 80%; /* Tip as pivot for rotation */
+  transform-origin: 50% 80%;
+  /* Tip as pivot for rotation */
   filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.8));
 }
 
@@ -853,65 +864,85 @@ body {
     transform: translateX(0) translateY(0) rotate(0deg) scale(1.2);
     opacity: 1;
   }
+
   5% {
     transform: translateX(20px) translateY(-10px) rotate(5deg) scale(1.3);
   }
+
   10% {
     transform: translateX(50px) translateY(-30px) rotate(15deg) scale(1.4);
   }
+
   15% {
     transform: translateX(80px) translateY(-50px) rotate(25deg) scale(1.5);
   }
+
   20% {
     transform: translateX(120px) translateY(-80px) rotate(45deg) scale(1.6);
   }
+
   25% {
     transform: translateX(160px) translateY(-110px) rotate(65deg) scale(1.7);
   }
+
   30% {
     transform: translateX(200px) translateY(-120px) rotate(90deg) scale(1.8);
   }
+
   35% {
     transform: translateX(240px) translateY(-130px) rotate(115deg) scale(1.9);
   }
+
   40% {
     transform: translateX(250px) translateY(-150px) rotate(135deg) scale(2);
   }
+
   45% {
     transform: translateX(240px) translateY(-170px) rotate(155deg) scale(2.1);
   }
+
   50% {
     transform: translateX(200px) translateY(-180px) rotate(180deg) scale(2.2);
   }
+
   55% {
     transform: translateX(160px) translateY(-190px) rotate(205deg) scale(2.3);
   }
+
   60% {
     transform: translateX(100px) translateY(-200px) rotate(225deg) scale(2.4);
   }
+
   65% {
     transform: translateX(40px) translateY(-210px) rotate(245deg) scale(2.5);
   }
+
   70% {
     transform: translateX(-50px) translateY(-180px) rotate(270deg) scale(2.6);
   }
+
   75% {
     transform: translateX(-120px) translateY(-150px) rotate(295deg) scale(2.7);
   }
+
   80% {
     transform: translateX(-150px) translateY(-120px) rotate(315deg) scale(2.8);
   }
+
   85% {
     transform: translateX(-180px) translateY(-90px) rotate(335deg) scale(2.9);
   }
+
   90% {
     transform: translateX(-200px) translateY(-50px) rotate(345deg) scale(3);
     opacity: 0.8;
   }
+
   95% {
     transform: translateX(-100px) translateY(-20px) rotate(355deg) scale(3.2);
     opacity: 0.6;
   }
+
   100% {
     transform: translateX(0) translateY(0) rotate(360deg) scale(3.5);
     opacity: 0;
@@ -932,7 +963,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     radial-gradient(1px 1px at 10% 20%, #c0c0c0, transparent),
     radial-gradient(1px 1px at 30% 40%, #8a2be2, transparent),
     radial-gradient(1px 1px at 50% 60%, #00d4ff, transparent),
@@ -975,36 +1006,46 @@ body {
     transform: translateY(-120vh) translateX(0) rotate(0deg) scale(0);
     opacity: 0;
   }
+
   10% {
     opacity: 1;
     transform: translateY(-100vh) translateX(10px) rotate(36deg) scale(0.5);
   }
+
   20% {
     transform: translateY(-80vh) translateX(-10px) rotate(72deg) scale(1);
   }
+
   30% {
     transform: translateY(-60vh) translateX(20px) rotate(108deg) scale(1.2);
   }
+
   40% {
     transform: translateY(-40vh) translateX(-20px) rotate(144deg) scale(1.4);
   }
+
   50% {
     transform: translateY(-20vh) translateX(30px) rotate(180deg) scale(1.6);
   }
+
   60% {
     transform: translateY(0vh) translateX(-30px) rotate(216deg) scale(1.8);
   }
+
   70% {
     transform: translateY(20vh) translateX(40px) rotate(252deg) scale(2);
   }
+
   80% {
     transform: translateY(40vh) translateX(-40px) rotate(288deg) scale(2.2);
     opacity: 0.8;
   }
+
   90% {
     transform: translateY(60vh) translateX(50px) rotate(324deg) scale(2.4);
     opacity: 0.6;
   }
+
   100% {
     transform: translateY(100vh) translateX(0) rotate(360deg) scale(0);
     opacity: 0;
@@ -1012,8 +1053,15 @@ body {
 }
 
 @keyframes twinkle-particle {
-  0% { opacity: 0.5; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1.2); }
+  0% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 /* Quantum Portal for Transition Back to Login */
@@ -1054,31 +1102,70 @@ body {
 }
 
 @keyframes portalExpand {
-  0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
-  20% { opacity: 1; }
-  80% { transform: translate(-50%, -50%) scale(1.5) rotate(180deg); }
-  100% { transform: translate(-50%, -50%) scale(2) rotate(360deg); opacity: 0; }
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    transform: translate(-50%, -50%) scale(1.5) rotate(180deg);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(2) rotate(360deg);
+    opacity: 0;
+  }
 }
 
 @keyframes portalSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes portalGlow {
-  0% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
-  50% { box-shadow: 0 0 60px rgba(0, 212, 255, 1), 0 0 100px rgba(138, 43, 226, 0.8); }
-  100% { box-shadow: 0 0 100px rgba(0, 212, 255, 1.5), 0 0 150px rgba(138, 43, 226, 1); }
+  0% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 60px rgba(0, 212, 255, 1), 0 0 100px rgba(138, 43, 226, 0.8);
+  }
+
+  100% {
+    box-shadow: 0 0 100px rgba(0, 212, 255, 1.5), 0 0 150px rgba(138, 43, 226, 1);
+  }
 }
 
 @keyframes portalPulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.2); }
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
 }
 
 @keyframes portalShrink {
-  0% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
 }
 
 /* Dark Mode Support */
@@ -1140,7 +1227,8 @@ body {
   .quantum-cube-1,
   .quantum-cube-2,
   .quantum-cube-3 {
-    display: none; /* Hide extra cubes on mobile */
+    display: none;
+    /* Hide extra cubes on mobile */
   }
 
   .quantum-orb-1,
@@ -1149,12 +1237,14 @@ body {
   }
 
   .stars::after {
-    display: none; /* Reduce star layers on mobile */
+    display: none;
+    /* Reduce star layers on mobile */
   }
 
   .input {
     padding: 12px 14px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+    /* Prevents zoom on iOS */
   }
 
   .label-text {
@@ -1184,7 +1274,8 @@ body {
 
   /* Floating particles - reduce on mobile */
   .floating-particles .particle:nth-child(n+11) {
-    display: none; /* Show only 10 particles on tablet */
+    display: none;
+    /* Show only 10 particles on tablet */
   }
 }
 
@@ -1268,12 +1359,14 @@ body {
 
   /* Hide even more particles on mobile */
   .floating-particles .particle:nth-child(n+6) {
-    display: none; /* Show only 5 particles on mobile */
+    display: none;
+    /* Show only 5 particles on mobile */
   }
 
   /* Sparkle particles for registration success */
   .sparkle-overlay .sparkle-particle:nth-child(n+16) {
-    display: none; /* Reduce sparkle particles */
+    display: none;
+    /* Reduce sparkle particles */
   }
 
   /* Make quantum portal smaller */
@@ -1383,11 +1476,13 @@ body {
 
   /* Minimal particles on very small screens */
   .floating-particles .particle:nth-child(n+4) {
-    display: none; /* Show only 3 particles */
+    display: none;
+    /* Show only 3 particles */
   }
 
   .sparkle-overlay .sparkle-particle:nth-child(n+11) {
-    display: none; /* Show only 10 sparkle particles */
+    display: none;
+    /* Show only 10 sparkle particles */
   }
 
   .quantum-portal {

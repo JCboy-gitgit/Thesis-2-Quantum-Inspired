@@ -7,7 +7,7 @@
 
 /* Main Layout with Nature/Leaf Background */
 [data-theme="green"] .scheduleLayout {
-  background: 
+  background:
     /* Leaf pattern overlay */
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%2316a34a' fill-opacity='0.03' d='M50 5c-10 15-25 20-25 40s15 30 25 50c10-20 25-30 25-50S60 20 50 5z'/%3E%3C/svg%3E") 0 0 / 120px 120px,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%232EAF7D' fill-opacity='0.02' d='M50 5c-10 15-25 20-25 40s15 30 25 50c10-20 25-30 25-50S60 20 50 5z'/%3E%3C/svg%3E") 60px 60px / 120px 120px,
@@ -4413,4 +4413,971 @@
 
 [data-theme="green"] .viewerTable tbody tr:hover {
   background: rgba(46, 175, 125, 0.08);
+}
+
+/* ==================== Light Theme Support ==================== */
+[data-theme="light"] .scheduleLayout {
+  background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+[data-theme="light"] .scheduleHeader,
+[data-theme="light"] .headerTitleSection,
+[data-theme="light"] .formCard,
+[data-theme="light"] .configurationCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .scheduleTitle,
+[data-theme="light"] .formSectionTitle {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .scheduleSubtitle,
+[data-theme="light"] .formHint {
+  color: #4a5568;
+}
+
+[data-theme="light"] .headerIconWrapper {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+[data-theme="light"] .backButton {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .backButton:hover {
+  border-color: #00a651;
+  color: #00a651;
+}
+
+[data-theme="light"] .formInput,
+[data-theme="light"] .formSelect {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .formInput:focus,
+[data-theme="light"] .formSelect:focus {
+  border-color: #00a651;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .tabNavigation {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .tabButton {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .tabButton:hover {
+  background: rgba(0, 166, 81, 0.08);
+  color: #00a651;
+}
+
+[data-theme="light"] .tabButton.activeTab {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  color: white;
+}
+
+[data-theme="light"] .generateButton {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+[data-theme="light"] .settingsCard,
+[data-theme="light"] .timeCard,
+[data-theme="light"] .summaryCard,
+[data-theme="light"] .selectionCard,
+[data-theme="light"] .dataCard,
+[data-theme="light"] .dataSourceCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .selectionTitle,
+[data-theme="light"] .summaryValue,
+[data-theme="light"] .dataCardHeader h4 {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .selectionSubtitle,
+[data-theme="light"] .summaryLabel,
+[data-theme="light"] .selectionDetail {
+  color: #4a5568;
+}
+
+[data-theme="light"] .loadingContainer {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .loadingContainer p {
+  color: #4a5568;
+}
+
+[data-theme="light"] .stepProgress {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .step {
+  color: #4a5568;
+}
+
+[data-theme="light"] .step.active {
+  color: #00a651;
+}
+
+[data-theme="light"] .stepNumber {
+  background: rgba(0, 166, 81, 0.1);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .step.active .stepNumber,
+[data-theme="light"] .step.completed .stepNumber {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  color: white;
+}
+
+/* Additional Light Theme Coverage for Steps 2 & 3 */
+[data-theme="light"] .panelContainer,
+[data-theme="light"] .panel,
+[data-theme="light"] .contentPanel,
+[data-theme="light"] .dataPanel,
+[data-theme="light"] .sectionPanel,
+[data-theme="light"] .facultyPanel,
+[data-theme="light"] .roomPanel,
+[data-theme="light"] .coursePanel {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .panelHeader,
+[data-theme="light"] .sectionHeader,
+[data-theme="light"] .cardHeader {
+  background: rgba(0, 166, 81, 0.05);
+  border-bottom-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .panelTitle,
+[data-theme="light"] .sectionTitle,
+[data-theme="light"] .cardTitle,
+[data-theme="light"] .labelTitle,
+[data-theme="light"] .dataLabel {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .panelSubtitle,
+[data-theme="light"] .sectionSubtitle,
+[data-theme="light"] .cardSubtitle,
+[data-theme="light"] .labelValue,
+[data-theme="light"] .dataValue {
+  color: #4a5568;
+}
+
+[data-theme="light"] .itemCard,
+[data-theme="light"] .listCard,
+[data-theme="light"] .infoCard,
+[data-theme="light"] .facultyCard,
+[data-theme="light"] .roomCard,
+[data-theme="light"] .courseCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .itemCard:hover,
+[data-theme="light"] .listCard:hover {
+  border-color: #00a651;
+  box-shadow: 0 8px 24px rgba(0, 166, 81, 0.12);
+}
+
+[data-theme="light"] .infoLabel,
+[data-theme="light"] .dataInfoLabel {
+  color: #4a5568;
+}
+
+[data-theme="light"] .infoValue,
+[data-theme="light"] .dataInfoValue {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .checkbox,
+[data-theme="light"] .radioButton,
+[data-theme="light"] .selectBox {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .badgeLabel,
+[data-theme="light"] .tagLabel {
+  background: rgba(0, 166, 81, 0.1);
+  color: #00a651;
+}
+
+[data-theme="light"] .statusBadge {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .nextButton,
+[data-theme="light"] .prevButton,
+[data-theme="light"] .actionBtn {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  color: white;
+}
+
+[data-theme="light"] .cancelButton,
+[data-theme="light"] .secondaryBtn {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .emptyMessage,
+[data-theme="light"] .noDataMessage {
+  color: #4a5568;
+}
+
+[data-theme="light"] .icon,
+[data-theme="light"] .panelIcon {
+  color: #00a651;
+}
+
+/* ==================== Light Theme - Step 2 & 3 Panels ==================== */
+/* Preview Section (Step 2) */
+[data-theme="light"] .previewSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+[data-theme="light"] .previewCard {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .previewCard h3 {
+  color: #1a1a1a !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+[data-theme="light"] .previewCard h3 svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .previewTable {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+[data-theme="light"] .previewTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+[data-theme="light"] .previewTable thead {
+  background: rgba(0, 166, 81, 0.08) !important;
+}
+
+[data-theme="light"] .previewTable th {
+  color: #1a1a1a !important;
+  font-weight: 600;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .previewTable td {
+  color: #4a5568 !important;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .previewTable tbody tr:hover {
+  background: rgba(0, 166, 81, 0.04);
+}
+
+[data-theme="light"] .moreRow td {
+  color: #00a651 !important;
+  font-style: italic;
+  background: rgba(0, 166, 81, 0.05);
+}
+
+/* Filter Section (Step 2) */
+[data-theme="light"] .filterSection {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+[data-theme="light"] .filterHeader {
+  background: transparent !important;
+}
+
+[data-theme="light"] .filterTitle h3 {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .filterTitle svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .filterContent {
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="light"] .filterContent p,
+[data-theme="light"] .filterDescription {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .filterInactiveBadge {
+  background: rgba(0, 166, 81, 0.1) !important;
+  color: #00a651 !important;
+}
+
+/* Compatibility Card (Step 2) */
+[data-theme="light"] .compatibilityCard {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+[data-theme="light"] .compatibilityCard h3 {
+  color: #1a1a1a !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+[data-theme="light"] .compatibilityCard h3 svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .compatibilityList {
+  background: rgba(0, 166, 81, 0.04);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+[data-theme="light"] .compatibilityItem {
+  color: #4a5568 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+[data-theme="light"] .compatibilityItem.success svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .compatibilityItem.warning svg {
+  color: #f59e0b !important;
+}
+
+/* Config Section (Step 3) */
+[data-theme="light"] .configSection {
+  background: transparent;
+}
+
+[data-theme="light"] .formCard {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .formSectionTitle {
+  color: #1a1a1a !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+[data-theme="light"] .formSectionTitle svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .formLabel {
+  color: #1a1a1a !important;
+  font-weight: 500;
+}
+
+[data-theme="light"] .timeConfigInfo {
+  background: rgba(0, 166, 81, 0.08) !important;
+  border-color: rgba(0, 166, 81, 0.2) !important;
+}
+
+[data-theme="light"] .timeConfigInfo p {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .timeConfigInfo svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .slotDurationInfo {
+  background: rgba(0, 166, 81, 0.05) !important;
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .slotDurationNote {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .timeSlotPreview {
+  background: rgba(0, 166, 81, 0.04) !important;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+[data-theme="light"] .timeSlotPreview strong {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .timeSlotChip {
+  background: rgba(0, 166, 81, 0.15) !important;
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .timeSlotMore,
+[data-theme="light"] .timeSlotCount,
+[data-theme="light"] .slotAllocationNote {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .checkboxLabel {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .checkboxLabel span {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .onlineDaysSummary {
+  background: rgba(0, 166, 81, 0.05) !important;
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .onlineDaysNote {
+  color: #4a5568 !important;
+}
+
+/* Advanced Settings (Step 3) */
+[data-theme="light"] .advancedToggle {
+  margin-bottom: 20px;
+}
+
+[data-theme="light"] .advancedToggleButton {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .advancedToggleButton:hover {
+  background: rgba(0, 166, 81, 0.05) !important;
+  border-color: #00a651 !important;
+}
+
+[data-theme="light"] .advancedToggleButton svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .algorithmInfo {
+  background: rgba(0, 166, 81, 0.08) !important;
+}
+
+[data-theme="light"] .algorithmInfo p {
+  color: #4a5568 !important;
+}
+
+/* Auto-Generate Section (Step 3) */
+[data-theme="light"] .autoGenerateSection,
+[data-theme="light"] .autoRegenerate {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+[data-theme="light"] .autoGenerateSection h4,
+[data-theme="light"] .autoRegenerate h4,
+[data-theme="light"] .autoGenerateTitle {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .autoGenerateSection p,
+[data-theme="light"] .autoRegenerate p,
+[data-theme="light"] .autoGenerateDescription {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .autoGenerateSection svg,
+[data-theme="light"] .autoRegenerate svg {
+  color: #00a651 !important;
+}
+
+/* Summary Cards (Step 2) */
+[data-theme="light"] .summaryCard {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .summaryInfo h4 {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .summaryInfo p {
+  color: #4a5568 !important;
+}
+
+[data-theme="light"] .summaryIcon {
+  background: rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .summaryIcon svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .campusIcon {
+  background: rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .classIcon {
+  background: rgba(46, 175, 125, 0.1) !important;
+}
+
+/* Quick Actions and Filter Controls */
+[data-theme="light"] .quickActionsBox,
+[data-theme="light"] .filterControlsBox {
+  background: rgba(0, 166, 81, 0.04) !important;
+  border-color: rgba(0, 166, 81, 0.15) !important;
+}
+
+[data-theme="light"] .quickActionsLabel {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .filterControlLabel {
+  color: #1a1a1a !important;
+}
+
+/* ==================== Green Theme Support ==================== */
+/* Main container and background */
+[data-theme="green"] .container {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 25%, #bbf7d0 50%, #dcfce7 75%, #f0fdf4 100%) !important;
+}
+
+/* Card backgrounds */
+[data-theme="green"] .card,
+[data-theme="green"] .sectionCard,
+[data-theme="green"] .stepCard,
+[data-theme="green"] .configCard,
+[data-theme="green"] .settingsCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* All headings and titles */
+[data-theme="green"] h1,
+[data-theme="green"] h2,
+[data-theme="green"] h3,
+[data-theme="green"] h4,
+[data-theme="green"] h5,
+[data-theme="green"] .sectionTitle,
+[data-theme="green"] .stepTitle,
+[data-theme="green"] .cardTitle,
+[data-theme="green"] .headerTitle {
+  color: #02353C !important;
+}
+
+/* All labels and form labels */
+[data-theme="green"] label,
+[data-theme="green"] .label,
+[data-theme="green"] .formLabel,
+[data-theme="green"] .fieldLabel,
+[data-theme="green"] .inputLabel,
+[data-theme="green"] .checkboxLabel,
+[data-theme="green"] .optionLabel {
+  color: #02353C !important;
+}
+
+/* All paragraph text and descriptions */
+[data-theme="green"] p,
+[data-theme="green"] .description,
+[data-theme="green"] .subtitle,
+[data-theme="green"] .infoText,
+[data-theme="green"] .helperText,
+[data-theme="green"] .noteText {
+  color: #166534 !important;
+}
+
+/* Info boxes and alerts */
+[data-theme="green"] .infoBox,
+[data-theme="green"] .alertBox,
+[data-theme="green"] .noteBox,
+[data-theme="green"] .tipBox,
+[data-theme="green"] .warningBox,
+[data-theme="green"] .hintBox {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #166534 !important;
+}
+
+[data-theme="green"] .infoBox p,
+[data-theme="green"] .alertBox p,
+[data-theme="green"] .noteBox p,
+[data-theme="green"] .warningBox p {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .infoBox svg,
+[data-theme="green"] .alertBox svg,
+[data-theme="green"] .noteBox svg {
+  color: #2EAF7D !important;
+}
+
+/* Input fields */
+[data-theme="green"] input,
+[data-theme="green"] select,
+[data-theme="green"] textarea,
+[data-theme="green"] .input,
+[data-theme="green"] .select,
+[data-theme="green"] .textField {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] input::placeholder,
+[data-theme="green"] textarea::placeholder {
+  color: #166534 !important;
+  opacity: 0.6 !important;
+}
+
+/* Checkbox and radio labels - IMPORTANT for day selections */
+[data-theme="green"] input[type="checkbox"]+label,
+[data-theme="green"] input[type="checkbox"]+span,
+[data-theme="green"] input[type="radio"]+label,
+[data-theme="green"] input[type="radio"]+span,
+[data-theme="green"] .checkboxText,
+[data-theme="green"] .radioText {
+  color: #02353C !important;
+}
+
+/* Time slot items */
+[data-theme="green"] .timeSlot,
+[data-theme="green"] .slotItem,
+[data-theme="green"] .timeOption,
+[data-theme="green"] .slotLabel {
+  color: #02353C !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+/* Day selection checkboxes */
+[data-theme="green"] .dayRow,
+[data-theme="green"] .dayOption,
+[data-theme="green"] .dayItem,
+[data-theme="green"] .weekDay,
+[data-theme="green"] .scheduleDay {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .dayRow label,
+[data-theme="green"] .dayOption label,
+[data-theme="green"] .weekDay label {
+  color: #02353C !important;
+}
+
+/* Duration info and time slot preview */
+[data-theme="green"] .durationInfo,
+[data-theme="green"] .slotDuration,
+[data-theme="green"] .timeInfo,
+[data-theme="green"] .previewLabel {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .durationInfo span,
+[data-theme="green"] .slotDuration span {
+  color: #02353C !important;
+}
+
+/* Section headers */
+[data-theme="green"] .sectionHeader,
+[data-theme="green"] .groupHeader,
+[data-theme="green"] .stepHeader {
+  color: #02353C !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .sectionHeader svg,
+[data-theme="green"] .groupHeader svg {
+  color: #2EAF7D !important;
+}
+
+/* Advanced settings toggle */
+[data-theme="green"] .advancedToggleButton {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .advancedToggleButton:hover {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-color: #2EAF7D !important;
+}
+
+[data-theme="green"] .advancedToggleButton svg {
+  color: #2EAF7D !important;
+}
+
+/* Algorithm info panel */
+[data-theme="green"] .algorithmInfo {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .algorithmInfo p,
+[data-theme="green"] .algorithmInfo span {
+  color: #166534 !important;
+}
+
+/* Summary cards */
+[data-theme="green"] .summaryCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .summaryInfo h4,
+[data-theme="green"] .summaryTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .summaryInfo p,
+[data-theme="green"] .summaryDescription {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .summaryIcon {
+  background: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .summaryIcon svg {
+  color: #2EAF7D !important;
+}
+
+/* Auto-generate section */
+[data-theme="green"] .autoGenerateSection,
+[data-theme="green"] .autoRegenerate {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .autoGenerateSection h4,
+[data-theme="green"] .autoRegenerate h4,
+[data-theme="green"] .autoGenerateTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .autoGenerateSection p,
+[data-theme="green"] .autoRegenerate p,
+[data-theme="green"] .autoGenerateDescription {
+  color: #166534 !important;
+}
+
+[data-theme="green"] .autoGenerateSection svg,
+[data-theme="green"] .autoRegenerate svg {
+  color: #2EAF7D !important;
+}
+
+/* Preview sections */
+[data-theme="green"] .previewSection,
+[data-theme="green"] .previewCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .previewCard h3,
+[data-theme="green"] .previewTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .previewCard th,
+[data-theme="green"] .previewTable th {
+  background: rgba(46, 175, 125, 0.15) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .previewCard td,
+[data-theme="green"] .previewTable td {
+  color: #166534 !important;
+  border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+/* Filter and config sections */
+[data-theme="green"] .filterSection,
+[data-theme="green"] .configSection,
+[data-theme="green"] .formCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .filterHeader,
+[data-theme="green"] .configHeader {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .filterHeader svg,
+[data-theme="green"] .configHeader svg {
+  color: #2EAF7D !important;
+}
+
+/* Quick actions box */
+[data-theme="green"] .quickActionsBox,
+[data-theme="green"] .filterControlsBox {
+  background: rgba(46, 175, 125, 0.08) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .quickActionsLabel {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .filterControlLabel {
+  color: #02353C !important;
+}
+
+/* Building and room cards */
+[data-theme="green"] .buildingCard,
+[data-theme="green"] .roomCard,
+[data-theme="green"] .dataCard {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .buildingCard h4,
+[data-theme="green"] .roomCard h4,
+[data-theme="green"] .dataCard h4 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .buildingCard p,
+[data-theme="green"] .roomCard p,
+[data-theme="green"] .dataCard p {
+  color: #166534 !important;
+}
+
+/* Compatibility card */
+[data-theme="green"] .compatibilityCard,
+[data-theme="green"] .statsCard {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(46, 175, 125, 0.25) !important;
+}
+
+[data-theme="green"] .compatibilityCard h3,
+[data-theme="green"] .statsCard h3 {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .compatibilityCard span,
+[data-theme="green"] .statsCard span {
+  color: #166534 !important;
+}
+
+/* Buttons - primary */
+[data-theme="green"] .primaryBtn,
+[data-theme="green"] .generateBtn,
+[data-theme="green"] .submitBtn,
+[data-theme="green"] .actionBtn {
+  background: linear-gradient(135deg, #449342, #2EAF7D) !important;
+  color: white !important;
+}
+
+[data-theme="green"] .primaryBtn:hover,
+[data-theme="green"] .generateBtn:hover,
+[data-theme="green"] .submitBtn:hover,
+[data-theme="green"] .actionBtn:hover {
+  background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
+}
+
+/* Buttons - secondary */
+[data-theme="green"] .secondaryBtn,
+[data-theme="green"] .backBtn,
+[data-theme="green"] .cancelBtn {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .secondaryBtn:hover,
+[data-theme="green"] .backBtn:hover {
+  background: rgba(46, 175, 125, 0.1) !important;
+  border-color: #2EAF7D !important;
+}
+
+/* Step indicators and navigation */
+[data-theme="green"] .stepIndicator,
+[data-theme="green"] .progressStep {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .stepIndicator.active,
+[data-theme="green"] .progressStep.active {
+  color: #2EAF7D !important;
+}
+
+/* Table styling */
+[data-theme="green"] table {
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] th {
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] td {
+  color: #166534 !important;
+  border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] tr:hover td {
+  background: rgba(46, 175, 125, 0.05) !important;
+}
+
+/* Override any remaining white text */
+[data-theme="green"] .stepContent label,
+[data-theme="green"] .stepContent span,
+[data-theme="green"] .stepContent p,
+[data-theme="green"] .formGroup label,
+[data-theme="green"] .formGroup span {
+  color: #02353C !important;
 }

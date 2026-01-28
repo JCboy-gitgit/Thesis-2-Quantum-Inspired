@@ -19,6 +19,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -35,7 +36,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 
+  box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
     0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
     inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
@@ -48,6 +49,7 @@
     opacity: 0;
     transform: translateY(20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -172,24 +174,330 @@
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
 }
 
+/* ==================== Green Theme - Leafy Growing Animation ==================== */
 .green-preview {
   background: linear-gradient(135deg, #005826, #00a651);
   color: white;
   box-shadow: 0 4px 15px rgba(0, 166, 81, 0.4);
 }
 
+.leaf-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.leaf {
+  position: absolute;
+  color: #c1f6ed;
+  opacity: 0;
+  transform: scale(0) rotate(0deg);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.leaf-main {
+  position: relative;
+  color: white;
+  opacity: 1;
+  transform: scale(1);
+  z-index: 2;
+}
+
+.leaf-1 {
+  top: 5px;
+  left: 5px;
+  animation: leafGrow1 3s ease-in-out infinite;
+}
+
+.leaf-2 {
+  top: 8px;
+  right: 6px;
+  animation: leafGrow2 3s ease-in-out infinite 0.5s;
+}
+
+.leaf-3 {
+  bottom: 6px;
+  left: 8px;
+  animation: leafGrow3 3s ease-in-out infinite 1s;
+}
+
+@keyframes leafGrow1 {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(-45deg) translateY(10px);
+  }
+
+  20%,
+  80% {
+    opacity: 0.8;
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(15deg) translateY(-3px);
+  }
+}
+
+@keyframes leafGrow2 {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(45deg) translateY(10px);
+  }
+
+  20%,
+  80% {
+    opacity: 0.7;
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1) rotate(-20deg) translateY(-2px);
+  }
+}
+
+@keyframes leafGrow3 {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(30deg) translateY(10px);
+  }
+
+  20%,
+  80% {
+    opacity: 0.6;
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15) rotate(-10deg) translateY(-4px);
+  }
+}
+
+.theme-option:hover .leaf-main {
+  animation: leafBounce 0.6s ease-in-out;
+}
+
+@keyframes leafBounce {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: scale(1.2) rotate(-10deg);
+  }
+
+  50% {
+    transform: scale(0.9) rotate(5deg);
+  }
+
+  75% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+}
+
+/* ==================== Dark Theme - Moon with Stars Animation ==================== */
 .dark-preview {
   background: linear-gradient(135deg, #1a1f3a, #0a0e27);
   color: #00d4ff;
   box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
 }
 
+.moon-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moon-icon {
+  color: #ffd700;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+  z-index: 2;
+}
+
+.star {
+  position: absolute;
+  font-size: 8px;
+  color: #00d4ff;
+  opacity: 0;
+  animation: starTwinkle 2s ease-in-out infinite;
+}
+
+.star-1 {
+  top: 6px;
+  right: 8px;
+  animation-delay: 0s;
+}
+
+.star-2 {
+  top: 10px;
+  left: 6px;
+  font-size: 6px;
+  animation-delay: 0.7s;
+}
+
+.star-3 {
+  bottom: 8px;
+  right: 10px;
+  font-size: 7px;
+  animation-delay: 1.4s;
+}
+
+@keyframes starTwinkle {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px #00d4ff);
+  }
+}
+
+.theme-option:hover .moon-icon {
+  animation: moonGlow 1s ease-in-out;
+}
+
+@keyframes moonGlow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.9));
+    transform: scale(1.15);
+  }
+}
+
+/* ==================== Light Theme - Sun with Clouds Animation ==================== */
 .light-preview {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  color: #333;
+  background: linear-gradient(135deg, #87ceeb, #e8f4ff);
+  color: #ffa500;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.sun-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sun-icon {
+  color: #ffa500;
+  filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+  z-index: 2;
+  animation: sunPulse 3s ease-in-out infinite;
+}
+
+@keyframes sunPulse {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+  }
+
+  50% {
+    transform: scale(1.1) rotate(15deg);
+    filter: drop-shadow(0 0 12px rgba(255, 165, 0, 0.8));
+  }
+}
+
+.cloud {
+  position: absolute;
+  font-size: 14px;
+  color: white;
+  opacity: 0.9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cloud-1 {
+  top: 4px;
+  right: 2px;
+  font-size: 12px;
+  animation: cloudFloat1 4s ease-in-out infinite;
+}
+
+.cloud-2 {
+  bottom: 6px;
+  left: 0px;
+  font-size: 10px;
+  animation: cloudFloat2 4s ease-in-out infinite 2s;
+}
+
+@keyframes cloudFloat1 {
+
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translateX(-3px) translateY(2px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes cloudFloat2 {
+
+  0%,
+  100% {
+    transform: translateX(0) translateY(0);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateX(4px) translateY(-1px);
+    opacity: 0.6;
+  }
+}
+
+.theme-option:hover .sun-icon {
+  animation: sunSpin 0.8s ease-in-out;
+}
+
+@keyframes sunSpin {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  50% {
+    transform: scale(1.2) rotate(180deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(360deg);
+  }
 }
 
 .theme-option:hover .theme-preview {
@@ -300,4 +608,153 @@
     padding: 4px 8px;
     font-size: 10px;
   }
+}
+
+/* ==================== Light Theme Support ==================== */
+[data-theme="light"] .settings-modal {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.25);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 166, 81, 0.1);
+}
+
+[data-theme="light"] .settings-header {
+  background: rgba(0, 166, 81, 0.08);
+  border-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .settings-title {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .settings-close {
+  background: rgba(0, 0, 0, 0.05);
+  color: #4a5568;
+}
+
+[data-theme="light"] .settings-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+[data-theme="light"] .settings-section-title {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .settings-section-description {
+  color: #4a5568;
+}
+
+[data-theme="light"] .theme-option {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .theme-option:hover {
+  background: rgba(0, 166, 81, 0.08);
+  border-color: #00a651;
+}
+
+[data-theme="light"] .theme-option.active {
+  background: rgba(0, 166, 81, 0.1);
+  border-color: #00a651;
+}
+
+[data-theme="light"] .theme-name {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .theme-description {
+  color: #4a5568;
+}
+
+[data-theme="light"] .settings-footer {
+  border-color: rgba(0, 166, 81, 0.15);
+}
+
+/* ==================== Green Theme Support ==================== */
+[data-theme="green"] .settings-modal {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(220, 252, 231, 0.98));
+  border-color: rgba(46, 175, 125, 0.35);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(46, 175, 125, 0.2),
+    inset 0 0 40px rgba(46, 175, 125, 0.1);
+}
+
+[data-theme="green"] .settings-header {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15), rgba(68, 147, 66, 0.1));
+  border-color: rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .settings-title {
+  color: #02353C;
+}
+
+[data-theme="green"] .settings-title svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .settings-close {
+  background: rgba(46, 175, 125, 0.1);
+  color: #166534;
+}
+
+[data-theme="green"] .settings-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+[data-theme="green"] .settings-section-title {
+  color: #02353C;
+}
+
+[data-theme="green"] .settings-section-description {
+  color: #166534;
+}
+
+[data-theme="green"] .theme-option {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .theme-option:hover {
+  background: rgba(193, 246, 237, 0.4);
+  border-color: #2EAF7D;
+  box-shadow: 0 0 20px rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .theme-option.active {
+  background: rgba(193, 246, 237, 0.5);
+  border-color: #2EAF7D;
+  box-shadow: 0 0 25px rgba(46, 175, 125, 0.25);
+}
+
+[data-theme="green"] .theme-name {
+  color: #02353C;
+}
+
+[data-theme="green"] .theme-description {
+  color: #166534;
+}
+
+[data-theme="green"] .theme-active-badge {
+  background: linear-gradient(135deg, #449342, #2EAF7D);
+  box-shadow: 0 2px 8px rgba(46, 175, 125, 0.3);
+}
+
+[data-theme="green"] .settings-footer {
+  border-color: rgba(46, 175, 125, 0.25);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="green"] .settings-done-btn {
+  background: linear-gradient(135deg, #449342, #2EAF7D);
+  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+}
+
+[data-theme="green"] .settings-done-btn:hover {
+  background: linear-gradient(135deg, #2EAF7D, #3FD0C9);
+  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.4);
 }

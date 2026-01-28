@@ -44,63 +44,61 @@
 /* Body styling for green theme - enable pseudo-element backgrounds */
 [data-theme="green"] body {
     position: relative;
-    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
+    min-height: 100vh;
+    background: linear-gradient(180deg,
+            #f0fdf4 0%,
+            #dcfce7 20%,
+            #bbf7d0 40%,
+            #dcfce7 60%,
+            #f0fdf4 80%,
+            #dcfce7 100%);
+    background-attachment: fixed;
+    background-size: 100% 200vh;
 }
 
-/* Nature Background Layer - Floating Leaves - Apply to body only */
+/* Nature Background Layer - Seamless soft spots - No visible tiling */
 [data-theme="green"] body::before {
     content: '';
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath d='M20 35c-5-8 5-25 15-20s15 20 5 28c-8 6-15-2-20 8' fill='none' stroke='%232EAF7D' stroke-width='0.5' opacity='0.12'/%3E%3C/svg%3E"),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Cellipse cx='30' cy='25' rx='12' ry='18' fill='%23449342' opacity='0.05' transform='rotate(25 30 25)'/%3E%3C/svg%3E"),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10c20 15 25 40 10 55s-40 5-50-15c5 25 35 35 55 20s15-45-15-60z' fill='%232EAF7D' opacity='0.03'/%3E%3C/svg%3E");
-    background-size: 200px 200px, 150px 150px, 300px 300px;
-    background-position: 0 0, 100px 50px, 50px 100px;
+    width: 100%;
+    height: 100%;
+    background:
+        /* Scattered soft green spots at different positions - no tiling */
+        radial-gradient(ellipse 120px 180px at 10% 15%, rgba(46, 175, 125, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 100px 150px at 85% 10%, rgba(68, 147, 66, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 80px 120px at 40% 25%, rgba(46, 175, 125, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 150px 200px at 70% 35%, rgba(68, 147, 66, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 100px 140px at 15% 45%, rgba(46, 175, 125, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 130px 170px at 90% 50%, rgba(68, 147, 66, 0.045) 0%, transparent 70%),
+        radial-gradient(ellipse 110px 160px at 55% 55%, rgba(46, 175, 125, 0.035) 0%, transparent 70%),
+        radial-gradient(ellipse 90px 130px at 25% 70%, rgba(68, 147, 66, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 140px 190px at 75% 75%, rgba(46, 175, 125, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 100px 150px at 45% 85%, rgba(68, 147, 66, 0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 120px 160px at 5% 90%, rgba(46, 175, 125, 0.045) 0%, transparent 70%),
+        radial-gradient(ellipse 80px 120px at 95% 95%, rgba(68, 147, 66, 0.035) 0%, transparent 70%);
     pointer-events: none;
     z-index: 0;
-    animation: floatLeaves 30s ease-in-out infinite;
 }
 
-/* Tree Silhouette Decoration - Bottom Right - Apply to body only */
+/* Tree Silhouette Decoration - Bottom Right - Static for performance */
 [data-theme="green"] body::after {
     content: '';
     position: fixed;
-    bottom: 0;
-    right: -50px;
-    width: 350px;
-    height: 450px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 250'%3E%3Cpath d='M100 250v-80M100 170c-30-20-50-50-40-80s40-50 40-80c0 30 30 50 40 80s-10 60-40 80z' fill='%23449342' opacity='0.06'/%3E%3Ccircle cx='60' cy='100' r='35' fill='%232EAF7D' opacity='0.04'/%3E%3Ccircle cx='140' cy='90' r='30' fill='%232EAF7D' opacity='0.04'/%3E%3Ccircle cx='100' cy='60' r='40' fill='%23449342' opacity='0.05'/%3E%3C/svg%3E");
+    bottom: -20px;
+    right: -30px;
+    width: 280px;
+    height: 380px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 250'%3E%3Cpath d='M100 250v-60' stroke='%23449342' stroke-width='8' opacity='0.04'/%3E%3Cpath d='M100 190 Q60 160 70 120 Q80 80 100 50 Q120 80 130 120 Q140 160 100 190' fill='%232EAF7D' opacity='0.035'/%3E%3Cpath d='M100 160 Q75 140 80 110 Q90 80 100 65 Q110 80 120 110 Q125 140 100 160' fill='%23449342' opacity='0.03'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.5;
+    opacity: 0.7;
 }
 
-@keyframes floatLeaves {
-
-    0%,
-    100% {
-        background-position: 0 0, 100px 50px, 50px 100px;
-    }
-
-    25% {
-        background-position: 20px 10px, 120px 60px, 70px 90px;
-    }
-
-    50% {
-        background-position: 10px 20px, 90px 70px, 60px 110px;
-    }
-
-    75% {
-        background-position: -10px 5px, 110px 40px, 40px 95px;
-    }
-}
+/* Removed floatLeaves animation for mobile performance */
 
 /* ==================== Content Layer - Always Above Background ==================== */
 /* Ensure all page containers and content are above the body::before/after decorations */

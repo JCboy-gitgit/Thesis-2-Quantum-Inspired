@@ -249,3 +249,65 @@
 [data-theme="green"] .sidebar::-webkit-scrollbar-thumb:hover {
   background: #2EAF7D;
 }
+
+/* ==================== Light Theme Sidebar ==================== */
+[data-theme="light"] .sidebar {
+  background: rgba(255, 255, 255, 0.98);
+  border-right: 2px solid rgba(0, 166, 81, 0.2);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .sidebar-header {
+  border-bottom: 1px solid rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .sidebar-title {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .sidebar-item {
+  color: #4a5568;
+}
+
+[data-theme="light"] .sidebar-item:hover {
+  background: rgba(0, 166, 81, 0.08);
+  color: #00a651;
+}
+
+[data-theme="light"] .sidebar-item.active {
+  background: linear-gradient(90deg, rgba(0, 166, 81, 0.15) 0%, transparent 100%);
+  color: #00a651;
+  border-left: 3px solid #00a651;
+}
+
+[data-theme="light"] .submenu {
+  background: rgba(0, 166, 81, 0.03);
+  border-left: 3px solid rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .submenu-item {
+  color: #4a5568;
+}
+
+[data-theme="light"] .submenu-item:hover {
+  background: rgba(0, 166, 81, 0.08);
+  color: #00a651;
+}
+
+[data-theme="light"] .submenu-item.active {
+  color: #00a651;
+  background: rgba(0, 166, 81, 0.1);
+  border-left: 3px solid #00a651;
+}
+
+[data-theme="light"] .sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 166, 81, 0.2);
+}
+
+[data-theme="light"] .sidebar::-webkit-scrollbar-thumb:hover {
+  background: #00a651;
+}

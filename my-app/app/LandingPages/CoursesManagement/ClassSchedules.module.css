@@ -1323,3 +1323,140 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== Light Theme Support ==================== */
+:global([data-theme="light"]) .pageLayout,
+:global([data-theme="light"]) .pageMain {
+  background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+:global([data-theme="light"]) .pageHeader,
+:global([data-theme="light"]) .welcomeSection {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .pageTitle,
+:global([data-theme="light"]) .welcomeTitle {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+:global([data-theme="light"]) .pageSubtitle,
+:global([data-theme="light"]) .welcomeSubtitle {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .scheduleCard,
+:global([data-theme="light"]) .classCard,
+:global([data-theme="light"]) .roomCard,
+:global([data-theme="light"]) .seatCard,
+:global([data-theme="light"]) .batchCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme="light"]) .scheduleEventName,
+:global([data-theme="light"]) .roomNumber,
+:global([data-theme="light"]) .batchName,
+:global([data-theme="light"]) .participantName,
+:global([data-theme="light"]) .sectionTitle {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .scheduleInfo,
+:global([data-theme="light"]) .roomStat,
+:global([data-theme="light"]) .batchTime,
+:global([data-theme="light"]) .participantNumber {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .scheduleInfo svg,
+:global([data-theme="light"]) .roomStat svg,
+:global([data-theme="light"]) .batchTime svg,
+:global([data-theme="light"]) .sectionTitle svg {
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .scheduleCardHeader {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+:global([data-theme="light"]) .scheduleCardFooter {
+  background: rgba(0, 166, 81, 0.05);
+  border-top-color: rgba(0, 166, 81, 0.15);
+}
+
+:global([data-theme="light"]) .backButton,
+:global([data-theme="light"]) .addButton,
+:global([data-theme="light"]) .viewButton {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+:global([data-theme="light"]) .statsGrid .statCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.15);
+}
+
+:global([data-theme="light"]) .statLabel {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .statValue {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .searchInput {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .searchInput:focus {
+  border-color: #00a651;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+}
+
+:global([data-theme="light"]) .campusSection,
+:global([data-theme="light"]) .roomView,
+:global([data-theme="light"]) .batchView {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .campusHeaderRow,
+:global([data-theme="light"]) .buildingHeaderRow {
+  background: rgba(0, 166, 81, 0.05);
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .campusHeaderRow:hover,
+:global([data-theme="light"]) .buildingHeaderRow:hover {
+  background: rgba(0, 166, 81, 0.1);
+}
+
+:global([data-theme="light"]) .loadingState,
+:global([data-theme="light"]) .emptyState {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .emptyState h3 {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .emptyState p {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .progressBar {
+  background: rgba(0, 166, 81, 0.1);
+}
+
+:global([data-theme="light"]) .progressFill {
+  background: linear-gradient(90deg, #005826 0%, #00a651 100%);
+}

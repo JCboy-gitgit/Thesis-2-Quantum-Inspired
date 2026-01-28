@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown, Archive } from 'lucide-react'
 import SettingsModal from './SettingsModal'
 import ArchiveModal from './ArchiveModal'
+import ProfileModal from './ProfileModal'
 import NotificationBell from './NotificationBell'
 import './MenuBar.css'
 
@@ -22,6 +23,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
@@ -36,7 +38,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
       if (user) {
         setUserEmail(user.email || null)
         setIsAdmin(user.email === ADMIN_EMAIL)
-        
+
         // Fetch pending registrations count for admin
         if (user.email === ADMIN_EMAIL) {
           fetchPendingCount()
@@ -51,7 +53,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
       if (session?.user) {
         setUserEmail(session.user.email || null)
         setIsAdmin(session.user.email === ADMIN_EMAIL)
-        
+
         if (session.user.email === ADMIN_EMAIL) {
           fetchPendingCount()
         }
@@ -130,90 +132,90 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         </div>
 
         <div className="menu-bar-right">
-        {/* Notification Bell - Only for Admin */}
-        {isAdmin && showAccountIcon && (
-          <NotificationBell 
-            pendingCount={pendingRegistrations}
-            onNotificationClick={() => fetchPendingCount()}
-          />
-        )}
+          {/* Notification Bell - Only for Admin */}
+          {isAdmin && showAccountIcon && (
+            <NotificationBell
+              pendingCount={pendingRegistrations}
+              onNotificationClick={() => fetchPendingCount()}
+            />
+          )}
 
-        {showAccountIcon && (
-          <div className="account-section">
-            <button 
-              className="account-button"
-              onClick={() => setShowAccountMenu(!showAccountMenu)}
-              title="Account Menu"
-            >
-              <div className="account-avatar">
-                <User size={20} />
-              </div>
-              <ChevronDown size={14} className={`account-chevron ${showAccountMenu ? 'rotated' : ''}`} />
-            </button>
-            
-            {showAccountMenu && (
-              <div className="account-menu">
-                {userEmail && (
-                  <>
-                    <div className="account-menu-email">
-                      <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                      {userEmail}
-                    </div>
-                    <div className="account-menu-divider"></div>
-                  </>
-                )}
-                <div 
-                  className="account-menu-item"
-                  onClick={() => {
-                    setShowAccountMenu(false)
-                    router.push('/LandingPages/Profile')
-                  }}
-                >
-                  <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Profile
+          {showAccountIcon && (
+            <div className="account-section">
+              <button
+                className="account-button"
+                onClick={() => setShowAccountMenu(!showAccountMenu)}
+                title="Account Menu"
+              >
+                <div className="account-avatar">
+                  <User size={20} />
                 </div>
-                {isAdmin && (
-                  <div 
+                <ChevronDown size={14} className={`account-chevron ${showAccountMenu ? 'rotated' : ''}`} />
+              </button>
+
+              {showAccountMenu && (
+                <div className="account-menu">
+                  {userEmail && (
+                    <>
+                      <div className="account-menu-email">
+                        <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        {userEmail}
+                      </div>
+                      <div className="account-menu-divider"></div>
+                    </>
+                  )}
+                  <div
                     className="account-menu-item"
                     onClick={() => {
                       setShowAccountMenu(false)
-                      setShowArchive(true)
+                      setShowProfile(true)
                     }}
                   >
-                    <Archive size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Archive
+                    <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Profile
                   </div>
-                )}
-                <div 
-                  className="account-menu-item"
-                  onClick={() => {
-                    setShowAccountMenu(false)
-                    setShowSettings(true)
-                  }}
-                >
-                  <SettingsIcon size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Settings
+                  {isAdmin && (
+                    <div
+                      className="account-menu-item"
+                      onClick={() => {
+                        setShowAccountMenu(false)
+                        setShowArchive(true)
+                      }}
+                    >
+                      <Archive size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                      Archive
+                    </div>
+                  )}
+                  <div
+                    className="account-menu-item"
+                    onClick={() => {
+                      setShowAccountMenu(false)
+                      setShowSettings(true)
+                    }}
+                  >
+                    <SettingsIcon size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Settings
+                  </div>
+                  <div className="account-menu-divider"></div>
+                  <div
+                    className="account-menu-item logout-item"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowAccountMenu(false)
+                      handleLogout()
+                    }}
+                  >
+                    <LogOut size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Logout
+                  </div>
                 </div>
-                <div className="account-menu-divider"></div>
-                <div 
-                  className="account-menu-item logout-item"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowAccountMenu(false)
-                    handleLogout()
-                  }}
-                >
-                  <LogOut size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Logout
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Toggle Arrow Button - inside header */}
-        <button 
+        <button
           className="menu-bar-toggle-btn"
           onClick={toggleMenuBar}
           title={isMenuBarHidden ? 'Show Menu Bar' : 'Hide Menu Bar'}
@@ -224,7 +226,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
 
       {/* Floating toggle button when menu is hidden */}
       {isMenuBarHidden && (
-        <button 
+        <button
           className="menu-bar-show-btn"
           onClick={toggleMenuBar}
           title="Show Menu Bar"
@@ -233,14 +235,19 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         </button>
       )}
 
-      <SettingsModal 
-        isOpen={showSettings} 
-        onClose={() => setShowSettings(false)} 
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
 
       <ArchiveModal
         isOpen={showArchive}
         onClose={() => setShowArchive(false)}
+      />
+
+      <ProfileModal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
       />
     </>
   )

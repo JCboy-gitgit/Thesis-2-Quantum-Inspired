@@ -100,17 +100,17 @@ function getInitials(name: string | null): string {
 function getRoleInfo(role: string) {
   switch (role) {
     case 'administrator':
-      return { icon: '👑', label: 'Administrator / Dean', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.15)' }
+      return { icon: '★', label: 'Administrator / Dean', color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.15)' }
     case 'department_head':
-      return { icon: '🛡️', label: 'Department Head', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.15)' }
+      return { icon: '◆', label: 'Department Head', color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.15)' }
     case 'program_chair':
-      return { icon: '⭐', label: 'Program Chair', color: '#ec4899', bgColor: 'rgba(236, 72, 153, 0.15)' }
+      return { icon: '●', label: 'Program Chair', color: '#ec4899', bgColor: 'rgba(236, 72, 153, 0.15)' }
     case 'coordinator':
-      return { icon: '⚙️', label: 'Coordinator', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.15)' }
+      return { icon: '◎', label: 'Coordinator', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.15)' }
     case 'staff':
-      return { icon: '💼', label: 'Staff', color: '#64748b', bgColor: 'rgba(100, 116, 139, 0.15)' }
+      return { icon: '■', label: 'Staff', color: '#64748b', bgColor: 'rgba(100, 116, 139, 0.15)' }
     default:
-      return { icon: '👨‍🏫', label: 'Faculty Member', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.15)' }
+      return { icon: '○', label: 'Faculty Member', color: '#22c55e', bgColor: 'rgba(34, 197, 94, 0.15)' }
   }
 }
 
@@ -279,7 +279,7 @@ function FacultyCollegesContent() {
   useEffect(() => {
     const collegeId = searchParams.get('college')
     const fileId = searchParams.get('file')
-    
+
     if (collegeId && colleges.length > 0) {
       const college = colleges.find(c => c.id === parseInt(collegeId))
       if (college) {
@@ -362,12 +362,12 @@ function FacultyCollegesContent() {
       // Group by upload_group_id (each CSV file)
       const facultyData = (data || []) as FacultyProfile[]
       const fileMap = new Map<number, { faculty: FacultyProfile[], departments: Set<string>, file_name: string, isLegacy: boolean }>()
-      
+
       facultyData.forEach((f: FacultyProfile) => {
         const isLegacy = f.upload_group_id === null || f.upload_group_id === undefined
         const groupId = isLegacy ? 0 : f.upload_group_id!
         const fileName = f.file_name || 'Legacy Import'
-        
+
         if (!fileMap.has(groupId)) {
           fileMap.set(groupId, { faculty: [], departments: new Set(), file_name: fileName, isLegacy })
         }
@@ -413,8 +413,8 @@ function FacultyCollegesContent() {
 
       // Separate hierarchy (with position/role) from regular faculty
       const hierarchy = (data || [])
-        .filter((f: FacultyProfile) => 
-          f.role !== 'faculty' || 
+        .filter((f: FacultyProfile) =>
+          f.role !== 'faculty' ||
           (f.position && f.position.toLowerCase() !== 'faculty' && f.position.toLowerCase() !== '')
         )
         .sort((a: FacultyProfile, b: FacultyProfile) => {
@@ -425,8 +425,8 @@ function FacultyCollegesContent() {
         })
 
       const regular = (data || [])
-        .filter((f: FacultyProfile) => 
-          f.role === 'faculty' && 
+        .filter((f: FacultyProfile) =>
+          f.role === 'faculty' &&
           (!f.position || f.position.toLowerCase() === 'faculty' || f.position.toLowerCase() === '')
         )
 
@@ -595,7 +595,7 @@ function FacultyCollegesContent() {
     try {
       const { error } = await db
         .from('faculty_profiles')
-        .update({ 
+        .update({
           file_name: renameFileName.trim(),
           updated_at: new Date().toISOString()
         })
@@ -631,7 +631,7 @@ function FacultyCollegesContent() {
           .insert({
             item_type: 'faculty_file' as any,
             item_name: selectedFile.file_name,
-            item_data: { 
+            item_data: {
               file_name: selectedFile.file_name,
               college: selectedFile.college,
               faculty_count: selectedFile.faculty_count,
@@ -800,9 +800,9 @@ function FacultyCollegesContent() {
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       if (!f.full_name?.toLowerCase().includes(term) &&
-          !f.email?.toLowerCase().includes(term) &&
-          !f.position?.toLowerCase().includes(term) &&
-          !f.department?.toLowerCase().includes(term)) {
+        !f.email?.toLowerCase().includes(term) &&
+        !f.position?.toLowerCase().includes(term) &&
+        !f.department?.toLowerCase().includes(term)) {
         return false
       }
     }
@@ -846,7 +846,7 @@ function FacultyCollegesContent() {
               </button>
             )}
             <div className={styles.breadcrumbPath}>
-              <span 
+              <span
                 className={currentView === 'colleges' ? styles.breadcrumbActive : styles.breadcrumbLink}
                 onClick={() => { setCurrentView('colleges'); setSelectedCollege(null); setSelectedFile(null); }}
               >
@@ -855,7 +855,7 @@ function FacultyCollegesContent() {
               {selectedCollege && (
                 <>
                   <span className={styles.breadcrumbSeparator}>/</span>
-                  <span 
+                  <span
                     className={currentView === 'files' ? styles.breadcrumbActive : styles.breadcrumbLink}
                     onClick={() => { setCurrentView('files'); setSelectedFile(null); }}
                   >
@@ -896,12 +896,12 @@ function FacultyCollegesContent() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    className={styles.secondaryBtn} 
+                  <button
+                    className={styles.secondaryBtn}
                     onClick={() => window.location.href = '/LandingPages/FacultyColleges/TeachingLoadAssignment'}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '8px',
                       padding: '10px 20px',
                       backgroundColor: '#8b5cf6',
@@ -914,7 +914,7 @@ function FacultyCollegesContent() {
                     }}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
                     </svg>
                     Teaching Load Assignment
                   </button>
@@ -968,14 +968,14 @@ function FacultyCollegesContent() {
                       </div>
                     </div>
                     <div className={styles.collegeActions}>
-                      <button 
+                      <button
                         className={styles.editBtn}
                         onClick={(e) => { e.stopPropagation(); openEditCollegeModal(college); }}
                         title="Edit college"
                       >
                         <EditIcon />
                       </button>
-                      <button 
+                      <button
                         className={styles.deleteBtn}
                         onClick={(e) => { e.stopPropagation(); setSelectedCollege(college); setShowDeleteCollegeConfirm(true); }}
                         title="Delete college"
@@ -1043,14 +1043,14 @@ function FacultyCollegesContent() {
                         </div>
                       </div>
                       <div className={styles.fileActions}>
-                        <button 
+                        <button
                           className={styles.editBtn}
                           onClick={(e) => { e.stopPropagation(); openRenameFileModal(file); }}
                           title="Rename file"
                         >
                           <EditIcon />
                         </button>
-                        <button 
+                        <button
                           className={styles.deleteBtn}
                           onClick={(e) => { e.stopPropagation(); openDeleteFileConfirmModal(file); }}
                           title="Delete file"
@@ -1067,8 +1067,8 @@ function FacultyCollegesContent() {
                   <FileIcon />
                   <h3>No Faculty Files Found</h3>
                   <p>No CSV files match this college. Upload faculty data from the Upload CSV page.</p>
-                  <button 
-                    className={styles.addBtn} 
+                  <button
+                    className={styles.addBtn}
                     onClick={() => router.push('/LandingPages/UploadCSV')}
                   >
                     Go to Upload CSV
@@ -1146,7 +1146,7 @@ function FacultyCollegesContent() {
                   {/* Hierarchy Section */}
                   {hierarchyFaculty.length > 0 && (
                     <div className={styles.hierarchySection}>
-                      <h3 className={styles.sectionTitle}>👑 College Leadership & Staff</h3>
+                      <h3 className={styles.sectionTitle}>★ College Leadership & Staff</h3>
                       <div className={styles.hierarchyGrid}>
                         {hierarchyFaculty.map(faculty => {
                           const roleInfo = getRoleInfo(faculty.role)
@@ -1188,16 +1188,7 @@ function FacultyCollegesContent() {
                               <div className={styles.hierarchyInfo}>
                                 <span className={styles.roleIcon}>{roleInfo.icon}</span>
                                 <h4>{faculty.full_name}</h4>
-                                <p className={styles.facultyIdBadge} style={{ 
-                                  fontSize: '11px', 
-                                  fontWeight: 600, 
-                                  padding: '2px 8px', 
-                                  background: 'linear-gradient(135deg, #667eea, #764ba2)', 
-                                  color: 'white', 
-                                  borderRadius: '6px',
-                                  display: 'inline-block',
-                                  marginBottom: '4px'
-                                }}>ID: {faculty.faculty_id}</p>
+                                <p className={styles.facultyIdBadge}>ID: {faculty.faculty_id}</p>
                                 <p className={styles.hierarchyPosition}>{faculty.position}</p>
                                 <span className={styles.roleBadge} style={{ backgroundColor: roleInfo.bgColor, color: roleInfo.color }}>
                                   {roleInfo.label}
@@ -1219,7 +1210,7 @@ function FacultyCollegesContent() {
                   {/* Regular Faculty Section */}
                   {regularFaculty.length > 0 && (
                     <div className={styles.facultySection}>
-                      <h3 className={styles.sectionTitle}>👨‍🏫 Faculty Members ({regularFaculty.length})</h3>
+                      <h3 className={styles.sectionTitle}>● Faculty Members ({regularFaculty.length})</h3>
                       <div className={styles.facultyGrid}>
                         {paginatedFaculty.filter(f => f.role === 'faculty').map(faculty => {
                           const empBadge = getEmploymentBadge(faculty.employment_type)
@@ -1259,16 +1250,7 @@ function FacultyCollegesContent() {
                               </div>
                               <div className={styles.facultyInfo}>
                                 <h4>{faculty.full_name}</h4>
-                                <p style={{ 
-                                  fontSize: '11px', 
-                                  fontWeight: 600, 
-                                  padding: '2px 8px', 
-                                  background: 'linear-gradient(135deg, #667eea, #764ba2)', 
-                                  color: 'white', 
-                                  borderRadius: '6px',
-                                  display: 'inline-block',
-                                  marginBottom: '4px'
-                                }}>ID: {faculty.faculty_id}</p>
+                                <p className={styles.facultyIdBadge}>ID: {faculty.faculty_id}</p>
                                 <p>{faculty.department || 'No Department'}</p>
                                 <span className={styles.empBadge} style={{ backgroundColor: empBadge.color }}>
                                   {empBadge.label}

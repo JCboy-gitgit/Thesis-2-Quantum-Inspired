@@ -1263,3 +1263,218 @@ body {
   color: #ffffff;
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.3);
 }
+
+/* ==================== Light Theme Overrides ==================== */
+[data-theme="light"] .menu-bar {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .menu-toggle {
+  background: rgba(0, 166, 81, 0.08);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #00a651;
+}
+
+[data-theme="light"] .menu-toggle:hover {
+  background: rgba(0, 166, 81, 0.15);
+  border-color: #00a651;
+}
+
+[data-theme="light"] .logo-text {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+[data-theme="light"] .menu-bar-toggle-btn,
+[data-theme="light"] .menu-bar-show-btn {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #00a651;
+}
+
+[data-theme="light"] .menu-bar-toggle-btn:hover,
+[data-theme="light"] .menu-bar-show-btn:hover {
+  background: rgba(0, 166, 81, 0.1);
+  border-color: #00a651;
+}
+
+[data-theme="light"] .account-avatar {
+  background: rgba(0, 166, 81, 0.1);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #00a651;
+}
+
+[data-theme="light"] .account-button:hover .account-avatar {
+  background: rgba(0, 166, 81, 0.2);
+  border-color: #00a651;
+}
+
+[data-theme="light"] .account-chevron {
+  color: #4a5568;
+}
+
+[data-theme="light"] .account-menu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .account-menu-email {
+  background: rgba(0, 166, 81, 0.08);
+  border-bottom-color: rgba(0, 166, 81, 0.15);
+  color: #00a651;
+}
+
+[data-theme="light"] .account-menu-item {
+  color: #4a5568;
+}
+
+[data-theme="light"] .account-menu-item:hover {
+  background: rgba(0, 166, 81, 0.08);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .account-menu-item.logout-item {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+[data-theme="light"] .account-menu-item.logout-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* Page Layout Light Theme */
+[data-theme="light"] .page-layout {
+  background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+[data-theme="light"] .page-layout::before {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+[data-theme="light"] .page-layout::after {
+  background: radial-gradient(circle, rgba(0, 166, 81, 0.1) 0%, transparent 70%);
+}
+
+/* Page Header Light Theme */
+[data-theme="light"] .page-header-content {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .page-header-content h1 {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+[data-theme="light"] .page-header-content h2 {
+  color: #4a5568;
+}
+
+/* Cards Light Theme */
+[data-theme="light"] .upload-card {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .upload-card:hover {
+  border-color: #00a651;
+  box-shadow: 0 8px 32px rgba(0, 166, 81, 0.12);
+}
+
+[data-theme="light"] .section-title {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .format-info {
+  background: rgba(0, 166, 81, 0.08);
+  border-left-color: #00a651;
+}
+
+[data-theme="light"] .format-info h3 {
+  color: #00a651;
+}
+
+[data-theme="light"] .format-info p {
+  color: #4a5568;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .format-info small {
+  color: #4a5568;
+}
+
+/* Form Elements Light Theme */
+[data-theme="light"] .label {
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .input {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .input:focus {
+  border-color: #00a651;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .file-input {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .file-input:hover {
+  border-color: #00a651;
+  background: rgba(0, 166, 81, 0.04);
+}
+
+/* Buttons Light Theme */
+[data-theme="light"] .upload-button {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  box-shadow: 0 4px 16px rgba(0, 166, 81, 0.3);
+}
+
+[data-theme="light"] .upload-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00a651 0%, #4cff96 100%);
+  box-shadow: 0 8px 24px rgba(0, 166, 81, 0.4);
+}
+
+[data-theme="light"] .skip-button {
+  color: #00a651;
+  border-color: #00a651;
+}
+
+[data-theme="light"] .skip-button:hover {
+  background: #00a651;
+  color: white;
+  box-shadow: 0 8px 24px rgba(0, 166, 81, 0.3);
+}
+
+/* Messages Light Theme */
+[data-theme="light"] .message.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .message.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+}

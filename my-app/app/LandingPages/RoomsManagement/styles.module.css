@@ -845,7 +845,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .successMessage {
@@ -1781,4 +1783,97 @@
 :global([data-theme="dark"]) .roomAmenities .noAmenity {
   background: rgba(71, 85, 105, 0.3);
   color: #64748b;
+}
+
+/* ==================== Light Theme Support ==================== */
+:global([data-theme="light"]) .layout {
+  background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+:global([data-theme="light"]) .main {
+  background: transparent;
+}
+
+:global([data-theme="light"]) .header,
+:global([data-theme="light"]) .statsGrid .statCard,
+:global([data-theme="light"]) .searchSection,
+:global([data-theme="light"]) .breadcrumb,
+:global([data-theme="light"]) .roomCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .title,
+:global([data-theme="light"]) .statValue,
+:global([data-theme="light"]) .roomCardInfo h4 {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .subtitle,
+:global([data-theme="light"]) .statLabel,
+:global([data-theme="light"]) .roomCardInfo p,
+:global([data-theme="light"]) .roomCode,
+:global([data-theme="light"]) .roomLocation {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .searchInput,
+:global([data-theme="light"]) .filterSelect,
+:global([data-theme="light"]) .amenityBtn {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .searchInput:focus,
+:global([data-theme="light"]) .filterSelect:focus {
+  border-color: #00a651;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+}
+
+:global([data-theme="light"]) .amenityBtn:hover {
+  border-color: #00a651;
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .amenityBtn.active {
+  background: #00a651;
+  color: white;
+}
+
+:global([data-theme="light"]) .backBtn,
+:global([data-theme="light"]) .editBtn {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1a1a1a;
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .backBtn:hover,
+:global([data-theme="light"]) .editBtn:hover {
+  background: #00a651;
+  color: white;
+}
+
+:global([data-theme="light"]) .roomType {
+  background: rgba(0, 166, 81, 0.1);
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .roomCode {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .emptyState,
+:global([data-theme="light"]) .loadingState {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .emptyState h3 {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .emptyState p {
+  color: #4a5568;
 }

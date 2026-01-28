@@ -30,8 +30,9 @@ function LoadingFallback() {
   return (
     <div className="login-page">
       <div className="background-container">
-        <div className="quantum-logo"></div>
         <div className="stars"></div>
+        <div className="quantum-orb quantum-orb-1"></div>
+        <div className="quantum-orb quantum-orb-2"></div>
         <div className="glow-effect"></div>
       </div>
       <main className="container">
@@ -248,14 +249,10 @@ function PageContent(): JSX.Element {
     <div className="login-page">
       {/* Animated Background */}
       <div className="background-container">
-        {/* Multiple Quantum Rotating Cubes */}
-        <div className="quantum-logo"></div>
-        <div className="quantum-cube quantum-cube-1"></div>
-        <div className="quantum-cube quantum-cube-2"></div>
-        <div className="quantum-cube quantum-cube-3"></div>
+        {/* Realistic Space Background */}
+        <div className="stars"></div>
         <div className="quantum-orb quantum-orb-1"></div>
         <div className="quantum-orb quantum-orb-2"></div>
-        <div className="stars"></div>
         <div className="glow-effect"></div>
         {/* Floating particles */}
         <div className="floating-particles">

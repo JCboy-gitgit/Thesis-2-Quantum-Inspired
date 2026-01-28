@@ -32,21 +32,26 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="settings-content">
           <div className="settings-section">
             <h3 className="settings-section-title">Appearance</h3>
             <p className="settings-section-description">
               Choose your preferred theme for the application
             </p>
-            
+
             <div className="theme-options">
               <button
                 className={`theme-option ${theme === 'green' ? 'active' : ''}`}
                 onClick={() => setTheme('green')}
               >
                 <div className="theme-preview green-preview">
-                  <Leaf size={24} />
+                  <div className="leaf-container">
+                    <Leaf className="leaf leaf-1" size={16} />
+                    <Leaf className="leaf leaf-2" size={12} />
+                    <Leaf className="leaf leaf-3" size={14} />
+                    <Leaf className="leaf leaf-main" size={22} />
+                  </div>
                 </div>
                 <span className="theme-name">Green (Default)</span>
                 <span className="theme-description">College of Science theme</span>
@@ -58,19 +63,28 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                 onClick={() => setTheme('dark')}
               >
                 <div className="theme-preview dark-preview">
-                  <Moon size={24} />
+                  <div className="moon-container">
+                    <Moon className="moon-icon" size={22} />
+                    <span className="star star-1">✦</span>
+                    <span className="star star-2">✧</span>
+                    <span className="star star-3">✦</span>
+                  </div>
                 </div>
                 <span className="theme-name">Dark Mode</span>
                 <span className="theme-description">Easy on the eyes</span>
                 {theme === 'dark' && <span className="theme-active-badge">Active</span>}
               </button>
-              
+
               <button
                 className={`theme-option ${theme === 'light' ? 'active' : ''}`}
                 onClick={() => setTheme('light')}
               >
                 <div className="theme-preview light-preview">
-                  <Sun size={24} />
+                  <div className="sun-container">
+                    <Sun className="sun-icon" size={22} />
+                    <div className="cloud cloud-1">☁</div>
+                    <div className="cloud cloud-2">☁</div>
+                  </div>
                 </div>
                 <span className="theme-name">Light Mode</span>
                 <span className="theme-description">Classic bright look</span>
@@ -79,7 +93,7 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-        
+
         <div className="settings-footer">
           <button className="settings-done-btn" onClick={onClose}>
             Done
@@ -92,6 +106,6 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   if (!isOpen) return null
-  
+
   return <SettingsModalContent onClose={onClose} />
 }

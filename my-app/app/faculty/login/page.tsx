@@ -191,8 +191,9 @@ export default function FacultyLoginPage(): JSX.Element {
     <div className="login-page">
       {/* Animated Background */}
       <div className="background-container">
-        <div className="quantum-logo"></div>
         <div className="stars"></div>
+        <div className="quantum-orb quantum-orb-1"></div>
+        <div className="quantum-orb quantum-orb-2"></div>
         <div className="glow-effect"></div>
       </div>
 
