@@ -151,6 +151,11 @@ interface TimeSettings {
   slotDuration: number // 60 minutes
   includeSaturday: boolean
   includeSunday: boolean
+  // Lunch break settings
+  lunchBreakEnabled: boolean
+  lunchBreakStart: string  // "13:00" = 1:00 PM
+  lunchBreakEnd: string    // "14:00" = 2:00 PM
+  lunchBreakStrict: boolean // true = hard constraint (no classes), false = soft constraint (avoid if possible)
 }
 
 interface TimeSlot {
@@ -294,7 +299,12 @@ export default function GenerateSchedulePage() {
     endTime: '20:00',
     slotDuration: 90, // Fixed to 90 minutes (1.5 hours) - standard academic period
     includeSaturday: true,
-    includeSunday: false
+    includeSunday: false,
+    // Lunch break settings - default 1:00 PM to 2:00 PM
+    lunchBreakEnabled: true,
+    lunchBreakStart: '13:00',
+    lunchBreakEnd: '14:00',
+    lunchBreakStrict: true // No classes during lunch (hard constraint)
   })
 
   // UI states
@@ -474,7 +484,7 @@ export default function GenerateSchedulePage() {
     try {
       // Get sections for this year batch
       const batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
-      
+
       if (batchSections.length === 0) {
         setClasses([])
         setCourses([])
@@ -565,10 +575,10 @@ export default function GenerateSchedulePage() {
       const classSchedules: ClassSchedule[] = []
       const unassigned: typeof unassignedCourses = []
       let autoId = 1 // Generate unique numeric IDs
-      
+
       for (const section of batchSections) {
         const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
-        const sectionCourses = filteredCourses.filter((c: any) => 
+        const sectionCourses = filteredCourses.filter((c: any) =>
           sectionAssignments.some((a: any) => a.course_id === c.id)
         )
 
@@ -577,7 +587,7 @@ export default function GenerateSchedulePage() {
           const teacherKey = `${course.id}-${section.section_name}`
           const teacherKeyNoSection = `${course.id}-`
           const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
-          
+
           if (!assignedTeacher) {
             unassigned.push({
               course_code: course.course_code || '',
@@ -615,9 +625,9 @@ export default function GenerateSchedulePage() {
       if (batch) {
         setConfig(prev => ({
           ...prev,
-          semester: batch.year_batch.includes('First') || batch.year_batch.includes('1st') ? '1st Semester' : 
-                    batch.year_batch.includes('Second') || batch.year_batch.includes('2nd') ? '2nd Semester' : 
-                    batch.year_batch.includes('Summer') ? 'Summer' : prev.semester,
+          semester: batch.year_batch.includes('First') || batch.year_batch.includes('1st') ? '1st Semester' :
+            batch.year_batch.includes('Second') || batch.year_batch.includes('2nd') ? '2nd Semester' :
+              batch.year_batch.includes('Summer') ? 'Summer' : prev.semester,
           academicYear: batch.academic_year || prev.academicYear
         }))
       }
@@ -640,7 +650,7 @@ export default function GenerateSchedulePage() {
       // Deselect - remove from array
       const newSelected = selectedCampusGroups.filter(id => id !== groupId)
       setSelectedCampusGroups(newSelected)
-      
+
       // Reload rooms from remaining selected groups
       if (newSelected.length > 0) {
         await loadMultipleCampusData(newSelected)
@@ -662,7 +672,7 @@ export default function GenerateSchedulePage() {
   // Load rooms from multiple campus groups
   const loadMultipleCampusData = async (groupIds: number[]) => {
     const allRooms: CampusRoom[] = []
-    
+
     for (const groupId of groupIds) {
       const { data, error } = await (supabase
         .from('campuses') as any)
@@ -687,7 +697,7 @@ export default function GenerateSchedulePage() {
         allRooms.push(...mappedRooms)
       }
     }
-    
+
     setRooms(allRooms)
   }
 
@@ -758,7 +768,7 @@ export default function GenerateSchedulePage() {
     const headers = ['Course Code', 'Course Name', 'Section', 'Semester', 'Department']
     const csvContent = [
       headers.join(','),
-      ...unassignedCourses.map(c => 
+      ...unassignedCourses.map(c =>
         [
           `"${c.course_code}"`,
           `"${c.course_name}"`,
@@ -805,8 +815,8 @@ export default function GenerateSchedulePage() {
         // Search filter
         if (roomSearchQuery.trim()) {
           const query = roomSearchQuery.toLowerCase()
-          return r.room.toLowerCase().includes(query) || 
-                 r.room_type?.toLowerCase().includes(query)
+          return r.room.toLowerCase().includes(query) ||
+            r.room_type?.toLowerCase().includes(query)
         }
         return true
       })
@@ -917,7 +927,12 @@ export default function GenerateSchedulePage() {
           quantum_tunneling_probability: config.quantumTunnelingProbability,
           max_teacher_hours_per_day: config.maxTeacherHoursPerDay,
           avoid_conflicts: config.avoidConflicts,
-          online_days: config.onlineDays // REMOVED: prioritize_accessibility
+          online_days: config.onlineDays,
+          // Lunch break settings
+          lunch_break_enabled: timeSettings.lunchBreakEnabled,
+          lunch_start_time: timeSettings.lunchBreakStart,
+          lunch_end_time: timeSettings.lunchBreakEnd,
+          lunch_mode: timeSettings.lunchBreakStrict ? 'strict' : 'flexible'
         }
       }
 
@@ -995,7 +1010,7 @@ export default function GenerateSchedulePage() {
     } catch (error: any) {
       console.error('Schedule generation failed:', error)
       // Handle error properly - stringify if it's an object
-      const errorMessage = typeof error === 'object' 
+      const errorMessage = typeof error === 'object'
         ? (error.message || JSON.stringify(error, null, 2))
         : String(error)
       alert(`Schedule generation failed: ${errorMessage}`)
@@ -1147,7 +1162,7 @@ export default function GenerateSchedulePage() {
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.blockSwaps.toLocaleString()}</span>
                   </div>
                 </div>
-                
+
                 {/* BulSU QSA: Online Class Statistics */}
                 {(scheduleResult.onlineClassCount ?? 0) > 0 && (
                   <div className={styles.onlineStatsCard}>
@@ -1226,22 +1241,22 @@ export default function GenerateSchedulePage() {
                   <h3 className={styles.formSectionTitle}>
                     <FaCalendar /> Generated Schedule Timetable
                   </h3>
-                  
+
                   {/* View Toggle Buttons */}
                   <div className={styles.timetableViewToggle}>
-                    <button 
+                    <button
                       className={`${styles.viewToggleBtn} ${timetableView === 'room' ? styles.active : ''}`}
                       onClick={() => setTimetableView('room')}
                     >
                       <FaBuilding /> Room Schedule
                     </button>
-                    <button 
+                    <button
                       className={`${styles.viewToggleBtn} ${timetableView === 'section' ? styles.active : ''}`}
                       onClick={() => setTimetableView('section')}
                     >
                       <FaUsers /> Section Schedule
                     </button>
-                    <button 
+                    <button
                       className={`${styles.viewToggleBtn} ${timetableView === 'teacher' ? styles.active : ''}`}
                       onClick={() => setTimetableView('teacher')}
                     >
@@ -1252,8 +1267,8 @@ export default function GenerateSchedulePage() {
                   {/* Filter Selector */}
                   <div className={styles.timetableFilter}>
                     {timetableView === 'room' && (
-                      <select 
-                        value={selectedTimetableRoom} 
+                      <select
+                        value={selectedTimetableRoom}
                         onChange={(e) => setSelectedTimetableRoom(e.target.value)}
                         className={styles.filterSelect}
                       >
@@ -1264,8 +1279,8 @@ export default function GenerateSchedulePage() {
                       </select>
                     )}
                     {timetableView === 'section' && (
-                      <select 
-                        value={selectedTimetableSection} 
+                      <select
+                        value={selectedTimetableSection}
                         onChange={(e) => setSelectedTimetableSection(e.target.value)}
                         className={styles.filterSelect}
                       >
@@ -1276,8 +1291,8 @@ export default function GenerateSchedulePage() {
                       </select>
                     )}
                     {timetableView === 'teacher' && (
-                      <select 
-                        value={selectedTimetableTeacher} 
+                      <select
+                        value={selectedTimetableTeacher}
                         onChange={(e) => setSelectedTimetableTeacher(e.target.value)}
                         className={styles.filterSelect}
                       >
@@ -1320,7 +1335,7 @@ export default function GenerateSchedulePage() {
                         };
 
                         const combinedBlocks: CombinedBlock[] = [];
-                        
+
                         // Filter allocations based on view
                         let viewFilteredAllocations = scheduleResult.allocations.filter(a => {
                           if (timetableView === 'room') {
@@ -1352,12 +1367,12 @@ export default function GenerateSchedulePage() {
 
                           // Merge consecutive slots
                           let currentBlock: CombinedBlock | null = null;
-                          
+
                           sorted.forEach(alloc => {
                             const timeStr = alloc.schedule_time || '';
                             const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
                             if (!timeMatch) return;
-                            
+
                             const startMins = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
                             const endMins = parseInt(timeMatch[3]) * 60 + parseInt(timeMatch[4]);
 
@@ -1382,7 +1397,7 @@ export default function GenerateSchedulePage() {
                               };
                             }
                           });
-                          
+
                           if (currentBlock) {
                             combinedBlocks.push(currentBlock);
                           }
@@ -1409,7 +1424,7 @@ export default function GenerateSchedulePage() {
                                 const minute = totalMinutes % 60;
                                 const displayTime = formatTimeAMPM(hour, minute);
                                 const isHourMark = minute === 0;
-                                
+
                                 return (
                                   <tr key={i} className={isHourMark ? styles.hourRow : styles.halfHourRow}>
                                     <td className={`${styles.timeCell} ${isHourMark ? styles.hourMark : styles.halfHourMark}`}>
@@ -1420,11 +1435,11 @@ export default function GenerateSchedulePage() {
                                       const blocksStartingHere = combinedBlocks.filter(block => {
                                         const blockStartHour = Math.floor(block.startMinutes / 60);
                                         const blockStartMin = block.startMinutes % 60;
-                                        return block.day === day.toLowerCase() && 
-                                               blockStartHour === hour && 
-                                               blockStartMin === minute;
+                                        return block.day === day.toLowerCase() &&
+                                          blockStartHour === hour &&
+                                          blockStartMin === minute;
                                       });
-                                      
+
                                       return (
                                         <td key={`${day}-${i}`} className={styles.scheduleCell} style={{ position: 'relative', height: `${ROW_HEIGHT}px` }}>
                                           {blocksStartingHere.map((block, idx) => {
@@ -1432,14 +1447,14 @@ export default function GenerateSchedulePage() {
                                             const durationMinutes = block.endMinutes - block.startMinutes;
                                             const durationSlots = Math.ceil(durationMinutes / 30);
                                             const spanHeight = durationSlots * ROW_HEIGHT;
-                                            
+
                                             // Format display time as AM/PM
                                             const startH = Math.floor(block.startMinutes / 60);
                                             const startM = block.startMinutes % 60;
                                             const endH = Math.floor(block.endMinutes / 60);
                                             const endM = block.endMinutes % 60;
                                             const displayTimeRange = `${formatTimeAMPM(startH, startM)} - ${formatTimeAMPM(endH, endM)}`;
-                                            
+
                                             // Get color based on view type
                                             const getColor = () => {
                                               if (block.is_online) return '#9c27b0';
@@ -1455,7 +1470,7 @@ export default function GenerateSchedulePage() {
                                                 return '#1976d2';
                                               }
                                             };
-                                            
+
                                             return (
                                               <div
                                                 key={idx}
@@ -1604,10 +1619,10 @@ export default function GenerateSchedulePage() {
                                   onClick={() => handleSelectCampusGroup(group.upload_group_id)}
                                 >
                                   <div className={styles.dataCardCheckbox}>
-                                    <input 
-                                      type="checkbox" 
+                                    <input
+                                      type="checkbox"
                                       checked={isSelected}
-                                      onChange={() => {}}
+                                      onChange={() => { }}
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                   </div>
@@ -1676,7 +1691,7 @@ export default function GenerateSchedulePage() {
                             {yearBatches.map(batch => {
                               const batchSections = sections.filter(s => s.year_batch_id === batch.id)
                               const totalStudents = batchSections.reduce((sum, s) => sum + (s.student_count || 0), 0)
-                              
+
                               return (
                                 <div
                                   key={batch.id}
@@ -1741,8 +1756,8 @@ export default function GenerateSchedulePage() {
                       </div>
                       <div className={styles.summaryInfo}>
                         <h4>
-                          {selectedCampusInfoList.length === 1 
-                            ? selectedCampusInfoList[0]?.school_name 
+                          {selectedCampusInfoList.length === 1
+                            ? selectedCampusInfoList[0]?.school_name
                             : `${selectedCampusInfoList.length} Campus Files`}
                         </h4>
                         <p>{rooms.length} rooms • {totalRoomCapacity} total capacity</p>
@@ -1929,11 +1944,11 @@ export default function GenerateSchedulePage() {
                                     <Building2 size={16} />
                                     <strong style={{ flex: 1 }}>{building}</strong>
                                     {isActive && (
-                                      <span style={{ 
-                                        fontSize: '11px', 
-                                        backgroundColor: '#16a34a', 
-                                        color: 'white', 
-                                        padding: '2px 8px', 
+                                      <span style={{
+                                        fontSize: '11px',
+                                        backgroundColor: '#16a34a',
+                                        color: 'white',
+                                        padding: '2px 8px',
                                         borderRadius: '4px',
                                         fontWeight: 600
                                       }}>
@@ -1951,17 +1966,17 @@ export default function GenerateSchedulePage() {
                                 {/* Collapsible room list for individual selection */}
                                 {buildingRooms.length > 0 && (
                                   <details style={{ marginTop: '10px', cursor: 'pointer' }}>
-                                    <summary style={{ 
-                                      fontWeight: '500', 
-                                      color: 'var(--text-medium)', 
+                                    <summary style={{
+                                      fontWeight: '500',
+                                      color: 'var(--text-medium)',
                                       fontSize: '12px',
                                       userSelect: 'none',
                                       padding: '4px 0',
                                       opacity: 0.8
                                     }}>
-                                      {allRoomsSelected 
-                                        ? `✓ All ${buildingRooms.length} rooms` 
-                                        : someRoomsSelected 
+                                      {allRoomsSelected
+                                        ? `✓ All ${buildingRooms.length} rooms`
+                                        : someRoomsSelected
                                           ? `${buildingRoomIds.filter(id => selectedRooms.includes(id)).length}/${buildingRooms.length} rooms`
                                           : `View ${buildingRooms.length} rooms`}
                                     </summary>
@@ -1989,13 +2004,13 @@ export default function GenerateSchedulePage() {
                                           <span style={{ fontSize: '11px', color: 'var(--text-light)', marginLeft: '6px' }}>
                                             {room.capacity}
                                           </span>
-                                          <span style={{ 
-                                            fontSize: '10px', 
-                                            color: 'var(--text-light)', 
-                                            marginLeft: '6px', 
-                                            backgroundColor: 'var(--bg-gray-100)', 
-                                            padding: '1px 5px', 
-                                            borderRadius: '3px' 
+                                          <span style={{
+                                            fontSize: '10px',
+                                            color: 'var(--text-light)',
+                                            marginLeft: '6px',
+                                            backgroundColor: 'var(--bg-gray-100)',
+                                            padding: '1px 5px',
+                                            borderRadius: '3px'
                                           }}>
                                             {room.room_type}
                                           </span>
@@ -2203,10 +2218,10 @@ export default function GenerateSchedulePage() {
 
                     {/* Unassigned Courses Warning */}
                     {unassignedCourses.length > 0 && (
-                      <div style={{ 
-                        marginTop: '16px', 
-                        padding: '16px', 
-                        background: 'linear-gradient(135deg, rgba(245, 124, 0, 0.1), rgba(255, 167, 38, 0.05))', 
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '16px',
+                        background: 'linear-gradient(135deg, rgba(245, 124, 0, 0.1), rgba(255, 167, 38, 0.05))',
                         borderRadius: '10px',
                         border: '1px solid rgba(245, 124, 0, 0.3)'
                       }}>
@@ -2217,11 +2232,11 @@ export default function GenerateSchedulePage() {
                           </span>
                         </div>
                         <p style={{ fontSize: '13px', margin: '0 0 12px 0', opacity: 0.85 }}>
-                          Some courses for {config.semester} do not have professors assigned yet. 
+                          Some courses for {config.semester} do not have professors assigned yet.
                           You can assign them or bypass this check.
                         </p>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                          <button 
+                          <button
                             onClick={() => setShowUnassignedWarning(true)}
                             style={{
                               display: 'flex',
@@ -2239,16 +2254,16 @@ export default function GenerateSchedulePage() {
                           >
                             <FaEye /> View Unassigned Courses
                           </button>
-                          <label style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                          <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: '8px',
                             cursor: 'pointer',
                             fontSize: '13px',
                             fontWeight: 500
                           }}>
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={bypassTeacherCheck}
                               onChange={(e) => setBypassTeacherCheck(e.target.checked)}
                               style={{ width: '16px', height: '16px', cursor: 'pointer' }}
@@ -2261,10 +2276,10 @@ export default function GenerateSchedulePage() {
 
                     {/* All courses have professors assigned */}
                     {unassignedCourses.length === 0 && classes.length > 0 && (
-                      <div style={{ 
-                        marginTop: '16px', 
-                        padding: '12px 16px', 
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))', 
+                      <div style={{
+                        marginTop: '16px',
+                        padding: '12px 16px',
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
                         borderRadius: '10px',
                         border: '1px solid rgba(16, 185, 129, 0.3)',
                         display: 'flex',
@@ -2346,6 +2361,80 @@ export default function GenerateSchedulePage() {
                       </div>
                     </div>
 
+                    {/* Lunch Break Settings */}
+                    <div className={styles.lunchBreakSection}>
+                      <div className={styles.lunchBreakHeader}>
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={timeSettings.lunchBreakEnabled}
+                            onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakEnabled: e.target.checked }))}
+                          />
+                          <span style={{ fontWeight: 600, fontSize: '14px' }}>
+                            🍽️ Enable Lunch Break Period
+                          </span>
+                        </label>
+                      </div>
+
+                      {timeSettings.lunchBreakEnabled && (
+                        <div className={styles.lunchBreakSettings}>
+                          <div className={styles.lunchBreakInfo}>
+                            <Clock size={18} />
+                            <p>No classes will be scheduled during the lunch break period to ensure faculty and students have time for meals.</p>
+                          </div>
+
+                          <div className={styles.formRow}>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Lunch Start Time</label>
+                              <input
+                                type="time"
+                                className={styles.formInput}
+                                value={timeSettings.lunchBreakStart}
+                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakStart: e.target.value }))}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Lunch End Time</label>
+                              <input
+                                type="time"
+                                className={styles.formInput}
+                                value={timeSettings.lunchBreakEnd}
+                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakEnd: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+
+                          <div className={styles.checkboxGroup}>
+                            <label className={styles.checkboxLabel}>
+                              <input
+                                type="checkbox"
+                                checked={timeSettings.lunchBreakStrict}
+                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakStrict: e.target.checked }))}
+                              />
+                              <span>
+                                <strong>Strict Mode:</strong> Absolutely no classes during lunch break (hard constraint)
+                              </span>
+                            </label>
+                          </div>
+
+                          {!timeSettings.lunchBreakStrict && (
+                            <div className={styles.lunchBreakWarning}>
+                              <AlertTriangle size={16} />
+                              <span>Flexible mode: Algorithm will avoid lunch break but may schedule classes if necessary due to limited room availability.</span>
+                            </div>
+                          )}
+
+                          <div className={styles.lunchBreakPreview}>
+                            <strong>Lunch Break:</strong> {timeSettings.lunchBreakStart} - {timeSettings.lunchBreakEnd}
+                            <span className={timeSettings.lunchBreakStrict ? styles.strictBadge : styles.flexibleBadge}>
+                              {timeSettings.lunchBreakStrict ? '🔒 Strict' : '⚡ Flexible'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+
                     {/* Time Slot Preview */}
                     <div className={styles.timeSlotPreview}>
                       <strong>Generated Time Slots Preview:</strong>
@@ -2378,7 +2467,7 @@ export default function GenerateSchedulePage() {
                     <div className={styles.timeConfigInfo}>
                       <Zap size={20} />
                       <p>
-                        Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations, 
+                        Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations,
                         allowing the quantum algorithm to "tunnel" through problem spaces by shifting F2F demand to available days.
                       </p>
                     </div>
@@ -2745,19 +2834,19 @@ export default function GenerateSchedulePage() {
                   ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
                 </p>
                 <p className={styles.warningDescription}>
-                  Please assign professors to these courses in the Teaching Load Assignment page, 
+                  Please assign professors to these courses in the Teaching Load Assignment page,
                   or you can bypass this check and schedule them without professors (TBD will be shown).
                 </p>
               </div>
 
               <div className={styles.warningActions}>
-                <button 
+                <button
                   onClick={downloadUnassignedCoursesCSV}
                   className={`${styles.warningActionBtn} ${styles.download}`}
                 >
                   <FaDownload /> Download CSV of Unassigned Courses
                 </button>
-                <button 
+                <button
                   onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
                   className={`${styles.warningActionBtn} ${styles.teaching}`}
                 >
@@ -2790,8 +2879,8 @@ export default function GenerateSchedulePage() {
 
               <div className={styles.bypassSection}>
                 <label className={styles.bypassLabel}>
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={bypassTeacherCheck}
                     onChange={(e) => setBypassTeacherCheck(e.target.checked)}
                   />
@@ -2804,13 +2893,13 @@ export default function GenerateSchedulePage() {
 
             <div className={styles.warningModalFooter}>
               <div className={styles.modalActions}>
-                <button 
+                <button
                   onClick={() => setShowUnassignedWarning(false)}
                   className={styles.cancelBtn}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     if (bypassTeacherCheck) {
                       executeScheduleGeneration()
