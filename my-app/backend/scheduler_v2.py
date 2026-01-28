@@ -1728,7 +1728,9 @@ class EnhancedQuantumScheduler:
         
         # Pick a random assignment to modify
         assignment = random.choice(assignments)
-        section = self.sections[assignment['section_id']]
+        section = self.sections.get(assignment['section_id'])
+        if not section:
+            return None  # Skip if section not found
         
         # Determine valid modifications based on online status
         if assignment['is_online']:
@@ -1802,7 +1804,9 @@ class EnhancedQuantumScheduler:
     def _apply_move(self, move: Dict[str, Any]) -> bool:
         """Apply a move to the schedule (handles online day transitions)"""
         old = move['old']
-        section = self.sections[old['section_id']]
+        section = self.sections.get(old['section_id'])
+        if not section:
+            return False  # Skip if section not found
         
         # Remove old assignment
         self._deallocate_section_assignment(
@@ -1831,7 +1835,9 @@ class EnhancedQuantumScheduler:
     def _revert_move(self, move: Dict[str, Any]):
         """Revert a move (handles online day transitions)"""
         old = move['old']
-        section = self.sections[old['section_id']]
+        section = self.sections.get(old['section_id'])
+        if not section:
+            return  # Skip if section not found
         is_old_online = old.get('is_online', self._is_online_day(old['day']))
         
         # Remove the new assignment
