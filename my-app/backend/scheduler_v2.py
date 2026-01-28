@@ -2176,7 +2176,10 @@ class EnhancedQuantumScheduler:
         
         # Restore best solution
         self.schedule = best_schedule
-        self.section_assignments = best_assignments
+        # Convert back to defaultdict to allow adding new sections during aggressive pass
+        self.section_assignments = defaultdict(list)
+        for k, v in best_assignments.items():
+            self.section_assignments[k] = v
         self.stats.final_cost = best_cost
         
         # Final aggressive pass to try to schedule any remaining sections
