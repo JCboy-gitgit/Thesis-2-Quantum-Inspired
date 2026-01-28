@@ -5006,11 +5006,11 @@
 }
 
 /* All headings and titles */
-[data-theme="green"] h1,
-[data-theme="green"] h2,
-[data-theme="green"] h3,
-[data-theme="green"] h4,
-[data-theme="green"] h5,
+[data-theme="green"] .scheduleLayout h1,
+[data-theme="green"] .scheduleLayout h2,
+[data-theme="green"] .scheduleLayout h3,
+[data-theme="green"] .scheduleLayout h4,
+[data-theme="green"] .scheduleLayout h5,
 [data-theme="green"] .sectionTitle,
 [data-theme="green"] .stepTitle,
 [data-theme="green"] .cardTitle,
@@ -5019,7 +5019,7 @@
 }
 
 /* All labels and form labels */
-[data-theme="green"] label,
+[data-theme="green"] .scheduleLayout label,
 [data-theme="green"] .label,
 [data-theme="green"] .formLabel,
 [data-theme="green"] .fieldLabel,
@@ -5030,7 +5030,7 @@
 }
 
 /* All paragraph text and descriptions */
-[data-theme="green"] p,
+[data-theme="green"] .scheduleLayout p,
 [data-theme="green"] .description,
 [data-theme="green"] .subtitle,
 [data-theme="green"] .infoText,
@@ -5065,9 +5065,9 @@
 }
 
 /* Input fields */
-[data-theme="green"] input,
-[data-theme="green"] select,
-[data-theme="green"] textarea,
+[data-theme="green"] .scheduleLayout input,
+[data-theme="green"] .scheduleLayout select,
+[data-theme="green"] .scheduleLayout textarea,
 [data-theme="green"] .input,
 [data-theme="green"] .select,
 [data-theme="green"] .textField {
@@ -5076,17 +5076,17 @@
   color: #02353C !important;
 }
 
-[data-theme="green"] input::placeholder,
-[data-theme="green"] textarea::placeholder {
+[data-theme="green"] .scheduleLayout input::placeholder,
+[data-theme="green"] .scheduleLayout textarea::placeholder {
   color: #166534 !important;
   opacity: 0.6 !important;
 }
 
 /* Checkbox and radio labels - IMPORTANT for day selections */
-[data-theme="green"] input[type="checkbox"]+label,
-[data-theme="green"] input[type="checkbox"]+span,
-[data-theme="green"] input[type="radio"]+label,
-[data-theme="green"] input[type="radio"]+span,
+[data-theme="green"] .scheduleLayout input[type="checkbox"]+label,
+[data-theme="green"] .scheduleLayout input[type="checkbox"]+span,
+[data-theme="green"] .scheduleLayout input[type="radio"]+label,
+[data-theme="green"] .scheduleLayout input[type="radio"]+span,
 [data-theme="green"] .checkboxText,
 [data-theme="green"] .radioText {
   color: #02353C !important;
@@ -5355,21 +5355,21 @@
 }
 
 /* Table styling */
-[data-theme="green"] table {
+[data-theme="green"] .scheduleLayout table {
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] th {
+[data-theme="green"] .scheduleLayout th {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] td {
+[data-theme="green"] .scheduleLayout td {
   color: #166534 !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] tr:hover td {
+[data-theme="green"] .scheduleLayout tr:hover td {
   background: rgba(46, 175, 125, 0.05) !important;
 }
 
