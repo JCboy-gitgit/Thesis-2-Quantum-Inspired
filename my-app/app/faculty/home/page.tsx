@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
   Bell,
   BookOpen,
   ChevronRight,
@@ -74,7 +74,7 @@ export default function FacultyHomePage() {
   useEffect(() => {
     checkAuthAndLoad()
     updateGreeting()
-    
+
     // Update greeting every minute
     const interval = setInterval(updateGreeting, 60000)
     return () => clearInterval(interval)
@@ -105,7 +105,7 @@ export default function FacultyHomePage() {
   const checkAuthAndLoad = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/faculty/login')
         return
@@ -134,7 +134,7 @@ export default function FacultyHomePage() {
       const { data: facultyProfile } = await supabase
         .from('faculty_profiles')
         .select('full_name, department, college')
-        .eq('email', session.user.email)
+        .eq('email', session.user.email || '')
         .single()
 
       // Merge the data - faculty_profiles takes priority
@@ -146,7 +146,7 @@ export default function FacultyHomePage() {
       }
 
       setUser(mergedUser)
-      
+
       // Set college theme based on user's college/department
       if (mergedUser.college) {
         const collegeLower = mergedUser.college.toLowerCase()
@@ -235,15 +235,15 @@ export default function FacultyHomePage() {
   const convertTo24Hour = (time: string): string => {
     const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
     if (!match) return time.replace(/\s/g, '')
-    
+
     let [, hourStr, minute, period] = match
     let hour = parseInt(hourStr)
-    
+
     if (period) {
       if (period.toUpperCase() === 'PM' && hour !== 12) hour += 12
       if (period.toUpperCase() === 'AM' && hour === 12) hour = 0
     }
-    
+
     return `${hour.toString().padStart(2, '0')}:${minute}`
   }
 
@@ -323,9 +323,9 @@ export default function FacultyHomePage() {
   return (
     <div className={styles.pageContainer} data-college-theme={collegeTheme}>
       {/* Sidebar */}
-      <FacultySidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
+      <FacultySidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         menuBarHidden={isMenuBarHidden}
       />
 
@@ -335,14 +335,14 @@ export default function FacultyHomePage() {
         <header className={`${styles.topHeader} ${isMenuBarHidden ? styles.hidden : ''}`}>
           <div className={styles.headerLeft}>
             {/* Sidebar Toggle Button */}
-            <button 
+            <button
               className={styles.sidebarToggle}
               onClick={() => setSidebarOpen(!sidebarOpen)}
               title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
             >
               <Menu size={24} />
             </button>
-            
+
             {/* Logo/Branding */}
             <div className={styles.logo}>
               <span className={styles.logoIcon}>Q</span>
@@ -357,14 +357,14 @@ export default function FacultyHomePage() {
 
             {/* User Dropdown */}
             <div className={styles.userSection}>
-              <button 
+              <button
                 className={styles.userIconBtn}
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 title="Account Menu"
               >
                 <User size={20} />
               </button>
-              
+
               {showUserMenu && (
                 <div className={styles.userMenu}>
                   {user?.email && (
@@ -414,7 +414,7 @@ export default function FacultyHomePage() {
           </div>
 
           {/* Toggle Arrow Button - inside header */}
-          <button 
+          <button
             className={styles.menuBarToggle}
             onClick={() => setIsMenuBarHidden(!isMenuBarHidden)}
             title={isMenuBarHidden ? 'Show Header' : 'Hide Header'}
@@ -425,7 +425,7 @@ export default function FacultyHomePage() {
 
         {/* Floating Show Button when header is hidden */}
         {isMenuBarHidden && (
-          <button 
+          <button
             className={styles.menuBarShowBtn}
             onClick={() => setIsMenuBarHidden(false)}
             title="Show Header"
@@ -624,9 +624,9 @@ export default function FacultyHomePage() {
       </div>
 
       {/* Settings Modal */}
-      <FacultySettingsModal 
-        isOpen={showSettingsModal} 
-        onClose={() => setShowSettingsModal(false)} 
+      <FacultySettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
       />
     </div>
   )
