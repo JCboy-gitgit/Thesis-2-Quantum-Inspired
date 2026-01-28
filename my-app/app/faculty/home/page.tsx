@@ -135,7 +135,7 @@ export default function FacultyHomePage() {
         .from('faculty_profiles')
         .select('full_name, department, college')
         .eq('email', session.user.email || '')
-        .single()
+        .single() as { data: { full_name?: string; department?: string; college?: string } | null }
 
       // Merge the data - faculty_profiles takes priority
       const mergedUser: UserProfile = {

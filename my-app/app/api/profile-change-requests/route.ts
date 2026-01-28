@@ -104,10 +104,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'Your existing request has been updated',
-        request: data 
+        request: data
       })
     }
 
@@ -129,10 +129,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Your change request has been submitted for admin approval',
-      request: data 
+      request: data
     })
   } catch (error) {
     console.error('POST error:', error)
@@ -173,33 +173,59 @@ export async function PATCH(request: Request) {
 
     // If approving, update the actual user data
     if (action === 'approve') {
-      // Update the users table
-      const updateData: Record<string, any> = {
-        [changeRequest.field_name]: changeRequest.requested_value,
-        updated_at: new Date().toISOString()
-      }
-
-      const { error: updateError } = await supabaseAdmin
-        .from('users')
-        .update(updateData)
-        .eq('id', changeRequest.user_id)
-
-      if (updateError) {
-        console.error('Error updating user:', updateError)
+      // Validate role field if being updated - must match CHECK constraint
+      const validRoles = ['administrator', 'department_head', 'program_chair', 'coordinator', 'faculty', 'staff']
+      if (changeRequest.field_name === 'role' && !validRoles.includes(changeRequest.requested_value)) {
         return NextResponse.json(
-          { error: 'Failed to update user profile' },
-          { status: 500 }
+          { error: `Invalid role value. Must be one of: ${validRoles.join(', ')}` },
+          { status: 400 }
         )
       }
 
-      // Also update faculty_profiles if the email matches
-      const { error: facultyUpdateError } = await supabaseAdmin
-        .from('faculty_profiles')
-        .update({ [changeRequest.field_name]: changeRequest.requested_value })
-        .eq('email', changeRequest.email)
+      // Update the users table (only if field exists in users table)
+      const usersTableFields = ['full_name', 'department_id', 'phone', 'avatar_url']
+      if (usersTableFields.includes(changeRequest.field_name)) {
+        const updateData: Record<string, any> = {
+          [changeRequest.field_name]: changeRequest.requested_value,
+          updated_at: new Date().toISOString()
+        }
 
-      if (facultyUpdateError) {
-        console.error('Faculty profile update error (non-critical):', facultyUpdateError)
+        const { error: updateError } = await supabaseAdmin
+          .from('users')
+          .update(updateData)
+          .eq('id', changeRequest.user_id)
+
+        if (updateError) {
+          console.error('Error updating user:', updateError)
+          return NextResponse.json(
+            { error: 'Failed to update user profile' },
+            { status: 500 }
+          )
+        }
+      }
+
+      // Update faculty_profiles if the email matches
+      // faculty_profiles has different fields: full_name, position, role, department, college, email, phone, etc.
+      const facultyProfileFields = ['full_name', 'position', 'role', 'department', 'college', 'phone', 'office_location', 'employment_type', 'bio', 'specialization', 'education']
+      if (facultyProfileFields.includes(changeRequest.field_name)) {
+        const { error: facultyUpdateError } = await supabaseAdmin
+          .from('faculty_profiles')
+          .update({
+            [changeRequest.field_name]: changeRequest.requested_value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', changeRequest.email)
+
+        if (facultyUpdateError) {
+          console.error('Faculty profile update error:', facultyUpdateError)
+          // If this is the primary target table for this field, return error
+          if (!usersTableFields.includes(changeRequest.field_name)) {
+            return NextResponse.json(
+              { error: `Failed to update faculty profile: ${facultyUpdateError.message}` },
+              { status: 500 }
+            )
+          }
+        }
       }
     }
 
@@ -224,8 +250,8 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: action === 'approve' 
-        ? 'Request approved and profile updated' 
+      message: action === 'approve'
+        ? 'Request approved and profile updated'
         : 'Request rejected',
       request: data
     })
@@ -267,9 +293,9 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Request cancelled successfully' 
+    return NextResponse.json({
+      success: true,
+      message: 'Request cancelled successfully'
     })
   } catch (error) {
     console.error('DELETE error:', error)

@@ -130,18 +130,18 @@ export async function GET(request: NextRequest) {
 
     // Get users from Supabase Auth
     const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
-    
+
     if (authError) {
       console.error('Auth error:', authError)
       // Fallback: try to get from users table
       let query = supabaseAdmin.from('users').select('*')
-      
+
       if (status !== 'all') {
         query = query.eq('status', status)
       }
-      
+
       const { data, error } = await query.order('created_at', { ascending: false })
-      
+
       if (error) throw error
       return NextResponse.json({ registrations: data || [] })
     }
@@ -152,43 +152,43 @@ export async function GET(request: NextRequest) {
     // - users.is_active = false AND user_profiles.position = 'REJECTED' → rejected
     // - Otherwise → pending or unconfirmed
     const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
-    
+
     // Get user data from our users table
     const { data: usersData, error: usersError } = await supabaseAdmin
       .from('users')
       .select('*')
-    
+
     if (usersError) {
       console.error('Error fetching users:', usersError)
     }
     console.log(`Found ${usersData?.length || 0} users in database`)
-    
+
     // Get user_profiles to check rejection status
     const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('user_profiles')
       .select('user_id, position')
-    
+
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
     }
     console.log(`Found ${profilesData?.length || 0} user profiles in database`)
-    
+
     const usersMap = new Map(usersData?.map(u => [u.email, u]) || [])
     const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || [])
-    
+
     const registrations = authUsers.users
       .filter(user => user.email !== ADMIN_EMAIL)
       .map(user => {
         const userRecord = usersMap.get(user.email || '')
         const userProfile = userRecord ? profilesMap.get(userRecord.id) : null
-        
+
         // Determine status from database - FIXED LOGIC
         let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed'
-        
+
         // First check if email is confirmed
         if (!user.email_confirmed_at) {
           userStatus = 'unconfirmed'
-        } 
+        }
         // Then check database status - prioritize profile position for rejection status
         else if (userProfile?.position === 'REJECTED') {
           userStatus = 'rejected'
@@ -205,12 +205,12 @@ export async function GET(request: NextRequest) {
         else {
           userStatus = 'pending'
         }
-        
+
         // Debug log for each user
         if (userRecord) {
           console.log(`User ${user.email}: is_active=${userRecord.is_active}, profile_position=${userProfile?.position}, determined_status=${userStatus}`)
         }
-        
+
         return {
           id: user.id,
           email: user.email,
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
 
     // Get user info from auth
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
-    
+
     if (userError || !userData.user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -281,7 +281,6 @@ export async function POST(request: NextRequest) {
           id: userId,
           email: userEmail,
           full_name: full_name || userData.user.user_metadata?.full_name || 'Faculty Member',
-          role: 'faculty',
           is_active: true,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
@@ -320,8 +319,8 @@ export async function POST(request: NextRequest) {
         // Don't fail the request if email fails
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Faculty ${userEmail} has been approved`,
         action: 'approved',
         emailSent: true
@@ -343,7 +342,6 @@ export async function POST(request: NextRequest) {
           id: userId,
           email: userEmail,
           full_name: full_name || existingUser?.full_name || userData.user.user_metadata?.full_name || 'User',
-          role: existingUser?.role || 'faculty',
           is_active: false,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
@@ -381,8 +379,8 @@ export async function POST(request: NextRequest) {
         console.error('Failed to send rejection email:', emailError)
       }
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Faculty ${userEmail} has been rejected`,
         action: 'rejected',
         emailSent: true
@@ -416,13 +414,13 @@ export async function DELETE(request: NextRequest) {
 
     // Delete from auth
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
-    
+
     if (error) {
       console.error('Delete auth user error:', error)
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Faculty registration deleted'
     })
 
