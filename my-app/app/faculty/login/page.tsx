@@ -250,7 +250,8 @@ export default function FacultyLoginPage(): JSX.Element {
       }
 
       // Update last_login timestamp
-      const { error: updateError } = await supabase
+      const db = supabase as any
+      const { error: updateError } = await db
         .from('users')
         .update({ last_login: new Date().toISOString() })
         .eq('id', userData.id)
