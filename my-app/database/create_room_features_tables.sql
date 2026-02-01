@@ -24,7 +24,7 @@ CREATE TABLE public.feature_tags (
 );
 
 -- Default feature categories
-COMMENT ON COLUMN public.feature_tags.tag_category IS 'Categories: equipment, furniture, technology, safety, accessibility';
+COMMENT ON COLUMN public.feature_tags.tag_category IS 'Categories: equipment, furniture, technology, safety, accessibility, extracurricular';
 
 -- Insert common feature tags
 INSERT INTO public.feature_tags (tag_name, tag_category, description, icon) VALUES
@@ -82,7 +82,19 @@ INSERT INTO public.feature_tags (tag_name, tag_category, description, icon) VALU
 -- Accessibility
 ('Wheelchair_Accessible', 'accessibility', 'Wheelchair accessible room', 'accessibility'),
 ('Hearing_Loop', 'accessibility', 'Hearing assistance loop system', 'ear'),
-('Adjustable_Desks', 'accessibility', 'Height-adjustable desks', 'move');
+('Adjustable_Desks', 'accessibility', 'Height-adjustable desks', 'move'),
+
+-- Extracurricular / Outdoor / PE
+('Outdoor_Field', 'extracurricular', 'Outdoor field or court area', 'sun'),
+('Gymnasium', 'extracurricular', 'Indoor gymnasium/sports hall', 'dumbbell'),
+('Swimming_Pool', 'extracurricular', 'Swimming pool facility', 'waves'),
+('Dance_Studio', 'extracurricular', 'Dance or aerobics studio with mirrors', 'music'),
+('Fitness_Equipment', 'extracurricular', 'Exercise machines and weights', 'dumbbell'),
+('Sports_Court', 'extracurricular', 'Basketball/Volleyball/Tennis court', 'circle'),
+('Track_Field', 'extracurricular', 'Running track and field events area', 'flag'),
+('Covered_Court', 'extracurricular', 'Covered outdoor court', 'home'),
+('Open_Area', 'extracurricular', 'Open space for outdoor activities', 'maximize'),
+('Stage_Area', 'extracurricular', 'Stage or performance area', 'video');
 
 -- =====================================================
 -- 2. Room Features (Links rooms to their features)

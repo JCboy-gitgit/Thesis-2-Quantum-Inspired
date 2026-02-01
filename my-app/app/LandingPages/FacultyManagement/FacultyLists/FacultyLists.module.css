@@ -138,7 +138,11 @@
 }
 
 [data-theme="green"] .statIcon {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  background: rgba(46, 175, 125, 0.12);
+}
+
+[data-theme="green"] .statIcon svg {
+  color: #2EAF7D;
 }
 
 [data-theme="green"] .statLabel {
@@ -469,8 +473,8 @@
 .statIcon {
   width: 56px;
   height: 56px;
-  background: var(--primary-gradient);
-  border-radius: 14px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -480,7 +484,7 @@
 .statIcon svg {
   width: 26px;
   height: 26px;
-  color: #ffffff;
+  color: #00A651;
 }
 
 .statContent {
@@ -1468,6 +1472,15 @@
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ==================== Dark Theme ==================== */
+[data-theme="dark"] .statIcon {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .statIcon svg {
+  color: #38bdf8;
 }
 
 [data-theme="green"] .changeFileBtn:hover {

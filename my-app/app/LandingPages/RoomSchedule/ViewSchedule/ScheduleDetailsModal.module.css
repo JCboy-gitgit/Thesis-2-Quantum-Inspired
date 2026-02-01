@@ -450,16 +450,25 @@
 
 .statIcon {
   font-size: 24px;
-  color: var(--content-text-secondary);
+  color: #00A651;
   flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 166, 81, 0.12);
 }
 
 .statCard.success .statIcon {
-  color: var(--success-green);
+  color: #059669;
+  background: rgba(5, 150, 105, 0.12);
 }
 
 .statCard.pwd .statIcon {
-  color: var(--primary);
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
 }
 
 .statLabel {

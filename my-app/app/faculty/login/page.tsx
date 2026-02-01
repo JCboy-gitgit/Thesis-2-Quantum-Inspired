@@ -25,6 +25,7 @@ export default function FacultyLoginPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [existingSession, setExistingSession] = useState<{ user: any; isActive: boolean } | null>(null)
+  const [keepSignedIn, setKeepSignedIn] = useState(false)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
@@ -32,6 +33,10 @@ export default function FacultyLoginPage(): JSX.Element {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Check for keep signed in flag
+        const keepSignedInFlag = localStorage.getItem('faculty_keep_signed_in')
+        const storedSessionToken = localStorage.getItem('faculty_session_token')
+        
         const { data: { session }, error } = await supabase.auth.getSession()
 
         if (error) {
@@ -45,9 +50,9 @@ export default function FacultyLoginPage(): JSX.Element {
           // Check if user is approved (is_active = true)
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('is_active, full_name')
+            .select('is_active, full_name, id')
             .eq('id', session.user.id)
-            .single() as { data: { is_active: boolean; full_name: string } | null; error: any }
+            .single() as { data: { is_active: boolean; full_name: string; id: string } | null; error: any }
 
           if (userError) {
             console.error('User data check error:', userError)
@@ -57,9 +62,43 @@ export default function FacultyLoginPage(): JSX.Element {
           }
 
           if (userData?.is_active) {
-            // Auto-redirect for approved faculty
-            router.replace('/faculty/home')
-            return
+            // Verify session token is still valid
+            if (storedSessionToken) {
+              try {
+                const checkResponse = await fetch('/api/presence', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'check_session',
+                    user_id: userData.id,
+                    session_token: storedSessionToken
+                  })
+                })
+                
+                // Check if response is JSON
+                const contentType = checkResponse.headers.get('content-type')
+                if (contentType && contentType.includes('application/json')) {
+                  const checkData = await checkResponse.json()
+                  
+                  if (!checkData.valid && checkData.valid !== undefined) {
+                    // Session was invalidated (logged in elsewhere)
+                    console.log('Session invalidated, clearing local storage')
+                    localStorage.removeItem('faculty_session_token')
+                    localStorage.removeItem('faculty_keep_signed_in')
+                    await supabase.auth.signOut()
+                    return
+                  }
+                }
+              } catch (checkError) {
+                console.error('Session check error:', checkError)
+              }
+            }
+            
+            // Auto-redirect for approved faculty (only if keep signed in or has valid session)
+            if (keepSignedInFlag === 'true' || storedSessionToken) {
+              router.replace('/faculty/home')
+              return
+            }
           } else {
             console.log('User is not active, staying on login page')
           }
@@ -69,6 +108,9 @@ export default function FacultyLoginPage(): JSX.Element {
           return
         } else {
           console.log('No valid session found')
+          // Clear any stored session data if no Supabase session
+          localStorage.removeItem('faculty_session_token')
+          localStorage.removeItem('faculty_keep_signed_in')
         }
       } catch (error) {
         console.error('Session check failed:', error)
@@ -172,6 +214,51 @@ export default function FacultyLoginPage(): JSX.Element {
         setError('Your account is pending admin approval. Please wait for confirmation.')
         setLoading(false)
         return
+      }
+
+      // Generate session token and register login with presence API
+      try {
+        const presenceResponse = await fetch('/api/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'login',
+            user_id: userData.id
+          })
+        })
+        
+        // Check if response is JSON before parsing
+        const contentType = presenceResponse.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const presenceData = await presenceResponse.json()
+          
+          if (presenceData.success && presenceData.session_token) {
+            // Store session token in localStorage
+            localStorage.setItem('faculty_session_token', presenceData.session_token)
+            
+            // If keep signed in is checked, also store a flag
+            if (keepSignedIn) {
+              localStorage.setItem('faculty_keep_signed_in', 'true')
+            } else {
+              localStorage.removeItem('faculty_keep_signed_in')
+            }
+          }
+        }
+      } catch (presenceError) {
+        console.error('Presence API error:', presenceError)
+        // Continue with login even if presence API fails
+      }
+
+      // Update last_login timestamp
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', userData.id)
+      
+      if (updateError) {
+        console.error('Failed to update last_login:', updateError)
+      } else {
+        console.log('Successfully updated last_login for user:', userData.id)
       }
 
       // Success
@@ -289,6 +376,19 @@ export default function FacultyLoginPage(): JSX.Element {
                       dangerouslySetInnerHTML={{ __html: showPassword ? eyeHideSVG : eyeShowSVG }}
                     />
                   </div>
+                </label>
+              </div>
+
+              {/* Keep Signed In Checkbox */}
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={keepSignedIn}
+                    onChange={(e) => setKeepSignedIn(e.target.checked)}
+                    className="checkbox-input"
+                  />
+                  <span className="checkbox-text">Keep me signed in</span>
                 </label>
               </div>
 

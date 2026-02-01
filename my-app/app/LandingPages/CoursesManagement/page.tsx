@@ -27,7 +27,15 @@ import {
   ArrowLeft,
   Search,
   Tag,
-  Beaker
+  Beaker,
+  Folder,
+  FolderOpen,
+  Home,
+  Settings,
+  Palette,
+  MoreVertical,
+  FolderInput,
+  MoveRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -98,6 +106,26 @@ const emptyFormData: CourseFormData = {
   prerequisite: 'None'
 }
 
+// Folder color presets - theme aligned
+const FOLDER_COLORS = [
+  { name: 'Default', gradient: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))' },
+  { name: 'Green', gradient: 'linear-gradient(135deg, #276749 0%, #38a169 100%)' },
+  { name: 'Purple', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { name: 'Teal', gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)' },
+  { name: 'Orange', gradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)' },
+  { name: 'Pink', gradient: 'linear-gradient(135deg, #be185d 0%, #ec4899 100%)' },
+  { name: 'Indigo', gradient: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)' },
+  { name: 'Cyan', gradient: 'linear-gradient(135deg, #0891b2 0%, #22d3ee 100%)' },
+]
+
+// Interface for folder settings
+interface FolderSettings {
+  [collegeName: string]: {
+    color: string
+    customName?: string
+  }
+}
+
 // ==================== Helper Functions ====================
 async function fetchAllRows<T = Record<string, unknown>>(
   table: string,
@@ -148,6 +176,21 @@ function CoursesManagementContent() {
   const [loading, setLoading] = useState(true)
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  
+  // Folder navigation state
+  const [selectedCollegeFolder, setSelectedCollegeFolder] = useState<string | null>(null)
+  
+  // Folder settings state
+  const [folderSettings, setFolderSettings] = useState<FolderSettings>({})
+  const [showFolderSettingsModal, setShowFolderSettingsModal] = useState(false)
+  const [editingFolderName, setEditingFolderName] = useState<string | null>(null)
+  const [folderMenuOpen, setFolderMenuOpen] = useState<string | null>(null)
+  
+  // Move file state
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [movingGroupId, setMovingGroupId] = useState<number | null>(null)
+  const [movingFromCollege, setMovingFromCollege] = useState<string | null>(null)
+  
   const [courses, setCourses] = useState<Course[]>([])
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [viewMode, setViewMode] = useState<'selection' | 'list'>('selection')
@@ -184,7 +227,110 @@ function CoursesManagementContent() {
   useEffect(() => {
     checkAuth()
     fetchUploadGroups()
+    // Load folder settings from localStorage
+    const savedSettings = localStorage.getItem('courseFolderSettings')
+    if (savedSettings) {
+      try {
+        setFolderSettings(JSON.parse(savedSettings))
+      } catch (e) {
+        console.error('Failed to parse folder settings:', e)
+      }
+    }
   }, [])
+
+  // Save folder settings to localStorage when they change
+  useEffect(() => {
+    if (Object.keys(folderSettings).length > 0) {
+      localStorage.setItem('courseFolderSettings', JSON.stringify(folderSettings))
+    }
+  }, [folderSettings])
+
+  // Get folder color for a college
+  const getFolderColor = (collegeName: string) => {
+    return folderSettings[collegeName]?.color || FOLDER_COLORS[0].gradient
+  }
+
+  // Update folder color
+  const updateFolderColor = (collegeName: string, color: string) => {
+    setFolderSettings(prev => ({
+      ...prev,
+      [collegeName]: {
+        ...prev[collegeName],
+        color
+      }
+    }))
+    setFolderMenuOpen(null)
+  }
+
+  // Update folder custom name
+  const updateFolderName = (collegeName: string, customName: string) => {
+    setFolderSettings(prev => ({
+      ...prev,
+      [collegeName]: {
+        ...prev[collegeName],
+        customName: customName || undefined
+      }
+    }))
+    setEditingFolderName(null)
+    setShowFolderSettingsModal(false)
+  }
+
+  // Get display name for folder
+  const getFolderDisplayName = (collegeName: string) => {
+    return folderSettings[collegeName]?.customName || collegeName
+  }
+
+  // Get all unique colleges for move modal
+  const getAllColleges = () => {
+    return Array.from(new Set(uploadGroups.map(g => g.college || 'Uncategorized'))).sort()
+  }
+
+  // Open move modal
+  const openMoveModal = (groupId: number, currentCollege: string) => {
+    setMovingGroupId(groupId)
+    setMovingFromCollege(currentCollege)
+    setShowMoveModal(true)
+  }
+
+  // Move file to different college
+  const handleMoveFile = async (targetCollege: string) => {
+    if (!movingGroupId || targetCollege === movingFromCollege) {
+      setShowMoveModal(false)
+      return
+    }
+
+    try {
+      // Update all courses in the upload group to the new college
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('class_schedules')
+        .update({ college: targetCollege })
+        .eq('upload_group_id', movingGroupId)
+
+      if (error) throw error
+
+      // Refresh the data
+      await fetchUploadGroups()
+      
+      // Close modal and reset state
+      setShowMoveModal(false)
+      setMovingGroupId(null)
+      setMovingFromCollege(null)
+      
+      // If we're inside a folder that's now empty, go back to root
+      if (selectedCollegeFolder === movingFromCollege) {
+        const remainingInFolder = uploadGroups.filter(
+          g => g.college === movingFromCollege && g.upload_group_id !== movingGroupId
+        )
+        if (remainingInFolder.length === 0) {
+          setSelectedCollegeFolder(null)
+        }
+      }
+    } catch (error) {
+      console.error('Error moving file:', error)
+      alert('Failed to move file. Please try again.')
+    }
+  }
 
   const checkAuth = async () => {
     try {
@@ -727,30 +873,329 @@ function CoursesManagementContent() {
                 </div>
               </div>
 
-              {/* Upload Groups Grid */}
-              <div className={styles.schedulesGrid}>
-                {uploadGroups
-                  .filter(group =>
-                    !searchTerm ||
-                    group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    group.degree_programs?.some(dp => dp.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                    group.file_name?.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map((group) => (
-                    <div
-                      key={group.upload_group_id}
-                      className={styles.scheduleCard}
-                    >
-                      <div className={styles.scheduleCardHeader}>
-                        <h3 className={styles.scheduleEventName}>
-                          <FileSpreadsheet size={20} />
-                          {group.college || `Upload Group #${group.upload_group_id}`}
-                        </h3>
-                        <span className={styles.scheduleType}>
-                          {group.total_courses} Courses
-                        </span>
-                      </div>
-                      <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
+              {/* Breadcrumb Navigation */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '20px',
+                padding: '12px 16px',
+                background: 'var(--bg-white, #ffffff)',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color, #e2e8f0)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+              }}>
+                <button
+                  onClick={() => setSelectedCollegeFolder(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    background: selectedCollegeFolder ? 'transparent' : 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
+                    color: selectedCollegeFolder ? 'var(--text-secondary, #718096)' : 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Home size={16} />
+                  All Colleges
+                </button>
+                {selectedCollegeFolder && (
+                  <>
+                    <ChevronRight size={16} style={{ color: 'var(--text-secondary, #718096)' }} />
+                    <span style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      background: getFolderColor(selectedCollegeFolder),
+                      color: 'white',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '14px'
+                    }}>
+                      <FolderOpen size={16} />
+                      {getFolderDisplayName(selectedCollegeFolder)}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Folder View - College Folders */}
+              {!selectedCollegeFolder && (
+                <>
+                  <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      color: 'var(--text-dark, #1a202c)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Folder size={20} />
+                      College Folders
+                    </h3>
+                  </div>
+                  <div className={styles.schedulesGrid}>
+                    {/* Get unique colleges from upload groups */}
+                    {Array.from(new Set(uploadGroups
+                      .filter(group =>
+                        !searchTerm ||
+                        group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        group.degree_programs?.some(dp => dp.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                        group.file_name?.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map(group => group.college || 'Uncategorized')
+                    )).sort().map((college) => {
+                      const collegeGroups = uploadGroups.filter(g => (g.college || 'Uncategorized') === college)
+                      const totalCourses = collegeGroups.reduce((sum, g) => sum + g.total_courses, 0)
+                      const totalPrograms = new Set(collegeGroups.flatMap(g => g.degree_programs || [])).size
+                      const folderColor = getFolderColor(college)
+                      
+                      return (
+                        <div
+                          key={college}
+                          className={styles.scheduleCard}
+                          onClick={() => setSelectedCollegeFolder(college)}
+                          style={{ cursor: 'pointer', position: 'relative' }}
+                        >
+                          <div className={styles.scheduleCardHeader} style={{
+                            background: folderColor
+                          }}>
+                            <h3 className={styles.scheduleEventName}>
+                              <Folder size={24} />
+                              {getFolderDisplayName(college)}
+                            </h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className={styles.scheduleType}>
+                                {collegeGroups.length} File(s)
+                              </span>
+                              {/* Settings Menu Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setFolderMenuOpen(folderMenuOpen === college ? null : college)
+                                }}
+                                style={{
+                                  background: 'rgba(255,255,255,0.2)',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '4px 6px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                <MoreVertical size={16} color="white" />
+                              </button>
+                            </div>
+                            
+                            {/* Dropdown Menu */}
+                            {folderMenuOpen === college && (
+                              <div 
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  position: 'absolute',
+                                  top: '60px',
+                                  right: '16px',
+                                  background: 'var(--bg-white, #ffffff)',
+                                  borderRadius: '12px',
+                                  boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+                                  padding: '12px',
+                                  zIndex: 100,
+                                  minWidth: '220px',
+                                  border: '1px solid var(--border-color, #e2e8f0)'
+                                }}
+                              >
+                                <div style={{ marginBottom: '12px' }}>
+                                  <label style={{ 
+                                    fontSize: '12px', 
+                                    fontWeight: 600, 
+                                    color: 'var(--text-secondary, #718096)',
+                                    marginBottom: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}>
+                                    <Palette size={14} />
+                                    Folder Color
+                                  </label>
+                                  <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                                    gap: '6px',
+                                    marginTop: '8px'
+                                  }}>
+                                    {FOLDER_COLORS.map((colorOption) => (
+                                      <button
+                                        key={colorOption.name}
+                                        onClick={() => updateFolderColor(college, colorOption.gradient)}
+                                        title={colorOption.name}
+                                        style={{
+                                          width: '32px',
+                                          height: '32px',
+                                          borderRadius: '8px',
+                                          border: folderColor === colorOption.gradient 
+                                            ? '3px solid var(--primary-medium, #2c5282)' 
+                                            : '2px solid var(--border-color, #e2e8f0)',
+                                          background: colorOption.gradient,
+                                          cursor: 'pointer',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div style={{ borderTop: '1px solid var(--border-color, #e2e8f0)', paddingTop: '12px' }}>
+                                  <label style={{ 
+                                    fontSize: '12px', 
+                                    fontWeight: 600, 
+                                    color: 'var(--text-secondary, #718096)',
+                                    marginBottom: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}>
+                                    <Edit3 size={14} />
+                                    Display Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    defaultValue={getFolderDisplayName(college)}
+                                    placeholder={college}
+                                    onBlur={(e) => updateFolderName(college, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        updateFolderName(college, (e.target as HTMLInputElement).value)
+                                      }
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px 12px',
+                                      borderRadius: '8px',
+                                      border: '1px solid var(--border-color, #e2e8f0)',
+                                      fontSize: '13px',
+                                      marginTop: '6px',
+                                      background: '#ffffff',
+                                      color: '#1a202c'
+                                    }}
+                                  />
+                                </div>
+                                
+                                <button
+                                  onClick={() => setFolderMenuOpen(null)}
+                                  style={{
+                                    width: '100%',
+                                    marginTop: '12px',
+                                    padding: '8px',
+                                    background: 'var(--bg-gray-100, #edf2f7)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary, #718096)'
+                                  }}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className={styles.scheduleCardBody}>
+                            <div className={styles.scheduleInfo}>
+                              <FileSpreadsheet size={16} />
+                              <span>{totalCourses} Total Courses</span>
+                            </div>
+                            <div className={styles.scheduleInfo}>
+                              <GraduationCap size={16} />
+                              <span>{totalPrograms} Degree Program(s)</span>
+                            </div>
+                          </div>
+                          <div className={styles.scheduleCardFooter}>
+                            <button
+                              className={styles.viewButton}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedCollegeFolder(college)
+                              }}
+                              style={{ 
+                                background: folderColor
+                              }}
+                            >
+                              <FolderOpen size={16} />
+                              Open Folder
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {uploadGroups.length === 0 && (
+                    <div className={styles.emptyState}>
+                      <Folder size={64} />
+                      <h3>No Course Files Found</h3>
+                      <p>Upload course curriculum CSV files from the Upload CSV page to see them here.</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Inside College Folder - Show Upload Groups */}
+              {selectedCollegeFolder && (
+                <>
+                  <div style={{ marginBottom: '16px' }}>
+                    <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: 600, 
+                      color: 'var(--text-dark, #1a202c)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <FileSpreadsheet size={20} />
+                      Course Files in {getFolderDisplayName(selectedCollegeFolder)}
+                    </h3>
+                  </div>
+                  <div className={styles.schedulesGrid}>
+                    {uploadGroups
+                      .filter(group => 
+                        (group.college || 'Uncategorized') === selectedCollegeFolder &&
+                        (!searchTerm ||
+                          group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          group.degree_programs?.some(dp => dp.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          group.file_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+                      )
+                      .map((group) => (
+                        <div
+                          key={group.upload_group_id}
+                          className={styles.scheduleCard}
+                        >
+                          <div className={styles.scheduleCardHeader}>
+                            <h3 className={styles.scheduleEventName}>
+                              <FileSpreadsheet size={20} />
+                              {group.degree_programs?.join(', ') || `Upload Group #${group.upload_group_id}`}
+                            </h3>
+                            <span className={styles.scheduleType}>
+                              {group.total_courses} Courses
+                            </span>
+                          </div>
+                          <div className={styles.scheduleCardBody} onClick={() => handleGroupSelect(group.upload_group_id)}>
+                            {group.file_name && (
+                              <div className={styles.scheduleInfo}>
+                                <Tag size={16} />
+                                <span style={{ fontSize: '12px' }}>{group.file_name}</span>
+                              </div>
+                            )}
                         {group.degree_programs && group.degree_programs.length > 0 && (
                           <div className={styles.scheduleInfo}>
                             <GraduationCap size={16} />
@@ -772,6 +1217,25 @@ function CoursesManagementContent() {
                           >
                             <BookOpen size={16} />
                             View & Manage
+                          </button>
+                          <button
+                            onClick={() => openMoveModal(group.upload_group_id, group.college || 'Uncategorized')}
+                            style={{
+                              padding: '12px 16px',
+                              background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '10px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: 600,
+                              transition: 'all 0.2s ease'
+                            }}
+                            title="Move to another folder"
+                          >
+                            <FolderInput size={16} />
                           </button>
                           <button
                             onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
@@ -848,14 +1312,16 @@ function CoursesManagementContent() {
                       </div>
                     </div>
                   ))}
-              </div>
+                  </div>
 
-              {uploadGroups.length === 0 && (
-                <div className={styles.emptyState}>
-                  <FileSpreadsheet size={64} />
-                  <h3>No Courses Found</h3>
-                  <p>Upload course curriculum CSV files from the Upload CSV page to see them here.</p>
-                </div>
+                  {uploadGroups.filter(g => (g.college || 'Uncategorized') === selectedCollegeFolder).length === 0 && (
+                    <div className={styles.emptyState}>
+                      <FileSpreadsheet size={64} />
+                      <h3>No Course Files Found</h3>
+                      <p>No course files have been uploaded for this college yet.</p>
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -1393,6 +1859,224 @@ function CoursesManagementContent() {
           )}
         </div>
       </main>
+
+      {/* ==================== Move File Modal ==================== */}
+      {showMoveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--bg-white, #ffffff)',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '450px',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+          }}
+          data-modal="move-file"
+          >
+            {/* Modal Header */}
+            <div 
+              data-modal-header="move-file"
+              style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border-color, #e2e8f0)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
+              color: 'white'
+            }}>
+              <h3 style={{ 
+                margin: 0, 
+                fontSize: '18px', 
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <FolderInput size={22} />
+                Move File to Folder
+              </h3>
+              <button
+                onClick={() => {
+                  setShowMoveModal(false)
+                  setMovingGroupId(null)
+                  setMovingFromCollege(null)
+                }}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={20} color="white" />
+              </button>
+            </div>
+            
+            {/* Current Location */}
+            <div style={{
+              padding: '16px 24px',
+              background: 'var(--bg-gray-50, #f7fafc)',
+              borderBottom: '1px solid var(--border-color, #e2e8f0)'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', marginBottom: '4px' }}>
+                Moving from:
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--text-dark, #1a202c)'
+              }}>
+                <Folder size={18} style={{ color: 'var(--primary-medium, #2c5282)' }} />
+                {movingFromCollege && getFolderDisplayName(movingFromCollege)}
+              </div>
+            </div>
+            
+            {/* Destination Folders */}
+            <div style={{
+              padding: '16px 24px',
+              maxHeight: '400px',
+              overflowY: 'auto'
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', marginBottom: '12px' }}>
+                Select destination folder:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {getAllColleges().map((college) => {
+                  const isCurrentFolder = college === movingFromCollege
+                  const folderColor = getFolderColor(college)
+                  
+                  return (
+                    <button
+                      key={college}
+                      onClick={() => !isCurrentFolder && handleMoveFile(college)}
+                      disabled={isCurrentFolder}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '14px 16px',
+                        background: isCurrentFolder 
+                          ? 'var(--bg-gray-100, #edf2f7)' 
+                          : 'var(--bg-white, #ffffff)',
+                        border: isCurrentFolder 
+                          ? '2px dashed var(--border-color, #e2e8f0)'
+                          : '2px solid var(--border-color, #e2e8f0)',
+                        borderRadius: '12px',
+                        cursor: isCurrentFolder ? 'not-allowed' : 'pointer',
+                        opacity: isCurrentFolder ? 0.6 : 1,
+                        transition: 'all 0.2s ease',
+                        textAlign: 'left'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isCurrentFolder) {
+                          e.currentTarget.style.borderColor = 'var(--primary-medium, #2c5282)'
+                          e.currentTarget.style.background = 'var(--primary-light, rgba(44, 82, 130, 0.05))'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isCurrentFolder) {
+                          e.currentTarget.style.borderColor = 'var(--border-color, #e2e8f0)'
+                          e.currentTarget.style.background = 'var(--bg-white, #ffffff)'
+                        }
+                      }}
+                    >
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '10px',
+                        background: folderColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Folder size={20} color="white" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontWeight: 600, 
+                          fontSize: '14px',
+                          color: 'var(--text-dark, #1a202c)'
+                        }}>
+                          {getFolderDisplayName(college)}
+                        </div>
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: 'var(--text-secondary, #718096)',
+                          marginTop: '2px'
+                        }}>
+                          {uploadGroups.filter(g => (g.college || 'Uncategorized') === college).length} file(s)
+                        </div>
+                      </div>
+                      {!isCurrentFolder && (
+                        <MoveRight size={18} style={{ color: 'var(--primary-medium, #2c5282)' }} />
+                      )}
+                      {isCurrentFolder && (
+                        <span style={{ 
+                          fontSize: '11px', 
+                          color: 'var(--text-secondary, #718096)',
+                          fontWeight: 500 
+                        }}>
+                          Current
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid var(--border-color, #e2e8f0)',
+              background: 'var(--bg-gray-50, #f7fafc)'
+            }}>
+              <button
+                onClick={() => {
+                  setShowMoveModal(false)
+                  setMovingGroupId(null)
+                  setMovingFromCollege(null)
+                }}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'var(--bg-gray-200, #e2e8f0)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary, #718096)'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ==================== Create/Edit Modal ==================== */}
       {showModal && (

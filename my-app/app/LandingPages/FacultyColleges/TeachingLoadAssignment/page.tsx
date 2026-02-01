@@ -6,6 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from '../../CoursesManagement/ClassSchedules.module.css'
 import stylesLocal from './styles.module.css'
 import { supabase } from '@/lib/supabaseClient'
+import { useColleges } from '@/app/context/CollegesContext'
 import {
   BookOpen,
   ChevronDown,
@@ -105,6 +106,7 @@ interface SectionCourseAssignment {
 // ==================== Main Component ====================
 function TeachingLoadAssignmentContent() {
   const router = useRouter()
+  const { activeColleges: bulsuColleges } = useColleges()
 
   // Options
   const semesters = ['First Semester', 'Second Semester', 'Summer']
@@ -995,7 +997,10 @@ function TeachingLoadAssignmentContent() {
               }}
             >
               <option value="all">All Colleges</option>
-              {getColleges().map(college => (
+              {bulsuColleges.map(college => (
+                <option key={college.code} value={college.name}>{college.name}</option>
+              ))}
+              {getColleges().filter(college => !bulsuColleges.some(bc => bc.name === college)).map(college => (
                 <option key={college} value={college}>{college}</option>
               ))}
             </select>

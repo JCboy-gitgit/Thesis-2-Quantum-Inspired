@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import { useColleges } from '@/app/context/CollegesContext'
 import styles from './styles.module.css'
 
 // ==================== INTERFACES ====================
@@ -189,12 +190,31 @@ function FileIcon({ className }: { className?: string }) {
   )
 }
 
+function MoveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+      <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 12h-2v-2.59l-2.79 2.79-1.41-1.41L10.59 14H8v-2h6v6zm4-8l-2 2h1.5v3h2v-3H21l-2-2z" />
+    </svg>
+  )
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  )
+}
+
 // ==================== MAIN COMPONENT ====================
 function FacultyCollegesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Use untyped Supabase client for flexibility across tables
   const db = supabase as any
+  
+  // Get colleges from context
+  const { activeColleges: bulsuColleges } = useColleges()
 
   // View state: 'colleges' | 'files' | 'faculty'
   const [currentView, setCurrentView] = useState<'colleges' | 'files' | 'faculty'>('colleges')
@@ -228,6 +248,13 @@ function FacultyCollegesContent() {
   const [showEditFacultyModal, setShowEditFacultyModal] = useState(false)
   const [deleteFacultyTarget, setDeleteFacultyTarget] = useState<string | null>(null)
   const [renameFileName, setRenameFileName] = useState('')
+
+  // Move file modal states
+  const [showMoveFileModal, setShowMoveFileModal] = useState(false)
+  const [movingFileGroup, setMovingFileGroup] = useState<FileGroup | null>(null)
+  const [selectedMoveCollege, setSelectedMoveCollege] = useState('')
+  const [moveSearchTerm, setMoveSearchTerm] = useState('')
+  const [movingFile, setMovingFile] = useState(false)
 
   // Add Faculty and Export modal states
   const [showAddFacultyModal, setShowAddFacultyModal] = useState(false)
@@ -730,6 +757,46 @@ function FacultyCollegesContent() {
     } finally {
       setDeleting(false)
     }
+  }
+
+  // Move file to different college
+  const handleMoveFile = async () => {
+    if (!movingFileGroup || !selectedMoveCollege) return
+
+    setMovingFile(true)
+    try {
+      // Update all faculty profiles in this file group to the new college
+      const { error } = await db
+        .from('faculty_profiles')
+        .update({ college: selectedMoveCollege })
+        .eq('upload_group_id', movingFileGroup.upload_group_id)
+
+      if (error) throw error
+
+      setSuccessMessage(`File "${movingFileGroup.file_name}" moved to ${selectedMoveCollege}`)
+      setShowMoveFileModal(false)
+      setMovingFileGroup(null)
+      setSelectedMoveCollege('')
+      setMoveSearchTerm('')
+      
+      // Refresh files for current college
+      if (selectedCollege) {
+        fetchFilesForCollege(selectedCollege.college || selectedCollege.department_name)
+      }
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Error moving file:', error)
+      alert(`Failed to move file: ${error.message}`)
+    } finally {
+      setMovingFile(false)
+    }
+  }
+
+  const openMoveFileModal = (file: FileGroup) => {
+    setMovingFileGroup(file)
+    setSelectedMoveCollege('')
+    setMoveSearchTerm('')
+    setShowMoveFileModal(true)
   }
 
   // ==================== UTILITY FUNCTIONS ====================
@@ -1332,6 +1399,13 @@ function FacultyCollegesContent() {
                         </div>
                       </div>
                       <div className={styles.fileActions}>
+                        <button
+                          className={styles.editBtn}
+                          onClick={(e) => { e.stopPropagation(); openMoveFileModal(file); }}
+                          title="Move file"
+                        >
+                          <MoveIcon />
+                        </button>
                         <button
                           className={styles.editBtn}
                           onClick={(e) => { e.stopPropagation(); openRenameFileModal(file); }}
@@ -1976,6 +2050,104 @@ function FacultyCollegesContent() {
               <button className={styles.btnCancel} onClick={() => setShowDeleteFileConfirm(false)}>Cancel</button>
               <button className={styles.btnDelete} onClick={handleDeleteFile} disabled={deleting}>
                 {deleting ? 'Deleting...' : `Delete ${selectedFile.faculty_count} Faculty`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move File Modal */}
+      {showMoveFileModal && movingFileGroup && (
+        <div className={styles.modalOverlay} onClick={() => setShowMoveFileModal(false)}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+            <div className={styles.modalHeader} data-modal-header="move-file">
+              <h3>📁 Move File to College</h3>
+              <button className={styles.modalClose} onClick={() => setShowMoveFileModal(false)}>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.modalSubtext}>
+                Moving: <strong>{movingFileGroup.file_name}</strong> ({movingFileGroup.faculty_count} faculty)
+              </p>
+              <p className={styles.modalSubtext} style={{ fontSize: '0.85rem', marginTop: '4px' }}>
+                Current college: <strong>{movingFileGroup.college}</strong>
+              </p>
+              
+              <div className={styles.formGroup} style={{ marginTop: '16px' }}>
+                <label>Search College</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={moveSearchTerm}
+                  onChange={e => setMoveSearchTerm(e.target.value)}
+                  placeholder="Search colleges..."
+                />
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>Select Destination College</label>
+                <div style={{ 
+                  maxHeight: '250px', 
+                  overflowY: 'auto', 
+                  border: '1px solid var(--border-color, #ddd)', 
+                  borderRadius: '8px',
+                  marginTop: '8px'
+                }}>
+                  {bulsuColleges
+                    .filter(college => {
+                      const searchLower = moveSearchTerm.toLowerCase()
+                      return (
+                        college.code.toLowerCase().includes(searchLower) ||
+                        college.name.toLowerCase().includes(searchLower)
+                      )
+                    })
+                    .filter(college => college.code !== movingFileGroup.college && college.name !== movingFileGroup.college)
+                    .map(college => (
+                      <div
+                        key={college.code}
+                        onClick={() => setSelectedMoveCollege(college.name)}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid var(--border-color, #eee)',
+                          background: selectedMoveCollege === college.name ? 'var(--primary-color, #4f46e5)' : 'transparent',
+                          color: selectedMoveCollege === college.name ? 'white' : 'inherit',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}
+                        onMouseEnter={e => {
+                          if (selectedMoveCollege !== college.name) {
+                            e.currentTarget.style.background = 'var(--hover-bg, #f3f4f6)'
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (selectedMoveCollege !== college.name) {
+                            e.currentTarget.style.background = 'transparent'
+                          }
+                        }}
+                      >
+                        <FolderIcon className={styles.folderIconSmall} />
+                        <div>
+                          <div style={{ fontWeight: 500 }}>{college.code}</div>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{college.name}</div>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowMoveFileModal(false)}>Cancel</button>
+              <button 
+                className={styles.btnSave} 
+                onClick={handleMoveFile} 
+                disabled={movingFile || !selectedMoveCollege}
+              >
+                {movingFile ? 'Moving...' : `Move to ${selectedMoveCollege || 'selected college'}`}
               </button>
             </div>
           </div>

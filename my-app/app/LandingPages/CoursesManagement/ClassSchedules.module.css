@@ -57,7 +57,7 @@
 }
 
 :global([data-theme="green"]) .scheduleCardHeader {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%);
 }
 
 :global([data-theme="green"]) .scheduleCardFooter {
@@ -1299,6 +1299,11 @@
   .seatingGrid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
+
+  .searchInput {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    touch-action: manipulation;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1459,4 +1464,89 @@
 
 :global([data-theme="light"]) .progressFill {
   background: linear-gradient(90deg, #005826 0%, #00a651 100%);
+}
+
+/* ==================== Download CSV Button ==================== */
+.downloadCsvBtn {
+  padding: 8px 16px;
+  background: rgba(56, 161, 105, 0.1);
+  color: var(--primary-medium, #38a169);
+  border: 1px solid var(--primary-medium, #38a169);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+  transition: all 0.2s ease;
+}
+
+.downloadCsvBtn:hover {
+  background: rgba(56, 161, 105, 0.15);
+  transform: scale(1.05);
+}
+
+.downloadCsvText {
+  display: inline;
+}
+
+/* Mobile responsive - icon only for download button */
+@media (max-width: 768px) {
+  .downloadCsvBtn {
+    padding: 8px;
+    margin-right: 8px;
+  }
+  
+  .downloadCsvText {
+    display: none;
+  }
+}
+
+/* ==================== Folder Navigation Styles ==================== */
+.folderCard {
+  background: var(--bg-white, #ffffff);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 2px solid var(--border-color, #e2e8f0);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.folderCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25);
+  border-color: #667eea;
+}
+
+.folderCardHeader {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+/* Green Theme Folder Styles */
+:global([data-theme="green"]) .folderCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .folderCard:hover {
+  border-color: #2EAF7D;
+  box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25);
+  transform: translateY(-8px) scale(1.02);
+}
+
+:global([data-theme="green"]) .folderCardHeader {
+  background: linear-gradient(135deg, #2EAF7D 0%, #449342 100%);
+}
+
+/* Green Theme - Override inline styles for Move Button */
+:global([data-theme="green"]) button[title="Move to another folder"] {
+  background: linear-gradient(135deg, #276749 0%, #38a169 100%) !important;
 }

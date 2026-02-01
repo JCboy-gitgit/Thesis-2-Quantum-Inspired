@@ -847,7 +847,7 @@ class QuantumInspiredScheduler:
         return entries
     
     def get_unscheduled_sections(self) -> List[Dict]:
-        """Get list of sections that couldn't be scheduled with reasons"""
+        """Get list of sections that couldn't be scheduled with detailed reasons"""
         unscheduled = []
         
         for section_id, section in self.sections.items():
@@ -855,26 +855,90 @@ class QuantumInspiredScheduler:
             needed = max(1, section.weekly_hours // self.slot_duration)
             
             if assigned < needed:
-                # Determine detailed reason
+                # Determine detailed reason with specific categorization
                 compatible_rooms = self.compatible_rooms.get(section_id, [])
+                reason_code = "UNKNOWN"
+                reason_details = []
+                
                 if not compatible_rooms:
                     # Check why no rooms are compatible
                     min_capacity = int(section.student_count * self.constraints.min_room_capacity_buffer)
                     rooms_by_capacity = [r for r in self.rooms.values() if r.capacity >= min_capacity]
+                    lab_rooms = [r for r in self.rooms.values() if r.room_type in ["laboratory", "computer_lab", "lab"]]
                     
                     if not rooms_by_capacity:
+                        reason_code = "INSUFFICIENT_ROOM_CAPACITY"
                         reason = f"No rooms with capacity >= {min_capacity} students (section has {section.student_count} students)"
-                    elif section.requires_lab:
+                        reason_details = [
+                            f"Required capacity: {min_capacity}+ students",
+                            f"Largest available room: {max((r.capacity for r in self.rooms.values()), default=0)} students",
+                            "Consider: Adding larger rooms or splitting section into smaller groups"
+                        ]
+                    elif section.requires_lab and not any(r.capacity >= min_capacity for r in lab_rooms):
+                        reason_code = "NO_LAB_ROOMS"
                         reason = f"No laboratory rooms available with capacity >= {min_capacity} students"
+                        available_lab_capacity = max((r.capacity for r in lab_rooms), default=0) if lab_rooms else 0
+                        reason_details = [
+                            f"This course requires a laboratory room (Lab Hours: {section.lab_hours})",
+                            f"Total lab rooms available: {len(lab_rooms)}",
+                            f"Largest lab room capacity: {available_lab_capacity} students",
+                            "Consider: Adding more lab rooms or reducing lab section size"
+                        ]
                     else:
+                        reason_code = "ROOM_TYPE_MISMATCH"
                         reason = f"No compatible rooms (capacity or type mismatch for {section.student_count} students)"
+                        reason_details = [
+                            f"Required room type: {'Laboratory' if section.requires_lab else 'Lecture Room'}",
+                            "Consider: Checking room type configuration"
+                        ]
                 elif assigned == 0:
-                    # Calculate total available slots
+                    # Check for specific conflict reasons
                     total_slots = len(self.DAYS[:6]) * len(self.time_slots)
                     used_slots = len(self.schedule)
-                    reason = f"All {total_slots} time slots were filled or conflicted (schedule density: {used_slots}/{total_slots})"
+                    utilization = (used_slots / total_slots * 100) if total_slots > 0 else 0
+                    
+                    # Check if teacher conflict is the issue
+                    teacher_conflicts = 0
+                    if section.teacher_id and section.teacher_id > 0:
+                        for day in self.DAYS[:6]:
+                            for slot_id in self.time_slots:
+                                if self._check_teacher_conflict(section.teacher_id, day, slot_id):
+                                    teacher_conflicts += 1
+                    
+                    if teacher_conflicts > (total_slots * 0.7):  # Teacher is busy 70%+ of the time
+                        reason_code = "TEACHER_OVERLOADED"
+                        reason = f"Teacher '{section.teacher_name}' is heavily scheduled ({teacher_conflicts}/{total_slots} slots occupied)"
+                        reason_details = [
+                            f"Teacher: {section.teacher_name}",
+                            f"Teacher's occupied slots: {teacher_conflicts} out of {total_slots}",
+                            "Consider: Assigning a different teacher or reducing their load"
+                        ]
+                    elif utilization > 90:
+                        reason_code = "SCHEDULE_FULL"
+                        reason = f"Schedule is nearly full ({utilization:.1f}% utilization)"
+                        reason_details = [
+                            f"Total slots: {total_slots}",
+                            f"Used slots: {used_slots}",
+                            f"Utilization: {utilization:.1f}%",
+                            "Consider: Adding more rooms or extending operating hours"
+                        ]
+                    else:
+                        reason_code = "TIME_CONFLICT"
+                        reason = f"All available time slots conflicted (schedule density: {used_slots}/{total_slots})"
+                        reason_details = [
+                            f"Compatible rooms: {len(compatible_rooms)}",
+                            f"Schedule utilization: {utilization:.1f}%",
+                            "Consider: Checking for teacher availability conflicts"
+                        ]
                 else:
-                    reason = f"Partially scheduled: {assigned}/{needed} slots (remaining slots conflicted)"
+                    reason_code = "PARTIAL_SCHEDULE"
+                    remaining = needed - assigned
+                    reason = f"Partially scheduled: {assigned}/{needed} slots ({remaining} more needed)"
+                    reason_details = [
+                        f"Successfully assigned: {assigned} slots",
+                        f"Still needed: {remaining} slots",
+                        "Consider: Checking for time conflicts in remaining slots"
+                    ]
                 
                 unscheduled.append({
                     "id": section.id,
@@ -887,7 +951,9 @@ class QuantumInspiredScheduler:
                     "needed_slots": needed,
                     "assigned_slots": assigned,
                     "compatible_rooms_count": len(compatible_rooms),
-                    "reason": reason
+                    "reason": reason,
+                    "reason_code": reason_code,
+                    "reason_details": reason_details
                 })
         
         return unscheduled

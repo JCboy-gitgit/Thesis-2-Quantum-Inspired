@@ -200,8 +200,15 @@ function ViewSchedulePage() {
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
   const [selectedCourse, setSelectedCourse] = useState<string>('all')
 
+  // Search states for view mode selectors
+  const [roomSearchFilter, setRoomSearchFilter] = useState('')
+  const [sectionSearchFilter, setSectionSearchFilter] = useState('')
+  const [teacherSearchFilter, setTeacherSearchFilter] = useState('')
+  const [courseSearchFilter, setCourseSearchFilter] = useState('')
+
   // Timetable ref for export
   const timetableRef = useRef<HTMLDivElement>(null)
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
   // Filters
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
@@ -225,6 +232,9 @@ function ViewSchedulePage() {
   const [buildingRoomMap, setBuildingRoomMap] = useState<Map<string, string[]>>(new Map())
   const [filteredRooms, setFilteredRooms] = useState<string[]>([])
 
+  // Pagination for timetable views
+  const [currentTimetableIndex, setCurrentTimetableIndex] = useState(0)
+
   // Archive modal state
   const [showArchiveModal, setShowArchiveModal] = useState(false)
 
@@ -241,6 +251,11 @@ function ViewSchedulePage() {
     checkAuth()
     fetchSchedules()
   }, [])
+
+  // Reset timetable index when view mode or selections change
+  useEffect(() => {
+    setCurrentTimetableIndex(0)
+  }, [timetableViewMode, selectedRoom, selectedSection, selectedTeacher, selectedCourse, filterBuilding, filterRoom, filterDay, searchQuery])
 
   const checkAuth = async () => {
     try {
@@ -519,11 +534,22 @@ function ViewSchedulePage() {
         }
         
         setAllocations(enrichedAllocations)
+        
+        // Debug: Log all allocations
+        console.log('=== ViewSchedule Data Debug ===');
+        console.log('Total allocations fetched:', enrichedAllocations.length);
+        console.log('Sample allocation:', enrichedAllocations[0]);
+        enrichedAllocations.forEach((a, i) => {
+          console.log(`Alloc ${i + 1}: ${a.course_code} | ${a.section} | ${a.room} | ${a.schedule_day} | ${a.schedule_time}`);
+        });
 
         // Extract unique buildings, rooms, sections and teachers
         const uniqueBuildings = [...new Set(enrichedAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(enrichedAllocations.map(a => a.room).filter((r): r is string => !!r))]
-        const uniqueSections = [...new Set(enrichedAllocations.map(a => a.section).filter((s): s is string => !!s))]
+        // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
+        const uniqueSections = [...new Set(enrichedAllocations.map(a => 
+          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+        ).filter((s): s is string => !!s))]
         const uniqueTeachers = [...new Set(enrichedAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
         const uniqueCourses = [...new Set(enrichedAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
         
@@ -630,7 +656,10 @@ function ViewSchedulePage() {
 
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
-        const uniqueSections = [...new Set(mockAllocations.map(a => a.section).filter((s): s is string => !!s))]
+        // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
+        const uniqueSections = [...new Set(mockAllocations.map(a => 
+          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+        ).filter((s): s is string => !!s))]
         const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
         const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
 
@@ -668,7 +697,11 @@ function ViewSchedulePage() {
     if (timetableViewMode === 'room' && selectedRoom !== 'all') {
       filtered = filtered.filter(a => a.room === selectedRoom)
     } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
-      filtered = filtered.filter(a => a.section === selectedSection)
+      // Match both LAB and LEC variants of the section
+      filtered = filtered.filter(a => {
+        const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+        return baseSection === selectedSection
+      })
     } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
       filtered = filtered.filter(a => a.teacher_name === selectedTeacher)
     } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
@@ -946,6 +979,402 @@ function ViewSchedulePage() {
     window.print()
   }
 
+  const handleExportPDF = async (exportType: 'current' | 'all-rooms' | 'all-sections' | 'all-teachers' | 'all-courses' = 'current') => {
+    try {
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [215.9, 279.4] // Short bond paper: 8.5" x 11" in mm (portrait)
+      })
+
+      const pageWidth = 215.9 // portrait width
+      const pageHeight = 279.4 // portrait height
+      const margin = 8
+      const usableWidth = pageWidth - (margin * 2)
+
+      // Generate comprehensive color palette for all unique courses
+      const generateColorPalette = (allocs: RoomAllocation[]) => {
+        const uniqueCourses = new Set(allocs.map(a => a.course_code))
+        const colorMap = new Map<string, { r: number; g: number; b: number }>()
+        
+        const colors = [
+          { r: 25, g: 118, b: 210 },   // Blue
+          { r: 56, g: 142, b: 60 },    // Green
+          { r: 245, g: 124, b: 0 },    // Orange
+          { r: 123, g: 31, b: 162 },   // Purple
+          { r: 0, g: 121, b: 107 },    // Teal
+          { r: 194, g: 24, b: 91 },    // Pink
+          { r: 93, g: 64, b: 55 },     // Brown
+          { r: 69, g: 90, b: 100 },    // Blue-grey
+          { r: 230, g: 74, b: 25 },    // Deep Orange
+          { r: 0, g: 151, b: 167 },    // Cyan
+          { r: 48, g: 63, b: 159 },    // Indigo
+          { r: 104, g: 159, b: 56 },   // Light Green
+          { r: 251, g: 192, b: 45 },   // Amber
+          { r: 198, g: 40, b: 40 },    // Red
+          { r: 106, g: 27, b: 154 },   // Deep Purple
+          { r: 0, g: 105, b: 92 },     // Dark Teal
+          { r: 239, g: 108, b: 0 },    // Amber Dark
+          { r: 216, g: 27, b: 96 },    // Magenta
+          { r: 78, g: 52, b: 46 },     // Dark Brown
+          { r: 1, g: 87, b: 155 }      // Dark Blue
+        ]
+        
+        let colorIdx = 0
+        uniqueCourses.forEach(course => {
+          colorMap.set(course, colors[colorIdx % colors.length])
+          colorIdx++
+        })
+        
+        return colorMap
+      }
+
+      // Helper: Draw timetable for specific view (works with any PDF instance)
+      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, {r: number, g: number, b: number}>) => {
+        // QTime Logo - Green Q box with "Qtime Scheduler" text
+        const logoSize = 8
+        const logoTextSize = 10
+        const logoText = 'Qtime Scheduler'
+        pdfDoc.setFontSize(logoTextSize)
+        pdfDoc.setFont('helvetica', 'bold')
+        const textWidth = pdfDoc.getTextWidth(logoText)
+        const totalWidth = logoSize + 2 + textWidth  // logo + spacing + text
+        const startX = (pageWidth - totalWidth) / 2
+        const logoY = margin
+        
+        // Green rounded rectangle for Q
+        pdfDoc.setFillColor(22, 163, 74) // Green (#16a34a)
+        pdfDoc.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
+        
+        // "Q" letter in white
+        pdfDoc.setTextColor(255, 255, 255)
+        pdfDoc.setFontSize(6)
+        pdfDoc.setFont('helvetica', 'bold')
+        const qWidth = pdfDoc.getTextWidth('Q')
+        pdfDoc.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
+        
+        // "Qtime Scheduler" text in black
+        pdfDoc.setTextColor(0, 0, 0)
+        pdfDoc.setFontSize(logoTextSize)
+        pdfDoc.setFont('helvetica', 'bold')
+        pdfDoc.text(logoText, startX + logoSize + 2, logoY + 6)
+        
+        // Reset text color
+        pdfDoc.setTextColor(0, 0, 0)
+
+        // Title - centered (below logo)
+        pdfDoc.setFontSize(12)
+        pdfDoc.setFont('helvetica', 'bold')
+        const titleWidth = pdfDoc.getTextWidth(title)
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 14)
+        
+        // Subtitle - centered
+        pdfDoc.setFontSize(8)
+        pdfDoc.setFont('helvetica', 'normal')
+        const subtitle = `${selectedSchedule?.schedule_name} | ${selectedSchedule?.school_name}`
+        const subtitleWidth = pdfDoc.getTextWidth(subtitle)
+        pdfDoc.text(subtitle, (pageWidth - subtitleWidth) / 2, margin + 19)
+
+        // Get color map for this allocation if not provided
+        const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
+
+        // Process allocations into blocks
+        const blocks = processAllocationsToBlocks(allocData)
+        
+        // Table dimensions - portrait (adjusted for logo space)
+        const startY = margin + 22
+        const timeColWidth = 18
+        const dayColWidth = (usableWidth - timeColWidth) / 6 // 6 days for portrait (Mon-Sat)
+        const rowHeight = 8
+        const timeSlots = generateTimeSlots()
+
+        // Draw header grid and labels
+        pdfDoc.setDrawColor(100, 100, 100)
+        pdfDoc.setLineWidth(0.5)
+        
+        // Header row background
+        pdfDoc.setFillColor(240, 240, 240)
+        pdfDoc.rect(margin, startY, usableWidth, rowHeight, 'F')
+        
+        // Draw header border
+        pdfDoc.setDrawColor(150, 150, 150)
+        pdfDoc.rect(margin, startY, usableWidth, rowHeight)
+
+        // Header text
+        pdfDoc.setFontSize(7)
+        pdfDoc.setFont('helvetica', 'bold')
+        pdfDoc.setTextColor(0, 0, 0)
+        // Center "Time" header
+        const timeHeaderWidth = pdfDoc.getTextWidth('Time')
+        pdfDoc.text('Time', margin + (timeColWidth - timeHeaderWidth) / 2, startY + 5.5)
+        
+        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekdays.forEach((day, idx) => {
+          const x = margin + timeColWidth + (idx * dayColWidth)
+          // Center full day name in column
+          const dayWidth = pdfDoc.getTextWidth(day)
+          pdfDoc.text(day, x + (dayColWidth - dayWidth) / 2, startY + 5.5)
+          // Draw column separator in header only
+          pdfDoc.setDrawColor(150, 150, 150)
+          pdfDoc.setLineWidth(0.3)
+          pdfDoc.line(x, startY, x, startY + rowHeight)
+        })
+        // Draw time column separator
+        pdfDoc.line(margin + timeColWidth, startY, margin + timeColWidth, startY + rowHeight)
+
+        // Draw time slots and blocks
+        timeSlots.forEach((slot, rowIdx) => {
+          const y = startY + rowHeight + (rowIdx * rowHeight)
+          if (y > pageHeight - margin - 10) return
+
+          // Time label + Section
+          pdfDoc.setFontSize(7)
+          pdfDoc.setFont('helvetica', 'normal')
+          pdfDoc.setTextColor(0, 0, 0)
+          const [hour, min] = slot.split(':').map(Number)
+          const period = hour >= 12 ? 'PM' : 'AM'
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          pdfDoc.text(`${displayHour}:${min.toString().padStart(2, '0')} ${period}`, margin + 1, y + 3.5)
+
+          // Draw day cells - blocks on top of lines
+          weekdays.forEach((day, dayIdx) => {
+            const x = margin + timeColWidth + (dayIdx * dayColWidth)
+            
+            // Find blocks for this day/time
+            const dayLower = day.toLowerCase()
+            const slotMinutes = hour * 60 + min
+
+            // Check if this slot is covered by any block (to skip drawing line)
+            const isCoveredByBlock = blocks.some(b => 
+              b.day === dayLower && 
+              b.startMinutes <= slotMinutes && 
+              b.endMinutes > slotMinutes
+            )
+
+            // Only draw horizontal line if NOT covered by a block
+            if (!isCoveredByBlock) {
+              pdfDoc.setDrawColor(230, 230, 230)
+              pdfDoc.setLineWidth(0.15)
+              pdfDoc.line(x, y + rowHeight, x + dayColWidth, y + rowHeight)
+            }
+
+            const relevantBlocks = blocks.filter(b => 
+              b.day === dayLower && 
+              b.startMinutes <= slotMinutes && 
+              b.endMinutes > slotMinutes
+            )
+
+            if (relevantBlocks.length > 0 && slotMinutes === relevantBlocks[0].startMinutes) {
+              const block = relevantBlocks[0]
+              const durationSlots = Math.ceil((block.endMinutes - block.startMinutes) / 30)
+              const blockHeight = durationSlots * rowHeight
+
+              // Color background - solid fill, no lines
+              const color = localColorMap.get(block.course_code) || { r: 200, g: 200, b: 200 }
+              pdfDoc.setFillColor(color.r, color.g, color.b)
+              pdfDoc.rect(x + 0.3, y + 0.3, dayColWidth - 0.6, blockHeight - 0.6, 'F')
+
+              // Calculate center X position for all text
+              const centerX = x + dayColWidth / 2
+
+              // Text on top of colored background - CENTERED
+              pdfDoc.setTextColor(255, 255, 255)
+              let textY = y + 3
+              
+              // 1. Course Code (bold, larger) - centered
+              pdfDoc.setFontSize(7)
+              pdfDoc.setFont('helvetica', 'bold')
+              const courseText = block.course_code || 'N/A'
+              pdfDoc.text(courseText, centerX, textY, { align: 'center' })
+              textY += 2.8
+              
+              // 2. Course Name - centered
+              if (blockHeight > 8) {
+                pdfDoc.setFontSize(5.5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const courseNameText = block.course_name || ''
+                const courseNameLines = pdfDoc.splitTextToSize(courseNameText.substring(0, 35), dayColWidth - 1.5)
+                pdfDoc.text(courseNameLines.slice(0, 1), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // 3. Time Range - centered
+              if (blockHeight > 12) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const startH = Math.floor(block.startMinutes / 60)
+                const startM = block.startMinutes % 60
+                const endH = Math.floor(block.endMinutes / 60)
+                const endM = block.endMinutes % 60
+                const formatTime = (h: number, m: number) => {
+                  const period = h >= 12 ? 'PM' : 'AM'
+                  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h
+                  return `${displayH}:${m.toString().padStart(2, '0')} ${period}`
+                }
+                const timeText = `${formatTime(startH, startM)} - ${formatTime(endH, endM)}`
+                pdfDoc.text(timeText, centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // 4. Section - centered
+              if (blockHeight > 16) {
+                pdfDoc.setFontSize(5.5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const sectionText = block.section || 'N/A'
+                pdfDoc.text(sectionText.substring(0, 20), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // 5. Room (just room code, strip building name if present) - centered
+              if (blockHeight > 20) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const fullRoom = block.room || 'N/A'
+                // Extract room code after hyphen (e.g., "Federizo Hall-FH 302" -> "FH 302")
+                const roomText = fullRoom.includes('-') ? fullRoom.split('-').slice(1).join('-') : fullRoom
+                pdfDoc.text(roomText.substring(0, 25), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // 6. Teacher Name - centered
+              if (blockHeight > 24) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const facultyText = block.teacher_name || 'TBD'
+                pdfDoc.text(facultyText.substring(0, 20), centerX, textY, { align: 'center' })
+              }
+
+              // Draw subtle border around block (no grid lines on top)
+              pdfDoc.setDrawColor(255, 255, 255)
+              pdfDoc.setLineWidth(0.5)
+              pdfDoc.rect(x + 0.3, y + 0.3, dayColWidth - 0.6, blockHeight - 0.6)
+            }
+          })
+          // Lines are already drawn as background before blocks - no need to draw again
+        })
+      }
+      
+      // Legacy wrapper for backward compatibility with pageNum
+      const drawTimetable = (allocData: RoomAllocation[], title: string, pageNum: number) => {
+        if (pageNum > 1) pdf.addPage()
+        drawTimetableOnPdf(pdf, allocData, title, generateColorPalette(allocData))
+      }
+
+      // Helper: Process allocations to blocks
+      const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
+        const blocks: any[] = []
+        const groupedMap = new Map()
+
+        allocs.forEach(alloc => {
+          const days = expandDays(alloc.schedule_day || '')
+          days.forEach(day => {
+            const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${day.toLowerCase()}|${alloc.teacher_name || ''}`
+            if (!groupedMap.has(key)) groupedMap.set(key, [])
+            groupedMap.get(key).push({ ...alloc, schedule_day: day })
+          })
+        })
+
+        groupedMap.forEach(allocGroup => {
+          const sorted = allocGroup.sort((a: any, b: any) => {
+            return parseTimeToMinutes(a.schedule_time || '') - parseTimeToMinutes(b.schedule_time || '')
+          })
+
+          let currentBlock: any = null
+          sorted.forEach((alloc: any) => {
+            const timeParts = (alloc.schedule_time || '').split(/\s*-\s*/)
+            if (timeParts.length !== 2) return
+
+            const startMins = parseTimeToMinutes(timeParts[0])
+            const endMins = parseTimeToMinutes(timeParts[1])
+            if (startMins === 0 && endMins === 0) return
+
+            if (currentBlock && currentBlock.endMinutes === startMins) {
+              currentBlock.endMinutes = endMins
+            } else {
+              if (currentBlock) blocks.push(currentBlock)
+              currentBlock = {
+                course_code: alloc.course_code,
+                course_name: alloc.course_name,
+                section: alloc.section,
+                room: alloc.room,
+                building: alloc.building,
+                teacher_name: alloc.teacher_name,
+                day: (alloc.schedule_day || '').toLowerCase(),
+                startMinutes: startMins,
+                endMinutes: endMins
+              }
+            }
+          })
+          if (currentBlock) blocks.push(currentBlock)
+        })
+
+        return blocks
+      }
+
+      // Helper: Generate time slots (7:00 AM to 8:00 PM)
+      const generateTimeSlots = () => {
+        const slots = []
+        for (let i = 0; i < 27; i++) {  // 27 slots = 7:00 AM to 8:00 PM (last row is 8:00 PM)
+          const hour = Math.floor(i / 2) + 7
+          const minute = (i % 2) * 30
+          slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
+        }
+        return slots
+      }
+
+      // Generate PDFs based on export type
+      let pageCount = 0
+
+      if (exportType === 'current') {
+        const viewLabel = timetableViewMode === 'room' ? `Room: ${selectedRoom}` :
+          timetableViewMode === 'section' ? `Section: ${selectedSection}` :
+            timetableViewMode === 'teacher' ? `Teacher: ${selectedTeacher}` :
+              timetableViewMode === 'course' ? `Course: ${selectedCourse}` : 'All Classes'
+        drawTimetable(allocations, viewLabel, ++pageCount)
+      } else if (exportType === 'all-rooms') {
+        // Export all rooms as pages in one PDF
+        for (const room of rooms) {
+          const roomAllocs = allocations.filter(a => a.room === room)
+          if (roomAllocs.length > 0) {
+            drawTimetable(roomAllocs, `Room: ${room}`, ++pageCount)
+          }
+        }
+      } else if (exportType === 'all-sections') {
+        // Export all sections as pages in one PDF
+        for (const section of sections) {
+          const sectionAllocs = allocations.filter(a => a.section === section)
+          if (sectionAllocs.length > 0) {
+            drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
+          }
+        }
+      } else if (exportType === 'all-teachers') {
+        // Export all teachers as pages in one PDF
+        for (const teacher of teachers) {
+          const teacherAllocs = allocations.filter(a => a.teacher_name === teacher)
+          if (teacherAllocs.length > 0) {
+            drawTimetable(teacherAllocs, `Teacher: ${teacher}`, ++pageCount)
+          }
+        }
+      } else if (exportType === 'all-courses') {
+        // Export all courses as pages in one PDF
+        for (const course of courses) {
+          const courseAllocs = allocations.filter(a => a.course_code === course)
+          if (courseAllocs.length > 0) {
+            drawTimetable(courseAllocs, `Course: ${course}`, ++pageCount)
+          }
+        }
+      }
+
+      // Save single PDF with all pages
+      const fileName = `timetable_${selectedSchedule?.schedule_name}_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`
+      pdf.save(fileName)
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      alert('Failed to export PDF. Please make sure jsPDF is installed.')
+    }
+  }
+
   const handleExportImage = async () => {
     if (!timetableRef.current) {
       alert('Timetable not loaded')
@@ -990,15 +1419,16 @@ function ViewSchedulePage() {
     setSidebarOpen(prev => !prev)
   }
 
-  // Get cell color based on building or department
+  // Get cell color based on building or department - Using solid colors instead of transparency
   const getCellColor = (allocation: RoomAllocation): string => {
+    // Light pastel colors that are easier to read and don't use transparency
     const colors = [
-      'var(--primary-alpha)',
-      'rgba(6, 182, 212, 0.15)',
-      'rgba(245, 158, 11, 0.15)',
-      'rgba(236, 72, 153, 0.15)',
-      'rgba(99, 102, 241, 0.15)',
-      'rgba(16, 185, 129, 0.15)'
+      '#E8F5E9',  // Light green
+      '#E0F2F1',  // Light teal
+      '#FFF3E0',  // Light orange
+      '#FCE4EC',  // Light pink
+      '#F3E5F5',  // Light purple
+      '#E3F2FD'   // Light blue
     ]
     const index = buildings.indexOf(allocation.building) % colors.length
     return colors[index] || colors[0]
@@ -1031,14 +1461,32 @@ function ViewSchedulePage() {
 
             {selectedSchedule && (
               <div className={styles.headerActions}>
-                <button className={styles.actionButton} onClick={handleExportImage}>
-                  <FaImage /> Export Image
-                </button>
+                <div className={styles.exportDropdown}>
+                  <button className={styles.actionButton} onClick={() => setShowExportMenu(!showExportMenu)}>
+                    <Download size={18} /> Export PDF <ChevronDown size={14} />
+                  </button>
+                  {showExportMenu && (
+                    <div className={styles.exportMenu}>
+                      <button onClick={() => { handleExportPDF('current'); setShowExportMenu(false); }}>
+                        <Eye size={14} /> Current View
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-rooms'); setShowExportMenu(false); }}>
+                        <DoorOpen size={14} /> All Rooms
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-sections'); setShowExportMenu(false); }}>
+                        <Users size={14} /> All Sections
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-teachers'); setShowExportMenu(false); }}>
+                        <FaChalkboardTeacher /> All Teachers
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-courses'); setShowExportMenu(false); }}>
+                        <BookOpen size={14} /> All Courses
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button className={styles.actionButton} onClick={handleExport}>
                   <Download size={18} /> Export CSV
-                </button>
-                <button className={styles.actionButton} onClick={handlePrint}>
-                  <Printer size={18} /> Print
                 </button>
               </div>
             )}
@@ -1332,65 +1780,141 @@ function ViewSchedulePage() {
                   </button>
                 </div>
 
-                {/* View Mode Specific Selector */}
+                {/* View Mode Specific Selector with Search */}
                 {timetableViewMode === 'room' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Room:</label>
-                    <select
-                      value={selectedRoom}
-                      onChange={(e) => setSelectedRoom(e.target.value)}
-                      className={styles.viewModeSelect}
-                    >
-                      <option value="all">All Rooms</option>
-                      {rooms.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
+                    <div className={styles.searchableSelect}>
+                      <div className={styles.searchInputWrapper}>
+                        <Search size={14} />
+                        <input
+                          type="text"
+                          placeholder="Search rooms..."
+                          value={roomSearchFilter}
+                          onChange={(e) => setRoomSearchFilter(e.target.value)}
+                          className={styles.selectSearchInput}
+                        />
+                        {roomSearchFilter && (
+                          <button onClick={() => setRoomSearchFilter('')} className={styles.clearSelectSearch}>
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={selectedRoom}
+                        onChange={(e) => setSelectedRoom(e.target.value)}
+                        className={styles.viewModeSelect}
+                      >
+                        <option value="all">All Rooms ({rooms.length})</option>
+                        {rooms
+                          .filter(r => r.toLowerCase().includes(roomSearchFilter.toLowerCase()))
+                          .map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 )}
                 {timetableViewMode === 'section' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Section:</label>
-                    <select
-                      value={selectedSection}
-                      onChange={(e) => setSelectedSection(e.target.value)}
-                      className={styles.viewModeSelect}
-                    >
-                      <option value="all">All Sections</option>
-                      {sections.map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                    <div className={styles.searchableSelect}>
+                      <div className={styles.searchInputWrapper}>
+                        <Search size={14} />
+                        <input
+                          type="text"
+                          placeholder="Search sections..."
+                          value={sectionSearchFilter}
+                          onChange={(e) => setSectionSearchFilter(e.target.value)}
+                          className={styles.selectSearchInput}
+                        />
+                        {sectionSearchFilter && (
+                          <button onClick={() => setSectionSearchFilter('')} className={styles.clearSelectSearch}>
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={selectedSection}
+                        onChange={(e) => setSelectedSection(e.target.value)}
+                        className={styles.viewModeSelect}
+                      >
+                        <option value="all">All Sections ({sections.length})</option>
+                        {sections
+                          .filter(s => s.toLowerCase().includes(sectionSearchFilter.toLowerCase()))
+                          .map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 )}
                 {timetableViewMode === 'teacher' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Teacher:</label>
-                    <select
-                      value={selectedTeacher}
-                      onChange={(e) => setSelectedTeacher(e.target.value)}
-                      className={styles.viewModeSelect}
-                    >
-                      <option value="all">All Teachers</option>
-                      {teachers.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    <div className={styles.searchableSelect}>
+                      <div className={styles.searchInputWrapper}>
+                        <Search size={14} />
+                        <input
+                          type="text"
+                          placeholder="Search teachers..."
+                          value={teacherSearchFilter}
+                          onChange={(e) => setTeacherSearchFilter(e.target.value)}
+                          className={styles.selectSearchInput}
+                        />
+                        {teacherSearchFilter && (
+                          <button onClick={() => setTeacherSearchFilter('')} className={styles.clearSelectSearch}>
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={selectedTeacher}
+                        onChange={(e) => setSelectedTeacher(e.target.value)}
+                        className={styles.viewModeSelect}
+                      >
+                        <option value="all">All Teachers ({teachers.length})</option>
+                        {teachers
+                          .filter(t => t.toLowerCase().includes(teacherSearchFilter.toLowerCase()))
+                          .map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 )}
                 {timetableViewMode === 'course' && (
                   <div className={styles.viewModeSelector}>
                     <label>Select Course:</label>
-                    <select
-                      value={selectedCourse}
-                      onChange={(e) => setSelectedCourse(e.target.value)}
-                      className={styles.viewModeSelect}
-                    >
-                      <option value="all">All Courses</option>
-                      {courses.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    <div className={styles.searchableSelect}>
+                      <div className={styles.searchInputWrapper}>
+                        <Search size={14} />
+                        <input
+                          type="text"
+                          placeholder="Search courses..."
+                          value={courseSearchFilter}
+                          onChange={(e) => setCourseSearchFilter(e.target.value)}
+                          className={styles.selectSearchInput}
+                        />
+                        {courseSearchFilter && (
+                          <button onClick={() => setCourseSearchFilter('')} className={styles.clearSelectSearch}>
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={selectedCourse}
+                        onChange={(e) => setSelectedCourse(e.target.value)}
+                        className={styles.viewModeSelect}
+                      >
+                        <option value="all">All Courses ({courses.length})</option>
+                        {courses
+                          .filter(c => c.toLowerCase().includes(courseSearchFilter.toLowerCase()))
+                          .map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1469,24 +1993,28 @@ function ViewSchedulePage() {
                   <p>This schedule doesn&apos;t have any room allocations yet.</p>
                 </div>
               ) : (
-                /* Timetable Grid - Using combined blocks like GenerateSchedule */
+                /* Timetable Grid - Simplified to match GenerateSchedule */
                 <div className={styles.timetableWrapper} ref={timetableRef}>
-                  {/* Timetable Title for Export */}
+                  {/* Timetable Title with Navigation */}
                   <div className={styles.timetableTitle}>
-                    <h3>
-                      {timetableViewMode === 'all' && 'All Classes Timetable'}
-                      {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
-                      {timetableViewMode === 'room' && selectedRoom === 'all' && 'Please select a room to view'}
-                      {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
-                      {timetableViewMode === 'section' && selectedSection === 'all' && 'Please select a section to view'}
-                      {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
-                      {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'Please select a teacher to view'}
-                      {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
-                      {timetableViewMode === 'course' && selectedCourse === 'all' && 'Please select a course to view'}
-                    </h3>
-                    <p className={styles.timetableSubtitle}>
-                      {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div>
+                        <h3>
+                          {timetableViewMode === 'all' && 'All Classes Timetable'}
+                          {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
+                          {timetableViewMode === 'room' && selectedRoom === 'all' && 'All Rooms Timetable'}
+                          {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
+                          {timetableViewMode === 'section' && selectedSection === 'all' && 'All Sections Timetable'}
+                          {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
+                          {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'All Teachers Timetable'}
+                          {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
+                          {timetableViewMode === 'course' && selectedCourse === 'all' && 'All Courses Timetable'}
+                        </h3>
+                        <p className={styles.timetableSubtitle}>
+                          {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <div className={styles.timetableContainer}>
                     {(() => {
@@ -1499,12 +2027,23 @@ function ViewSchedulePage() {
 
                       // Helper: Parse time string to minutes
                       const parseToMinutes = (timeStr: string): number => {
-                        const match = timeStr.match(/^(\d{1,2}):(\d{2})/);
+                        if (!timeStr) return 0;
+                        const cleanTime = timeStr.trim();
+                        const ampmMatch = cleanTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                        if (ampmMatch) {
+                          let hour = parseInt(ampmMatch[1]);
+                          const minute = parseInt(ampmMatch[2]);
+                          const period = ampmMatch[3].toUpperCase();
+                          if (period === 'PM' && hour !== 12) hour += 12;
+                          if (period === 'AM' && hour === 12) hour = 0;
+                          return hour * 60 + minute;
+                        }
+                        const match = cleanTime.match(/^(\d{1,2}):(\d{2})/);
                         if (!match) return 0;
                         return parseInt(match[1]) * 60 + parseInt(match[2]);
                       };
 
-                      // Pre-process allocations: Group consecutive slots into combined blocks
+                      // Type for combined blocks
                       type CombinedBlock = {
                         course_code: string;
                         course_name: string;
@@ -1517,17 +2056,19 @@ function ViewSchedulePage() {
                         endMinutes: number;
                       };
 
-                      // Filter allocations based on current view
+                      // STEP 1: Filter allocations based on current view mode
                       let viewFilteredAllocations = allocations.filter(a => {
                         if (timetableViewMode === 'room' && selectedRoom !== 'all') {
-                          return a.room === selectedRoom;
+                          if (a.room !== selectedRoom) return false;
                         } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
-                          return a.section === selectedSection;
+                          const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '');
+                          if (baseSection !== selectedSection) return false;
                         } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
-                          return a.teacher_name === selectedTeacher;
+                          if (a.teacher_name !== selectedTeacher) return false;
                         } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
-                          return a.course_code === selectedCourse;
+                          if (a.course_code !== selectedCourse) return false;
                         }
+                        
                         // Apply additional filters
                         if (filterBuilding !== 'all' && a.building !== filterBuilding) return false;
                         if (filterRoom !== 'all' && a.room !== filterRoom) return false;
@@ -1545,44 +2086,40 @@ function ViewSchedulePage() {
                         return true;
                       });
 
-                      // Group by course+section+room+day+teacher to find consecutive slots
-                      const groupedMap = new Map<string, typeof viewFilteredAllocations>();
+                      console.log('ViewSchedule - Filtered allocations:', viewFilteredAllocations.length);
+
+                      // STEP 2: Group by course+section+room+day+teacher to find consecutive slots
+                      // Use same approach as GenerateSchedule (NO day expansion - use schedule_day directly)
+                      const groupedMap = new Map<string, RoomAllocation[]>();
                       viewFilteredAllocations.forEach(alloc => {
-                        // Expand days (handle TTH, MWF, etc.)
-                        const expandedDays = expandDays(alloc.schedule_day || '');
-                        expandedDays.forEach(day => {
-                          const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${day.toLowerCase()}|${alloc.teacher_name || ''}`;
-                          if (!groupedMap.has(key)) {
-                            groupedMap.set(key, []);
-                          }
-                          groupedMap.get(key)!.push({...alloc, schedule_day: day});
-                        });
+                        const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${alloc.schedule_day}|${alloc.teacher_name || ''}`;
+                        if (!groupedMap.has(key)) {
+                          groupedMap.set(key, []);
+                        }
+                        groupedMap.get(key)!.push(alloc);
                       });
 
-                      // For each group, combine consecutive time slots
+                      // STEP 3: Combine consecutive time slots into blocks
                       const combinedBlocks: CombinedBlock[] = [];
                       groupedMap.forEach((allocs) => {
-                        // Sort by start time
                         const sorted = allocs.sort((a, b) => {
                           return parseToMinutes(a.schedule_time || '') - parseToMinutes(b.schedule_time || '');
                         });
 
-                        // Merge consecutive slots
                         let currentBlock: CombinedBlock | null = null;
-                        
+
                         sorted.forEach(alloc => {
                           const timeStr = alloc.schedule_time || '';
-                          const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
-                          if (!timeMatch) return;
+                          const timeParts = timeStr.split(/\s*-\s*/);
+                          if (timeParts.length !== 2) return;
                           
-                          const startMins = parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]);
-                          const endMins = parseInt(timeMatch[3]) * 60 + parseInt(timeMatch[4]);
+                          const startMins = parseToMinutes(timeParts[0]);
+                          const endMins = parseToMinutes(timeParts[1]);
+                          if (startMins === 0 && endMins === 0) return;
 
                           if (currentBlock && currentBlock.endMinutes === startMins) {
-                            // Extend current block
                             currentBlock.endMinutes = endMins;
                           } else {
-                            // Start new block
                             if (currentBlock) {
                               combinedBlocks.push(currentBlock);
                             }
@@ -1599,61 +2136,45 @@ function ViewSchedulePage() {
                             };
                           }
                         });
-                        
+
                         if (currentBlock) {
                           combinedBlocks.push(currentBlock);
                         }
                       });
 
-                      // SAFEGUARD: Limit blocks to maximum 4 hours (240 minutes)
-                      // This prevents display of absurdly long blocks from bad data
-                      const MAX_BLOCK_DURATION = 240; // 4 hours
-                      const sanitizedBlocks = combinedBlocks.map(block => {
+                      console.log('ViewSchedule - Combined blocks:', combinedBlocks.length);
+                      combinedBlocks.forEach((b, i) => {
+                        console.log(`  Block ${i}: ${b.course_code} | ${b.day} | ${b.startMinutes}-${b.endMinutes} mins`);
+                      });
+
+                      // STEP 4: Limit block duration (max 4 hours)
+                      const MAX_BLOCK_DURATION = 240;
+                      const finalBlocks = combinedBlocks.map(block => {
                         const duration = block.endMinutes - block.startMinutes;
                         if (duration > MAX_BLOCK_DURATION) {
-                          console.warn(`⚠️ Block ${block.course_code} ${block.section} is ${duration} mins, limiting to ${MAX_BLOCK_DURATION}`);
-                          return {
-                            ...block,
-                            endMinutes: block.startMinutes + MAX_BLOCK_DURATION
-                          };
+                          return { ...block, endMinutes: block.startMinutes + MAX_BLOCK_DURATION };
                         }
                         return block;
                       });
-                      
-                      // Replace combinedBlocks with sanitized version for rendering
-                      const finalBlocks = sanitizedBlocks;
 
+                      // STEP 5: Render settings
                       const ROW_HEIGHT = 40;
                       const START_HOUR = 7;
+                      const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-                      // Color palette for courses - distinct, vibrant colors
+                      // Color palette for courses
                       const COURSE_COLORS = [
-                        '#1976d2', // Blue
-                        '#388e3c', // Green
-                        '#f57c00', // Orange
-                        '#7b1fa2', // Purple
-                        '#00796b', // Teal
-                        '#c2185b', // Pink
-                        '#5d4037', // Brown
-                        '#455a64', // Blue Grey
-                        '#d32f2f', // Red
-                        '#303f9f', // Indigo
-                        '#0097a7', // Cyan
-                        '#689f38', // Light Green
-                        '#ffa000', // Amber
-                        '#512da8', // Deep Purple
-                        '#e64a19', // Deep Orange
-                        '#00838f', // Cyan Dark
+                        '#1976d2', '#388e3c', '#f57c00', '#7b1fa2', '#00796b',
+                        '#c2185b', '#5d4037', '#455a64', '#d32f2f', '#303f9f',
+                        '#0097a7', '#689f38', '#ffa000', '#512da8', '#e64a19', '#00838f'
                       ];
                       
-                      // Build a map of unique course codes to colors for consistency
                       const courseColorMap = new Map<string, string>();
                       const uniqueCourseCodes = [...new Set(finalBlocks.map(b => b.course_code))];
                       uniqueCourseCodes.forEach((code, idx) => {
                         courseColorMap.set(code, COURSE_COLORS[idx % COURSE_COLORS.length]);
                       });
 
-                      // Get color based on course_code (same subject = same color)
                       const getBlockColor = (block: CombinedBlock): string => {
                         return courseColorMap.get(block.course_code) || '#1976d2';
                       };
@@ -1666,20 +2187,16 @@ function ViewSchedulePage() {
                                 <Clock size={16} /> Time
                               </th>
                               {activeDays.map(day => (
-                                <th key={day} className={styles.dayHeader}>
-                                  {day}
-                                </th>
+                                <th key={day} className={styles.dayHeader}>{day}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {/* Generate 30-minute time slots from 7:00 AM to 9:00 PM */}
-                            {Array.from({ length: 28 }, (_, i) => {
-                              const totalMinutes = (START_HOUR * 60) + (i * 30);
-                              const hour = Math.floor(totalMinutes / 60);
-                              const minute = totalMinutes % 60;
-                              const displayTime = formatTimeAMPM(hour, minute);
+                            {Array.from({ length: 26 }, (_, i) => {
+                              const hour = START_HOUR + Math.floor(i / 2);
+                              const minute = (i % 2) * 30;
                               const isHourMark = minute === 0;
+                              const displayTime = formatTimeAMPM(hour, minute);
                               
                               return (
                                 <tr key={i} className={isHourMark ? styles.hourRow : styles.halfHourRow}>
@@ -1687,7 +2204,6 @@ function ViewSchedulePage() {
                                     {displayTime}
                                   </td>
                                   {activeDays.map(day => {
-                                    // Find blocks that START at this exact time slot for this day
                                     const blocksStartingHere = finalBlocks.filter(block => {
                                       const blockStartHour = Math.floor(block.startMinutes / 60);
                                       const blockStartMin = block.startMinutes % 60;
@@ -1696,17 +2212,12 @@ function ViewSchedulePage() {
                                              blockStartMin === minute;
                                     });
                                     
-                                    // Check if this cell is COVERED by a block that started earlier
-                                    // This prevents the "striped" background showing through
                                     const isCoveredByBlock = finalBlocks.some(block => {
                                       if (block.day !== day.toLowerCase()) return false;
                                       const currentMinutes = hour * 60 + minute;
-                                      // Block covers this cell if: startMinutes <= currentMinutes < endMinutes
-                                      // AND the block didn't start at this exact time (we'll render it separately)
                                       return block.startMinutes < currentMinutes && currentMinutes < block.endMinutes;
                                     });
                                     
-                                    // If covered by a block, make cell transparent
                                     const cellStyle = isCoveredByBlock 
                                       ? { position: 'relative' as const, height: `${ROW_HEIGHT}px`, background: 'transparent' }
                                       : { position: 'relative' as const, height: `${ROW_HEIGHT}px` };
@@ -1714,12 +2225,10 @@ function ViewSchedulePage() {
                                     return (
                                       <td key={`${day}-${i}`} className={styles.dataCell} style={cellStyle}>
                                         {blocksStartingHere.map((block, idx) => {
-                                          // Calculate duration in 30-min slots
                                           const durationMinutes = block.endMinutes - block.startMinutes;
                                           const durationSlots = Math.ceil(durationMinutes / 30);
                                           const spanHeight = durationSlots * ROW_HEIGHT;
                                           
-                                          // Format display time as AM/PM
                                           const startH = Math.floor(block.startMinutes / 60);
                                           const startM = block.startMinutes % 60;
                                           const endH = Math.floor(block.endMinutes / 60);
@@ -1756,45 +2265,18 @@ function ViewSchedulePage() {
                                               <div style={{ fontSize: '12px', opacity: 0.95, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                                                 {block.course_name || ''}
                                               </div>
-                                              {/* Time display - shown for all views */}
                                               <div style={{ fontSize: '10px', opacity: 0.85, marginBottom: '4px', fontWeight: 600, backgroundColor: 'rgba(0,0,0,0.15)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
                                                 {displayTimeRange}
                                               </div>
-                                              {/* Show different info based on view */}
-                                              {timetableViewMode === 'room' && (
-                                                <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section || 'N/A'}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.teacher_name || 'TBD'}</div>
-                                                </>
-                                              )}
-                                              {timetableViewMode === 'section' && (
-                                                <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.room}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.teacher_name || 'TBD'}</div>
-                                                </>
-                                              )}
-                                              {timetableViewMode === 'teacher' && (
-                                                <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.room}</div>
-                                                </>
-                                              )}
-                                              {timetableViewMode === 'course' && (
-                                                <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.teacher_name || 'TBD'}</div>
-                                                </>
-                                              )}
-                                              {timetableViewMode === 'all' && (
-                                                <>
-                                                  <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
-                                                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.room}</div>
-                                                </>
+                                              <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
+                                              <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.room}</div>
+                                              {block.teacher_name && (
+                                                <div style={{ fontSize: '10px', opacity: 0.85, marginTop: '2px' }}>{block.teacher_name}</div>
                                               )}
                                             </div>
                                           );
                                         })}
-                                        {blocksStartingHere.length === 0 && <div className={styles.emptyCell}></div>}
+                                        {blocksStartingHere.length === 0 && !isCoveredByBlock && <div className={styles.emptyCell}></div>}
                                       </td>
                                     );
                                   })}
@@ -1815,12 +2297,12 @@ function ViewSchedulePage() {
                   <span className={styles.legendTitle}>Buildings:</span>
                   {buildings.map((building, idx) => {
                     const colors = [
-                      'var(--primary-alpha)',
-                      'rgba(6, 182, 212, 0.15)',
-                      'rgba(245, 158, 11, 0.15)',
-                      'rgba(236, 72, 153, 0.15)',
-                      'rgba(99, 102, 241, 0.15)',
-                      'rgba(16, 185, 129, 0.15)'
+                      '#E8F5E9',  // Light green
+                      '#E0F2F1',  // Light teal
+                      '#FFF3E0',  // Light orange
+                      '#FCE4EC',  // Light pink
+                      '#F3E5F5',  // Light purple
+                      '#E3F2FD'   // Light blue
                     ]
                     return (
                       <span

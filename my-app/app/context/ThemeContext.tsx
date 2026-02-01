@@ -2,11 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-// Base themes
-// NOTE: include "green" so stored selections don't get forced back to dark
-type BaseTheme = 'light' | 'dark' | 'green'
+// Base themes - light and dark modes
+type BaseTheme = 'light' | 'dark'
 
-// College-specific color themes
+// College-specific color themes (accent colors)
 type CollegeTheme = 'science' | 'arts-letters' | 'architecture' | 'default'
 
 interface ThemeContextType {
@@ -30,6 +29,15 @@ interface CollegeColors {
 
 // College theme color definitions
 const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
+  default: {
+    primary: 'rgba(0, 212, 255, 1)',
+    primaryLight: 'rgba(0, 212, 255, 0.2)',
+    primaryDark: 'rgba(0, 153, 204, 1)',
+    accent: '#00d4ff',
+    gradient: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%)',
+    glow: 'rgba(0, 212, 255, 0.5)',
+    name: 'Quantum Inspired'
+  },
   science: {
     primary: 'rgba(37, 150, 190, 1)',
     primaryLight: 'rgba(37, 150, 190, 0.2)',
@@ -56,15 +64,6 @@ const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
     gradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%)',
     glow: 'rgba(239, 68, 68, 0.5)',
     name: 'College of Architecture and Fine Arts'
-  },
-  default: {
-    primary: 'rgba(0, 212, 255, 1)',
-    primaryLight: 'rgba(0, 212, 255, 0.2)',
-    primaryDark: 'rgba(0, 153, 204, 1)',
-    accent: '#00d4ff',
-    gradient: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%)',
-    glow: 'rgba(0, 212, 255, 0.5)',
-    name: 'Default Theme'
   }
 }
 
@@ -83,8 +82,9 @@ export const COLLEGE_THEME_MAP: Record<string, CollegeTheme> = {
 }
 
 // Provide a default value so hooks don't throw during initial render
+// DEFAULT: light mode with quantum-inspired theme
 const defaultContext: ThemeContextType = {
-  theme: 'green',
+  theme: 'light',
   collegeTheme: 'default',
   setTheme: () => { },
   setCollegeTheme: () => { },
@@ -95,30 +95,40 @@ const defaultContext: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContext)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<BaseTheme>('green')
+  // DEFAULT: light mode with quantum-inspired (default) color theme
+  const [theme, setThemeState] = useState<BaseTheme>('light')
   const [collegeTheme, setCollegeThemeState] = useState<CollegeTheme>('default')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     // Load saved themes from localStorage
-    const savedTheme = localStorage.getItem('app-base-theme') as BaseTheme
-    const savedCollegeTheme = localStorage.getItem('app-college-theme') as CollegeTheme
+    const savedTheme = localStorage.getItem('faculty-base-theme') as BaseTheme
+    const savedCollegeTheme = localStorage.getItem('faculty-college-theme') as CollegeTheme
 
-    const allowedThemes: BaseTheme[] = ['light', 'dark', 'green']
+    // Valid base themes are only light and dark
+    const allowedThemes: BaseTheme[] = ['light', 'dark']
 
     if (savedTheme && allowedThemes.includes(savedTheme)) {
       setThemeState(savedTheme)
       document.documentElement.setAttribute('data-theme', savedTheme)
     } else {
-      // default to green to match base styling
-      document.documentElement.setAttribute('data-theme', 'green')
+      // Default to light mode for faculty
+      setThemeState('light')
+      document.documentElement.setAttribute('data-theme', 'light')
+      localStorage.setItem('faculty-base-theme', 'light')
     }
 
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {
       setCollegeThemeState(savedCollegeTheme)
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
       applyCollegeThemeCSS(savedCollegeTheme)
+    } else {
+      // Default to quantum-inspired theme
+      setCollegeThemeState('default')
+      document.documentElement.setAttribute('data-college-theme', 'default')
+      applyCollegeThemeCSS('default')
+      localStorage.setItem('faculty-college-theme', 'default')
     }
   }, [])
 
@@ -135,23 +145,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newTheme: BaseTheme) => {
     setThemeState(newTheme)
-    localStorage.setItem('app-base-theme', newTheme)
+    localStorage.setItem('faculty-base-theme', newTheme)
     document.documentElement.setAttribute('data-theme', newTheme)
   }
 
   const setCollegeTheme = (college: CollegeTheme) => {
     setCollegeThemeState(college)
-    localStorage.setItem('app-college-theme', college)
+    localStorage.setItem('faculty-college-theme', college)
     document.documentElement.setAttribute('data-college-theme', college)
     applyCollegeThemeCSS(college)
   }
 
   const toggleTheme = () => {
-    // Cycle through green -> dark -> light for simplicity
-    const order: BaseTheme[] = ['green', 'dark', 'light']
-    const idx = order.indexOf(theme)
-    const nextTheme = order[(idx + 1) % order.length]
-    setTheme(nextTheme)
+    // Toggle between light and dark
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
   }
 
   const getCollegeColors = (): CollegeColors => {

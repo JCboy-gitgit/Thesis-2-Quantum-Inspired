@@ -1316,6 +1316,11 @@
     min-width: 100%;
   }
 
+  .searchInput {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    touch-action: manipulation;
+  }
+
   .filterButtons {
     width: 100%;
   }
@@ -1974,4 +1979,39 @@
 :global([data-theme="light"]) .emailHint,
 :global([data-theme="green"]) .emailHint {
   color: #888;
+}
+
+/* ==================== Move File Modal ==================== */
+.folderIconSmall {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+:global([data-theme="green"]) .folderIconSmall {
+  color: #2eaf7d;
+}
+
+:global([data-theme="dark"]) .folderIconSmall {
+  color: #f59e0b;
+}
+
+/* Move Modal Header Styling for Green Theme */
+:global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] {
+  background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%);
+  color: #ffffff;
+}
+
+:global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] h3 {
+  color: #ffffff;
+}
+
+:global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] .modalClose {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+:global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] .modalClose:hover {
+  background: rgba(255, 255, 255, 0.25);
 }

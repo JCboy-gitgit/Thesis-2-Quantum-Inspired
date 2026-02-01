@@ -188,22 +188,38 @@
 }
 
 .statIcon {
-  width: 48px;
-  height: 48px;
-  background: var(--primary-gradient);
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #00A651;
+}
+
+.statIcon svg {
+  width: 24px;
+  height: 24px;
+  color: #00A651;
 }
 
 .statCard.statUsable .statIcon {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.statCard.statUsable .statIcon svg {
+  color: #22c55e;
 }
 
 .statCard.statNotUsable .statIcon {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.statCard.statNotUsable .statIcon svg {
+  color: #ef4444;
 }
 
 .statContent {
@@ -647,14 +663,19 @@
 }
 
 .roomCardIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  background: rgba(0, 166, 81, 0.12);
+  color: #00A651;
   flex-shrink: 0;
+}
+
+.roomCardIcon svg {
+  color: #00A651;
 }
 
 .roomCardInfo {
@@ -1758,7 +1779,39 @@
 }
 
 :global([data-theme="dark"]) .roomCardIcon {
-  background: rgba(71, 85, 105, 0.8) !important;
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+:global([data-theme="dark"]) .roomCardIcon svg {
+  color: #38bdf8 !important;
+}
+
+:global([data-theme="dark"]) .statIcon {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+:global([data-theme="dark"]) .statIcon svg {
+  color: #38bdf8 !important;
+}
+
+:global([data-theme="dark"]) .statCard.statUsable .statIcon {
+  background: rgba(34, 211, 238, 0.15) !important;
+  color: #22d3ee !important;
+}
+
+:global([data-theme="dark"]) .statCard.statUsable .statIcon svg {
+  color: #22d3ee !important;
+}
+
+:global([data-theme="dark"]) .statCard.statNotUsable .statIcon {
+  background: rgba(248, 113, 113, 0.15) !important;
+  color: #f87171 !important;
+}
+
+:global([data-theme="dark"]) .statCard.statNotUsable .statIcon svg {
+  color: #f87171 !important;
 }
 
 :global([data-theme="dark"]) .roomType {
@@ -1876,4 +1929,50 @@
 
 :global([data-theme="light"]) .emptyState p {
   color: #4a5568;
+}
+
+/* ==================== Mobile Search Fix ==================== */
+@media (max-width: 768px) {
+  .searchInput {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+  }
+
+  .searchSection {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .searchBox {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .filterButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .amenityFilters {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .amenityBtn {
+    font-size: 11px;
+    padding: 8px 6px;
+    justify-content: center;
+  }
 }

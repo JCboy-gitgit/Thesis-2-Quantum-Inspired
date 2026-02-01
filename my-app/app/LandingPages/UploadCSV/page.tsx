@@ -454,7 +454,7 @@ export default function UploadCSVPage(): JSX.Element {
   // Upload Degree Program Courses
   const handleClassUpload = async () => {
     if (!classFile || !degreeProgramName) {
-      setClassError('Please provide College & Degree Program name and choose a file.')
+      setClassError('Please provide College name (from Admin Settings) and choose a file.')
       return
     }
 
@@ -784,7 +784,7 @@ export default function UploadCSVPage(): JSX.Element {
           <Upload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
           Upload CSV Data
         </h1>
-        <h2>Upload Rooms and Degree Program data for Room Allocation</h2>
+        <h2>Upload CSV data for Rooms, Courses, and Faculty</h2>
       </div>
 
       <main className={styles['upload-container']}>
@@ -807,11 +807,21 @@ export default function UploadCSVPage(): JSX.Element {
               </p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
                 <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
-                Example: CS-101, Room 101, Science Building, 1, College of Science, Lecture Room, Standard Classroom, 40, true, true, false
+                Example: CS-101, Room 101, Science Building, 1, CS, Lecture Room, Standard Classroom, 40, true, true, false
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
                 <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Rooms upload populates RoomsManagement (Rooms & Buildings).</span>
+              </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
+                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Room Types:</strong> <span style={{ color: 'var(--text-dark)' }}>Lecture Room, Laboratory, Computer Lab, Conference Room, Auditorium, etc.</span>
+              </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
+                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <strong style={{ color: '#065f46' }}>College Field:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Use a college code from Admin Settings (e.g., CS, CICT). Use Shared for multi-college rooms.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '4px', fontSize: '12px' }}>
                 <AlertTriangle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
@@ -916,18 +926,28 @@ export default function UploadCSVPage(): JSX.Element {
                 <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Degree Programs:</strong> <span style={{ color: 'var(--text-dark)' }}>BS Biology, BS Mathematics, BS Computer Science, BS Chemistry, BS Physics, etc.</span>
               </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
+                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Course uploads appear in CoursesManagement and are grouped by college.</span>
+              </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
+                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the CoursesManagement folder.</span>
+              </div>
             </div>
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
                 <GraduationCap size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                College & Degree Program
+                College Name (from Admin Settings)
                 <input
                   type="text"
                   value={degreeProgramName}
                   onChange={(e) => setDegreeProgramName(e.target.value)}
                   className={styles['input']}
-                  placeholder="e.g., College of Science - BS Biology"
+                  placeholder="e.g., College of Science"
                   required
                 />
               </label>
@@ -1008,12 +1028,22 @@ export default function UploadCSVPage(): JSX.Element {
                 <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
                 <strong style={{ color: '#065f46' }}>Types Supported:</strong> <span style={{ color: 'var(--text-dark)' }}>Official, Staff, Faculty, Faculty (Part-Time), Faculty (Adjunct), Guest Lecturer</span>
               </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
+                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Faculty uploads appear in FacultyColleges and Faculty Management.</span>
+              </div>
+              <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
+                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
+                <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the FacultyColleges folder.</span>
+              </div>
             </div>
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
                 <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                College Name
+                College Name (from Admin Settings)
                 <input
                   type="text"
                   value={facultyCollegeName}

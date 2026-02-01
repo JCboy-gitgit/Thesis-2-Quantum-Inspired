@@ -264,7 +264,7 @@ class SectionDataModel(BaseModel):
     required_features: Optional[List[str]] = None  # NEW: Required equipment tags
 
 class RoomDataModel(BaseModel):
-    """Room data from frontend - Enhanced with equipment"""
+    """Room data from frontend - Enhanced with equipment and college assignment"""
     id: int
     room_code: str
     room_name: str = ""  # Default empty string if not provided
@@ -279,6 +279,7 @@ class RoomDataModel(BaseModel):
     has_computers: int = 0
     has_lab_equipment: bool = False
     feature_tags: Optional[List[str]] = None  # NEW: Equipment tags like "Desktop_PC", "DC_Power_Supply"
+    college: Optional[str] = None  # NEW: College assignment (e.g., "CS", "CAFA", "Shared")
 
 class ScheduleGenerationRequest(BaseModel):
     """Request model for schedule generation - Enhanced v2 with 30-min slots and BulSU QSA"""
@@ -309,13 +310,13 @@ class ScheduleGenerationRequest(BaseModel):
     max_consecutive_hours: int = 4
     prioritize_accessibility: bool = True
     avoid_lunch_conflicts: bool = True
-    lunch_start: str = "12:00"
-    lunch_end: str = "13:00"
+    lunch_start: str = "13:00"  # 1:00 PM - UPDATED DEFAULT
+    lunch_end: str = "14:00"    # 2:00 PM - UPDATED DEFAULT
     
     # NEW: Constraint settings for BulSU rules
-    lunch_mode: str = "flexible"  # 'strict', 'flexible', or 'none'
-    lunch_start_hour: int = 12
-    lunch_end_hour: int = 13
+    lunch_mode: str = "strict"  # 'strict', 'flexible', or 'none' - STRICT BY DEFAULT
+    lunch_start_hour: int = 13  # 1:00 PM - UPDATED DEFAULT
+    lunch_end_hour: int = 14    # 2:00 PM - UPDATED DEFAULT
     strict_lab_room_matching: bool = True  # Lab classes MUST be in lab rooms
     strict_lecture_room_matching: bool = True  # Lectures should NOT be in lab rooms
     
@@ -515,9 +516,13 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         generated_schedule_id = generated_schedule.get("id")
         print(f"✅ Generated schedule record created with ID: {generated_schedule_id}")
         
-        # Save room allocations
+        # Save room allocations with LAB & LEC combining
         if result["schedule_entries"] and generated_schedule_id:
-            room_allocations = []
+            # DEBUG: Log the number of schedule entries received
+            print(f"📊 DEBUG: Received {len(result['schedule_entries'])} schedule entries from scheduler")
+            
+            # STEP 1: Build allocations from schedule entries
+            all_allocations = []
             for entry in result["schedule_entries"]:
                 allocation = {
                     "schedule_id": generated_schedule_id,
@@ -538,12 +543,20 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
                     "status": "scheduled"
-                    # Note: Split session info (is_split_session, session_number, total_sessions, session_label) 
-                    # is available in schedule_entries response but not saved to DB (columns don't exist yet)
                 }
-                room_allocations.append(allocation)
+                all_allocations.append(allocation)
             
-            saved_allocations = await save_room_allocations(room_allocations)
+            # DEBUG: Log first and last allocation
+            print(f"📊 DEBUG: Built {len(all_allocations)} allocation entries to save")
+            if all_allocations:
+                print(f"   First: {all_allocations[0].get('course_code')} - {all_allocations[0].get('schedule_day')} {all_allocations[0].get('schedule_time')}")
+                if len(all_allocations) > 1:
+                    print(f"   Last: {all_allocations[-1].get('course_code')} - {all_allocations[-1].get('schedule_day')} {all_allocations[-1].get('schedule_time')}")
+            
+            # Save all allocations without merging LAB/LEC
+            # The frontend will handle combining them for display
+            print(f"✅ Prepared {len(all_allocations)} room allocation entries")
+            saved_allocations = await save_room_allocations(all_allocations)
             print(f"✅ Saved {len(saved_allocations)} room allocations to database")
         
         print("=" * 60)

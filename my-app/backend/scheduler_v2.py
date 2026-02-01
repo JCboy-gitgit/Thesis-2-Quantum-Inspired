@@ -309,7 +309,7 @@ class Section:
 
 @dataclass  
 class Room:
-    """Room for scheduling with equipment tracking"""
+    """Room for scheduling with equipment tracking and college assignment"""
     id: int
     room_code: str
     room_name: str
@@ -325,6 +325,7 @@ class Room:
     has_lab_equipment: bool = False
     specific_classification: Optional[str] = None  # e.g., "Engineering Lab"
     feature_tags: Set[str] = field(default_factory=set)  # NEW: Equipment tags like "Desktop_PC", "DC_Power_Supply"
+    college: Optional[str] = None  # NEW: College assignment (e.g., "CS", "CAFA", "Shared")
 
 
 @dataclass
@@ -337,8 +338,8 @@ class SchedulingConstraints:
     prioritize_accessibility: bool = True
     avoid_lunch_conflicts: bool = True
     lunch_mode: str = 'strict'  # CHANGED TO STRICT - faculty MUST have lunch break
-    lunch_start_minutes: int = 720   # 12:00
-    lunch_end_minutes: int = 780     # 13:00
+    lunch_start_minutes: int = 780   # 13:00 (1:00 PM) - UPDATED DEFAULT
+    lunch_end_minutes: int = 840     # 14:00 (2:00 PM) - UPDATED DEFAULT
     prefer_morning_classes: bool = True
     distribute_days_evenly: bool = True
     day_class_start: int = 420       # 07:00 in minutes
@@ -385,13 +386,53 @@ class OptimizationStats:
 # ==================== Helper Functions ====================
 
 def parse_time_to_minutes(time_str: str) -> int:
-    """Convert HH:MM to minutes since midnight"""
-    parts = time_str.replace(' ', '').split(':')
-    return int(parts[0]) * 60 + int(parts[1])
+    """Convert HH:MM or HH:MM AM/PM to minutes since midnight"""
+    if not time_str:
+        return 420  # Default to 7:00 AM
+    
+    # Remove extra spaces and clean up
+    clean_time = time_str.strip().replace(' ', '')
+    
+    # Check if it contains AM/PM
+    is_pm = 'PM' in clean_time.upper()
+    is_am = 'AM' in clean_time.upper()
+    
+    # Remove AM/PM suffix
+    clean_time = clean_time.replace('AM', '').replace('am', '').replace('PM', '').replace('pm', '')
+    
+    # Split by colon
+    parts = clean_time.split(':')
+    if len(parts) < 2:
+        return 420  # Default to 7:00 AM
+    
+    try:
+        hour = int(parts[0])
+        minute = int(parts[1])
+    except ValueError:
+        return 420  # Default to 7:00 AM on parse error
+    
+    # Convert 12-hour format to 24-hour if AM/PM was present
+    if is_pm and hour != 12:
+        hour += 12
+    elif is_am and hour == 12:
+        hour = 0
+    
+    return hour * 60 + minute
 
 
 def minutes_to_time(minutes: int) -> str:
-    """Convert minutes to HH:MM format"""
+    """Convert minutes to 12-hour AM/PM format (e.g., '7:00 AM', '1:30 PM')"""
+    hour = minutes // 60
+    minute = minutes % 60
+    period = "AM" if hour < 12 else "PM"
+    display_hour = hour % 12
+    if display_hour == 0:
+        display_hour = 12
+    return f"{display_hour}:{minute:02d} {period}"
+
+
+def minutes_to_time_24h(minutes: int) -> str:
+    """Convert minutes to 24-hour HH:MM format (for internal use)"""
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
@@ -529,6 +570,7 @@ class EnhancedQuantumScheduler:
         2. Lecture classes should NOT be in lab rooms (wastes lab resources)
         3. Room capacity must fit student count (with tolerance)
         4. NEW: Room must have ALL required features (equipment tags)
+        5. NEW: College constraint - rooms must match section college or be "Shared"
         """
         compatible = {}
         
@@ -536,6 +578,7 @@ class EnhancedQuantumScheduler:
             compatible_rooms = []
             is_lab_class = section.requires_lab or section.lab_hours > 0
             required_features = section.required_features or set()
+            section_college = section.college  # Get section's college
             
             # BulSU Rule: Student count must be <= room capacity
             # For lectures: allow up to 10% overflow (room can be slightly smaller)
@@ -546,11 +589,18 @@ class EnhancedQuantumScheduler:
                 # Allow rooms with capacity >= 90% of student count for lectures
                 min_capacity = int(section.student_count * (1 - self.constraints.capacity_tolerance))
             
-            # First pass: strict matching with feature check
+            # First pass: strict matching with feature check and college constraint
             for room in self.rooms.values():
                 room_type_lower = room.room_type.lower() if room.room_type else ''
                 is_lab_room = 'lab' in room_type_lower or 'computer' in room_type_lower
                 room_features = room.feature_tags or set()
+                room_college = room.college  # Get room's college
+                
+                # NEW COLLEGE CONSTRAINT: Room must belong to section's college OR be "Shared"
+                # Skip rooms that belong to a different college (unless no college specified)
+                if section_college and room_college and room_college != 'Shared':
+                    if room_college != section_college:
+                        continue  # Skip rooms belonging to other colleges
                 
                 # Primary Rule: Room must fit all students
                 if room.capacity < min_capacity:
@@ -573,10 +623,15 @@ class EnhancedQuantumScheduler:
                 compatible_rooms.append(room.id)
             
             # Second pass: relax lecture-in-lab restriction (lab rooms can host lectures if needed)
-            # BUT still respect feature requirements
+            # BUT still respect feature requirements and college constraints
             if not compatible_rooms and not is_lab_class:
                 for room in self.rooms.values():
                     room_features = room.feature_tags or set()
+                    room_college = room.college
+                    # College constraint still applies
+                    if section_college and room_college and room_college != 'Shared':
+                        if room_college != section_college:
+                            continue
                     # Still check feature requirements
                     if required_features and not required_features.issubset(room_features):
                         continue
@@ -585,12 +640,17 @@ class EnhancedQuantumScheduler:
             
             # Third pass: For lab classes, ONLY lab rooms (no fallback to lecture rooms)
             # This ensures lab classes never end up in lecture rooms
-            # BUT still respect feature requirements
+            # BUT still respect feature requirements and college constraints
             if not compatible_rooms and is_lab_class:
                 for room in self.rooms.values():
                     room_type_lower = room.room_type.lower() if room.room_type else ''
                     is_lab_room = 'lab' in room_type_lower or 'computer' in room_type_lower
                     room_features = room.feature_tags or set()
+                    room_college = room.college
+                    # College constraint still applies
+                    if section_college and room_college and room_college != 'Shared':
+                        if room_college != section_college:
+                            continue
                     # Still check feature requirements
                     if required_features and not required_features.issubset(room_features):
                         continue
@@ -599,18 +659,28 @@ class EnhancedQuantumScheduler:
                         if room.capacity >= section.student_count * 0.7:
                             compatible_rooms.append(room.id)
             
-            # Fourth pass: last resort for lectures only (ignore features)
+            # Fourth pass: last resort for lectures only (ignore features but keep college constraint)
             if not compatible_rooms and not is_lab_class:
                 relaxed_capacity = int(section.student_count * 0.8)
                 for room in self.rooms.values():
+                    room_college = room.college
+                    # College constraint still applies
+                    if section_college and room_college and room_college != 'Shared':
+                        if room_college != section_college:
+                            continue
                     if room.capacity >= relaxed_capacity:
                         compatible_rooms.append(room.id)
             
-            # Final fallback for lectures: use ALL non-lab rooms (ignore features)
+            # Final fallback for lectures: use ALL non-lab rooms from same college (ignore features)
             if not compatible_rooms and not is_lab_class:
                 for room in self.rooms.values():
                     room_type_lower = room.room_type.lower() if room.room_type else ''
                     is_lab_room = 'lab' in room_type_lower or 'computer' in room_type_lower
+                    room_college = room.college
+                    # College constraint still applies - only use same college or shared rooms
+                    if section_college and room_college and room_college != 'Shared':
+                        if room_college != section_college:
+                            continue
                     if not is_lab_room:
                         compatible_rooms.append(room.id)
             
@@ -624,9 +694,12 @@ class EnhancedQuantumScheduler:
             
             compatible[section.id] = compatible_rooms
             
-            # Log warning for lab classes with no compatible rooms
-            if not compatible_rooms and is_lab_class:
-                print(f"⚠️ WARNING: No lab rooms available for section {section.section_code} ({section.student_count} students)")
+            # Log warning for sections with no compatible rooms
+            if not compatible_rooms:
+                if is_lab_class:
+                    print(f"⚠️ WARNING: No lab rooms available for section {section.section_code} ({section.student_count} students, college: {section_college})")
+                else:
+                    print(f"⚠️ WARNING: No compatible rooms for section {section.section_code} ({section.student_count} students, college: {section_college})")
             
         return compatible
     
@@ -898,12 +971,14 @@ class EnhancedQuantumScheduler:
             return False
         
         start_mins = slot.start_minutes
-        end_mins = end_slot.start_minutes + 30
+        # Use actual slot duration instead of hardcoded 30 minutes
+        end_mins = end_slot.start_minutes + end_slot.duration_minutes
         
         # Check overlap with lunch
         lunch_start = self.constraints.lunch_start_minutes
         lunch_end = self.constraints.lunch_end_minutes
         
+        # Overlap occurs when: class_start < lunch_end AND lunch_start < class_end
         return start_mins < lunch_end and lunch_start < end_mins
     
     def _is_lunch_strict_violation(self, start_slot_id: int, slot_count: int) -> bool:
@@ -1185,11 +1260,23 @@ class EnhancedQuantumScheduler:
             if max_consecutive > MAX_CONSECUTIVE_TEACHING_SLOTS:
                 cost += SOFT_CONSECUTIVE_HOURS_EXCEEDED * (max_consecutive - MAX_CONSECUTIVE_TEACHING_SLOTS)
         
-        # FACULTY WELFARE: Check for mandatory lunch break (12:00-13:00)
+        # FACULTY WELFARE: Check for mandatory lunch break
         # If a teacher has classes before AND after lunch, they MUST have lunch free
         if self.constraints.require_faculty_lunch_break:
-            lunch_start_slot = (self.constraints.lunch_start_minutes - 420) // 30 + 1  # Convert to slot ID
-            lunch_end_slot = (self.constraints.lunch_end_minutes - 420) // 30 + 1
+            # Find slots that correspond to lunch break times
+            lunch_start_slot = None
+            lunch_end_slot = None
+            
+            for i, slot in enumerate(sorted(self.time_slots_by_id.values(), key=lambda s: s.start_minutes), 1):
+                if lunch_start_slot is None and slot.start_minutes >= self.constraints.lunch_start_minutes:
+                    lunch_start_slot = i
+                if slot.start_minutes < self.constraints.lunch_end_minutes:
+                    lunch_end_slot = i
+            
+            if lunch_start_slot is None:
+                lunch_start_slot = len(self.time_slots) + 1  # No slots during lunch
+            if lunch_end_slot is None:
+                lunch_end_slot = len(self.time_slots)  # No slots after lunch start
             
             for (teacher_id, day), slot_ids in teacher_slot_times.items():
                 sorted_slots = sorted(set(slot_ids))
@@ -1242,6 +1329,10 @@ class EnhancedQuantumScheduler:
         For online days, room_id should be None.
         """
         is_online = self._is_online_day(day) or force_online
+        
+        # CRITICAL: Check strict lunch break constraint FIRST
+        if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(start_slot_id, slot_count):
+            return False  # Cannot schedule during lunch break in strict mode
         
         # For online classes, we don't need room availability
         if not is_online:
@@ -1780,10 +1871,13 @@ class EnhancedQuantumScheduler:
         
         elif modification == "change_time":
             current_slot = assignment['start_slot']
+            slot_count = assignment['slot_count']
             valid_slots = [
                 s for s in self.time_slots 
                 if s.id != current_slot and 
-                s.id + assignment['slot_count'] <= len(self.time_slots)
+                s.id + slot_count <= len(self.time_slots) and
+                # CRITICAL: Exclude lunch slots in strict mode
+                not (self.constraints.lunch_mode == 'strict' and self._is_during_lunch(s.id, slot_count))
             ]
             if valid_slots:
                 new_slot = random.choice(valid_slots)
@@ -2016,7 +2110,12 @@ class EnhancedQuantumScheduler:
                         continue  # Labs can't be online
                     
                     new_room = None if is_online else random.choice(compatible)
-                    valid_slots = [s for s in self.time_slots if s.id + slot_count <= len(self.time_slots) + 1]
+                    # CRITICAL: Filter out lunch slots in strict mode
+                    valid_slots = [
+                        s for s in self.time_slots 
+                        if s.id + slot_count <= len(self.time_slots) + 1 and
+                        not (self.constraints.lunch_mode == 'strict' and self._is_during_lunch(s.id, slot_count))
+                    ]
                     
                     if valid_slots:
                         new_slot = random.choice(valid_slots)

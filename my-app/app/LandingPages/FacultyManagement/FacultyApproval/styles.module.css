@@ -565,6 +565,11 @@
     width: 100%;
   }
 
+  .searchBox input {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    touch-action: manipulation;
+  }
+
   .filterTabs {
     width: 100%;
     overflow-x: auto;

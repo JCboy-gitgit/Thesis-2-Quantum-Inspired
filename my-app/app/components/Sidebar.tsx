@@ -96,12 +96,6 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           exact: true
         },
         {
-          label: 'Profile Requests',
-          path: '/LandingPages/FacultyManagement/ProfileChangeRequests',
-          icon: UserCog,
-          exact: true
-        },
-        {
           label: 'Faculty Colleges',
           path: '/LandingPages/FacultyColleges',
           icon: Building,

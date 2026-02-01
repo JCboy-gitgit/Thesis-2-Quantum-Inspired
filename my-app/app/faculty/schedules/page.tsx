@@ -881,23 +881,39 @@ function RoomSchedulesViewContent() {
                           className={styles.allocationCard}
                           onClick={() => setSelectedAllocation(allocation)}
                         >
-                          <div className={styles.timeSlot}>
+                          <div className={styles.cardHeaderRow}>
+                            <div className={styles.courseCodeBadge}>
+                              {allocation.course_code}
+                              {(allocation.lab_hours && allocation.lab_hours > 0) && (
+                                <span className={styles.labLabel}>LAB</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={styles.courseInfo}>
+                            <h3 className={styles.courseName}>{allocation.course_name}</h3>
+                          </div>
+                          <div className={styles.enhancedInfo}>
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>Section:</span>
+                              <span className={styles.infoValue}>{allocation.section}</span>
+                            </div>
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>Room:</span>
+                              <span className={styles.infoValue}>{allocation.room}</span>
+                            </div>
+                            {allocation.teacher_name && (
+                              <div className={styles.infoRow}>
+                                <span className={styles.infoLabel}>Faculty:</span>
+                                <span className={styles.infoValue}>{allocation.teacher_name}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className={styles.timeInfo}>
                             <Calendar size={16} />
                             {allocation.schedule_day}
                             <Clock size={16} style={{ marginLeft: '8px' }} />
                             {allocation.schedule_time}
                           </div>
-                          <div className={styles.courseInfo}>
-                            <h3 className={styles.courseCode}>{allocation.course_code}</h3>
-                            <p className={styles.courseName}>{allocation.course_name}</p>
-                            <p className={styles.section}>Section: {allocation.section}</p>
-                          </div>
-                          {allocation.teacher_name && (
-                            <div className={styles.teacherInfo}>
-                              <Users size={14} />
-                              {allocation.teacher_name}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -922,26 +938,36 @@ function RoomSchedulesViewContent() {
                           className={styles.allocationCard}
                           onClick={() => setSelectedAllocation(allocation)}
                         >
-                          <div className={styles.timeSlot}>
+                          <div className={styles.cardHeaderRow}>
+                            <div className={styles.courseCodeBadge}>
+                              {allocation.course_code}
+                              {(allocation.lab_hours && allocation.lab_hours > 0) && (
+                                <span className={styles.labLabel}>LAB</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={styles.courseInfo}>
+                            <h3 className={styles.courseName}>{allocation.course_name}</h3>
+                          </div>
+                          <div className={styles.enhancedInfo}>
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>Course & Section:</span>
+                              <span className={styles.infoValue}>{allocation.section}</span>
+                            </div>
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>Room:</span>
+                              <span className={styles.infoValue}>{allocation.room}</span>
+                            </div>
+                            <div className={styles.infoRow}>
+                              <span className={styles.infoLabel}>Building:</span>
+                              <span className={styles.infoValue}>{allocation.building}</span>
+                            </div>
+                          </div>
+                          <div className={styles.timeInfo}>
                             <Calendar size={16} />
                             {allocation.schedule_day}
                             <Clock size={16} style={{ marginLeft: '8px' }} />
                             {allocation.schedule_time}
-                          </div>
-                          <div className={styles.courseInfo}>
-                            <h3 className={styles.courseCode}>{allocation.course_code}</h3>
-                            <p className={styles.courseName}>{allocation.course_name}</p>
-                            <p className={styles.section}>Section: {allocation.section}</p>
-                          </div>
-                          <div className={styles.locationInfo}>
-                            <div className={styles.location}>
-                              <Building2 size={14} />
-                              {allocation.building}
-                            </div>
-                            <div className={styles.room}>
-                              <DoorOpen size={14} />
-                              {allocation.room}
-                            </div>
                           </div>
                         </div>
                       ))}
@@ -989,15 +1015,17 @@ function RoomSchedulesViewContent() {
               </button>
             </div>
             
-            {/* Item Navigation */}
+            {/* Item Navigation - Pagination */}
             {timetableItems.length > 0 && (
               <div className={styles.timetableNavigation}>
                 <button 
                   className={styles.navButton}
                   onClick={() => navigateTimetable('prev')}
                   disabled={timetableIndex === 0}
+                  title="Previous schedule"
                 >
                   <ChevronLeft size={20} />
+                  Previous
                 </button>
                 <div className={styles.timetableSelector}>
                   <select 
@@ -1013,14 +1041,16 @@ function RoomSchedulesViewContent() {
                     ))}
                   </select>
                   <span className={styles.navCounter}>
-                    {timetableIndex + 1} of {timetableItems.length}
+                    Page {timetableIndex + 1} of {timetableItems.length}
                   </span>
                 </div>
                 <button 
                   className={styles.navButton}
                   onClick={() => navigateTimetable('next')}
                   disabled={timetableIndex === timetableItems.length - 1}
+                  title="Next schedule"
                 >
+                  Next
                   <ChevronRight size={20} />
                 </button>
               </div>
@@ -1115,34 +1145,37 @@ function RoomSchedulesViewContent() {
                                   }}
                                   onClick={() => setSelectedAllocation(allocation)}
                                 >
-                                  <div className={styles.classCardCode} style={{ color: getCourseTextColor(allocation.course_code) }}>
-                                    {allocation.course_code}
+                                  <div className={styles.cardHeader}>
+                                    <div className={styles.classCardCode} style={{ color: getCourseTextColor(allocation.course_code) }}>
+                                      {allocation.course_code}
+                                    </div>
+                                    {(allocation.lab_hours && allocation.lab_hours > 0) && (
+                                      <span className={styles.labBadge} title="Lab Schedule">
+                                        LAB
+                                      </span>
+                                    )}
                                   </div>
                                   <div className={styles.classCardName}>
                                     {allocation.course_name}
                                   </div>
-                                  <div className={styles.classCardTime}>
-                                    <Clock size={12} />
-                                    {allocation.schedule_time}
+                                  <div className={styles.classCardSection}>
+                                    <GraduationCap size={12} />
+                                    {allocation.section}
                                   </div>
-                                  {timetableType !== 'room' && (
-                                    <div className={styles.classCardRoom}>
-                                      <DoorOpen size={12} />
-                                      {allocation.room}
-                                    </div>
-                                  )}
-                                  {timetableType !== 'faculty' && allocation.teacher_name && (
+                                  <div className={styles.classCardRoom}>
+                                    <DoorOpen size={12} />
+                                    {allocation.room}
+                                  </div>
+                                  {allocation.teacher_name && (
                                     <div className={styles.classCardTeacher}>
                                       <User size={12} />
                                       {allocation.teacher_name}
                                     </div>
                                   )}
-                                  {timetableType !== 'section' && (
-                                    <div className={styles.classCardSection}>
-                                      <GraduationCap size={12} />
-                                      {allocation.section}
-                                    </div>
-                                  )}
+                                  <div className={styles.classCardTime}>
+                                    <Clock size={12} />
+                                    {allocation.schedule_time}
+                                  </div>
                                 </div>
                               ))}
                             </td>

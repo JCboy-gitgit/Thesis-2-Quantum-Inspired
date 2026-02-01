@@ -60,12 +60,12 @@
 }
 
 [data-theme="green"] .headerIconWrapper {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+  background: rgba(46, 175, 125, 0.12);
+  box-shadow: none;
 }
 
 [data-theme="green"] .headerLargeIcon {
-  color: #ffffff;
+  color: #2EAF7D;
 }
 
 /* Back Button */
@@ -186,6 +186,18 @@
 }
 
 [data-theme="green"] .summaryIcon {
+  background: rgba(46, 175, 125, 0.12);
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .summaryIcon svg {
+  color: #2EAF7D;
+}
+
+[data-theme="green"] .summaryIcon.campusIcon,
+[data-theme="green"] .summaryIcon.classIcon,
+[data-theme="green"] .summaryIcon.teacherIcon {
+  background: rgba(46, 175, 125, 0.12);
   color: #2EAF7D;
 }
 
@@ -415,15 +427,25 @@
 }
 
 [data-theme="green"] .dataSourceIcon {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
-  color: #ffffff !important;
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .dataSourceIcon svg {
+  color: #2EAF7D !important;
 }
 
 [data-theme="green"] .dataSourceIcon.campusIcon,
 [data-theme="green"] .dataSourceIcon.classIcon,
 [data-theme="green"] .dataSourceIcon.teacherIcon {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
-  color: #ffffff !important;
+  background: rgba(46, 175, 125, 0.12) !important;
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .dataSourceIcon.campusIcon svg,
+[data-theme="green"] .dataSourceIcon.classIcon svg,
+[data-theme="green"] .dataSourceIcon.teacherIcon svg {
+  color: #2EAF7D !important;
 }
 
 [data-theme="green"] .dataSourceStatus {
@@ -633,19 +655,19 @@
 .headerIconWrapper {
   width: 72px;
   height: 72px;
-  background: var(--primary-gradient);
-  border-radius: 16px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 16px -4px var(--glow-color);
+  box-shadow: none;
   flex-shrink: 0;
 }
 
 .headerLargeIcon {
   width: 36px;
   height: 36px;
-  color: white;
+  color: #00A651;
 }
 
 .headerText {
@@ -1497,7 +1519,7 @@
 .dataSourceIcon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1506,18 +1528,30 @@
 }
 
 .dataSourceIcon.campusIcon {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+.dataSourceIcon.campusIcon svg {
+  color: #6366f1;
 }
 
 .dataSourceIcon.classIcon {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  color: white;
+  background: rgba(6, 182, 212, 0.12);
+  color: #06b6d4;
+}
+
+.dataSourceIcon.classIcon svg {
+  color: #06b6d4;
 }
 
 .dataSourceIcon.teacherIcon {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.dataSourceIcon.teacherIcon svg {
+  color: #f59e0b;
 }
 
 .dataSourceStatus {
@@ -1812,7 +1846,7 @@
 .summaryIcon {
   width: 52px;
   height: 52px;
-  border-radius: 12px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1820,18 +1854,30 @@
 }
 
 .summaryIcon.campusIcon {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+.summaryIcon.campusIcon svg {
+  color: #6366f1;
 }
 
 .summaryIcon.classIcon {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  color: white;
+  background: rgba(6, 182, 212, 0.12);
+  color: #06b6d4;
+}
+
+.summaryIcon.classIcon svg {
+  color: #06b6d4;
 }
 
 .summaryIcon.teacherIcon {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.summaryIcon.teacherIcon svg {
+  color: #f59e0b;
 }
 
 .summaryInfo h4 {
@@ -2182,8 +2228,8 @@
 .statIcon {
   width: 56px;
   height: 56px;
-  background: var(--primary-alpha);
-  border-radius: 14px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2192,7 +2238,7 @@
 
 .statIcon svg {
   font-size: 24px;
-  color: var(--primary);
+  color: #00A651;
 }
 
 .statInfo {
@@ -2290,6 +2336,47 @@
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 8px;
+}
+
+/* Export Dropdown */
+.exportDropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.exportDropdownContent {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: white;
+  min-width: 160px;
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  z-index: 100;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.exportDropdown:hover .exportDropdownContent {
+  display: block;
+}
+
+.exportDropdownContent button {
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.exportDropdownContent button:hover {
+  background: #f0f9ff;
+  color: #0ea5e9;
 }
 
 .primaryButton,
@@ -2762,6 +2849,55 @@
 .warningText {
   color: #f59e0b;
   font-weight: 600;
+}
+
+/* ==================== Dark Theme Stat Icons ==================== */
+[data-theme="dark"] .statIcon {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .statIcon svg {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .headerIconWrapper {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .headerLargeIcon {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .dataSourceIcon {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .dataSourceIcon svg {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .dataSourceIcon.campusIcon,
+[data-theme="dark"] .dataSourceIcon.classIcon,
+[data-theme="dark"] .dataSourceIcon.teacherIcon {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .summaryIcon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .summaryIcon svg {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .summaryIcon.campusIcon,
+[data-theme="dark"] .summaryIcon.classIcon,
+[data-theme="dark"] .summaryIcon.teacherIcon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
 }
 
 /* ==================== Dark Theme Timetable Styles ==================== */
@@ -3668,6 +3804,184 @@
   background: var(--bg-gray-50);
 }
 
+/* ==================== View All Modal Styles ==================== */
+.viewAllModal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 1000px;
+  width: 95%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.viewAllModalHeader {
+  padding: 24px 32px;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.05), rgba(46, 175, 125, 0.1));
+}
+
+.viewAllModalTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--content-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.viewAllModalTitle svg {
+  color: var(--primary);
+}
+
+.viewAllModalSearch {
+  padding: 16px 32px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-gray-50);
+}
+
+.viewAllSearchInput {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--content-text);
+  background: var(--bg-white);
+  transition: all 0.2s ease;
+}
+
+.viewAllSearchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(46, 175, 125, 0.1);
+}
+
+.viewAllSearchInput::placeholder {
+  color: var(--text-light);
+}
+
+.viewAllModalBody {
+  padding: 24px 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.viewAllTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.viewAllTable thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-white);
+  z-index: 1;
+}
+
+.viewAllTable th,
+.viewAllTable td {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.viewAllTable th {
+  font-weight: 700;
+  color: var(--content-text-secondary);
+  background: var(--bg-gray-50);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 11px;
+}
+
+.viewAllTable td {
+  color: var(--content-text);
+  font-weight: 500;
+}
+
+.viewAllTable tbody tr:hover {
+  background: rgba(46, 175, 125, 0.05);
+}
+
+.viewAllModalFooter {
+  padding: 16px 32px;
+  border-top: 2px solid var(--border-color);
+  background: var(--bg-gray-50);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeBtn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.viewAllButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 20px;
+  width: 100%;
+  border: 2px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewAllButton:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.3);
+}
+
+.viewMoreLink {
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.viewMoreLink:hover {
+  text-decoration: underline;
+}
+
+.moreRow {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.moreRow:hover {
+  background: rgba(46, 175, 125, 0.08);
+}
+
 /* ==================== Slot Duration Info Styles ==================== */
 .slotDurationInfo {
   display: flex;
@@ -4168,6 +4482,101 @@
 [data-theme="dark"] .previewTable td {
   color: #cbd5e1;
   border-color: rgba(71, 85, 105, 0.3);
+}
+
+/* Dark Theme - View All Modal */
+[data-theme="dark"] .viewAllModal {
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .viewAllModalHeader {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.15));
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .viewAllModalTitle {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .viewAllModalTitle svg {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .viewAllModalSearch {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.4);
+}
+
+[data-theme="dark"] .viewAllSearchInput {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(71, 85, 105, 0.5);
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .viewAllSearchInput:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .viewAllSearchInput::placeholder {
+  color: #64748b;
+}
+
+[data-theme="dark"] .viewAllModalBody {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+[data-theme="dark"] .viewAllTable thead {
+  background: rgba(30, 41, 59, 0.95);
+}
+
+[data-theme="dark"] .viewAllTable th {
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+  border-color: rgba(71, 85, 105, 0.4);
+}
+
+[data-theme="dark"] .viewAllTable td {
+  color: #cbd5e1;
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+[data-theme="dark"] .viewAllTable tbody tr:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
+[data-theme="dark"] .viewAllModalFooter {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.4);
+}
+
+[data-theme="dark"] .closeBtn {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+}
+
+[data-theme="dark"] .closeBtn:hover {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .viewAllButton {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .viewAllButton:hover {
+  background: #38bdf8;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="dark"] .viewMoreLink {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .moreRow:hover {
+  background: rgba(56, 189, 248, 0.1);
 }
 
 /* ==================== Light Mode Styles ==================== */
@@ -4718,6 +5127,91 @@
   background: rgba(0, 166, 81, 0.05);
 }
 
+/* Light Theme - View All Modal */
+[data-theme="light"] .viewAllModal {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 166, 81, 0.2) !important;
+}
+
+[data-theme="light"] .viewAllModalHeader {
+  background: linear-gradient(135deg, rgba(0, 166, 81, 0.05), rgba(0, 166, 81, 0.1)) !important;
+  border-color: rgba(0, 166, 81, 0.15) !important;
+}
+
+[data-theme="light"] .viewAllModalTitle {
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .viewAllModalTitle svg {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .viewAllModalSearch {
+  background: rgba(0, 166, 81, 0.03) !important;
+  border-color: rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .viewAllSearchInput {
+  background: white !important;
+  border-color: rgba(0, 166, 81, 0.2) !important;
+  color: #1a1a1a !important;
+}
+
+[data-theme="light"] .viewAllSearchInput:focus {
+  border-color: #00a651 !important;
+  box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .viewAllTable thead {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .viewAllTable th {
+  background: rgba(0, 166, 81, 0.08) !important;
+  color: #1a1a1a !important;
+  border-color: rgba(0, 166, 81, 0.15) !important;
+}
+
+[data-theme="light"] .viewAllTable td {
+  color: #374151 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .viewAllTable tbody tr:hover {
+  background: rgba(0, 166, 81, 0.04) !important;
+}
+
+[data-theme="light"] .viewAllModalFooter {
+  background: rgba(0, 166, 81, 0.03) !important;
+  border-color: rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .closeBtn {
+  background: linear-gradient(135deg, #00a651, #059669) !important;
+}
+
+[data-theme="light"] .closeBtn:hover {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+}
+
+[data-theme="light"] .viewAllButton {
+  border-color: #00a651 !important;
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .viewAllButton:hover {
+  background: #00a651 !important;
+  color: white !important;
+}
+
+[data-theme="light"] .viewMoreLink {
+  color: #00a651 !important;
+}
+
+[data-theme="light"] .moreRow:hover {
+  background: rgba(0, 166, 81, 0.08) !important;
+}
+
 /* Filter Section (Step 2) */
 [data-theme="light"] .filterSection {
   background: rgba(255, 255, 255, 0.98) !important;
@@ -5240,6 +5734,93 @@
 [data-theme="green"] .previewTable td {
   color: #166534 !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+/* Green Theme - View All Modal */
+[data-theme="green"] .viewAllModal {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .viewAllModalHeader {
+  background: linear-gradient(135deg, rgba(46, 175, 125, 0.08), rgba(46, 175, 125, 0.15)) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .viewAllModalTitle {
+  color: #02353C !important;
+}
+
+[data-theme="green"] .viewAllModalTitle svg {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .viewAllModalSearch {
+  background: rgba(46, 175, 125, 0.05) !important;
+  border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .viewAllSearchInput {
+  background: white !important;
+  border-color: rgba(46, 175, 125, 0.3) !important;
+  color: #02353C !important;
+}
+
+[data-theme="green"] .viewAllSearchInput:focus {
+  border-color: #2EAF7D !important;
+  box-shadow: 0 0 0 4px rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .viewAllTable thead {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="green"] .viewAllTable th {
+  background: rgba(46, 175, 125, 0.15) !important;
+  color: #02353C !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .viewAllTable td {
+  color: #166534 !important;
+  border-color: rgba(46, 175, 125, 0.15) !important;
+}
+
+[data-theme="green"] .viewAllTable tbody tr:hover {
+  background: rgba(46, 175, 125, 0.08) !important;
+}
+
+[data-theme="green"] .viewAllModalFooter {
+  background: rgba(46, 175, 125, 0.05) !important;
+  border-color: rgba(46, 175, 125, 0.2) !important;
+}
+
+[data-theme="green"] .closeBtn {
+  background: linear-gradient(135deg, #2EAF7D, #16a34a) !important;
+}
+
+[data-theme="green"] .closeBtn:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .viewAllButton {
+  border-color: #2EAF7D !important;
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .viewAllButton:hover {
+  background: #2EAF7D !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.3) !important;
+}
+
+[data-theme="green"] .viewMoreLink {
+  color: #2EAF7D !important;
+}
+
+[data-theme="green"] .moreRow:hover {
+  background: rgba(46, 175, 125, 0.08) !important;
 }
 
 /* Filter and config sections */

@@ -5,6 +5,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from '../ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
+import { useColleges } from '@/app/context/CollegesContext'
 import {
   BookOpen,
   ChevronDown,
@@ -115,6 +116,7 @@ const emptySectionForm: SectionFormData = {
 // ==================== Main Component ====================
 function ClassSectionAssigningContent() {
   const router = useRouter()
+  const { activeColleges: bulsuColleges } = useColleges()
 
   // State
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -129,6 +131,7 @@ function ClassSectionAssigningContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterYearLevel, setFilterYearLevel] = useState<string>('all')
   const [filterDegreeProgram, setFilterDegreeProgram] = useState<string>('all')
+  const [filterCollege, setFilterCollege] = useState<string>('all')
 
   // Modal States
   const [showYearBatchModal, setShowYearBatchModal] = useState(false)
@@ -335,7 +338,8 @@ function ClassSectionAssigningContent() {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(s =>
         s.section_name.toLowerCase().includes(term) ||
-        s.degree_program.toLowerCase().includes(term)
+        s.degree_program.toLowerCase().includes(term) ||
+        (s.college && s.college.toLowerCase().includes(term))
       )
     }
 
@@ -347,7 +351,16 @@ function ClassSectionAssigningContent() {
       filtered = filtered.filter(s => s.degree_program === filterDegreeProgram)
     }
 
+    if (filterCollege !== 'all') {
+      filtered = filtered.filter(s => s.college === filterCollege)
+    }
+
     return filtered
+  }
+
+  // Get unique colleges from sections
+  const getColleges = () => {
+    return [...new Set(sections.map(s => s.college).filter(Boolean))] as string[]
   }
 
   // Group sections by year batch and year level
@@ -999,6 +1012,39 @@ function ClassSectionAssigningContent() {
                 <option key={program} value={program}>{program}</option>
               ))}
             </select>
+
+            <select
+              value={filterCollege}
+              onChange={(e) => setFilterCollege(e.target.value)}
+              style={{
+                padding: '12px 16px',
+                borderRadius: '10px',
+                border: '2px solid var(--border-color, #e2e8f0)',
+                background: 'var(--bg-white, #fff)',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                minWidth: '180px',
+                color: 'var(--text-dark, #1a202c)'
+              }}
+            >
+              <option value="all">All Colleges</option>
+              {bulsuColleges.map(c => (
+                <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+              ))}
+              <option value="CAFA">CAFA</option>
+              <option value="CAL">CAL</option>
+              <option value="CBA">CBA</option>
+              <option value="COE">COE</option>
+              <option value="CICT">CICT</option>
+              <option value="CIT">CIT</option>
+              <option value="CON">CON</option>
+              <option value="CED">CED</option>
+              <option value="CHASS">CHASS</option>
+              {getColleges().filter(c => !['CS', 'CAFA', 'CAL', 'CBA', 'COE', 'CICT', 'CIT', 'CON', 'CED', 'CHASS'].includes(c)).map(college => (
+                <option key={college} value={college}>{college}</option>
+              ))}
+            </select>
           </div>
 
           {/* Stats Cards */}
@@ -1166,24 +1212,10 @@ function ClassSectionAssigningContent() {
                         e.currentTarget.style.background = 'rgba(56, 161, 105, 0.1)'
                         e.currentTarget.style.transform = 'scale(1)'
                       }}
-                      style={{
-                        padding: '8px 16px',
-                        background: 'rgba(56, 161, 105, 0.1)',
-                        color: 'var(--primary-medium, #38a169)',
-                        border: '1px solid var(--primary-medium, #38a169)',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        marginRight: '12px',
-                        transition: 'all 0.2s ease'
-                      }}
+                      className={styles.downloadCsvBtn}
                     >
                       <Download size={16} />
-                      Download CSV
+                      <span className={styles.downloadCsvText}>Download CSV</span>
                     </button>
                     <span className={styles.roomCount}>
                       {totalSections} sections
@@ -1663,14 +1695,14 @@ function ClassSectionAssigningContent() {
             <div style={{ padding: '24px' }}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
-                  Year Batch Name * <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(max 20 chars)</span>
+                  Year Batch Name * <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(max 40 chars)</span>
                 </label>
                 <input
                   type="text"
                   value={yearBatchForm.year_batch}
-                  onChange={(e) => setYearBatchForm(prev => ({ ...prev, year_batch: e.target.value.slice(0, 20) }))}
+                  onChange={(e) => setYearBatchForm(prev => ({ ...prev, year_batch: e.target.value.slice(0, 40) }))}
                   placeholder="e.g., 2024-25 1st Sem"
-                  maxLength={20}
+                  maxLength={40}
                   style={{
                     width: '100%',
                     padding: '12px 14px',
@@ -1679,8 +1711,8 @@ function ClassSectionAssigningContent() {
                     fontSize: '14px'
                   }}
                 />
-                <span style={{ fontSize: '11px', color: yearBatchForm.year_batch.length > 18 ? '#e53e3e' : 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
-                  {yearBatchForm.year_batch.length}/20 characters • e.g., &quot;2024-25 1st Sem&quot;, &quot;2024-25 2nd Sem&quot;, &quot;2024-25 Summer&quot;
+                <span style={{ fontSize: '11px', color: yearBatchForm.year_batch.length > 38 ? '#e53e3e' : 'var(--text-secondary)', marginTop: '4px', display: 'block' }}>
+                  {yearBatchForm.year_batch.length}/40 characters • e.g., &quot;2024-25 1st Sem&quot;, &quot;2024-25 2nd Sem&quot;, &quot;2024-25 Summer&quot;
                 </span>
               </div>
 
@@ -1876,6 +1908,29 @@ function ClassSectionAssigningContent() {
                     fontSize: '14px'
                   }}
                 />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
+                  College *
+                </label>
+                <select
+                  value={sectionForm.college}
+                  onChange={(e) => setSectionForm(prev => ({ ...prev, college: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">-- Select College --</option>
+                  {bulsuColleges.map(c => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ marginBottom: '24px' }}>

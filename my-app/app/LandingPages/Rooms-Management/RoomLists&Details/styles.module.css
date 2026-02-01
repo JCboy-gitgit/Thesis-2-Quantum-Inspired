@@ -260,15 +260,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border-radius: 14px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   flex-shrink: 0;
-  color: var(--primary);
+  color: #00A651;
+}
+
+.campusCardIcon svg {
+  color: #00A651;
 }
 
 .campusCardIcon.schoolIcon {
-  background: var(--primary-gradient);
-  color: white;
+  background: rgba(0, 166, 81, 0.15);
+  color: #00A651;
 }
 
 .campusCardContent {
@@ -375,14 +379,18 @@
 .statIcon {
   width: 64px;
   height: 64px;
-  background: var(--hover-bg);
-  border-radius: 14px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-size: 28px;
-  color: var(--primary);
+  color: #00A651;
+}
+
+.statIcon svg {
+  color: #00A651;
 }
 
 .statContent {
@@ -1458,4 +1466,23 @@
   .headerLargeIcon {
     font-size: 36px;
   }
+}
+
+/* ==================== Dark Theme ==================== */
+[data-theme="dark"] .statIcon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .statIcon svg {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .campusCardIcon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .campusCardIcon svg {
+  color: #38bdf8;
 }

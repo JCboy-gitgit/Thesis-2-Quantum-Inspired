@@ -238,42 +238,10 @@ export default function FacultyProfilePage() {
     setMessage(null)
 
     try {
-      // Check if name was changed - this requires admin approval
+      // Name can now be changed directly by faculty (no approval needed)
       const nameChanged = editForm.full_name !== user.full_name
 
-      if (nameChanged) {
-        // Submit name change request to admin
-        const response = await fetch('/api/profile-change-requests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            email: user.email,
-            fieldName: 'full_name',
-            currentValue: user.full_name,
-            requestedValue: editForm.full_name
-          })
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to submit name change request')
-        }
-
-        setPendingNameRequest({ requested_value: editForm.full_name })
-
-        // Revert name in form since it's pending approval
-        setEditForm({ ...editForm, full_name: user.full_name })
-
-        setMessage({
-          type: 'info',
-          text: '📋 Name change request submitted! Waiting for admin approval. Other changes saved.'
-        })
-      }
-
       // Update other fields directly (phone, office_location, bio, specialization)
-      // These don't require admin approval
       const profileData = {
         user_id: user.id,
         office_location: editForm.office_location,
@@ -292,7 +260,35 @@ export default function FacultyProfilePage() {
         console.error('Profile update error:', profileError)
       }
 
-      // Update phone in users table (this is allowed)
+      // Update name directly in users table (faculty can now edit their own name)
+      if (nameChanged) {
+        const nameUpdateResult = await (supabase
+          .from('users') as any)
+          .update({
+            full_name: editForm.full_name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+
+        const nameError = nameUpdateResult?.error
+        if (nameError) {
+          console.error('Name update error:', nameError)
+          throw new Error('Failed to update name')
+        }
+
+        // Also update faculty_profiles if exists
+        if (user.email) {
+          await (supabase
+            .from('faculty_profiles') as any)
+            .update({
+              full_name: editForm.full_name,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', user.email)
+        }
+      }
+
+      // Update phone in users table
       if (editForm.phone !== user.phone) {
         const phoneUpdateResult = await (supabase
           .from('users') as any)
@@ -308,9 +304,10 @@ export default function FacultyProfilePage() {
         }
       }
 
-      // Update local state with allowed changes (not name if pending)
+      // Update local state with all changes
       setUser({
         ...user,
+        full_name: editForm.full_name,
         phone: editForm.phone,
         office_location: editForm.office_location,
         bio: editForm.bio,
@@ -318,10 +315,7 @@ export default function FacultyProfilePage() {
       })
 
       setEditing(false)
-
-      if (!nameChanged) {
-        setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
-      }
+      setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
 
     } catch (error: any) {
       console.error('Save error:', error)

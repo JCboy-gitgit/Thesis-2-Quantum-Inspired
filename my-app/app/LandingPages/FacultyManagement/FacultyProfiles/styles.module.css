@@ -711,14 +711,18 @@
 .fileCardIcon {
   width: 56px;
   height: 56px;
-  background: var(--primary-gradient);
-  border-radius: 12px;
+  background: rgba(0, 166, 81, 0.12);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #00A651;
   font-size: 24px;
   flex-shrink: 0;
+}
+
+.fileCardIcon svg {
+  color: #00A651;
 }
 
 .fileCardContent {
@@ -1310,4 +1314,14 @@
   .fileGrid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ==================== Dark Theme ==================== */
+[data-theme="dark"] .fileCardIcon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .fileCardIcon svg {
+  color: #38bdf8;
 }

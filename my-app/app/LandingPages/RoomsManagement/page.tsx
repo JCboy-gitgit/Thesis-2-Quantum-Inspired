@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
+import { useColleges } from '@/app/context/CollegesContext'
 import {
   Building2,
   ArrowLeft,
@@ -137,6 +138,9 @@ const getRoomStatusInfo = (status: string | null | undefined) => {
 
 export default function RoomsManagementPage() {
   const router = useRouter()
+  
+  // Get colleges from context
+  const { activeColleges: bulsuColleges } = useColleges()
 
   // Layout states
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -159,6 +163,7 @@ export default function RoomsManagementPage() {
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
   const [filterFloor, setFilterFloor] = useState<string>('all')
   const [filterRoomType, setFilterRoomType] = useState<string>('all')
+  const [filterCollege, setFilterCollege] = useState<string>('all')
   const [filterAC, setFilterAC] = useState(false)
   const [filterTV, setFilterTV] = useState(false)
   const [filterWhiteboard, setFilterWhiteboard] = useState(false)
@@ -197,7 +202,8 @@ export default function RoomsManagementPage() {
     has_whiteboard: true,
     has_tv: false,
     status: 'usable',
-    notes: ''
+    notes: '',
+    college: ''
   })
 
   // ==================== AUTH & INIT ====================
@@ -442,6 +448,7 @@ export default function RoomsManagementPage() {
     return Array.from(floors).sort((a, b) => (a as number) - (b as number)) as number[]
   }, [allRooms])
   const uniqueRoomTypes = useMemo(() => [...new Set(allRooms.map(r => r.room_type).filter(t => t))].sort(), [allRooms])
+  const uniqueColleges = useMemo(() => [...new Set(allRooms.map(r => r.college).filter(c => c))].sort(), [allRooms])
 
   // Filtered rooms for search view
   const filteredRooms = useMemo(() => {
@@ -460,12 +467,13 @@ export default function RoomsManagementPage() {
       if (filterBuilding !== 'all' && room.building !== filterBuilding) return false
       if (filterFloor !== 'all' && room.floor_number !== parseInt(filterFloor)) return false
       if (filterRoomType !== 'all' && room.room_type !== filterRoomType) return false
+      if (filterCollege !== 'all' && room.college !== filterCollege) return false
       if (filterAC && !room.has_ac) return false
       if (filterTV && !room.has_tv) return false
       if (filterWhiteboard && !room.has_whiteboard) return false
       return true
     })
-  }, [allRooms, searchTerm, filterBuilding, filterFloor, filterRoomType, filterAC, filterTV, filterWhiteboard])
+  }, [allRooms, searchTerm, filterBuilding, filterFloor, filterRoomType, filterCollege, filterAC, filterTV, filterWhiteboard])
 
   // Stats calculation
   const stats: CampusStats = useMemo(() => {
@@ -491,13 +499,14 @@ export default function RoomsManagementPage() {
     return { totalCampuses, totalBuildings, totalRooms, totalCapacity, avgCapacity, usableRooms, notUsableRooms }
   }, [allRooms, campusGroups])
 
-  const hasActiveFilters = filterBuilding !== 'all' || filterFloor !== 'all' || filterRoomType !== 'all' || filterAC || filterTV || filterWhiteboard
+  const hasActiveFilters = filterBuilding !== 'all' || filterFloor !== 'all' || filterRoomType !== 'all' || filterCollege !== 'all' || filterAC || filterTV || filterWhiteboard
 
   const clearFilters = () => {
     setSearchTerm('')
     setFilterBuilding('all')
     setFilterFloor('all')
     setFilterRoomType('all')
+    setFilterCollege('all')
     setFilterAC(false)
     setFilterTV(false)
     setFilterWhiteboard(false)
@@ -532,7 +541,8 @@ export default function RoomsManagementPage() {
           has_projector: false,
           status: formData.status || 'usable',
           notes: formData.notes || null,
-          file_name: 'Manual Entry'
+          file_name: 'Manual Entry',
+          college: formData.college || null
         })
 
       if (error) throw error
@@ -567,7 +577,8 @@ export default function RoomsManagementPage() {
           has_whiteboard: Boolean(formData.has_whiteboard),
           has_tv: Boolean(formData.has_tv),
           status: formData.status || 'usable',
-          notes: formData.notes || null
+          notes: formData.notes || null,
+          college: formData.college || null
         })
         .eq('id', editingRoom.id)
 
@@ -689,7 +700,8 @@ export default function RoomsManagementPage() {
       has_whiteboard: room.has_whiteboard ?? true,
       has_tv: room.has_tv || false,
       status: room.status || 'usable',
-      notes: room.notes || ''
+      notes: room.notes || '',
+      college: room.college || ''
     })
     setShowAddModal(true)
   }
@@ -710,7 +722,8 @@ export default function RoomsManagementPage() {
       has_whiteboard: true,
       has_tv: false,
       status: 'usable',
-      notes: ''
+      notes: '',
+      college: ''
     })
   }
 
@@ -866,6 +879,14 @@ export default function RoomsManagementPage() {
                 />
               </div>
               <div className={styles.filterButtons}>
+                <select value={filterCollege} onChange={(e) => setFilterCollege(e.target.value)} className={styles.filterSelect}>
+                  <option value="all">All Colleges</option>
+                  {bulsuColleges.map(c => (
+                    <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                  ))}
+                  <option value="Shared">Shared / Multi-College</option>
+                  {uniqueColleges.filter(c => c && !bulsuColleges.some(bc => bc.code === c) && c !== 'Shared').map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
                 <select value={filterBuilding} onChange={(e) => setFilterBuilding(e.target.value)} className={styles.filterSelect}>
                   <option value="all">All Buildings</option>
                   {uniqueBuildings.map(b => <option key={b} value={b}>{b}</option>)}
@@ -1118,6 +1139,21 @@ export default function RoomsManagementPage() {
                       <div className={styles.roomCardInfo}>
                         <h4>{room.room}</h4>
                         {room.room_code && <span className={styles.roomCode}>{room.room_code}</span>}
+                        {room.college && (
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(99, 102, 241, 0.15)',
+                            color: '#6366f1',
+                            display: 'inline-block',
+                            marginBottom: '4px'
+                          }}>
+                            <University size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
+                            {room.college}
+                          </span>
+                        )}
                         <div className={styles.roomInfoRow}>
                           <p><Users size={11} /> Capacity: {room.capacity}</p>
                           <p><MapPin size={11} /> Floor {displayValue(room.floor_number, 'G')}</p>
@@ -1326,6 +1362,23 @@ export default function RoomsManagementPage() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+                <div className={styles.formGroup}>
+                  <label>College</label>
+                  <select
+                    value={formData.college}
+                    onChange={e => setFormData(prev => ({ ...prev, college: e.target.value }))}
+                    className={styles.formSelect}
+                  >
+                    <option value="">-- Select College --</option>
+                    {bulsuColleges.map(c => (
+                      <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                    ))}
+                    <option value="Shared">Shared / Multi-College</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Status</label>
                   <select

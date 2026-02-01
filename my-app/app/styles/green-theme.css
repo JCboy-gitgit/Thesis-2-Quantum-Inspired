@@ -1204,13 +1204,39 @@
 
 /* Modal header for Create/Edit Course */
 [data-theme="green"] div[style*="var(--primary-gradient)"] {
-    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+    background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%) !important;
 }
 
 /* Modal save button - ensure white text */
 [data-theme="green"] button[style*="primary-gradient"] {
-    background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
+    background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%) !important;
     color: #ffffff !important;
+}
+
+/* Move File Modal - fix header gradient */
+[data-theme="green"] h3 svg[class*="lucide-folder-input"],
+[data-theme="green"] div h3 svg {
+    color: white !important;
+}
+
+/* Move File Modal header - specific targeting */
+[data-theme="green"] [data-modal-header="move-file"] {
+    background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%) !important;
+}
+
+/* Move button styling for green theme */
+[data-theme="green"] button[title="Move to another folder"] {
+    background: linear-gradient(135deg, #276749 0%, #38a169 100%) !important;
+}
+
+/* MoveRight arrow icon color fix for green theme */
+[data-theme="green"] svg[class*="lucide-move-right"] {
+    color: #2EAF7D !important;
+}
+
+/* Folder icon in modal for green theme */
+[data-theme="green"] svg[class*="lucide-folder"] {
+    color: #2EAF7D !important;
 }
 
 /* Label colors in modal forms */

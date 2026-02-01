@@ -22,7 +22,8 @@ import {
   TrendingUp,
   Settings,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react'
 import styles from './styles.module.css'
 import FacultySidebar from '@/app/components/FacultySidebar'
@@ -68,6 +69,8 @@ export default function FacultyHomePage() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [greeting, setGreeting] = useState('')
   const [todayClassCount, setTodayClassCount] = useState(0)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [sessionInvalid, setSessionInvalid] = useState(false)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -79,6 +82,66 @@ export default function FacultyHomePage() {
     const interval = setInterval(updateGreeting, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  // Heartbeat to keep user online - runs every 2 minutes
+  useEffect(() => {
+    if (!user) return
+
+    const sendHeartbeat = async () => {
+      try {
+        // Always update last_login directly as a simple presence indicator
+        await supabase
+          .from('users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', user.id)
+
+        // Also try the presence API if session token exists
+        if (sessionToken) {
+          const response = await fetch('/api/presence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'heartbeat',
+              user_id: user.id,
+              session_token: sessionToken
+            })
+          })
+          
+          // Check if response is JSON before parsing
+          const contentType = response.headers.get('content-type')
+          if (!contentType || !contentType.includes('application/json')) {
+            console.warn('Presence API returned non-JSON response')
+            return
+          }
+          
+          const data = await response.json()
+          
+          // If session is invalid (logged in elsewhere), show warning and redirect
+          if (!data.success && data.error === 'SESSION_INVALID') {
+            setSessionInvalid(true)
+            // Wait a moment then redirect to login
+            setTimeout(async () => {
+              await supabase.auth.signOut()
+              localStorage.removeItem('faculty_session_token')
+              localStorage.removeItem('faculty_keep_signed_in')
+              router.push('/faculty/login?reason=session_expired')
+            }, 3000)
+          }
+        }
+      } catch (error) {
+        console.error('Heartbeat error:', error)
+        // Silently ignore heartbeat errors - don't disrupt the user experience
+      }
+    }
+
+    // Send initial heartbeat
+    sendHeartbeat()
+
+    // Send heartbeat every 2 minutes
+    const heartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000)
+
+    return () => clearInterval(heartbeatInterval)
+  }, [user, sessionToken, router])
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -109,6 +172,12 @@ export default function FacultyHomePage() {
       if (!session?.user) {
         router.push('/faculty/login')
         return
+      }
+
+      // Load session token from localStorage
+      const storedToken = localStorage.getItem('faculty_session_token')
+      if (storedToken) {
+        setSessionToken(storedToken)
       }
 
       // Admin should not access faculty pages
@@ -628,6 +697,30 @@ export default function FacultyHomePage() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
       />
+
+      {/* Session Invalid Modal */}
+      {sessionInvalid && (
+        <div className={styles.sessionInvalidOverlay}>
+          <div className={styles.sessionInvalidModal}>
+            <div className={styles.sessionInvalidIcon}>
+              <AlertCircle size={48} />
+            </div>
+            <h2>Session Expired</h2>
+            <p>Your account has been logged in from another device or browser. For security reasons, you have been logged out of this session.</p>
+            <button
+              className={styles.sessionInvalidBtn}
+              onClick={async () => {
+                localStorage.removeItem('faculty_session_token')
+                localStorage.removeItem('faculty_keep_signed_in')
+                await supabase.auth.signOut()
+                router.push('/faculty/login')
+              }}
+            >
+              Return to Login
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

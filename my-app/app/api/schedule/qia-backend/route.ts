@@ -23,6 +23,7 @@ interface RoomData {
   has_ac: boolean
   has_projector: boolean
   is_pwd_accessible: boolean
+  college?: string | null  // NEW: College assignment (e.g., "CS", "CAFA", "Shared")
 }
 
 interface ClassData {
@@ -40,6 +41,7 @@ interface ClassData {
   department: string
   semester: string
   academic_year: string
+  college?: string | null  // NEW: College assignment for room separation
 }
 
 interface TeacherData {
@@ -131,7 +133,8 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
       department: cls.department || '',
       lec_hours: lecHours,
       lab_hours: labHours,
-      required_features: courseRequirements.get(courseId) || []  // NEW: Required equipment tags
+      required_features: courseRequirements.get(courseId) || [],  // NEW: Required equipment tags
+      college: cls.college || (cls as any).college || null  // NEW: College assignment for room separation
     }
   })
 }
@@ -151,7 +154,8 @@ function convertRoomsToBackend(rooms: RoomData[], roomFeatures: Map<number, stri
     room_type: room.room_type,
     floor: room.floor_number,
     is_accessible: room.is_pwd_accessible ?? false,  // Required by Python backend
-    feature_tags: roomFeatures.get(room.id) || []  // NEW: Equipment tags from database
+    feature_tags: roomFeatures.get(room.id) || [],  // NEW: Equipment tags from database
+    college: (room as any).college || null  // NEW: College assignment for room separation
   }))
 }
 
@@ -569,6 +573,16 @@ export async function POST(request: NextRequest) {
     console.log('   First room converted:', JSON.stringify(rooms[0], null, 2))
 
     // Prepare payload for Python backend
+    // Parse lunch times from "HH:MM" format to hours
+    const parseLunchHour = (timeStr: string | undefined, defaultHour: number): number => {
+      if (!timeStr) return defaultHour
+      const parts = timeStr.split(':')
+      return parseInt(parts[0], 10) || defaultHour
+    }
+    
+    const lunchStartHour = parseLunchHour(body.config.lunch_start_time, 13) // Default 1:00 PM
+    const lunchEndHour = parseLunchHour(body.config.lunch_end_time, 14) // Default 2:00 PM
+    
     const backendPayload = {
       schedule_name: body.schedule_name,
       semester: body.semester,
@@ -587,9 +601,10 @@ export async function POST(request: NextRequest) {
       max_teacher_hours_per_day: body.config.max_teacher_hours_per_day,
       avoid_conflicts: body.config.avoid_conflicts,
       // NEW: Constraint settings for BulSU rules
-      lunch_mode: body.config.lunch_mode || 'flexible', // 'strict', 'flexible', or 'none'
-      lunch_start_hour: body.config.lunch_start_hour || 12,
-      lunch_end_hour: body.config.lunch_end_hour || 13,
+      // Use lunch_break_enabled to determine mode, and parse time strings to hours
+      lunch_mode: body.config.lunch_break_enabled === false ? 'none' : (body.config.lunch_mode || 'strict'),
+      lunch_start_hour: lunchStartHour,
+      lunch_end_hour: lunchEndHour,
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
       strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? true, // Lectures should NOT be in lab rooms
       // Split session settings - allow classes to be divided into multiple sessions
@@ -599,6 +614,7 @@ export async function POST(request: NextRequest) {
     console.log('📡 Trying to connect to Python backend...')
     console.log('🌐 Online Days:', body.online_days?.join(', ') || 'None')
     console.log('🍽️ Lunch Mode:', backendPayload.lunch_mode)
+    console.log('🍽️ Lunch Time:', `${backendPayload.lunch_start_hour}:00 - ${backendPayload.lunch_end_hour}:00`)
     console.log('🔬 Strict Lab Matching:', backendPayload.strict_lab_room_matching)
     console.log('✂️ Allow Split Sessions:', backendPayload.allow_split_sessions)
     

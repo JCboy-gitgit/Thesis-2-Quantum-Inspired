@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
+import { useColleges } from '@/app/context/CollegesContext'
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -207,6 +208,7 @@ function FacultyProfilesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const collegeFilter = searchParams.get('college')
+  const { activeColleges: bulsuColleges } = useColleges()
 
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -495,7 +497,10 @@ function FacultyProfilesContent() {
                       className={styles.filterSelect}
                     >
                       <option value="">All Colleges</option>
-                      {colleges.map(c => (
+                      {bulsuColleges.map(c => (
+                        <option key={c.code} value={c.name}>{c.name}</option>
+                      ))}
+                      {colleges.filter(c => !bulsuColleges.some(bc => bc.name === c)).map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>

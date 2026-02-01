@@ -24,6 +24,7 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/faculty/home' },
+    { icon: User, label: 'My Profile', path: '/faculty/profile' },
     { icon: Users, label: 'Faculty Directory', path: '/faculty/directory' },
     { icon: Building2, label: 'Departments', path: '/faculty/departments' },
     { icon: Calendar, label: 'Room Schedules', path: '/faculty/schedules' },

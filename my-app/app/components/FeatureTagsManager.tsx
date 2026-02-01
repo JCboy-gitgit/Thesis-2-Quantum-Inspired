@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package } from 'lucide-react'
+import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package, Sun, Dumbbell } from 'lucide-react'
 import styles from './FeatureTagsManager.module.css'
 
 // ==================== INTERFACES ====================
@@ -58,6 +58,10 @@ const getCategoryIcon = (category: string) => {
       return <Shield size={14} />
     case 'accessibility':
       return <Accessibility size={14} />
+    case 'extracurricular':
+    case 'outdoor':
+    case 'pe':
+      return <Dumbbell size={14} />
     default:
       return <Package size={14} />
   }
@@ -74,6 +78,9 @@ const getCategoryLabel = (category: string): string => {
     'furniture': 'Furniture',
     'safety': 'Safety',
     'accessibility': 'Accessibility',
+    'extracurricular': 'Extracurricular / PE',
+    'outdoor': 'Outdoor Activities',
+    'pe': 'Physical Education',
     'general': 'General'
   }
   return labels[category.toLowerCase()] || category
@@ -90,6 +97,9 @@ const getCategoryColor = (category: string): string => {
     'furniture': '#a855f7',
     'safety': '#ef4444',
     'accessibility': '#06b6d4',
+    'extracurricular': '#f59e0b',
+    'outdoor': '#84cc16',
+    'pe': '#f59e0b',
     'general': '#64748b'
   }
   return colors[category.toLowerCase()] || '#64748b'
