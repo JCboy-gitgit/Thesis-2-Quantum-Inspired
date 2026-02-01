@@ -885,7 +885,7 @@ export default function RoomsManagementPage() {
                     <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
                   ))}
                   <option value="Shared">Shared / Multi-College</option>
-                  {uniqueColleges.filter(c => c && !bulsuColleges.some(bc => bc.code === c) && c !== 'Shared').map(c => <option key={c} value={c}>{c}</option>)}
+                  {uniqueColleges.filter((c): c is string => !!c && !bulsuColleges.some(bc => bc.code === c) && c !== 'Shared').map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <select value={filterBuilding} onChange={(e) => setFilterBuilding(e.target.value)} className={styles.filterSelect}>
                   <option value="all">All Buildings</option>
