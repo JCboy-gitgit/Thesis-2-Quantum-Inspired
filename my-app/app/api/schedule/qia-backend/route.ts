@@ -606,8 +606,7 @@ export async function POST(request: NextRequest) {
       max_teacher_hours_per_day: body.config.max_teacher_hours_per_day,
       avoid_conflicts: body.config.avoid_conflicts,
       // NEW: Constraint settings for BulSU rules
-      // Use lunch_break_enabled to determine mode, and parse time strings to hours
-      lunch_mode: body.config.lunch_break_enabled === false ? 'none' : (body.config.lunch_mode || 'strict'),
+      lunch_mode: body.config.lunch_mode || 'strict',
       lunch_start_hour: lunchStartHour,
       lunch_end_hour: lunchEndHour,
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
