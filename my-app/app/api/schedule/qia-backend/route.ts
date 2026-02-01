@@ -578,14 +578,15 @@ export async function POST(request: NextRequest) {
 
     // Prepare payload for Python backend
     // Parse lunch times from "HH:MM" format to hours
-    const parseLunchHour = (timeStr: string | undefined, defaultHour: number): number => {
-      if (!timeStr) return defaultHour
+    const parseLunchHour = (timeStr: string | number | undefined, defaultHour: number): number => {
+      if (timeStr === undefined) return defaultHour
+      if (typeof timeStr === 'number') return timeStr
       const parts = timeStr.split(':')
       return parseInt(parts[0], 10) || defaultHour
     }
     
-    const lunchStartHour = parseLunchHour(body.config.lunch_start_time, 13) // Default 1:00 PM
-    const lunchEndHour = parseLunchHour(body.config.lunch_end_time, 14) // Default 2:00 PM
+    const lunchStartHour = parseLunchHour(body.config.lunch_start_hour, 13) // Default 1:00 PM
+    const lunchEndHour = parseLunchHour(body.config.lunch_end_hour, 14) // Default 2:00 PM
     
     const backendPayload = {
       schedule_name: body.schedule_name,
