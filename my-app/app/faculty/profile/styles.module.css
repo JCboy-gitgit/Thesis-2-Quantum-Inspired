@@ -622,7 +622,10 @@
   margin: 0.25rem 0;
 }
 
-/* Responsive */
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
 @media (max-width: 768px) {
   .mainContent {
     padding: 20px;
@@ -639,6 +642,7 @@
 
   .header {
     padding: 15px;
+    height: 60px;
   }
 
   .backBtn span,
@@ -665,11 +669,20 @@
     align-items: flex-start;
     gap: 0.25rem;
   }
+
+  .profileCard {
+    padding: 1.5rem;
+  }
+
+  .sectionHeader {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
   .mainContent {
-    padding: 15px;
+    padding: 12px;
   }
 
   .avatar {
@@ -693,6 +706,69 @@
   .actionBtns button {
     width: 100%;
     justify-content: center;
+  }
+
+  .profileCard {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+  }
+
+  .formGroup label {
+    font-size: 0.8rem;
+  }
+
+  .formGroup input,
+  .formGroup select {
+    padding: 0.625rem;
+    font-size: 0.875rem;
+  }
+
+  .submitBtn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .scheduleCard {
+    padding: 0.875rem;
+  }
+
+  .scheduleItem {
+    padding: 0.75rem 0;
+  }
+
+  .backBtn,
+  .logoutBtn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .mainContent {
+    padding: 10px;
+  }
+
+  .avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .avatarInfo h1 {
+    font-size: 1.1rem;
+  }
+
+  .profileCard {
+    padding: 0.875rem;
+  }
+
+  .formGroup input,
+  .formGroup select {
+    padding: 0.5rem;
+    font-size: 0.8rem;
   }
 }
 

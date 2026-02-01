@@ -348,6 +348,31 @@
   color: var(--college-primary);
 }
 
+/* Mobile Menu Overlay */
+.mobileMenuOverlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileMenuOverlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
 .userMenu {
   position: absolute;
   top: calc(100% + 10px);
@@ -709,33 +734,31 @@
 /* Main Content */
 .mainContent {
   flex: 1;
-  padding: 24px;
-  padding-top: 94px; /* Account for 70px header */
+  padding: clamp(10px, 3vw, 24px);
+  padding-top: clamp(70px, 12vw, 94px);
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-}
-
-@media (max-width: 768px) {
-  .mainContent {
-    padding: 16px;
-    padding-top: 90px;
-  }
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Welcome Banner */
 .welcomeBanner {
   background: rgba(20, 26, 50, 0.8);
   border: 1px solid var(--college-primary-light);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  margin-top: 60px;
+  border-radius: clamp(12px, 3vw, 16px);
+  padding: clamp(14px, 4vw, 24px);
+  margin-bottom: clamp(16px, 4vw, 24px);
+  margin-top: clamp(10px, 3vw, 60px);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: clamp(10px, 2vw, 16px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 :global([data-theme="light"]) .welcomeBanner {
@@ -744,10 +767,12 @@
 }
 
 .welcomeBanner h2 {
-  font-size: 24px;
+  font-size: clamp(18px, 5vw, 24px);
   font-weight: 700;
   margin: 0 0 4px 0;
   color: white;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 :global([data-theme="light"]) .welcomeBanner h2 {
@@ -784,19 +809,22 @@
 /* Stats Grid */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: clamp(10px, 2vw, 16px);
+  margin-bottom: clamp(16px, 4vw, 24px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .statCard {
   background: rgba(20, 26, 50, 0.8);
   border: 1px solid var(--college-primary-light);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: clamp(10px, 2vw, 12px);
+  padding: clamp(12px, 3vw, 20px);
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(10px, 2vw, 16px);
+  min-width: 0;
 }
 
 :global([data-theme="light"]) .statCard {
@@ -805,10 +833,10 @@
 }
 
 .statIcon {
-  width: 48px;
-  height: 48px;
+  width: clamp(36px, 8vw, 48px);
+  height: clamp(36px, 8vw, 48px);
   background: var(--college-gradient);
-  border-radius: 12px;
+  border-radius: clamp(8px, 2vw, 12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -821,7 +849,7 @@
 }
 
 .statValue {
-  font-size: 24px;
+  font-size: clamp(18px, 5vw, 24px);
   font-weight: 700;
   color: white;
   line-height: 1;
@@ -859,16 +887,20 @@
 
 .classCards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: clamp(10px, 2vw, 16px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .classCard {
   background: rgba(20, 26, 50, 0.8);
   border: 2px solid var(--college-primary-light);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: clamp(10px, 2vw, 12px);
+  padding: clamp(14px, 3vw, 20px);
   transition: all 0.3s ease;
+  min-width: 0;
+  overflow: hidden;
 }
 
 :global([data-theme="light"]) .classCard {
@@ -975,11 +1007,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  word-break: break-word;
 }
 
 /* Schedule Section */
 .scheduleSection {
   margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sectionHeader {
@@ -987,24 +1023,39 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .scheduleList {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .scheduleItem {
   background: rgba(20, 26, 50, 0.8);
   border: 1px solid var(--college-primary-light);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: clamp(10px, 2vw, 12px);
+  padding: clamp(12px, 3vw, 16px);
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: clamp(8px, 2vw, 12px);
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+@media (min-width: 600px) {
+  .scheduleItem {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
 }
 
 :global([data-theme="light"]) .scheduleItem {
@@ -1029,6 +1080,8 @@
 
 .scheduleInfo {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .scheduleInfo h4 {
@@ -1036,6 +1089,7 @@
   font-weight: 600;
   margin: 0 0 4px 0;
   color: white;
+  word-break: break-word;
 }
 
 :global([data-theme="light"]) .scheduleInfo h4 {
@@ -1869,8 +1923,10 @@
 
 .resourceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 15px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .resourceCard {
@@ -1963,8 +2019,10 @@
 
 .actionGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 15px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .actionCard {
@@ -2002,14 +2060,33 @@
   color: #1e293b;
 }
 
-/* Mobile Responsive */
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablet (768px and below) */
 @media (max-width: 768px) {
   .mobileMenuBtn {
     display: flex;
   }
 
+  .mainLayout.withSidebar {
+    margin-left: 0;
+  }
+
+  .topHeader {
+    padding: 0 12px;
+    height: 56px;
+  }
+
   .mainContent {
-    padding: 15px;
+    padding: 12px;
+    padding-top: 70px;
+  }
+
+  .welcomeBanner {
+    display: flex !important;
+    visibility: visible !important;
   }
 
   .welcomeContent {
@@ -2022,52 +2099,122 @@
   }
 
   .welcomeText h1 {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .welcomeSection {
-    padding: 20px;
+    padding: 16px;
   }
 
-  .classCards {
-    grid-template-columns: 1fr;
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .classSection {
+    margin-bottom: 16px;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .scheduleSection {
+    margin-bottom: 16px;
   }
 
   .scheduleTime {
     min-width: auto;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .scheduleItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    font-size: 12px;
+    width: 100%;
   }
 
   .header {
-    padding: 12px 15px;
+    padding: 10px 12px;
+  }
+
+  .headerLeft {
+    gap: 8px;
   }
 
   .logoText {
+    font-size: 15px;
+  }
+
+  .logoIcon {
+    width: 34px;
+    height: 34px;
     font-size: 16px;
+  }
+
+  .headerRight {
+    gap: 6px;
+  }
+
+  .iconBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .userIconBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .sidebarToggle {
+    width: 34px;
+    height: 36px;
+  }
+
+  .userMenu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    right: auto;
+    width: 90%;
+    max-width: 320px;
+    min-width: unset;
+    border-radius: 16px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
 
   .themeMenu {
     position: fixed;
-    top: 70px;
-    right: 10px;
-    left: 10px;
-    width: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    right: auto;
+    width: 90%;
+    max-width: 320px;
     min-width: unset;
+    border-radius: 16px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .roomViewerSection {
+    margin-bottom: 16px;
+  }
+
+  .roomViewerContainer {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .sectionHeader {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .actionGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .actionCard {
-    padding: 20px 15px;
+    padding: 16px 12px;
   }
 
   .resourceGrid {
@@ -2090,27 +2237,314 @@
   .resourceContent p {
     font-size: 12px;
   }
+
+  .announcementsSection {
+    margin-bottom: 16px;
+  }
+
+  .announcementCard {
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
+  }
 }
 
+/* Mobile phones (480px and below) */
 @media (max-width: 480px) {
-  .logoIcon {
-    width: 35px;
-    height: 35px;
+  .pageContainer {
+    overflow-x: hidden;
+  }
+
+  .topHeader {
+    height: 56px;
+    padding: 0 10px;
+  }
+
+  .mainContent {
+    padding: 8px;
+    padding-top: 66px;
+    overflow-x: hidden;
+  }
+
+  .welcomeBanner {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bannerInfo {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .infoBadge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .classCardHeader {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .liveIndicator {
+    font-size: 10px;
+  }
+
+  .statusBadge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .classTime {
+    font-size: 11px;
+  }
+
+  .scheduleSection {
+    margin-bottom: 12px;
+  }
+
+  .scheduleInfo h4 {
+    font-size: 13px;
+  }
+
+  .scheduleInfo p {
+    font-size: 11px;
+  }
+
+  .emptySchedule {
+    padding: 30px 15px;
+  }
+
+  .emptySchedule h3 {
     font-size: 16px;
+  }
+
+  .emptySchedule p {
+    font-size: 13px;
+  }
+
+  .logoIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .logoText {
+    font-size: 14px;
+  }
+
+  .iconBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .userIconBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .sidebarToggle {
+    width: 34px;
+    height: 34px;
+  }
+
+  .menuBarToggle {
+    width: 40px;
+    height: 20px;
+  }
+
+  .menuBarShowBtn {
+    width: 50px;
+    height: 28px;
+  }
+
+  .actionGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .actionCard {
+    padding: 14px 10px;
+  }
+
+  .actionCard span {
+    font-size: 12px;
+  }
+
+  .resourceCard {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .resourceIcon {
+    width: 45px;
+    height: 45px;
+  }
+
+  .resourceContent h3 {
+    font-size: 14px;
+  }
+
+  .resourceContent p {
+    font-size: 11px;
+  }
+
+  .userMenu,
+  .themeMenu,
+  .settingsMenu,
+  .profileMenu {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+  }
+
+  .userMenuItem,
+  .menuItem {
+    padding: 14px 16px;
+  }
+}
+
+/* Small phones (360px and below) */
+@media (max-width: 360px) {
+  .topHeader {
+    padding: 0 8px;
+    height: 52px;
+  }
+
+  .mainContent {
+    padding: 6px;
+    padding-top: 60px;
+  }
+
+  .welcomeBanner {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionGrid {
+    gap: 6px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .actionCard {
+    padding: 10px 8px;
+    min-width: 0;
+  }
+
+  .actionCard span {
+    font-size: 11px;
+    word-break: break-word;
+    text-align: center;
   }
 
   .logoText {
     display: none;
   }
 
-  .iconBtn {
-    width: 36px;
-    height: 36px;
+  .headerLeft {
+    gap: 6px;
   }
 
-  .userAvatar {
-    width: 60px;
-    height: 60px;
+  .headerRight {
+    gap: 6px;
+  }
+
+  .resourceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resourceCard {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .resourceIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .resourceContent h3 {
+    font-size: 13px;
+  }
+
+  .resourceContent p {
+    font-size: 11px;
+  }
+
+  .sectionTitle {
+    font-size: 14px;
+  }
+
+  .classCards {
+    gap: 8px;
+  }
+
+  .scheduleItem {
+    padding: 10px;
+  }
+
+  .scheduleTime {
+    font-size: 10px;
+  }
+
+  .scheduleInfo h4 {
+    font-size: 12px;
+  }
+
+  .scheduleInfo p {
+    font-size: 10px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .iconBtn,
+  .userIconBtn,
+  .sidebarToggle,
+  .menuBarToggle,
+  .refreshBtn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .userMenuItem,
+  .menuItem,
+  .profileMenuItem {
+    min-height: 48px;
+    padding: 14px 16px;
+  }
+
+  .scheduleItem {
+    min-height: 60px;
+  }
+
+  .classCard:active {
+    transform: scale(0.98);
+  }
+
+  .statCard:active {
+    transform: scale(0.98);
+  }
+
+  .resourceCard:active {
+    transform: scale(0.98);
   }
 }
 

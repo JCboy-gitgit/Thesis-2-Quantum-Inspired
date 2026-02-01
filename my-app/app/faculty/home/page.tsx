@@ -23,11 +23,11 @@ import {
   Settings,
   LogOut,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react'
 import styles from './styles.module.css'
 import FacultySidebar from '@/app/components/FacultySidebar'
-import RoomViewer2D from '@/app/components/RoomViewer2D'
 import FacultySettingsModal from '@/app/components/FacultySettingsModal'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 
@@ -90,7 +90,8 @@ export default function FacultyHomePage() {
     const sendHeartbeat = async () => {
       try {
         // Always update last_login directly as a simple presence indicator
-        await supabase
+        const db = supabase as any
+        const { error: updateError } = await db
           .from('users')
           .update({ last_login: new Date().toISOString() })
           .eq('id', user.id)
@@ -382,9 +383,9 @@ export default function FacultyHomePage() {
 
   if (loading) {
     return (
-      <div className={styles.loadingScreen}>
-        <div className={styles.spinner}></div>
-        <p>Loading your dashboard...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white gap-5">
+        <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+        <p className="text-sm text-slate-400">Loading your dashboard...</p>
       </div>
     )
   }
@@ -399,54 +400,63 @@ export default function FacultyHomePage() {
       />
 
       {/* Main Layout */}
-      <div className={`${styles.mainLayout} ${sidebarOpen ? styles.withSidebar : styles.fullWidth}`}>
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-[250px]' : 'ml-0'}`}>
         {/* Top Header */}
-        <header className={`${styles.topHeader} ${isMenuBarHidden ? styles.hidden : ''}`}>
-          <div className={styles.headerLeft}>
+        <header className={`fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[70px] flex items-center justify-between px-3 sm:px-4 md:px-8 bg-slate-900/95 backdrop-blur-md border-b-2 border-cyan-500/20 z-[90] transition-transform duration-300 shadow-lg ${isMenuBarHidden ? '-translate-y-full' : ''}`}>
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Sidebar Toggle Button */}
             <button
-              className={styles.sidebarToggle}
+              className="flex w-10 h-10 sm:w-11 sm:h-11 bg-transparent border-2 border-cyan-500/30 rounded-lg text-cyan-500 cursor-pointer items-center justify-center transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(0,212,255,0.3)]"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
             >
-              <Menu size={24} />
+              <Menu size={20} className="sm:w-6 sm:h-6" />
             </button>
 
             {/* Logo/Branding */}
-            <div className={styles.logo}>
-              <span className={styles.logoIcon}>Q</span>
-              <span className={styles.logoText}>Qtime Faculty</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center font-extrabold text-lg sm:text-xl text-white shadow-lg">Q</span>
+              <span className="hidden sm:block text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">Qtime Faculty</span>
             </div>
           </div>
-          <div className={styles.headerRight}>
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Notifications */}
-            <button className={styles.iconBtn} title="Notifications">
-              <Bell size={20} />
+            <button className="w-9 h-9 sm:w-10 sm:h-10 bg-cyan-500/10 border-none rounded-lg text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500 hover:text-white" title="Notifications">
+              <Bell size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             {/* User Dropdown */}
-            <div className={styles.userSection}>
+            <div className="relative">
               <button
-                className={styles.userIconBtn}
+                className="w-10 h-10 sm:w-11 sm:h-11 bg-transparent border-2 border-cyan-500/30 rounded-full text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(0,212,255,0.3)]"
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 title="Account Menu"
               >
-                <User size={20} />
+                <User size={18} className="sm:w-5 sm:h-5" />
               </button>
 
               {showUserMenu && (
-                <div className={styles.userMenu}>
-                  {user?.email && (
-                    <>
-                      <div className={styles.userMenuEmail}>
-                        <User size={16} />
-                        {user.email}
-                      </div>
-                      <div className={styles.menuDivider} />
+                <>
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] md:hidden" onClick={() => setShowUserMenu(false)} />
+                  <div className="fixed md:absolute inset-x-4 bottom-4 md:inset-auto md:top-[calc(100%+10px)] md:right-0 bg-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/30 rounded-2xl shadow-2xl min-w-[280px] z-[1000] p-2 animate-in slide-in-from-bottom-5 md:slide-in-from-top-2 duration-200">
+                    {/* Mobile Close Button */}
+                    <button 
+                      className="md:hidden absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <X size={18} />
+                    </button>
+                    {user?.email && (
+                      <>
+                        <div className="flex items-center gap-2.5 px-4 py-3 text-cyan-500 text-sm font-semibold break-all pr-10 md:pr-4">
+                          <User size={16} />
+                          {user.email}
+                        </div>
+                        <div className="h-px bg-cyan-500/20 my-1" />
                     </>
                   )}
                   <button
-                    className={styles.userMenuItem}
+                    className="w-full p-3 bg-transparent border-none rounded-xl text-white/90 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-cyan-500/15 hover:text-cyan-500 hover:translate-x-1 text-left"
                     onClick={() => {
                       setShowUserMenu(false)
                       router.push('/faculty/profile')
@@ -456,7 +466,7 @@ export default function FacultyHomePage() {
                     Profile
                   </button>
                   <button
-                    className={styles.userMenuItem}
+                    className="w-full p-3 bg-transparent border-none rounded-xl text-white/90 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-cyan-500/15 hover:text-cyan-500 hover:translate-x-1 text-left"
                     onClick={() => {
                       setShowUserMenu(false)
                       setShowSettingsModal(true)
@@ -465,9 +475,9 @@ export default function FacultyHomePage() {
                     <Settings size={16} />
                     Settings
                   </button>
-                  <div className={styles.menuDivider} />
+                  <div className="h-px bg-cyan-500/20 my-1" />
                   <button
-                    className={`${styles.userMenuItem} ${styles.logoutItem}`}
+                    className="w-full p-3 bg-transparent border-none rounded-xl text-red-500 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-red-500/15 text-left"
                     onClick={async () => {
                       setShowUserMenu(false)
                       await supabase.auth.signOut()
@@ -477,14 +487,15 @@ export default function FacultyHomePage() {
                     <LogOut size={16} />
                     Logout
                   </button>
-                </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
 
           {/* Toggle Arrow Button - inside header */}
           <button
-            className={styles.menuBarToggle}
+            className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 bg-slate-900/95 border-2 border-t-0 border-cyan-500/20 rounded-b-xl cursor-pointer flex items-center justify-center text-cyan-500 transition-all z-[91] shadow-lg hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
             onClick={() => setIsMenuBarHidden(!isMenuBarHidden)}
             title={isMenuBarHidden ? 'Show Header' : 'Hide Header'}
           >
@@ -495,7 +506,7 @@ export default function FacultyHomePage() {
         {/* Floating Show Button when header is hidden */}
         {isMenuBarHidden && (
           <button
-            className={styles.menuBarShowBtn}
+            className="fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 bg-slate-900/95 border-2 border-t-0 border-cyan-500/20 rounded-b-2xl cursor-pointer flex items-center justify-center text-cyan-500 transition-all z-[1001] shadow-lg hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:translate-y-1 animate-in slide-in-from-top duration-300"
             onClick={() => setIsMenuBarHidden(false)}
             title="Show Header"
           >
@@ -504,120 +515,132 @@ export default function FacultyHomePage() {
         )}
 
         {/* Main Content */}
-        <main className={styles.mainContent}>
-          {/* Welcome Banner */}
-          <section className={styles.welcomeBanner}>
-            <div>
-              <h2>{greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!</h2>
-              <p>{getCurrentDate()}</p>
-            </div>
-            {user?.department && (
-              <div className={styles.bannerInfo}>
-                <div className={styles.infoBadge}>
-                  <Building2 size={16} />
-                  <span>{user.department}</span>
+        <main className="flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-6 max-w-[1400px] mx-auto w-full box-border overflow-x-hidden">
+          {/* Welcome Banner - Left aligned like Admin Dashboard */}
+          <section className="bg-slate-800/80 border border-cyan-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 mt-2 sm:mt-4 md:mt-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <div className="text-left">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold m-0 mb-1 text-white break-words leading-tight">{greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!</h2>
+                <p className="text-slate-400 text-sm sm:text-base m-0">{getCurrentDate()}</p>
+                {user?.department && (
+                  <div className="flex gap-2 flex-wrap mt-3">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 rounded-full text-xs sm:text-sm text-cyan-500 font-semibold">
+                      <Building2 size={14} className="sm:w-4 sm:h-4" />
+                      <span>{user.department}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="text-left sm:text-right flex-shrink-0">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-500 leading-none">
+                  {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="text-xs sm:text-sm text-slate-400 mt-1">
+                  {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </div>
               </div>
-            )}
-          </section>
-
-          {/* Quick Stats */}
-          <section className={styles.statsGrid}>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>
-                <Calendar size={24} />
-              </div>
-              <div className={styles.statContent}>
-                <div className={styles.statValue}>{todayClassCount}</div>
-                <div className={styles.statLabel}>Classes Today</div>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>
-                <BookOpen size={24} />
-              </div>
-              <div className={styles.statContent}>
-                <div className={styles.statValue}>{schedules.length}</div>
-                <div className={styles.statLabel}>Total Classes This Week</div>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>
-                <Clock size={24} />
-              </div>
-              <div className={styles.statContent}>
-                <div className={styles.statValue}>{currentClass ? 'In Progress' : 'Free'}</div>
-                <div className={styles.statLabel}>Current Status</div>
-              </div>
             </div>
           </section>
 
-          {/* Current & Next Class */}
-          <section className={styles.classSection}>
-            <h3 className={styles.sectionTitle}>My Classes</h3>
-            <div className={styles.classCards}>
-              <div className={`${styles.classCard} ${currentClass ? styles.active : ''}`}>
-                <div className={styles.classCardHeader}>
+          {/* Quick Stats - Responsive Grid */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
+            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                <Calendar size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-none mb-1">{todayClassCount}</div>
+                <div className="text-xs sm:text-sm text-slate-400">Classes Today</div>
+              </div>
+            </div>
+            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                <BookOpen size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-none mb-1">{schedules.length}</div>
+                <div className="text-xs sm:text-sm text-slate-400">Total Classes This Week</div>
+              </div>
+            </div>
+            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                <Clock size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-white leading-none mb-1">{currentClass ? 'In Progress' : 'Free'}</div>
+                <div className="text-xs sm:text-sm text-slate-400">Current Status</div>
+              </div>
+            </div>
+          </section>
+
+          {/* Current & Next Class - Responsive Stack */}
+          <section className="mb-4 sm:mb-5 md:mb-6">
+            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-white">My Classes</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              {/* Current Class Card */}
+              <div className={`bg-slate-800/80 border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${currentClass ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]' : 'border-cyan-500/20'}`}>
+                <div className="flex items-center justify-between mb-3">
                   {currentClass ? (
                     <>
-                      <span className={styles.liveIndicator}>
-                        <span className={styles.liveDot}></span>
+                      <span className="flex items-center gap-1.5 text-green-500 text-xs font-bold">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         NOW
                       </span>
-                      <span className={styles.classTime}>
+                      <span className="text-xs text-slate-400 font-semibold">
                         {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={styles.statusBadge}>NO CLASS</span>
+                    <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">NO CLASS</span>
                   )}
                 </div>
-                <div className={styles.classBody}>
+                <div className="mt-3">
                   {currentClass ? (
                     <>
-                      <h4>{currentClass.course_code}</h4>
-                      <p className={styles.courseName}>{currentClass.course_name}</p>
-                      <div className={styles.classDetails}>
-                        <span><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
-                        <span><BookOpen size={14} /> {currentClass.section}</span>
+                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">{currentClass.course_code}</h4>
+                      <p className="text-sm text-slate-400 m-0 mb-3">{currentClass.course_name}</p>
+                      <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-slate-400">
+                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={14} /> {currentClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h4>Free Time</h4>
-                      <p className={styles.courseName}>No ongoing class at the moment</p>
+                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">Free Time</h4>
+                      <p className="text-sm text-slate-400 m-0">No ongoing class at the moment</p>
                     </>
                   )}
                 </div>
               </div>
 
-              <div className={`${styles.classCard} ${nextClass ? styles.upcoming : ''}`}>
-                <div className={styles.classCardHeader}>
+              {/* Next Class Card */}
+              <div className={`bg-slate-800/80 border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${nextClass ? 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]' : 'border-cyan-500/20'}`}>
+                <div className="flex items-center justify-between mb-3">
                   {nextClass ? (
                     <>
-                      <span className={styles.statusBadge}>NEXT UP</span>
-                      <span className={styles.classTime}>
+                      <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">NEXT UP</span>
+                      <span className="text-xs text-slate-400 font-semibold">
                         {formatTime(nextClass.start_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={styles.statusBadge}>FINISHED</span>
+                    <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">FINISHED</span>
                   )}
                 </div>
-                <div className={styles.classBody}>
+                <div className="mt-3">
                   {nextClass ? (
                     <>
-                      <h4>{nextClass.course_code}</h4>
-                      <p className={styles.courseName}>{nextClass.course_name}</p>
-                      <div className={styles.classDetails}>
-                        <span><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
-                        <span><BookOpen size={14} /> {nextClass.section}</span>
+                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">{nextClass.course_code}</h4>
+                      <p className="text-sm text-slate-400 m-0 mb-3">{nextClass.course_name}</p>
+                      <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-slate-400">
+                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={14} /> {nextClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h4>All Done!</h4>
-                      <p className={styles.courseName}>No more classes for today</p>
+                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">All Done!</h4>
+                      <p className="text-sm text-slate-400 m-0">No more classes for today</p>
                     </>
                   )}
                 </div>
@@ -626,66 +649,55 @@ export default function FacultyHomePage() {
           </section>
 
           {/* Today's Schedule */}
-          <section className={styles.scheduleSection}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>
-                <Calendar size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+          <section className="mb-4 sm:mb-5 md:mb-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <Calendar size={18} className="sm:w-5 sm:h-5 inline-block" />
                 Today's Schedule
               </h3>
-              <button className={styles.iconBtn} onClick={checkAuthAndLoad} title="Refresh">
-                <RefreshCw size={18} />
+              <button className="w-9 h-9 sm:w-10 sm:h-10 bg-cyan-500/10 border-none rounded-lg text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500 hover:text-white" onClick={checkAuthAndLoad} title="Refresh">
+                <RefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
             {schedules.filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]).length > 0 ? (
-              <div className={styles.scheduleList}>
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {schedules
                   .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
                   .map((schedule, index) => (
-                    <div key={index} className={styles.scheduleItem}>
-                      <div className={styles.scheduleTime}>
-                        <Clock size={16} />
+                    <div key={index} className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:border-cyan-500 hover:translate-x-1">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-cyan-500 min-w-[130px] sm:min-w-[140px]">
+                        <Clock size={14} className="sm:w-4 sm:h-4" />
                         <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
                       </div>
-                      <div className={styles.scheduleInfo}>
-                        <h4>{schedule.course_code} - {schedule.course_name}</h4>
-                        <p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm sm:text-base font-semibold m-0 mb-1 text-white break-words">{schedule.course_code} - {schedule.course_name}</h4>
+                        <p className="text-xs sm:text-sm text-slate-400 m-0 flex items-center gap-1.5 flex-wrap">
                           <MapPin size={12} /> {schedule.room}, {schedule.building}
-                          <span className={styles.separator}>•</span>
+                          <span className="mx-1 text-slate-600">•</span>
                           <BookOpen size={12} /> {schedule.section}
                         </p>
                       </div>
-                      <ChevronRight size={18} className={styles.chevron} />
+                      <ChevronRight size={16} className="hidden sm:block text-cyan-500 flex-shrink-0" />
                     </div>
                   ))}
               </div>
             ) : (
-              <div className={styles.emptySchedule}>
-                <Calendar size={64} style={{ opacity: 0.3, marginBottom: '16px' }} />
-                <h3>No Schedule Today</h3>
-                <p>Your schedule will appear here once assigned by the admin.</p>
+              <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-6 sm:p-8 md:p-12 text-center">
+                <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-bold text-white m-0 mb-2">No Schedule Today</h3>
+                <p className="text-sm text-slate-400 m-0">Your schedule will appear here once assigned by the admin.</p>
               </div>
             )}
           </section>
 
-          {/* Room Viewer 2D */}
-          <section className={styles.roomViewerSection}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Campus Map</h3>
-              <span className={styles.viewOnlyBadge}>View Only</span>
-            </div>
-            <div className={styles.roomViewerContainer}>
-              <RoomViewer2D />
-            </div>
-          </section>
-
-          {/* Department Announcements Placeholder */}
-          <section className={styles.announcementsSection}>
-            <h3 className={styles.sectionTitle}>Department Announcements</h3>
-            <div className={styles.announcementCard}>
-              <TrendingUp size={20} />
+          {/* Department Announcements */}
+          <section className="mb-4 sm:mb-5 md:mb-6">
+            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-white">Department Announcements</h3>
+            <div className="bg-cyan-500/10 border border-cyan-500 rounded-xl p-4 sm:p-5 flex gap-3 sm:gap-4 text-cyan-500">
+              <TrendingUp size={20} className="flex-shrink-0 mt-0.5" />
               <div>
-                <h4>Welcome to QTime Faculty Portal</h4>
-                <p>Stay updated with your schedule, faculty directory, and department information all in one place.</p>
+                <h4 className="text-sm sm:text-base font-bold m-0 mb-1">Welcome to QTime Faculty Portal</h4>
+                <p className="text-xs sm:text-sm m-0 opacity-90">Stay updated with your schedule, faculty directory, and department information all in one place.</p>
               </div>
             </div>
           </section>
@@ -698,17 +710,17 @@ export default function FacultyHomePage() {
         onClose={() => setShowSettingsModal(false)}
       />
 
-      {/* Session Invalid Modal */}
+      {/* Session Invalid Modal - Responsive */}
       {sessionInvalid && (
-        <div className={styles.sessionInvalidOverlay}>
-          <div className={styles.sessionInvalidModal}>
-            <div className={styles.sessionInvalidIcon}>
-              <AlertCircle size={48} />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[2000] p-4">
+          <div className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+              <AlertCircle size={36} className="sm:w-12 sm:h-12 text-red-500" />
             </div>
-            <h2>Session Expired</h2>
-            <p>Your account has been logged in from another device or browser. For security reasons, you have been logged out of this session.</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Session Expired</h2>
+            <p className="text-sm sm:text-base text-slate-400 mb-5 sm:mb-6">Your account has been logged in from another device or browser. For security reasons, you have been logged out of this session.</p>
             <button
-              className={styles.sessionInvalidBtn}
+              className="w-full py-3 px-6 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-cyan-500/30 active:scale-[0.98]"
               onClick={async () => {
                 localStorage.removeItem('faculty_session_token')
                 localStorage.removeItem('faculty_keep_signed_in')

@@ -311,3 +311,88 @@
 [data-theme="light"] .sidebar::-webkit-scrollbar-thumb:hover {
   background: #00a651;
 }
+
+/* ==================== Dark Theme Sidebar (Quantum-Inspired) ==================== */
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, rgba(20, 26, 50, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%);
+  border-right: 2px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 2px 0 20px rgba(0, 212, 255, 0.15);
+}
+
+[data-theme="dark"] .sidebar::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(circle at 50% 100%, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="dark"] .sidebar-header {
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .sidebar-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .sidebar-nav {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="dark"] .sidebar-item {
+  color: #a0aec0;
+}
+
+[data-theme="dark"] .sidebar-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
+[data-theme="dark"] .sidebar-item.active {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.2) 0%, transparent 100%);
+  color: #00d4ff;
+  border-left: 3px solid #00d4ff;
+}
+
+[data-theme="dark"] .sidebar-icon {
+  color: inherit;
+}
+
+[data-theme="dark"] .submenu {
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 3px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="dark"] .submenu-item {
+  color: #a0aec0;
+}
+
+[data-theme="dark"] .submenu-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
+[data-theme="dark"] .submenu-item.active {
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.15);
+  border-left: 3px solid #00d4ff;
+}
+
+[data-theme="dark"] .sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+[data-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+[data-theme="dark"] .sidebar::-webkit-scrollbar-thumb:hover {
+  background: #00d4ff;
+}

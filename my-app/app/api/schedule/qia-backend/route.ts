@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Backend URLs - Try local first, then fall back to Render
-const LOCAL_BACKEND_URL = 'http://localhost:8000'
+// Backend URLs - Use environment variable first, then Render, then localhost for development
+const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
+const LOCAL_BACKEND_URL = 'http://localhost:8000'
+
+// Determine if we're in production (Vercel)
+const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -617,19 +621,32 @@ export async function POST(request: NextRequest) {
     console.log('🍽️ Lunch Time:', `${backendPayload.lunch_start_hour}:00 - ${backendPayload.lunch_end_hour}:00`)
     console.log('🔬 Strict Lab Matching:', backendPayload.strict_lab_room_matching)
     console.log('✂️ Allow Split Sessions:', backendPayload.allow_split_sessions)
+    console.log('🌍 Environment:', isProduction ? 'Production' : 'Development')
     
-    // Try local backend first, then fall back to Render
-    // Increased timeouts to handle large schedule generation (can take 30+ seconds)
-    const backendUrls = [
-      { url: LOCAL_BACKEND_URL, type: 'Local', timeout: 180000 }, // 3 min for large schedules
-      { url: RENDER_BACKEND_URL, type: 'Render', timeout: 300000 } // 5 min for Render cold starts + large schedules
-    ]
+    // In production (Vercel): Try Render first, then env URL
+    // In development: Try local first, then Render
+    const backendUrls = isProduction
+      ? [
+          // Production: Render first (most reliable for production)
+          { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: 300000 },
+          { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: 300000 }
+        ]
+      : [
+          // Development: Local first, then Render
+          { url: LOCAL_BACKEND_URL, type: 'Local', timeout: 180000 },
+          { url: RENDER_BACKEND_URL, type: 'Render', timeout: 300000 }
+        ]
+    
+    // Remove duplicate URLs
+    const uniqueBackendUrls = backendUrls.filter((backend, index, arr) => 
+      arr.findIndex(b => b.url === backend.url) === index
+    )
     
     let backendResponse
     let usedBackendUrl = ''
     let lastError: any = null
     
-    for (const backend of backendUrls) {
+    for (const backend of uniqueBackendUrls) {
       try {
         console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
         
@@ -652,14 +669,14 @@ export async function POST(request: NextRequest) {
         console.warn(`⚠️ ${backend.type} backend failed:`, fetchError.message)
         
         // Continue to next backend
-        if (backend === backendUrls[backendUrls.length - 1]) {
+        if (backend === uniqueBackendUrls[uniqueBackendUrls.length - 1]) {
           // This was the last backend, throw error
           console.error('❌ All backends failed')
           
           return NextResponse.json(
             { 
               success: false,
-              error: `Cannot connect to any Python backend. Tried: ${backendUrls.map(b => b.url).join(', ')}`,
+              error: `Cannot connect to any Python backend. Tried: ${uniqueBackendUrls.map(b => b.url).join(', ')}`,
               details: 'Ensure at least one backend server is running. Using fallback scheduler...',
               local_backend: LOCAL_BACKEND_URL,
               render_backend: RENDER_BACKEND_URL

@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-// Base themes - light and dark modes
-type BaseTheme = 'light' | 'dark'
+// Base themes - includes green (nature-inspired), light, and dark modes
+type BaseTheme = 'green' | 'light' | 'dark'
 
 // College-specific color themes (accent colors)
 type CollegeTheme = 'science' | 'arts-letters' | 'architecture' | 'default'
@@ -82,9 +82,9 @@ export const COLLEGE_THEME_MAP: Record<string, CollegeTheme> = {
 }
 
 // Provide a default value so hooks don't throw during initial render
-// DEFAULT: light mode with quantum-inspired theme
+// DEFAULT: green mode (nature-inspired) with quantum-inspired theme
 const defaultContext: ThemeContextType = {
-  theme: 'light',
+  theme: 'green',
   collegeTheme: 'default',
   setTheme: () => { },
   setCollegeTheme: () => { },
@@ -95,8 +95,8 @@ const defaultContext: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContext)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // DEFAULT: light mode with quantum-inspired (default) color theme
-  const [theme, setThemeState] = useState<BaseTheme>('light')
+  // DEFAULT: green mode (nature-inspired) with default color theme
+  const [theme, setThemeState] = useState<BaseTheme>('green')
   const [collegeTheme, setCollegeThemeState] = useState<CollegeTheme>('default')
   const [mounted, setMounted] = useState(false)
 
@@ -106,17 +106,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem('faculty-base-theme') as BaseTheme
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme') as CollegeTheme
 
-    // Valid base themes are only light and dark
-    const allowedThemes: BaseTheme[] = ['light', 'dark']
+    // Valid base themes include green, light and dark
+    const allowedThemes: BaseTheme[] = ['green', 'light', 'dark']
 
     if (savedTheme && allowedThemes.includes(savedTheme)) {
       setThemeState(savedTheme)
       document.documentElement.setAttribute('data-theme', savedTheme)
     } else {
-      // Default to light mode for faculty
-      setThemeState('light')
-      document.documentElement.setAttribute('data-theme', 'light')
-      localStorage.setItem('faculty-base-theme', 'light')
+      // Default to green mode
+      setThemeState('green')
+      document.documentElement.setAttribute('data-theme', 'green')
+      localStorage.setItem('faculty-base-theme', 'green')
     }
 
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {
@@ -157,8 +157,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const toggleTheme = () => {
-    // Toggle between light and dark
-    const newTheme = theme === 'light' ? 'dark' : 'light'
+    // Cycle through green -> dark -> light -> green
+    let newTheme: BaseTheme
+    if (theme === 'green') {
+      newTheme = 'dark'
+    } else if (theme === 'dark') {
+      newTheme = 'light'
+    } else {
+      newTheme = 'green'
+    }
     setTheme(newTheme)
   }
 

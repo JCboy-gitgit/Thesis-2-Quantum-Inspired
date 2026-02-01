@@ -76,7 +76,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           exact: true
         },
         {
-          label: '2D / 3D Map Viewer', 
+          label: '2D Map Editor', 
           path: '/LandingPages/Rooms-Management/MapViewer',
           icon: Map,
           exact: true
