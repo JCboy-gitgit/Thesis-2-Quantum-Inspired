@@ -7,29 +7,19 @@ import {
   Calendar,
   Clock,
   MapPin,
-  User,
-  Bell,
   BookOpen,
   ChevronRight,
   Building2,
   GraduationCap,
-  Sun,
-  Moon,
-  Palette,
-  Menu,
-  ChevronDown,
-  ChevronUp,
   TrendingUp,
-  Settings,
-  LogOut,
   RefreshCw,
-  AlertCircle,
-  X
+  AlertCircle
 } from 'lucide-react'
 import styles from './styles.module.css'
 import FacultySidebar from '@/app/components/FacultySidebar'
-import FacultySettingsModal from '@/app/components/FacultySettingsModal'
+import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
+import '@/app/styles/faculty-global.css'
 
 interface UserProfile {
   id: string
@@ -63,16 +53,40 @@ export default function FacultyHomePage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
   const [currentClass, setCurrentClass] = useState<ScheduleItem | null>(null)
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
   const [greeting, setGreeting] = useState('')
   const [todayClassCount, setTodayClassCount] = useState(0)
   const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [sessionInvalid, setSessionInvalid] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Theme helper
+  const isLightMode = theme === 'light'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  useEffect(() => {
+    setMounted(true)
+    // Force styles to apply immediately
+    document.body.classList.add('faculty-loaded')
+    // Force a style recalculation
+    document.documentElement.style.setProperty('--faculty-loaded', '1')
+    return () => {
+      document.body.classList.remove('faculty-loaded')
+    }
+  }, [])
+
+  // Force re-render after mount to ensure CSS is applied
+  useEffect(() => {
+    if (mounted && !loading) {
+      // Trigger a micro re-render to force CSS application
+      const timer = setTimeout(() => {
+        document.body.offsetHeight // Force reflow
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [mounted, loading])
 
   useEffect(() => {
     checkAuthAndLoad()
@@ -144,21 +158,6 @@ export default function FacultyHomePage() {
     return () => clearInterval(heartbeatInterval)
   }, [user, sessionToken, router])
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (!target.closest(`.${styles.userSection}`)) {
-        setShowUserMenu(false)
-      }
-    }
-
-    if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showUserMenu])
-
   const updateGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) setGreeting('Good Morning')
@@ -217,14 +216,18 @@ export default function FacultyHomePage() {
 
       setUser(mergedUser)
 
-      // Set college theme based on user's college/department
-      if (mergedUser.college) {
+      // Only set college theme if user hasn't manually chosen one
+      // Check if a saved theme exists in localStorage
+      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+      if (!savedCollegeTheme && mergedUser.college) {
+        // No saved theme - use college-based default
         const collegeLower = mergedUser.college.toLowerCase()
         const matchedTheme = COLLEGE_THEME_MAP[collegeLower]
         if (matchedTheme) {
           setCollegeTheme(matchedTheme)
         }
       }
+      // If savedCollegeTheme exists, ThemeContext already loaded it - respect user's choice
 
       // Fetch schedules for this faculty
       await fetchSchedules(userData.email, mergedUser.full_name)
@@ -383,7 +386,12 @@ export default function FacultyHomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white gap-5">
+      <div 
+        className="min-h-screen flex flex-col items-center justify-center text-white gap-5"
+        style={{ 
+          background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)'
+        }}
+      >
         <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
         <p className="text-sm text-slate-400">Loading your dashboard...</p>
       </div>
@@ -391,7 +399,11 @@ export default function FacultyHomePage() {
   }
 
   return (
-    <div className={styles.pageContainer} data-college-theme={collegeTheme}>
+    <div 
+      className={`${styles.pageContainer} faculty-page-wrapper`} 
+      data-theme={theme}
+      data-college-theme={collegeTheme}
+    >
       {/* Sidebar */}
       <FacultySidebar
         isOpen={sidebarOpen}
@@ -401,184 +413,106 @@ export default function FacultyHomePage() {
 
       {/* Main Layout */}
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-[250px]' : 'ml-0'}`}>
-        {/* Top Header */}
-        <header className={`fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[70px] flex items-center justify-between px-3 sm:px-4 md:px-8 bg-slate-900/95 backdrop-blur-md border-b-2 border-cyan-500/20 z-[90] transition-transform duration-300 shadow-lg ${isMenuBarHidden ? '-translate-y-full' : ''}`}>
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Sidebar Toggle Button */}
-            <button
-              className="flex w-10 h-10 sm:w-11 sm:h-11 bg-transparent border-2 border-cyan-500/30 rounded-lg text-cyan-500 cursor-pointer items-center justify-center transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(0,212,255,0.3)]"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
-            >
-              <Menu size={20} className="sm:w-6 sm:h-6" />
-            </button>
-
-            {/* Logo/Branding */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center font-extrabold text-lg sm:text-xl text-white shadow-lg">Q</span>
-              <span className="hidden sm:block text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">Qtime Faculty</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notifications */}
-            <button className="w-9 h-9 sm:w-10 sm:h-10 bg-cyan-500/10 border-none rounded-lg text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500 hover:text-white" title="Notifications">
-              <Bell size={18} className="sm:w-5 sm:h-5" />
-            </button>
-
-            {/* User Dropdown */}
-            <div className="relative">
-              <button
-                className="w-10 h-10 sm:w-11 sm:h-11 bg-transparent border-2 border-cyan-500/30 rounded-full text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(0,212,255,0.3)]"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                title="Account Menu"
-              >
-                <User size={18} className="sm:w-5 sm:h-5" />
-              </button>
-
-              {showUserMenu && (
-                <>
-                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] md:hidden" onClick={() => setShowUserMenu(false)} />
-                  <div className="fixed md:absolute inset-x-4 bottom-4 md:inset-auto md:top-[calc(100%+10px)] md:right-0 bg-slate-900/98 backdrop-blur-xl border-2 border-cyan-500/30 rounded-2xl shadow-2xl min-w-[280px] z-[1000] p-2 animate-in slide-in-from-bottom-5 md:slide-in-from-top-2 duration-200">
-                    {/* Mobile Close Button */}
-                    <button 
-                      className="md:hidden absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white"
-                      onClick={() => setShowUserMenu(false)}
-                    >
-                      <X size={18} />
-                    </button>
-                    {user?.email && (
-                      <>
-                        <div className="flex items-center gap-2.5 px-4 py-3 text-cyan-500 text-sm font-semibold break-all pr-10 md:pr-4">
-                          <User size={16} />
-                          {user.email}
-                        </div>
-                        <div className="h-px bg-cyan-500/20 my-1" />
-                    </>
-                  )}
-                  <button
-                    className="w-full p-3 bg-transparent border-none rounded-xl text-white/90 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-cyan-500/15 hover:text-cyan-500 hover:translate-x-1 text-left"
-                    onClick={() => {
-                      setShowUserMenu(false)
-                      router.push('/faculty/profile')
-                    }}
-                  >
-                    <User size={16} />
-                    Profile
-                  </button>
-                  <button
-                    className="w-full p-3 bg-transparent border-none rounded-xl text-white/90 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-cyan-500/15 hover:text-cyan-500 hover:translate-x-1 text-left"
-                    onClick={() => {
-                      setShowUserMenu(false)
-                      setShowSettingsModal(true)
-                    }}
-                  >
-                    <Settings size={16} />
-                    Settings
-                  </button>
-                  <div className="h-px bg-cyan-500/20 my-1" />
-                  <button
-                    className="w-full p-3 bg-transparent border-none rounded-xl text-red-500 cursor-pointer flex items-center gap-3 text-sm font-medium transition-all hover:bg-red-500/15 text-left"
-                    onClick={async () => {
-                      setShowUserMenu(false)
-                      await supabase.auth.signOut()
-                      router.push('/faculty/login')
-                    }}
-                  >
-                    <LogOut size={16} />
-                    Logout
-                  </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Toggle Arrow Button - inside header */}
-          <button
-            className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 bg-slate-900/95 border-2 border-t-0 border-cyan-500/20 rounded-b-xl cursor-pointer flex items-center justify-center text-cyan-500 transition-all z-[91] shadow-lg hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
-            onClick={() => setIsMenuBarHidden(!isMenuBarHidden)}
-            title={isMenuBarHidden ? 'Show Header' : 'Hide Header'}
-          >
-            <ChevronUp size={18} />
-          </button>
-        </header>
-
-        {/* Floating Show Button when header is hidden */}
-        {isMenuBarHidden && (
-          <button
-            className="fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 bg-slate-900/95 border-2 border-t-0 border-cyan-500/20 rounded-b-2xl cursor-pointer flex items-center justify-center text-cyan-500 transition-all z-[1001] shadow-lg hover:bg-cyan-500/10 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:translate-y-1 animate-in slide-in-from-top duration-300"
-            onClick={() => setIsMenuBarHidden(false)}
-            title="Show Header"
-          >
-            <ChevronDown size={18} />
-          </button>
-        )}
+        {/* Faculty Menu Bar */}
+        <FacultyMenuBar
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+          isHidden={isMenuBarHidden}
+          onToggleHidden={setIsMenuBarHidden}
+          userEmail={user?.email}
+        />
 
         {/* Main Content */}
         <main className="flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-6 max-w-[1400px] mx-auto w-full box-border overflow-x-hidden">
-          {/* Welcome Banner - Left aligned like Admin Dashboard */}
-          <section className="bg-slate-800/80 border border-cyan-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 mt-2 sm:mt-4 md:mt-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-              <div className="text-left">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold m-0 mb-1 text-white break-words leading-tight">{greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!</h2>
-                <p className="text-slate-400 text-sm sm:text-base m-0">{getCurrentDate()}</p>
-                {user?.department && (
-                  <div className="flex gap-2 flex-wrap mt-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 rounded-full text-xs sm:text-sm text-cyan-500 font-semibold">
-                      <Building2 size={14} className="sm:w-4 sm:h-4" />
-                      <span>{user.department}</span>
-                    </div>
-                  </div>
-                )}
+          {/* Welcome Banner - Clean responsive layout */}
+          <section className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 mt-2 sm:mt-4 md:mt-8 border ${
+            isLightMode 
+              ? 'bg-white/95 border-slate-200 shadow-lg' 
+              : 'bg-slate-800/80 border-cyan-500/20'
+          }`}>
+            {/* Mobile: stacked center layout, Desktop: row layout */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Left: Greeting and date */}
+              <div className="text-center sm:text-left">
+                <h2 className={`text-xl sm:text-xl md:text-2xl font-bold m-0 mb-1 break-words leading-tight ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                  {greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!
+                </h2>
+                <p className={`text-sm sm:text-base m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {getCurrentDate()}
+                </p>
               </div>
-              <div className="text-left sm:text-right flex-shrink-0">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-500 leading-none">
+              
+              {/* Right: Time display and department badge */}
+              <div className="flex flex-col items-center sm:items-end gap-2 sm:gap-1">
+                <div className={`text-3xl sm:text-3xl md:text-4xl font-bold leading-none ${styles.accentText}`}>
                   {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                <div className="text-xs sm:text-sm text-slate-400 mt-1">
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </div>
+                {user?.department && (
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold mt-2 sm:mt-1 transition-colors duration-300 ${styles.collegeBadge}`}>
+                    <Building2 size={12} />
+                    <span>{user.department}</span>
+                  </div>
+                )}
               </div>
             </div>
           </section>
 
           {/* Quick Stats - Responsive Grid */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
-            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${
+              isLightMode 
+                ? 'bg-white/95 border-slate-200 shadow-md' 
+                : 'bg-slate-800/80 border-cyan-500/20'
+            }`}>
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <Calendar size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-none mb-1">{todayClassCount}</div>
-                <div className="text-xs sm:text-sm text-slate-400">Classes Today</div>
+                <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{todayClassCount}</div>
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Classes Today</div>
               </div>
             </div>
-            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${
+              isLightMode 
+                ? 'bg-white/95 border-slate-200 shadow-md' 
+                : 'bg-slate-800/80 border-cyan-500/20'
+            }`}>
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <BookOpen size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-none mb-1">{schedules.length}</div>
-                <div className="text-xs sm:text-sm text-slate-400">Total Classes This Week</div>
+                <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{schedules.length}</div>
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Total Classes This Week</div>
               </div>
             </div>
-            <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0">
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1 border ${
+              isLightMode 
+                ? 'bg-white/95 border-slate-200 shadow-md' 
+                : 'bg-slate-800/80 border-cyan-500/20'
+            }`}>
+              <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <Clock size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-lg sm:text-xl md:text-2xl font-bold text-white leading-none mb-1">{currentClass ? 'In Progress' : 'Free'}</div>
-                <div className="text-xs sm:text-sm text-slate-400">Current Status</div>
+                <div className={`text-lg sm:text-xl md:text-2xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{currentClass ? 'In Progress' : 'Free'}</div>
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Current Status</div>
               </div>
             </div>
           </section>
 
           {/* Current & Next Class - Responsive Stack */}
           <section className="mb-4 sm:mb-5 md:mb-6">
-            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-white">My Classes</h3>
+            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>My Classes</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Current Class Card */}
-              <div className={`bg-slate-800/80 border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${currentClass ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]' : 'border-cyan-500/20'}`}>
+              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${
+                currentClass 
+                  ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]' 
+                  : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
+              } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {currentClass ? (
                     <>
@@ -586,61 +520,69 @@ export default function FacultyHomePage() {
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                         NOW
                       </span>
-                      <span className="text-xs text-slate-400 font-semibold">
+                      <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
                       </span>
                     </>
                   ) : (
-                    <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">NO CLASS</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${styles.collegeBadge}`}>NO CLASS</span>
                   )}
                 </div>
                 <div className="mt-3">
                   {currentClass ? (
                     <>
-                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">{currentClass.course_code}</h4>
-                      <p className="text-sm text-slate-400 m-0 mb-3">{currentClass.course_name}</p>
-                      <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-slate-400">
+                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{currentClass.course_code}</h4>
+                      <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{currentClass.course_name}</p>
+                      <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={14} /> {currentClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">Free Time</h4>
-                      <p className="text-sm text-slate-400 m-0">No ongoing class at the moment</p>
+                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Free Time</h4>
+                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No ongoing class at the moment</p>
                     </>
                   )}
                 </div>
               </div>
 
               {/* Next Class Card */}
-              <div className={`bg-slate-800/80 border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${nextClass ? 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]' : 'border-cyan-500/20'}`}>
+              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${
+                nextClass 
+                  ? isLightMode ? 'border-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.3)]' : 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]'
+                  : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
+              } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {nextClass ? (
                     <>
-                      <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">NEXT UP</span>
-                      <span className="text-xs text-slate-400 font-semibold">
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                        isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                      }`}>NEXT UP</span>
+                      <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(nextClass.start_time)}
                       </span>
                     </>
                   ) : (
-                    <span className="px-2.5 py-1 bg-cyan-500/20 text-cyan-500 rounded-xl text-[11px] font-bold">FINISHED</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                      isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                    }`}>FINISHED</span>
                   )}
                 </div>
                 <div className="mt-3">
                   {nextClass ? (
                     <>
-                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">{nextClass.course_code}</h4>
-                      <p className="text-sm text-slate-400 m-0 mb-3">{nextClass.course_name}</p>
-                      <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-slate-400">
+                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{nextClass.course_code}</h4>
+                      <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{nextClass.course_name}</p>
+                      <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={14} /> {nextClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <>
-                      <h4 className="text-base sm:text-lg font-bold m-0 mb-1 text-white">All Done!</h4>
-                      <p className="text-sm text-slate-400 m-0">No more classes for today</p>
+                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>All Done!</h4>
+                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No more classes for today</p>
                     </>
                   )}
                 </div>
@@ -651,11 +593,11 @@ export default function FacultyHomePage() {
           {/* Today's Schedule */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
                 <Calendar size={18} className="sm:w-5 sm:h-5 inline-block" />
                 Today's Schedule
               </h3>
-              <button className="w-9 h-9 sm:w-10 sm:h-10 bg-cyan-500/10 border-none rounded-lg text-cyan-500 cursor-pointer flex items-center justify-center transition-all hover:bg-cyan-500 hover:text-white" onClick={checkAuthAndLoad} title="Refresh">
+              <button className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white' : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'}`} onClick={checkAuthAndLoad} title="Refresh">
                 <RefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
@@ -664,36 +606,36 @@ export default function FacultyHomePage() {
                 {schedules
                   .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
                   .map((schedule, index) => (
-                    <div key={index} className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:border-cyan-500 hover:translate-x-1">
-                      <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-cyan-500 min-w-[130px] sm:min-w-[140px]">
+                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${isLightMode ? 'bg-white/90 border border-slate-200 hover:border-emerald-500' : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'}`}>
+                      <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`}>
                         <Clock size={14} className="sm:w-4 sm:h-4" />
                         <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm sm:text-base font-semibold m-0 mb-1 text-white break-words">{schedule.course_code} - {schedule.course_name}</h4>
-                        <p className="text-xs sm:text-sm text-slate-400 m-0 flex items-center gap-1.5 flex-wrap">
+                        <h4 className={`text-sm sm:text-base font-semibold m-0 mb-1 break-words ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{schedule.course_code} - {schedule.course_name}</h4>
+                        <p className={`text-xs sm:text-sm m-0 flex items-center gap-1.5 flex-wrap ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           <MapPin size={12} /> {schedule.room}, {schedule.building}
-                          <span className="mx-1 text-slate-600">•</span>
+                          <span className={`mx-1 ${isLightMode ? 'text-slate-300' : 'text-slate-600'}`}>•</span>
                           <BookOpen size={12} /> {schedule.section}
                         </p>
                       </div>
-                      <ChevronRight size={16} className="hidden sm:block text-cyan-500 flex-shrink-0" />
+                      <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`} />
                     </div>
                   ))}
               </div>
             ) : (
-              <div className="bg-slate-800/80 border border-cyan-500/20 rounded-xl p-6 sm:p-8 md:p-12 text-center">
+              <div className={`rounded-xl p-6 sm:p-8 md:p-12 text-center ${isLightMode ? 'bg-white/90 border border-slate-200' : 'bg-slate-800/80 border border-cyan-500/20'}`}>
                 <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
-                <h3 className="text-base sm:text-lg font-bold text-white m-0 mb-2">No Schedule Today</h3>
-                <p className="text-sm text-slate-400 m-0">Your schedule will appear here once assigned by the admin.</p>
+                <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>No Schedule Today</h3>
+                <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Your schedule will appear here once assigned by the admin.</p>
               </div>
             )}
           </section>
 
           {/* Department Announcements */}
           <section className="mb-4 sm:mb-5 md:mb-6">
-            <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-white">Department Announcements</h3>
-            <div className="bg-cyan-500/10 border border-cyan-500 rounded-xl p-4 sm:p-5 flex gap-3 sm:gap-4 text-cyan-500">
+            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Department Announcements</h3>
+            <div className={`rounded-xl p-4 sm:p-5 flex gap-3 sm:gap-4 ${isLightMode ? 'bg-emerald-500/10 border border-emerald-500 text-emerald-600' : 'bg-cyan-500/10 border border-cyan-500 text-cyan-500'}`}>
               <TrendingUp size={20} className="flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-sm sm:text-base font-bold m-0 mb-1">Welcome to QTime Faculty Portal</h4>
@@ -703,12 +645,6 @@ export default function FacultyHomePage() {
           </section>
         </main>
       </div>
-
-      {/* Settings Modal */}
-      <FacultySettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
 
       {/* Session Invalid Modal - Responsive */}
       {sessionInvalid && (

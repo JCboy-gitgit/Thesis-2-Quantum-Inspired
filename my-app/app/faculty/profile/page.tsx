@@ -24,10 +24,17 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Settings,
+  Lock,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import styles from './styles.module.css'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
+import FacultySettingsModal from '@/app/components/FacultySettingsModal'
+import '@/app/styles/faculty-global.css'
 
 interface UserProfile {
   id: string
@@ -68,11 +75,21 @@ export default function FacultyProfilePage() {
   const [editForm, setEditForm] = useState<UserProfile | null>(null)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showThemeSettings, setShowThemeSettings] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
   const [assignedSchedule, setAssignedSchedule] = useState<AssignedScheduleInfo | null>(null)
   const [loadingSchedule, setLoadingSchedule] = useState(false)
   const [pendingNameRequest, setPendingNameRequest] = useState<{ requested_value: string } | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Password change state
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -330,6 +347,155 @@ export default function FacultyProfilePage() {
     setEditing(false)
   }
 
+  // Handle profile image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)' })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image size must be less than 5MB' })
+      return
+    }
+
+    setUploadingImage(true)
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        // If bucket doesn't exist, try creating it or use a fallback
+        if (uploadError.message.includes('Bucket not found')) {
+          setMessage({ type: 'error', text: 'Storage not configured. Please contact administrator.' })
+          return
+        }
+        throw uploadError
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath)
+
+      // Update user profile with new avatar URL
+      const db = supabase as any
+      const { error: updateError } = await db
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+
+      // Update local state
+      setUser({ ...user, avatar_url: publicUrl })
+      if (editForm) setEditForm({ ...editForm, avatar_url: publicUrl })
+      
+      setMessage({ type: 'success', text: 'Profile image updated successfully!' })
+    } catch (error: any) {
+      console.error('Error uploading image:', error)
+      setMessage({ type: 'error', text: error.message || 'Failed to upload image' })
+    } finally {
+      setUploadingImage(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: 'Please fill in both password fields' })
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' })
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: 'Passwords do not match' })
+      return
+    }
+
+    setChangingPassword(true)
+    setMessage(null)
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      })
+
+      if (error) {
+        console.error('Password change error:', error)
+        throw error
+      }
+
+      setMessage({ type: 'success', text: '✅ Password changed successfully!' })
+      setPasswordForm({ newPassword: '', confirmPassword: '' })
+      setShowPasswordChange(false)
+    } catch (error: any) {
+      console.error('Password change failed:', error)
+      setMessage({ type: 'error', text: '❌ ' + (error.message || 'Failed to change password') })
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  // Handle forgot password (send reset email via Gmail)
+  const [sendingResetEmail, setSendingResetEmail] = useState(false)
+  
+  const handleForgotPassword = async () => {
+    if (!user?.email) {
+      setMessage({ type: 'error', text: 'No email found for this account' })
+      return
+    }
+
+    setSendingResetEmail(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setMessage({ type: 'success', text: '✅ Password reset email sent! Check your inbox.' })
+      } else {
+        throw new Error(data.error || 'Failed to send reset email')
+      }
+    } catch (error: any) {
+      console.error('Reset password error:', error)
+      setMessage({ type: 'error', text: '❌ ' + (error.message || 'Failed to send reset email') })
+    } finally {
+      setSendingResetEmail(false)
+    }
+  }
+
   const handleLogout = async () => {
     try {
       console.log('Logging out from profile page...')
@@ -361,7 +527,7 @@ export default function FacultyProfilePage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       {/* Header */}
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={() => router.push('/faculty/home')}>
@@ -383,20 +549,36 @@ export default function FacultyProfilePage() {
           </button>
 
           {showProfileMenu && (
-            <div className={styles.profileMenu}>
-              <button
-                className={styles.profileMenuItem}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handleLogout()
-                }}
-                type="button"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
+            <>
+              <div 
+                className={styles.profileMenuBackdrop}
+                onClick={() => setShowProfileMenu(false)}
+              />
+              <div className={styles.profileMenu}>
+                <button
+                  className={styles.profileMenuItem}
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    setShowSettingsModal(true)
+                  }}
+                  type="button"
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </button>
+                <button
+                  className={styles.profileMenuItem}
+                  onClick={() => {
+                    setShowProfileMenu(false)
+                    handleLogout()
+                  }}
+                  type="button"
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       </header>
@@ -416,9 +598,34 @@ export default function FacultyProfilePage() {
           {/* Avatar Section */}
           <div className={styles.avatarSection}>
             <div className={styles.avatar}>
-              <User size={60} />
-              <button className={styles.avatarEditBtn}>
-                <Camera size={16} />
+              {user?.avatar_url ? (
+                <img 
+                  src={user.avatar_url} 
+                  alt="Profile" 
+                  className={styles.avatarImage}
+                />
+              ) : (
+                <User size={60} />
+              )}
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                style={{ display: 'none' }}
+              />
+              <button 
+                className={styles.avatarEditBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                title="Upload profile image"
+              >
+                {uploadingImage ? (
+                  <span className={styles.btnSpinner}></span>
+                ) : (
+                  <Camera size={16} />
+                )}
               </button>
             </div>
             <div className={styles.avatarInfo}>
@@ -456,7 +663,6 @@ export default function FacultyProfilePage() {
               <label>
                 <User size={16} />
                 Full Name
-                {editing && <span className={styles.adminApprovalHint}>(Requires admin approval)</span>}
               </label>
               {editing ? (
                 <input
@@ -569,6 +775,100 @@ export default function FacultyProfilePage() {
             </div>
           </div>
 
+          {/* Password & Security Section */}
+          <div className={styles.scheduleSection}>
+            <h2 className={styles.sectionTitle}>
+              <Lock size={20} />
+              Password & Security
+            </h2>
+
+            {!showPasswordChange ? (
+              <div className={styles.securityActions}>
+                <button 
+                  className={styles.changePasswordBtn}
+                  onClick={() => setShowPasswordChange(true)}
+                >
+                  <Key size={18} />
+                  Change Password
+                </button>
+                <button 
+                  className={styles.forgotPasswordBtn}
+                  onClick={handleForgotPassword}
+                  disabled={sendingResetEmail}
+                >
+                  <Mail size={18} />
+                  {sendingResetEmail ? 'Sending...' : 'Send Password Reset Email'}
+                </button>
+              </div>
+            ) : (
+              <div className={styles.passwordChangeForm}>
+                <div className={styles.formGroup}>
+                  <label>
+                    <Lock size={16} />
+                    New Password
+                  </label>
+                  <div className={styles.passwordInputWrapper}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      placeholder="Enter new password (min 6 characters)"
+                    />
+                    <button 
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label>
+                    <Lock size={16} />
+                    Confirm Password
+                  </label>
+                  <div className={styles.passwordInputWrapper}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                    />
+                    <button 
+                      type="button"
+                      className={styles.passwordToggle}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.passwordActions}>
+                  <button 
+                    className={styles.cancelBtn} 
+                    onClick={() => {
+                      setShowPasswordChange(false)
+                      setPasswordForm({ newPassword: '', confirmPassword: '' })
+                    }}
+                    disabled={changingPassword}
+                  >
+                    <X size={18} />
+                    Cancel
+                  </button>
+                  <button 
+                    className={styles.saveBtn} 
+                    onClick={handlePasswordChange}
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? <span className={styles.btnSpinner}></span> : <Key size={18} />}
+                    {changingPassword ? 'Changing...' : 'Change Password'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Assigned Schedule Section */}
           <div className={styles.scheduleSection}>
             <h2 className={styles.sectionTitle}>
@@ -626,6 +926,12 @@ export default function FacultyProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Settings Modal */}
+      <FacultySettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   )
 }

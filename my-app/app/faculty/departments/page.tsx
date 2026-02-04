@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTheme } from '@/app/context/ThemeContext'
 import { 
   Building2, 
   ArrowLeft, 
@@ -18,6 +19,7 @@ import {
   X
 } from 'lucide-react'
 import styles from './styles.module.css'
+import '@/app/styles/faculty-global.css'
 
 interface Department {
   id: number
@@ -43,6 +45,7 @@ interface DepartmentStats {
 
 function DepartmentsViewContent() {
   const router = useRouter()
+  const { theme, collegeTheme } = useTheme()
   
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
@@ -163,7 +166,7 @@ function DepartmentsViewContent() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
           <ArrowLeft size={20} />

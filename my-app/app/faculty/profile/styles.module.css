@@ -1,5 +1,43 @@
 /* Faculty Profile Page Styles */
 
+/* ==================== Scrollbar Styling ==================== */
+.pageContainer,
+.pageContainer * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary, rgba(0, 212, 255, 0.4)) rgba(0, 0, 0, 0.1);
+}
+
+.pageContainer::-webkit-scrollbar,
+.pageContainer *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pageContainer::-webkit-scrollbar-track,
+.pageContainer *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb,
+.pageContainer *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 212, 255, 0.5));
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb:hover,
+.pageContainer *::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 212, 255, 0.7));
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 166, 81, 0.4));
+}
+
 .loadingScreen {
   min-height: 100vh;
   display: flex;
@@ -108,11 +146,18 @@
   color: #00d4ff;
 }
 
+.profileMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 999;
+}
+
 .profileMenu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  background: rgba(20, 26, 50, 0.95);
+  background: rgba(20, 26, 50, 0.98);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(0, 212, 255, 0.2);
   border-radius: 10px;
@@ -120,7 +165,7 @@
   min-width: 150px;
   overflow: hidden;
   animation: slideInMenu 0.3s ease-out;
-  z-index: 1000;
+  z-index: 1001;
   pointer-events: auto;
 }
 
@@ -255,6 +300,14 @@
   justify-content: center;
   color: white;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .avatarEditBtn {
@@ -277,6 +330,11 @@
 .avatarEditBtn:hover {
   background: #00d4ff;
   color: white;
+}
+
+.avatarEditBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .avatarInfo h1 {
@@ -935,88 +993,88 @@
   color: #64748b;
 }
 
-/* ==================== GREEN THEME SUPPORT ==================== */
+/* ==================== GREEN THEME OVERRIDE: Faculty uses Cyan/Quantum ==================== */
 :global([data-theme="green"]) .loadingScreen {
-  background: linear-gradient(135deg, #042f2e 0%, #065f46 50%, #064e3b 100%);
+  background: linear-gradient(135deg, #0a0f1e 0%, #141a32 50%, #0a0f1e 100%) !important;
 }
 
 :global([data-theme="green"]) .spinner {
-  border-color: rgba(16, 185, 129, 0.2);
-  border-top-color: #10b981;
+  border-color: rgba(0, 212, 255, 0.2) !important;
+  border-top-color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .pageContainer {
-  background: linear-gradient(135deg, #042f2e 0%, #065f46 50%, #064e3b 100%);
+  background: linear-gradient(135deg, #0a0f1e 0%, #141a32 50%, #0a0f1e 100%) !important;
 }
 
 :global([data-theme="green"]) .header {
-  background: rgba(6, 78, 59, 0.95);
-  border-bottom-color: rgba(16, 185, 129, 0.2);
+  background: rgba(20, 26, 50, 0.95) !important;
+  border-bottom-color: rgba(0, 212, 255, 0.2) !important;
 }
 
 :global([data-theme="green"]) .backBtn {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.2);
-  color: #10b981;
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .backBtn:hover {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(0, 212, 255, 0.2) !important;
 }
 
 :global([data-theme="green"]) .profileAvatar {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #10b981;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1)) !important;
+  border-color: rgba(0, 212, 255, 0.3) !important;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .profileMenu {
-  background: rgba(6, 78, 59, 0.98);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(20, 26, 50, 0.98) !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
 }
 
 :global([data-theme="green"]) .profileMenuItem {
-  border-bottom-color: rgba(16, 185, 129, 0.1);
+  border-bottom-color: rgba(0, 212, 255, 0.1) !important;
 }
 
 :global([data-theme="green"]) .profileCard {
-  background: rgba(6, 78, 59, 0.8);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(20, 26, 50, 0.8) !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
 }
 
 :global([data-theme="green"]) .avatar {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #10b981;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1)) !important;
+  border-color: rgba(0, 212, 255, 0.3) !important;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .roleBadge {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: rgba(0, 212, 255, 0.15) !important;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .editBtn,
 :global([data-theme="green"]) .saveBtn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #00d4ff, #00b8db) !important;
 }
 
 :global([data-theme="green"]) .formGroup input:focus,
 :global([data-theme="green"]) .formGroup textarea:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15) !important;
 }
 
 :global([data-theme="green"]) .sectionTitle {
-  color: #10b981;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .scheduleCard {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(16, 185, 129, 0.02));
-  border-color: rgba(16, 185, 129, 0.2);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.02)) !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
 }
 
 :global([data-theme="green"]) .viewScheduleBtn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #00d4ff, #00b8db) !important;
 }
 
 /* Light theme - admin approval hint and pending badge */
@@ -1031,14 +1089,162 @@
   color: #d97706;
 }
 
-/* Green theme - admin approval hint and pending badge */
+/* Green theme OVERRIDE - admin approval hint and pending badge */
 :global([data-theme="green"]) .adminApprovalHint {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
 }
 
 :global([data-theme="green"]) .pendingBadge {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+/* ==================== Password & Security Section ==================== */
+.securityActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.changePasswordBtn,
+.forgotPasswordBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  color: #00d4ff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.changePasswordBtn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+.forgotPasswordBtn {
+  background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.3);
   color: #fbbf24;
+}
+
+.forgotPasswordBtn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.passwordChangeForm {
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+}
+
+.passwordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInputWrapper input {
+  flex: 1;
+  padding-right: 50px !important;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.passwordToggle:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
+.passwordActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+/* Light Theme Security Styles */
+:global([data-theme="light"]) .changePasswordBtn,
+:global([data-theme="light"]) .forgotPasswordBtn {
+  background: rgba(0, 166, 81, 0.1);
+  border-color: rgba(0, 166, 81, 0.3);
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .changePasswordBtn:hover {
+  background: rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .forgotPasswordBtn {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
+}
+
+:global([data-theme="light"]) .forgotPasswordBtn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+:global([data-theme="light"]) .passwordChangeForm {
+  background: rgba(0, 166, 81, 0.05);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .passwordToggle {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .passwordToggle:hover {
+  background: rgba(0, 166, 81, 0.1);
+  color: #00a651;
+}
+
+/* Responsive Security Section */
+@media (max-width: 640px) {
+  .securityActions {
+    flex-direction: column;
+  }
+
+  .changePasswordBtn,
+  .forgotPasswordBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .passwordActions {
+    flex-direction: column-reverse;
+  }
+
+  .passwordActions button {
+    width: 100%;
+    justify-content: center;
+  }
 }

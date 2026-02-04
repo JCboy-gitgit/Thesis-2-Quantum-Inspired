@@ -1,4 +1,4 @@
-/* Floor Plan Public View Styles */
+/* Floor Plan Public View Styles - LIGHT MODE */
 
 .loadingContainer,
 .errorContainer {
@@ -8,13 +8,13 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: linear-gradient(180deg, #00331a 0%, #004d26 50%, #00331a 100%);
-  color: #d1fae5;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  color: #1e293b;
 }
 
 .spinner {
   animation: spin 1s linear infinite;
-  color: #22c55e;
+  color: #3b82f6;
 }
 
 @keyframes spin {
@@ -29,12 +29,14 @@
 .errorContainer h2 {
   font-size: 24px;
   margin: 0;
+  color: #1e293b;
 }
 
 .errorContainer p {
   font-size: 16px;
   opacity: 0.8;
   margin: 0;
+  color: #475569;
 }
 
 .backBtn {
@@ -42,7 +44,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border: none;
   border-radius: 8px;
   color: white;
@@ -55,26 +57,27 @@
 
 .backBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
-/* Container */
+/* Container - Light Mode */
 .container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #00331a 0%, #004d26 50%, #00331a 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
 }
 
-/* Header */
+/* Header - Light Mode */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 51, 26, 0.98) 100%);
-  border-bottom: 2px solid rgba(34, 197, 94, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
   gap: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .headerLeft {
@@ -89,17 +92,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(34, 197, 94, 0.15);
-  border: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 8px;
-  color: #d1fae5;
+  color: #3b82f6;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .backLink:hover {
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .logoSection {
@@ -114,7 +117,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border-radius: 10px;
 }
 
@@ -127,7 +130,7 @@
 .logoText {
   font-size: 18px;
   font-weight: 700;
-  color: #d1fae5;
+  color: #1e293b;
 }
 
 .headerCenter {
@@ -144,12 +147,12 @@
   gap: 12px;
   font-size: 20px;
   font-weight: 700;
-  color: #d1fae5;
+  color: #1e293b;
   margin: 0;
 }
 
 .title svg {
-  color: #22c55e;
+  color: #3b82f6;
 }
 
 .scheduleInfo {
@@ -157,11 +160,11 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(209, 250, 229, 0.7);
+  color: #64748b;
 }
 
 .scheduleInfo svg {
-  color: #22c55e;
+  color: #3b82f6;
 }
 
 .headerRight {
@@ -175,14 +178,14 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: rgba(34, 197, 94, 0.15);
-  border: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 10px;
-  color: #d1fae5;
+  color: #1e293b;
 }
 
 .timeDisplay svg {
-  color: #22c55e;
+  color: #3b82f6;
 }
 
 .time {
@@ -194,15 +197,15 @@
   font-size: 13px;
   opacity: 0.8;
   padding-left: 10px;
-  border-left: 2px solid rgba(34, 197, 94, 0.25);
+  border-left: 2px solid rgba(59, 130, 246, 0.25);
 }
 
 .liveToggle {
   padding: 10px 20px;
-  background: rgba(0, 51, 26, 0.7);
-  border: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(59, 130, 246, 0.25);
   border-radius: 8px;
-  color: #d1fae5;
+  color: #475569;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -210,12 +213,13 @@
 }
 
 .liveToggle:hover {
-  border-color: #22c55e;
+  border-color: #3b82f6;
+  color: #3b82f6;
 }
 
 .liveToggle.active {
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
-  border-color: #22c55e;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #3b82f6;
   color: white;
 }
 
@@ -239,10 +243,10 @@
 
 .canvas {
   position: relative;
-  background: #f0fdf4;
-  border: 2px solid rgba(34, 197, 94, 0.3);
+  background: #ffffff;
+  border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transform-origin: top center;
   min-width: fit-content;
 }
@@ -366,31 +370,44 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  z-index: 10;
 }
 
 .availabilityDot.available {
-  background: #22c55e;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   animation: pulse-green 2s ease-in-out infinite;
 }
 
 .availabilityDot.occupied {
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   animation: pulse-red 2s ease-in-out infinite;
 }
 
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  50% { box-shadow: 0 0 10px 4px rgba(34, 197, 94, 0.2); }
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1.1);
+  }
 }
 
 @keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.2); }
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0), 0 2px 6px rgba(0,0,0,0.4);
+    transform: scale(1.1);
+  }
 }
 
 /* Current Class Badge */
@@ -411,7 +428,7 @@
   color: white;
 }
 
-/* Zoom Controls */
+/* Zoom Controls - Light Mode */
 .zoomControls {
   position: absolute;
   bottom: 24px;
@@ -420,9 +437,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 51, 26, 0.98) 100%);
-  border: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .zoomControls button {
@@ -431,46 +449,47 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 51, 26, 0.7);
-  border: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 6px;
-  color: #d1fae5;
+  color: #3b82f6;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .zoomControls button:hover {
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
 }
 
 .zoomControls span {
   font-size: 13px;
   font-weight: 600;
-  color: #d1fae5;
+  color: #1e293b;
   min-width: 50px;
   text-align: center;
 }
 
-/* Side Panel */
+/* Side Panel - Light Mode */
 .sidePanel {
   width: 320px;
-  background: linear-gradient(135deg, rgba(0, 77, 38, 0.95) 0%, rgba(0, 51, 26, 0.98) 100%);
-  border-left: 2px solid rgba(34, 197, 94, 0.25);
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 2px solid rgba(59, 130, 246, 0.15);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
 .roomInfo {
   padding: 20px;
-  border-bottom: 2px solid rgba(34, 197, 94, 0.15);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.1);
 }
 
 .roomInfo h3 {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(209, 250, 229, 0.6);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0 0 16px 0;
@@ -493,13 +512,13 @@
 .roomHeader h4 {
   font-size: 18px;
   font-weight: 700;
-  color: #d1fae5;
+  color: #1e293b;
   margin: 0 0 4px 0;
 }
 
 .roomHeader p {
   font-size: 13px;
-  color: rgba(209, 250, 229, 0.7);
+  color: #64748b;
   margin: 0;
   text-transform: capitalize;
 }
@@ -515,25 +534,25 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #d1fae5;
+  color: #334155;
 }
 
 .detailItem svg {
-  color: #22c55e;
+  color: #3b82f6;
   flex-shrink: 0;
 }
 
-/* Status Section */
+/* Status Section - Light Mode */
 .statusSection {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 2px solid rgba(34, 197, 94, 0.15);
+  border-top: 2px solid rgba(59, 130, 246, 0.1);
 }
 
 .statusSection h5 {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(209, 250, 229, 0.6);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0 0 12px 0;
@@ -542,21 +561,39 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
 
 .statusBadge.available {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.25) 100%);
+  color: #16a34a;
+  border: 2px solid #22c55e;
+  animation: glowGreen 2s ease-in-out infinite;
 }
 
 .statusBadge.occupied {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.25) 100%);
+  color: #dc2626;
+  border: 2px solid #ef4444;
+  animation: glowRed 2s ease-in-out infinite;
+}
+
+@keyframes glowGreen {
+  0%, 100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+}
+
+@keyframes glowRed {
+  0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
 }
 
 .occupiedStatus {
@@ -567,8 +604,9 @@
 
 .classInfo {
   padding: 12px;
-  background: rgba(0, 51, 26, 0.5);
+  background: rgba(59, 130, 246, 0.08);
   border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.15);
 }
 
 .classInfo p {
@@ -578,29 +616,29 @@
 .courseCode {
   font-size: 16px;
   font-weight: 700;
-  color: #d1fae5;
+  color: #1e293b;
 }
 
 .section {
   font-size: 14px;
-  color: rgba(209, 250, 229, 0.8);
+  color: #475569;
   margin-top: 4px !important;
 }
 
 .time {
   font-size: 13px;
-  color: #22c55e;
+  color: #3b82f6;
   font-weight: 600;
   margin-top: 8px !important;
 }
 
 .teacher {
   font-size: 12px;
-  color: rgba(209, 250, 229, 0.6);
+  color: #64748b;
   margin-top: 4px !important;
 }
 
-/* No Selection */
+/* No Selection - Light Mode */
 .noSelection {
   display: flex;
   flex-direction: column;
@@ -608,7 +646,7 @@
   justify-content: center;
   gap: 12px;
   padding: 40px 20px;
-  color: rgba(209, 250, 229, 0.5);
+  color: #94a3b8;
   text-align: center;
 }
 
@@ -621,7 +659,7 @@
   margin: 0;
 }
 
-/* Legend */
+/* Legend - Light Mode */
 .legend {
   padding: 20px;
   margin-top: auto;
@@ -630,7 +668,7 @@
 .legend h4 {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(209, 250, 229, 0.6);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0 0 16px 0;
@@ -641,8 +679,9 @@
   gap: 16px;
   margin-bottom: 16px;
   padding: 12px;
-  background: rgba(0, 51, 26, 0.5);
+  background: rgba(59, 130, 246, 0.05);
   border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.1);
 }
 
 .legendItem {
@@ -650,22 +689,25 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #d1fae5;
+  color: #334155;
 }
 
 .legendDot {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .legendDot.available {
-  background: #22c55e;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: 2px solid #86efac;
 }
 
 .legendDot.occupied {
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 2px solid #fca5a5;
 }
 
 .roomTypeLegend {

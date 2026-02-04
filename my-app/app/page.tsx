@@ -15,6 +15,14 @@ interface Department {
   college: string | null
 }
 
+interface College {
+  id: number
+  code: string
+  name: string
+  short_name?: string
+  is_active: boolean
+}
+
 const eyeShowSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`
 const eyeHideSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24m4.24 4.24L3 3m6 6l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
@@ -56,8 +64,10 @@ function PageContent(): JSX.Element {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('')
+  const [selectedCollege, setSelectedCollege] = useState('')
   const [departments, setDepartments] = useState<Department[]>([])
   const [groupedDepartments, setGroupedDepartments] = useState<Record<string, Department[]>>({})
+  const [colleges, setColleges] = useState<College[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -125,21 +135,20 @@ function PageContent(): JSX.Element {
     )
   }, [])
 
-  // Fetch departments on mount
+  // Fetch colleges on mount
   useEffect(() => {
-    fetchDepartments()
+    fetchColleges()
   }, [])
 
-  const fetchDepartments = async () => {
+  const fetchColleges = async () => {
     try {
-      const response = await fetch('/api/departments')
+      const response = await fetch('/api/colleges')
       const data = await response.json()
-      if (data.departments) {
-        setDepartments(data.departments)
-        setGroupedDepartments(data.groupedByCollege || {})
+      if (data.colleges) {
+        setColleges(data.colleges)
       }
     } catch (error) {
-      console.error('Error fetching departments:', error)
+      console.error('Error fetching colleges:', error)
     }
   }
 
@@ -161,8 +170,8 @@ function PageContent(): JSX.Element {
       setError('Please enter your full name.')
       return false
     }
-    if (!isAdminLogin && !selectedDepartment) {
-      setError('Please select your department.')
+    if (!isAdminLogin && !selectedCollege) {
+      setError('Please select your college.')
       return false
     }
     return true
@@ -203,7 +212,7 @@ function PageContent(): JSX.Element {
           options: {
             data: {
               full_name: fullName,
-              department: selectedDepartment
+              college: selectedCollege
             }
           }
         })
@@ -215,7 +224,7 @@ function PageContent(): JSX.Element {
             id: data.user.id,
             email: email,
             full_name: fullName,
-            department: selectedDepartment,
+            college: selectedCollege,
             role: 'faculty',
             is_active: false,
             created_at: new Date().toISOString()
@@ -229,7 +238,7 @@ function PageContent(): JSX.Element {
           setPassword('')
           setConfirmPassword('')
           setFullName('')
-          setSelectedDepartment('')
+          setSelectedCollege('')
           setRegisterSuccess(false)
         }, 5000)
       }
@@ -347,38 +356,26 @@ function PageContent(): JSX.Element {
               </label>
             </div>
 
-            {/* Department Selection (Faculty Registration Only) */}
+            {/* College Selection (Faculty Registration Only) */}
             {!isAdminLogin && (
               <div className="form-group">
                 <label className="label">
                   <span className="label-text">
                     <span dangerouslySetInnerHTML={{ __html: buildingSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    College / Department
+                    Select your College
                   </span>
                   <select
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    value={selectedCollege}
+                    onChange={(e) => setSelectedCollege(e.target.value)}
                     className="input select-input"
                     required
                   >
-                    <option value="">Select your department...</option>
-                    {Object.keys(groupedDepartments).length > 0 ? (
-                      Object.entries(groupedDepartments).map(([college, depts]) => (
-                        <optgroup key={college} label={college}>
-                          {depts.map((dept) => (
-                            <option key={dept.id} value={dept.department_name}>
-                              {dept.department_name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))
-                    ) : (
-                      departments.map((dept) => (
-                        <option key={dept.id} value={dept.department_name}>
-                          {dept.department_name}
-                        </option>
-                      ))
-                    )}
+                    <option value="">Select your college...</option>
+                    {colleges.map((college) => (
+                      <option key={college.id} value={college.name}>
+                        {college.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
@@ -389,7 +386,7 @@ function PageContent(): JSX.Element {
               <label className="label">
                 <span className="label-text">
                   <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Password
+                  {isAdminLogin ? 'Password' : 'Create your Password'}
                 </span>
                 <div className="password-input-wrapper">
                   <input
@@ -495,7 +492,7 @@ function PageContent(): JSX.Element {
                   setPassword('')
                   setConfirmPassword('')
                   setFullName('')
-                  setSelectedDepartment('')
+                  setSelectedCollege('')
                   setRegisterSuccess(false)
                 }}
                 className="link-button"

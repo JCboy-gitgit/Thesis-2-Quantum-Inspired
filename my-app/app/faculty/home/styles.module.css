@@ -1,14 +1,37 @@
 /* Faculty Home Page Styles - Sidebar Layout */
 
-/* ==================== College Theme Variables ==================== */
+/* ==================== Base Theme Variables (Dark Mode Default) ==================== */
 .pageContainer {
+  /* College colors (overridden by college theme below) */
   --college-primary: rgba(0, 212, 255, 1);
   --college-primary-light: rgba(0, 212, 255, 0.2);
   --college-primary-dark: rgba(0, 153, 204, 1);
   --college-accent: #00d4ff;
   --college-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
   --college-glow: rgba(0, 212, 255, 0.5);
+  
+  /* Dark mode colors (default) */
+  --page-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  --card-bg: rgba(20, 26, 50, 0.8);
+  --card-border: var(--college-primary-light);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --divider-color: rgba(0, 212, 255, 0.2);
 }
+
+/* Light mode theme variables */
+.pageContainer[data-theme="light"] {
+  --page-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --divider-color: #e2e8f0;
+}
+
+/* ==================== College Theme Variables ==================== */
 
 /* College of Science Theme */
 .pageContainer[data-college-theme="science"] {
@@ -41,6 +64,97 @@
   --college-text: #fca5a5;
 }
 
+/* ==================== Scrollbar Styling for Faculty Pages ==================== */
+/* Firefox */
+.pageContainer,
+.mainContent,
+.pageContainer *,
+.mainContent * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary, rgba(0, 212, 255, 0.4)) rgba(0, 0, 0, 0.1);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.pageContainer::-webkit-scrollbar,
+.mainContent::-webkit-scrollbar,
+.pageContainer *::-webkit-scrollbar,
+.mainContent *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pageContainer::-webkit-scrollbar-track,
+.mainContent::-webkit-scrollbar-track,
+.pageContainer *::-webkit-scrollbar-track,
+.mainContent *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb,
+.mainContent::-webkit-scrollbar-thumb,
+.pageContainer *::-webkit-scrollbar-thumb,
+.mainContent *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 212, 255, 0.5));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.pageContainer::-webkit-scrollbar-thumb:hover,
+.mainContent::-webkit-scrollbar-thumb:hover,
+.pageContainer *::-webkit-scrollbar-thumb:hover,
+.mainContent *::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 212, 255, 0.7));
+  background-clip: padding-box;
+}
+
+/* Light theme scrollbar */
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-track,
+:global([data-theme="light"]) .mainContent::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-thumb,
+:global([data-theme="light"]) .mainContent::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 166, 81, 0.4));
+  background-clip: padding-box;
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-thumb:hover,
+:global([data-theme="light"]) .mainContent::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 166, 81, 0.6));
+  background-clip: padding-box;
+}
+
+/* ==================== College Badge - Uses Theme Colors ==================== */
+.collegeBadge {
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  color: var(--college-primary, #00d4ff);
+  border: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.3));
+}
+
+/* Light mode college badge */
+:global([data-theme="light"]) .collegeBadge {
+  background: var(--college-primary-light, rgba(16, 185, 129, 0.15));
+  color: var(--college-primary-dark, #059669);
+  border: 1px solid var(--college-primary, rgba(16, 185, 129, 0.3));
+}
+
+/* Accent text - uses theme colors */
+.accentText {
+  color: var(--college-primary, #00d4ff);
+}
+
+:global([data-theme="light"]) .accentText {
+  color: var(--college-primary-dark, #059669);
+}
+
+/* Accent icon background - uses theme gradient */
+.accentIcon {
+  background: var(--college-gradient, linear-gradient(135deg, #00d4ff 0%, #0099cc 100%));
+}
+
 /* Loading Screen */
 .loadingScreen {
   min-height: 100vh;
@@ -71,14 +185,11 @@
 /* Main Layout */
 .pageContainer {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
-  color: white;
+  background: var(--page-bg);
+  color: var(--text-primary);
   display: flex;
-}
-
-:global([data-theme="light"]) .pageContainer {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-  color: #1e293b;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mainLayout {
@@ -745,8 +856,8 @@
 
 /* Welcome Banner */
 .welcomeBanner {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid var(--college-primary-light);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: clamp(12px, 3vw, 16px);
   padding: clamp(14px, 4vw, 24px);
   margin-bottom: clamp(16px, 4vw, 24px);
@@ -761,31 +872,18 @@
   box-sizing: border-box;
 }
 
-:global([data-theme="light"]) .welcomeBanner {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
-}
-
 .welcomeBanner h2 {
   font-size: clamp(18px, 5vw, 24px);
   font-weight: 700;
   margin: 0 0 4px 0;
-  color: white;
+  color: var(--text-primary);
   word-break: break-word;
   line-height: 1.3;
 }
 
-:global([data-theme="light"]) .welcomeBanner h2 {
-  color: #1e293b;
-}
-
 .welcomeBanner p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
-}
-
-:global([data-theme="light"]) .welcomeBanner p {
-  color: #64748b;
 }
 
 .bannerInfo {
@@ -817,19 +915,14 @@
 }
 
 .statCard {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid var(--college-primary-light);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: clamp(10px, 2vw, 12px);
   padding: clamp(12px, 3vw, 20px);
   display: flex;
   align-items: center;
   gap: clamp(10px, 2vw, 16px);
   min-width: 0;
-}
-
-:global([data-theme="light"]) .statCard {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
 }
 
 .statIcon {
@@ -851,22 +944,14 @@
 .statValue {
   font-size: clamp(18px, 5vw, 24px);
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   line-height: 1;
   margin-bottom: 4px;
 }
 
-:global([data-theme="light"]) .statValue {
-  color: #1e293b;
-}
-
 .statLabel {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-:global([data-theme="light"]) .statLabel {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* Class Section */
@@ -878,11 +963,7 @@
   font-size: 18px;
   font-weight: 700;
   margin: 0 0 16px 0;
-  color: white;
-}
-
-:global([data-theme="light"]) .sectionTitle {
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .classCards {
@@ -894,18 +975,13 @@
 }
 
 .classCard {
-  background: rgba(20, 26, 50, 0.8);
-  border: 2px solid var(--college-primary-light);
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   border-radius: clamp(10px, 2vw, 12px);
   padding: clamp(14px, 3vw, 20px);
   transition: all 0.3s ease;
   min-width: 0;
   overflow: hidden;
-}
-
-:global([data-theme="light"]) .classCard {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2px solid #e2e8f0;
 }
 
 .classCard.active {
@@ -958,12 +1034,8 @@
 
 .classTime {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   font-weight: 600;
-}
-
-:global([data-theme="light"]) .classTime {
-  color: #64748b;
 }
 
 .classBody {
@@ -974,21 +1046,13 @@
   font-size: 18px;
   font-weight: 700;
   margin: 0 0 4px 0;
-  color: white;
-}
-
-:global([data-theme="light"]) .classBody h4 {
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .courseName {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   margin: 0 0 12px 0;
-}
-
-:global([data-theme="light"]) .courseName {
-  color: #64748b;
 }
 
 .classDetails {
@@ -996,11 +1060,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-:global([data-theme="light"]) .classDetails {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .classDetails span {
@@ -1035,8 +1095,8 @@
 }
 
 .scheduleItem {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid var(--college-primary-light);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: clamp(10px, 2vw, 12px);
   padding: clamp(12px, 3vw, 16px);
   display: flex;
@@ -1056,11 +1116,6 @@
     align-items: center;
     gap: 16px;
   }
-}
-
-:global([data-theme="light"]) .scheduleItem {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
 }
 
 .scheduleItem:hover {
@@ -1088,17 +1143,13 @@
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 4px 0;
-  color: white;
+  color: var(--text-primary);
   word-break: break-word;
-}
-
-:global([data-theme="light"]) .scheduleInfo h4 {
-  color: #1e293b;
 }
 
 .scheduleInfo p {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -1106,13 +1157,9 @@
   flex-wrap: wrap;
 }
 
-:global([data-theme="light"]) .scheduleInfo p {
-  color: #64748b;
-}
-
 .separator {
   margin: 0 4px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .chevron {
@@ -1126,16 +1173,11 @@
 }
 
 .roomViewerContainer {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid var(--college-primary-light);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 20px;
   overflow: hidden;
-}
-
-:global([data-theme="light"]) .roomViewerContainer {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
 }
 
 .viewOnlyBadge {
@@ -2075,13 +2117,13 @@
   }
 
   .topHeader {
-    padding: 0 12px;
-    height: 56px;
+    padding: 0 14px;
+    height: 60px;
   }
 
   .mainContent {
-    padding: 12px;
-    padding-top: 70px;
+    padding: 14px;
+    padding-top: 74px;
   }
 
   .welcomeBanner {
@@ -2253,22 +2295,28 @@
 @media (max-width: 480px) {
   .pageContainer {
     overflow-x: hidden;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .topHeader {
     height: 56px;
-    padding: 0 10px;
+    padding: 0 12px;
   }
 
   .mainContent {
-    padding: 8px;
+    padding: 12px;
     padding-top: 66px;
     overflow-x: hidden;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .welcomeBanner {
     display: flex !important;
     visibility: visible !important;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   .statsGrid {

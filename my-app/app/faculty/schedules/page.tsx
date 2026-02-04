@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTheme } from '@/app/context/ThemeContext'
 import { 
   ArrowLeft, 
   Calendar, 
@@ -22,9 +23,12 @@ import {
   ChevronRight,
   Download,
   FileImage,
-  Printer
+  Printer,
+  FileText,
+  ChevronDown
 } from 'lucide-react'
 import styles from './styles.module.css'
+import '@/app/styles/faculty-global.css'
 
 interface RoomAllocation {
   id: number
@@ -90,6 +94,7 @@ const TIME_SLOTS = [
 
 function RoomSchedulesViewContent() {
   const router = useRouter()
+  const { theme, collegeTheme } = useTheme()
   
   // User and view state
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -161,6 +166,19 @@ function RoomSchedulesViewContent() {
     }
   }, [timetableType, allocations, myAllocations, viewMode])
 
+  // Helper function to strip LAB/LEC suffixes for section combination
+  const stripSectionSuffix = (section: string | undefined): string => {
+    if (!section) return ''
+    return section
+      .replace(/_LAB$/i, '')
+      .replace(/_LEC$/i, '')
+      .replace(/_LECTURE$/i, '')
+      .replace(/_LABORATORY$/i, '')
+      .replace(/ LAB$/i, '')
+      .replace(/ LEC$/i, '')
+      .trim()
+  }
+
   const updateTimetableItems = () => {
     const currentAllocations = allocations.length > 0 ? allocations : myAllocations
     let items: string[] = []
@@ -172,8 +190,8 @@ function RoomSchedulesViewContent() {
       // Get unique teacher names
       items = [...new Set(currentAllocations.map(a => a.teacher_name).filter(Boolean))] as string[]
     } else if (timetableType === 'section') {
-      // Get unique sections
-      items = [...new Set(currentAllocations.map(a => a.section).filter(Boolean))] as string[]
+      // Get unique sections - combine LAB and LEC into single entries
+      items = [...new Set(currentAllocations.map(a => stripSectionSuffix(a.section)).filter(Boolean))] as string[]
     }
     
     setTimetableItems(items.sort())
@@ -439,7 +457,11 @@ function RoomSchedulesViewContent() {
     } else if (timetableType === 'faculty') {
       return currentAllocations.filter(a => a.teacher_name === selectedTimetableItem)
     } else if (timetableType === 'section') {
-      return currentAllocations.filter(a => a.section === selectedTimetableItem)
+      // Match both LAB and LEC variants of the section
+      return currentAllocations.filter(a => {
+        const baseSection = stripSectionSuffix(a.section)
+        return baseSection === selectedTimetableItem
+      })
     }
     return []
   }
@@ -614,6 +636,421 @@ function RoomSchedulesViewContent() {
     }
   }
 
+  // PDF Export state
+  const [showPdfExportMenu, setShowPdfExportMenu] = useState(false)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest(`.${styles.exportDropdown}`)) {
+        setShowPdfExportMenu(false)
+      }
+    }
+
+    if (showPdfExportMenu) {
+      document.addEventListener('click', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showPdfExportMenu])
+
+  // Helper: Normalize day abbreviations to full names
+  const normalizeDay = (day: string): string => {
+    const dayMap: { [key: string]: string } = {
+      'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+      'T': 'Tuesday', 'TUE': 'Tuesday', 'TUESDAY': 'Tuesday',
+      'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+      'TH': 'Thursday', 'THU': 'Thursday', 'THURSDAY': 'Thursday',
+      'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+      'S': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+      'SU': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+    }
+    return dayMap[day.toUpperCase()] || day
+  }
+
+  // Helper: Expand day string to array of full day names
+  const expandDays = (dayStr: string): string[] => {
+    const day = dayStr.trim().toUpperCase()
+    if (day.includes('/')) {
+      return day.split('/').map(d => normalizeDay(d.trim()))
+    }
+    if (day === 'TTH' || day === 'TH') {
+      return ['Tuesday', 'Thursday']
+    }
+    if (day === 'MWF') {
+      return ['Monday', 'Wednesday', 'Friday']
+    }
+    if (day === 'MW') {
+      return ['Monday', 'Wednesday']
+    }
+    return [normalizeDay(day)]
+  }
+
+  // PDF Export Function
+  const handleExportPDF = async (exportType: 'current' | 'all-rooms' | 'all-sections' | 'all-teachers' = 'current') => {
+    try {
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [215.9, 279.4] // Short bond paper: 8.5" x 11" in mm (portrait)
+      })
+
+      const pageWidth = 215.9
+      const pageHeight = 279.4
+      const margin = 8
+      const usableWidth = pageWidth - (margin * 2)
+
+      // Generate color palette for courses
+      const generateColorPalette = (allocs: RoomAllocation[]) => {
+        const uniqueCourses = new Set(allocs.map(a => a.course_code))
+        const colorMap = new Map<string, { r: number; g: number; b: number }>()
+        
+        const colors = [
+          { r: 25, g: 118, b: 210 },   // Blue
+          { r: 56, g: 142, b: 60 },    // Green
+          { r: 245, g: 124, b: 0 },    // Orange
+          { r: 123, g: 31, b: 162 },   // Purple
+          { r: 0, g: 121, b: 107 },    // Teal
+          { r: 194, g: 24, b: 91 },    // Pink
+          { r: 93, g: 64, b: 55 },     // Brown
+          { r: 69, g: 90, b: 100 },    // Blue-grey
+          { r: 230, g: 74, b: 25 },    // Deep Orange
+          { r: 0, g: 151, b: 167 },    // Cyan
+          { r: 48, g: 63, b: 159 },    // Indigo
+          { r: 104, g: 159, b: 56 },   // Light Green
+          { r: 251, g: 192, b: 45 },   // Amber
+          { r: 198, g: 40, b: 40 },    // Red
+          { r: 106, g: 27, b: 154 },   // Deep Purple
+          { r: 0, g: 105, b: 92 },     // Dark Teal
+          { r: 239, g: 108, b: 0 },    // Amber Dark
+          { r: 216, g: 27, b: 96 },    // Magenta
+          { r: 78, g: 52, b: 46 },     // Dark Brown
+          { r: 1, g: 87, b: 155 }      // Dark Blue
+        ]
+        
+        let colorIdx = 0
+        uniqueCourses.forEach(course => {
+          colorMap.set(course, colors[colorIdx % colors.length])
+          colorIdx++
+        })
+        
+        return colorMap
+      }
+
+      // Process allocations to blocks
+      const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
+        const blocks: any[] = []
+        const groupedMap = new Map()
+
+        allocs.forEach(alloc => {
+          const days = expandDays(alloc.schedule_day || '')
+          days.forEach(day => {
+            const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${day.toLowerCase()}|${alloc.teacher_name || ''}`
+            if (!groupedMap.has(key)) groupedMap.set(key, [])
+            groupedMap.get(key).push({ ...alloc, schedule_day: day })
+          })
+        })
+
+        groupedMap.forEach(allocGroup => {
+          const sorted = allocGroup.sort((a: any, b: any) => {
+            return parseTimeToMinutes(a.schedule_time || '') - parseTimeToMinutes(b.schedule_time || '')
+          })
+
+          let currentBlock: any = null
+          sorted.forEach((alloc: any) => {
+            const timeParts = (alloc.schedule_time || '').split(/\s*-\s*/)
+            if (timeParts.length !== 2) return
+
+            const startMins = parseTimeToMinutes(timeParts[0])
+            const endMins = parseTimeToMinutes(timeParts[1])
+            if (startMins === 0 && endMins === 0) return
+
+            if (currentBlock && currentBlock.endMinutes === startMins) {
+              currentBlock.endMinutes = endMins
+            } else {
+              if (currentBlock) blocks.push(currentBlock)
+              currentBlock = {
+                course_code: alloc.course_code,
+                course_name: alloc.course_name,
+                section: alloc.section,
+                room: alloc.room,
+                building: alloc.building,
+                teacher_name: alloc.teacher_name,
+                day: (alloc.schedule_day || '').toLowerCase(),
+                startMinutes: startMins,
+                endMinutes: endMins
+              }
+            }
+          })
+          if (currentBlock) blocks.push(currentBlock)
+        })
+
+        return blocks
+      }
+
+      // Generate time slots (7:00 AM to 8:00 PM)
+      const generateTimeSlots = () => {
+        const slots = []
+        for (let i = 0; i < 27; i++) {
+          const hour = Math.floor(i / 2) + 7
+          const minute = (i % 2) * 30
+          slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
+        }
+        return slots
+      }
+
+      // Draw timetable on PDF
+      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, {r: number, g: number, b: number}>) => {
+        // QTime Logo
+        const logoSize = 8
+        const logoTextSize = 10
+        const logoText = 'Qtime Scheduler'
+        pdfDoc.setFontSize(logoTextSize)
+        pdfDoc.setFont('helvetica', 'bold')
+        const textWidth = pdfDoc.getTextWidth(logoText)
+        const totalWidth = logoSize + 2 + textWidth
+        const startX = (pageWidth - totalWidth) / 2
+        const logoY = margin
+        
+        // Green rounded rectangle for Q
+        pdfDoc.setFillColor(22, 163, 74)
+        pdfDoc.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
+        
+        // "Q" letter in white
+        pdfDoc.setTextColor(255, 255, 255)
+        pdfDoc.setFontSize(6)
+        pdfDoc.setFont('helvetica', 'bold')
+        const qWidth = pdfDoc.getTextWidth('Q')
+        pdfDoc.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
+        
+        // "Qtime Scheduler" text
+        pdfDoc.setTextColor(0, 0, 0)
+        pdfDoc.setFontSize(logoTextSize)
+        pdfDoc.setFont('helvetica', 'bold')
+        pdfDoc.text(logoText, startX + logoSize + 2, logoY + 6)
+        
+        pdfDoc.setTextColor(0, 0, 0)
+
+        // Title
+        pdfDoc.setFontSize(12)
+        pdfDoc.setFont('helvetica', 'bold')
+        const titleWidth = pdfDoc.getTextWidth(title)
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 14)
+        
+        // Subtitle
+        pdfDoc.setFontSize(8)
+        pdfDoc.setFont('helvetica', 'normal')
+        const subtitle = `${selectedSchedule?.schedule_name} | ${selectedSchedule?.semester} ${selectedSchedule?.academic_year}`
+        const subtitleWidth = pdfDoc.getTextWidth(subtitle)
+        pdfDoc.text(subtitle, (pageWidth - subtitleWidth) / 2, margin + 19)
+
+        const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
+        const blocks = processAllocationsToBlocks(allocData)
+        
+        // Table dimensions
+        const startY = margin + 22
+        const timeColWidth = 18
+        const dayColWidth = (usableWidth - timeColWidth) / 6
+        const rowHeight = 8
+        const timeSlots = generateTimeSlots()
+
+        // Header row
+        pdfDoc.setDrawColor(100, 100, 100)
+        pdfDoc.setLineWidth(0.5)
+        pdfDoc.setFillColor(240, 240, 240)
+        pdfDoc.rect(margin, startY, usableWidth, rowHeight, 'F')
+        pdfDoc.setDrawColor(150, 150, 150)
+        pdfDoc.rect(margin, startY, usableWidth, rowHeight)
+
+        // Header text
+        pdfDoc.setFontSize(7)
+        pdfDoc.setFont('helvetica', 'bold')
+        pdfDoc.setTextColor(0, 0, 0)
+        const timeHeaderWidth = pdfDoc.getTextWidth('Time')
+        pdfDoc.text('Time', margin + (timeColWidth - timeHeaderWidth) / 2, startY + 5.5)
+        
+        const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        weekdays.forEach((day, idx) => {
+          const x = margin + timeColWidth + (idx * dayColWidth)
+          const dayWidth = pdfDoc.getTextWidth(day)
+          pdfDoc.text(day, x + (dayColWidth - dayWidth) / 2, startY + 5.5)
+          pdfDoc.setDrawColor(150, 150, 150)
+          pdfDoc.setLineWidth(0.3)
+          pdfDoc.line(x, startY, x, startY + rowHeight)
+        })
+        pdfDoc.line(margin + timeColWidth, startY, margin + timeColWidth, startY + rowHeight)
+
+        // Time slots and blocks
+        timeSlots.forEach((slot, rowIdx) => {
+          const y = startY + rowHeight + (rowIdx * rowHeight)
+          if (y > pageHeight - margin - 10) return
+
+          pdfDoc.setFontSize(7)
+          pdfDoc.setFont('helvetica', 'normal')
+          pdfDoc.setTextColor(0, 0, 0)
+          const [hour, min] = slot.split(':').map(Number)
+          const period = hour >= 12 ? 'PM' : 'AM'
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+          pdfDoc.text(`${displayHour}:${min.toString().padStart(2, '0')} ${period}`, margin + 1, y + 3.5)
+
+          weekdays.forEach((day, dayIdx) => {
+            const x = margin + timeColWidth + (dayIdx * dayColWidth)
+            const dayLower = day.toLowerCase()
+            const slotMinutes = hour * 60 + min
+
+            const isCoveredByBlock = blocks.some(b => 
+              b.day === dayLower && 
+              b.startMinutes <= slotMinutes && 
+              b.endMinutes > slotMinutes
+            )
+
+            if (!isCoveredByBlock) {
+              pdfDoc.setDrawColor(230, 230, 230)
+              pdfDoc.setLineWidth(0.15)
+              pdfDoc.line(x, y + rowHeight, x + dayColWidth, y + rowHeight)
+            }
+
+            const relevantBlocks = blocks.filter(b => 
+              b.day === dayLower && 
+              b.startMinutes <= slotMinutes && 
+              b.endMinutes > slotMinutes
+            )
+
+            if (relevantBlocks.length > 0 && slotMinutes === relevantBlocks[0].startMinutes) {
+              const block = relevantBlocks[0]
+              const durationSlots = Math.ceil((block.endMinutes - block.startMinutes) / 30)
+              const blockHeight = durationSlots * rowHeight
+
+              const color = localColorMap.get(block.course_code) || { r: 200, g: 200, b: 200 }
+              pdfDoc.setFillColor(color.r, color.g, color.b)
+              pdfDoc.rect(x + 0.3, y + 0.3, dayColWidth - 0.6, blockHeight - 0.6, 'F')
+
+              const centerX = x + dayColWidth / 2
+              pdfDoc.setTextColor(255, 255, 255)
+              let textY = y + 3
+              
+              // Course Code
+              pdfDoc.setFontSize(7)
+              pdfDoc.setFont('helvetica', 'bold')
+              pdfDoc.text(block.course_code || 'N/A', centerX, textY, { align: 'center' })
+              textY += 2.8
+              
+              // Course Name
+              if (blockHeight > 8) {
+                pdfDoc.setFontSize(5.5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const courseNameLines = pdfDoc.splitTextToSize((block.course_name || '').substring(0, 35), dayColWidth - 1.5)
+                pdfDoc.text(courseNameLines.slice(0, 1), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // Time Range
+              if (blockHeight > 12) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const startH = Math.floor(block.startMinutes / 60)
+                const startM = block.startMinutes % 60
+                const endH = Math.floor(block.endMinutes / 60)
+                const endM = block.endMinutes % 60
+                const formatTime = (h: number, m: number) => {
+                  const p = h >= 12 ? 'PM' : 'AM'
+                  const dH = h === 0 ? 12 : h > 12 ? h - 12 : h
+                  return `${dH}:${m.toString().padStart(2, '0')} ${p}`
+                }
+                pdfDoc.text(`${formatTime(startH, startM)} - ${formatTime(endH, endM)}`, centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // Section
+              if (blockHeight > 16) {
+                pdfDoc.setFontSize(5.5)
+                pdfDoc.setFont('helvetica', 'normal')
+                pdfDoc.text((block.section || 'N/A').substring(0, 20), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // Room
+              if (blockHeight > 20) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                const fullRoom = block.room || 'N/A'
+                const roomText = fullRoom.includes('-') ? fullRoom.split('-').slice(1).join('-') : fullRoom
+                pdfDoc.text(roomText.substring(0, 25), centerX, textY, { align: 'center' })
+                textY += 2.5
+              }
+              
+              // Teacher
+              if (blockHeight > 24) {
+                pdfDoc.setFontSize(5)
+                pdfDoc.setFont('helvetica', 'normal')
+                pdfDoc.text((block.teacher_name || 'TBD').substring(0, 20), centerX, textY, { align: 'center' })
+              }
+
+              pdfDoc.setDrawColor(255, 255, 255)
+              pdfDoc.setLineWidth(0.5)
+              pdfDoc.rect(x + 0.3, y + 0.3, dayColWidth - 0.6, blockHeight - 0.6)
+            }
+          })
+        })
+      }
+
+      const drawTimetable = (allocData: RoomAllocation[], title: string, pageNum: number) => {
+        if (pageNum > 1) pdf.addPage()
+        drawTimetableOnPdf(pdf, allocData, title, generateColorPalette(allocData))
+      }
+
+      // Generate PDFs based on export type
+      let pageCount = 0
+      const currentAllocations = allocations.length > 0 ? allocations : myAllocations
+
+      if (exportType === 'current') {
+        const viewLabel = timetableType === 'room' ? `Room: ${selectedTimetableItem}` :
+          timetableType === 'faculty' ? `Faculty: ${selectedTimetableItem}` :
+          timetableType === 'section' ? `Section: ${selectedTimetableItem}` : 'Schedule'
+        const currentData = getTimetableAllocations()
+        drawTimetable(currentData, viewLabel, ++pageCount)
+      } else if (exportType === 'all-rooms') {
+        const roomItems = [...new Set(currentAllocations.map(a => `${a.building} - ${a.room}`))]
+        for (const room of roomItems) {
+          const roomAllocs = currentAllocations.filter(a => `${a.building} - ${a.room}` === room)
+          if (roomAllocs.length > 0) {
+            drawTimetable(roomAllocs, `Room: ${room}`, ++pageCount)
+          }
+        }
+      } else if (exportType === 'all-sections') {
+        const sectionItems = [...new Set(currentAllocations.map(a => stripSectionSuffix(a.section)).filter(Boolean))]
+        for (const section of sectionItems) {
+          const sectionAllocs = currentAllocations.filter(a => {
+            const baseSection = stripSectionSuffix(a.section)
+            return baseSection === section
+          })
+          if (sectionAllocs.length > 0) {
+            drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
+          }
+        }
+      } else if (exportType === 'all-teachers') {
+        const teacherItems = [...new Set(currentAllocations.map(a => a.teacher_name).filter(Boolean))] as string[]
+        for (const teacher of teacherItems) {
+          const teacherAllocs = currentAllocations.filter(a => a.teacher_name === teacher)
+          if (teacherAllocs.length > 0) {
+            drawTimetable(teacherAllocs, `Faculty: ${teacher}`, ++pageCount)
+          }
+        }
+      }
+
+      // Save PDF
+      const fileName = `timetable_${selectedSchedule?.schedule_name}_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`
+      pdf.save(fileName)
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      alert('Failed to export PDF. Please try again.')
+    }
+  }
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -629,7 +1066,7 @@ function RoomSchedulesViewContent() {
   const currentAllocations = viewMode === 'my-schedule' ? myAllocations : allocations
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
           <ArrowLeft size={20} />
@@ -1059,21 +1496,41 @@ function RoomSchedulesViewContent() {
             {/* Export Buttons */}
             {selectedTimetableItem && (
               <div className={styles.exportButtons}>
+                {/* PDF Export Dropdown */}
+                <div className={styles.exportDropdown}>
+                  <button 
+                    className={styles.exportBtn}
+                    onClick={() => setShowPdfExportMenu(!showPdfExportMenu)}
+                    title="Export as PDF"
+                  >
+                    <FileText size={18} />
+                    Export PDF
+                    <ChevronDown size={14} />
+                  </button>
+                  {showPdfExportMenu && (
+                    <div className={styles.exportDropdownMenu}>
+                      <button onClick={() => { handleExportPDF('current'); setShowPdfExportMenu(false); }}>
+                        Current View
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-rooms'); setShowPdfExportMenu(false); }}>
+                        All Rooms (PDF)
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-sections'); setShowPdfExportMenu(false); }}>
+                        All Sections (PDF)
+                      </button>
+                      <button onClick={() => { handleExportPDF('all-teachers'); setShowPdfExportMenu(false); }}>
+                        All Faculty (PDF)
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button 
                   className={styles.exportBtn}
                   onClick={() => handleExportTimetable('current')}
                   title="Export current timetable as image"
                 >
                   <FileImage size={18} />
-                  Export Current
-                </button>
-                <button 
-                  className={styles.exportBtn}
-                  onClick={() => handleExportTimetable('all')}
-                  title="Export all timetables"
-                >
-                  <Download size={18} />
-                  Export All {timetableType === 'room' ? 'Rooms' : timetableType === 'faculty' ? 'Faculty' : 'Sections'}
+                  Export Image
                 </button>
                 <button 
                   className={styles.exportBtn}

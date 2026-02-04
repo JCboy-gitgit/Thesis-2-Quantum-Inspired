@@ -1,0 +1,581 @@
+/* ==================== Faculty-Specific Global Styles ==================== */
+/* This file contains styles STRICTLY scoped to faculty pages only */
+/* All rules must be scoped to .faculty-page-wrapper or .faculty-login-wrapper */
+/* NO body-level selectors or :has() selectors that could affect admin pages */
+
+/* ==================== COLLEGE THEME COLOR SYSTEM ==================== */
+/* These CSS variables cascade to ALL faculty elements */
+
+/* DEFAULT THEME (Quantum/Cyan) - Dark Mode */
+.faculty-page-wrapper,
+.faculty-login-wrapper,
+[data-college-theme="default"] .faculty-page-wrapper {
+  --college-primary: #00d4ff;
+  --college-primary-rgb: 0, 212, 255;
+  --college-primary-light: rgba(0, 212, 255, 0.2);
+  --college-primary-dark: #0099cc;
+  --college-accent: #00d4ff;
+  --college-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  --college-glow: rgba(0, 212, 255, 0.5);
+  --college-text: #00d4ff;
+}
+
+/* SCIENCE THEME (Teal/Emerald) */
+[data-college-theme="science"] .faculty-page-wrapper,
+.faculty-page-wrapper[data-college-theme="science"] {
+  --college-primary: #10b981;
+  --college-primary-rgb: 16, 185, 129;
+  --college-primary-light: rgba(16, 185, 129, 0.2);
+  --college-primary-dark: #059669;
+  --college-accent: #34d399;
+  --college-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --college-glow: rgba(16, 185, 129, 0.5);
+  --college-text: #10b981;
+}
+
+/* ARTS & LETTERS THEME (Orange/Amber) */
+[data-college-theme="arts-letters"] .faculty-page-wrapper,
+.faculty-page-wrapper[data-college-theme="arts-letters"] {
+  --college-primary: #f97316;
+  --college-primary-rgb: 249, 115, 22;
+  --college-primary-light: rgba(249, 115, 22, 0.2);
+  --college-primary-dark: #ea580c;
+  --college-accent: #fb923c;
+  --college-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  --college-glow: rgba(249, 115, 22, 0.5);
+  --college-text: #f97316;
+}
+
+/* ARCHITECTURE THEME (Red/Rose) */
+[data-college-theme="architecture"] .faculty-page-wrapper,
+.faculty-page-wrapper[data-college-theme="architecture"] {
+  --college-primary: #ef4444;
+  --college-primary-rgb: 239, 68, 68;
+  --college-primary-light: rgba(239, 68, 68, 0.2);
+  --college-primary-dark: #dc2626;
+  --college-accent: #f87171;
+  --college-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --college-glow: rgba(239, 68, 68, 0.5);
+  --college-text: #ef4444;
+}
+
+/* ==================== DARK MODE BASE STYLES ==================== */
+.faculty-page-wrapper,
+.faculty-page-wrapper[data-theme="dark"],
+[data-theme="dark"] .faculty-page-wrapper {
+  --page-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  --card-bg: rgba(20, 26, 50, 0.95);
+  --card-border: var(--college-primary-light);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --divider-color: var(--college-primary-light);
+  --sidebar-bg: rgba(20, 26, 50, 0.98);
+  --header-bg: rgba(15, 23, 42, 0.95);
+  --button-bg: var(--college-primary-light);
+  --button-hover-bg: var(--college-primary);
+  --icon-color: var(--college-primary);
+  --active-bg: var(--college-primary-light);
+  background: var(--page-bg) !important;
+  color: var(--text-primary);
+}
+
+/* ==================== LIGHT MODE BASE STYLES (SUPER LIGHT) ==================== */
+.faculty-page-wrapper[data-theme="light"],
+[data-theme="light"] .faculty-page-wrapper {
+  --page-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  --card-bg: rgba(255, 255, 255, 0.98);
+  --card-border: rgba(var(--college-primary-rgb), 0.25);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --divider-color: #e2e8f0;
+  --sidebar-bg: rgba(255, 255, 255, 0.98);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --button-bg: rgba(var(--college-primary-rgb), 0.1);
+  --button-hover-bg: var(--college-primary);
+  --icon-color: var(--college-primary);
+  --active-bg: rgba(var(--college-primary-rgb), 0.15);
+  background: var(--page-bg) !important;
+  color: var(--text-primary);
+}
+
+/* ==================== LOGIN PAGE - NO BLOCKING BACKGROUND ==================== */
+.faculty-login-wrapper {
+  min-height: 100vh;
+  /* Remove any blocking background - let the animated space show through */
+  background: transparent !important;
+}
+
+/* ==================== Faculty Modal - CENTERED like Admin ==================== */
+/* Override the faculty modal overlay to CENTER the modal on all screens */
+.faculty-settings-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 99999 !important;
+  padding: 20px !important;
+  overflow-y: auto !important;
+}
+
+.faculty-settings-modal-overlay * {
+  pointer-events: auto;
+}
+
+.faculty-settings-modal {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+  margin: auto !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--card-bg, rgba(20, 26, 50, 0.98)) !important;
+  border: 2px solid var(--primary, #00d4ff) !important;
+  border-radius: 20px !important;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.6),
+    0 0 40px rgba(0, 212, 255, 0.15),
+    inset 0 0 60px rgba(0, 212, 255, 0.05) !important;
+}
+
+/* Mobile modal - still centered but with proper sizing */
+@media (max-width: 768px) {
+  .faculty-settings-modal-overlay {
+    padding: 16px !important;
+    align-items: center !important;
+  }
+
+  .faculty-settings-modal {
+    max-height: 85vh !important;
+    max-height: 85dvh !important;
+    border-radius: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .faculty-settings-modal-overlay {
+    padding: 12px !important;
+  }
+
+  .faculty-settings-modal {
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* Faculty modal content styling */
+.faculty-settings-modal .settings-header {
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2) !important;
+}
+
+.faculty-settings-modal .settings-title svg {
+  color: #00d4ff !important;
+}
+
+.faculty-settings-modal .settings-done-btn {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.faculty-settings-modal .settings-done-btn:hover {
+  background: linear-gradient(135deg, #00b8e6 0%, #007aa3 100%) !important;
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.4) !important;
+}
+
+/* Faculty modal mode options */
+.faculty-settings-modal .mode-option {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid rgba(0, 212, 255, 0.2) !important;
+}
+
+.faculty-settings-modal .mode-option:hover {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+}
+
+.faculty-settings-modal .mode-option.active {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.15) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2) !important;
+}
+
+.faculty-settings-modal .mode-check {
+  color: #00d4ff !important;
+}
+
+/* Faculty modal color theme options */
+.faculty-settings-modal .color-theme-option {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.faculty-settings-modal .color-theme-option:hover {
+  border-color: rgba(0, 212, 255, 0.5) !important;
+  background: rgba(0, 212, 255, 0.1) !important;
+}
+
+.faculty-settings-modal .color-theme-option.active {
+  border-color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.15) !important;
+}
+
+/* Light mode modal adjustments */
+[data-theme="light"] .faculty-settings-modal {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(0, 166, 81, 0.3) !important;
+}
+
+[data-theme="light"] .faculty-settings-modal .settings-header {
+  background: rgba(0, 166, 81, 0.1) !important;
+  border-bottom-color: rgba(0, 166, 81, 0.2) !important;
+}
+
+[data-theme="light"] .faculty-settings-modal .mode-option {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .faculty-settings-modal .mode-option:hover {
+  border-color: #00a651 !important;
+  background: rgba(0, 166, 81, 0.1) !important;
+}
+
+[data-theme="light"] .faculty-settings-modal .mode-option.active {
+  border-color: #00a651 !important;
+  background: rgba(0, 166, 81, 0.1) !important;
+}
+
+/* ==================== Faculty User Dropdown Menu ==================== */
+.faculty-user-dropdown {
+  position: fixed !important;
+  inset: auto 1rem 1rem 1rem !important;
+  top: auto !important;
+  z-index: 10000 !important;
+}
+
+@media (min-width: 768px) {
+  .faculty-user-dropdown {
+    position: absolute !important;
+    inset: auto !important;
+    top: calc(100% + 10px) !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+}
+
+/* ==================== Faculty Sidebar Styles ==================== */
+.faculty-sidebar {
+  background: rgba(20, 26, 50, 0.98) !important;
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+[data-theme="light"] .faculty-sidebar {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-right: 1px solid rgba(0, 166, 81, 0.2);
+}
+
+/* Override green theme sidebar for faculty */
+[data-theme="green"] .faculty-sidebar {
+  background: rgba(20, 26, 50, 0.98) !important;
+  border-right: 1px solid rgba(0, 212, 255, 0.2) !important;
+}
+
+/* ==================== Faculty Mobile Spacing/Padding ==================== */
+.faculty-main-content {
+  padding: 16px;
+}
+
+@media (max-width: 768px) {
+  .faculty-main-content {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .faculty-main-content {
+    padding: 10px;
+  }
+}
+
+/* ==================== Faculty Scrollbar Styles ==================== */
+.faculty-page-wrapper,
+.faculty-page-wrapper *,
+.faculty-main-content,
+.faculty-main-content * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary, rgba(0, 212, 255, 0.4)) rgba(0, 0, 0, 0.1);
+}
+
+.faculty-page-wrapper::-webkit-scrollbar,
+.faculty-page-wrapper *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.faculty-page-wrapper::-webkit-scrollbar-track,
+.faculty-page-wrapper *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.faculty-page-wrapper::-webkit-scrollbar-thumb,
+.faculty-page-wrapper *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 212, 255, 0.5));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.faculty-page-wrapper::-webkit-scrollbar-thumb:hover,
+.faculty-page-wrapper *::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 212, 255, 0.7));
+  background-clip: padding-box;
+}
+
+/* Light theme scrollbar for faculty */
+[data-theme="light"] .faculty-page-wrapper::-webkit-scrollbar-track,
+[data-theme="light"] .faculty-page-wrapper *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .faculty-page-wrapper::-webkit-scrollbar-thumb,
+[data-theme="light"] .faculty-page-wrapper *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 166, 81, 0.4));
+  background-clip: padding-box;
+}
+
+/* ==================== College Color Theme Variables ==================== */
+/* These are applied based on data-college-theme attribute */
+
+/* Default Quantum theme - Cyan */
+.faculty-page-wrapper,
+.faculty-page-wrapper[data-college-theme="default"] {
+  --college-primary: rgba(0, 212, 255, 1);
+  --college-primary-light: rgba(0, 212, 255, 0.2);
+  --college-primary-dark: rgba(0, 153, 204, 1);
+  --college-accent: #00d4ff;
+  --college-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
+  --college-glow: rgba(0, 212, 255, 0.5);
+}
+
+/* College of Science - Teal/Green */
+.faculty-page-wrapper[data-college-theme="science"] {
+  --college-primary: rgba(37, 150, 158, 1);
+  --college-primary-light: rgba(37, 150, 158, 0.2);
+  --college-primary-dark: rgba(16, 185, 129, 1);
+  --college-accent: #10b981;
+  --college-gradient: linear-gradient(135deg, #25969e 0%, #10b981 50%, #34d399 100%);
+  --college-glow: rgba(16, 185, 129, 0.5);
+}
+
+/* College of Arts and Letters - Orange */
+.faculty-page-wrapper[data-college-theme="arts-letters"] {
+  --college-primary: rgba(249, 115, 22, 1);
+  --college-primary-light: rgba(249, 115, 22, 0.2);
+  --college-primary-dark: rgba(194, 65, 12, 1);
+  --college-accent: #fbbf24;
+  --college-gradient: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
+  --college-glow: rgba(249, 115, 22, 0.5);
+}
+
+/* College of Architecture and Fine Arts - Red */
+.faculty-page-wrapper[data-college-theme="architecture"] {
+  --college-primary: rgba(239, 68, 68, 1);
+  --college-primary-light: rgba(239, 68, 68, 0.2);
+  --college-primary-dark: rgba(153, 27, 27, 1);
+  --college-accent: #f87171;
+  --college-gradient: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+  --college-glow: rgba(239, 68, 68, 0.5);
+}
+
+/* ==================== Faculty Card Styles ==================== */
+.faculty-page-wrapper .faculty-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.faculty-page-wrapper .faculty-card:hover {
+  border-color: var(--college-primary);
+  box-shadow: 0 8px 32px var(--college-glow);
+}
+
+/* ==================== Faculty Button Styles ==================== */
+.faculty-page-wrapper .faculty-btn-primary {
+  background: var(--college-gradient);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.faculty-page-wrapper .faculty-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--college-glow);
+}
+
+/* ==================== Faculty Header Accent Colors ==================== */
+.faculty-page-wrapper header {
+  border-bottom-color: var(--college-primary-light) !important;
+}
+
+.faculty-page-wrapper .header-accent {
+  color: var(--college-primary);
+}
+
+/* ==================== Faculty Loading States ==================== */
+.faculty-page-wrapper .faculty-loading {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  color: white;
+}
+
+[data-theme="light"] .faculty-page-wrapper .faculty-loading {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  color: #1a1a1a;
+}
+
+/* ==================== Faculty Settings Modal - Dark Theme Override ==================== */
+/* Force dark theme styling for faculty settings modal */
+[data-theme="dark"] .faculty-settings-modal,
+.faculty-page-wrapper .faculty-settings-modal {
+  background: linear-gradient(135deg, #0f1629 0%, #1a2035 100%) !important;
+  border: 2px solid rgba(0, 212, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-header,
+.faculty-page-wrapper .faculty-settings-modal .settings-header {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 153, 204, 0.1) 100%) !important;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2) !important;
+  padding: 20px 24px !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-title,
+.faculty-page-wrapper .faculty-settings-modal .settings-title {
+  color: #00d4ff !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-close,
+.faculty-page-wrapper .faculty-settings-modal .settings-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #a0aec0 !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-close:hover,
+.faculty-page-wrapper .faculty-settings-modal .settings-close:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #ef4444 !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-content,
+.faculty-page-wrapper .faculty-settings-modal .settings-content {
+  background: transparent !important;
+  padding: 24px !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-section-title,
+.faculty-page-wrapper .faculty-settings-modal .settings-section-title {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-section-description,
+.faculty-page-wrapper .faculty-settings-modal .settings-section-description {
+  color: #a0aec0 !important;
+}
+
+/* Theme option buttons - Dark mode */
+[data-theme="dark"] .faculty-settings-modal button,
+.faculty-page-wrapper .faculty-settings-modal button {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal button:hover,
+.faculty-page-wrapper .faculty-settings-modal button:hover {
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-color: rgba(0, 212, 255, 0.4) !important;
+}
+
+/* Active theme button */
+[data-theme="dark"] .faculty-settings-modal button.border-emerald-500,
+.faculty-page-wrapper .faculty-settings-modal button.border-emerald-500,
+[data-theme="dark"] .faculty-settings-modal button[class*="border-emerald"],
+.faculty-page-wrapper .faculty-settings-modal button[class*="border-emerald"] {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: #10b981 !important;
+}
+
+/* Footer with Done button */
+[data-theme="dark"] .faculty-settings-modal .settings-footer,
+.faculty-page-wrapper .faculty-settings-modal .settings-footer {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-top: 1px solid rgba(0, 212, 255, 0.15) !important;
+  padding: 16px 24px !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-done-btn,
+.faculty-page-wrapper .faculty-settings-modal .settings-done-btn {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  padding: 14px 32px !important;
+  border-radius: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .settings-done-btn:hover,
+.faculty-page-wrapper .faculty-settings-modal .settings-done-btn:hover {
+  background: linear-gradient(135deg, #00b8e6 0%, #007aa3 100%) !important;
+  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Active badge styling */
+[data-theme="dark"] .faculty-settings-modal span.bg-emerald-500,
+.faculty-page-wrapper .faculty-settings-modal span.bg-emerald-500,
+[data-theme="dark"] .faculty-settings-modal span[class*="bg-emerald"],
+.faculty-page-wrapper .faculty-settings-modal span[class*="bg-emerald"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Text colors in modal */
+[data-theme="dark"] .faculty-settings-modal span,
+.faculty-page-wrapper .faculty-settings-modal span {
+  color: inherit !important;
+}
+
+[data-theme="dark"] .faculty-settings-modal .opacity-70,
+.faculty-page-wrapper .faculty-settings-modal .opacity-70 {
+  color: #a0aec0 !important;
+}

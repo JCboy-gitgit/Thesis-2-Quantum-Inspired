@@ -22,7 +22,8 @@ import {
   ArrowUpDown, Laptop, Beaker, Library, UtensilsCrossed, Bath, Archive,
   Dumbbell, Music, Theater, Presentation, Server, CircleDot, Triangle,
   Hexagon, Pentagon, Octagon, Heart, Zap, Flame, Droplets, Sun, Moon,
-  MoveUp, MoveDown, ChevronsUp, ChevronsDown, LayoutList, Grip
+  MoveUp, MoveDown, ChevronsUp, ChevronsDown, LayoutList, Grip,
+  BoxSelect, Menu, Wrench
 } from 'lucide-react'
 
 // Untyped supabase helper for tables not in generated types
@@ -267,6 +268,17 @@ export default function MapViewerPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'layers'>('properties')
 
+  // Mobile FAB state
+  const [showMobileFAB, setShowMobileFAB] = useState(false)
+  const [activeMobilePanel, setActiveMobilePanel] = useState<'none' | 'toolbox' | 'properties'>('none')
+
+  // Multi-select state
+  const [selectedElements, setSelectedElements] = useState<string[]>([])
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false)
+  const [marqueeStart, setMarqueeStart] = useState<{ x: number; y: number } | null>(null)
+  const [marqueeEnd, setMarqueeEnd] = useState<{ x: number; y: number } | null>(null)
+  const [selectMode, setSelectMode] = useState<'single' | 'multi'>('single')
+
   // Editing state
   const [editForm, setEditForm] = useState({
     label: '',
@@ -326,6 +338,15 @@ export default function MapViewerPage() {
       const width = window.innerWidth
       setIsMobile(width < 768)
       setIsTablet(width >= 768 && width < 1024)
+      // Auto-collapse panels on mobile
+      if (width < 768) {
+        setLeftPanelOpen(false)
+        setRightPanelOpen(false)
+        setShowMobileFAB(true)
+      } else {
+        setShowMobileFAB(false)
+        setActiveMobilePanel('none')
+      }
     }
 
     checkDevice()
@@ -1038,6 +1059,112 @@ export default function MapViewerPage() {
       elementX: element.x,
       elementY: element.y
     })
+  }
+
+  // Marquee selection handlers
+  const handleMarqueeStart = (e: React.MouseEvent) => {
+    if (viewMode !== 'editor' || selectMode !== 'multi') return
+    if ((e.target as HTMLElement).closest(`.${styles.canvasElement}`)) return // Don't start if clicking on an element
+    
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    
+    const scale = zoom / 100
+    const x = (e.clientX - rect.left) / scale
+    const y = (e.clientY - rect.top) / scale
+    
+    setIsMarqueeSelecting(true)
+    setMarqueeStart({ x, y })
+    setMarqueeEnd({ x, y })
+  }
+
+  const handleMarqueeMove = (e: React.MouseEvent) => {
+    if (!isMarqueeSelecting || !canvasRef.current) return
+    
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    const x = (e.clientX - rect.left) / scale
+    const y = (e.clientY - rect.top) / scale
+    
+    setMarqueeEnd({ x, y })
+  }
+
+  const handleMarqueeEnd = () => {
+    if (!isMarqueeSelecting || !marqueeStart || !marqueeEnd) {
+      setIsMarqueeSelecting(false)
+      return
+    }
+
+    // Calculate selection box bounds
+    const left = Math.min(marqueeStart.x, marqueeEnd.x)
+    const right = Math.max(marqueeStart.x, marqueeEnd.x)
+    const top = Math.min(marqueeStart.y, marqueeEnd.y)
+    const bottom = Math.max(marqueeStart.y, marqueeEnd.y)
+
+    // Find all elements that intersect with the selection box
+    const selected = canvasElements.filter(el => {
+      const elRight = el.x + el.width
+      const elBottom = el.y + el.height
+      
+      // Check if element intersects with selection box
+      return el.x < right && elRight > left && el.y < bottom && elBottom > top
+    }).map(el => el.id)
+
+    setSelectedElements(selected)
+    if (selected.length === 1) {
+      const el = canvasElements.find(e => e.id === selected[0])
+      if (el) setSelectedElement(el)
+    } else if (selected.length > 1) {
+      setSelectedElement(null) // Clear single selection when multiple selected
+    }
+
+    setIsMarqueeSelecting(false)
+    setMarqueeStart(null)
+    setMarqueeEnd(null)
+  }
+
+  // Toggle selection mode
+  const toggleSelectMode = () => {
+    setSelectMode(prev => prev === 'single' ? 'multi' : 'single')
+    setSelectedElements([])
+    if (selectMode === 'single') {
+      showNotification('info', 'Multi-select mode: Click and drag to select multiple elements')
+    }
+  }
+
+  // Clear all selections
+  const clearSelection = () => {
+    setSelectedElements([])
+    setSelectedElement(null)
+  }
+
+  // Delete selected elements
+  const deleteSelectedElements = () => {
+    if (selectedElements.length > 0) {
+      setCanvasElements(prev => prev.filter(el => !selectedElements.includes(el.id)))
+      setSelectedElements([])
+      showNotification('success', `${selectedElements.length} element(s) removed`)
+    } else if (selectedElement) {
+      removeElement(selectedElement.id)
+    }
+  }
+
+  // Mobile panel toggle handler
+  const toggleMobilePanel = (panel: 'toolbox' | 'properties') => {
+    if (activeMobilePanel === panel) {
+      setActiveMobilePanel('none')
+      setLeftPanelOpen(false)
+      setRightPanelOpen(false)
+    } else {
+      setActiveMobilePanel(panel)
+      if (panel === 'toolbox') {
+        setLeftPanelOpen(true)
+        setRightPanelOpen(false)
+      } else {
+        setRightPanelOpen(true)
+        setLeftPanelOpen(false)
+      }
+    }
   }
 
   // Toggle hallway orientation
@@ -1873,7 +2000,7 @@ export default function MapViewerPage() {
           >
             <div
               ref={canvasRef}
-              className={styles.canvas}
+              className={`${styles.canvas} ${selectMode === 'multi' ? styles.multiSelectMode : ''}`}
               style={{
                 width: canvasSize.width,
                 height: canvasSize.height,
@@ -1885,12 +2012,42 @@ export default function MapViewerPage() {
                 backgroundSize: showGrid && viewMode === 'editor' ? `${gridSize}px ${gridSize}px` : 'none'
               }}
               onClick={handleCanvasClick}
+              onMouseDown={selectMode === 'multi' ? handleMarqueeStart : undefined}
+              onMouseMove={(e) => {
+                handleElementDrag(e)
+                handleResizeMove(e)
+                if (isMarqueeSelecting) handleMarqueeMove(e)
+              }}
+              onMouseUp={() => {
+                handleElementDragEnd()
+                handleResizeEnd()
+                if (isMarqueeSelecting) handleMarqueeEnd()
+              }}
+              onMouseLeave={() => {
+                handleElementDragEnd()
+                handleResizeEnd()
+                if (isMarqueeSelecting) handleMarqueeEnd()
+              }}
             >
+              {/* Marquee Selection Box */}
+              {isMarqueeSelecting && marqueeStart && marqueeEnd && (
+                <div
+                  className={styles.marqueeSelection}
+                  style={{
+                    left: Math.min(marqueeStart.x, marqueeEnd.x),
+                    top: Math.min(marqueeStart.y, marqueeEnd.y),
+                    width: Math.abs(marqueeEnd.x - marqueeStart.x),
+                    height: Math.abs(marqueeEnd.y - marqueeStart.y)
+                  }}
+                />
+              )}
+
               {/* Render elements on canvas - filter by visibility */}
               {canvasElements
                 .filter(element => isLayerVisible(element.id))
                 .map(element => {
                 const isSelected = selectedElement?.id === element.id
+                const isMultiSelected = selectedElements.includes(element.id)
                 const isDraggingEl = draggingElement === element.id
                 const isResizing = resizingElement === element.id
                 const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
@@ -1899,7 +2056,7 @@ export default function MapViewerPage() {
                 return (
                   <div
                     key={element.id}
-                    className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${isDraggingEl ? styles.dragging : ''} ${isResizing ? styles.resizing : ''} ${element.isLocked ? styles.locked : ''} ${viewMode === 'live' && showScheduleOverlay ? styles[availability] : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
+                    className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected || isMultiSelected ? styles.selected : ''} ${isDraggingEl ? styles.dragging : ''} ${isResizing ? styles.resizing : ''} ${element.isLocked ? styles.locked : ''} ${viewMode === 'live' && showScheduleOverlay ? styles[availability] : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
                     style={{
                       left: element.x,
                       top: element.y,
@@ -2047,22 +2204,46 @@ export default function MapViewerPage() {
               </div>
 
               {viewMode === 'editor' && (
-                <div className={styles.snapControl}>
-                  <button
-                    className={`${styles.gridToggleBtn} ${showGrid ? styles.active : ''}`}
-                    onClick={() => setShowGrid(!showGrid)}
-                    title={showGrid ? 'Hide Grid' : 'Show Grid'}
-                  >
-                    <Grid size={16} />
-                  </button>
-                  <span>Snap:</span>
-                  <button
-                    className={`${styles.toggleBtn} ${snapToGrid ? styles.active : ''}`}
-                    onClick={() => setSnapToGrid(!snapToGrid)}
-                  >
-                    {snapToGrid ? 'ON' : 'OFF'}
-                  </button>
-                </div>
+                <>
+                  <div className={styles.selectControl}>
+                    <button
+                      className={`${styles.selectModeBtn} ${selectMode === 'multi' ? styles.active : ''}`}
+                      onClick={toggleSelectMode}
+                      title={selectMode === 'single' ? 'Enable multi-select (drag to select multiple)' : 'Disable multi-select'}
+                    >
+                      <BoxSelect size={16} />
+                      {!isMobile && <span>{selectMode === 'multi' ? 'Multi' : 'Single'}</span>}
+                    </button>
+                    {selectedElements.length > 0 && (
+                      <span className={styles.selectedCount}>{selectedElements.length} selected</span>
+                    )}
+                    {(selectedElements.length > 0 || selectedElement) && (
+                      <button
+                        className={styles.deleteSelectedBtn}
+                        onClick={deleteSelectedElements}
+                        title="Delete selected elements"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.snapControl}>
+                    <button
+                      className={`${styles.gridToggleBtn} ${showGrid ? styles.active : ''}`}
+                      onClick={() => setShowGrid(!showGrid)}
+                      title={showGrid ? 'Hide Grid' : 'Show Grid'}
+                    >
+                      <Grid size={16} />
+                    </button>
+                    <span>Snap:</span>
+                    <button
+                      className={`${styles.toggleBtn} ${snapToGrid ? styles.active : ''}`}
+                      onClick={() => setSnapToGrid(!snapToGrid)}
+                    >
+                      {snapToGrid ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                </>
               )}
 
               <div className={styles.elementCount}>
@@ -2814,6 +2995,38 @@ export default function MapViewerPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile Floating Action Buttons */}
+      {showMobileFAB && viewMode === 'editor' && (
+        <div className={styles.mobileFAB}>
+          <button
+            className={`${styles.fabButton} ${activeMobilePanel === 'toolbox' ? styles.active : ''}`}
+            onClick={() => toggleMobilePanel('toolbox')}
+            title="Toolbox"
+          >
+            <Wrench size={22} />
+          </button>
+          <button
+            className={`${styles.fabButton} ${activeMobilePanel === 'properties' ? styles.active : ''}`}
+            onClick={() => toggleMobilePanel('properties')}
+            title="Properties"
+          >
+            <Settings size={22} />
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Panel Overlay */}
+      {showMobileFAB && activeMobilePanel !== 'none' && (
+        <div 
+          className={styles.mobileOverlay} 
+          onClick={() => {
+            setActiveMobilePanel('none')
+            setLeftPanelOpen(false)
+            setRightPanelOpen(false)
+          }} 
+        />
       )}
 
       {/* Notification */}

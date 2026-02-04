@@ -11,8 +11,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// Create typed Supabase client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// Create typed Supabase client with session persistence
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    storageKey: 'supabase.auth.token',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    // Session expires in 7 days (604800 seconds) when "keep me signed in" is used
+    // This is controlled at Supabase dashboard level, but we ensure refresh is enabled
+  }
+})
 
 // ============================================================================
 // HELPER FUNCTIONS FOR QIA CLASSROOM SCHEDULING

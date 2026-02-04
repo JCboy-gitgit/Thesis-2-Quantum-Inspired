@@ -1,5 +1,43 @@
 /* Room Schedules View - Faculty Side */
 
+/* ==================== Scrollbar Styling ==================== */
+.pageContainer,
+.pageContainer * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary, rgba(0, 212, 255, 0.4)) rgba(0, 0, 0, 0.1);
+}
+
+.pageContainer::-webkit-scrollbar,
+.pageContainer *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pageContainer::-webkit-scrollbar-track,
+.pageContainer *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb,
+.pageContainer *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 212, 255, 0.5));
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb:hover,
+.pageContainer *::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 212, 255, 0.7));
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 166, 81, 0.4));
+}
+
 .pageContainer {
   min-height: 100vh;
   padding: 2rem;
@@ -746,6 +784,64 @@
   flex-shrink: 0;
 }
 
+/* Export Dropdown Menu */
+.exportDropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.exportDropdownMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.exportDropdownMenu button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportDropdownMenu button:hover {
+  background: var(--college-primary, rgba(99, 102, 241, 0.15));
+  color: var(--college-primary, var(--primary));
+}
+
+.exportDropdownMenu button:not(:last-child) {
+  border-bottom: 1px solid var(--card-border);
+}
+
+/* Light theme adjustments */
+:global([data-theme="light"]) .exportDropdownMenu {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="light"]) .exportDropdownMenu button {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .exportDropdownMenu button:hover {
+  background: var(--college-primary-light, rgba(99, 102, 241, 0.1));
+  color: var(--college-primary, #4f46e5);
+}
+
 /* Timetable Container */
 .timetableContainer {
   background: var(--card-bg);
@@ -1063,33 +1159,33 @@
   background: rgba(15, 23, 42, 0.5);
 }
 
-/* Green theme for timetable */
+/* Green theme for timetable - OVERRIDE: Faculty uses cyan/quantum, NOT green */
 :global([data-theme="green"]) .typeTab.activeTypeTab {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #00d4ff, #00b8db) !important;
 }
 
 :global([data-theme="green"]) .timetableHeader {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.15));
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 184, 219, 0.15)) !important;
 }
 
 :global([data-theme="green"]) .timetableTitle svg {
-  color: #10b981;
+  color: #00d4ff !important;
 }
 
 :global([data-theme="green"]) .timeColumnHeader,
 :global([data-theme="green"]) .dayColumnHeader {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.1));
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 184, 219, 0.1)) !important;
 }
 
 :global([data-theme="green"]) .timeCellLabel {
-  background: rgba(16, 185, 129, 0.05);
+  background: rgba(0, 212, 255, 0.05) !important;
 }
 
 :global([data-theme="green"]) .navButton:hover:not(:disabled),
 :global([data-theme="green"]) .exportBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+  border-color: #00d4ff !important;
+  color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.1) !important;
 }
 
 /* Light theme for timetable */

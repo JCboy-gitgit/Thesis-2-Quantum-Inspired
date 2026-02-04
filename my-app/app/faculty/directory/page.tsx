@@ -3,8 +3,10 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useTheme } from '@/app/context/ThemeContext'
 import { ArrowLeft, Search, Users, Building2, Briefcase, Mail, Phone, MapPin, X } from 'lucide-react'
 import styles from './styles.module.css'
+import '@/app/styles/faculty-global.css'
 
 interface FacultyProfile {
   id: string
@@ -119,6 +121,7 @@ function getEmploymentBadge(type: string): { label: string; color: string } {
 
 function FacultyDirectoryContent() {
   const router = useRouter()
+  const { theme, collegeTheme } = useTheme()
 
   const [loading, setLoading] = useState(true)
   const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
@@ -265,7 +268,7 @@ function FacultyDirectoryContent() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
           <ArrowLeft size={20} />

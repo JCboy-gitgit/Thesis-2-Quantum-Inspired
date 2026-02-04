@@ -81,6 +81,26 @@ export const COLLEGE_THEME_MAP: Record<string, CollegeTheme> = {
   'fine arts': 'architecture',
 }
 
+// Function to determine default theme based on path
+const getDefaultThemeForPath = (): BaseTheme => {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname
+    // Faculty pages default to light mode
+    if (path.startsWith('/faculty')) {
+      return 'light'
+    }
+  }
+  // Admin pages default to green mode
+  return 'green'
+}
+
+// Function to get college theme from college name
+export const getCollegeThemeFromName = (collegeName: string): CollegeTheme => {
+  if (!collegeName) return 'default'
+  const collegeLower = collegeName.toLowerCase().trim()
+  return COLLEGE_THEME_MAP[collegeLower] || 'default'
+}
+
 // Provide a default value so hooks don't throw during initial render
 // DEFAULT: green mode (nature-inspired) with quantum-inspired theme
 const defaultContext: ThemeContextType = {
@@ -105,18 +125,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Load saved themes from localStorage
     const savedTheme = localStorage.getItem('faculty-base-theme') as BaseTheme
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme') as CollegeTheme
+    
+    // Check if we're on a faculty page
+    const isFacultyPage = window.location.pathname.startsWith('/faculty')
+    
+    // Faculty pages should NEVER use green theme - default to light mode
+    const defaultTheme: BaseTheme = isFacultyPage ? 'light' : 'green'
 
     // Valid base themes include green, light and dark
     const allowedThemes: BaseTheme[] = ['green', 'light', 'dark']
 
     if (savedTheme && allowedThemes.includes(savedTheme)) {
-      setThemeState(savedTheme)
-      document.documentElement.setAttribute('data-theme', savedTheme)
+      // For faculty pages, convert green to light mode
+      let themeToApply = savedTheme
+      if (isFacultyPage && savedTheme === 'green') {
+        themeToApply = 'light'
+      }
+      setThemeState(themeToApply)
+      document.documentElement.setAttribute('data-theme', themeToApply)
     } else {
-      // Default to green mode
-      setThemeState('green')
-      document.documentElement.setAttribute('data-theme', 'green')
-      localStorage.setItem('faculty-base-theme', 'green')
+      // Default theme based on page
+      setThemeState(defaultTheme)
+      document.documentElement.setAttribute('data-theme', defaultTheme)
+      localStorage.setItem('faculty-base-theme', defaultTheme)
     }
 
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {

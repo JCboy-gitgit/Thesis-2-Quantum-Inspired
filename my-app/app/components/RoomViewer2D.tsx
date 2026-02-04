@@ -536,22 +536,26 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
       </div>
 
-      {/* Legend - Compact on mobile */}
+      {/* Legend - Enhanced visibility */}
       <div className={`${styles.legend} ${isMobile ? styles.legendCompact : ''}`}>
-        <div className={styles.legendItem}>
-          <div className={`${styles.statusIndicator} ${styles.available}`}></div>
-          <span>{isMobile ? 'Free' : 'Available'}</span>
-        </div>
-        <div className={styles.legendItem}>
-          <div className={`${styles.statusIndicator} ${styles.occupied}`}></div>
-          <span>{isMobile ? 'In Use' : 'Occupied'}</span>
-        </div>
-        {!isMobile && (
-          <div className={styles.legendItem}>
-            <Clock size={14} />
-            <span>Live ({currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</span>
+        <div className={`${styles.legendItem} ${styles.availableLegend}`}>
+          <div className={`${styles.statusIndicator} ${styles.available}`}>
+            <CheckCircle size={10} className={styles.statusIcon} />
           </div>
-        )}
+          <span>{isMobile ? 'Free' : 'Available / Free'}</span>
+        </div>
+        <div className={`${styles.legendItem} ${styles.occupiedLegend}`}>
+          <div className={`${styles.statusIndicator} ${styles.occupied}`}>
+            <XCircle size={10} className={styles.statusIcon} />
+          </div>
+          <span>{isMobile ? 'In Use' : 'Occupied / In Use'}</span>
+        </div>
+        <div className={styles.legendItem}>
+          <div className={styles.liveIndicator}>
+            <Clock size={14} />
+          </div>
+          <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</span>
+        </div>
       </div>
 
       {/* Mobile hint */}
@@ -677,24 +681,33 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 <span>Capacity: {selectedElement.linkedRoomData.capacity}</span>
               </div>
             )}
-            <div className={styles.detailRow}>
+            
+            {/* Enhanced Status Badge */}
+            <div className={`${styles.statusBadge} ${
+              getRoomAvailability(selectedElement.linkedRoomData.room) === 'available' 
+                ? styles.statusAvailable 
+                : getRoomAvailability(selectedElement.linkedRoomData.room) === 'occupied' 
+                  ? styles.statusOccupied 
+                  : styles.statusUnknown
+            }`}>
               {getRoomAvailability(selectedElement.linkedRoomData.room) === 'available' ? (
                 <>
-                  <CheckCircle size={14} className={styles.availableIcon} />
-                  <span>Currently Available</span>
+                  <CheckCircle size={18} />
+                  <span>✓ AVAILABLE NOW</span>
                 </>
               ) : getRoomAvailability(selectedElement.linkedRoomData.room) === 'occupied' ? (
                 <>
-                  <XCircle size={14} className={styles.occupiedIcon} />
-                  <span>Currently Occupied</span>
+                  <XCircle size={18} />
+                  <span>⚠ IN USE</span>
                 </>
               ) : (
                 <>
-                  <Info size={14} />
+                  <Info size={18} />
                   <span>Status Unknown</span>
                 </>
               )}
             </div>
+            
             {getCurrentClass(selectedElement.linkedRoomData.room) && (
               <div className={styles.currentClassDetails}>
                 <h4>Current Class</h4>

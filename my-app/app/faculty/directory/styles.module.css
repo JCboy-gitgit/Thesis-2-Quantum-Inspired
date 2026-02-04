@@ -1,5 +1,43 @@
 /* Faculty Directory - View Only Styles */
 
+/* ==================== Scrollbar Styling ==================== */
+.pageContainer,
+.pageContainer * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary, rgba(0, 212, 255, 0.4)) rgba(0, 0, 0, 0.1);
+}
+
+.pageContainer::-webkit-scrollbar,
+.pageContainer *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pageContainer::-webkit-scrollbar-track,
+.pageContainer *::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb,
+.pageContainer *::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 212, 255, 0.5));
+  border-radius: 4px;
+}
+
+.pageContainer::-webkit-scrollbar-thumb:hover,
+.pageContainer *::-webkit-scrollbar-thumb:hover {
+  background: var(--college-primary, rgba(0, 212, 255, 0.7));
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme="light"]) .pageContainer::-webkit-scrollbar-thumb {
+  background: var(--college-primary, rgba(0, 166, 81, 0.4));
+}
+
 .pageContainer {
   min-height: 100vh;
   padding: 2rem;

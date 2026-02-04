@@ -538,7 +538,7 @@ export default function FloorPlanViewPage() {
                     return currentClass ? (
                       <div className={styles.occupiedStatus}>
                         <div className={`${styles.statusBadge} ${styles.occupied}`}>
-                          <Clock size={14} /> Occupied
+                          <Clock size={16} /> ⚠ IN USE
                         </div>
                         <div className={styles.classInfo}>
                           <p className={styles.courseCode}>{currentClass.course_code}</p>
@@ -551,7 +551,7 @@ export default function FloorPlanViewPage() {
                       </div>
                     ) : (
                       <div className={`${styles.statusBadge} ${styles.available}`}>
-                        <Check size={14} /> Available
+                        <Check size={16} /> ✓ AVAILABLE NOW
                       </div>
                     )
                   })()}
