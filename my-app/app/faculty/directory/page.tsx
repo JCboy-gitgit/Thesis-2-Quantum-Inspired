@@ -390,7 +390,11 @@ function FacultyDirectoryContent() {
 
           <div className={styles.facultyGrid}>
             {currentData.map(faculty => (
-              <div key={faculty.id} className={styles.facultyCard} onClick={() => setSelectedFaculty(faculty)}>
+              <div 
+                key={faculty.id} 
+                className={`${styles.facultyCard} ${selectedFaculty?.id === faculty.id ? styles.facultyCardSelected : ''}`} 
+                onClick={() => setSelectedFaculty(faculty)}
+              >
                 <div className={styles.facultyAvatar} style={{ backgroundColor: getRoleColor(faculty.role) }}>
                   {getInitials(faculty.full_name)}
                 </div>
@@ -449,20 +453,21 @@ function FacultyDirectoryContent() {
         </>
       )}
 
-      {selectedFaculty && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedFaculty(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeButton} onClick={() => setSelectedFaculty(null)}>
+      {/* Side Panel - Faculty Details */}
+      <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
+        {selectedFaculty && (
+          <>
+            <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
               <X size={24} />
             </button>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+            <div className={styles.panelHeader}>
+              <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                 {getInitials(selectedFaculty.full_name)}
               </div>
               <div>
-                <h2 className={styles.modalName}>{selectedFaculty.full_name}</h2>
-                <p className={styles.modalPosition}>{selectedFaculty.position}</p>
-                <div className={styles.modalBadges}>
+                <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
+                <p className={styles.panelPosition}>{selectedFaculty.position}</p>
+                <div className={styles.panelBadges}>
                   <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                     {getRoleLabel(selectedFaculty.role)}
                   </span>
@@ -475,7 +480,7 @@ function FacultyDirectoryContent() {
                 </div>
               </div>
             </div>
-            <div className={styles.modalBody}>
+            <div className={styles.panelBody}>
               <div className={styles.infoGrid}>
                 {selectedFaculty.faculty_id && (
                   <div className={styles.infoItem}>
@@ -538,9 +543,9 @@ function FacultyDirectoryContent() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

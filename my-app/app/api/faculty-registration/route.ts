@@ -274,21 +274,89 @@ export async function POST(request: NextRequest) {
     const userEmail = userData.user.email
 
     if (action === 'approve') {
-      // Upsert user in our users table with approved status
-      const { error: upsertError } = await supabaseAdmin
-        .from('users')
-        .upsert({
-          id: userId,
-          email: userEmail,
-          full_name: full_name || userData.user.user_metadata?.full_name || 'Faculty Member',
-          is_active: true,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'id' })
+      console.log(`\n========== APPROVING USER ==========`)
+      console.log(`User ID: ${userId}`)
+      console.log(`Email: ${userEmail}`)
 
-      if (upsertError) {
-        console.error('Upsert error:', upsertError)
-        throw upsertError
+      // STEP 1: Check if user has confirmed their email via Supabase email link
+      // Admin cannot approve until user confirms their email first
+      if (!userData.user.email_confirmed_at) {
+        console.log('Email not confirmed - user must confirm via email link first')
+        return NextResponse.json({
+          error: 'Cannot approve: User has not confirmed their email yet. They must click the confirmation link sent to their email before you can approve their account.',
+          details: 'Waiting for email confirmation'
+        }, { status: 400 })
       }
+
+      console.log('✅ Email already confirmed by user')
+
+      // STEP 2: Check if user exists in users table
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      const finalName = full_name || existingUser?.full_name || userData.user.user_metadata?.full_name || 'Faculty Member'
+
+      if (existingUser) {
+        // User exists - UPDATE the record
+        console.log('User exists, updating is_active to true...')
+        const { error: updateError } = await supabaseAdmin
+          .from('users')
+          .update({
+            is_active: true,
+            full_name: finalName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('Update error:', updateError)
+          return NextResponse.json({
+            error: `Failed to approve: ${updateError.message}`
+          }, { status: 500 })
+        }
+      } else {
+        // User doesn't exist - INSERT new record
+        console.log('User not found, inserting new record...')
+        const { error: insertError } = await supabaseAdmin
+          .from('users')
+          .insert({
+            id: userId,
+            email: userEmail,
+            full_name: finalName,
+            role: 'faculty',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+        if (insertError) {
+          console.error('Insert error:', insertError)
+          return NextResponse.json({
+            error: `Failed to approve: ${insertError.message}`
+          }, { status: 500 })
+        }
+      }
+
+      // Verify the approval worked
+      const { data: verifyUser } = await supabaseAdmin
+        .from('users')
+        .select('id, email, is_active, full_name')
+        .eq('id', userId)
+        .single()
+
+      console.log('Verification:', verifyUser)
+
+      if (!verifyUser?.is_active) {
+        console.error('ERROR: is_active is still false after approval!')
+        return NextResponse.json({
+          error: 'Approval failed - database did not update. Please check RLS policies or contact support.',
+        }, { status: 500 })
+      }
+
+      console.log(`✅ User ${userEmail} successfully approved!`)
 
       // Clear rejection marker in user_profiles if previously rejected
       const { data: profileResult, error: profileError } = await supabaseAdmin
@@ -305,6 +373,8 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('Profile updated successfully for approval:', userId)
       }
+
+      console.log(`========== APPROVAL COMPLETE ==========\n`)
 
       // Send approval email
       try {

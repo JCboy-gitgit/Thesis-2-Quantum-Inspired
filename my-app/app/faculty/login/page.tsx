@@ -27,6 +27,13 @@ export default function FacultyLoginPage(): JSX.Element {
   const [showPassword, setShowPassword] = useState(false)
   const [existingSession, setExistingSession] = useState<{ user: any; isActive: boolean } | null>(null)
   const [keepSignedIn, setKeepSignedIn] = useState(false)
+  
+  // Forgot password states
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null)
+  const [forgotError, setForgotError] = useState<string | null>(null)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
@@ -146,6 +153,52 @@ export default function FacultyLoginPage(): JSX.Element {
     setPassword('')
     setMessage(null)
     setError(null)
+  }
+
+  // Forgot Password Handler
+  const handleForgotPassword = async (e: FormEvent) => {
+    e.preventDefault()
+    setForgotError(null)
+    setForgotMessage(null)
+
+    if (!forgotEmail || !/^\S+@\S+\.\S+$/.test(forgotEmail)) {
+      setForgotError('Please enter a valid email address.')
+      return
+    }
+
+    setForgotLoading(true)
+
+    try {
+      const response = await fetch('/api/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email')
+      }
+
+      setForgotMessage('Password reset link sent! Please check your email inbox.')
+      setTimeout(() => {
+        setShowForgotPassword(false)
+        setForgotEmail('')
+        setForgotMessage(null)
+      }, 3000)
+    } catch (err: any) {
+      setForgotError(err?.message ?? 'Something went wrong. Please try again.')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPassword(false)
+    setForgotEmail('')
+    setForgotError(null)
+    setForgotMessage(null)
   }
 
   const validate = (): boolean => {
@@ -414,8 +467,8 @@ export default function FacultyLoginPage(): JSX.Element {
                 </label>
               </div>
 
-              {/* Keep Signed In Checkbox */}
-              <div className="form-group checkbox-group">
+              {/* Keep Signed In & Forgot Password Row */}
+              <div className="form-group checkbox-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
@@ -425,6 +478,22 @@ export default function FacultyLoginPage(): JSX.Element {
                   />
                   <span className="checkbox-text">Keep me signed in</span>
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="forgot-password-link"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#00d4ff',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0
+                  }}
+                >
+                  Forgot Password?
+                </button>
               </div>
 
               {/* Submit Button */}
@@ -481,6 +550,78 @@ export default function FacultyLoginPage(): JSX.Element {
           </div>
         </div>
       </main>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="modal-overlay" onClick={closeForgotPasswordModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="modal-close"
+              onClick={closeForgotPasswordModal}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="modal-header">
+              <div className="modal-icon">
+                <span dangerouslySetInnerHTML={{ __html: lockSVG }} />
+              </div>
+              <h2 className="modal-title">Forgot Password</h2>
+              <p className="modal-subtitle">
+                Enter your registered email address and we'll send you a link to reset your password.
+              </p>
+            </div>
+            <form onSubmit={handleForgotPassword} className="modal-form">
+              <div className="form-group">
+                <label className="label">
+                  <span className="label-text">
+                    <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Email Address
+                  </span>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="input"
+                    placeholder="your@email.com"
+                    required
+                    autoFocus
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className={`button ${forgotLoading ? 'loading' : ''}`}
+              >
+                {forgotLoading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Sending...
+                  </>
+                ) : (
+                  <>Send Reset Link</>  
+                )}
+              </button>
+
+              {forgotMessage && <div className="message success">{forgotMessage}</div>}
+              {forgotError && <div className="message error">{forgotError}</div>}
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={closeForgotPasswordModal}
+                  className="link-button"
+                >
+                  ← Back to Login
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -53,7 +53,7 @@ export default function FacultyHomePage() {
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
   const [currentClass, setCurrentClass] = useState<ScheduleItem | null>(null)
   const [nextClass, setNextClass] = useState<ScheduleItem | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Start closed to prevent layout flash
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [greeting, setGreeting] = useState('')
   const [todayClassCount, setTodayClassCount] = useState(0)
@@ -72,34 +72,34 @@ export default function FacultyHomePage() {
     // Apply theme immediately from localStorage BEFORE mounting
     const savedTheme = localStorage.getItem('faculty-base-theme')
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-    
+
     // Determine effective theme - faculty pages only use light or dark (never green)
     let themeToApply = savedTheme || 'light'
     if (themeToApply === 'green') {
       themeToApply = 'light' // Faculty pages convert green to light
     }
-    
+
     // Set the effective theme immediately for proper styling
     setEffectiveTheme(themeToApply as 'light' | 'dark')
     document.documentElement.setAttribute('data-theme', themeToApply)
-    
+
     if (savedCollegeTheme) {
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
     }
-    
+
     setMounted(true)
     // Force styles to apply immediately
     document.body.classList.add('faculty-loaded')
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
-    
+
     // Wait for CSS to be fully applied - use requestAnimationFrame for better timing
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setThemeReady(true)
       })
     })
-    
+
     return () => {
       document.body.classList.remove('faculty-loaded')
     }
@@ -115,10 +115,19 @@ export default function FacultyHomePage() {
   }, [theme, mounted])
 
   // Force reflow after everything is ready to ensure styles are applied
+  // Also open sidebar after page is fully ready (prevents layout flash on login)
   useEffect(() => {
     if (mounted && !loading && themeReady) {
       // Trigger a reflow to force CSS application
       document.body.offsetHeight
+
+      // Open sidebar after a short delay to ensure CSS is fully applied
+      // This prevents the broken layout on first login
+      const timer = setTimeout(() => {
+        setSidebarOpen(true)
+      }, 100)
+
+      return () => clearTimeout(timer)
     }
   }, [mounted, loading, themeReady])
 
@@ -155,16 +164,16 @@ export default function FacultyHomePage() {
               session_token: sessionToken
             })
           })
-          
+
           // Check if response is JSON before parsing
           const contentType = response.headers.get('content-type')
           if (!contentType || !contentType.includes('application/json')) {
             console.warn('Presence API returned non-JSON response')
             return
           }
-          
+
           const data = await response.json()
-          
+
           // If session is invalid (logged in elsewhere), show warning and redirect
           if (!data.success && data.error === 'SESSION_INVALID') {
             setSessionInvalid(true)
@@ -237,106 +246,70 @@ export default function FacultyHomePage() {
       const { data: facultyProfile } = await supabase
         .from('faculty_profiles')
         .select('full_name, department, college')
-        .eq('email', session.user.email || '')
-        .single() as { data: { full_name?: string; department?: string; college?: string } | null }
+        .eq('user_id', session.user.id)
+        .single()
 
-      // Merge the data - faculty_profiles takes priority
-      const mergedUser: UserProfile = {
+      // Merge data, prioritizing faculty_profiles
+      const mergedUser = {
         ...userData,
-        full_name: facultyProfile?.full_name || userData.full_name || '',
-        department: facultyProfile?.department || userData.department || '',
-        college: facultyProfile?.college || userData.college || ''
+        full_name: facultyProfile?.full_name || userData.full_name,
+        department: facultyProfile?.department || userData.department,
+        college: facultyProfile?.college || userData.college
       }
 
       setUser(mergedUser)
 
-      // Only set college theme if user hasn't manually chosen one
-      // Check if a saved theme exists in localStorage
-      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-      if (!savedCollegeTheme && mergedUser.college) {
-        // No saved theme - use college-based default
-        const collegeLower = mergedUser.college.toLowerCase()
-        const matchedTheme = COLLEGE_THEME_MAP[collegeLower]
-        if (matchedTheme) {
-          setCollegeTheme(matchedTheme)
-        }
+      // Apply college theme if available
+      if (mergedUser.college && COLLEGE_THEME_MAP[mergedUser.college]) {
+        setCollegeTheme(COLLEGE_THEME_MAP[mergedUser.college])
       }
-      // If savedCollegeTheme exists, ThemeContext already loaded it - respect user's choice
 
-      // Fetch schedules for this faculty
-      await fetchSchedules(userData.email, mergedUser.full_name)
+      // Fetch schedules
+      await fetchSchedules(session.user.id)
 
-    } catch (error) {
-      console.error('Auth check error:', error)
-      router.push('/faculty/login')
-    } finally {
       setLoading(false)
+    } catch (error) {
+      console.error('Auth check failed:', error)
+      router.push('/faculty/login')
     }
   }
 
-  const fetchSchedules = async (email: string, facultyName?: string) => {
+  const fetchSchedules = async (userId: string) => {
     try {
-      // First, try to fetch the default schedule assigned by admin
-      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
-      
-      // Check if response is JSON before parsing
-      const contentType = response.headers.get('content-type')
-      if (!response.ok || !contentType || !contentType.includes('application/json')) {
-        console.warn('Faculty schedule API returned non-JSON response or failed')
+      const db = supabase as any
+      const { data, error } = await db
+        .from('faculty_schedules')
+        .select(`
+          id,
+          course_code,
+          course_name,
+          room,
+          building,
+          day,
+          start_time,
+          end_time,
+          section
+        `)
+        .eq('user_id', userId)
+
+      if (error) {
+        // Table might not exist yet - this is expected, just silently return empty
+        // console.log('Note: faculty_schedules table not available:', error.message)
         setSchedules([])
         return
       }
-      
-      const data = await response.json()
 
-      if (data.success && data.defaultSchedule && data.allocations && data.allocations.length > 0) {
-        // The API now filters by teacher_name, so we get only this faculty's classes
-        // Transform room allocations to schedule items
-        const transformedSchedules: ScheduleItem[] = data.allocations.map((alloc: any) => {
-          // Parse schedule_time like "8:00-9:30" or "08:00 - 09:30"
-          let startTime = '08:00'
-          let endTime = '09:00'
-          if (alloc.schedule_time) {
-            const timeParts = alloc.schedule_time.split('-').map((t: string) => t.trim())
-            if (timeParts.length === 2) {
-              // Convert to 24-hour format if needed
-              startTime = convertTo24Hour(timeParts[0])
-              endTime = convertTo24Hour(timeParts[1])
-            }
-          }
+      if (data && data.length > 0) {
+        // Process schedules...
+        const processedSchedules = data.map((schedule: any) => ({
+          ...schedule,
+          day: normalizeDay(schedule.day),
+          start_time: convertTo24Hour(schedule.start_time),
+          end_time: convertTo24Hour(schedule.end_time)
+        }))
 
-          // Normalize day
-          const normalizedDay = normalizeDay(alloc.schedule_day || '')
-
-          return {
-            id: alloc.id,
-            course_code: alloc.course_code || 'N/A',
-            course_name: alloc.course_name || '',
-            room: alloc.room || 'TBA',
-            building: alloc.building || '',
-            day: normalizedDay,
-            start_time: startTime,
-            end_time: endTime,
-            section: alloc.section || ''
-          }
-        })
-
-        setSchedules(transformedSchedules)
-        findCurrentAndNextClass(transformedSchedules)
-        return
-      }
-
-      // Fallback: Try to fetch from schedule_assignments (old method)
-      const { data: scheduleData, error } = await supabase
-        .from('schedule_assignments')
-        .select('*')
-        .eq('professor_email', email)
-        .order('day', { ascending: true })
-        .order('start_time', { ascending: true })
-
-      if (scheduleData && scheduleData.length > 0) {
-        setSchedules(scheduleData)
-        findCurrentAndNextClass(scheduleData)
+        setSchedules(processedSchedules)
+        findCurrentAndNextClass(processedSchedules)
       } else {
         // No schedules found - that's okay
         setSchedules([])
@@ -438,10 +411,10 @@ export default function FacultyHomePage() {
   if (loading || !mounted || !themeReady) {
     const loadingIsLight = getLoadingTheme()
     return (
-      <div 
+      <div
         className="min-h-screen flex flex-col items-center justify-center gap-5"
-        style={{ 
-          background: loadingIsLight 
+        style={{
+          background: loadingIsLight
             ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
             : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
           color: loadingIsLight ? '#1e293b' : '#ffffff',
@@ -453,7 +426,7 @@ export default function FacultyHomePage() {
           zIndex: 9999
         }}
       >
-        <div 
+        <div
           className="w-12 h-12 rounded-full animate-spin"
           style={{
             border: `4px solid ${loadingIsLight ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0, 212, 255, 0.3)'}`,
@@ -468,8 +441,8 @@ export default function FacultyHomePage() {
   }
 
   return (
-    <div 
-      className={`${styles.pageContainer} faculty-page-wrapper`} 
+    <div
+      className={`${styles.pageContainer} faculty-page-wrapper`}
       data-theme={effectiveTheme}
       data-college-theme={collegeTheme}
       style={{
@@ -485,8 +458,8 @@ export default function FacultyHomePage() {
       />
 
       {/* Main Layout */}
-      <div 
-        className={`flex-1 flex flex-col min-h-screen w-full box-border transition-all duration-300 ${sidebarOpen ? 'md:pl-[250px]' : 'pl-0'}`}
+      <div
+        className={`flex-1 flex flex-col min-h-screen w-full box-border transition-all duration-300 ${sidebarOpen ? 'md:pl-[250px]' : ''}`}
       >
         {/* Faculty Menu Bar */}
         <FacultyMenuBar
@@ -500,11 +473,10 @@ export default function FacultyHomePage() {
         {/* Main Content */}
         <main className={`flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pb-6 max-w-[1400px] mx-auto w-full box-border overflow-x-hidden transition-all duration-300 ${isMenuBarHidden ? 'pt-10 sm:pt-12' : 'pt-16 sm:pt-20 md:pt-24'}`}>
           {/* Welcome Banner - Clean responsive layout */}
-          <section className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 border ${
-            isLightMode 
-              ? 'bg-white/95 border-slate-200 shadow-lg' 
-              : 'bg-slate-800/80 border-cyan-500/20'
-          }`}>
+          <section className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 border ${isLightMode
+            ? 'bg-white/95 border-slate-200 shadow-lg'
+            : 'bg-slate-800/80 border-cyan-500/20'
+            }`}>
             {/* Mobile: stacked center layout, Desktop: row layout */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               {/* Left: Greeting and date */}
@@ -516,7 +488,7 @@ export default function FacultyHomePage() {
                   {getCurrentDate()}
                 </p>
               </div>
-              
+
               {/* Right: Time display and department badge */}
               <div className="flex flex-col items-center sm:items-end gap-2 sm:gap-1">
                 <div className={`text-3xl sm:text-3xl md:text-4xl font-bold leading-none ${styles.accentText}`}>
@@ -537,11 +509,10 @@ export default function FacultyHomePage() {
 
           {/* Quick Stats - Responsive Grid */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
-            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${
-              isLightMode 
-                ? 'bg-white/95 border-slate-200 shadow-md' 
-                : 'bg-slate-800/80 border-cyan-500/20'
-            }`}>
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${isLightMode
+              ? 'bg-white/95 border-slate-200 shadow-md'
+              : 'bg-slate-800/80 border-cyan-500/20'
+              }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <Calendar size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
@@ -550,11 +521,10 @@ export default function FacultyHomePage() {
                 <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Classes Today</div>
               </div>
             </div>
-            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${
-              isLightMode 
-                ? 'bg-white/95 border-slate-200 shadow-md' 
-                : 'bg-slate-800/80 border-cyan-500/20'
-            }`}>
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${isLightMode
+              ? 'bg-white/95 border-slate-200 shadow-md'
+              : 'bg-slate-800/80 border-cyan-500/20'
+              }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <BookOpen size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
@@ -563,11 +533,10 @@ export default function FacultyHomePage() {
                 <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Total Classes This Week</div>
               </div>
             </div>
-            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1 border ${
-              isLightMode 
-                ? 'bg-white/95 border-slate-200 shadow-md' 
-                : 'bg-slate-800/80 border-cyan-500/20'
-            }`}>
+            <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1 border ${isLightMode
+              ? 'bg-white/95 border-slate-200 shadow-md'
+              : 'bg-slate-800/80 border-cyan-500/20'
+              }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
                 <Clock size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
@@ -586,11 +555,10 @@ export default function FacultyHomePage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Current Class Card */}
-              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${
-                currentClass 
-                  ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]' 
-                  : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
-              } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
+              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${currentClass
+                ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]'
+                : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
+                } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {currentClass ? (
                     <>
@@ -626,25 +594,22 @@ export default function FacultyHomePage() {
               </div>
 
               {/* Next Class Card */}
-              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${
-                nextClass 
-                  ? isLightMode ? 'border-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.3)]' : 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]'
-                  : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
-              } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
+              <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${nextClass
+                ? isLightMode ? 'border-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.3)]' : 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]'
+                : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
+                } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {nextClass ? (
                     <>
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
-                        isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
-                      }`}>Next Up</span>
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                        }`}>Next Up</span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(nextClass.start_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
-                      isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
-                    }`}>Finished</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                      }`}>Finished</span>
                   )}
                 </div>
                 <div className="mt-3">

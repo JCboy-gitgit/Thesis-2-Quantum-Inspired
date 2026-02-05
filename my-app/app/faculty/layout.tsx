@@ -20,16 +20,10 @@ export default function FacultyLayout({
   children: React.ReactNode
 }) {
   const [mounted, setMounted] = useState(false)
-  const [isLightMode, setIsLightMode] = useState(() => {
-    // Initialize with a function to avoid SSR issues
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('faculty-base-theme')
-      return savedTheme !== 'dark'
-    }
-    return true
-  })
+  // Always start with dark to match SSR, update after mount
+  const [isLightMode, setIsLightMode] = useState(false)
   const pathname = usePathname()
-  
+
   // Login and reset-password pages handle their own loading states
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/reset-password')
 
@@ -37,16 +31,16 @@ export default function FacultyLayout({
     // Apply theme immediately from localStorage
     const savedTheme = localStorage.getItem('faculty-base-theme')
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-    
+
     // Faculty uses light/dark only - convert green to light
     const effectiveTheme = savedTheme === 'dark' ? 'dark' : 'light'
     setIsLightMode(effectiveTheme === 'light')
     document.documentElement.setAttribute('data-theme', effectiveTheme)
-    
+
     if (savedCollegeTheme) {
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
     }
-    
+
     setMounted(true)
   }, [])
 
@@ -58,14 +52,14 @@ export default function FacultyLayout({
   // Don't render children until mounted to prevent flash
   if (!mounted) {
     return (
-      <div 
+      <div
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: isLightMode 
+          background: isLightMode
             ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
             : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
           display: 'flex',
@@ -73,7 +67,7 @@ export default function FacultyLayout({
           justifyContent: 'center',
         }}
       >
-        <div 
+        <div
           style={{
             width: '40px',
             height: '40px',
