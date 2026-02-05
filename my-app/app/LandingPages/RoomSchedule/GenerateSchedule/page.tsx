@@ -1137,22 +1137,46 @@ export default function GenerateSchedulePage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        // Handle error - could be string, object, or array
+        // First get the response as text, then try to parse as JSON
+        const responseText = await response.text()
         let errorMsg = 'Failed to generate schedule'
-        if (typeof errorData.error === 'string') {
-          errorMsg = errorData.error
-        } else if (errorData.error) {
-          errorMsg = JSON.stringify(errorData.error)
-        } else if (errorData.detail) {
-          errorMsg = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
-        } else if (errorData.message) {
-          errorMsg = errorData.message
+        
+        try {
+          const errorData = JSON.parse(responseText)
+          // Handle error - could be string, object, or array
+          if (typeof errorData.error === 'string') {
+            errorMsg = errorData.error
+          } else if (errorData.error) {
+            errorMsg = JSON.stringify(errorData.error)
+          } else if (errorData.detail) {
+            errorMsg = typeof errorData.detail === 'string' ? errorData.detail : JSON.stringify(errorData.detail)
+          } else if (errorData.message) {
+            errorMsg = errorData.message
+          }
+        } catch (parseError) {
+          // Response is not JSON (likely HTML error page from backend)
+          console.error('Backend returned non-JSON response:', responseText.substring(0, 200))
+          if (response.status === 503) {
+            errorMsg = 'Python backend is unavailable. Please ensure the Render service is running.'
+          } else if (response.status === 502 || response.status === 504) {
+            errorMsg = 'Backend gateway error. The schedule generation timed out or the server is overloaded.'
+          } else {
+            errorMsg = `Server error (${response.status}): The backend returned an invalid response. Please try again.`
+          }
         }
         throw new Error(errorMsg)
       }
 
-      const result = await response.json()
+      // Parse successful response - also protect against invalid JSON
+      let result
+      try {
+        const responseText = await response.text()
+        result = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('Failed to parse successful response as JSON')
+        throw new Error('The backend returned an invalid response format. Please try again.')
+      }
+      
       console.log('[GenerateSchedule] API Response:', JSON.stringify(result, null, 2))
 
       setScheduleResult({

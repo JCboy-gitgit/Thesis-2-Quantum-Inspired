@@ -4425,21 +4425,52 @@
 }
 
 [data-theme="dark"] .summaryCard:hover {
-  border-color: #3b82f6;
-}
-
-[data-theme="dark"] .stepProgress .step {
-  background: rgba(30, 41, 59, 0.8);
-  color: #94a3b8;
-}
-
-[data-theme="dark"] .stepProgress .step.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #fff;
+  border-color: #00d4ff;
 }
 
 [data-theme="dark"] .stepProgress .stepLine {
   background: rgba(71, 85, 105, 0.5);
+}
+
+/* Dark theme step number styling */
+[data-theme="dark"] .stepNumber {
+  background: rgba(51, 65, 85, 0.8);
+  color: #94a3b8;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .step.active .stepNumber {
+  background: linear-gradient(135deg, #00d4ff 0%, #0891b2 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.4);
+}
+
+[data-theme="dark"] .step.completed .stepNumber {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Dark theme step text */
+[data-theme="dark"] .step {
+  color: #64748b;
+}
+
+[data-theme="dark"] .step.active {
+  color: #00d4ff;
+}
+
+[data-theme="dark"] .step.completed {
+  color: #22c55e;
+}
+
+/* Dark theme step progress container */
+[data-theme="dark"] .stepProgress {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(0, 212, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .formInput,

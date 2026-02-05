@@ -1,0 +1,458 @@
+/* MapViewer Loading Page - Theme-Aware */
+
+/* ==================== Base Styles ==================== */
+.loadingContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+/* ==================== Theme: Green (Default Admin) ==================== */
+.loadingContainer.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
+}
+
+.green .loadingContent {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 
+    0 0 60px rgba(16, 185, 129, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.green .title {
+  color: #1e293b;
+}
+
+.green .subtitle {
+  color: #64748b;
+}
+
+.green .step {
+  color: #475569;
+}
+
+.green .progressBar {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.green .scanLine {
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  box-shadow: 0 0 20px #10b981;
+}
+
+.green .gridBackground {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+}
+
+/* ==================== Theme: Light ==================== */
+.loadingContainer.light {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
+}
+
+.light .loadingContent {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 0 60px rgba(59, 130, 246, 0.08),
+    0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.light .title {
+  color: #1e293b;
+}
+
+.light .subtitle {
+  color: #64748b;
+}
+
+.light .step {
+  color: #475569;
+}
+
+.light .mapIcon {
+  color: #3b82f6;
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4));
+}
+
+.light .progressBar {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.light .progressFill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+}
+
+.light .stepDot {
+  background: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.light .scanLine {
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  box-shadow: 0 0 20px #3b82f6;
+}
+
+.light .gridBackground {
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+}
+
+/* ==================== Theme: Dark ==================== */
+.loadingContainer.dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.dark .loadingContent {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 
+    0 0 60px rgba(0, 212, 255, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .title {
+  color: #f1f5f9;
+}
+
+.dark .subtitle {
+  color: #94a3b8;
+}
+
+.dark .step {
+  color: #64748b;
+}
+
+.dark .mapIcon {
+  color: #00d4ff;
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
+}
+
+.dark .progressBar {
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.dark .progressFill {
+  background: linear-gradient(90deg, #00d4ff, #22d3ee, #00d4ff);
+}
+
+.dark .stepDot {
+  background: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.dark .scanLine {
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  box-shadow: 0 0 20px #00d4ff;
+}
+
+.dark .gridBackground {
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+}
+
+/* ==================== Common Styles ==================== */
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  z-index: 2;
+  padding: 40px;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+}
+
+/* Icon Container with Glow */
+.iconContainer {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapIcon {
+  width: 80px;
+  height: 80px;
+  color: #10b981;
+  animation: pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.5));
+}
+
+.mapSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Scanning line effect */
+.scanLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  animation: scan 2s ease-in-out infinite;
+  border-radius: 2px;
+  box-shadow: 0 0 20px #10b981;
+}
+
+@keyframes scan {
+  0%, 100% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Title */
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #94a3b8;
+  margin: 0;
+  margin-top: -8px;
+}
+
+/* Progress Bar */
+.progressContainer {
+  width: 280px;
+  margin-top: 8px;
+}
+
+.progressBar {
+  height: 6px;
+  background: rgba(51, 65, 85, 0.8);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.progressFill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+  background-size: 200% 100%;
+  border-radius: 3px;
+  animation: progress 1.5s ease-in-out infinite, shimmer 2s linear infinite;
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Loading Steps */
+.loadingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  font-size: 14px;
+  animation: fadeInStep 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.step:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.step:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.step:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes fadeInStep {
+  to {
+    opacity: 1;
+  }
+}
+
+.stepDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: dotPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.step:nth-child(1) .stepDot {
+  animation-delay: 0s;
+}
+
+.step:nth-child(2) .stepDot {
+  animation-delay: 0.3s;
+}
+
+.step:nth-child(3) .stepDot {
+  animation-delay: 0.6s;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+/* Grid Background */
+.gridBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridMove 20s linear infinite;
+  z-index: 1;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(40px, 40px);
+  }
+}
+
+/* Corner accents */
+.loadingContainer::before,
+.loadingContainer::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+  animation: float 6s ease-in-out infinite;
+}
+
+.loadingContainer::before {
+  top: -100px;
+  right: -100px;
+}
+
+.loadingContainer::after {
+  bottom: -100px;
+  left: -100px;
+  animation-delay: 3s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-20px, 20px);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .loadingContent {
+    padding: 30px;
+    margin: 20px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .progressContainer {
+    width: 220px;
+  }
+
+  .iconContainer {
+    width: 100px;
+    height: 100px;
+  }
+
+  .mapIcon {
+    width: 60px;
+    height: 60px;
+  }
+}

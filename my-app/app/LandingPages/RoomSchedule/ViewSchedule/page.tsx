@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './ViewSchedule.module.css'
@@ -61,6 +61,9 @@ import {
 } from 'lucide-react'
 import ArchiveModal from '@/app/components/ArchiveModal'
 
+// Untyped supabase helper for tables not in generated types
+const db = supabase as any
+
 // Interface for approved faculty
 interface ApprovedFaculty {
   id: string
@@ -69,11 +72,6 @@ interface ApprovedFaculty {
   department_id?: number
   is_active: boolean
 }
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 // ==================== Types ====================
 type TimetableViewMode = 'all' | 'room' | 'section' | 'teacher' | 'course'
@@ -247,9 +245,29 @@ function ViewSchedulePage() {
   const [facultySearchQuery, setFacultySearchQuery] = useState('')
   const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
+  // Auth state to prevent rendering before auth check completes
+  const [authChecked, setAuthChecked] = useState(false)
+  const [isAuthorized, setIsAuthorized] = useState(false)
+
   useEffect(() => {
-    checkAuth()
-    fetchSchedules()
+    let isMounted = true
+    
+    const initPage = async () => {
+      const authorized = await checkAuth()
+      if (isMounted && authorized) {
+        setIsAuthorized(true)
+        setAuthChecked(true)
+        await fetchSchedules()
+      } else if (isMounted) {
+        setAuthChecked(true)
+      }
+    }
+    
+    initPage()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // Reset timetable index when view mode or selections change
@@ -257,23 +275,26 @@ function ViewSchedulePage() {
     setCurrentTimetableIndex(0)
   }, [timetableViewMode, selectedRoom, selectedSection, selectedTeacher, selectedCourse, filterBuilding, filterRoom, filterDay, searchQuery])
 
-  const checkAuth = async () => {
+  const checkAuth = async (): Promise<boolean> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
         router.push('/faculty/login')
-        return
+        return false
       }
 
       // Only admin can access admin pages
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
         router.push('/faculty/home')
-        return
+        return false
       }
+      
+      return true
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/faculty/login')
+      return false
     }
   }
 
@@ -431,22 +452,22 @@ function ViewSchedulePage() {
     setLoading(true)
     try {
       // Try to fetch from generated_schedules table first
-      const { data: scheduleData, error: scheduleError } = await supabase
+      const { data: scheduleData, error: scheduleError } = await db
         .from('generated_schedules')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (!scheduleError && scheduleData && scheduleData.length > 0) {
         // Fetch school names and college names
-        const schedulesWithNames = await Promise.all(scheduleData.map(async (schedule) => {
-          const { data: campusData } = await supabase
+        const schedulesWithNames = await Promise.all(scheduleData.map(async (schedule: any) => {
+          const { data: campusData } = await db
             .from('campuses')
             .select('school_name')
             .eq('upload_group_id', schedule.campus_group_id)
             .limit(1)
             .single()
 
-          const { data: classData } = await supabase
+          const { data: classData } = await db
             .from('class_schedules')
             .select('college')
             .eq('upload_group_id', schedule.class_group_id)
@@ -484,7 +505,7 @@ function ViewSchedulePage() {
 
     try {
       // Fetch room allocations for this schedule
-      const { data: allocationData, error: allocationError } = await supabase
+      const { data: allocationData, error: allocationError } = await db
         .from('room_allocations')
         .select('*')
         .eq('schedule_id', schedule.id)
@@ -493,13 +514,13 @@ function ViewSchedulePage() {
 
       if (!allocationError && allocationData && allocationData.length > 0) {
         // Check if any allocations are missing teacher_name
-        const hasMissingTeachers = allocationData.some(a => !a.teacher_name)
+        const hasMissingTeachers = allocationData.some((a: any) => !a.teacher_name)
         
-        let enrichedAllocations = allocationData
+        let enrichedAllocations: any[] = allocationData
         
         // If teacher names are missing, try to fetch from teaching_loads
         if (hasMissingTeachers) {
-          const { data: teachingLoadsData } = await supabase
+          const { data: teachingLoadsData } = await db
             .from('teaching_loads')
             .select(`
               course_id,
@@ -522,7 +543,7 @@ function ViewSchedulePage() {
             })
 
             // Enrich allocations with teacher names
-            enrichedAllocations = allocationData.map(a => {
+            enrichedAllocations = allocationData.map((a: any) => {
               if (!a.teacher_name && a.course_code) {
                 const teacherKey = `${(a.course_code || '').toLowerCase()}|${(a.section || '').toLowerCase()}`
                 const teacherName = teacherMap.get(teacherKey) || ''
@@ -539,23 +560,23 @@ function ViewSchedulePage() {
         console.log('=== ViewSchedule Data Debug ===');
         console.log('Total allocations fetched:', enrichedAllocations.length);
         console.log('Sample allocation:', enrichedAllocations[0]);
-        enrichedAllocations.forEach((a, i) => {
+        enrichedAllocations.forEach((a: any, i: number) => {
           console.log(`Alloc ${i + 1}: ${a.course_code} | ${a.section} | ${a.room} | ${a.schedule_day} | ${a.schedule_time}`);
         });
 
         // Extract unique buildings, rooms, sections and teachers
-        const uniqueBuildings = [...new Set(enrichedAllocations.map(a => a.building).filter((b): b is string => !!b))]
-        const uniqueRooms = [...new Set(enrichedAllocations.map(a => a.room).filter((r): r is string => !!r))]
+        const uniqueBuildings: string[] = [...new Set(enrichedAllocations.map((a: any) => a.building).filter((b: any): b is string => !!b))]
+        const uniqueRooms: string[] = [...new Set(enrichedAllocations.map((a: any) => a.room).filter((r: any): r is string => !!r))]
         // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
-        const uniqueSections = [...new Set(enrichedAllocations.map(a => 
+        const uniqueSections: string[] = [...new Set(enrichedAllocations.map((a: any) => 
           a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
-        ).filter((s): s is string => !!s))]
-        const uniqueTeachers = [...new Set(enrichedAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
-        const uniqueCourses = [...new Set(enrichedAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
+        ).filter((s: any): s is string => !!s))]
+        const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
+        const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
         
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
-        enrichedAllocations.forEach(a => {
+        enrichedAllocations.forEach((a: any) => {
           if (a.building && a.room) {
             if (!brMap.has(a.building)) {
               brMap.set(a.building, [])
@@ -587,19 +608,19 @@ function ViewSchedulePage() {
   const buildAllocationsFromSource = async (schedule: Schedule) => {
     try {
       // Fetch class schedules
-      const { data: classData } = await supabase
+      const { data: classData } = await db
         .from('class_schedules')
         .select('*')
         .eq('upload_group_id', schedule.class_group_id)
 
       // Fetch rooms
-      const { data: roomData } = await supabase
+      const { data: roomData } = await db
         .from('campuses')
         .select('*')
         .eq('upload_group_id', schedule.campus_group_id)
 
       // Fetch teaching loads with faculty names to get assigned teachers
-      const { data: teachingLoadsData } = await supabase
+      const { data: teachingLoadsData } = await db
         .from('teaching_loads')
         .select(`
           course_id,
@@ -846,7 +867,7 @@ function ViewSchedulePage() {
       }
 
       // Get the room allocations for this schedule
-      const { data: allocationsData, error: fetchAllocError } = await supabase
+      const { data: allocationsData, error: fetchAllocError } = await db
         .from('room_allocations')
         .select('*')
         .eq('schedule_id', id)
@@ -870,7 +891,7 @@ function ViewSchedulePage() {
       }
 
       // Insert into archived_items table
-      const { error: archiveError } = await supabase
+      const { error: archiveError } = await db
         .from('archived_items')
         .insert(archiveData)
 
@@ -880,7 +901,7 @@ function ViewSchedulePage() {
       }
 
       // Now delete room_allocations (foreign key constraint)
-      const { error: allocError } = await supabase
+      const { error: allocError } = await db
         .from('room_allocations')
         .delete()
         .eq('schedule_id', id)
@@ -891,7 +912,7 @@ function ViewSchedulePage() {
       }
 
       // Delete from generated_schedules
-      const { error } = await supabase
+      const { error } = await db
         .from('generated_schedules')
         .delete()
         .eq('id', id)
@@ -1505,26 +1526,20 @@ function ViewSchedulePage() {
                     View and manage all your previously generated room allocation schedules
                   </p>
                 </div>
-                <button 
-                  className={styles.archiveButton} 
-                  onClick={() => setShowArchiveModal(true)}
-                >
-                  <Archive size={18} /> View Archive
-                </button>
               </div>
             </div>
           )}
 
-          {/* Loading State */}
-          {loading && (
+          {/* Loading State - Show during auth check or data fetch */}
+          {(!authChecked || loading) && (
             <div className={styles.loadingState}>
               <div className={styles.spinner}></div>
-              <p>Loading schedule history...</p>
+              <p>{!authChecked ? 'Verifying access...' : 'Loading schedule history...'}</p>
             </div>
           )}
 
           {/* Schedule List View */}
-          {!loading && !selectedSchedule && schedules.length === 0 && (
+          {authChecked && isAuthorized && !loading && !selectedSchedule && schedules.length === 0 && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
                 <FaDoorOpen />
@@ -1542,7 +1557,7 @@ function ViewSchedulePage() {
           )}
 
           {/* Schedules Grid */}
-          {!loading && !selectedSchedule && schedules.length > 0 && (
+          {authChecked && isAuthorized && !loading && !selectedSchedule && schedules.length > 0 && (
             <>
               {/* History Controls */}
               <div className={styles.historyControls}>

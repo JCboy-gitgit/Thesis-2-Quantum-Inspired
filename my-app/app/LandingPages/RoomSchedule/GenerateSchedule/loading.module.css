@@ -1,0 +1,500 @@
+/* GenerateSchedule Loading Page - Theme-Aware with Quantum Animation */
+
+/* ==================== Base Styles ==================== */
+.loadingContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+/* ==================== Theme: Green (Default Admin) ==================== */
+.loadingContainer.green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
+}
+
+.green .loadingContent {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 
+    0 0 60px rgba(16, 185, 129, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.green .title {
+  color: #1e293b;
+}
+
+.green .subtitle {
+  color: #64748b;
+}
+
+.green .step {
+  color: #475569;
+}
+
+.green .nucleus {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+}
+
+.green .orbit1,
+.green .orbit2,
+.green .orbit3 {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.green .electron {
+  background: #10b981;
+  box-shadow: 0 0 15px #10b981;
+}
+
+.green .progressBar {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.green .progressFill {
+  background: linear-gradient(90deg, #34d399, #10b981, #34d399);
+}
+
+.green .stepDot {
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.green .gridBackground {
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+}
+
+.green .particle {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+/* ==================== Theme: Light ==================== */
+.loadingContainer.light {
+  background: linear-gradient(135deg, #f8fafc 0%, #e8f5e9 50%, #f0f4f8 100%);
+}
+
+.light .loadingContent {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  box-shadow: 
+    0 0 60px rgba(34, 197, 94, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.light .title {
+  color: #1e293b;
+}
+
+.light .subtitle {
+  color: #64748b;
+}
+
+.light .step {
+  color: #475569;
+}
+
+.light .nucleus {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
+}
+
+.light .orbit1,
+.light .orbit2,
+.light .orbit3 {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.light .electron {
+  background: #22c55e;
+  box-shadow: 0 0 15px #22c55e;
+}
+
+.light .progressBar {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.light .progressFill {
+  background: linear-gradient(90deg, #22c55e, #4ade80, #22c55e);
+}
+
+.light .stepDot {
+  background: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.light .gridBackground {
+  background-image: 
+    linear-gradient(rgba(34, 197, 94, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.04) 1px, transparent 1px);
+}
+
+.light .particle {
+  background: rgba(34, 197, 94, 0.3);
+}
+
+/* ==================== Theme: Dark ==================== */
+.loadingContainer.dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.dark .loadingContent {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 
+    0 0 60px rgba(0, 212, 255, 0.1),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .title {
+  color: #f1f5f9;
+}
+
+.dark .subtitle {
+  color: #94a3b8;
+}
+
+.dark .step {
+  color: #64748b;
+}
+
+.dark .nucleus {
+  background: linear-gradient(135deg, #00d4ff, #0891b2);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+}
+
+.dark .orbit1,
+.dark .orbit2,
+.dark .orbit3 {
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.dark .electron {
+  background: #00d4ff;
+  box-shadow: 0 0 15px #00d4ff;
+}
+
+.dark .progressBar {
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.dark .progressFill {
+  background: linear-gradient(90deg, #00d4ff, #22d3ee, #00d4ff);
+}
+
+.dark .stepDot {
+  background: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.dark .gridBackground {
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+}
+
+.dark .particle {
+  background: rgba(0, 212, 255, 0.4);
+}
+
+/* ==================== Common Styles ==================== */
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  z-index: 2;
+  padding: 48px 56px;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+}
+
+/* Quantum Icon Container */
+.iconContainer {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantumIcon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Nucleus - central glowing sphere */
+.nucleus {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  position: absolute;
+  z-index: 3;
+  animation: nucleusPulse 2s ease-in-out infinite;
+}
+
+@keyframes nucleusPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* Orbits */
+.orbit1,
+.orbit2,
+.orbit3 {
+  position: absolute;
+  border: 2px solid;
+  border-radius: 50%;
+  animation: orbitRotate 3s linear infinite;
+}
+
+.orbit1 {
+  width: 60px;
+  height: 60px;
+  animation-duration: 2s;
+}
+
+.orbit2 {
+  width: 90px;
+  height: 90px;
+  animation-duration: 3s;
+  transform: rotate(60deg);
+  animation-direction: reverse;
+}
+
+.orbit3 {
+  width: 120px;
+  height: 120px;
+  animation-duration: 4s;
+  transform: rotate(-30deg);
+}
+
+@keyframes orbitRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Electrons */
+.electron {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Title */
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: 15px;
+  margin: -8px 0 0 0;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Progress Container */
+.progressContainer {
+  width: 100%;
+  max-width: 280px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  width: 30%;
+  border-radius: 6px;
+  animation: progressSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+  0% {
+    width: 0%;
+    margin-left: 0;
+  }
+  50% {
+    width: 50%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
+}
+
+/* Loading Steps */
+.loadingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 240px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  animation: fadeInStep 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.step:nth-child(1) { animation-delay: 0.2s; }
+.step:nth-child(2) { animation-delay: 0.4s; }
+.step:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes fadeInStep {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.stepDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Grid Background */
+.gridBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: 30px 30px;
+  z-index: 1;
+  opacity: 0.8;
+}
+
+/* Floating Particles */
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite;
+}
+
+.particle:nth-child(1) {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+  top: 60%;
+  left: 80%;
+  animation-delay: 1s;
+}
+
+.particle:nth-child(3) {
+  top: 80%;
+  left: 30%;
+  animation-delay: 2s;
+}
+
+.particle:nth-child(4) {
+  top: 30%;
+  left: 70%;
+  animation-delay: 3s;
+}
+
+.particle:nth-child(5) {
+  top: 50%;
+  left: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-100px) rotate(180deg);
+    opacity: 0.3;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-200px) rotate(360deg);
+    opacity: 0;
+  }
+}

@@ -7,8 +7,6 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { useTheme } from '@/app/context/ThemeContext'
 
-// Extended theme type for MapViewer (includes 'green' which maps to 'light' with green accents)
-type MapViewerTheme = 'green' | 'light' | 'dark'
 import styles from './styles.module.css'
 import {
   Map, Building2, Layers, Plus, Minus, Move, MousePointer, Square,
@@ -181,7 +179,7 @@ const TOOLBOX_ITEMS = {
 
 export default function MapViewerPage() {
   const router = useRouter()
-  const { theme: globalTheme, setTheme: setGlobalTheme } = useTheme() // Sync with global theme
+  const { theme: globalTheme } = useTheme() // Use global theme from context
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [menuBarHidden, setMenuBarHidden] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -258,7 +256,7 @@ export default function MapViewerPage() {
   const [draggingElement, setDraggingElement] = useState<string | null>(null)
 
   // UI state
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -267,6 +265,10 @@ export default function MapViewerPage() {
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'layers'>('properties')
+
+  // Auth state to prevent rendering before auth check completes
+  const [authChecked, setAuthChecked] = useState(false)
+  const [isAuthorized, setIsAuthorized] = useState(false)
 
   // Mobile FAB state
   const [showMobileFAB, setShowMobileFAB] = useState(false)
@@ -293,35 +295,16 @@ export default function MapViewerPage() {
     borderWidth: 2
   })
 
-  // Local theme state for MapViewer (synced with global theme)
-  const [localTheme, setLocalTheme] = useState<MapViewerTheme>('green')
-
-  // Sync with global theme on mount and when it changes
+  // Sync canvas background with global theme
   useEffect(() => {
-    // Use global theme from context
-    if (globalTheme && ['green', 'light', 'dark'].includes(globalTheme)) {
-      setLocalTheme(globalTheme)
-      // Update canvas background based on theme
-      if (globalTheme === 'dark') {
-        setCanvasBackground('#1a1f3a')
-      } else if (canvasBackground === '#1a1f3a') {
-        // Reset to white if coming from dark mode
-        setCanvasBackground('#ffffff')
-      }
-    }
-  }, [globalTheme])
-
-  // Save local theme when changed and sync with global
-  const changeLocalTheme = (newTheme: MapViewerTheme) => {
-    setLocalTheme(newTheme)
-    setGlobalTheme(newTheme)
-    // Update canvas background based on theme
-    if (newTheme === 'dark') {
+    // Update canvas background based on global theme
+    if (globalTheme === 'dark') {
       setCanvasBackground('#1a1f3a')
     } else if (canvasBackground === '#1a1f3a') {
+      // Reset to white if coming from dark mode
       setCanvasBackground('#ffffff')
     }
-  }
+  }, [globalTheme])
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
   const handleMenuBarToggle = (isHidden: boolean) => setMenuBarHidden(isHidden)
@@ -364,27 +347,44 @@ export default function MapViewerPage() {
     }
   }, [viewMode])
 
-  // Auth check
+  // Auth check - sequential initialization
   useEffect(() => {
-    checkAuth()
-    fetchBuildings()
-    fetchSchedules()
+    let isMounted = true
+    
+    const initPage = async () => {
+      const authorized = await checkAuth()
+      if (isMounted && authorized) {
+        setIsAuthorized(true)
+        setAuthChecked(true)
+        await Promise.all([fetchBuildings(), fetchSchedules()])
+      } else if (isMounted) {
+        setAuthChecked(true)
+      }
+    }
+    
+    initPage()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  const checkAuth = async () => {
+  const checkAuth = async (): Promise<boolean> => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
         router.push('/faculty/login')
-        return
+        return false
       }
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
         router.push('/faculty/home')
-        return
+        return false
       }
+      return true
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/faculty/login')
+      return false
     }
   }
 
@@ -1619,7 +1619,17 @@ export default function MapViewerPage() {
   }
 
   return (
-    <div className={styles.layout} data-theme={localTheme}>
+    <div className={styles.layout} data-theme={globalTheme || 'green'}>
+      {/* Full page loading overlay during auth check */}
+      {(!authChecked || !isAuthorized) && (
+        <div className={styles.authLoadingOverlay}>
+          <div className={styles.authLoadingContent}>
+            <Loader2 size={48} className={styles.spinnerIcon} />
+            <h2>{!authChecked ? 'Verifying access...' : 'Redirecting...'}</h2>
+          </div>
+        </div>
+      )}
+      
       <MenuBar onToggleSidebar={toggleSidebar} showSidebarToggle={true} onMenuBarToggle={handleMenuBarToggle} />
       <Sidebar isOpen={sidebarOpen} />
 
