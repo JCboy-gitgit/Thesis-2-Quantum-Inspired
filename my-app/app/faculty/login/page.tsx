@@ -97,6 +97,21 @@ export default function FacultyLoginPage(): JSX.Element {
             
             // Auto-redirect for approved faculty (only if keep signed in or has valid session)
             if (keepSignedInFlag === 'true' || storedSessionToken) {
+              // Set theme before navigation to prevent flash
+              const savedTheme = localStorage.getItem('faculty-base-theme') || 'dark'
+              const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+              document.documentElement.setAttribute('data-theme', savedTheme)
+              document.body.setAttribute('data-theme', savedTheme)
+              
+              // Set background immediately
+              const bgColor = savedTheme === 'light' ? '#f8fafc' : '#0a0e27'
+              document.body.style.backgroundColor = bgColor
+              document.documentElement.style.backgroundColor = bgColor
+              
+              if (savedCollegeTheme) {
+                document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+              }
+              
               router.replace('/faculty/home')
               return
             }
@@ -265,6 +280,21 @@ export default function FacultyLoginPage(): JSX.Element {
 
       // Success - prefetch the home page first
       router.prefetch('/faculty/home')
+      
+      // Set theme immediately before navigation to prevent flash
+      const savedTheme = localStorage.getItem('faculty-base-theme') || 'dark'
+      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+      document.documentElement.setAttribute('data-theme', savedTheme)
+      document.body.setAttribute('data-theme', savedTheme)
+      
+      // Set background immediately
+      const bgColor = savedTheme === 'light' ? '#f8fafc' : '#0a0e27'
+      document.body.style.backgroundColor = bgColor
+      document.documentElement.style.backgroundColor = bgColor
+      
+      if (savedCollegeTheme) {
+        document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+      }
       
       setMessage(`Welcome back, ${userData.full_name || 'Faculty'}! Redirecting...`)
       setTimeout(() => {

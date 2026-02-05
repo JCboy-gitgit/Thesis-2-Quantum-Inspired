@@ -1,65 +1,54 @@
 /* Faculty Home Page Styles - Sidebar Layout */
 
 /* ==================== Base Theme Variables (Dark Mode Default) ==================== */
+/* Note: Primary theme variables are set in faculty-global.css via .faculty-page-wrapper */
+/* This file only needs to define utility-specific variables */
 .pageContainer {
-  /* College colors (overridden by college theme below) */
+  /* College colors for utility classes (overridden by college theme below) */
   --college-primary: rgba(0, 212, 255, 1);
   --college-primary-light: rgba(0, 212, 255, 0.2);
   --college-primary-dark: rgba(0, 153, 204, 1);
   --college-accent: #00d4ff;
   --college-gradient: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #006699 100%);
   --college-glow: rgba(0, 212, 255, 0.5);
-  
-  /* Dark mode colors (default) */
-  --page-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
-  --card-bg: rgba(20, 26, 50, 0.8);
-  --card-border: var(--college-primary-light);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-muted: rgba(255, 255, 255, 0.4);
-  --divider-color: rgba(0, 212, 255, 0.2);
 }
 
-/* Light mode theme variables */
+/* Light mode theme variables for utility classes */
 .pageContainer[data-theme="light"] {
-  --page-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-  --card-bg: rgba(255, 255, 255, 0.95);
-  --card-border: #e2e8f0;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --divider-color: #e2e8f0;
+  /* Override colors for light mode utility classes */
+  --college-primary-dark: #059669;
 }
 
 /* ==================== College Theme Variables ==================== */
+/* These variables are for utility classes that need college-specific colors */
 
 /* College of Science Theme */
 .pageContainer[data-college-theme="science"] {
-  --college-primary: rgba(37, 150, 190, 1);
-  --college-primary-light: rgba(37, 150, 190, 0.2);
-  --college-primary-dark: rgba(25, 100, 130, 1);
-  --college-accent: #10b981;
-  --college-gradient: linear-gradient(135deg, #25969e 0%, #10b981 50%, #34d399 100%);
-  --college-glow: rgba(37, 150, 190, 0.5);
+  --college-primary: #10b981;
+  --college-primary-light: rgba(16, 185, 129, 0.2);
+  --college-primary-dark: #059669;
+  --college-accent: #34d399;
+  --college-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
+  --college-glow: rgba(16, 185, 129, 0.5);
 }
 
 /* College of Arts and Letters Theme */
 .pageContainer[data-college-theme="arts-letters"] {
-  --college-primary: rgba(249, 115, 22, 1);
+  --college-primary: #f97316;
   --college-primary-light: rgba(249, 115, 22, 0.2);
-  --college-primary-dark: rgba(194, 65, 12, 1);
-  --college-accent: #fbbf24;
-  --college-gradient: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
+  --college-primary-dark: #ea580c;
+  --college-accent: #fb923c;
+  --college-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #fb923c 100%);
   --college-glow: rgba(249, 115, 22, 0.5);
 }
 
 /* College of Architecture and Fine Arts Theme */
 .pageContainer[data-college-theme="architecture"] {
-  --college-primary: rgba(239, 68, 68, 1);
+  --college-primary: #ef4444;
   --college-primary-light: rgba(239, 68, 68, 0.2);
-  --college-primary-dark: rgba(127, 29, 29, 1);
+  --college-primary-dark: #dc2626;
   --college-accent: #f87171;
-  --college-gradient: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+  --college-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #f87171 100%);
   --college-glow: rgba(239, 68, 68, 0.5);
   --college-text: #fca5a5;
 }
@@ -185,7 +174,7 @@
 /* Main Layout */
 .pageContainer {
   min-height: 100vh;
-  background: var(--page-bg);
+  /* Background is handled by faculty-global.css via .faculty-page-wrapper */
   color: var(--text-primary);
   display: flex;
   overflow-y: auto;

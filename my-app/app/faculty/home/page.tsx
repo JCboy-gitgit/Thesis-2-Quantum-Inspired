@@ -60,6 +60,7 @@ export default function FacultyHomePage() {
   const [sessionToken, setSessionToken] = useState<string | null>(null)
   const [sessionInvalid, setSessionInvalid] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [themeReady, setThemeReady] = useState(false)
 
   // Theme helper
   const isLightMode = theme === 'light'
@@ -72,21 +73,42 @@ export default function FacultyHomePage() {
     document.body.classList.add('faculty-loaded')
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
+    
+    // Wait a brief moment for CSS to fully load before showing content
+    const themeTimer = setTimeout(() => {
+      setThemeReady(true)
+    }, 150)
+    
     return () => {
       document.body.classList.remove('faculty-loaded')
+      clearTimeout(themeTimer)
     }
   }, [])
 
   // Force re-render after mount to ensure CSS is applied
   useEffect(() => {
-    if (mounted && !loading) {
+    if (mounted && !loading && themeReady) {
+      // Apply theme immediately to prevent flash
+      const savedTheme = localStorage.getItem('faculty-base-theme')
+      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+      
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme)
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark')
+      }
+      
+      if (savedCollegeTheme) {
+        document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+      }
+      
       // Trigger a micro re-render to force CSS application
       const timer = setTimeout(() => {
         document.body.offsetHeight // Force reflow
       }, 50)
       return () => clearTimeout(timer)
     }
-  }, [mounted, loading])
+  }, [mounted, loading, themeReady])
 
   useEffect(() => {
     checkAuthAndLoad()
@@ -244,6 +266,15 @@ export default function FacultyHomePage() {
     try {
       // First, try to fetch the default schedule assigned by admin
       const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      if (!response.ok || !contentType || !contentType.includes('application/json')) {
+        console.warn('Faculty schedule API returned non-JSON response or failed')
+        setSchedules([])
+        return
+      }
+      
       const data = await response.json()
 
       if (data.success && data.defaultSchedule && data.allocations && data.allocations.length > 0) {
@@ -384,12 +415,18 @@ export default function FacultyHomePage() {
     })
   }
 
-  if (loading) {
+  if (loading || !mounted || !themeReady) {
     return (
       <div 
         className="min-h-screen flex flex-col items-center justify-center text-white gap-5"
         style={{ 
-          background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)'
+          background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999
         }}
       >
         <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
@@ -403,6 +440,10 @@ export default function FacultyHomePage() {
       className={`${styles.pageContainer} faculty-page-wrapper`} 
       data-theme={theme}
       data-college-theme={collegeTheme}
+      style={{
+        backgroundColor: isLightMode ? '#f8fafc' : '#0a0e27',
+        minHeight: '100vh'
+      }}
     >
       {/* Sidebar */}
       <FacultySidebar
@@ -505,7 +546,10 @@ export default function FacultyHomePage() {
 
           {/* Current & Next Class - Responsive Stack */}
           <section className="mb-4 sm:mb-5 md:mb-6">
-            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>My Classes</h3>
+            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+              <BookOpen size={18} className="sm:w-5 sm:h-5" />
+              My Classes
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Current Class Card */}
               <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${
@@ -516,16 +560,16 @@ export default function FacultyHomePage() {
                 <div className="flex items-center justify-between mb-3">
                   {currentClass ? (
                     <>
-                      <span className="flex items-center gap-1.5 text-green-500 text-xs font-bold">
+                      <span className="flex items-center gap-1.5 text-green-500 text-xs font-bold uppercase">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        NOW
+                        Now
                       </span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${styles.collegeBadge}`}>NO CLASS</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${styles.collegeBadge}`}>No Class</span>
                   )}
                 </div>
                 <div className="mt-3">
@@ -534,8 +578,8 @@ export default function FacultyHomePage() {
                       <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{currentClass.course_code}</h4>
                       <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{currentClass.course_name}</p>
                       <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {currentClass.room}, {currentClass.building}</span>
-                        <span className="flex items-center gap-1.5"><BookOpen size={14} /> {currentClass.section}</span>
+                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {currentClass.room}, {currentClass.building}</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {currentClass.section}</span>
                       </div>
                     </>
                   ) : (
@@ -556,17 +600,17 @@ export default function FacultyHomePage() {
                 <div className="flex items-center justify-between mb-3">
                   {nextClass ? (
                     <>
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
                         isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
-                      }`}>NEXT UP</span>
+                      }`}>Next Up</span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(nextClass.start_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
                       isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
-                    }`}>FINISHED</span>
+                    }`}>Finished</span>
                   )}
                 </div>
                 <div className="mt-3">
@@ -575,8 +619,8 @@ export default function FacultyHomePage() {
                       <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{nextClass.course_code}</h4>
                       <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{nextClass.course_name}</p>
                       <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} /> {nextClass.room}, {nextClass.building}</span>
-                        <span className="flex items-center gap-1.5"><BookOpen size={14} /> {nextClass.section}</span>
+                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {nextClass.room}, {nextClass.building}</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {nextClass.section}</span>
                       </div>
                     </>
                   ) : (
@@ -594,7 +638,7 @@ export default function FacultyHomePage() {
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
               <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                <Calendar size={18} className="sm:w-5 sm:h-5 inline-block" />
+                <Calendar size={18} className="sm:w-5 sm:h-5" />
                 Today's Schedule
               </h3>
               <button className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white' : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'}`} onClick={checkAuthAndLoad} title="Refresh">
@@ -608,15 +652,15 @@ export default function FacultyHomePage() {
                   .map((schedule, index) => (
                     <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${isLightMode ? 'bg-white/90 border border-slate-200 hover:border-emerald-500' : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'}`}>
                       <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`}>
-                        <Clock size={14} className="sm:w-4 sm:h-4" />
+                        <Clock size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
                         <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className={`text-sm sm:text-base font-semibold m-0 mb-1 break-words ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{schedule.course_code} - {schedule.course_name}</h4>
                         <p className={`text-xs sm:text-sm m-0 flex items-center gap-1.5 flex-wrap ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                          <MapPin size={12} /> {schedule.room}, {schedule.building}
+                          <MapPin size={12} className="flex-shrink-0" /> {schedule.room}, {schedule.building}
                           <span className={`mx-1 ${isLightMode ? 'text-slate-300' : 'text-slate-600'}`}>•</span>
-                          <BookOpen size={12} /> {schedule.section}
+                          <BookOpen size={12} className="flex-shrink-0" /> {schedule.section}
                         </p>
                       </div>
                       <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`} />
@@ -634,9 +678,12 @@ export default function FacultyHomePage() {
 
           {/* Department Announcements */}
           <section className="mb-4 sm:mb-5 md:mb-6">
-            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Department Announcements</h3>
-            <div className={`rounded-xl p-4 sm:p-5 flex gap-3 sm:gap-4 ${isLightMode ? 'bg-emerald-500/10 border border-emerald-500 text-emerald-600' : 'bg-cyan-500/10 border border-cyan-500 text-cyan-500'}`}>
-              <TrendingUp size={20} className="flex-shrink-0 mt-0.5" />
+            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+              <TrendingUp size={18} className="sm:w-5 sm:h-5" />
+              Department Announcements
+            </h3>
+            <div className={`rounded-xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 ${isLightMode ? 'bg-emerald-500/10 border border-emerald-500 text-emerald-600' : 'bg-cyan-500/10 border border-cyan-500 text-cyan-500'}`}>
+              <TrendingUp size={20} className="flex-shrink-0 mt-1" />
               <div>
                 <h4 className="text-sm sm:text-base font-bold m-0 mb-1">Welcome to QTime Faculty Portal</h4>
                 <p className="text-xs sm:text-sm m-0 opacity-90">Stay updated with your schedule, faculty directory, and department information all in one place.</p>
