@@ -254,11 +254,143 @@ export default function MapViewerPage() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [dragGhost, setDragGhost] = useState<{ x: number; y: number } | null>(null)
   const [draggingElement, setDraggingElement] = useState<string | null>(null)
+  const [pointerDragActive, setPointerDragActive] = useState(false)
 
   // UI state
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+
+  const autoHideMobileToolbox = useCallback(() => {
+    if (!isMobile) return
+    setActiveMobilePanel('none')
+    setLeftPanelOpen(false)
+  }, [isMobile])
+
+  const updateDragGhostFromPointer = useCallback((clientX: number, clientY: number) => {
+    if (viewMode !== 'editor' || !canvasRef.current) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    let x = (clientX - rect.left) / scale
+    let y = (clientY - rect.top) / scale
+    x = snapToGridPosition(x)
+    y = snapToGridPosition(y)
+    setDragGhost({ x, y })
+  }, [viewMode, zoom])
+
+  const placeDraggedItem = useCallback((clientX: number, clientY: number) => {
+    if (viewMode !== 'editor' || !canvasRef.current || !dragItem) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    const scale = zoom / 100
+    let x = (clientX - rect.left) / scale
+    let y = (clientY - rect.top) / scale
+
+    x = snapToGridPosition(x)
+    y = snapToGridPosition(y)
+
+    if (dragItem.type === 'room') {
+      const room = dragItem.data as Room
+      const exists = canvasElements.find(el => el.linkedRoomId === room.id)
+      if (exists) {
+        showNotification('info', 'Room already on canvas')
+      } else {
+        const colors = getRoomColor(room.room_type)
+        const newElement: CanvasElement = {
+          id: generateId(),
+          type: 'room',
+          x,
+          y,
+          width: 140,
+          height: 100,
+          rotation: 0,
+          label: room.room,
+          color: colors.bg,
+          borderColor: colors.border,
+          linkedRoomId: room.id,
+          linkedRoomData: room,
+          zIndex: canvasElements.length + 1
+        }
+        setCanvasElements(prev => [...prev, newElement])
+        showNotification('success', `Added ${room.room} to canvas`)
+      }
+    } else if (dragItem.type === 'toolbox') {
+      const item = dragItem.data
+      const newElement: CanvasElement = {
+        id: generateId(),
+        type: item.type,
+        x,
+        y,
+        width: item.width || 100,
+        height: item.height || 60,
+        rotation: 0,
+        label: item.label,
+        color: item.color,
+        borderColor: item.color,
+        zIndex: canvasElements.length + 1
+      }
+      setCanvasElements(prev => [...prev, newElement])
+      showNotification('success', `Added ${item.label} to canvas`)
+    } else if (dragItem.type === 'icon') {
+      const iconOption = dragItem.data
+      const newElement: CanvasElement = {
+        id: generateId(),
+        type: 'icon',
+        x,
+        y,
+        width: 50,
+        height: 50,
+        rotation: 0,
+        label: iconOption.label,
+        color: '#6366f1',
+        iconType: iconOption.name,
+        zIndex: canvasElements.length + 1
+      }
+      setCanvasElements(prev => [...prev, newElement])
+      showNotification('success', `Added ${iconOption.label} icon`)
+    } else if (dragItem.type === 'shape') {
+      const shapeOption = dragItem.data
+      const newElement: CanvasElement = {
+        id: generateId(),
+        type: 'shape',
+        x,
+        y,
+        width: 60,
+        height: 60,
+        rotation: 0,
+        label: shapeOption.label,
+        color: '#10b981',
+        shapeType: shapeOption.name,
+        zIndex: canvasElements.length + 1
+      }
+      setCanvasElements(prev => [...prev, newElement])
+      showNotification('success', `Added ${shapeOption.label} shape`)
+    }
+
+    setDragItem(null)
+    setIsDragging(false)
+    setDragGhost(null)
+  }, [viewMode, dragItem, zoom, canvasElements])
+
+  useEffect(() => {
+    if (!pointerDragActive) return
+
+    const handlePointerMove = (e: PointerEvent) => {
+      updateDragGhostFromPointer(e.clientX, e.clientY)
+    }
+
+    const handlePointerUp = (e: PointerEvent) => {
+      placeDraggedItem(e.clientX, e.clientY)
+      setPointerDragActive(false)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+  }, [pointerDragActive, updateDragGhostFromPointer, placeDraggedItem])
   const [searchQuery, setSearchQuery] = useState('')
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
@@ -700,9 +832,19 @@ export default function MapViewerPage() {
     setSelectedElement(null)
   }
 
+  const handlePointerDragStart = (itemType: 'room' | 'toolbox' | 'icon' | 'shape', data: any, clientX: number, clientY: number) => {
+    if (viewMode !== 'editor' || !isMobile) return
+    autoHideMobileToolbox()
+    setDragItem({ type: itemType, data })
+    setIsDragging(true)
+    setPointerDragActive(true)
+    updateDragGhostFromPointer(clientX, clientY)
+  }
+
   // Handle room drag start from toolbox
   const handleRoomDragStart = (e: React.DragEvent, room: Room) => {
     if (viewMode !== 'editor') return
+    autoHideMobileToolbox()
     setDragItem({ type: 'room', data: room })
     setIsDragging(true)
     e.dataTransfer.effectAllowed = 'copy'
@@ -712,6 +854,7 @@ export default function MapViewerPage() {
   // Handle toolbox item drag start
   const handleToolboxDragStart = (e: React.DragEvent, item: any) => {
     if (viewMode !== 'editor') return
+    autoHideMobileToolbox()
     setDragItem({ type: 'toolbox', data: item })
     setIsDragging(true)
     e.dataTransfer.effectAllowed = 'copy'
@@ -721,6 +864,7 @@ export default function MapViewerPage() {
   // Handle icon drag start
   const handleIconDragStart = (e: React.DragEvent, iconOption: any) => {
     if (viewMode !== 'editor') return
+    autoHideMobileToolbox()
     setDragItem({ type: 'icon', data: iconOption })
     setIsDragging(true)
     e.dataTransfer.effectAllowed = 'copy'
@@ -729,6 +873,7 @@ export default function MapViewerPage() {
   // Handle shape drag start
   const handleShapeDragStart = (e: React.DragEvent, shapeOption: any) => {
     if (viewMode !== 'editor') return
+    autoHideMobileToolbox()
     setDragItem({ type: 'shape', data: shapeOption })
     setIsDragging(true)
     e.dataTransfer.effectAllowed = 'copy'
@@ -753,97 +898,7 @@ export default function MapViewerPage() {
   // Handle drop on canvas
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
-    if (viewMode !== 'editor' || !canvasRef.current || !dragItem) return
-
-    const rect = canvasRef.current.getBoundingClientRect()
-    const scale = zoom / 100
-    let x = (e.clientX - rect.left) / scale
-    let y = (e.clientY - rect.top) / scale
-
-    x = snapToGridPosition(x)
-    y = snapToGridPosition(y)
-
-    if (dragItem.type === 'room') {
-      const room = dragItem.data as Room
-      const exists = canvasElements.find(el => el.linkedRoomId === room.id)
-      if (exists) {
-        showNotification('info', 'Room already on canvas')
-      } else {
-        const colors = getRoomColor(room.room_type)
-        const newElement: CanvasElement = {
-          id: generateId(),
-          type: 'room',
-          x,
-          y,
-          width: 140,
-          height: 100,
-          rotation: 0,
-          label: room.room,
-          color: colors.bg,
-          borderColor: colors.border,
-          linkedRoomId: room.id,
-          linkedRoomData: room,
-          zIndex: canvasElements.length + 1
-        }
-        setCanvasElements(prev => [...prev, newElement])
-        showNotification('success', `Added ${room.room} to canvas`)
-      }
-    } else if (dragItem.type === 'toolbox') {
-      const item = dragItem.data
-      const newElement: CanvasElement = {
-        id: generateId(),
-        type: item.type,
-        x,
-        y,
-        width: item.width || 100,
-        height: item.height || 60,
-        rotation: 0,
-        label: item.label,
-        color: item.color,
-        borderColor: item.color,
-        zIndex: canvasElements.length + 1
-      }
-      setCanvasElements(prev => [...prev, newElement])
-      showNotification('success', `Added ${item.label} to canvas`)
-    } else if (dragItem.type === 'icon') {
-      const iconOption = dragItem.data
-      const newElement: CanvasElement = {
-        id: generateId(),
-        type: 'icon',
-        x,
-        y,
-        width: 50,
-        height: 50,
-        rotation: 0,
-        label: iconOption.label,
-        color: '#6366f1',
-        iconType: iconOption.name,
-        zIndex: canvasElements.length + 1
-      }
-      setCanvasElements(prev => [...prev, newElement])
-      showNotification('success', `Added ${iconOption.label} icon`)
-    } else if (dragItem.type === 'shape') {
-      const shapeOption = dragItem.data
-      const newElement: CanvasElement = {
-        id: generateId(),
-        type: 'shape',
-        x,
-        y,
-        width: 60,
-        height: 60,
-        rotation: 0,
-        label: shapeOption.label,
-        color: '#10b981',
-        shapeType: shapeOption.name,
-        zIndex: canvasElements.length + 1
-      }
-      setCanvasElements(prev => [...prev, newElement])
-      showNotification('success', `Added ${shapeOption.label} shape`)
-    }
-
-    setDragItem(null)
-    setIsDragging(false)
-    setDragGhost(null)
+    placeDraggedItem(e.clientX, e.clientY)
   }
 
   // Handle element drag on canvas
@@ -1836,6 +1891,11 @@ export default function MapViewerPage() {
                                   className={`${styles.roomItem} ${isRoomOnCanvas(room.id) ? styles.onCanvas : ''}`}
                                   draggable={true}
                                   onDragStart={(e) => handleRoomDragStart(e, room)}
+                                  onPointerDown={(e) => {
+                                    if (!isMobile) return
+                                    e.preventDefault()
+                                    handlePointerDragStart('room', room, e.clientX, e.clientY)
+                                  }}
                                   style={{
                                     borderLeftColor: getRoomColor(room.room_type).bg
                                   }}
@@ -1885,6 +1945,11 @@ export default function MapViewerPage() {
                                 className={styles.toolItem}
                                 draggable={true}
                                 onDragStart={(e) => handleToolboxDragStart(e, item)}
+                                onPointerDown={(e) => {
+                                  if (!isMobile) return
+                                  e.preventDefault()
+                                  handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
+                                }}
                               >
                                 <item.icon size={24} />
                                 <span>{item.label}</span>
@@ -1914,6 +1979,11 @@ export default function MapViewerPage() {
                                 className={styles.toolItem}
                                 draggable={true}
                                 onDragStart={(e) => handleToolboxDragStart(e, item)}
+                                onPointerDown={(e) => {
+                                  if (!isMobile) return
+                                  e.preventDefault()
+                                  handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
+                                }}
                               >
                                 <item.icon size={24} />
                                 <span>{item.label}</span>
@@ -1943,6 +2013,11 @@ export default function MapViewerPage() {
                                 className={styles.toolItem}
                                 draggable={true}
                                 onDragStart={(e) => handleToolboxDragStart(e, item)}
+                                onPointerDown={(e) => {
+                                  if (!isMobile) return
+                                  e.preventDefault()
+                                  handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
+                                }}
                               >
                                 <item.icon size={24} />
                                 <span>{item.label}</span>
@@ -1956,6 +2031,11 @@ export default function MapViewerPage() {
                                 className={styles.iconItem}
                                 draggable={true}
                                 onDragStart={(e) => handleIconDragStart(e, iconOpt)}
+                                onPointerDown={(e) => {
+                                  if (!isMobile) return
+                                  e.preventDefault()
+                                  handlePointerDragStart('icon', iconOpt, e.clientX, e.clientY)
+                                }}
                                 title={iconOpt.label}
                               >
                                 <iconOpt.icon size={20} />
@@ -1985,6 +2065,11 @@ export default function MapViewerPage() {
                                 className={styles.iconItem}
                                 draggable={true}
                                 onDragStart={(e) => handleShapeDragStart(e, shapeOpt)}
+                                onPointerDown={(e) => {
+                                  if (!isMobile) return
+                                  e.preventDefault()
+                                  handlePointerDragStart('shape', shapeOpt, e.clientX, e.clientY)
+                                }}
                                 title={shapeOpt.label}
                               >
                                 <shapeOpt.icon size={20} />

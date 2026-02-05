@@ -1341,6 +1341,14 @@
 
 .roomName {
   font-size: 13px;
+
+@media (max-width: 768px) {
+  .roomItem,
+  .toolItem,
+  .iconItem {
+    touch-action: none;
+  }
+}
   font-weight: 600;
   color: var(--content-text);
   white-space: nowrap;
