@@ -93,6 +93,14 @@ export default function FacultyProfilePage() {
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
+  const parseJsonSafely = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return null
+    }
+    return response.json()
+  }
+
   useEffect(() => {
     checkAuthAndLoad()
     fetchDepartments()
@@ -117,8 +125,8 @@ export default function FacultyProfilePage() {
   const fetchDepartments = async () => {
     try {
       const response = await fetch('/api/departments')
-      const data = await response.json()
-      if (data.departments) {
+      const data = await parseJsonSafely(response)
+      if (data?.departments) {
         setDepartments(data.departments)
       }
     } catch (error) {
@@ -132,9 +140,9 @@ export default function FacultyProfilePage() {
       const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await parseJsonSafely(response)
 
-        if (data.schedule) {
+        if (data?.schedule) {
           setAssignedSchedule({
             schedule_id: data.schedule.id,
             schedule_name: data.schedule.schedule_name || 'Unnamed Schedule',
@@ -235,9 +243,9 @@ export default function FacultyProfilePage() {
   const fetchPendingNameRequest = async (userId: string) => {
     try {
       const response = await fetch(`/api/profile-change-requests?userId=${userId}&status=pending`)
-      const data = await response.json()
+      const data = await parseJsonSafely(response)
 
-      if (data.requests && data.requests.length > 0) {
+      if (data?.requests && data.requests.length > 0) {
         const nameRequest = data.requests.find((r: any) => r.field_name === 'full_name')
         if (nameRequest) {
           setPendingNameRequest({ requested_value: nameRequest.requested_value })
@@ -481,7 +489,11 @@ export default function FacultyProfilePage() {
         body: JSON.stringify({ email: user.email })
       })
 
-      const data = await response.json()
+      const data = await parseJsonSafely(response)
+
+      if (!data) {
+        throw new Error('Unexpected response from password reset service')
+      }
 
       if (data.success) {
         setMessage({ type: 'success', text: '✅ Password reset email sent! Check your inbox.' })

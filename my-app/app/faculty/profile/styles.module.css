@@ -52,8 +52,8 @@
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(0, 212, 255, 0.2);
-  border-top-color: #00d4ff;
+  border: 4px solid rgba(var(--college-primary-rgb), 0.2);
+  border-top-color: var(--college-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -75,25 +75,25 @@
   align-items: center;
   padding: 15px 30px;
   background: rgba(20, 26, 50, 0.95);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  border-bottom: 1px solid rgba(var(--college-primary-rgb), 0.2);
 }
 
 .backBtn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(var(--college-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 10px;
   padding: 10px 20px;
-  color: #00d4ff;
+  color: var(--college-primary);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .backBtn:hover {
-  background: rgba(0, 212, 255, 0.2);
+  background: rgba(var(--college-primary-rgb), 0.2);
 }
 
 /* Profile Section */
@@ -118,19 +118,19 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(255, 215, 0, 0.1));
-  border: 2px solid rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.2), rgba(255, 215, 0, 0.1));
+  border: 2px solid rgba(var(--college-primary-rgb), 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00d4ff;
+  color: var(--college-primary);
   transition: all 0.3s ease;
 }
 
 .profileBtn:hover .profileAvatar {
   transform: scale(1.1);
-  border-color: #00d4ff;
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+  border-color: var(--college-primary);
+  box-shadow: 0 0 15px rgba(var(--college-primary-rgb), 0.5);
 }
 
 .profileChevron {
@@ -143,7 +143,7 @@
 }
 
 .profileBtn:hover .profileChevron {
-  color: #00d4ff;
+  color: var(--college-primary);
 }
 
 .profileMenuBackdrop {
@@ -159,7 +159,7 @@
   right: 0;
   background: rgba(20, 26, 50, 0.98);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   min-width: 150px;
@@ -194,7 +194,7 @@
   background: transparent;
   width: 100%;
   text-align: left;
-  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+  border-bottom: 1px solid rgba(var(--college-primary-rgb), 0.1);
   font-family: inherit;
   pointer-events: auto;
 }
@@ -214,7 +214,7 @@
 }
 
 .profileMenuItem:focus {
-  outline: 2px solid rgba(0, 212, 255, 0.5);
+  outline: 2px solid rgba(var(--college-primary-rgb), 0.5);
   outline-offset: -2px;
 }
 
@@ -274,7 +274,7 @@
 /* Profile Card */
 .profileCard {
   background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 20px;
   padding: 30px;
 }
@@ -285,7 +285,7 @@
   align-items: center;
   gap: 25px;
   padding-bottom: 25px;
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  border-bottom: 1px solid rgba(var(--college-primary-rgb), 0.2);
   margin-bottom: 25px;
 }
 
@@ -293,7 +293,7 @@
   position: relative;
   width: 120px;
   height: 120px;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: var(--college-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -317,9 +317,9 @@
   width: 32px;
   height: 32px;
   background: #1a1f3a;
-  border: 2px solid #00d4ff;
+  border: 2px solid var(--college-primary);
   border-radius: 50%;
-  color: #00d4ff;
+  color: var(--college-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -328,7 +328,7 @@
 }
 
 .avatarEditBtn:hover {
-  background: #00d4ff;
+  background: var(--college-primary);
   color: white;
 }
 
@@ -349,8 +349,8 @@
 
 .roleBadge {
   display: inline-block;
-  background: rgba(0, 212, 255, 0.2);
-  color: #00d4ff;
+  background: rgba(var(--college-primary-rgb), 0.2);
+  color: var(--college-primary);
   padding: 5px 15px;
   border-radius: 20px;
   font-size: 12px;
@@ -377,13 +377,13 @@
 }
 
 .editBtn {
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  color: #00d4ff;
+  background: rgba(var(--college-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.3);
+  color: var(--college-primary);
 }
 
 .editBtn:hover {
-  background: #00d4ff;
+  background: var(--college-primary);
   color: white;
 }
 
@@ -450,14 +450,14 @@
 }
 
 .formGroup label svg {
-  color: #00d4ff;
+  color: var(--college-primary);
 }
 
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
   background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 10px;
   padding: 12px 15px;
   color: white;
@@ -469,7 +469,7 @@
 .formGroup input:focus,
 .formGroup select:focus,
 .formGroup textarea:focus {
-  border-color: #00d4ff;
+  border-color: var(--college-primary);
 }
 
 .formGroup input::placeholder,
@@ -480,7 +480,8 @@
 .formGroup select {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300d4ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  color: var(--college-primary);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 12px center;
   background-repeat: no-repeat;
   background-size: 24px;
@@ -552,7 +553,7 @@
 .scheduleSection {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  border-top: 1px solid rgba(var(--college-primary-rgb), 0.2);
 }
 
 .sectionTitle {
@@ -561,7 +562,7 @@
   gap: 0.75rem;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #00d4ff;
+  color: var(--college-primary);
   margin: 0 0 1.5rem 0;
 }
 
@@ -570,7 +571,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: rgba(0, 212, 255, 0.05);
+  background: rgba(var(--college-primary-rgb), 0.05);
   border-radius: 12px;
   color: #a0aec0;
 }
@@ -578,15 +579,15 @@
 .miniSpinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(0, 212, 255, 0.2);
-  border-top-color: #00d4ff;
+  border: 3px solid rgba(var(--college-primary-rgb), 0.2);
+  border-top-color: var(--college-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 .scheduleCard {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.02));
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.05), rgba(var(--college-primary-rgb), 0.02));
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 16px;
   padding: 1.5rem;
 }
@@ -636,7 +637,7 @@
   width: 100%;
   margin-top: 1.5rem;
   padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: var(--college-gradient);
   border: none;
   border-radius: 10px;
   color: white;
@@ -647,7 +648,7 @@
 
 .viewScheduleBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(var(--college-primary-rgb), 0.3);
 }
 
 .noSchedule {
@@ -837,8 +838,8 @@
 }
 
 :global([data-theme="light"]) .spinner {
-  border-color: rgba(0, 212, 255, 0.2);
-  border-top-color: #0099cc;
+  border-color: rgba(var(--college-primary-rgb), 0.2);
+  border-top-color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .pageContainer {
@@ -853,19 +854,19 @@
 }
 
 :global([data-theme="light"]) .backBtn {
-  background: rgba(0, 153, 204, 0.1);
-  border-color: rgba(0, 153, 204, 0.3);
-  color: #0099cc;
+  background: rgba(var(--college-primary-rgb), 0.1);
+  border-color: rgba(var(--college-primary-rgb), 0.3);
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .backBtn:hover {
-  background: rgba(0, 153, 204, 0.2);
+  background: rgba(var(--college-primary-rgb), 0.2);
 }
 
 :global([data-theme="light"]) .profileAvatar {
-  background: linear-gradient(135deg, rgba(0, 153, 204, 0.15), rgba(0, 153, 204, 0.05));
-  border-color: rgba(0, 153, 204, 0.3);
-  color: #0099cc;
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.15), rgba(var(--college-primary-rgb), 0.05));
+  border-color: rgba(var(--college-primary-rgb), 0.3);
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .profileMenu {
@@ -895,9 +896,9 @@
 }
 
 :global([data-theme="light"]) .avatar {
-  background: linear-gradient(135deg, rgba(0, 153, 204, 0.15), rgba(0, 153, 204, 0.05));
-  border-color: rgba(0, 153, 204, 0.3);
-  color: #0099cc;
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.15), rgba(var(--college-primary-rgb), 0.05));
+  border-color: rgba(var(--college-primary-rgb), 0.3);
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .avatarInfo h1 {
@@ -909,12 +910,12 @@
 }
 
 :global([data-theme="light"]) .roleBadge {
-  background: rgba(0, 153, 204, 0.15);
-  color: #0099cc;
+  background: rgba(var(--college-primary-rgb), 0.15);
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .editBtn {
-  background: linear-gradient(135deg, #0099cc, #006699);
+  background: var(--college-gradient);
 }
 
 :global([data-theme="light"]) .formGroup label {
@@ -932,8 +933,8 @@
 :global([data-theme="light"]) .formGroup input:focus,
 :global([data-theme="light"]) .formGroup textarea:focus,
 :global([data-theme="light"]) .formGroup select:focus {
-  border-color: #0099cc;
-  box-shadow: 0 0 0 3px rgba(0, 153, 204, 0.15);
+  border-color: var(--college-primary-dark);
+  box-shadow: 0 0 0 3px rgba(var(--college-primary-rgb), 0.15);
 }
 
 :global([data-theme="light"]) .formGroup p {
@@ -949,22 +950,22 @@
 }
 
 :global([data-theme="light"]) .sectionTitle {
-  color: #0099cc;
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .scheduleLoading {
-  background: rgba(0, 153, 204, 0.05);
+  background: rgba(var(--college-primary-rgb), 0.05);
   color: #64748b;
 }
 
 :global([data-theme="light"]) .miniSpinner {
-  border-color: rgba(0, 153, 204, 0.2);
-  border-top-color: #0099cc;
+  border-color: rgba(var(--college-primary-rgb), 0.2);
+  border-top-color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .scheduleCard {
-  background: linear-gradient(135deg, rgba(0, 153, 204, 0.05), rgba(0, 153, 204, 0.02));
-  border-color: rgba(0, 153, 204, 0.2);
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.05), rgba(var(--college-primary-rgb), 0.02));
+  border-color: rgba(var(--college-primary-rgb), 0.2);
 }
 
 :global([data-theme="light"]) .scheduleStatus {
@@ -980,7 +981,7 @@
 }
 
 :global([data-theme="light"]) .viewScheduleBtn {
-  background: linear-gradient(135deg, #0099cc, #006699);
+  background: var(--college-gradient);
 }
 
 :global([data-theme="light"]) .noSchedule {
@@ -999,8 +1000,8 @@
 }
 
 :global([data-theme="green"]) .spinner {
-  border-color: rgba(0, 212, 255, 0.2) !important;
-  border-top-color: #00d4ff !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  border-top-color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .pageContainer {
@@ -1009,72 +1010,72 @@
 
 :global([data-theme="green"]) .header {
   background: rgba(20, 26, 50, 0.95) !important;
-  border-bottom-color: rgba(0, 212, 255, 0.2) !important;
+  border-bottom-color: rgba(var(--college-primary-rgb), 0.2) !important;
 }
 
 :global([data-theme="green"]) .backBtn {
-  background: rgba(0, 212, 255, 0.1) !important;
-  border-color: rgba(0, 212, 255, 0.2) !important;
-  color: #00d4ff !important;
+  background: rgba(var(--college-primary-rgb), 0.1) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .backBtn:hover {
-  background: rgba(0, 212, 255, 0.2) !important;
+  background: rgba(var(--college-primary-rgb), 0.2) !important;
 }
 
 :global([data-theme="green"]) .profileAvatar {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1)) !important;
-  border-color: rgba(0, 212, 255, 0.3) !important;
-  color: #00d4ff !important;
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.2), rgba(var(--college-primary-rgb), 0.1)) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+  color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .profileMenu {
   background: rgba(20, 26, 50, 0.98) !important;
-  border-color: rgba(0, 212, 255, 0.2) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
 }
 
 :global([data-theme="green"]) .profileMenuItem {
-  border-bottom-color: rgba(0, 212, 255, 0.1) !important;
+  border-bottom-color: rgba(var(--college-primary-rgb), 0.1) !important;
 }
 
 :global([data-theme="green"]) .profileCard {
   background: rgba(20, 26, 50, 0.8) !important;
-  border-color: rgba(0, 212, 255, 0.2) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
 }
 
 :global([data-theme="green"]) .avatar {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1)) !important;
-  border-color: rgba(0, 212, 255, 0.3) !important;
-  color: #00d4ff !important;
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.2), rgba(var(--college-primary-rgb), 0.1)) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+  color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .roleBadge {
-  background: rgba(0, 212, 255, 0.15) !important;
-  color: #00d4ff !important;
+  background: rgba(var(--college-primary-rgb), 0.15) !important;
+  color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .editBtn,
 :global([data-theme="green"]) .saveBtn {
-  background: linear-gradient(135deg, #00d4ff, #00b8db) !important;
+  background: var(--college-gradient) !important;
 }
 
 :global([data-theme="green"]) .formGroup input:focus,
 :global([data-theme="green"]) .formGroup textarea:focus {
-  border-color: #00d4ff !important;
-  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15) !important;
+  border-color: var(--college-primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--college-primary-rgb), 0.15) !important;
 }
 
 :global([data-theme="green"]) .sectionTitle {
-  color: #00d4ff !important;
+  color: var(--college-primary) !important;
 }
 
 :global([data-theme="green"]) .scheduleCard {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.02)) !important;
-  border-color: rgba(0, 212, 255, 0.2) !important;
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.05), rgba(var(--college-primary-rgb), 0.02)) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
 }
 
 :global([data-theme="green"]) .viewScheduleBtn {
-  background: linear-gradient(135deg, #00d4ff, #00b8db) !important;
+  background: var(--college-gradient) !important;
 }
 
 /* Light theme - admin approval hint and pending badge */
@@ -1114,10 +1115,10 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: rgba(var(--college-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.3);
   border-radius: 12px;
-  color: #00d4ff;
+  color: var(--college-primary);
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
@@ -1125,10 +1126,10 @@
 }
 
 .changePasswordBtn:hover {
-  background: rgba(0, 212, 255, 0.2);
-  border-color: rgba(0, 212, 255, 0.5);
+  background: rgba(var(--college-primary-rgb), 0.2);
+  border-color: rgba(var(--college-primary-rgb), 0.5);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--college-primary-rgb), 0.2);
 }
 
 .forgotPasswordBtn {
@@ -1145,8 +1146,8 @@
 }
 
 .passwordChangeForm {
-  background: rgba(0, 212, 255, 0.05);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(var(--college-primary-rgb), 0.05);
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
   border-radius: 16px;
   padding: 1.5rem;
 }
@@ -1178,8 +1179,8 @@
 }
 
 .passwordToggle:hover {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
+  background: rgba(var(--college-primary-rgb), 0.1);
+  color: var(--college-primary);
 }
 
 .passwordActions {
@@ -1192,14 +1193,14 @@
 /* Light Theme Security Styles */
 :global([data-theme="light"]) .changePasswordBtn,
 :global([data-theme="light"]) .forgotPasswordBtn {
-  background: rgba(0, 166, 81, 0.1);
-  border-color: rgba(0, 166, 81, 0.3);
-  color: #00a651;
+  background: rgba(var(--college-primary-rgb), 0.1);
+  border-color: rgba(var(--college-primary-rgb), 0.3);
+  color: var(--college-primary-dark);
 }
 
 :global([data-theme="light"]) .changePasswordBtn:hover {
-  background: rgba(0, 166, 81, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2);
+  background: rgba(var(--college-primary-rgb), 0.2);
+  box-shadow: 0 4px 12px rgba(var(--college-primary-rgb), 0.2);
 }
 
 :global([data-theme="light"]) .forgotPasswordBtn {

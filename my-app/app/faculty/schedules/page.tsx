@@ -30,6 +30,14 @@ import {
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
 
+const parseJsonSafely = async (response: Response) => {
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    return null
+  }
+  return response.json()
+}
+
 interface RoomAllocation {
   id: number
   schedule_id: number
@@ -253,9 +261,9 @@ function RoomSchedulesViewContent() {
       const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
       
       if (response.ok) {
-        const data = await response.json()
+        const data = await parseJsonSafely(response)
         
-        if (data.schedule && data.allocations && data.allocations.length > 0) {
+        if (data?.schedule && data.allocations && data.allocations.length > 0) {
           setHasAssignedSchedule(true)
           setMyAllocations(data.allocations as RoomAllocation[])
           

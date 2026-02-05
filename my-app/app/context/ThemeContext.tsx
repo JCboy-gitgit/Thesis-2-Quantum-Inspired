@@ -175,9 +175,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const setTheme = (newTheme: BaseTheme) => {
-    setThemeState(newTheme)
-    localStorage.setItem('faculty-base-theme', newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
+    const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
+    const normalizedTheme: BaseTheme = isFacultyPage && newTheme === 'green' ? 'light' : newTheme
+    setThemeState(normalizedTheme)
+    localStorage.setItem('faculty-base-theme', normalizedTheme)
+    document.documentElement.setAttribute('data-theme', normalizedTheme)
   }
 
   const setCollegeTheme = (college: CollegeTheme) => {
@@ -188,9 +190,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }
 
   const toggleTheme = () => {
-    // Cycle through green -> dark -> light -> green
+    const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     let newTheme: BaseTheme
-    if (theme === 'green') {
+    if (isFacultyPage) {
+      newTheme = theme === 'dark' ? 'light' : 'dark'
+    } else if (theme === 'green') {
       newTheme = 'dark'
     } else if (theme === 'dark') {
       newTheme = 'light'

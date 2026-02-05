@@ -20,6 +20,108 @@
   --college-text: #00d4ff;
 }
 
+/* ==================== Faculty Theme Token Mapping ==================== */
+/* Map college theme variables to shared tokens used across faculty pages */
+.faculty-page-wrapper,
+.faculty-page-wrapper[data-college-theme],
+[data-college-theme] .faculty-page-wrapper {
+  --primary: var(--college-primary);
+  --primary-light: var(--college-primary-light);
+  --primary-dark: var(--college-primary-dark);
+  --primary-alpha: var(--college-primary-light);
+  --primary-gradient: var(--college-gradient);
+  --accent-gradient: var(--college-gradient);
+  --glow-color: var(--college-glow);
+  --border-color: var(--college-primary-light);
+}
+
+/* ==================== Faculty Tailwind Accent Overrides ==================== */
+/* Map common Tailwind accent classes to college theme colors */
+.faculty-page-wrapper .text-cyan-500,
+.faculty-page-wrapper .text-emerald-500,
+.faculty-page-wrapper .text-cyan-400,
+.faculty-page-wrapper .text-emerald-400 {
+  color: var(--college-primary) !important;
+}
+
+.faculty-page-wrapper .text-cyan-600,
+.faculty-page-wrapper .text-cyan-700,
+.faculty-page-wrapper .text-emerald-600,
+.faculty-page-wrapper .text-emerald-700 {
+  color: var(--college-primary-dark) !important;
+}
+
+.faculty-page-wrapper .bg-cyan-500\/10,
+.faculty-page-wrapper .bg-emerald-500\/10 {
+  background-color: rgba(var(--college-primary-rgb), 0.1) !important;
+}
+
+.faculty-page-wrapper .bg-cyan-500\/20,
+.faculty-page-wrapper .bg-emerald-500\/20 {
+  background-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+.faculty-page-wrapper .bg-cyan-500\/30,
+.faculty-page-wrapper .bg-emerald-500\/30 {
+  background-color: rgba(var(--college-primary-rgb), 0.3) !important;
+}
+
+.faculty-page-wrapper .bg-emerald-100 {
+  background-color: rgba(var(--college-primary-rgb), 0.15) !important;
+}
+
+.faculty-page-wrapper .border-cyan-500\/20,
+.faculty-page-wrapper .border-emerald-500\/20 {
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+.faculty-page-wrapper .border-cyan-500\/30,
+.faculty-page-wrapper .border-emerald-500\/30 {
+  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+}
+
+.faculty-page-wrapper .border-cyan-500,
+.faculty-page-wrapper .border-emerald-500 {
+  border-color: var(--college-primary) !important;
+}
+
+.faculty-page-wrapper .hover\:border-cyan-500:hover,
+.faculty-page-wrapper .hover\:border-emerald-500:hover {
+  border-color: var(--college-primary) !important;
+}
+
+.faculty-page-wrapper .bg-cyan-500,
+.faculty-page-wrapper .bg-emerald-500 {
+  background-color: var(--college-primary) !important;
+}
+
+.faculty-page-wrapper .hover\:bg-cyan-500:hover,
+.faculty-page-wrapper .hover\:bg-emerald-500:hover {
+  background-color: var(--college-primary) !important;
+}
+
+.faculty-page-wrapper .from-cyan-400,
+.faculty-page-wrapper .from-cyan-500,
+.faculty-page-wrapper .from-emerald-400,
+.faculty-page-wrapper .from-emerald-500,
+.faculty-page-wrapper .via-cyan-500,
+.faculty-page-wrapper .via-emerald-500,
+.faculty-page-wrapper .to-cyan-600,
+.faculty-page-wrapper .to-cyan-700,
+.faculty-page-wrapper .to-emerald-600 {
+  background-image: var(--college-gradient) !important;
+}
+
+.faculty-page-wrapper .shadow-cyan-500\/30,
+.faculty-page-wrapper .shadow-emerald-500\/30 {
+  box-shadow: 0 10px 20px rgba(var(--college-primary-rgb), 0.3) !important;
+}
+
+.faculty-page-wrapper .hover\:shadow-cyan-500\/30:hover,
+.faculty-page-wrapper .hover\:shadow-emerald-500\/30:hover {
+  box-shadow: 0 10px 20px rgba(var(--college-primary-rgb), 0.3) !important;
+}
+
 /* SCIENCE THEME (Teal/Emerald) */
 [data-college-theme="science"] .faculty-page-wrapper,
 .faculty-page-wrapper[data-college-theme="science"] {

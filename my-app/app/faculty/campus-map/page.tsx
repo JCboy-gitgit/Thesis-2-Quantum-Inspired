@@ -29,14 +29,41 @@ export default function FacultyCampusMapPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
+  const [isDesktop, setIsDesktop] = useState(false)
   
-  const isLightMode = theme === 'light'
+  // Use effectiveTheme for accurate light mode detection
+  const isLightMode = effectiveTheme === 'light'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
+  // Track desktop/mobile for sidebar margin
   useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
+
+  useEffect(() => {
+    // Initialize theme from localStorage immediately
+    const savedTheme = localStorage.getItem('faculty-base-theme')
+    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
+    setEffectiveTheme(effectiveThemeValue)
+    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
+    setMounted(true)
+    
     checkAuth()
   }, [])
+
+  // Sync with context theme changes
+  useEffect(() => {
+    if (mounted && theme) {
+      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
+      setEffectiveTheme(newEffectiveTheme)
+    }
+  }, [theme, mounted])
 
   const checkAuth = async () => {
     try {
@@ -75,7 +102,7 @@ export default function FacultyCampusMapPage() {
     }
   }
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center gap-5 ${
         isLightMode 
@@ -99,7 +126,7 @@ export default function FacultyCampusMapPage() {
           ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' 
           : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
       }`} 
-      data-theme={theme}
+      data-theme={effectiveTheme}
       data-college-theme={collegeTheme}
     >
       {/* Sidebar */}
@@ -110,7 +137,10 @@ export default function FacultyCampusMapPage() {
       />
 
       {/* Main Layout */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-[250px]' : 'ml-0'}`}>
+      <div 
+        className="flex-1 flex flex-col min-h-screen transition-all duration-300"
+        style={{ marginLeft: isDesktop && sidebarOpen ? '250px' : '0' }}
+      >
         {/* Faculty Menu Bar */}
         <FacultyMenuBar
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -125,18 +155,21 @@ export default function FacultyCampusMapPage() {
           {/* Page Header */}
           <div className="mb-4 sm:mb-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-cyan-700 rounded-xl flex items-center justify-center">
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center"
+                style={{ background: 'var(--college-gradient)' }}
+              >
                 <Map size={20} className="sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white m-0">Campus Floor Plan</h1>
-                <p className="text-xs sm:text-sm text-slate-400 m-0 mt-1">Interactive view of campus buildings and room locations</p>
+                <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold m-0 ${isLightMode ? 'text-slate-900' : 'text-white'}`}>Campus Floor Plan</h1>
+                <p className={`text-xs sm:text-sm m-0 mt-1 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Interactive view of campus buildings and room locations</p>
               </div>
             </div>
           </div>
 
           {/* Campus Map Viewer - Full Height */}
-          <section className="bg-slate-800/80 border border-cyan-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden">
+          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/80 border-cyan-500/20'}`}>
             <div className="w-full" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
               <RoomViewer2D collegeTheme={collegeTheme} />
             </div>

@@ -61,52 +61,64 @@ export default function FacultyHomePage() {
   const [sessionInvalid, setSessionInvalid] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [themeReady, setThemeReady] = useState(false)
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
 
-  // Theme helper
-  const isLightMode = theme === 'light'
+  // Theme helper - use effectiveTheme which is synced from localStorage
+  const isLightMode = effectiveTheme === 'light'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
   useEffect(() => {
+    // Apply theme immediately from localStorage BEFORE mounting
+    const savedTheme = localStorage.getItem('faculty-base-theme')
+    const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+    
+    // Determine effective theme - faculty pages only use light or dark (never green)
+    let themeToApply = savedTheme || 'light'
+    if (themeToApply === 'green') {
+      themeToApply = 'light' // Faculty pages convert green to light
+    }
+    
+    // Set the effective theme immediately for proper styling
+    setEffectiveTheme(themeToApply as 'light' | 'dark')
+    document.documentElement.setAttribute('data-theme', themeToApply)
+    
+    if (savedCollegeTheme) {
+      document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+    }
+    
     setMounted(true)
     // Force styles to apply immediately
     document.body.classList.add('faculty-loaded')
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
     
-    // Wait a brief moment for CSS to fully load before showing content
-    const themeTimer = setTimeout(() => {
-      setThemeReady(true)
-    }, 150)
+    // Wait for CSS to be fully applied - use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setThemeReady(true)
+      })
+    })
     
     return () => {
       document.body.classList.remove('faculty-loaded')
-      clearTimeout(themeTimer)
     }
   }, [])
 
-  // Force re-render after mount to ensure CSS is applied
+  // Sync effectiveTheme when theme context changes (e.g., user toggles theme)
+  useEffect(() => {
+    if (mounted && theme) {
+      // Faculty pages only use light or dark
+      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
+      setEffectiveTheme(newEffectiveTheme)
+    }
+  }, [theme, mounted])
+
+  // Force reflow after everything is ready to ensure styles are applied
   useEffect(() => {
     if (mounted && !loading && themeReady) {
-      // Apply theme immediately to prevent flash
-      const savedTheme = localStorage.getItem('faculty-base-theme')
-      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-      
-      if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme)
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark')
-      }
-      
-      if (savedCollegeTheme) {
-        document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
-      }
-      
-      // Trigger a micro re-render to force CSS application
-      const timer = setTimeout(() => {
-        document.body.offsetHeight // Force reflow
-      }, 50)
-      return () => clearTimeout(timer)
+      // Trigger a reflow to force CSS application
+      document.body.offsetHeight
     }
   }, [mounted, loading, themeReady])
 
@@ -415,12 +427,24 @@ export default function FacultyHomePage() {
     })
   }
 
+  // Determine loading theme from localStorage (before context is ready)
+  const getLoadingTheme = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('faculty-base-theme') === 'light'
+    }
+    return false
+  }
+
   if (loading || !mounted || !themeReady) {
+    const loadingIsLight = getLoadingTheme()
     return (
       <div 
-        className="min-h-screen flex flex-col items-center justify-center text-white gap-5"
+        className="min-h-screen flex flex-col items-center justify-center gap-5"
         style={{ 
-          background: 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+          background: loadingIsLight 
+            ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
+            : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+          color: loadingIsLight ? '#1e293b' : '#ffffff',
           position: 'fixed',
           top: 0,
           left: 0,
@@ -429,8 +453,16 @@ export default function FacultyHomePage() {
           zIndex: 9999
         }}
       >
-        <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-        <p className="text-sm text-slate-400">Loading your dashboard...</p>
+        <div 
+          className="w-12 h-12 rounded-full animate-spin"
+          style={{
+            border: `4px solid ${loadingIsLight ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0, 212, 255, 0.3)'}`,
+            borderTopColor: loadingIsLight ? '#10b981' : '#00d4ff',
+          }}
+        ></div>
+        <p style={{ color: loadingIsLight ? '#64748b' : '#94a3b8' }} className="text-sm">
+          Loading your dashboard...
+        </p>
       </div>
     )
   }
@@ -438,7 +470,7 @@ export default function FacultyHomePage() {
   return (
     <div 
       className={`${styles.pageContainer} faculty-page-wrapper`} 
-      data-theme={theme}
+      data-theme={effectiveTheme}
       data-college-theme={collegeTheme}
       style={{
         backgroundColor: isLightMode ? '#f8fafc' : '#0a0e27',
@@ -453,7 +485,9 @@ export default function FacultyHomePage() {
       />
 
       {/* Main Layout */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-[250px]' : 'ml-0'}`}>
+      <div 
+        className={`flex-1 flex flex-col min-h-screen w-full box-border transition-all duration-300 ${sidebarOpen ? 'md:pl-[250px]' : 'pl-0'}`}
+      >
         {/* Faculty Menu Bar */}
         <FacultyMenuBar
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -464,9 +498,9 @@ export default function FacultyHomePage() {
         />
 
         {/* Main Content */}
-        <main className="flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-6 max-w-[1400px] mx-auto w-full box-border overflow-x-hidden">
+        <main className={`flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pb-6 max-w-[1400px] mx-auto w-full box-border overflow-x-hidden transition-all duration-300 ${isMenuBarHidden ? 'pt-10 sm:pt-12' : 'pt-16 sm:pt-20 md:pt-24'}`}>
           {/* Welcome Banner - Clean responsive layout */}
-          <section className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 mt-2 sm:mt-4 md:mt-8 border ${
+          <section className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6 border ${
             isLightMode 
               ? 'bg-white/95 border-slate-200 shadow-lg' 
               : 'bg-slate-800/80 border-cyan-500/20'
