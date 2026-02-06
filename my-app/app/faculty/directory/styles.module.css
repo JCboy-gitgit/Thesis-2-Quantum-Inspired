@@ -710,6 +710,11 @@
   .collegeCard {
     padding: 1rem;
   }
+
+  /* Hide side panel on mobile, use modal instead */
+  .sidePanel {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -932,34 +937,5 @@
 
   .searchBar input {
     font-size: 0.875rem;
-  }
-
-  /* Side Panel Mobile Styles */
-  .sidePanel {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .panelHeader {
-    padding: 1.5rem;
-    padding-top: 3.5rem;
-  }
-
-  .panelAvatar {
-    width: 80px;
-    height: 80px;
-    font-size: 1.75rem;
-  }
-
-  .panelName {
-    font-size: 1.25rem;
-  }
-
-  .panelPosition {
-    font-size: 0.875rem;
-  }
-
-  .panelBody {
-    padding: 1rem 1.5rem;
   }
 }

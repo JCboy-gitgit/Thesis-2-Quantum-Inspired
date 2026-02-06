@@ -58,6 +58,7 @@ function DepartmentsViewContent() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDept, setSelectedDept] = useState<Department | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -76,6 +77,17 @@ function DepartmentsViewContent() {
       setFilteredDepartments(departments)
     }
   }, [searchTerm, departments])
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const checkAuth = async () => {
     try {
@@ -259,7 +271,8 @@ function DepartmentsViewContent() {
         ))}
       </div>
 
-      {selectedDept && (
+      {/* Mobile Modal */}
+      {isMobile && selectedDept && (
         <div className={styles.modalOverlay} onClick={() => setSelectedDept(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setSelectedDept(null)}>
@@ -321,6 +334,74 @@ function DepartmentsViewContent() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Desktop Side Panel */}
+      {!isMobile && (
+        <div className={`${styles.sidePanel} ${selectedDept ? styles.sidePanelOpen : ''}`}>
+          {selectedDept && (
+            <>
+              <button className={styles.closePanelButton} onClick={() => setSelectedDept(null)}>
+                <X size={24} />
+              </button>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelIcon}>
+                  {getDepartmentIcon(selectedDept.department_code)}
+                </div>
+                <div>
+                  <h2 className={styles.panelName}>{selectedDept.department_name}</h2>
+                  <p className={styles.panelCode}>{selectedDept.department_code}</p>
+                  <div className={styles.statusBadge} data-active={selectedDept.is_active}>
+                    {selectedDept.is_active ? 'Active' : 'Inactive'}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.panelBody}>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoItem}>
+                    <Building2 size={16} />
+                    <strong>College:</strong>
+                    <span>{selectedDept.college}</span>
+                  </div>
+                  {selectedDept.head_name && (
+                    <div className={styles.infoItem}>
+                      <Users size={16} />
+                      <strong>Department Head:</strong>
+                      <span>{selectedDept.head_name}</span>
+                    </div>
+                  )}
+                  {selectedDept.head_email && (
+                    <div className={styles.infoItem}>
+                      <Mail size={16} />
+                      <strong>Email:</strong>
+                      <span>{selectedDept.head_email}</span>
+                    </div>
+                  )}
+                  {selectedDept.contact_phone && (
+                    <div className={styles.infoItem}>
+                      <Phone size={16} />
+                      <strong>Phone:</strong>
+                      <span>{selectedDept.contact_phone}</span>
+                    </div>
+                  )}
+                  {selectedDept.office_location && (
+                    <div className={styles.infoItem}>
+                      <MapPin size={16} />
+                      <strong>Office Location:</strong>
+                      <span>{selectedDept.office_location}</span>
+                    </div>
+                  )}
+                </div>
+                {selectedDept.description && (
+                  <div className={styles.section}>
+                    <h3>Description</h3>
+                    <p>{selectedDept.description}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

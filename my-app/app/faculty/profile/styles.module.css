@@ -101,6 +101,14 @@
   position: relative;
   display: flex;
   align-items: center;
+  z-index: 1002;
+}
+
+.profileMenuWrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .profileBtn {
@@ -150,13 +158,14 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 999;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .profileMenu {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
+  position: fixed;
+  top: 70px;
+  right: 20px;
   background: rgba(20, 26, 50, 0.98);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(var(--college-primary-rgb), 0.2);
@@ -165,7 +174,7 @@
   min-width: 150px;
   overflow: hidden;
   animation: slideInMenu 0.3s ease-out;
-  z-index: 1001;
+  z-index: 2;
   pointer-events: auto;
 }
 

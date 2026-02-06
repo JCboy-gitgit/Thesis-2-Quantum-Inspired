@@ -130,6 +130,7 @@ function FacultyDirectoryContent() {
   const [selectedCollege, setSelectedCollege] = useState<string | null>(null)
   const [stats, setStats] = useState<FacultyStats | null>(null)
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
@@ -148,6 +149,17 @@ function FacultyDirectoryContent() {
   useEffect(() => {
     applyFilters()
   }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedCollege])
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const checkAuth = async () => {
     try {
@@ -453,21 +465,21 @@ function FacultyDirectoryContent() {
         </>
       )}
 
-      {/* Side Panel - Faculty Details */}
-      <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
-        {selectedFaculty && (
-          <>
-            <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
+      {/* Mobile Modal */}
+      {isMobile && selectedFaculty && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedFaculty(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.closeButton} onClick={() => setSelectedFaculty(null)}>
               <X size={24} />
             </button>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                 {getInitials(selectedFaculty.full_name)}
               </div>
               <div>
-                <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
-                <p className={styles.panelPosition}>{selectedFaculty.position}</p>
-                <div className={styles.panelBadges}>
+                <h2 className={styles.modalName}>{selectedFaculty.full_name}</h2>
+                <p className={styles.modalPosition}>{selectedFaculty.position}</p>
+                <div className={styles.modalBadges}>
                   <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                     {getRoleLabel(selectedFaculty.role)}
                   </span>
@@ -480,7 +492,7 @@ function FacultyDirectoryContent() {
                 </div>
               </div>
             </div>
-            <div className={styles.panelBody}>
+            <div className={styles.modalBody}>
               <div className={styles.infoGrid}>
                 {selectedFaculty.faculty_id && (
                   <div className={styles.infoItem}>
@@ -543,9 +555,105 @@ function FacultyDirectoryContent() {
                 </div>
               )}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Side Panel */}
+      {!isMobile && (
+        <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
+          {selectedFaculty && (
+            <>
+              <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
+                <X size={24} />
+              </button>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                  {getInitials(selectedFaculty.full_name)}
+                </div>
+                <div>
+                  <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
+                  <p className={styles.panelPosition}>{selectedFaculty.position}</p>
+                  <div className={styles.panelBadges}>
+                    <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                      {getRoleLabel(selectedFaculty.role)}
+                    </span>
+                    <span 
+                      className={styles.employmentBadge} 
+                      style={{ backgroundColor: getEmploymentBadge(selectedFaculty.employment_type).color }}
+                    >
+                      {getEmploymentBadge(selectedFaculty.employment_type).label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.panelBody}>
+                <div className={styles.infoGrid}>
+                  {selectedFaculty.faculty_id && (
+                    <div className={styles.infoItem}>
+                      <strong>Faculty ID:</strong>
+                      <span>{selectedFaculty.faculty_id}</span>
+                    </div>
+                  )}
+                  {selectedFaculty.college && (
+                    <div className={styles.infoItem}>
+                      <Building2 size={16} />
+                      <strong>College:</strong>
+                      <span>{selectedFaculty.college}</span>
+                    </div>
+                  )}
+                  {selectedFaculty.department && (
+                    <div className={styles.infoItem}>
+                      <Building2 size={16} />
+                      <strong>Department:</strong>
+                      <span>{selectedFaculty.department}</span>
+                    </div>
+                  )}
+                  {selectedFaculty.email && (
+                    <div className={styles.infoItem}>
+                      <Mail size={16} />
+                      <strong>Email:</strong>
+                      <span>{selectedFaculty.email}</span>
+                    </div>
+                  )}
+                  {selectedFaculty.phone && (
+                    <div className={styles.infoItem}>
+                      <Phone size={16} />
+                      <strong>Phone:</strong>
+                      <span>{selectedFaculty.phone}</span>
+                    </div>
+                  )}
+                  {selectedFaculty.office_location && (
+                    <div className={styles.infoItem}>
+                      <MapPin size={16} />
+                      <strong>Office:</strong>
+                      <span>{selectedFaculty.office_location}</span>
+                    </div>
+                  )}
+                </div>
+                {selectedFaculty.specialization && (
+                  <div className={styles.section}>
+                    <h3>Specialization</h3>
+                    <p>{selectedFaculty.specialization}</p>
+                  </div>
+                )}
+                {selectedFaculty.education && (
+                  <div className={styles.section}>
+                    <h3>Education</h3>
+                    <p>{selectedFaculty.education}</p>
+                  </div>
+                )}
+                {selectedFaculty.bio && (
+                  <div className={styles.section}>
+                    <h3>Biography</h3>
+                    <p>{selectedFaculty.bio}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

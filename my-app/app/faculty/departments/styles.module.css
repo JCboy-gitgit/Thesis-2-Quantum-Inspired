@@ -285,6 +285,96 @@
   color: white;
 }
 
+/* Side Panel Styles */
+.sidePanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  max-width: 100%;
+  height: 100vh;
+  background: var(--card-bg);
+  border-left: 2px solid var(--card-border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidePanelOpen {
+  transform: translateX(0);
+}
+
+.closePanelButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--background);
+  border: 2px solid var(--card-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  z-index: 10;
+}
+
+.closePanelButton:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.panelHeader {
+  padding: 2rem;
+  padding-top: 4rem;
+  border-bottom: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(0, 212, 255, 0.05) 100%);
+}
+
+.panelIcon {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.panelName {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+}
+
+.panelCode {
+  background: var(--primary-gradient);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+.panelBody {
+  padding: 1.5rem 2rem;
+  flex: 1;
+}
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -444,6 +534,11 @@
 
   .collegeHeader {
     padding: 1rem;
+  }
+
+  /* Hide side panel on mobile, use modal instead */
+  .sidePanel {
+    display: none;
   }
 }
 

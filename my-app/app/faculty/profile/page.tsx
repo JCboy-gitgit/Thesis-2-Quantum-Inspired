@@ -561,7 +561,7 @@ export default function FacultyProfilePage() {
           </button>
 
           {showProfileMenu && (
-            <>
+            <div className={styles.profileMenuWrapper}>
               <div 
                 className={styles.profileMenuBackdrop}
                 onClick={() => setShowProfileMenu(false)}
@@ -569,7 +569,8 @@ export default function FacultyProfilePage() {
               <div className={styles.profileMenu}>
                 <button
                   className={styles.profileMenuItem}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setShowProfileMenu(false)
                     setShowSettingsModal(true)
                   }}
@@ -580,7 +581,8 @@ export default function FacultyProfilePage() {
                 </button>
                 <button
                   className={styles.profileMenuItem}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setShowProfileMenu(false)
                     handleLogout()
                   }}
@@ -590,7 +592,7 @@ export default function FacultyProfilePage() {
                   <span>Logout</span>
                 </button>
               </div>
-            </>
+            </div>
           )}
         </div>
       </header>
