@@ -1,7 +1,10 @@
 import nodemailer from 'nodemailer'
 
+const smtpPort = Number(process.env.SMTP_PORT || 587)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -34,7 +37,7 @@ export async function sendEmail(options: EmailOptions): Promise<any> {
 
   try {
     const info = await transporter.sendMail({
-      from: `"Qtime Scheduler" <${process.env.EMAIL_USER}>`,
+      from: `"Qtime Scheduler" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -67,7 +70,7 @@ export async function sendBatchEmails(recipients: EmailRecipient[]) {
 
     try {
       await transporter.sendMail({
-        from: `"Qtime Scheduler" <${process.env.EMAIL_USER}>`,
+        from: `"Qtime Scheduler" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
         to: recipient.email,
         subject: `✅ Your Schedule Confirmed: ${recipient.batch_name || 'Test'}`,
         html: generateEmailHTML(recipient),
@@ -119,7 +122,7 @@ export async function sendBatchNotification(
 
   try {
     const mailInfo = await transporter.sendMail({
-      from: `"Qtime Scheduler" <${process.env.EMAIL_USER}>`,
+        from: `"Qtime Scheduler" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
       to: recipient.email,
       subject: `📅 Test Schedule: ${batchDetails.batch_name}`,
       html: generateBatchEmailHTML(recipient, batchDetails),

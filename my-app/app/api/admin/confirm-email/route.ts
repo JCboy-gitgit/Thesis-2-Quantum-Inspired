@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+// Cache-busting wrapper to prevent Next.js from caching Supabase requests
+const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
+  fetch(url, { ...options, cache: 'no-store' })
+
 // Use service role for admin operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { global: { fetch: fetchWithNoCache } }
 )
 
 // POST - Manually confirm a user's email (admin only)

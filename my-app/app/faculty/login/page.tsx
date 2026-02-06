@@ -105,8 +105,8 @@ export default function FacultyLoginPage(): JSX.Element {
             // Auto-redirect for approved faculty (only if keep signed in or has valid session)
             if (keepSignedInFlag === 'true' || storedSessionToken) {
               // Set theme before navigation to prevent flash
-              const savedTheme = localStorage.getItem('faculty-base-theme') || 'dark'
-              const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+              const savedTheme = localStorage.getItem('faculty-base-theme') || 'light'
+              const savedCollegeTheme = localStorage.getItem('faculty-college-theme') || 'default'
               document.documentElement.setAttribute('data-theme', savedTheme)
               document.body.setAttribute('data-theme', savedTheme)
               
@@ -335,8 +335,8 @@ export default function FacultyLoginPage(): JSX.Element {
       router.prefetch('/faculty/home')
       
       // Set theme immediately before navigation to prevent flash
-      const savedTheme = localStorage.getItem('faculty-base-theme') || 'dark'
-      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+      const savedTheme = localStorage.getItem('faculty-base-theme') || 'light'
+      const savedCollegeTheme = localStorage.getItem('faculty-college-theme') || 'default'
       document.documentElement.setAttribute('data-theme', savedTheme)
       document.body.setAttribute('data-theme', savedTheme)
       
@@ -349,7 +349,7 @@ export default function FacultyLoginPage(): JSX.Element {
         document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
       }
       
-      setMessage(`Welcome back, ${userData.full_name || 'Faculty'}! Redirecting...`)
+      setMessage(`Welcome back!, ${userData.full_name || 'Faculty'} Redirecting...`)
       setTimeout(() => {
         // Use replace to prevent back navigation to login
         router.replace('/faculty/home')

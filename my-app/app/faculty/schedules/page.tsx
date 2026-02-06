@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import { useTheme } from '@/app/context/ThemeContext'
 import { 
   ArrowLeft, 
@@ -88,7 +89,7 @@ interface AssignedSchedule {
   schedule_name?: string
 }
 
-type ViewMode = 'my-schedule' | 'rooms' | 'faculty' | 'classes' | 'timetable'
+type ViewMode = 'my-schedule' | 'rooms' | 'faculty' | 'classes' | 'timeline' | 'timetable'
 type TimetableType = 'room' | 'faculty' | 'section'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -139,9 +140,64 @@ function RoomSchedulesViewContent() {
   const [timetableItems, setTimetableItems] = useState<string[]>([])
   const [selectedTimetableItem, setSelectedTimetableItem] = useState<string>('')
   const [timetableIndex, setTimetableIndex] = useState<number>(0)
+  const [timelineDayIndex, setTimelineDayIndex] = useState<number>(0)
+
+  // Timeline derived values (must be after timelineDayIndex state)
+  const timelineDay = DAYS[timelineDayIndex] || DAYS[0]
+  const timelineAllocations = filteredAllocations
+    .filter(a => (a.schedule_day || '').toLowerCase().includes(timelineDay.toLowerCase()))
+    .sort((a, b) => (a.schedule_time || '').localeCompare(b.schedule_time || ''))
 
   useEffect(() => {
     checkAuth()
+  }, [])
+
+  // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
+  useEffect(() => {
+    const refreshUserData = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return
+
+        // Fetch fresh user data
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, email, full_name')
+          .eq('id', session.user.id)
+          .single()
+
+        // Fetch faculty_profiles for updated name
+        const { data: facultyProfile } = await supabase
+          .from('faculty_profiles')
+          .select('full_name, department, college')
+          .eq('user_id', userData?.id)
+          .single()
+
+        if (userData) {
+          setUser({
+            id: userData.id,
+            email: userData.email,
+            full_name: facultyProfile?.full_name || userData.full_name,
+            department: facultyProfile?.department || user?.department,
+            college: facultyProfile?.college || user?.college
+          })
+        }
+      } catch (error) {
+        console.error('Failed to refresh user data:', error)
+      }
+    }
+
+    // Refresh every 30 seconds
+    const refreshInterval = setInterval(refreshUserData, 30 * 1000)
+
+    return () => clearInterval(refreshInterval)
+  }, [user])
+
+  useEffect(() => {
+    const todayIndex = new Date().getDay() - 1
+    if (todayIndex >= 0 && todayIndex < DAYS.length) {
+      setTimelineDayIndex(todayIndex)
+    }
   }, [])
 
   useEffect(() => {
@@ -233,7 +289,7 @@ function RoomSchedulesViewContent() {
       const { data: facultyProfile } = await supabase
         .from('faculty_profiles')
         .select('full_name, department, college')
-        .eq('email', session.user.email || '')
+        .eq('user_id', userData.id)
         .single() as { data: { full_name?: string; department?: string; college?: string } | null; error: any }
 
       setUser({
@@ -258,7 +314,7 @@ function RoomSchedulesViewContent() {
 
   const fetchMySchedule = async (email: string) => {
     try {
-      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
       
       if (response.ok) {
         const data = await parseJsonSafely(response)
@@ -289,6 +345,7 @@ function RoomSchedulesViewContent() {
       const { data: scheduleData, error } = await supabase
         .from('generated_schedules')
         .select('*')
+        .order('is_current', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(10) as { data: any[] | null; error: any }
 
@@ -319,7 +376,8 @@ function RoomSchedulesViewContent() {
         
         // Only auto-select if we're not viewing my schedule
         if (viewMode !== 'my-schedule' && schedulesWithNames.length > 0) {
-          handleSelectSchedule(schedulesWithNames[0])
+          const current = schedulesWithNames.find(s => (s as any).is_current) || schedulesWithNames[0]
+          handleSelectSchedule(current)
         }
       }
     } catch (error) {
@@ -1120,6 +1178,13 @@ function RoomSchedulesViewContent() {
           All Classes
         </button>
         <button 
+          className={`${styles.viewTab} ${viewMode === 'timeline' ? styles.activeTab : ''}`}
+          onClick={() => handleViewModeChange('timeline')}
+        >
+          <Clock size={18} />
+          Timeline
+        </button>
+        <button 
           className={`${styles.viewTab} ${viewMode === 'timetable' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('timetable')}
         >
@@ -1308,6 +1373,45 @@ function RoomSchedulesViewContent() {
                   )
                 })}
               </>
+            )}
+
+            {viewMode === 'timeline' && (
+              <div className={styles.timelineWrapper}>
+                <div className={styles.timelineHeader}>
+                  <button
+                    className={styles.timelineNav}
+                    onClick={() => setTimelineDayIndex(prev => (prev - 1 + DAYS.length) % DAYS.length)}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className={styles.timelineDay}>{timelineDay}</span>
+                  <button
+                    className={styles.timelineNav}
+                    onClick={() => setTimelineDayIndex(prev => (prev + 1) % DAYS.length)}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                {timelineAllocations.length === 0 ? (
+                  <div className={styles.timelineEmpty}>No classes for this day.</div>
+                ) : (
+                  <div className={styles.timelineList}>
+                    {timelineAllocations.map(allocation => (
+                      <div key={allocation.id} className={styles.timelineCard}>
+                        <div className={styles.timelineTime}>
+                          <Clock size={14} />
+                          {allocation.schedule_time}
+                        </div>
+                        <div className={styles.timelineInfo}>
+                          <h3>{allocation.course_code}</h3>
+                          <p>{allocation.course_name}</p>
+                          <span>{allocation.building} • {allocation.room}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Rooms View - Group by Room */}

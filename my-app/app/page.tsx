@@ -5,6 +5,7 @@ import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import './styles/login.css'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 
 type Mode = 'login' | 'register'
 
@@ -149,7 +150,7 @@ function PageContent(): JSX.Element {
 
   const fetchColleges = async () => {
     try {
-      const response = await fetch('/api/colleges')
+      const response = await fetchNoCache('/api/colleges')
       const data = await response.json()
       if (data.colleges) {
         setColleges(data.colleges)
@@ -258,33 +259,23 @@ function PageContent(): JSX.Element {
           router.push('/LandingPages/Home')
         }, 1500)
       } else {
-        // Faculty registration with metadata
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              college: selectedCollege
-            }
-          }
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            fullName,
+            college: selectedCollege
+          })
         })
-        if (error) throw error
 
-        // Also save to users table immediately
-        if (data.user) {
-          await supabase.from('users').upsert({
-            id: data.user.id,
-            email: email,
-            full_name: fullName,
-            college: selectedCollege,
-            role: 'faculty',
-            is_active: false,
-            created_at: new Date().toISOString()
-          } as any, { onConflict: 'id' })
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data?.error || 'Registration failed')
         }
 
-        setMessage('Registration successful! Please wait for admin approval. You will receive an email once approved.')
+        setMessage('Registration successful! Please verify your email, then wait for admin approval.')
         setRegisterSuccess(true)
         setTimeout(() => {
           setEmail('')

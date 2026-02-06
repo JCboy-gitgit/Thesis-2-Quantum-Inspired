@@ -262,6 +262,7 @@ function FacultyListsContent() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0) // Force re-fetch trigger
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -270,7 +271,7 @@ function FacultyListsContent() {
   useEffect(() => {
     checkAuth()
     fetchFacultyData()
-  }, [])
+  }, [refreshKey]) // Re-fetch when refreshKey changes
 
   useEffect(() => {
     applyFilters()
@@ -428,16 +429,27 @@ function FacultyListsContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Inserting faculty:', newFaculty)
+      const { data, error } = await (supabase as any)
         .from('faculty_profiles')
         .insert([newFaculty])
+        .select()
 
+      console.log('Insert result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+
+      // Add new faculty to local state directly
+      const newFacultyData = data[0] as FacultyProfile
+      setAllFaculty(prev => [...prev, newFacultyData])
 
       setSuccessMessage('Faculty member added successfully!')
       setShowAddModal(false)
       resetForm()
-      fetchFacultyData()
+      setRefreshKey(prev => prev + 1) // Force re-fetch to update file groups
+      router.refresh() // Force refresh cached data
 
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
@@ -459,7 +471,8 @@ function FacultyListsContent() {
     setSaving(true)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Updating faculty ID:', selectedFaculty.id)
+      const { data, error } = await (supabase as any)
         .from('faculty_profiles')
         .update({
           full_name: formData.full_name,
@@ -475,13 +488,23 @@ function FacultyListsContent() {
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedFaculty.id)
+        .select()
 
+      console.log('Update result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+
+      // Update local state directly with returned data
+      const updatedFaculty = data[0] as FacultyProfile
+      setAllFaculty(prev => prev.map(f => f.id === updatedFaculty.id ? updatedFaculty : f))
 
       setSuccessMessage('Faculty member updated successfully!')
       setShowEditModal(false)
       resetForm()
-      fetchFacultyData()
+      setRefreshKey(prev => prev + 1) // Force re-fetch to ensure consistency
+      router.refresh() // Force refresh cached data
 
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
@@ -518,17 +541,27 @@ function FacultyListsContent() {
       }
 
       // Delete from faculty_profiles
-      const { error } = await supabase
+      console.log('Deleting faculty ID:', selectedFaculty.id)
+      const { data, error } = await supabase
         .from('faculty_profiles')
         .delete()
         .eq('id', selectedFaculty.id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+
+      // Remove from local state directly
+      setAllFaculty(prev => prev.filter(f => f.id !== selectedFaculty.id))
 
       setSuccessMessage(`"${selectedFaculty.full_name}" has been archived and deleted`)
       setShowDeleteConfirm(false)
       setSelectedFaculty(null)
-      fetchFacultyData()
+      setRefreshKey(prev => prev + 1) // Force re-fetch to update stats
+      router.refresh() // Force refresh cached data
 
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
@@ -565,6 +598,7 @@ function FacultyListsContent() {
       setShowRenameModal(false)
       setRenameFileName('')
       fetchFacultyData()
+      router.refresh() // Force refresh cached data
 
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
@@ -621,6 +655,7 @@ function FacultyListsContent() {
       setShowDeleteFileConfirm(false)
       setSelectedFile(null)
       fetchFacultyData()
+      router.refresh() // Force refresh cached data
 
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {

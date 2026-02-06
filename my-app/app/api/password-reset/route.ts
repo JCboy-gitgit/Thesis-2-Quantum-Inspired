@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailService'
 import crypto from 'crypto'
 
-// Use service role for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // Generate password reset email HTML
 function generatePasswordResetEmail(fullName: string, resetLink: string): string {
@@ -71,6 +69,7 @@ function generatePasswordResetEmail(fullName: string, resetLink: string): string
 // POST - Send password reset email
 export async function POST(request: NextRequest) {
   try {
+    const supabase Admin = createAdminClient()
     const body = await request.json()
     const { email } = body
 
@@ -168,6 +167,7 @@ export async function POST(request: NextRequest) {
 // GET - Verify token is valid (used by reset-password page)
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
 
@@ -211,6 +211,7 @@ export async function GET(request: NextRequest) {
 // PUT - Reset password using token
 export async function PUT(request: NextRequest) {
   try {
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
     const { token, newPassword } = body
 

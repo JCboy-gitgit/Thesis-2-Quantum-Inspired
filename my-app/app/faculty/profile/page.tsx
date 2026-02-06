@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import {
   User,
   Mail,
@@ -12,20 +13,13 @@ import {
   Edit3,
   Save,
   X,
-  ArrowLeft,
   Camera,
   Briefcase,
   BookOpen,
-  LogOut,
-  ChevronDown,
-  Sun,
-  Moon,
-  Palette,
   Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
-  Settings,
   Lock,
   Key,
   Eye,
@@ -34,6 +28,8 @@ import {
 import styles from './styles.module.css'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 import FacultySettingsModal from '@/app/components/FacultySettingsModal'
+import FacultySidebar from '@/app/components/FacultySidebar'
+import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import '@/app/styles/faculty-global.css'
 
 interface UserProfile {
@@ -47,6 +43,9 @@ interface UserProfile {
   bio?: string
   specialization?: string
   avatar_url?: string
+  college?: string
+  department?: string
+  position?: string
 }
 
 interface Department {
@@ -73,8 +72,8 @@ export default function FacultyProfilePage() {
   const [editing, setEditing] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState<UserProfile | null>(null)
-  const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [showThemeSettings, setShowThemeSettings] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
@@ -106,25 +105,9 @@ export default function FacultyProfilePage() {
     fetchDepartments()
   }, [])
 
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      // Don't close if clicking on the profile button, menu, or menu items
-      if (!target.closest('.profileSection') && !target.closest('.profileMenu')) {
-        setShowProfileMenu(false)
-      }
-    }
-
-    if (showProfileMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [showProfileMenu])
-
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/departments')
+      const response = await fetchNoCache('/api/departments')
       const data = await parseJsonSafely(response)
       if (data?.departments) {
         setDepartments(data.departments)
@@ -137,7 +120,7 @@ export default function FacultyProfilePage() {
   const fetchAssignedSchedule = async (email: string) => {
     setLoadingSchedule(true)
     try {
-      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
 
       if (response.ok) {
         const data = await parseJsonSafely(response)
@@ -218,7 +201,10 @@ export default function FacultyProfilePage() {
         phone: facultyProfileData?.phone || profileData?.contact_phone || userData.phone || '',
         office_location: facultyProfileData?.office_location || profileData?.office_location || '',
         bio: profileData?.bio || '',
-        specialization: facultyProfileData?.specialization || profileData?.specialization || ''
+        specialization: facultyProfileData?.specialization || profileData?.specialization || '',
+        college: facultyProfileData?.college || '',
+        department: facultyProfileData?.department || '',
+        position: facultyProfileData?.position || ''
       }
 
       setUser(fullProfile)
@@ -266,7 +252,66 @@ export default function FacultyProfilePage() {
       // Name can now be changed directly by faculty (no approval needed)
       const nameChanged = editForm.full_name !== user.full_name
 
-      // Update other fields directly (phone, office_location, bio, specialization)
+      // Update name directly in users table (faculty can now edit their own name)
+      if (nameChanged) {
+        const { error: nameError } = await supabase
+          .from('users')
+          .update({
+            full_name: editForm.full_name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+
+        if (nameError) {
+          console.error('Name update error:', nameError)
+          throw new Error('Failed to update name: ' + nameError.message)
+        }
+
+        // Also update faculty_profiles by user_id (primary key relationship)
+        const { error: facultyError } = await supabase
+          .from('faculty_profiles')
+          .update({
+            full_name: editForm.full_name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+
+        if (facultyError) {
+          // Log the actual error details (code, message, hint)
+          console.warn('Faculty profile update skipped:', facultyError?.message || facultyError?.code || 'Unknown error', facultyError?.hint || '')
+          // Don't throw - faculty_profiles might not exist for this user
+        }
+      }
+
+      // Update phone in both tables
+      if (editForm.phone !== user.phone) {
+        const { error: phoneError } = await supabase
+          .from('users')
+          .update({
+            phone: editForm.phone,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+
+        if (phoneError) {
+          console.warn('Phone update error:', phoneError?.message || phoneError?.code || 'Unknown error')
+        }
+
+        // Also update in faculty_profiles
+        const { error: facultyPhoneError } = await supabase
+          .from('faculty_profiles')
+          .update({
+            phone: editForm.phone,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+
+        if (facultyPhoneError) {
+          console.warn('Faculty phone update skipped:', facultyPhoneError?.message || facultyPhoneError?.code || 'Unknown error')
+        }
+      }
+
+      // Update other fields in user_profiles
       const profileData = {
         user_id: user.id,
         office_location: editForm.office_location,
@@ -275,57 +320,31 @@ export default function FacultyProfilePage() {
         updated_at: new Date().toISOString()
       }
 
-      // Try to upsert user_profiles
-      const profileResult = await (supabase
-        .from('user_profiles') as any)
-        .upsert(profileData, { onConflict: 'user_id' })
+      // Try to update first
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-      const profileError = profileResult?.error
-      if (profileError) {
-        console.error('Profile update error:', profileError)
-      }
+      if (existingProfile) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('user_id', user.id)
 
-      // Update name directly in users table (faculty can now edit their own name)
-      if (nameChanged) {
-        const nameUpdateResult = await (supabase
-          .from('users') as any)
-          .update({
-            full_name: editForm.full_name,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-
-        const nameError = nameUpdateResult?.error
-        if (nameError) {
-          console.error('Name update error:', nameError)
-          throw new Error('Failed to update name')
+        if (updateError) {
+          console.error('Profile update error:', updateError)
         }
+      } else {
+        // Insert new record if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert([profileData])
 
-        // Also update faculty_profiles if exists
-        if (user.email) {
-          await (supabase
-            .from('faculty_profiles') as any)
-            .update({
-              full_name: editForm.full_name,
-              updated_at: new Date().toISOString()
-            })
-            .eq('email', user.email)
-        }
-      }
-
-      // Update phone in users table
-      if (editForm.phone !== user.phone) {
-        const phoneUpdateResult = await (supabase
-          .from('users') as any)
-          .update({
-            phone: editForm.phone,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id)
-
-        const phoneError = phoneUpdateResult?.error
-        if (phoneError) {
-          console.error('Phone update error:', phoneError)
+        if (insertError) {
+          console.error('Profile insert error:', insertError)
         }
       }
 
@@ -341,6 +360,9 @@ export default function FacultyProfilePage() {
 
       setEditing(false)
       setMessage({ type: 'success', text: '✅ Profile updated successfully!' })
+      
+      // Force refresh to ensure all cached data is updated
+      router.refresh()
 
     } catch (error: any) {
       console.error('Save error:', error)
@@ -412,11 +434,27 @@ export default function FacultyProfilePage() {
 
       if (updateError) throw updateError
 
-      // Update local state
-      setUser({ ...user, avatar_url: publicUrl })
-      if (editForm) setEditForm({ ...editForm, avatar_url: publicUrl })
+      // Also update faculty_profiles profile_image if record exists (matches by email)
+      if (user.email) {
+        const facultyUpdateResult = await db
+          .from('faculty_profiles')
+          .update({ profile_image: publicUrl })
+          .eq('email', user.email)
+
+        if (facultyUpdateResult?.error) {
+          console.log('Note: faculty_profiles profile_image update not critical:', facultyUpdateResult.error)
+        }
+      }
+
+      // Update local state with cache bust for immediate refresh
+      const avatarUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+      setUser({ ...user, avatar_url: avatarUrlWithCacheBust })
+      if (editForm) setEditForm({ ...editForm, avatar_url: avatarUrlWithCacheBust })
       
       setMessage({ type: 'success', text: 'Profile image updated successfully!' })
+      
+      // Force refresh to ensure all cached data is updated
+      router.refresh()
     } catch (error: any) {
       console.error('Error uploading image:', error)
       setMessage({ type: 'error', text: error.message || 'Failed to upload image' })
@@ -508,27 +546,6 @@ export default function FacultyProfilePage() {
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      console.log('Logging out from profile page...')
-      // Close the menu immediately for better UX
-      setShowProfileMenu(false)
-
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('Logout error:', error)
-      } else {
-        console.log('Logout successful')
-      }
-      // Force redirect to login page
-      router.push('/faculty/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
-      // Even if logout fails, redirect to login
-      router.push('/faculty/login')
-    }
-  }
-
   if (loading) {
     return (
       <div className={styles.loadingScreen}>
@@ -540,63 +557,26 @@ export default function FacultyProfilePage() {
 
   return (
     <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
-      {/* Header */}
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => router.push('/faculty/home')}>
-          <ArrowLeft size={20} />
-          <span>Back to Dashboard</span>
-        </button>
+      {/* Sidebar */}
+      <FacultySidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        menuBarHidden={isMenuBarHidden}
+      />
 
-        {/* Profile Icon with Dropdown */}
-        <div className={styles.profileSection}>
-          <button
-            className={styles.profileBtn}
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            title="Profile Menu"
-          >
-            <div className={styles.profileAvatar}>
-              <User size={20} />
-            </div>
-            <ChevronDown size={14} className={`${styles.profileChevron} ${showProfileMenu ? styles.rotated : ''}`} />
-          </button>
+      {/* Main Layout */}
+      <div className={`flex-1 flex flex-col min-h-screen w-full box-border transition-all duration-300 ${sidebarOpen ? 'md:pl-[250px]' : ''}`}>
+        {/* Faculty Menu Bar */}
+        <FacultyMenuBar
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+          isHidden={isMenuBarHidden}
+          onToggleHidden={setIsMenuBarHidden}
+          userEmail={user?.email}
+        />
 
-          {showProfileMenu && (
-            <>
-              <div 
-                className={styles.profileMenuBackdrop}
-                onClick={() => setShowProfileMenu(false)}
-              />
-              <div className={styles.profileMenu}>
-                <button
-                  className={styles.profileMenuItem}
-                  onClick={() => {
-                    setShowProfileMenu(false)
-                    setShowSettingsModal(true)
-                  }}
-                  type="button"
-                >
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </button>
-                <button
-                  className={styles.profileMenuItem}
-                  onClick={() => {
-                    setShowProfileMenu(false)
-                    handleLogout()
-                  }}
-                  type="button"
-                >
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className={styles.mainContent}>
+        {/* Main Content */}
+        <main className={`${styles.mainContent} ${isMenuBarHidden ? 'pt-10 sm:pt-12' : 'pt-16 sm:pt-20 md:pt-24'}`}>
         {/* Message Toast */}
         {message && (
           <div className={`${styles.toast} ${styles[message.type]}`}>
@@ -643,7 +623,21 @@ export default function FacultyProfilePage() {
             <div className={styles.avatarInfo}>
               <h1>{user?.full_name || 'Faculty Member'}</h1>
               <p className={styles.email}>{user?.email}</p>
-              <span className={styles.roleBadge}>Faculty</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                <span className={styles.roleBadge}>{user?.position || 'Faculty'}</span>
+                {user?.college && (
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'var(--text-secondary)',
+                    padding: '4px 10px',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(16, 185, 129, 0.2)'
+                  }}>
+                    {user.college}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -938,6 +932,7 @@ export default function FacultyProfilePage() {
           </div>
         </div>
       </main>
+      </div>
 
       {/* Settings Modal */}
       <FacultySettingsModal

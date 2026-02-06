@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BulSU CAL Curriculum CSV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        
+        .program-title {
+            color: #11998e;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #11998e;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            color: #11998e;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+
+        .filter-section label {
+            font-weight: 600;
+            color: #333;
+            margin-right: 10px;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(17, 153, 142, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .preview pre {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #333;
+            border: 1px solid #dee2e6;
+            white-space: pre-wrap;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CAL Curriculum CSV Generator</h1>
+        <p class="program-title">College of Arts and Letters (BulSU)</p>
+        <p class="subtitle">Digitized from CAL-CURRICULUM.pdf (Broadcasting, Journalism, Performing Arts)</p>
+        
+        <div class="info-box">
+            <h3>CSV Format</h3>
+            <p>This tool generates a CSV file with the following columns: Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+        </div>
+
+        <div class="filter-section">
+            <label for="programSelect">Select Program to Download:</label>
+            <select id="programSelect" onchange="updateStats()">
+                <option value="all">All Programs</option>
+                <option value="BA Broadcasting">BA Broadcasting (2025 Revised)</option>
+                <option value="BA Journalism">BA Journalism (2025 Revised)</option>
+                <option value="BPA Theatre">BPA Theatre Track (2024 Revised)</option>
+            </select>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCourses">0</div>
+                <div class="label">Total Courses</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="totalUnits">0</div>
+                <div class="label">Total Lecture Units</div>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="generateCSV()">Generate & Download CSV</button>
+        
+        <div class="preview" id="preview" style="display:none;">
+            <h3>CSV Preview (First 15 rows)</h3>
+            <pre id="previewContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const curriculumData = [
+            // ================= BA BROADCASTING (2025 Revised) =================
+            // 1st Year - 1st Sem
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "STS 101", title: "Science, Technology and Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "FIL 102a", title: "Gramatikang Filipino", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAB 102", title: "Introduction to Communication and Media", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAB 103", title: "Introduction to Broadcasting, Interactive and Emerging Media", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "PE 10", title: "PE 1", labUnits: "0", labHours: "0", lecHours: "2", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "1st Semester", grade: "", code: "NSTP 10", title: "NSTP 1", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            
+            // 1st Year - 2nd Sem
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "BAB 104", title: "Media Laws", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "BAB 105", title: "Media Ethics", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "BAB 102b", title: "Photography and Videography", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "AE 101", title: "Academic English for Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "PE 11", title: "PE 2", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 10"},
+            {degree: "BA Broadcasting (2025)", year: "1", semester: "2nd Semester", grade: "", code: "NSTP 11", title: "NSTP 2", labUnits: "0", labHours: "0", lecHours: "3", prereq: "NSTP 10"},
+
+            // 2nd Year - 1st Sem
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "MST 101d", title: "Living in the IT Era", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 201", title: "Communication and Media Theories", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 202", title: "Research in Broadcasting, Interactive and Emerging Media", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 203", title: "Non-Linear Post-production", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 204", title: "Writing Nondramatic Materials", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 201b", title: "Performance of Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAB 201d", title: "Production Design", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "1st Semester", grade: "", code: "PE 12", title: "PE 3", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 11"},
+
+            // 2nd Year - 2nd Sem
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "AAH 101b", title: "Philippine Popular Culture", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "SSP 101c", title: "Gender and Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't ibang Disiplina", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAB 205", title: "Studies of Audiences", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAB 206", title: "Writing Dramatic Materials", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 203"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAB 207", title: "Production for Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 203; BAB 204"},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAB 201", title: "Advertising Principles", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "2", semester: "2nd Semester", grade: "", code: "PE 13", title: "PE 4", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 12"},
+
+            // 3rd Year - 1st Sem
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAB 301", title: "Producing Live for Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 207"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAB 302", title: "News Writing and Production", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 207"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAB 303", title: "Political Economy of Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAB 304", title: "Broadcasting Institution Management", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 102; BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAB 305", title: "Analysis of Broadcasting Texts", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 201; BAB 202"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "1st Semester", grade: "", code: "RLW 101", title: "Rizal's Life and Works", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 3rd Year - 2nd Sem
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAB 306", title: "Producing Pre-recorded Content", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 301"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAB 307", title: "Programming for Broadcasting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAB 103"},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAB 301a", title: "Marketing and Promotions", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAB 301b", title: "Producing Documentaries", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAB 301c", title: "Development Discourses", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "2nd Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 3rd Year - Midyear
+            {degree: "BA Broadcasting (2025)", year: "3", semester: "Midyear", grade: "", code: "BAB 308", title: "Internship", labUnits: "0", labHours: "0", lecHours: "6", prereq: "All Major Subjects"},
+
+            // 4th Year
+            {degree: "BA Broadcasting (2025)", year: "4", semester: "1st Semester", grade: "", code: "BAB 401", title: "Thesis 1", labUnits: "0", labHours: "0", lecHours: "6", prereq: "All Major Subjects"},
+            {degree: "BA Broadcasting (2025)", year: "4", semester: "2nd Semester", grade: "", code: "BAB 402", title: "Thesis 2", labUnits: "0", labHours: "0", lecHours: "6", prereq: "BAB 401"},
+            {degree: "BA Broadcasting (2025)", year: "4", semester: "2nd Semester", grade: "", code: "BAB 401a", title: "Special Topics (Personality Dev)", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // ================= BA JOURNALISM (2025 Revised) =================
+            // 1st Year - 1st Sem
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "STS 101", title: "Science Technology and Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAJ 101", title: "Introduction to Communication", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAJ 102", title: "Journalism Principles and Practices", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAJ 103", title: "Media and the Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAJ 101a", title: "General Sciences (Cognate 1)", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "BAJ 102a", title: "Gramatikang Filipino (Cognate 2)", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "PE 10", title: "P.E. 1", labUnits: "0", labHours: "0", lecHours: "2", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "1st Semester", grade: "", code: "NSTP 10", title: "NSTP 1", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 1st Year - 2nd Sem
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "AAP 101", title: "Art Appreciation", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't Ibang Disiplina", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "BAJ 104", title: "Newswriting and Reporting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 101"},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "BAJ 101b", title: "Basic Programming (Journalism Elective 1)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 102"},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "PE 11", title: "P.E. 2", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 10"},
+            {degree: "BA Journalism (2025)", year: "1", semester: "2nd Semester", grade: "", code: "NSTP 11", title: "NSTP 2", labUnits: "0", labHours: "0", lecHours: "3", prereq: "NSTP 10"},
+
+            // 2nd Year - 1st Sem
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "MST 101d", title: "Living In the IT Era", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 201", title: "Research for Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 102"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 202", title: "Communication Theory", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 101"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 201a", title: "Desktop Application (Cognate 3)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 201"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 201b", title: "Stylistics (Cognate 4)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 201"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 203", title: "Journalism Ethics", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104, ETH 101"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 204", title: "Feature Writing", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 102"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "BAJ 205", title: "News Editing and Production", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "1st Semester", grade: "", code: "PE 12", title: "P.E. 3", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 11"},
+
+            // 2nd Year - 2nd Sem
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAJ 206", title: "English for Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "PCM 101"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "AAH 101b", title: "Philippine Popular Culture", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "SSP 101b", title: "Gender and Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAJ 207", title: "Digital Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAJ 208", title: "Opinion and Commentary", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 102"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAJ 209", title: "Photojournalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "BAJ 210", title: "Media Laws", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 201"},
+            {degree: "BA Journalism (2025)", year: "2", semester: "2nd Semester", grade: "", code: "PE 13", title: "P.E. 4", labUnits: "0", labHours: "0", lecHours: "2", prereq: "PE 12"},
+
+            // 3rd Year - 1st Sem
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "RLW 101", title: "Rizal's Life and Works", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 301", title: "Multimedia Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104, BAJ 204"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 302", title: "Broadcast Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 301a", title: "Data Journalism (Cognate 5)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 301"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 303", title: "Journalism Studies", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 202"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 304", title: "Newsroom and Editorial Management", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 205"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "1st Semester", grade: "", code: "BAJ 305", title: "Seminar in Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "Senior Standing"},
+
+            // 3rd Year - 2nd Sem
+            {degree: "BA Journalism (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAJ 306", title: "Investigative Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104, BAJ 204"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAJ 301b", title: "Sports Journalism (Elective 3)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104, BAJ 204"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAJ 301c", title: "Science Journalism (Elective 3)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 104"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAJ 307", title: "Special Project in Journalism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 201"},
+            {degree: "BA Journalism (2025)", year: "3", semester: "2nd Semester", grade: "", code: "BAJ 301d", title: "Advertising (Cognate 6)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 301"},
+
+            // 3rd Year - Midyear
+            {degree: "BA Journalism (2025)", year: "3", semester: "Midyear", grade: "", code: "BAJ 308", title: "Internship", labUnits: "0", labHours: "0", lecHours: "6", prereq: "ALL"},
+
+            // 4th Year - 1st Sem
+            {degree: "BA Journalism (2025)", year: "4", semester: "1st Semester", grade: "", code: "BAJ 401", title: "Thesis 1", labUnits: "0", labHours: "0", lecHours: "3", prereq: "Senior Standing"},
+            {degree: "BA Journalism (2025)", year: "4", semester: "1st Semester", grade: "", code: "BAJ 401a", title: "Community Journalism (Elective 4)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 205"},
+
+            // 4th Year - 2nd Sem
+            {degree: "BA Journalism (2025)", year: "4", semester: "2nd Semester", grade: "", code: "BAJ 402", title: "Thesis 2", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BAJ 401"},
+
+            // ================= BPA THEATRE (2024 Revised) =================
+            // 1st Year - 1st Sem
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "PCM 101", title: "Purposive Communication", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "UTS 101", title: "Understanding the Self", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "STS 101", title: "Science, Technology and Society", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "BTA 102", title: "PA: Introduction to Performing Arts", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "BTA 103", title: "Theatre History I", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "BTA 104", title: "Body, Voice and Movement", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "FIL 101a", title: "Gramatikang Filipino", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "PE 10", title: "PATHFit 1", labUnits: "0", labHours: "0", lecHours: "2", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "1st Semester", grade: "", code: "NSTP 10", title: "NSTP 1", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 1st Year - 2nd Sem
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "MMW 101", title: "Mathematics in the Modern World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "RPH 101", title: "Readings in Philippine History", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "AAP 101", title: "Arts Appreciation", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "ETH 101", title: "Ethics", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "BTA 105", title: "Theater History 2", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 103"},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "BTA 106", title: "PA: Movement in the Performing Arts", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 104"},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "PE 11", title: "PATHFit 2", labUnits: "0", labHours: "0", lecHours: "2", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "1", semester: "2nd Semester", grade: "", code: "NSTP 11", title: "NSTP 2", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 2nd Year - 1st Sem
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 201", title: "PA: Semiotics of the Performing Arts", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 102"},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 202", title: "Acting 1", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 103, BTA 106"},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 203", title: "PA: Stagecraft", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 201a", title: "ESP for Theater Arts", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 204", title: "Stage Management", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "BTA 205", title: "Philippine Theater History", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 102"},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "PID 101", title: "Pagsasalin sa Iba't Ibang Disiplina", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "1st Semester", grade: "", code: "PE 12", title: "PATHFit 3", labUnits: "0", labHours: "0", lecHours: "2", prereq: ""},
+
+            // 2nd Year - 2nd Sem
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "BTA 206", title: "Acting 2", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 202"},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "BTA 207", title: "PA: Theory and Criticism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 201"},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "BTA 208", title: "Production Management", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "BTA 209", title: "Sociology of Theater", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "TCW 101", title: "The Contemporary World", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "PE 13", title: "PATHFit 4", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "BTA 210", title: "PA: Fundamentals of Music", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "2", semester: "2nd Semester", grade: "", code: "PAL 101", title: "Panitikan at Lipunan", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 3rd Year - 1st Sem
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "RLW 101", title: "Life and Works of Rizal", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "BTA 301", title: "Directing 1", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 204, BTA 207"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "BTA 302", title: "Dramaturgy", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 207"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "BTA 304", title: "Theater Theory and Criticism", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 207"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "BTA 305", title: "Production Design", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 203"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "1st Semester", grade: "", code: "BTA 306", title: "Asian Theater Tradition", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 3rd Year - 2nd Sem
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "BTA 308", title: "PA: Perspective in Asian Performing Arts", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 306"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "BTA 309", title: "Directing II", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 301"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "BTA 301a", title: "Musical Theater", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 210"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "BTA 310", title: "Technical Theater", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 203, BTA 305"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "BTA 301b", title: "Playwriting", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 302"},
+            {degree: "BPA Theatre (2024)", year: "3", semester: "2nd Semester", grade: "", code: "AE 101", title: "Academic English", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 3rd Year - Midyear
+            {degree: "BPA Theatre (2024)", year: "3", semester: "Midyear", grade: "", code: "BTA 311", title: "Internship", labUnits: "0", labHours: "0", lecHours: "6", prereq: "ALL MAJOR"},
+
+            // 4th Year - 1st Sem
+            {degree: "BPA Theatre (2024)", year: "4", semester: "1st Semester", grade: "", code: "BTA 401", title: "PA: Improvisation and Composition", labUnits: "3", labHours: "Unspecified", lecHours: "0", prereq: "BTA 206, BTA 309"},
+            {degree: "BPA Theatre (2024)", year: "4", semester: "1st Semester", grade: "", code: "BTA 402", title: "Theater Pedagogy", labUnits: "0", labHours: "0", lecHours: "3", prereq: "BTA 209"},
+            {degree: "BPA Theatre (2024)", year: "4", semester: "1st Semester", grade: "", code: "BTA 403", title: "Research in Theatre (Thesis 1)", labUnits: "0", labHours: "0", lecHours: "3", prereq: "ALL MAJOR"},
+            {degree: "BPA Theatre (2024)", year: "4", semester: "1st Semester", grade: "", code: "AAH 101b", title: "Philippine Popular Culture", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+
+            // 4th Year - 2nd Sem
+            {degree: "BPA Theatre (2024)", year: "4", semester: "2nd Semester", grade: "", code: "BTA 401a", title: "Multimedia and the Performing Arts", labUnits: "0", labHours: "0", lecHours: "3", prereq: ""},
+            {degree: "BPA Theatre (2024)", year: "4", semester: "2nd Semester", grade: "", code: "BTA 404", title: "Theater Recital (Thesis 2)", labUnits: "6", labHours: "Unspecified", lecHours: "0", prereq: "BTA 403"},
+        ];
+
+        function getFilteredData() {
+            const filter = document.getElementById('programSelect').value;
+            if (filter === 'all') return curriculumData;
+            return curriculumData.filter(item => item.degree.includes(filter));
+        }
+
+        function updateStats() {
+            const data = getFilteredData();
+            const totalCourses = data.length;
+            let totalUnits = 0;
+            data.forEach(course => {
+                const labUnits = parseInt(course.labUnits) || 0;
+                const lecUnits = parseInt(course.lecHours) || 0; // Assuming lecHours roughly equates to lec units for calc
+                totalUnits += labUnits + lecUnits;
+            });
+            
+            document.getElementById('totalCourses').textContent = totalCourses;
+            document.getElementById('totalUnits').textContent = totalUnits;
+            document.getElementById('preview').style.display = 'none';
+        }
+
+        function generateCSV() {
+            const headers = ["Degree Program", "Year Level", "Semester", "Grade", "Course Code", "Descriptive Title", "Lab Units", "Lab Hours", "Lec Hours", "Pre-requisite"];
+            
+            const data = getFilteredData();
+            let csvContent = headers.join(",") + "\n";
+            
+            data.forEach(course => {
+                const row = [
+                    `"${course.degree}"`,
+                    `"${course.year}"`,
+                    `"${course.semester}"`,
+                    `"${course.grade}"`,
+                    `"${course.code}"`,
+                    `"${course.title}"`,
+                    `"${course.labUnits}"`,
+                    `"${course.labHours}"`,
+                    `"${course.lecHours}"`,
+                    `"${course.prereq}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+            
+            // Show preview
+            const previewLines = csvContent.split('\n').slice(0, 16).join('\n');
+            document.getElementById('previewContent').textContent = previewLines;
+            document.getElementById('preview').style.display = 'block';
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            // Name file based on selection
+            const filter = document.getElementById('programSelect').value;
+            const filename = filter === 'all' ? "BULSU_CAL_All_Curricula.csv" : `BULSU_CAL_${filter.replace(/\s/g, '_')}_Curriculum.csv`;
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Initialize
+        window.onload = updateStats;
+    </script>
+</body>
+</html>

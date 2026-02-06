@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { useColleges } from '@/app/context/CollegesContext'
@@ -301,9 +302,14 @@ function FacultyCollegesContent() {
     department: '',
     college: '',
     phone: '',
-    office_location: ''
+    office_location: '',
+    profile_image: '' as string | null
   })
   const [selectedFacultyProfile, setSelectedFacultyProfile] = useState<FacultyProfile | null>(null)
+  
+  // Image upload states for admin editing
+  const [uploadingFacultyImage, setUploadingFacultyImage] = useState(false)
+  const facultyImageInputRef = useRef<HTMLInputElement>(null)
 
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -400,7 +406,7 @@ function FacultyCollegesContent() {
   // Fetch approved faculty users for email autocomplete
   const fetchApprovedFacultyUsers = async () => {
     try {
-      const response = await fetch('/api/faculty-default-schedule?action=approved-faculty')
+      const response = await fetchNoCache('/api/faculty-default-schedule?action=approved-faculty')
       const data = await response.json()
       
       if (data.success && data.approvedFaculty) {
@@ -501,10 +507,29 @@ function FacultyCollegesContent() {
 
       if (error) throw error
 
-      setFacultyProfiles(data || [])
+      // Also fetch users table to get avatar_url as fallback for profile_image
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('email, avatar_url')
+      
+      // Create email -> avatar_url map
+      const userAvatarMap = new Map<string, string>()
+      usersData?.forEach(u => {
+        if (u.email && u.avatar_url) {
+          userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
+        }
+      })
+      
+      // Merge avatar_url as fallback for profile_image
+      const enrichedData = (data || []).map(f => ({
+        ...f,
+        profile_image: f.profile_image || (f.email ? userAvatarMap.get(f.email.toLowerCase()) : null) || null
+      }))
+
+      setFacultyProfiles(enrichedData)
 
       // Separate hierarchy (with position/role) from regular faculty
-      const hierarchy = (data || [])
+      const hierarchy = enrichedData
         .filter((f: FacultyProfile) =>
           f.role !== 'faculty' ||
           (f.position && f.position.toLowerCase() !== 'faculty' && f.position.toLowerCase() !== '')
@@ -516,7 +541,7 @@ function FacultyCollegesContent() {
           return getPositionPriority(a.position) - getPositionPriority(b.position)
         })
 
-      const regular = (data || [])
+      const regular = enrichedData
         .filter((f: FacultyProfile) =>
           f.role === 'faculty' &&
           (!f.position || f.position.toLowerCase() === 'faculty' || f.position.toLowerCase() === '')
@@ -566,7 +591,8 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
-      const { error } = await db
+      console.log('Adding college:', collegeFormData)
+      const { data, error } = await db
         .from('departments')
         .insert([{
           department_code: collegeFormData.department_code,
@@ -579,8 +605,13 @@ function FacultyCollegesContent() {
           description: collegeFormData.description || null,
           is_active: true
         }])
+        .select()
 
+      console.log('Insert result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage('College added successfully!')
       setShowAddCollegeModal(false)
@@ -603,7 +634,8 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
-      const { error } = await db
+      console.log('Updating college ID:', selectedCollege.id)
+      const { data, error } = await db
         .from('departments')
         .update({
           department_code: collegeFormData.department_code,
@@ -618,8 +650,13 @@ function FacultyCollegesContent() {
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedCollege.id)
+        .select()
 
+      console.log('Update result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage('College updated successfully!')
       setShowEditCollegeModal(false)
@@ -655,12 +692,18 @@ function FacultyCollegesContent() {
         console.warn('Could not archive college:', archiveError)
       }
 
-      const { error } = await db
+      console.log('Deleting college ID:', selectedCollege.id)
+      const { data, error } = await db
         .from('departments')
         .delete()
         .eq('id', selectedCollege.id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage(`"${selectedCollege.department_name}" has been archived and deleted`)
       setShowDeleteCollegeConfirm(false)
@@ -737,12 +780,18 @@ function FacultyCollegesContent() {
         console.warn('Could not archive file:', archiveError)
       }
 
-      const { error } = await db
+      console.log('Deleting file with upload_group_id:', selectedFile.upload_group_id)
+      const { data, error } = await db
         .from('faculty_profiles')
         .delete()
         .eq('upload_group_id', selectedFile.upload_group_id)
+        .select()
 
+      console.log('Delete file result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived and deleted`)
       setShowDeleteFileConfirm(false)
@@ -766,12 +815,18 @@ function FacultyCollegesContent() {
     setMovingFile(true)
     try {
       // Update all faculty profiles in this file group to the new college
-      const { error } = await db
+      console.log('Moving file to college:', selectedMoveCollege)
+      const { data, error } = await db
         .from('faculty_profiles')
         .update({ college: selectedMoveCollege })
         .eq('upload_group_id', movingFileGroup.upload_group_id)
+        .select()
 
+      console.log('Move file result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Move failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage(`File "${movingFileGroup.file_name}" moved to ${selectedMoveCollege}`)
       setShowMoveFileModal(false)
@@ -848,9 +903,96 @@ function FacultyCollegesContent() {
       department: faculty.department || '',
       college: faculty.college || '',
       phone: faculty.phone || '',
-      office_location: faculty.office_location || ''
+      office_location: faculty.office_location || '',
+      profile_image: faculty.profile_image || null
     })
     setShowEditFacultyModal(true)
+  }
+
+  // Handle faculty profile image upload (admin)
+  const handleFacultyImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !selectedFacultyProfile) return
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, GIF, or WebP)')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB')
+      return
+    }
+
+    setUploadingFacultyImage(true)
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `faculty_${selectedFacultyProfile.id}_${Date.now()}.${fileExt}`
+      const filePath = `faculty-avatars/${fileName}`
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath)
+
+      const publicUrl = publicUrlData.publicUrl
+
+      // Update faculty_profiles table
+      const { error: updateError } = await supabase
+        .from('faculty_profiles')
+        .update({ profile_image: publicUrl })
+        .eq('id', selectedFacultyProfile.id)
+
+      if (updateError) throw updateError
+
+      // Also update users table if faculty has a user account
+      if (facultyFormData.email) {
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', facultyFormData.email)
+          .single()
+
+        if (existingUser) {
+          await supabase
+            .from('users')
+            .update({ avatar_url: publicUrl })
+            .eq('id', existingUser.id)
+        }
+      }
+
+      // Update local state
+      const imageUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+      setFacultyFormData({ ...facultyFormData, profile_image: imageUrlWithCacheBust })
+      setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: imageUrlWithCacheBust })
+      
+      // Update the main faculty list so cards show the new image
+      setFacultyProfiles(prev => prev.map(f => 
+        f.id === selectedFacultyProfile.id 
+          ? { ...f, profile_image: imageUrlWithCacheBust }
+          : f
+      ))
+      
+      setSuccessMessage('✅ Profile image updated!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Error uploading faculty image:', error)
+      alert(`Failed to upload image: ${error.message || error}`)
+    } finally {
+      setUploadingFacultyImage(false)
+      if (facultyImageInputRef.current) {
+        facultyImageInputRef.current.value = ''
+      }
+    }
   }
 
   const openDeleteFacultyConfirm = (faculty: FacultyProfile) => {
@@ -864,15 +1006,21 @@ function FacultyCollegesContent() {
   }
 
   const handleUpdateFaculty = async () => {
-    if (!selectedFacultyProfile) return
+    if (!selectedFacultyProfile) {
+      alert('No faculty selected')
+      return
+    }
     if (!facultyFormData.full_name.trim()) {
       alert('Name is required')
       return
     }
 
     setSaving(true)
+    console.log('Updating faculty:', selectedFacultyProfile.id, facultyFormData)
+
     try {
-      const { error } = await db
+      // First update faculty_profiles
+      const { data: updatedFaculty, error: updateError } = await supabase
         .from('faculty_profiles')
         .update({
           faculty_id: facultyFormData.faculty_id.trim() || null,
@@ -888,20 +1036,26 @@ function FacultyCollegesContent() {
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedFacultyProfile.id)
+        .select()
 
-      if (error) throw error
+      if (updateError) {
+        console.error('Faculty update error:', updateError)
+        throw new Error(`Database error: ${updateError.message}`)
+      }
+
+      console.log('Faculty updated successfully:', updatedFaculty)
 
       // If email is provided, sync this data to the users table (for approved faculty)
       if (facultyFormData.email.trim()) {
-        const { data: existingUser } = await db
+        const { data: existingUser, error: userCheckError } = await supabase
           .from('users')
           .select('id')
           .eq('email', facultyFormData.email.trim())
           .single()
 
-        if (existingUser) {
+        if (existingUser && !userCheckError) {
           // Update the user's profile with faculty data
-          await db
+          const { error: userUpdateError } = await supabase
             .from('users')
             .update({
               full_name: facultyFormData.full_name.trim(),
@@ -912,14 +1066,27 @@ function FacultyCollegesContent() {
             })
             .eq('id', existingUser.id)
           
-          console.log('Synced faculty profile data to user account')
+          if (userUpdateError) {
+            console.warn('Could not sync to user account:', userUpdateError)
+          } else {
+            console.log('Synced faculty profile data to user account')
+          }
         }
       }
 
-      setSuccessMessage('Faculty updated successfully!')
+      // Close modal and refresh data
       setShowEditFacultyModal(false)
-      if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
-      setTimeout(() => setSuccessMessage(''), 2500)
+      setSuccessMessage('✅ Faculty updated successfully!')
+      
+      // Force refresh the faculty list
+      if (selectedFile) {
+        await fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
+      }
+      
+      // Also refresh all faculty stats
+      await fetchAllFaculty()
+      
+      setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error updating faculty:', error)
       alert(`Failed to update faculty: ${error.message || error}`)
@@ -932,12 +1099,18 @@ function FacultyCollegesContent() {
     if (!selectedFacultyProfile) return
     setDeleting(true)
     try {
-      const { error } = await db
+      console.log('Deleting faculty ID:', selectedFacultyProfile.id)
+      const { data, error } = await db
         .from('faculty_profiles')
         .delete()
         .eq('id', selectedFacultyProfile.id)
+        .select()
 
+      console.log('Delete faculty result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage('Faculty deleted successfully')
       setDeleteFacultyTarget(null)
@@ -1780,6 +1953,75 @@ function FacultyCollegesContent() {
               <button className={styles.modalClose} onClick={() => setShowEditFacultyModal(false)}>✕</button>
             </div>
             <div className={styles.modalBody}>
+              {/* Profile Image Upload Section */}
+              <div className={styles.imageUploadSection} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '16px', 
+                marginBottom: '20px',
+                padding: '16px',
+                background: 'rgba(16, 185, 129, 0.05)',
+                borderRadius: '12px',
+                border: '1px solid rgba(16, 185, 129, 0.2)'
+              }}>
+                <div style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  borderRadius: '50%', 
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {facultyFormData.profile_image ? (
+                    <img 
+                      src={facultyFormData.profile_image} 
+                      alt="Profile" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '28px', fontWeight: 'bold', color: 'white' }}>
+                      {getInitials(facultyFormData.full_name)}
+                    </span>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px', display: 'block' }}>
+                    Profile Photo
+                  </label>
+                  <input
+                    type="file"
+                    ref={facultyImageInputRef}
+                    onChange={handleFacultyImageUpload}
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => facultyImageInputRef.current?.click()}
+                    disabled={uploadingFacultyImage}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: uploadingFacultyImage ? 'wait' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      opacity: uploadingFacultyImage ? 0.7 : 1
+                    }}
+                  >
+                    {uploadingFacultyImage ? 'Uploading...' : 'Upload Photo'}
+                  </button>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    JPG, PNG, GIF or WebP. Max 5MB.
+                  </p>
+                </div>
+              </div>
+              
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Faculty ID</label>

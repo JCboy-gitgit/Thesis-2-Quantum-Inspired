@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailService'
 
-// Use service role for admin operations (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // Email templates
 function generateApprovalEmail(email: string, fullName: string): string {
@@ -128,6 +126,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'pending' // pending, approved, rejected, all
 
+    const supabaseAdmin = createAdminClient()
+    
     // Get users from Supabase Auth
     const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
 
@@ -244,6 +244,7 @@ export async function GET(request: NextRequest) {
 // POST - Approve or reject a faculty registration
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
     const { userId, action, full_name, department } = body
 
@@ -469,6 +470,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove a faculty registration
 export async function DELETE(request: NextRequest) {
   try {
+    const supabaseAdmin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 

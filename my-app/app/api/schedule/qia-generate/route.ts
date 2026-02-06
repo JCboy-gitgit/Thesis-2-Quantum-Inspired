@@ -3,9 +3,20 @@ import { createClient } from '@supabase/supabase-js'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
+// Cache-busting wrapper to prevent Next.js from caching Supabase requests
+const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
+  fetch(url, { ...options, cache: 'no-store' })
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { global: { fetch: fetchWithNoCache } }
+)
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { global: { fetch: fetchWithNoCache } }
 )
 
 export const dynamic = 'force-dynamic'
@@ -413,6 +424,22 @@ export async function POST(request: NextRequest) {
       console.error('[QIA Schedule] Database error:', dbError)
     }
 
+    // Create admin alert for schedule generation
+    try {
+      await supabaseAdmin.from('system_alerts').insert({
+        title: savedToDatabase ? 'Schedule generated successfully' : 'Schedule generated (not saved)',
+        message: savedToDatabase
+          ? `"${body.schedule_name}" completed with ${result.stats.scheduled_classes} scheduled classes.`
+          : `"${body.schedule_name}" completed but was not saved to the database.`,
+        audience: 'admin',
+        severity: savedToDatabase ? 'success' : 'warning',
+        category: 'schedule',
+        schedule_id: scheduleId
+      })
+    } catch (alertError) {
+      console.warn('[QIA Schedule] Failed to write alert:', alertError)
+    }
+
     // Always return success with allocations data
     return NextResponse.json({
       success: true,
@@ -431,6 +458,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('[QIA Schedule] Error:', error)
+    try {
+      await supabaseAdmin.from('system_alerts').insert({
+        title: 'Schedule generation failed',
+        message: error.message || 'Internal server error',
+        audience: 'admin',
+        severity: 'error',
+        category: 'schedule'
+      })
+    } catch (alertError) {
+      console.warn('[QIA Schedule] Failed to write error alert:', alertError)
+    }
     return NextResponse.json(
       { success: false, error: error.message || 'Internal server error' },
       { status: 500 }

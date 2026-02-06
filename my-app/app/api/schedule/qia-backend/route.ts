@@ -9,9 +9,14 @@ const LOCAL_BACKEND_URL = 'http://localhost:8000'
 // Determine if we're in production (Vercel)
 const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
 
+// Cache-busting wrapper to prevent Next.js from caching Supabase requests
+const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
+  fetch(url, { ...options, cache: 'no-store' })
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { global: { fetch: fetchWithNoCache } }
 )
 
 export const dynamic = 'force-dynamic'

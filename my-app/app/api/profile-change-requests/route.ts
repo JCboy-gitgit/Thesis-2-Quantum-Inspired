@@ -1,22 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 
-// Create admin client with service role for full access
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
-
-// Regular client for auth checks
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // GET - Fetch profile change requests
 export async function GET(request: Request) {
   try {
+    const supabaseAdmin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'pending'
     const userId = searchParams.get('userId')
@@ -67,6 +59,7 @@ export async function GET(request: Request) {
 // POST - Create a new profile change request
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
     const { userId, email, fieldName, currentValue, requestedValue } = body
 
@@ -143,6 +136,7 @@ export async function POST(request: Request) {
 // PATCH - Approve or reject a request (admin only)
 export async function PATCH(request: Request) {
   try {
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
     const { requestId, action, adminNotes, adminId } = body
 
@@ -217,7 +211,7 @@ export async function PATCH(request: Request) {
           .eq('email', changeRequest.email)
 
         if (facultyUpdateError) {
-          console.error('Faculty profile update error:', facultyUpdateError)
+          console.warn('Faculty profile update skipped:', facultyUpdateError?.message || facultyUpdateError?.code || 'Unknown error', facultyUpdateError?.hint || '')
           // If this is the primary target table for this field, return error
           if (!usersTableFields.includes(changeRequest.field_name)) {
             return NextResponse.json(
@@ -264,6 +258,7 @@ export async function PATCH(request: Request) {
 // DELETE - Cancel a pending request (user can cancel their own)
 export async function DELETE(request: Request) {
   try {
+    const supabaseAdmin = createAdminClient()
     const { searchParams } = new URL(request.url)
     const requestId = searchParams.get('id')
     const userId = searchParams.get('userId')

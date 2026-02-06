@@ -21,7 +21,8 @@ import {
   GraduationCap,
   BookOpen,
   UserCheck,
-  UserCog
+  UserCog,
+  Bell
 } from 'lucide-react'
 import './Sidebar.css'
 

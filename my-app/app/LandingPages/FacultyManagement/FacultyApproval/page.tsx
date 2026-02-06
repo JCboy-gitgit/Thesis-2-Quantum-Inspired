@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import {
@@ -76,7 +77,7 @@ export default function FacultyApprovalPage() {
   const fetchRegistrations = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/faculty-registration?status=${filter}`)
+      const response = await fetchNoCache(`/api/faculty-registration?status=${filter}`)
       const data = await response.json()
 
       if (data.error) {
@@ -407,12 +408,12 @@ export default function FacultyApprovalPage() {
                     </>
                   ) : (
                     <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDelete(reg.id)}
+                      className={styles.rejectBtn}
+                      onClick={() => handleApproval(reg.id, 'reject')}
                       disabled={actionLoading === reg.id}
                     >
-                      {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
-                      Delete
+                      {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserX size={16} />}
+                      Reject
                     </button>
                   )}
                 </div>

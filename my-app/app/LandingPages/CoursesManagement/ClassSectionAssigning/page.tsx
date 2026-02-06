@@ -535,14 +535,20 @@ function ClassSectionAssigningContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Deleting year batch ID:', id)
+      const { data, error } = await (supabase as any)
         .from('year_batches')
         .delete()
         .eq('id', id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) {
         console.error('Supabase delete error:', error)
         throw new Error(error.message || 'Failed to delete year batch')
+      }
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       setYearBatches(prev => prev.filter(b => b.id !== id))
@@ -710,12 +716,18 @@ function ClassSectionAssigningContent() {
   const handleDeleteSection = async (id: number) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Deleting section ID:', id)
+      const { data, error } = await (supabase as any)
         .from('sections')
         .delete()
         .eq('id', id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSections(prev => prev.filter(s => s.id !== id))
       setAssignments(prev => prev.filter(a => a.section_id !== id))

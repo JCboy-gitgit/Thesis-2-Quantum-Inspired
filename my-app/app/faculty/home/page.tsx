@@ -62,6 +62,14 @@ export default function FacultyHomePage() {
   const [mounted, setMounted] = useState(false)
   const [themeReady, setThemeReady] = useState(false)
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
+  const [currentScheduleId, setCurrentScheduleId] = useState<number | null>(null)
+  const [attendanceOpen, setAttendanceOpen] = useState(false)
+  const [attendanceScope, setAttendanceScope] = useState<'class' | 'day' | 'week' | 'range'>('class')
+  const [attendanceReason, setAttendanceReason] = useState('')
+  const [attendanceDay, setAttendanceDay] = useState('')
+  const [attendanceStartDate, setAttendanceStartDate] = useState('')
+  const [attendanceEndDate, setAttendanceEndDate] = useState('')
+  const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
 
   // Theme helper - use effectiveTheme which is synced from localStorage
   const isLightMode = effectiveTheme === 'light'
@@ -140,6 +148,13 @@ export default function FacultyHomePage() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    if (attendanceOpen && !attendanceDay) {
+      const today = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]
+      setAttendanceDay(currentClass?.day || today)
+    }
+  }, [attendanceOpen, attendanceDay, currentClass])
+
   // Heartbeat to keep user online - runs every 2 minutes
   useEffect(() => {
     if (!user) return
@@ -201,11 +216,56 @@ export default function FacultyHomePage() {
     return () => clearInterval(heartbeatInterval)
   }, [user, sessionToken, router])
 
+  // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
+  useEffect(() => {
+    if (!user) return
+
+    const refreshUserData = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return
+
+        // Fetch fresh user data
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        // Fetch faculty_profiles for merged data
+        const { data: facultyProfile } = await supabase
+          .from('faculty_profiles')
+          .select('full_name, department, college')
+          .eq('user_id', session.user.id)
+          .single()
+
+        // Merge data, prioritizing faculty_profiles
+        const mergedUser = {
+          ...(userData || user),
+          full_name: facultyProfile?.full_name || userData?.full_name || user.full_name,
+          department: facultyProfile?.department || userData?.department || user.department,
+          college: facultyProfile?.college || userData?.college || user.college,
+          // Add cache bust to avatar URL if it exists
+          avatar_url: userData?.avatar_url ? `${userData.avatar_url}?t=${Date.now()}` : user.avatar_url
+        }
+
+        setUser(mergedUser)
+      } catch (error) {
+        console.error('Failed to refresh user data:', error)
+      }
+    }
+
+    // Refresh every 30 seconds
+    const refreshInterval = setInterval(refreshUserData, 30 * 1000)
+
+    return () => clearInterval(refreshInterval)
+  }, [user])
+
   const updateGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) setGreeting('Good Morning')
-    else if (hour < 17) setGreeting('Good Afternoon')
-    else setGreeting('Good Evening')
+    if (hour < 12) setGreeting('Good Morning!')
+    else if (hour < 17) setGreeting('Good Afternoon!')
+    else setGreeting('Good Evening!')
   }
 
   const checkAuthAndLoad = async () => {
@@ -310,6 +370,14 @@ export default function FacultyHomePage() {
 
         setSchedules(processedSchedules)
         findCurrentAndNextClass(processedSchedules)
+        const { data: currentSchedule } = await db
+          .from('generated_schedules')
+          .select('id')
+          .eq('is_current', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        setCurrentScheduleId(currentSchedule?.id || null)
       } else {
         // No schedules found - that's okay
         setSchedules([])
@@ -370,6 +438,60 @@ export default function FacultyHomePage() {
         setNextClass(schedule)
         break
       }
+    }
+  }
+
+  const handleMarkAbsent = async () => {
+    if (!user || !currentScheduleId) {
+      return
+    }
+
+    if (attendanceScope === 'class' && !currentClass) {
+      return
+    }
+
+    setAttendanceSubmitting(true)
+    try {
+      const payload: any = {
+        userId: user.id,
+        scheduleId: currentScheduleId,
+        scope: attendanceScope,
+        reason: attendanceReason
+      }
+
+      if (attendanceScope === 'class' && currentClass) {
+        payload.courseCode = currentClass.course_code
+        payload.section = currentClass.section
+        payload.dayOfWeek = currentClass.day
+        payload.startTime = currentClass.start_time
+        payload.endTime = currentClass.end_time
+      }
+
+      if (attendanceScope === 'day') {
+        payload.dayOfWeek = attendanceDay || currentClass?.day
+      }
+
+      if (attendanceScope === 'week') {
+        payload.dayOfWeek = ''
+      }
+
+      if (attendanceScope === 'range') {
+        payload.startDate = attendanceStartDate
+        payload.endDate = attendanceEndDate
+      }
+
+      await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      setAttendanceOpen(false)
+      setAttendanceReason('')
+    } catch (error) {
+      console.error('Attendance update failed:', error)
+    } finally {
+      setAttendanceSubmitting(false)
     }
   }
 
@@ -482,7 +604,7 @@ export default function FacultyHomePage() {
               {/* Left: Greeting and date */}
               <div className="text-center sm:text-left">
                 <h2 className={`text-xl sm:text-xl md:text-2xl font-bold m-0 mb-1 break-words leading-tight ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                  {greeting}, {user?.full_name?.split(' ')[0] || 'Faculty'}!
+                  {greeting}, {user?.full_name || 'Faculty'}
                 </h2>
                 <p className={`text-sm sm:text-base m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   {getCurrentDate()}
@@ -518,7 +640,7 @@ export default function FacultyHomePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{todayClassCount}</div>
-                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Classes Today</div>
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Ongoing Class</div>
               </div>
             </div>
             <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 border ${isLightMode
@@ -529,8 +651,8 @@ export default function FacultyHomePage() {
                 <BookOpen size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{schedules.length}</div>
-                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Total Classes This Week</div>
+                <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{todayClassCount > schedules.length ? 0 : schedules.length - todayClassCount}</div>
+                <div className={`text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Classes Left This Week</div>
               </div>
             </div>
             <div className={`rounded-xl p-3 sm:p-4 md:p-5 flex items-center gap-3 sm:gap-4 sm:col-span-2 lg:col-span-1 border ${isLightMode
@@ -551,7 +673,7 @@ export default function FacultyHomePage() {
           <section className="mb-4 sm:mb-5 md:mb-6">
             <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
               <BookOpen size={18} className="sm:w-5 sm:h-5" />
-              My Classes
+              Today's Classes
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Current Class Card */}
@@ -564,14 +686,14 @@ export default function FacultyHomePage() {
                     <>
                       <span className="flex items-center gap-1.5 text-green-500 text-xs font-bold uppercase">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        Now
+                        Ongoing
                       </span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${styles.collegeBadge}`}>No Class</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${styles.collegeBadge}`}>Next Class</span>
                   )}
                 </div>
                 <div className="mt-3">
@@ -586,8 +708,8 @@ export default function FacultyHomePage() {
                     </>
                   ) : (
                     <>
-                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Free Time</h4>
-                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No ongoing class at the moment</p>
+                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Upcoming Class</h4>
+                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No class scheduled for today</p>
                     </>
                   )}
                 </div>
@@ -691,6 +813,88 @@ export default function FacultyHomePage() {
           </section>
         </main>
       </div>
+
+      {/* Quick Action - Mark as Absence */}
+      <button
+        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${isLightMode
+          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+          : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
+        }`}
+        onClick={() => setAttendanceOpen(true)}
+      >
+        Mark as Absence
+      </button>
+
+      {attendanceOpen && (
+        <div className="fixed inset-0 z-[1600] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-md rounded-2xl p-5 border ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-900 border-cyan-500/20'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-base sm:text-lg font-bold ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Mark Absence</h3>
+              <button
+                className={`text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}
+                onClick={() => setAttendanceOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className={`text-xs font-semibold ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Scope</label>
+              <select
+                className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
+                value={attendanceScope}
+                onChange={(e) => setAttendanceScope(e.target.value as any)}
+              >
+                <option value="class">Current Class</option>
+                <option value="day">Whole Day</option>
+                <option value="week">Whole Week</option>
+                <option value="range">Date Range</option>
+              </select>
+
+              {attendanceScope === 'day' && (
+                <input
+                  className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
+                  value={attendanceDay}
+                  onChange={(e) => setAttendanceDay(e.target.value)}
+                  placeholder="Day of week (e.g., Monday)"
+                />
+              )}
+
+              {attendanceScope === 'range' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
+                    value={attendanceStartDate}
+                    onChange={(e) => setAttendanceStartDate(e.target.value)}
+                  />
+                  <input
+                    type="date"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
+                    value={attendanceEndDate}
+                    onChange={(e) => setAttendanceEndDate(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <textarea
+                className={`w-full rounded-lg border px-3 py-2 text-sm min-h-[90px] ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
+                value={attendanceReason}
+                onChange={(e) => setAttendanceReason(e.target.value)}
+                placeholder="Reason (optional)"
+              />
+
+              <button
+                className={`w-full rounded-lg px-4 py-2 font-semibold ${isLightMode ? 'bg-emerald-600 text-white' : 'bg-cyan-500 text-slate-900'}`}
+                onClick={handleMarkAbsent}
+                disabled={attendanceSubmitting}
+              >
+                {attendanceSubmitting ? 'Submitting...' : 'Confirm Absence'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Session Invalid Modal - Responsive */}
       {sessionInvalid && (

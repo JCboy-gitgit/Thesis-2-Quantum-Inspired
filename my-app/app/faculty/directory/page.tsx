@@ -179,7 +179,27 @@ function FacultyDirectoryContent() {
     setLoading(true)
     try {
       const data = await fetchAllRows('faculty_profiles')
-      setAllFaculty(data)
+      
+      // Also fetch users table to get avatar_url as fallback for profile_image
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('email, avatar_url')
+      
+      // Create email -> avatar_url map
+      const userAvatarMap = new Map<string, string>()
+      usersData?.forEach(u => {
+        if (u.email && u.avatar_url) {
+          userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
+        }
+      })
+      
+      // Merge avatar_url as fallback for profile_image
+      const enrichedData = data.map(f => ({
+        ...f,
+        profile_image: f.profile_image || (f.email ? userAvatarMap.get(f.email.toLowerCase()) : null) || null
+      }))
+      
+      setAllFaculty(enrichedData)
 
       const collegeMap = new Map<string, { faculty: FacultyProfile[], departments: Set<string> }>()
       data.forEach(f => {
@@ -269,15 +289,16 @@ function FacultyDirectoryContent() {
 
   return (
     <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
-      <div className={styles.header}>
-        <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
-          <ArrowLeft size={20} />
-          Back to Home
-        </button>
-        <h1 className={styles.pageTitle}>
-          <Users size={32} />
-          Faculty Directory
-        </h1>
+      <div className={`${styles.mainContentArea} ${selectedFaculty ? styles.withPanel : ''}`}>
+        <div className={styles.header}>
+          <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
+            <ArrowLeft size={20} />
+            Back to Home
+          </button>
+          <h1 className={styles.pageTitle}>
+            <Users size={32} />
+            Faculty Directory
+          </h1>
         <p className={styles.subtitle}>View all faculty members across the institution</p>
       </div>
 
@@ -395,9 +416,17 @@ function FacultyDirectoryContent() {
                 className={`${styles.facultyCard} ${selectedFaculty?.id === faculty.id ? styles.facultyCardSelected : ''}`} 
                 onClick={() => setSelectedFaculty(faculty)}
               >
-                <div className={styles.facultyAvatar} style={{ backgroundColor: getRoleColor(faculty.role) }}>
-                  {getInitials(faculty.full_name)}
-                </div>
+                {faculty.profile_image ? (
+                  <img 
+                    src={faculty.profile_image} 
+                    alt={faculty.full_name}
+                    className={styles.facultyAvatarImg}
+                  />
+                ) : (
+                  <div className={styles.facultyAvatar} style={{ backgroundColor: getRoleColor(faculty.role) }}>
+                    {getInitials(faculty.full_name)}
+                  </div>
+                )}
                 <div className={styles.facultyInfo}>
                   <h3 className={styles.facultyName}>{faculty.full_name}</h3>
                   <p className={styles.facultyPosition}>{faculty.position}</p>
@@ -452,6 +481,7 @@ function FacultyDirectoryContent() {
           )}
         </>
       )}
+      </div> {/* End mainContentArea */}
 
       {/* Side Panel - Faculty Details */}
       <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
@@ -461,9 +491,17 @@ function FacultyDirectoryContent() {
               <X size={24} />
             </button>
             <div className={styles.panelHeader}>
-              <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
-                {getInitials(selectedFaculty.full_name)}
-              </div>
+              {selectedFaculty.profile_image ? (
+                <img 
+                  src={selectedFaculty.profile_image} 
+                  alt={selectedFaculty.full_name}
+                  className={styles.panelAvatarImg}
+                />
+              ) : (
+                <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                  {getInitials(selectedFaculty.full_name)}
+                </div>
+              )}
               <div>
                 <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
                 <p className={styles.panelPosition}>{selectedFaculty.position}</p>

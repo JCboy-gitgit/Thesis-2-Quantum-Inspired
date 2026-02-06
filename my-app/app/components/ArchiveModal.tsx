@@ -221,12 +221,18 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
   const handlePermanentDelete = async (item: ArchivedItem) => {
     setActionLoading(true)
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('archived_items')
         .delete()
         .eq('id', item.id)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually deleted (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+      }
 
       setArchivedItems(prev => prev.filter(i => i.id !== item.id))
       setConfirmDelete(null)

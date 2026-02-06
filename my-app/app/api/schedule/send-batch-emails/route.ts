@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 import { sendEmail } from '@/lib/emailService'
 
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // ✅ Helper: Format time with AM/PM
 function formatTime12Hour(time24: string): string {
   try {

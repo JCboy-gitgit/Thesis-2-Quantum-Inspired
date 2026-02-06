@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './ViewSchedule.module.css'
@@ -102,6 +103,7 @@ interface Schedule {
   created_at: string
   school_name?: string
   college?: string
+  is_current?: boolean
 }
 
 interface RoomAllocation {
@@ -302,7 +304,7 @@ function ViewSchedulePage() {
   const fetchApprovedFaculty = async () => {
     setLoadingFaculty(true)
     try {
-      const response = await fetch('/api/faculty-default-schedule?action=approved-faculty')
+      const response = await fetchNoCache('/api/faculty-default-schedule?action=approved-faculty')
       const data = await response.json()
       
       if (data.success && data.approvedFaculty) {
@@ -912,14 +914,20 @@ function ViewSchedulePage() {
       }
 
       // Delete from generated_schedules
-      const { error } = await db
+      const { data, error } = await db
         .from('generated_schedules')
         .delete()
         .eq('id', id)
+        .select()
 
       if (error) {
         console.error('Error deleting from generated_schedules:', error)
         throw new Error(`Failed to delete schedule: ${error.message}`)
+      }
+      
+      // Check if any rows were actually deleted (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
       }
 
       // Update local state immediately
@@ -934,9 +942,58 @@ function ViewSchedulePage() {
       }
 
       alert('Schedule archived successfully! You can restore it from the Archive.')
+      router.refresh() // Force refresh cached data
     } catch (error: any) {
       console.error('Error archiving schedule:', error)
       alert(`Failed to archive schedule: ${error.message || 'Unknown error'}`)
+    }
+  }
+
+  const handleSetCurrentSchedule = async (scheduleId: number) => {
+    try {
+      const { error: resetError } = await db
+        .from('generated_schedules')
+        .update({ is_current: false, activated_at: null, activated_by: null })
+        .neq('id', scheduleId)
+
+      if (resetError) {
+        console.warn('Failed to reset current schedule flags:', resetError)
+      }
+
+      const { data: setData, error: setError } = await db
+        .from('generated_schedules')
+        .update({ is_current: true, activated_at: new Date().toISOString() })
+        .eq('id', scheduleId)
+        .select()
+
+      if (setError) {
+        throw setError
+      }
+      
+      // Check if any rows were actually updated (RLS may block silently)
+      if (!setData || setData.length === 0) {
+        throw new Error('Update failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+      }
+
+      // Notify faculty about the newly activated schedule
+      await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'New schedule activated',
+          message: 'A new current schedule is now active. Please refresh your faculty view.',
+          audience: 'faculty',
+          severity: 'info',
+          category: 'schedule',
+          scheduleId
+        })
+      })
+
+      setSchedules(prev => prev.map(s => ({ ...s, is_current: s.id === scheduleId })))
+      router.refresh() // Force refresh cached data
+    } catch (error: any) {
+      console.error('Failed to set current schedule:', error)
+      alert(error?.message || 'Failed to set current schedule')
     }
   }
 
@@ -1632,6 +1689,9 @@ function ViewSchedulePage() {
                           {schedule.semester} {schedule.academic_year}
                         </span>
                       </div>
+                      {schedule.is_current && (
+                        <div className={styles.currentBadge}>Current Schedule</div>
+                      )}
 
                       <div className={styles.scheduleInfoGrid}>
                         <div className={styles.infoItem}>
@@ -1711,6 +1771,12 @@ function ViewSchedulePage() {
                           onClick={() => handleSelectSchedule(schedule)}
                         >
                           <Eye size={16} /> View Timetable
+                        </button>
+                        <button
+                          className={styles.primaryButton}
+                          onClick={() => handleSetCurrentSchedule(schedule.id)}
+                        >
+                          <Check size={16} /> Set Current
                         </button>
                       </div>
 

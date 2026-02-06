@@ -32,6 +32,7 @@ export default function FacultyCampusMapPage() {
   const [mounted, setMounted] = useState(false)
   const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   const [isDesktop, setIsDesktop] = useState(false)
+  const [emptyRoomMode, setEmptyRoomMode] = useState(false)
   
   // Use effectiveTheme for accurate light mode detection
   const isLightMode = effectiveTheme === 'light'
@@ -166,12 +167,26 @@ export default function FacultyCampusMapPage() {
                 <p className={`text-xs sm:text-sm m-0 mt-1 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Interactive view of campus buildings and room locations</p>
               </div>
             </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emptyRoomMode
+                  ? isLightMode ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-cyan-500 text-slate-900 border-cyan-500'
+                  : isLightMode ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-800 border-cyan-500/20 text-slate-300'
+                }`}
+                onClick={() => setEmptyRoomMode(!emptyRoomMode)}
+              >
+                Empty Room Finder
+              </button>
+              <span className={`text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                {emptyRoomMode ? 'Highlighting available rooms' : 'Showing all rooms'}
+              </span>
+            </div>
           </div>
 
           {/* Campus Map Viewer - Full Height */}
           <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/80 border-cyan-500/20'}`}>
             <div className="w-full" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
-              <RoomViewer2D collegeTheme={collegeTheme} />
+              <RoomViewer2D collegeTheme={collegeTheme} highlightEmpty={emptyRoomMode} />
             </div>
           </section>
         </main>

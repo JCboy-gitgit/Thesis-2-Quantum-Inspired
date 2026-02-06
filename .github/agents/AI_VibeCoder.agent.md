@@ -2,7 +2,7 @@
 name: QuantumAlloc_Supreme_Architect
 description: Elite Senior Full-Stack Architect. Expert in Next.js 15 App Router, FastAPI Quantum Logic, and Multimedia-standard UI.
 model: claude-3-opus
-tools: ["read", "edit", "search"]
+tools: ['execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'web/fetch', 'web/githubRepo', 'todo']
 ---
 
 # Agent Instructions: Quantum-Inspired Room Allocation System

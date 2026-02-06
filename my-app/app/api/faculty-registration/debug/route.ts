@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+// Cache-busting wrapper to prevent Next.js from caching Supabase requests
+const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
+  fetch(url, { ...options, cache: 'no-store' })
+
 // Service role to bypass RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,7 +17,8 @@ const supabaseAdmin = createClient(
     auth: {
       autoRefreshToken: false,
       persistSession: false
-    }
+    },
+    global: { fetch: fetchWithNoCache }
   }
 )
 

@@ -56,9 +56,10 @@ interface FacultyProfile {
   education: string | null
   created_at: string
   updated_at: string
+  last_login?: string | null
 }
 
-// Helper function to fetch ALL rows with pagination
+// Helper function to fetch ALL rows with pagination and join last_login from users
 async function fetchAllRows(table: string, filters: Record<string, string | number | boolean> = {}) {
   const PAGE_SIZE = 1000
   let allData: FacultyProfile[] = []
@@ -71,7 +72,7 @@ async function fetchAllRows(table: string, filters: Record<string, string | numb
 
     let query = supabase
       .from(table)
-      .select('*')
+      .select('*, users(last_login)')
       .range(from, to)
       .order('full_name', { ascending: true })
 
@@ -87,7 +88,13 @@ async function fetchAllRows(table: string, filters: Record<string, string | numb
       break
     }
 
-    allData = [...allData, ...data]
+    // Map data to include last_login from joined users table
+    const mappedData = data.map((item: any) => ({
+      ...item,
+      last_login: item.users?.last_login || null
+    }))
+
+    allData = [...allData, ...mappedData]
     if (data.length < PAGE_SIZE) hasMore = false
     page++
   }
@@ -201,6 +208,23 @@ function getEmploymentBadge(type: string) {
       return { label: 'Guest', color: '#06b6d4' }
     default:
       return { label: type, color: '#64748b' }
+  }
+}
+
+// Get online status based on last_login timestamp
+function getOnlineStatus(lastLogin: string | null | undefined) {
+  if (!lastLogin) return { isOnline: false, label: 'Offline', color: '#64748b' }
+  
+  const lastLoginDate = new Date(lastLogin)
+  const now = new Date()
+  const minutesAgo = (now.getTime() - lastLoginDate.getTime()) / (1000 * 60)
+  
+  if (minutesAgo < 5) {
+    return { isOnline: true, label: 'Online', color: '#22c55e' }
+  } else if (minutesAgo < 30) {
+    return { isOnline: false, label: 'Away', color: '#f59e0b' }
+  } else {
+    return { isOnline: false, label: 'Offline', color: '#64748b' }
   }
 }
 
@@ -392,16 +416,23 @@ function FacultyProfilesContent() {
       }
 
       // Delete from faculty_profiles
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('faculty_profiles')
         .delete()
         .eq('id', profile.id)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually deleted (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+      }
 
       // Update local state
       setAllFaculty(prev => prev.filter(f => f.id !== profile.id))
 
+      router.refresh() // Force refresh cached data
       alert(`"${profile.full_name}" deleted successfully`)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -598,20 +629,40 @@ function FacultyProfilesContent() {
                           {getRoleInfo('administrator').icon} Administrators / Deans ({administrators.length})
                         </div>
                         <div className={styles.levelCards} style={{ justifyContent: 'center' }}>
-                          {administrators.map((profile) => (
-                            <div
-                              key={profile.id}
-                              className={`${styles.pyramidCard} ${styles.adminCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectProfile(profile)}
-                            >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
-                                {getInitials(profile.full_name)}
+                          {administrators.map((profile) => {
+                            const onlineStatus = getOnlineStatus(profile.last_login)
+                            return (
+                              <div
+                                key={profile.id}
+                                className={`${styles.pyramidCard} ${styles.adminCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectProfile(profile)}
+                              >
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                    {profile.profile_image ? (
+                                      <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      getInitials(profile.full_name)
+                                    )}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: onlineStatus.color,
+                                    border: '2px solid white',
+                                    boxShadow: `0 0 4px ${onlineStatus.color}`
+                                  }} title={onlineStatus.label} />
+                                </div>
+                                <div className={styles.pyramidName}>{profile.full_name}</div>
+                                <div className={styles.pyramidPosition}>{profile.position}</div>
+                                <div className={styles.pyramidId}>{profile.department || profile.college}</div>
                               </div>
-                              <div className={styles.pyramidName}>{profile.full_name}</div>
-                              <div className={styles.pyramidPosition}>{profile.position}</div>
-                              <div className={styles.pyramidId}>{profile.department || profile.college}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -623,20 +674,40 @@ function FacultyProfilesContent() {
                           {getRoleInfo('department_head').icon} Department Heads ({departmentHeads.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {departmentHeads.map((profile) => (
-                            <div
-                              key={profile.id}
-                              className={`${styles.pyramidCard} ${styles.headCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectProfile(profile)}
-                            >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
-                                {getInitials(profile.full_name)}
+                          {departmentHeads.map((profile) => {
+                            const onlineStatus = getOnlineStatus(profile.last_login)
+                            return (
+                              <div
+                                key={profile.id}
+                                className={`${styles.pyramidCard} ${styles.headCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectProfile(profile)}
+                              >
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                    {profile.profile_image ? (
+                                      <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      getInitials(profile.full_name)
+                                    )}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: onlineStatus.color,
+                                    border: '2px solid white',
+                                    boxShadow: `0 0 4px ${onlineStatus.color}`
+                                  }} title={onlineStatus.label} />
+                                </div>
+                                <div className={styles.pyramidName}>{profile.full_name}</div>
+                                <div className={styles.pyramidPosition}>{profile.position}</div>
+                                <div className={styles.pyramidId}>{profile.department}</div>
                               </div>
-                              <div className={styles.pyramidName}>{profile.full_name}</div>
-                              <div className={styles.pyramidPosition}>{profile.position}</div>
-                              <div className={styles.pyramidId}>{profile.department}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -648,20 +719,40 @@ function FacultyProfilesContent() {
                           {getRoleInfo('program_chair').icon} Program Chairs ({programChairs.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {programChairs.map((profile) => (
-                            <div
-                              key={profile.id}
-                              className={`${styles.pyramidCard} ${styles.chairCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectProfile(profile)}
-                            >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
-                                {getInitials(profile.full_name)}
+                          {programChairs.map((profile) => {
+                            const onlineStatus = getOnlineStatus(profile.last_login)
+                            return (
+                              <div
+                                key={profile.id}
+                                className={`${styles.pyramidCard} ${styles.chairCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectProfile(profile)}
+                              >
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                    {profile.profile_image ? (
+                                      <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      getInitials(profile.full_name)
+                                    )}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: onlineStatus.color,
+                                    border: '2px solid white',
+                                    boxShadow: `0 0 4px ${onlineStatus.color}`
+                                  }} title={onlineStatus.label} />
+                                </div>
+                                <div className={styles.pyramidName}>{profile.full_name}</div>
+                                <div className={styles.pyramidPosition}>{profile.position}</div>
+                                <div className={styles.pyramidId}>{profile.department}</div>
                               </div>
-                              <div className={styles.pyramidName}>{profile.full_name}</div>
-                              <div className={styles.pyramidPosition}>{profile.position}</div>
-                              <div className={styles.pyramidId}>{profile.department}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -673,20 +764,40 @@ function FacultyProfilesContent() {
                           {getRoleInfo('coordinator').icon} Coordinators ({coordinators.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {coordinators.map((profile) => (
-                            <div
-                              key={profile.id}
-                              className={`${styles.pyramidCard} ${styles.coordinatorCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectProfile(profile)}
-                            >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
-                                {getInitials(profile.full_name)}
+                          {coordinators.map((profile) => {
+                            const onlineStatus = getOnlineStatus(profile.last_login)
+                            return (
+                              <div
+                                key={profile.id}
+                                className={`${styles.pyramidCard} ${styles.coordinatorCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectProfile(profile)}
+                              >
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                    {profile.profile_image ? (
+                                      <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      getInitials(profile.full_name)
+                                    )}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: onlineStatus.color,
+                                    border: '2px solid white',
+                                    boxShadow: `0 0 4px ${onlineStatus.color}`
+                                  }} title={onlineStatus.label} />
+                                </div>
+                                <div className={styles.pyramidName}>{profile.full_name}</div>
+                                <div className={styles.pyramidPosition}>{profile.position}</div>
+                                <div className={styles.pyramidId}>{profile.department}</div>
                               </div>
-                              <div className={styles.pyramidName}>{profile.full_name}</div>
-                              <div className={styles.pyramidPosition}>{profile.position}</div>
-                              <div className={styles.pyramidId}>{profile.department}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -698,20 +809,40 @@ function FacultyProfilesContent() {
                           {getRoleInfo('faculty').icon} Faculty Members ({facultyMembers.length})
                         </div>
                         <div className={styles.levelCards}>
-                          {facultyMembers.slice(0, 12).map((profile) => (
-                            <div
-                              key={profile.id}
-                              className={`${styles.pyramidCard} ${styles.facultyCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
-                              onClick={() => handleSelectProfile(profile)}
-                            >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
-                                {getInitials(profile.full_name)}
+                          {facultyMembers.slice(0, 12).map((profile) => {
+                            const onlineStatus = getOnlineStatus(profile.last_login)
+                            return (
+                              <div
+                                key={profile.id}
+                                className={`${styles.pyramidCard} ${styles.facultyCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
+                                onClick={() => handleSelectProfile(profile)}
+                              >
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                    {profile.profile_image ? (
+                                      <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                      getInitials(profile.full_name)
+                                    )}
+                                  </div>
+                                  <div style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50%',
+                                    backgroundColor: onlineStatus.color,
+                                    border: '2px solid white',
+                                    boxShadow: `0 0 4px ${onlineStatus.color}`
+                                  }} title={onlineStatus.label} />
+                                </div>
+                                <div className={styles.pyramidName}>{profile.full_name}</div>
+                                <div className={styles.pyramidPosition}>{profile.employment_type}</div>
+                                <div className={styles.pyramidId}>{profile.department}</div>
                               </div>
-                              <div className={styles.pyramidName}>{profile.full_name}</div>
-                              <div className={styles.pyramidPosition}>{profile.employment_type}</div>
-                              <div className={styles.pyramidId}>{profile.department}</div>
-                            </div>
-                          ))}
+                            )
+                          })}
                           {facultyMembers.length > 12 && (
                             <div className={styles.moreIndicator}>
                               +{facultyMembers.length - 12} more faculty
@@ -880,6 +1011,7 @@ function FacultyProfilesContent() {
                     <div className={styles.quickNavGrid}>
                       {filteredFaculty.map((profile) => {
                         const roleInfo = getRoleInfo(profile.role)
+                        const onlineStatus = getOnlineStatus(profile.last_login)
                         return (
                           <button
                             key={profile.id}
@@ -887,13 +1019,32 @@ function FacultyProfilesContent() {
                             onClick={() => handleSelectProfile(profile)}
                             style={{ borderLeftColor: roleInfo.color }}
                           >
-                            <span className={styles.quickNavIcon} style={{ color: roleInfo.color }}>
-                              {roleInfo.icon}
-                            </span>
-                            <div className={styles.quickNavInfo}>
-                              <span className={styles.quickNavName}>{profile.full_name}</span>
-                              <span className={styles.quickNavPosition}>{profile.position}</span>
-                              <span className={styles.quickNavDept}>{profile.department}</span>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                              <div style={{ position: 'relative', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', backgroundColor: roleInfo.bgColor, border: `2px solid ${roleInfo.color}` }}>
+                                {profile.profile_image ? (
+                                  <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', color: roleInfo.color, fontWeight: 'bold' }}>
+                                    {getInitials(profile.full_name)}
+                                  </div>
+                                )}
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  right: 0,
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  backgroundColor: onlineStatus.color,
+                                  border: '2px solid white',
+                                  boxShadow: `0 0 3px ${onlineStatus.color}`
+                                }} title={onlineStatus.label} />
+                              </div>
+                              <div className={styles.quickNavInfo}>
+                                <span className={styles.quickNavName}>{profile.full_name}</span>
+                                <span className={styles.quickNavPosition}>{profile.position}</span>
+                                <span className={styles.quickNavDept}>{profile.department}</span>
+                              </div>
                             </div>
                           </button>
                         )

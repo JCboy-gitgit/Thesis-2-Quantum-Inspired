@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import {
@@ -79,7 +80,7 @@ export default function ProfileChangeRequestsPage() {
   const fetchRequests = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/profile-change-requests?status=${filter}`)
+      const response = await fetchNoCache(`/api/profile-change-requests?status=${filter}`)
       const data = await response.json()
 
       if (data.error) {

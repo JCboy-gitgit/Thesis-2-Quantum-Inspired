@@ -535,7 +535,7 @@
   right: 10px;
   display: flex;
   gap: 6px;
-  z-index: 2;
+  z-index: 10;
 }
 
 .iconBtn {
@@ -720,10 +720,15 @@
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
-  background: var(--primary-gradient, linear-gradient(135deg, #00d4ff 0%, #00b4d8 100%));
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border-radius: 6px;
   margin: 0 0 4px 0;
+}
+
+:global([data-theme="dark"]) .facultyIdBadge {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
 }
 
 .empBadge {
@@ -757,10 +762,27 @@
   border-radius: 12px;
   padding: 16px;
   border: 1px solid var(--card-border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 8px;
   transition: all 0.3s ease;
+}
+
+.facultyCard .facultyAvatar {
+  grid-row: 1 / 3;
+}
+
+.facultyCard .facultyInfo {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.facultyCard .facultyEmail {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
 }
 
 .facultyCard:hover {
@@ -1019,6 +1041,13 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Keep side-by-side layout unless truly mobile */
+@media (max-width: 480px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 .formGroup {
@@ -1301,10 +1330,6 @@
 
   .collegeGrid,
   .fileGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .formRow {
     grid-template-columns: 1fr;
   }
 
