@@ -505,7 +505,7 @@ export default function MapViewerPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return false
       }
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
@@ -515,7 +515,7 @@ export default function MapViewerPage() {
       return true
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
       return false
     }
   }

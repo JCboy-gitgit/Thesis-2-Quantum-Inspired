@@ -1,0 +1,11 @@
+{
+  "name": "thesis-root",
+  "private": true,
+  "description": "Root package - run commands from my-app folder",
+  "scripts": {
+    "dev": "cd my-app && npm run dev",
+    "build": "cd my-app && npm run build",
+    "start": "cd my-app && npm run start",
+    "install-app": "cd my-app && npm install"
+  }
+}

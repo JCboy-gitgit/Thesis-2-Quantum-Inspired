@@ -71,7 +71,7 @@ export default function FacultyCampusMapPage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -90,14 +90,14 @@ export default function FacultyCampusMapPage() {
 
       if (userError || !userData || !userData.is_active) {
         await supabase.auth.signOut()
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
       setUser(userData)
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,34 @@
 /* Theme styles apply to .faculty-page-wrapper ONLY - login page has its own fixed styling */
 /* NO body-level selectors or :has() selectors that could affect admin pages */
 
+/* ==================== CSS ISOLATION - Prevent Admin CSS Bleed ==================== */
+/* Reset specific admin styles that might bleed through, without breaking module CSS */
+.faculty-page-wrapper {
+  /* Do NOT use all: revert as it breaks CSS modules */
+  /* Instead, explicitly reset problematic inherited properties */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  font-family: var(--font-geist-sans, 'Segoe UI', system-ui, -apple-system, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Reset admin background/colors that might persist */
+  background: var(--bg-primary, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  
+  /* Ensure proper display */
+  display: block;
+  position: relative;
+}
+
+/* Ensure all children inherit proper font */
+.faculty-page-wrapper * {
+  box-sizing: border-box;
+}
+
 /* ==================== COLLEGE THEME COLOR SYSTEM ==================== */
 /* These CSS variables cascade to ALL faculty elements */
 

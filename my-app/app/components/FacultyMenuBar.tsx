@@ -110,7 +110,8 @@ export default function FacultyMenuBar({
   const [userAvatar, setUserAvatar] = useState<string | null>(null)
   const [lastMetadata, setLastMetadata] = useState<number>(0)
 
-  const isLightMode = theme === 'light'
+  // Faculty pages treat 'green' as 'light' mode (green is only for admin pages)
+  const isLightMode = theme === 'light' || theme === 'green'
   
   // Get current college theme colors
   const colors = useMemo(() => {
@@ -194,10 +195,10 @@ export default function FacultyMenuBar({
       localStorage.removeItem('faculty_session_token')
       localStorage.removeItem('faculty_keep_signed_in')
       await supabase.auth.signOut()
-      router.push('/faculty/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

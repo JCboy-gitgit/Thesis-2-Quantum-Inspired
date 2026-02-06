@@ -420,7 +420,7 @@ export default function GenerateSchedulePage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -431,7 +431,7 @@ export default function GenerateSchedulePage() {
       }
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 
@@ -1762,14 +1762,6 @@ export default function GenerateSchedulePage() {
         <div className={styles.scheduleContainer}>
           {/* Header */}
           <header className={styles.scheduleHeader}>
-            <button
-              className={styles.backButton}
-              onClick={() => router.push('/LandingPages/RoomSchedule/ViewSchedule')}
-            >
-              <FaArrowLeft className={styles.iconBack} />
-              Back to Schedules
-            </button>
-
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
                 <FaAtom className={styles.headerLargeIcon} />

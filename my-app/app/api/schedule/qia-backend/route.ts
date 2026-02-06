@@ -75,8 +75,12 @@ interface RequestBody {
   schedule_name: string
   semester: string
   academic_year: string
-  campus_group_id: number
-  class_group_id: number
+  // Support both old and new field names for backward compatibility
+  campus_group_id?: number
+  campus_group_ids?: number[]  // Frontend sends array
+  class_group_id?: number
+  year_batch_id?: number       // Frontend sends this as class_group_id
+  college?: string             // College filter for the schedule
   teacher_group_id: number | null
   rooms: RoomData[]
   classes: ClassData[]
@@ -262,6 +266,11 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   let scheduleId = 0
   let savedToDatabase = false
   
+  // Resolve the correct group IDs from the request
+  // Frontend sends campus_group_ids (array) and year_batch_id
+  const resolvedCampusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
+  const resolvedClassGroupId = body.class_group_id || body.year_batch_id || 1
+  
   try {
     // Create schedule record
     const { data: scheduleData, error: scheduleError } = await supabase
@@ -270,8 +279,8 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
         schedule_name: body.schedule_name,
         semester: body.semester,
         academic_year: body.academic_year,
-        campus_group_id: body.campus_group_id || 1,
-        class_group_id: body.class_group_id || 1,
+        campus_group_id: resolvedCampusGroupId,
+        class_group_id: resolvedClassGroupId,
         total_classes: sortedSections.length,
         scheduled_classes: scheduledCount,
         unscheduled_classes: sortedSections.length - scheduledCount,
@@ -593,10 +602,16 @@ export async function POST(request: NextRequest) {
     const lunchStartHour = parseLunchHour(body.config.lunch_start_hour, 13) // Default 1:00 PM
     const lunchEndHour = parseLunchHour(body.config.lunch_end_hour, 14) // Default 2:00 PM
     
+    // Resolve the correct group IDs for Python backend
+    const campusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
+    const classGroupId = body.class_group_id || body.year_batch_id || 1
+    
     const backendPayload = {
       schedule_name: body.schedule_name,
       semester: body.semester,
       academic_year: body.academic_year,
+      campus_group_id: campusGroupId,  // Pass to Python for database storage
+      class_group_id: classGroupId,     // Pass to Python for database storage
       section_ids: null, // Schedule all sections
       room_ids: null, // Use all rooms
       time_slots: timeSlots,

@@ -79,7 +79,7 @@ export default function FacultyDepartmentsPage() {
   const { isAdmin, isLoading: authLoading, isAuthenticated } = useAuth({
     requireAuth: true,
     requireAdmin: true,
-    redirectTo: '/faculty/login'
+    redirectTo: '/'
   })
 
   const [sidebarOpen, setSidebarOpen] = useState(true)

@@ -15,8 +15,8 @@ interface FacultySettingsModalProps {
 function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
   const { theme, collegeTheme, setTheme, setCollegeTheme } = useTheme()
   
-  // For faculty, we use light/dark only
-  const displayMode = theme === 'dark' || theme === 'green' ? 'dark' : 'light'
+  // For faculty pages, 'green' is treated as 'light' mode (green is only for admin)
+  const displayMode = theme === 'dark' ? 'dark' : 'light'
   const isLightMode = displayMode === 'light'
 
   // Get college theme colors

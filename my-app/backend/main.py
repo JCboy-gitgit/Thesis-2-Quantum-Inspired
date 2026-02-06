@@ -286,6 +286,8 @@ class ScheduleGenerationRequest(BaseModel):
     schedule_name: str
     semester: str
     academic_year: str
+    campus_group_id: Optional[int] = None  # Campus group ID for database storage
+    class_group_id: Optional[int] = None   # Class group ID for database storage  
     section_ids: Optional[List[int]] = None
     room_ids: Optional[List[int]] = None
     time_slots: Optional[List[TimeSlotModel]] = None
@@ -503,8 +505,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "schedule_name": request.schedule_name,
             "semester": request.semester,
             "academic_year": request.academic_year,
-            "campus_group_id": 1,  # Default campus group (can be updated)
-            "class_group_id": 1,   # Default class group (can be updated)
+            "campus_group_id": request.campus_group_id or 1,  # Use request value or default to 1
+            "class_group_id": request.class_group_id or 1,    # Use request value or default to 1
             "total_classes": result["total_sections"],
             "scheduled_classes": result["scheduled_sections"],
             "unscheduled_classes": result["unscheduled_sections"],

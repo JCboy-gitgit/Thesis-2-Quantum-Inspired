@@ -51,7 +51,7 @@ function generateApprovalEmail(email: string, fullName: string): string {
           </ul>
           
           <center>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/faculty/login" class="button">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/" class="button">
               Login to Faculty Portal →
             </a>
           </center>

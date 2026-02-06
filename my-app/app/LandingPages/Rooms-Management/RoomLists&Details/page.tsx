@@ -180,7 +180,7 @@ export default function SchoolCapacityPage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -191,7 +191,7 @@ export default function SchoolCapacityPage() {
       }
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

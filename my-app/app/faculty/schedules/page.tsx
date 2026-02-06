@@ -270,7 +270,7 @@ function RoomSchedulesViewContent() {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -281,7 +281,7 @@ function RoomSchedulesViewContent() {
         .single() as { data: any; error: any }
 
       if (!userData || !userData.is_active) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -308,7 +308,7 @@ function RoomSchedulesViewContent() {
       
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

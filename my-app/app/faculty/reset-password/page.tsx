@@ -118,7 +118,7 @@ function ResetPasswordContent() {
             <p>{tokenError}</p>
             <button 
               className={styles.primaryButton}
-              onClick={() => router.push('/faculty/login')}
+              onClick={() => router.push('/')}
             >
               <ArrowLeft size={18} />
               Back to Login
@@ -140,7 +140,7 @@ function ResetPasswordContent() {
             <p>Your password has been changed. You can now login with your new password.</p>
             <button 
               className={styles.primaryButton}
-              onClick={() => router.push('/faculty/login')}
+              onClick={() => router.push('/')}
             >
               <ArrowLeft size={18} />
               Go to Login
@@ -241,7 +241,7 @@ function ResetPasswordContent() {
         <div className={styles.footer}>
           <button 
             className={styles.linkButton}
-            onClick={() => router.push('/faculty/login')}
+            onClick={() => router.push('/')}
           >
             <ArrowLeft size={14} />
             Back to Login

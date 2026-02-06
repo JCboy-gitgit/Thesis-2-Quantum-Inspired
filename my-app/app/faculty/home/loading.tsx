@@ -29,7 +29,8 @@ export default function FacultyHomeLoading() {
     return null
   }
 
-  const isLight = theme === 'light'
+  // Faculty pages treat 'green' as 'light' mode
+  const isLight = theme === 'light' || theme === 'green'
 
   return (
     <div 

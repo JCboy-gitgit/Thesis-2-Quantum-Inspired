@@ -77,6 +77,20 @@ export default function FacultyHomePage() {
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
   useEffect(() => {
+    // CRITICAL: Aggressively purge admin styles first
+    const adminClasses = ['admin-dashboard', 'admin-page', 'green', 'dark-mode', 'dark', 'admin', 'admin-layout']
+    adminClasses.forEach(cls => {
+      document.body.classList.remove(cls)
+      document.documentElement.classList.remove(cls)
+    })
+    
+    // Clear admin CSS variables
+    const propsToRemove = ['--admin-bg', '--sidebar-width', '--header-height', 'background', 'backgroundColor']
+    propsToRemove.forEach(prop => {
+      document.documentElement.style.removeProperty(prop)
+      document.body.style.removeProperty(prop)
+    })
+
     // Apply theme immediately from localStorage BEFORE mounting
     const savedTheme = localStorage.getItem('faculty-base-theme')
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
@@ -95,9 +109,22 @@ export default function FacultyHomePage() {
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
     }
 
+    // Add faculty classes
+    document.body.classList.add('faculty-page', 'faculty-loaded')
+    
+    // Force body background based on faculty theme
+    const bgColor = themeToApply === 'light' ? '#f8fafc' : '#0a0e27'
+    const textColor = themeToApply === 'light' ? '#1e293b' : '#ffffff'
+    document.documentElement.style.setProperty('background', bgColor, 'important')
+    document.body.style.setProperty('background', bgColor, 'important')
+    document.body.style.setProperty('color', textColor, 'important')
+    
+    // Reset CSS variables on root
+    document.documentElement.style.setProperty('--bg-primary', bgColor)
+    document.documentElement.style.setProperty('--bg-secondary', themeToApply === 'light' ? '#ffffff' : '#1a1f3a')
+    document.documentElement.style.setProperty('--text-primary', textColor)
+
     setMounted(true)
-    // Force styles to apply immediately
-    document.body.classList.add('faculty-loaded')
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
 
@@ -197,7 +224,7 @@ export default function FacultyHomePage() {
               await supabase.auth.signOut()
               localStorage.removeItem('faculty_session_token')
               localStorage.removeItem('faculty_keep_signed_in')
-              router.push('/faculty/login?reason=session_expired')
+              router.push('/?reason=session_expired')
             }, 3000)
           }
         }
@@ -273,7 +300,7 @@ export default function FacultyHomePage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -298,7 +325,7 @@ export default function FacultyHomePage() {
 
       if (userError || !userData || !userData.is_active) {
         await supabase.auth.signOut()
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -330,7 +357,7 @@ export default function FacultyHomePage() {
       setLoading(false)
     } catch (error) {
       console.error('Auth check failed:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 
@@ -498,10 +525,10 @@ export default function FacultyHomePage() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
-      router.push('/faculty/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout failed:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 
@@ -604,7 +631,7 @@ export default function FacultyHomePage() {
               {/* Left: Greeting and date */}
               <div className="text-center sm:text-left">
                 <h2 className={`text-xl sm:text-xl md:text-2xl font-bold m-0 mb-1 break-words leading-tight ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                  {greeting}, {user?.full_name || 'Faculty'}
+                  {greeting} {user?.full_name || 'Faculty'}
                 </h2>
                 <p className={`text-sm sm:text-base m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   {getCurrentDate()}
@@ -911,7 +938,7 @@ export default function FacultyHomePage() {
                 localStorage.removeItem('faculty_session_token')
                 localStorage.removeItem('faculty_keep_signed_in')
                 await supabase.auth.signOut()
-                router.push('/faculty/login')
+                router.push('/')
               }}
             >
               Return to Login

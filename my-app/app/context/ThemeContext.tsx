@@ -1,6 +1,7 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 
 // Base themes - includes green (nature-inspired), light, and dark modes
 type BaseTheme = 'green' | 'light' | 'dark'
@@ -119,36 +120,65 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<BaseTheme>('green')
   const [collegeTheme, setCollegeThemeState] = useState<CollegeTheme>('default')
   const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
 
+  // Separate theme storage keys for admin and faculty to prevent conflicts
+  const getThemeStorageKey = (isFaculty: boolean) => 
+    isFaculty ? 'faculty-base-theme' : 'admin-base-theme'
+  
+  const getCollegeThemeStorageKey = (isFaculty: boolean) => 
+    isFaculty ? 'faculty-college-theme' : 'admin-college-theme'
+
+  // Use useLayoutEffect to apply theme BEFORE paint - prevents flash
+  useLayoutEffect(() => {
+    const isFacultyPage = pathname?.startsWith('/faculty') ?? false
+    const isLoginPage = pathname === '/' || pathname === '/login'
+    
+    // Skip theme management for login page (it has its own styles)
+    if (isLoginPage) return
+    
+    const themeKey = getThemeStorageKey(isFacultyPage)
+    const savedTheme = localStorage.getItem(themeKey) as BaseTheme
+    
+    // Define valid themes
+    const allowedThemes: BaseTheme[] = ['green', 'light', 'dark']
+    
+    // Determine the correct theme for this context
+    let themeToApply: BaseTheme
+    
+    if (savedTheme && allowedThemes.includes(savedTheme)) {
+      // Use saved theme, but enforce light/dark for faculty (never green)
+      if (isFacultyPage) {
+        themeToApply = savedTheme === 'green' ? 'light' : savedTheme
+      } else {
+        themeToApply = savedTheme
+      }
+    } else {
+      // Default: green for admin, light for faculty
+      themeToApply = isFacultyPage ? 'light' : 'green'
+    }
+    
+    // Apply the theme
+    setThemeState(themeToApply)
+    document.documentElement.setAttribute('data-theme', themeToApply)
+    
+    // For faculty pages, also clear any admin-specific body classes
+    if (isFacultyPage) {
+      const adminClasses = ['admin-dashboard', 'admin-page', 'green', 'admin', 'admin-layout']
+      adminClasses.forEach(cls => {
+        document.body.classList.remove(cls)
+        document.documentElement.classList.remove(cls)
+      })
+    }
+    
+  }, [pathname])
+
+  // Initial mount: set up college theme
   useEffect(() => {
     setMounted(true)
-    // Load saved themes from localStorage
-    const savedTheme = localStorage.getItem('faculty-base-theme') as BaseTheme
-    const savedCollegeTheme = localStorage.getItem('faculty-college-theme') as CollegeTheme
-    
-    // Check if we're on a faculty page
-    const isFacultyPage = window.location.pathname.startsWith('/faculty')
-    
-    // Faculty pages should NEVER use green theme - default to light mode
-    const defaultTheme: BaseTheme = isFacultyPage ? 'light' : 'green'
-
-    // Valid base themes include green, light and dark
-    const allowedThemes: BaseTheme[] = ['green', 'light', 'dark']
-
-    if (savedTheme && allowedThemes.includes(savedTheme)) {
-      // For faculty pages, convert green to light mode
-      let themeToApply = savedTheme
-      if (isFacultyPage && savedTheme === 'green') {
-        themeToApply = 'light'
-      }
-      setThemeState(themeToApply)
-      document.documentElement.setAttribute('data-theme', themeToApply)
-    } else {
-      // Default theme based on page
-      setThemeState(defaultTheme)
-      document.documentElement.setAttribute('data-theme', defaultTheme)
-      localStorage.setItem('faculty-base-theme', defaultTheme)
-    }
+    const isFacultyPage = pathname?.startsWith('/faculty') ?? false
+    const collegeKey = getCollegeThemeStorageKey(isFacultyPage)
+    const savedCollegeTheme = localStorage.getItem(collegeKey) as CollegeTheme
 
     if (savedCollegeTheme && Object.keys(COLLEGE_COLORS).includes(savedCollegeTheme)) {
       setCollegeThemeState(savedCollegeTheme)
@@ -159,9 +189,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setCollegeThemeState('default')
       document.documentElement.setAttribute('data-college-theme', 'default')
       applyCollegeThemeCSS('default')
-      localStorage.setItem('faculty-college-theme', 'default')
     }
-  }, [])
+  }, [pathname])
 
   const applyCollegeThemeCSS = (college: CollegeTheme) => {
     const colors = COLLEGE_COLORS[college]
@@ -177,14 +206,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = (newTheme: BaseTheme) => {
     const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     const normalizedTheme: BaseTheme = isFacultyPage && newTheme === 'green' ? 'light' : newTheme
+    const storageKey = getThemeStorageKey(isFacultyPage)
     setThemeState(normalizedTheme)
-    localStorage.setItem('faculty-base-theme', normalizedTheme)
+    localStorage.setItem(storageKey, normalizedTheme)
     document.documentElement.setAttribute('data-theme', normalizedTheme)
   }
 
   const setCollegeTheme = (college: CollegeTheme) => {
+    const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
+    const storageKey = getCollegeThemeStorageKey(isFacultyPage)
     setCollegeThemeState(college)
-    localStorage.setItem('faculty-college-theme', college)
+    localStorage.setItem(storageKey, college)
     document.documentElement.setAttribute('data-college-theme', college)
     applyCollegeThemeCSS(college)
   }

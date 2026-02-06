@@ -30,13 +30,14 @@ export default function FacultyAlertsPage() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)
 
-  const isLightMode = theme === 'light'
+  // Faculty pages treat 'green' as 'light' mode
+  const isLightMode = theme === 'light' || theme === 'green'
 
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
       setUserId(session.user.id)

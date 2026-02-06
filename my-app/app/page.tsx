@@ -1,20 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, useRef } from 'react'
 import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import './styles/login.css'
 import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 
-type Mode = 'login' | 'register'
-
-interface Department {
-  id: number
-  department_code: string
-  department_name: string
-  college: string | null
-}
+type ActiveTab = 'login' | 'signup'
 
 interface College {
   id: number
@@ -32,7 +25,6 @@ const userSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xml
 const emailSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const buildingSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 21h18M9 8h1m-1 4h1m-1 4h1m4-8h1m-1 4h1m-1 4h1M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const lockSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-const lockClosedSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>`
 
 // Loading fallback component
 function LoadingFallback() {
@@ -60,22 +52,35 @@ function PageContent(): JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [checkingSession, setCheckingSession] = useState(true)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [selectedDepartment, setSelectedDepartment] = useState('')
-  const [selectedCollege, setSelectedCollege] = useState('')
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [groupedDepartments, setGroupedDepartments] = useState<Record<string, Department[]>>({})
-  const [colleges, setColleges] = useState<College[]>([])
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [registerSuccess, setRegisterSuccess] = useState(false)
+  
+  // Tab state
+  const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login'
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab)
+  const [tabAnimation, setTabAnimation] = useState<string>('')
+  const prevTabRef = useRef<ActiveTab>(initialTab)
+  
+  // Login states
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [staySignedIn, setStaySignedIn] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [loginMessage, setLoginMessage] = useState<string | null>(null)
+  const [loginError, setLoginError] = useState<string | null>(null)
+  
+  // Signup states
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('')
+  const [signupFullName, setSignupFullName] = useState('')
+  const [selectedCollege, setSelectedCollege] = useState('')
+  const [showSignupPassword, setShowSignupPassword] = useState(false)
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false)
+  const [colleges, setColleges] = useState<College[]>([])
+  const [signupLoading, setSignupLoading] = useState(false)
+  const [signupMessage, setSignupMessage] = useState<string | null>(null)
+  const [signupError, setSignupError] = useState<string | null>(null)
+  const [registerSuccess, setRegisterSuccess] = useState(false)
   
   // Forgot password states
   const [showForgotPassword, setShowForgotPassword] = useState(false)
@@ -84,22 +89,22 @@ function PageContent(): JSX.Element {
   const [forgotMessage, setForgotMessage] = useState<string | null>(null)
   const [forgotError, setForgotError] = useState<string | null>(null)
 
-  // Only allow admin login 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
-  const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('mode') === 'admin')
 
-  // Check existing session on mount - auto-redirect if already logged in
+  // Particle data
+  const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
+  const [sparkleParticles, setSparkleParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
+
+  // Check existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          // Admin check
           if (session.user.email === ADMIN_EMAIL) {
             router.replace('/LandingPages/Home')
             return
           }
-          // Faculty check - only redirect if approved
           const { data: userData } = await supabase
             .from('users')
             .select('is_active')
@@ -119,11 +124,7 @@ function PageContent(): JSX.Element {
     checkSession()
   }, [router, ADMIN_EMAIL])
 
-  // Particle data - generated on client side only to avoid hydration mismatch
-  const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
-  const [sparkleParticles, setSparkleParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
-
-  // Generate particles on mount (client-side only)
+  // Generate particles on mount
   useEffect(() => {
     setParticles(
       Array.from({ length: 20 }, () => ({
@@ -158,6 +159,24 @@ function PageContent(): JSX.Element {
     } catch (error) {
       console.error('Error fetching colleges:', error)
     }
+  }
+
+  // Handle tab change with animation
+  const handleTabChange = (newTab: ActiveTab) => {
+    if (newTab === activeTab) return
+    
+    const direction = newTab === 'signup' ? 'right' : 'left'
+    setTabAnimation(`exiting-${direction}`)
+    
+    setTimeout(() => {
+      prevTabRef.current = activeTab
+      setActiveTab(newTab)
+      setTabAnimation(`entering-${direction === 'right' ? 'right' : 'left'}`)
+      
+      setTimeout(() => {
+        setTabAnimation('')
+      }, 350)
+    }, 150)
   }
 
   // Forgot Password Handler
@@ -206,94 +225,193 @@ function PageContent(): JSX.Element {
     setForgotMessage(null)
   }
 
-  const validate = (): boolean => {
-    setError(null)
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      setError('Please enter a valid email.')
-      return false
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
-      return false
-    }
-    if (!isAdminLogin && password !== confirmPassword) {
-      setError('Passwords do not match.')
-      return false
-    }
-    if (!isAdminLogin && !fullName.trim()) {
-      setError('Please enter your full name.')
-      return false
-    }
-    if (!isAdminLogin && !selectedCollege) {
-      setError('Please select your college.')
-      return false
-    }
-    return true
-  }
-
-  async function handleSubmit(e: FormEvent) {
+  // Login handler
+  async function handleLogin(e: FormEvent) {
     e.preventDefault()
-    setMessage(null)
-    if (!validate()) return
-    setLoading(true)
-    setError(null)
+    setLoginMessage(null)
+    setLoginError(null)
+
+    if (!loginEmail || !/^\S+@\S+\.\S+$/.test(loginEmail)) {
+      setLoginError('Please enter a valid email.')
+      return
+    }
+    if (loginPassword.length < 6) {
+      setLoginError('Password must be at least 6 characters.')
+      return
+    }
+
+    setLoginLoading(true)
 
     try {
-      if (isAdminLogin) {
-        // Only admin can login
-        if (email !== ADMIN_EMAIL) {
-          setError('Only admin can login here. Faculty should use the Faculty Login page.')
-          setLoading(false)
-          return
-        }
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: loginEmail, 
+        password: loginPassword 
+      })
+      if (error) throw error
 
-        // Handle stay signed in - store preference
+      // Check if admin
+      if (loginEmail === ADMIN_EMAIL) {
         if (staySignedIn) {
           localStorage.setItem('adminStaySignedIn', 'true')
         }
-
-        setMessage('Login successful. Redirecting...')
+        setLoginMessage('Admin login successful. Redirecting...')
         setTimeout(() => {
           router.push('/LandingPages/Home')
-        }, 1500)
-      } else {
-        const response = await fetch('/api/auth/register', {
+        }, 1000)
+        return
+      }
+
+      // Faculty login flow
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, is_active, full_name')
+        .eq('id', data.user.id)
+        .single() as { data: { id: string; is_active: boolean; full_name: string } | null; error: any }
+
+      if (!userData) {
+        await supabase.auth.signOut()
+        setLoginError('Account not found. Please register first.')
+        setLoginLoading(false)
+        return
+      }
+
+      // Check if rejected
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('position')
+        .eq('user_id', userData.id)
+        .single() as { data: { position: string } | null; error: any }
+
+      if (profileData?.position === 'REJECTED') {
+        await supabase.auth.signOut()
+        setLoginError('Your registration was not approved. Please contact the administrator.')
+        setLoginLoading(false)
+        return
+      }
+
+      if (!userData.is_active) {
+        await supabase.auth.signOut()
+        setLoginError('Your account is pending admin approval. Please wait for confirmation.')
+        setLoginLoading(false)
+        return
+      }
+
+      // Generate session token
+      try {
+        const presenceResponse = await fetch('/api/presence', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email,
-            password,
-            fullName,
-            college: selectedCollege
+            action: 'login',
+            user_id: userData.id
           })
         })
-
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data?.error || 'Registration failed')
+        
+        const contentType = presenceResponse.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const presenceData = await presenceResponse.json()
+          if (presenceData.session_token) {
+            localStorage.setItem('faculty_session_token', presenceData.session_token)
+          }
         }
-
-        setMessage('Registration successful! Please verify your email, then wait for admin approval.')
-        setRegisterSuccess(true)
-        setTimeout(() => {
-          setEmail('')
-          setPassword('')
-          setConfirmPassword('')
-          setFullName('')
-          setSelectedCollege('')
-          setRegisterSuccess(false)
-        }, 5000)
+      } catch (presenceError) {
+        console.error('Presence API error:', presenceError)
       }
+
+      if (staySignedIn) {
+        localStorage.setItem('faculty_keep_signed_in', 'true')
+      }
+
+      // Set theme before navigation
+      const savedTheme = localStorage.getItem('faculty-base-theme') || 'light'
+      const savedCollegeTheme = localStorage.getItem('faculty-college-theme') || 'default'
+      const effectiveTheme = savedTheme === 'green' ? 'light' : savedTheme
+      document.documentElement.setAttribute('data-theme', effectiveTheme)
+      document.body.setAttribute('data-theme', effectiveTheme)
+
+      const bgColor = (savedTheme === 'light' || savedTheme === 'green') ? '#f8fafc' : '#0a0e27'
+      document.body.style.backgroundColor = bgColor
+      document.documentElement.style.backgroundColor = bgColor
+
+      if (savedCollegeTheme) {
+        document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+      }
+
+      setLoginMessage(`Welcome back, ${userData.full_name || 'Faculty'}! Redirecting...`)
+      setTimeout(() => {
+        router.replace('/faculty/home')
+      }, 1000)
+
     } catch (err: any) {
-      setError((err?.message ?? String(err)))
+      setLoginError(err?.message ?? String(err))
     } finally {
-      setLoading(false)
+      setLoginLoading(false)
     }
   }
 
-  // Show loading while checking session
+  // Signup handler
+  async function handleSignup(e: FormEvent) {
+    e.preventDefault()
+    setSignupMessage(null)
+    setSignupError(null)
+
+    if (!signupFullName.trim()) {
+      setSignupError('Please enter your full name.')
+      return
+    }
+    if (!signupEmail || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
+      setSignupError('Please enter a valid email.')
+      return
+    }
+    if (!selectedCollege) {
+      setSignupError('Please select your college.')
+      return
+    }
+    if (signupPassword.length < 6) {
+      setSignupError('Password must be at least 6 characters.')
+      return
+    }
+    if (signupPassword !== signupConfirmPassword) {
+      setSignupError('Passwords do not match.')
+      return
+    }
+
+    setSignupLoading(true)
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: signupEmail,
+          password: signupPassword,
+          fullName: signupFullName,
+          college: selectedCollege
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || 'Registration failed')
+      }
+
+      setSignupMessage('Registration successful! Please verify your email, then wait for admin approval.')
+      setRegisterSuccess(true)
+      setTimeout(() => {
+        setSignupEmail('')
+        setSignupPassword('')
+        setSignupConfirmPassword('')
+        setSignupFullName('')
+        setSelectedCollege('')
+        setRegisterSuccess(false)
+      }, 5000)
+    } catch (err: any) {
+      setSignupError(err?.message ?? String(err))
+    } finally {
+      setSignupLoading(false)
+    }
+  }
+
   if (checkingSession) {
     return <LoadingFallback />
   }
@@ -302,12 +420,11 @@ function PageContent(): JSX.Element {
     <div className="login-page">
       {/* Animated Background */}
       <div className="background-container">
-        {/* Realistic Space Background */}
         <div className="stars"></div>
         <div className="quantum-orb quantum-orb-1"></div>
         <div className="quantum-orb quantum-orb-2"></div>
+        <div className="ambient-orb"></div>
         <div className="glow-effect"></div>
-        {/* Floating particles */}
         <div className="floating-particles">
           {particles.map((particle, i) => (
             <span
@@ -349,241 +466,298 @@ function PageContent(): JSX.Element {
 
       {/* Content */}
       <main className="container">
-        <div className="card">
+        <div className="card tabbed-card">
+          {/* Tab Header */}
           <div className="card-header">
-            <h1 className="title">
-              {isAdminLogin ? 'Admin Login' : 'Faculty Registration'}
-            </h1>
-            <p className="subtitle">
-              {isAdminLogin
-                ? 'Admin access only'
-                : 'Register as faculty. You will be approved by admin.'}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="form">
-            {/* Full Name Field (Faculty Registration Only) */}
-            {!isAdminLogin && (
-              <div className="form-group">
-                <label className="label">
-                  <span className="label-text">
-                    <span dangerouslySetInnerHTML={{ __html: userSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Full Name
-                  </span>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="input"
-                    placeholder="Juan Dela Cruz"
-                    required
-                  />
-                </label>
-              </div>
-            )}
-
-            {/* Email Field */}
-            <div className="form-group">
-              <label className="label">
-                <span className="label-text">
-                  <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  Email Address
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input"
-                  placeholder="your@email.com"
-                  required
-                />
-              </label>
-            </div>
-
-            {/* College Selection (Faculty Registration Only) */}
-            {!isAdminLogin && (
-              <div className="form-group">
-                <label className="label">
-                  <span className="label-text">
-                    <span dangerouslySetInnerHTML={{ __html: buildingSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Select your College
-                  </span>
-                  <select
-                    value={selectedCollege}
-                    onChange={(e) => setSelectedCollege(e.target.value)}
-                    className="input select-input"
-                    required
-                  >
-                    <option value="">Select your college...</option>
-                    {colleges.map((college) => (
-                      <option key={college.id} value={college.name}>
-                        {college.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
-
-            {/* Password Field */}
-            <div className="form-group">
-              <label className="label">
-                <span className="label-text">
-                  <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                  {isAdminLogin ? 'Password' : 'Create your Password'}
-                </span>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input"
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="toggle-password"
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                    dangerouslySetInnerHTML={{ __html: showPassword ? eyeHideSVG : eyeShowSVG }}
-                  />
-                </div>
-              </label>
-            </div>
-
-            {/* Confirm Password Field (Faculty Registration Only) */}
-            {!isAdminLogin && (
-              <div className="form-group">
-                <label className="label">
-                  <span className="label-text">
-                    <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Confirm Password
-                  </span>
-                  <div className="password-input-wrapper">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="input"
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="toggle-password"
-                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                      dangerouslySetInnerHTML={{ __html: showConfirmPassword ? eyeHideSVG : eyeShowSVG }}
-                    />
-                  </div>
-                </label>
-              </div>
-            )}
-
-            {/* Stay Signed In & Forgot Password (Admin Only) */}
-            {isAdminLogin && (
-              <div className="form-group checkbox-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={staySignedIn}
-                    onChange={(e) => setStaySignedIn(e.target.checked)}
-                    className="checkbox-input"
-                  />
-                  <span className="checkbox-text">
-                    <span dangerouslySetInnerHTML={{ __html: lockClosedSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Keep me signed in
-                  </span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(true)}
-                  className="forgot-password-link"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#00d4ff',
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    padding: 0
-                  }}
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`button ${loading ? 'loading' : ''}`}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  {isAdminLogin ? 'Logging in...' : 'Registering...'}
-                </>
-              ) : (
-                isAdminLogin ? (
-                  <>Login</>
-                ) : (
-                  <>Create Account</>
-                )
-              )}
-            </button>
-
-            {/* Mode Switch */}
-            <div className="switch-row">
-              <span className="switch-text">
-                {isAdminLogin
-                  ? 'Faculty? Register below.'
-                  : 'Admin? Login here.'}
-              </span>
+            <div className="tab-container">
               <button
                 type="button"
-                onClick={() => {
-                  setIsAdminLogin(!isAdminLogin)
-                  setError(null)
-                  setMessage(null)
-                  setEmail('')
-                  setPassword('')
-                  setConfirmPassword('')
-                  setFullName('')
-                  setSelectedCollege('')
-                  setRegisterSuccess(false)
-                }}
-                className="link-button"
+                className={`tab-button ${activeTab === 'login' ? 'active' : ''}`}
+                onClick={() => handleTabChange('login')}
               >
-                {isAdminLogin ? 'Faculty Registration' : 'Admin Login'}
+                Login
+              </button>
+              <button
+                type="button"
+                className={`tab-button ${activeTab === 'signup' ? 'active' : ''}`}
+                onClick={() => handleTabChange('signup')}
+              >
+                Sign Up
               </button>
             </div>
+          </div>
 
-            {/* Faculty Login Link */}
-            {!isAdminLogin && (
-              <div className="switch-row faculty-login-link">
-                <span className="switch-text">Already approved?</span>
-                <button
-                  type="button"
-                  onClick={() => router.push('/faculty/login')}
-                  className="link-button"
-                >
-                  Faculty Login →
-                </button>
+          {/* Tab Content */}
+          <div className="tab-content-wrapper">
+            {activeTab === 'login' ? (
+              <div className={`tab-content ${tabAnimation}`}>
+                {/* Login Content */}
+                <div className="tab-content-header">
+                  <h2 className="tab-content-title">Log-in to Your Account</h2>
+                  <p className="tab-content-subtitle">Admin and Faculty access</p>
+                </div>
+                
+                <form onSubmit={handleLogin} className="form">
+                  {/* Email Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        E-mail address
+                      </span>
+                      <input
+                        type="email"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        className="input"
+                        placeholder="your@email.com"
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  {/* Password Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Password
+                      </span>
+                      <div className="password-input-wrapper">
+                        <input
+                          type={showLoginPassword ? 'text' : 'password'}
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          className="input"
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="toggle-password"
+                          title={showLoginPassword ? 'Hide password' : 'Show password'}
+                          dangerouslySetInnerHTML={{ __html: showLoginPassword ? eyeHideSVG : eyeShowSVG }}
+                        />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Stay Signed In & Forgot Password */}
+                  <div className="form-group checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={staySignedIn}
+                        onChange={(e) => setStaySignedIn(e.target.checked)}
+                        className="checkbox-input"
+                      />
+                      <span className="checkbox-text">Remember me</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="forgot-password-link"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={loginLoading}
+                    className={`button ${loginLoading ? 'loading' : ''}`}
+                  >
+                    {loginLoading ? (
+                      <>
+                        <span className="spinner"></span>
+                        Logging in...
+                      </>
+                    ) : (
+                      <>LOGIN</>
+                    )}
+                  </button>
+
+                  {/* Messages */}
+                  {loginMessage && <div className="message success">{loginMessage}</div>}
+                  {loginError && <div className="message error">{loginError}</div>}
+                  
+                  {/* Switch to Sign Up */}
+                  <div className="switch-row">
+                    <span className="switch-text">Don't have an account yet?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('signup')}
+                      className="link-button"
+                    >
+                      SIGN UP
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <div className={`tab-content ${tabAnimation}`}>
+                {/* Signup Content */}
+                <div className="tab-content-header">
+                  <h2 className="tab-content-title">Faculty Registration</h2>
+                  <p className="tab-content-subtitle">Register as faculty. You will be approved by admin.</p>
+                </div>
+                
+                <form onSubmit={handleSignup} className="form">
+                  {/* Full Name Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: userSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Full Name
+                      </span>
+                      <input
+                        type="text"
+                        value={signupFullName}
+                        onChange={(e) => setSignupFullName(e.target.value)}
+                        className="input"
+                        placeholder="Juan Dela Cruz"
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  {/* Email Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Email Address
+                      </span>
+                      <input
+                        type="email"
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
+                        className="input"
+                        placeholder="your@email.com"
+                        required
+                      />
+                    </label>
+                  </div>
+
+                  {/* College Selection */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: buildingSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Select your College
+                      </span>
+                      <select
+                        value={selectedCollege}
+                        onChange={(e) => setSelectedCollege(e.target.value)}
+                        className="input select-input"
+                        required
+                      >
+                        <option value="">Select your college...</option>
+                        {colleges.map((college) => (
+                          <option key={college.id} value={college.name}>
+                            {college.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  {/* Password Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Create Password
+                      </span>
+                      <div className="password-input-wrapper">
+                        <input
+                          type={showSignupPassword ? 'text' : 'password'}
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          className="input"
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignupPassword(!showSignupPassword)}
+                          className="toggle-password"
+                          title={showSignupPassword ? 'Hide password' : 'Show password'}
+                          dangerouslySetInnerHTML={{ __html: showSignupPassword ? eyeHideSVG : eyeShowSVG }}
+                        />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Confirm Password Field */}
+                  <div className="form-group">
+                    <label className="label">
+                      <span className="label-text">
+                        <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                        Confirm Password
+                      </span>
+                      <div className="password-input-wrapper">
+                        <input
+                          type={showSignupConfirmPassword ? 'text' : 'password'}
+                          value={signupConfirmPassword}
+                          onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                          className="input"
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                          className="toggle-password"
+                          title={showSignupConfirmPassword ? 'Hide password' : 'Show password'}
+                          dangerouslySetInnerHTML={{ __html: showSignupConfirmPassword ? eyeHideSVG : eyeShowSVG }}
+                        />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={signupLoading}
+                    className={`button ${signupLoading ? 'loading' : ''}`}
+                  >
+                    {signupLoading ? (
+                      <>
+                        <span className="spinner"></span>
+                        Registering...
+                      </>
+                    ) : (
+                      <>REGISTER</>
+                    )}
+                  </button>
+
+                  {/* Messages */}
+                  {signupMessage && <div className="message success">{signupMessage}</div>}
+                  {signupError && <div className="message error">{signupError}</div>}
+                  
+                  {/* Switch to Login */}
+                  <div className="switch-row">
+                    <span className="switch-text">Already have an account?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('login')}
+                      className="link-button"
+                    >
+                      LOGIN
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
-
-            {/* Messages */}
-            {message && <div className="message success">{message}</div>}
-            {error && <div className="message error">{error}</div>}
-          </form>
+          </div>
 
           {/* Footer */}
           <div className="card-footer">
             <p className="footer-text">
-              Part of the Clarence Thesis Group System
+              Clarence Thesis Group System
             </p>
           </div>
         </div>

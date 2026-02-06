@@ -121,7 +121,7 @@ export default function AddEditRoomsPage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -132,7 +132,7 @@ export default function AddEditRoomsPage() {
       }
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

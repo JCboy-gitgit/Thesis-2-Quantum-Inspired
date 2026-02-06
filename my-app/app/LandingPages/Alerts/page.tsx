@@ -38,7 +38,7 @@ export default function AdminAlertsPage() {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
       setUserId(session.user.id)

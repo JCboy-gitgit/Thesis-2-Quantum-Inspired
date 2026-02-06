@@ -151,7 +151,7 @@ export default function FacultyProfilePage() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -169,7 +169,7 @@ export default function FacultyProfilePage() {
 
       if (userError || !userData || !userData.is_active) {
         await supabase.auth.signOut()
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
 
@@ -223,7 +223,7 @@ export default function FacultyProfilePage() {
 
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     } finally {
       setLoading(false)
     }
@@ -555,10 +555,10 @@ export default function FacultyProfilePage() {
       localStorage.removeItem('faculty_session_token')
       localStorage.removeItem('faculty_keep_signed_in')
       await supabase.auth.signOut()
-      router.push('/faculty/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

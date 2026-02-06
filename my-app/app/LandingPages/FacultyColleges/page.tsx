@@ -350,7 +350,7 @@ function FacultyCollegesContent() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        router.push('/faculty/login')
+        router.push('/')
         return
       }
       if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
@@ -359,7 +359,7 @@ function FacultyCollegesContent() {
       }
     } catch (error) {
       console.error('Auth check error:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

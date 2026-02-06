@@ -40,10 +40,10 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
-      router.push('/faculty/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout failed:', error)
-      router.push('/faculty/login')
+      router.push('/')
     }
   }
 

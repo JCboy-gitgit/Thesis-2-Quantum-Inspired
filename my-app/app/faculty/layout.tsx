@@ -1,17 +1,69 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import '@/app/styles/faculty-global.css'
 
-// Helper to get initial theme from localStorage (client-side only)
-function getInitialTheme(): boolean {
-  if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    // Default to light for faculty pages, unless explicitly set to dark
-    return savedTheme !== 'dark'
-  }
-  return true // Default to light mode
+// Aggressive CSS reset - clears ALL admin-specific styles
+function purgeAdminStyles() {
+  const html = document.documentElement
+  const body = document.body
+  
+  // Remove ALL admin-related classes from body and html
+  const adminClasses = [
+    'admin-dashboard', 'admin-page', 'green', 'dark-mode', 'dark',
+    'admin', 'admin-layout', 'admin-theme', 'sidebar-open', 'sidebar-collapsed'
+  ]
+  adminClasses.forEach(cls => {
+    body.classList.remove(cls)
+    html.classList.remove(cls)
+  })
+  
+  // Clear inline styles that admin might have set
+  const propsToRemove = [
+    '--admin-bg', '--admin-sidebar-bg', '--admin-header-bg',
+    '--sidebar-width', '--header-height', '--admin-primary',
+    '--bg-primary', '--bg-secondary', '--bg-tertiary',
+    '--primary', '--primary-dark', '--primary-light',
+    '--accent', '--accent-light', '--accent-dark',
+    'background', 'backgroundColor', 'color'
+  ]
+  
+  propsToRemove.forEach(prop => {
+    html.style.removeProperty(prop)
+    body.style.removeProperty(prop)
+  })
+  
+  // Remove any dynamically injected admin stylesheets
+  document.querySelectorAll('style[data-admin], link[data-admin]').forEach(el => el.remove())
+  
+  // Force remove any admin-specific data attributes
+  html.removeAttribute('data-admin-theme')
+  body.removeAttribute('data-admin-theme')
+}
+
+// Apply faculty-specific styles
+function applyFacultyStyles(isLightMode: boolean) {
+  const html = document.documentElement
+  const body = document.body
+  
+  // Set faculty class
+  body.classList.add('faculty-page')
+  
+  // Force correct background and text colors
+  const bgColor = isLightMode ? '#f8fafc' : '#0a0e27'
+  const textColor = isLightMode ? '#1e293b' : '#ffffff'
+  
+  html.style.setProperty('background', bgColor, 'important')
+  body.style.setProperty('background', bgColor, 'important')
+  body.style.setProperty('color', textColor, 'important')
+  
+  // Set faculty CSS variables
+  html.style.setProperty('--bg-primary', bgColor)
+  html.style.setProperty('--bg-secondary', isLightMode ? '#ffffff' : '#1a1f3a')
+  html.style.setProperty('--text-primary', textColor)
+  html.style.setProperty('--text-secondary', isLightMode ? '#64748b' : '#a0aec0')
+  html.style.setProperty('--primary', isLightMode ? '#10b981' : '#00d4ff')
 }
 
 export default function FacultyLayout({
@@ -20,36 +72,47 @@ export default function FacultyLayout({
   children: React.ReactNode
 }) {
   const [mounted, setMounted] = useState(false)
-  // Always start with light to match SSR, update after mount
   const [isLightMode, setIsLightMode] = useState(true)
   const pathname = usePathname()
 
-  // Login and reset-password pages handle their own loading states
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/reset-password')
 
-  useEffect(() => {
-    // Apply theme immediately from localStorage
+  // Use useLayoutEffect for synchronous DOM updates before paint
+  useLayoutEffect(() => {
+    // CRITICAL: Purge admin styles first, before anything else
+    purgeAdminStyles()
+    
+    // Get saved theme
     const savedTheme = localStorage.getItem('faculty-base-theme')
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-
-    // Faculty defaults to light mode - only use dark if explicitly set
+    
+    // Faculty defaults to light mode
     const effectiveTheme = savedTheme === 'dark' ? 'dark' : 'light'
-    setIsLightMode(effectiveTheme === 'light')
+    const lightMode = effectiveTheme === 'light'
+    
+    setIsLightMode(lightMode)
     document.documentElement.setAttribute('data-theme', effectiveTheme)
-
+    
     if (savedCollegeTheme) {
       document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
     }
-
+    
+    // Apply faculty styles
+    applyFacultyStyles(lightMode)
+    
     setMounted(true)
-  }, [])
+    
+    return () => {
+      document.body.classList.remove('faculty-page')
+    }
+  }, [pathname]) // Re-run on pathname change to catch navigation from admin
 
-  // Auth pages (login, reset-password) render immediately without loading spinner
+  // Auth pages render immediately
   if (isAuthPage) {
     return <>{children}</>
   }
 
-  // Don't render children until mounted to prevent flash
+  // Loading state
   if (!mounted) {
     return (
       <div
