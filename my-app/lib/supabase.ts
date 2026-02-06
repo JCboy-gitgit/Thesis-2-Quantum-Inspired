@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from './database.types'
 
 // Re-export all types from database.types for convenience
 export * from './database.types'
@@ -13,7 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Create typed Supabase client with session persistence
 // IMPORTANT: Disable fetch caching to always get fresh data
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     storageKey: 'supabase.auth.token',
@@ -24,7 +23,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     // Disable Next.js fetch caching for all Supabase requests
-    fetch: (url, options = {}) => {
+    fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
       return fetch(url, {
         ...options,
         cache: 'no-store',
@@ -41,7 +40,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
  * Fetch all rows from a table with pagination support (bypasses 1000 row limit)
  */
 export async function fetchAllRows<T>(
-  table: string, 
+  table: string,
   filters: Record<string, any> = {},
   orderBy: string = 'id',
   ascending: boolean = true
@@ -86,24 +85,24 @@ export async function fetchAllRows<T>(
  * Delete rows in batches (bypasses 1000 row limit)
  */
 export async function deleteInBatches(
-  table: string, 
-  ids: number[], 
+  table: string,
+  ids: number[],
   batchSize: number = 1000
 ): Promise<number> {
   let deletedCount = 0
-  
+
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize)
-    
+
     const { error } = await supabase
       .from(table)
       .delete()
       .in('id', batch)
-    
+
     if (error) throw error
     deletedCount += batch.length
   }
-  
+
   return deletedCount
 }
 
@@ -118,12 +117,12 @@ export async function getNextUploadGroupId(
     .select('upload_group_id')
     .order('upload_group_id', { ascending: false })
     .limit(1)
-  
+
   if (error) {
     console.error(`Error getting max ${table} ID:`, error)
     return 1
   }
-  
+
   return data && data.length > 0 ? ((data[0] as any).upload_group_id || 0) + 1 : 1
 }
 
@@ -137,21 +136,21 @@ export async function insertInBatches<T extends Record<string, any>>(
 ): Promise<{ inserted: number; errors: string[] }> {
   let insertedCount = 0
   const errors: string[] = []
-  
+
   for (let i = 0; i < data.length; i += batchSize) {
     const batch = data.slice(i, i + batchSize)
-    
+
     const { error } = await supabase
       .from(table)
       .insert(batch as any)
-    
+
     if (error) {
       errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`)
     } else {
       insertedCount += batch.length
     }
   }
-  
+
   return { inserted: insertedCount, errors }
 }
 
@@ -179,12 +178,12 @@ export async function checkRoomAvailability(
   const { data, error } = await query
 
   if (error) throw error
-  
+
   // Check for time overlap
   for (const allocation of data || []) {
     // Would need to check time overlaps - simplified version
   }
-  
+
   return (data?.length || 0) === 0
 }
 

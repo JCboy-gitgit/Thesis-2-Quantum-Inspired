@@ -213,7 +213,7 @@ function FacultyCollegesContent() {
   const searchParams = useSearchParams()
   // Use untyped Supabase client for flexibility across tables
   const db = supabase as any
-  
+
   // Get colleges from context
   const { activeColleges: bulsuColleges } = useColleges()
 
@@ -306,7 +306,7 @@ function FacultyCollegesContent() {
     profile_image: '' as string | null
   })
   const [selectedFacultyProfile, setSelectedFacultyProfile] = useState<FacultyProfile | null>(null)
-  
+
   // Image upload states for admin editing
   const [uploadingFacultyImage, setUploadingFacultyImage] = useState(false)
   const facultyImageInputRef = useRef<HTMLInputElement>(null)
@@ -408,7 +408,7 @@ function FacultyCollegesContent() {
     try {
       const response = await fetchNoCache('/api/faculty-default-schedule?action=approved-faculty')
       const data = await response.json()
-      
+
       if (data.success && data.approvedFaculty) {
         setApprovedFacultyUsers(data.approvedFaculty)
       }
@@ -420,9 +420,9 @@ function FacultyCollegesContent() {
   // Handle email input change with suggestions
   const handleEmailInputChange = (email: string) => {
     setFacultyFormData({ ...facultyFormData, email })
-    
+
     if (email.length >= 2) {
-      const filtered = approvedFacultyUsers.filter(u => 
+      const filtered = approvedFacultyUsers.filter(u =>
         u.email.toLowerCase().includes(email.toLowerCase()) ||
         u.full_name.toLowerCase().includes(email.toLowerCase())
       )
@@ -435,8 +435,8 @@ function FacultyCollegesContent() {
 
   // Select email from suggestions
   const selectEmailSuggestion = (user: ApprovedFacultyUser) => {
-    setFacultyFormData({ 
-      ...facultyFormData, 
+    setFacultyFormData({
+      ...facultyFormData,
       email: user.email,
       full_name: facultyFormData.full_name || user.full_name
     })
@@ -511,7 +511,7 @@ function FacultyCollegesContent() {
       const { data: usersData } = await supabase
         .from('users')
         .select('email, avatar_url')
-      
+
       // Create email -> avatar_url map
       const userAvatarMap = new Map<string, string>()
       usersData?.forEach(u => {
@@ -519,7 +519,7 @@ function FacultyCollegesContent() {
           userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
         }
       })
-      
+
       // Merge avatar_url as fallback for profile_image
       const enrichedData = (data || []).map(f => ({
         ...f,
@@ -833,7 +833,7 @@ function FacultyCollegesContent() {
       setMovingFileGroup(null)
       setSelectedMoveCollege('')
       setMoveSearchTerm('')
-      
+
       // Refresh files for current college
       if (selectedCollege) {
         fetchFilesForCollege(selectedCollege.college || selectedCollege.department_name)
@@ -974,14 +974,14 @@ function FacultyCollegesContent() {
       const imageUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`
       setFacultyFormData({ ...facultyFormData, profile_image: imageUrlWithCacheBust })
       setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: imageUrlWithCacheBust })
-      
+
       // Update the main faculty list so cards show the new image
-      setFacultyProfiles(prev => prev.map(f => 
-        f.id === selectedFacultyProfile.id 
+      setFacultyProfiles(prev => prev.map(f =>
+        f.id === selectedFacultyProfile.id
           ? { ...f, profile_image: imageUrlWithCacheBust }
           : f
       ))
-      
+
       setSuccessMessage('✅ Profile image updated!')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
@@ -1065,7 +1065,7 @@ function FacultyCollegesContent() {
               updated_at: new Date().toISOString()
             })
             .eq('id', existingUser.id)
-          
+
           if (userUpdateError) {
             console.warn('Could not sync to user account:', userUpdateError)
           } else {
@@ -1077,15 +1077,15 @@ function FacultyCollegesContent() {
       // Close modal and refresh data
       setShowEditFacultyModal(false)
       setSuccessMessage('✅ Faculty updated successfully!')
-      
+
       // Force refresh the faculty list
       if (selectedFile) {
         await fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
       }
-      
+
       // Also refresh all faculty stats
       await fetchAllFaculty()
-      
+
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error updating faculty:', error)
@@ -1137,7 +1137,8 @@ function FacultyCollegesContent() {
       department: '',
       college: selectedCollege?.department_name || '',
       phone: '',
-      office_location: ''
+      office_location: '',
+      profile_image: null
     })
   }
 
@@ -1191,7 +1192,7 @@ function FacultyCollegesContent() {
               updated_at: new Date().toISOString()
             })
             .eq('id', existingUser.id)
-          
+
           console.log('Synced new faculty profile data to user account')
         }
       }
@@ -1954,20 +1955,20 @@ function FacultyCollegesContent() {
             </div>
             <div className={styles.modalBody}>
               {/* Profile Image Upload Section */}
-              <div className={styles.imageUploadSection} style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '16px', 
+              <div className={styles.imageUploadSection} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
                 marginBottom: '20px',
                 padding: '16px',
                 background: 'rgba(16, 185, 129, 0.05)',
                 borderRadius: '12px',
                 border: '1px solid rgba(16, 185, 129, 0.2)'
               }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  borderRadius: '50%', 
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
                   overflow: 'hidden',
                   background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   display: 'flex',
@@ -1976,9 +1977,9 @@ function FacultyCollegesContent() {
                   flexShrink: 0
                 }}>
                   {facultyFormData.profile_image ? (
-                    <img 
-                      src={facultyFormData.profile_image} 
-                      alt="Profile" 
+                    <img
+                      src={facultyFormData.profile_image}
+                      alt="Profile"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
@@ -2021,7 +2022,7 @@ function FacultyCollegesContent() {
                   </p>
                 </div>
               </div>
-              
+
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Faculty ID</label>
@@ -2315,7 +2316,7 @@ function FacultyCollegesContent() {
               <p className={styles.modalSubtext} style={{ fontSize: '0.85rem', marginTop: '4px' }}>
                 Current college: <strong>{movingFileGroup.college}</strong>
               </p>
-              
+
               <div className={styles.formGroup} style={{ marginTop: '16px' }}>
                 <label>Search College</label>
                 <input
@@ -2326,13 +2327,13 @@ function FacultyCollegesContent() {
                   placeholder="Search colleges..."
                 />
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label>Select Destination College</label>
-                <div style={{ 
-                  maxHeight: '250px', 
-                  overflowY: 'auto', 
-                  border: '1px solid var(--border-color, #ddd)', 
+                <div style={{
+                  maxHeight: '250px',
+                  overflowY: 'auto',
+                  border: '1px solid var(--border-color, #ddd)',
                   borderRadius: '8px',
                   marginTop: '8px'
                 }}>
@@ -2384,9 +2385,9 @@ function FacultyCollegesContent() {
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setShowMoveFileModal(false)}>Cancel</button>
-              <button 
-                className={styles.btnSave} 
-                onClick={handleMoveFile} 
+              <button
+                className={styles.btnSave}
+                onClick={handleMoveFile}
                 disabled={movingFile || !selectedMoveCollege}
               >
                 {movingFile ? 'Moving...' : `Move to ${selectedMoveCollege || 'selected college'}`}
@@ -2437,7 +2438,7 @@ function FacultyCollegesContent() {
                     onChange={e => handleEmailInputChange(e.target.value)}
                     onFocus={() => {
                       if (facultyFormData.email.length >= 2) {
-                        const filtered = approvedFacultyUsers.filter(u => 
+                        const filtered = approvedFacultyUsers.filter(u =>
                           u.email.toLowerCase().includes(facultyFormData.email.toLowerCase()) ||
                           u.full_name.toLowerCase().includes(facultyFormData.email.toLowerCase())
                         )
@@ -2454,7 +2455,7 @@ function FacultyCollegesContent() {
                         ✅ Approved Faculty ({filteredEmailSuggestions.length})
                       </div>
                       {filteredEmailSuggestions.map(user => (
-                        <div 
+                        <div
                           key={user.id}
                           className={styles.suggestionItem}
                           onClick={() => selectEmailSuggestion(user)}

@@ -113,6 +113,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
+    const supabaseAdmin = createAdminClient()
     const { error } = await supabaseAdmin
       .from('alert_receipts')
       .upsert({

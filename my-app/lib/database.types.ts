@@ -499,55 +499,231 @@ export interface Campus {
 }
 
 // ============================================================================
+// SYSTEM ALERTS & NOTIFICATIONS
+// ============================================================================
+
+export type AlertSeverity = 'info' | 'warning' | 'error' | 'success';
+export type AlertAudience = 'admin' | 'faculty' | 'all';
+
+export interface SystemAlert {
+  id: string;
+  title: string;
+  message: string;
+  audience: AlertAudience;
+  severity: AlertSeverity;
+  category?: string;
+  schedule_id?: number;
+  created_by?: string;
+  metadata?: Record<string, unknown>;
+  deleted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AlertReceipt {
+  id: string;
+  alert_id: string;
+  user_id: string;
+  status: string;
+  read_at?: string;
+  confirmed_at?: string;
+  dismissed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// PROFILE CHANGE REQUESTS
+// ============================================================================
+
+export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ProfileChangeRequest {
+  id: string;
+  user_id: string;
+  email: string;
+  field_name: string;
+  current_value?: string;
+  requested_value: string;
+  status: ChangeRequestStatus;
+  admin_notes?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// PASSWORD RESET TOKENS
+// ============================================================================
+
+export interface PasswordResetToken {
+  id: string;
+  user_id: string;
+  email: string;
+  token: string;
+  expires_at: string;
+  used_at?: string;
+  created_at: string;
+}
+
+// ============================================================================
 // DATABASE TYPE DEFINITION FOR SUPABASE CLIENT
 // ============================================================================
 
-// Generic insert type helper - makes id and timestamps optional
-type InsertType<T> = Omit<T, 'id' | 'created_at' | 'updated_at'> & {
-  id?: T extends { id: number } ? number : T extends { id: string } ? string : never;
-  created_at?: string;
-  updated_at?: string;
-};
-
-// Generic update type helper - all fields optional
-type UpdateType<T> = Partial<Omit<T, 'id'>>;
-
-// Table type structure for proper Supabase typing
-type TableDefinition<TRow, TInsert = Partial<TRow>, TUpdate = Partial<TRow>> = {
-  Row: TRow;
-  Insert: TInsert;
-  Update: TUpdate;
-};
-
-export interface Database {
+// Supabase expects this exact structure for typed clients
+export type Database = {
   public: {
     Tables: {
-      users: TableDefinition<User>;
-      user_profiles: TableDefinition<UserProfile>;
-      departments: TableDefinition<Department>;
-      rooms: TableDefinition<Room>;
-      faculty: TableDefinition<Faculty>;
-      faculty_availability: TableDefinition<FacultyAvailability>;
-      faculty_profiles: TableDefinition<FacultyProfile>;
-      courses: TableDefinition<Course>;
-      class_schedules: TableDefinition<ClassSchedule>;
-      schedule_generations: TableDefinition<ScheduleGeneration>;
-      room_allocations: TableDefinition<RoomAllocation>;
-      time_slots: TableDefinition<TimeSlot>;
-      schedule_conflicts: TableDefinition<ScheduleConflict>;
-      file_uploads: TableDefinition<FileUpload>;
-      system_settings: TableDefinition<SystemSetting>;
-      archived_items: TableDefinition<ArchivedItem>;
-      campuses: TableDefinition<Campus>;
+      users: {
+        Row: User;
+        Insert: Partial<User>;
+        Update: Partial<User>;
+        Relationships: [];
+      };
+      user_profiles: {
+        Row: UserProfile;
+        Insert: Partial<UserProfile>;
+        Update: Partial<UserProfile>;
+        Relationships: [];
+      };
+      departments: {
+        Row: Department;
+        Insert: Partial<Department>;
+        Update: Partial<Department>;
+        Relationships: [];
+      };
+      rooms: {
+        Row: Room;
+        Insert: Partial<Room>;
+        Update: Partial<Room>;
+        Relationships: [];
+      };
+      faculty: {
+        Row: Faculty;
+        Insert: Partial<Faculty>;
+        Update: Partial<Faculty>;
+        Relationships: [];
+      };
+      faculty_availability: {
+        Row: FacultyAvailability;
+        Insert: Partial<FacultyAvailability>;
+        Update: Partial<FacultyAvailability>;
+        Relationships: [];
+      };
+      faculty_profiles: {
+        Row: FacultyProfile;
+        Insert: Partial<FacultyProfile>;
+        Update: Partial<FacultyProfile>;
+        Relationships: [];
+      };
+      courses: {
+        Row: Course;
+        Insert: Partial<Course>;
+        Update: Partial<Course>;
+        Relationships: [];
+      };
+      class_schedules: {
+        Row: ClassSchedule;
+        Insert: Partial<ClassSchedule>;
+        Update: Partial<ClassSchedule>;
+        Relationships: [];
+      };
+      schedule_generations: {
+        Row: ScheduleGeneration;
+        Insert: Partial<ScheduleGeneration>;
+        Update: Partial<ScheduleGeneration>;
+        Relationships: [];
+      };
+      room_allocations: {
+        Row: RoomAllocation;
+        Insert: Partial<RoomAllocation>;
+        Update: Partial<RoomAllocation>;
+        Relationships: [];
+      };
+      time_slots: {
+        Row: TimeSlot;
+        Insert: Partial<TimeSlot>;
+        Update: Partial<TimeSlot>;
+        Relationships: [];
+      };
+      schedule_conflicts: {
+        Row: ScheduleConflict;
+        Insert: Partial<ScheduleConflict>;
+        Update: Partial<ScheduleConflict>;
+        Relationships: [];
+      };
+      file_uploads: {
+        Row: FileUpload;
+        Insert: Partial<FileUpload>;
+        Update: Partial<FileUpload>;
+        Relationships: [];
+      };
+      system_settings: {
+        Row: SystemSetting;
+        Insert: Partial<SystemSetting>;
+        Update: Partial<SystemSetting>;
+        Relationships: [];
+      };
+      archived_items: {
+        Row: ArchivedItem;
+        Insert: Partial<ArchivedItem>;
+        Update: Partial<ArchivedItem>;
+        Relationships: [];
+      };
+      campuses: {
+        Row: Campus;
+        Insert: Partial<Campus>;
+        Update: Partial<Campus>;
+        Relationships: [];
+      };
+      system_alerts: {
+        Row: SystemAlert;
+        Insert: Partial<SystemAlert>;
+        Update: Partial<SystemAlert>;
+        Relationships: [];
+      };
+      alert_receipts: {
+        Row: AlertReceipt;
+        Insert: Partial<AlertReceipt>;
+        Update: Partial<AlertReceipt>;
+        Relationships: [];
+      };
+      profile_change_requests: {
+        Row: ProfileChangeRequest;
+        Insert: Partial<ProfileChangeRequest>;
+        Update: Partial<ProfileChangeRequest>;
+        Relationships: [];
+      };
+      password_reset_tokens: {
+        Row: PasswordResetToken;
+        Insert: Partial<PasswordResetToken>;
+        Update: Partial<PasswordResetToken>;
+        Relationships: [];
+      };
     };
     Views: {
-      room_schedule_view: { Row: RoomAllocation };
-      class_schedule_summary: { Row: ClassScheduleFile };
-      room_utilization_view: { Row: { room_id: number; room_code: string; building: string; capacity: number; room_type: RoomType; allocated_slots: number; total_hours_used: number } };
+      room_schedule_view: { Row: RoomAllocation; Relationships: [] };
+      class_schedule_summary: { Row: ClassScheduleFile; Relationships: [] };
+      room_utilization_view: {
+        Row: {
+          room_id: number;
+          room_code: string;
+          building: string;
+          capacity: number;
+          room_type: RoomType;
+          allocated_slots: number;
+          total_hours_used: number
+        };
+        Relationships: []
+      };
     };
+    Functions: Record<string, never>;
     Enums: {
       user_role: UserRole;
       room_type: RoomType;
     };
+    CompositeTypes: Record<string, never>;
   };
-}
+};
+

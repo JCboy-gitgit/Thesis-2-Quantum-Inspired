@@ -5,9 +5,12 @@ import { createAdminClient } from '@/lib/supabase/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const alertId = params.id
+    const { id: alertId } = await params
 
     if (!alertId) {
       return NextResponse.json({ error: 'Missing alert id' }, { status: 400 })

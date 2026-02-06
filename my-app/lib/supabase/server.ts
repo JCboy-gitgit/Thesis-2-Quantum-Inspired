@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { Database } from '@/lib/database.types'
 
 // Custom fetch wrapper to disable Next.js caching
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) => {
@@ -22,7 +21,7 @@ const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) => 
 export async function createClient() {
   const cookieStore = await cookies()
 
-  return createServerClient<Database>(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -30,9 +29,9 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => {
+            cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: any }) => {
               cookieStore.set(name, value, options)
             })
           } catch (error) {
@@ -62,7 +61,7 @@ export function createAdminClient() {
     throw new Error('Missing Supabase URL or Service Role Key')
   }
 
-  return createServerClient<Database>(
+  return createServerClient(
     supabaseUrl,
     supabaseServiceKey,
     {
