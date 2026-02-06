@@ -69,7 +69,7 @@ function generatePasswordResetEmail(fullName: string, resetLink: string): string
 // POST - Send password reset email
 export async function POST(request: NextRequest) {
   try {
-    const supabase Admin = createAdminClient()
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
     const { email } = body
 
