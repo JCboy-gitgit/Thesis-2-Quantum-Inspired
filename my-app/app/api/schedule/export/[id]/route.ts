@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
 
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Helper function to fetch ALL rows (bypass 1000 limit)
 async function fetchAllRows(table: string, filters: any = {}) {
   const PAGE_SIZE = 1000

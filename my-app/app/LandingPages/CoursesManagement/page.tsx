@@ -302,12 +302,18 @@ function CoursesManagementContent() {
     try {
       // Update all courses in the upload group to the new college
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Moving courses in group:', movingGroupId, 'to college:', targetCollege)
+      const { data, error } = await (supabase as any)
         .from('class_schedules')
         .update({ college: targetCollege })
         .eq('upload_group_id', movingGroupId)
+        .select()
 
+      console.log('Move result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Move failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       // Refresh the data
       await fetchUploadGroups()
@@ -648,11 +654,17 @@ function CoursesManagementContent() {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        console.log('Creating course:', newData)
+        const { data, error } = await (supabase as any)
           .from('class_schedules')
           .insert([newData])
+          .select()
 
+        console.log('Insert result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
 
         // Refresh data
         if (selectedGroupId) {
@@ -661,12 +673,18 @@ function CoursesManagementContent() {
       } else {
         // Update existing course
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        console.log('Updating course ID:', editingId)
+        const { data, error } = await (supabase as any)
           .from('class_schedules')
           .update({ ...formData, total_hours: total_hours })
           .eq('id', editingId)
+          .select()
 
+        console.log('Update result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
 
         // Update local state
         setCourses(prev =>
@@ -675,6 +693,7 @@ function CoursesManagementContent() {
       }
 
       closeModal()
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('Error saving course:', error)
       alert('Failed to save. Please try again.')
@@ -711,18 +730,25 @@ function CoursesManagementContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Deleting course ID:', id)
+      const { data, error } = await (supabase as any)
         .from('class_schedules')
         .delete()
         .eq('id', id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       // Update local state
       const updated = courses.filter(c => c.id !== id)
       setCourses(updated)
       calculateStats(updated)
       setDeleteConfirm(null)
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('Error deleting course:', error)
       alert('Failed to delete. Please try again.')
@@ -763,16 +789,23 @@ function CoursesManagementContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Deleting upload group ID:', groupId)
+      const { data, error } = await (supabase as any)
         .from('class_schedules')
         .delete()
         .eq('upload_group_id', groupId)
+        .select()
 
+      console.log('Delete group result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        console.warn('No rows deleted - group may have been empty or RLS blocked the operation')
+      }
 
       // Refresh upload groups
       await fetchUploadGroups()
       setDeleteGroupConfirm(null)
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('Error deleting upload group:', error)
       alert('Failed to delete group. Please try again.')

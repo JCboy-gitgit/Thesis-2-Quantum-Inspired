@@ -471,7 +471,7 @@ export default function SchoolCapacityPage() {
 
   const handleEditSave = async (roomId: number) => {
     try {
-      const { error } = await (supabase
+      const { data, error } = await (supabase
         .from('campuses') as any)
         .update({
           campus: editForm.campus,
@@ -480,8 +480,14 @@ export default function SchoolCapacityPage() {
           capacity: editForm.capacity
         })
         .eq('id', roomId)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually updated (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Update failed - no rows affected. Please check your permissions or run database/QUICK_FIX_RLS.sql in Supabase.')
+      }
 
       const updatedData = campusData.map(room =>
         room.id === roomId ? { ...room, ...editForm } : room
@@ -524,16 +530,23 @@ export default function SchoolCapacityPage() {
         }
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('campuses')
         .delete()
         .eq('id', roomId)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually deleted (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - no rows affected. Please check your permissions or run database/QUICK_FIX_RLS.sql in Supabase.')
+      }
 
       const updatedData = campusData.filter(room => room.id !== roomId)
       setCampusData(updatedData)
       calculateStats(updatedData)
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('Error deleting room:', error)
       alert('Failed to delete room')
@@ -580,6 +593,7 @@ export default function SchoolCapacityPage() {
         capacity: 0
       })
       setShowAddModal(false)
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('Error adding room:', error)
       alert('Failed to add room')
@@ -629,12 +643,18 @@ export default function SchoolCapacityPage() {
       }
 
       // Delete all rooms in this campus
-      const { error } = await supabase
+      console.log('Deleting campus with upload_group_id:', campusToDelete.upload_group_id)
+      const { data, error } = await supabase
         .from('campuses')
         .delete()
         .eq('upload_group_id', campusToDelete.upload_group_id)
+        .select()
 
+      console.log('Delete campus result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       // If the deleted campus was selected, clear selection
       if (selectedCampus === campusToDelete.upload_group_id) {
@@ -652,6 +672,7 @@ export default function SchoolCapacityPage() {
 
       setShowDeleteCampusModal(false)
       setCampusToDelete(null)
+      router.refresh() // Force refresh cached data
     } catch (error) {
       console.error('❌ Error deleting campus:', error)
       setSuccessMessage('❌ Failed to delete campus')

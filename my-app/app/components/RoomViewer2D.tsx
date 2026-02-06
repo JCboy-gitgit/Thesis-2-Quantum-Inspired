@@ -131,9 +131,10 @@ interface RoomViewer2DProps {
   fullscreen?: boolean
   onToggleFullscreen?: () => void
   collegeTheme?: 'science' | 'arts-letters' | 'architecture' | 'default'
+  highlightEmpty?: boolean
 }
 
-export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default' }: RoomViewer2DProps) {
+export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', highlightEmpty = false }: RoomViewer2DProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -150,7 +151,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isMobile, setIsMobile] = useState(false)
   const [showControls, setShowControls] = useState(true)
-  const [zoom, setZoom] = useState(fullscreen ? 70 : 45)
+  const [zoom, setZoom] = useState(fullscreen ? 100 : 100)
+  const [zoomInput, setZoomInput] = useState('100')
   const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 })
   const [error, setError] = useState<string | null>(null)
   const [hasFloorPlan, setHasFloorPlan] = useState(false)
@@ -160,11 +162,13 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
-      // Adjust zoom for mobile
+      // Adjust zoom for mobile - keep 100% as base
       if (window.innerWidth < 768) {
-        setZoom(35)
-      } else if (window.innerWidth < 1024) {
-        setZoom(45)
+        setZoom(70)
+        setZoomInput('70')
+      } else {
+        setZoom(100)
+        setZoomInput('100')
       }
     }
     checkMobile()
@@ -187,8 +191,35 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   // Update zoom when fullscreen changes
   useEffect(() => {
-    setZoom(isFullscreen ? 70 : 45)
+    const newZoom = isFullscreen ? 100 : 100
+    setZoom(newZoom)
+    setZoomInput(String(newZoom))
   }, [isFullscreen])
+
+  // Sync zoomInput with zoom
+  useEffect(() => {
+    setZoomInput(String(zoom))
+  }, [zoom])
+
+  // Handle manual zoom input
+  const handleZoomInputChange = (value: string) => {
+    setZoomInput(value)
+  }
+
+  const handleZoomInputBlur = () => {
+    const numValue = parseInt(zoomInput, 10)
+    if (!isNaN(numValue) && numValue >= 10 && numValue <= 300) {
+      setZoom(numValue)
+    } else {
+      setZoomInput(String(zoom))
+    }
+  }
+
+  const handleZoomInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleZoomInputBlur()
+    }
+  }
 
   const fetchFloorPlans = async () => {
     try {
@@ -309,6 +340,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       const { data: schedules } = await db
         .from('generated_schedules')
         .select('id')
+        .order('is_current', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(1)
 
@@ -500,15 +532,25 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           {/* Zoom controls */}
           <div className={styles.zoomControls}>
             <button
-              onClick={() => setZoom(Math.max(20, zoom - 10))}
+              onClick={() => setZoom(Math.max(10, zoom - 10))}
               className={styles.zoomBtn}
               title="Zoom out"
             >
               <ZoomOut size={16} />
             </button>
-            <span className={styles.zoomLevel}>{zoom}%</span>
+            <input
+              type="text"
+              value={zoomInput}
+              onChange={(e) => handleZoomInputChange(e.target.value)}
+              onBlur={handleZoomInputBlur}
+              onKeyDown={handleZoomInputKeyDown}
+              className={styles.zoomInput}
+              title="Enter zoom percentage (10-300)"
+              aria-label="Zoom percentage"
+            />
+            <span className={styles.zoomPercent}>%</span>
             <button
-              onClick={() => setZoom(Math.min(150, zoom + 10))}
+              onClick={() => setZoom(Math.min(300, zoom + 10))}
               className={styles.zoomBtn}
               title="Zoom in"
             >
@@ -603,7 +645,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                     backgroundColor: element.color || '#e5e7eb',
                     borderColor: element.borderColor || '#9ca3af',
                     transform: element.rotation ? `rotate(${element.rotation}deg)` : 'none',
-                    zIndex: element.zIndex || 1
+                    zIndex: element.zIndex || 1,
+                    opacity: highlightEmpty && availability === 'occupied' ? 0.25 : 1
                   }}
                   onClick={() => setSelectedElement(isSelected ? null : element)}
                   title={element.label || ''}

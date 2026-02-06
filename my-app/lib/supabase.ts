@@ -12,6 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create typed Supabase client with session persistence
+// IMPORTANT: Disable fetch caching to always get fresh data
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -20,7 +21,16 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     // Session expires in 7 days (604800 seconds) when "keep me signed in" is used
     // This is controlled at Supabase dashboard level, but we ensure refresh is enabled
-  }
+  },
+  global: {
+    // Disable Next.js fetch caching for all Supabase requests
+    fetch: (url, options = {}) => {
+      return fetch(url, {
+        ...options,
+        cache: 'no-store',
+      })
+    },
+  },
 })
 
 // ============================================================================

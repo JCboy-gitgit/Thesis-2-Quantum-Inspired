@@ -35,6 +35,7 @@ import {
   X,
   Upload
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // ==================== Types ====================
 interface CampusGroup {
@@ -365,6 +366,38 @@ export default function GenerateSchedulePage() {
   const [showAllClasses, setShowAllClasses] = useState(false)
   const [previewSearchQuery, setPreviewSearchQuery] = useState('')
 
+  // Helper function to send browser notification
+  const sendBrowserNotification = (title: string, body: string, icon: 'success' | 'error' = 'success') => {
+    // Check if browser supports notifications
+    if (!('Notification' in window)) {
+      console.log('Browser does not support notifications')
+      return
+    }
+
+    // Request permission if not granted
+    if (Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: icon === 'success' ? '/icons/check-circle.png' : '/icons/alert-circle.png',
+        badge: '/icons/icon-192x192.png',
+        tag: 'schedule-notification',
+        requireInteraction: true
+      })
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification(title, {
+            body,
+            icon: icon === 'success' ? '/icons/check-circle.png' : '/icons/alert-circle.png',
+            badge: '/icons/icon-192x192.png',
+            tag: 'schedule-notification',
+            requireInteraction: true
+          })
+        }
+      })
+    }
+  }
+
   // Helper function to change step and scroll to top
   const goToStep = (step: 1 | 2 | 3 | 4) => {
     setActiveStep(step)
@@ -375,6 +408,11 @@ export default function GenerateSchedulePage() {
   useEffect(() => {
     checkAuth()
     fetchAllGroups()
+    
+    // Request notification permission on mount
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
   }, [])
 
   const checkAuth = async () => {
@@ -1043,7 +1081,9 @@ export default function GenerateSchedulePage() {
   // Generate schedule
   const handleGenerateSchedule = async () => {
     if (!canGenerate) {
-      alert('Please complete all required selections')
+      toast.warning('Incomplete Selection', {
+        description: 'Please complete all required selections before generating.',
+      })
       return
     }
 
@@ -1068,7 +1108,9 @@ export default function GenerateSchedulePage() {
       const filteredRooms = getFilteredRooms()
 
       if (filteredRooms.length === 0) {
-        alert('No rooms selected. Please select at least one building or room.')
+        toast.error('No Rooms Selected', {
+          description: 'Please select at least one building or room.',
+        })
         setScheduling(false)
         return
       }
@@ -1207,13 +1249,54 @@ export default function GenerateSchedulePage() {
       })
       setShowResults(true)
       setShowTimetable(true)
+
+      // Show success notification with details
+      const scheduledCount = result.scheduled_classes || 0
+      const conflictCount = result.conflicts?.length || 0
+      const unscheduledCount = result.unscheduled_classes || 0
+
+      if (result.success && conflictCount === 0 && unscheduledCount === 0) {
+        // Perfect schedule - no conflicts
+        toast.success('Schedule Generated Successfully!', {
+          description: `${scheduledCount} classes scheduled with zero conflicts.`,
+          duration: 8000,
+        })
+        sendBrowserNotification(
+          'Schedule Complete!',
+          `${scheduledCount} classes scheduled successfully with no conflicts.`,
+          'success'
+        )
+      } else if (conflictCount > 0 || unscheduledCount > 0) {
+        // Schedule has conflicts or unscheduled classes
+        toast.warning('Schedule Generated with Issues', {
+          description: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts detected.`,
+          duration: 10000,
+        })
+        sendBrowserNotification(
+          'Schedule Has Conflicts',
+          `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts. Review needed.`,
+          'error'
+        )
+      } else {
+        toast.success('Schedule Generated', {
+          description: result.message || `${scheduledCount} classes scheduled.`,
+          duration: 6000,
+        })
+        sendBrowserNotification('Schedule Generated', `${scheduledCount} classes scheduled.`, 'success')
+      }
     } catch (error: any) {
       console.error('Schedule generation failed:', error)
       // Handle error properly - stringify if it's an object
       const errorMessage = typeof error === 'object'
         ? (error.message || JSON.stringify(error, null, 2))
         : String(error)
-      alert(`Schedule generation failed: ${errorMessage}`)
+      
+      // Show error toast and browser notification
+      toast.error('Schedule Generation Failed', {
+        description: errorMessage,
+        duration: 10000,
+      })
+      sendBrowserNotification('Schedule Generation Failed', errorMessage, 'error')
     } finally {
       setScheduling(false)
     }
@@ -1230,7 +1313,9 @@ export default function GenerateSchedulePage() {
   // Export schedule to PDF
   const handleExportPDF = async (exportType: 'current' | 'all-rooms' | 'all-sections' | 'all-teachers' | 'all-courses' = 'current') => {
     if (!scheduleResult?.allocations || scheduleResult.allocations.length === 0) {
-      alert('No schedule data to export')
+      toast.warning('No Data', {
+        description: 'No schedule data available to export.',
+      })
       return
     }
 
@@ -1646,9 +1731,14 @@ export default function GenerateSchedulePage() {
       // Save PDF
       const fileName = `${config.scheduleName.replace(/\s+/g, '_')}_${exportType}_Schedule.pdf`
       pdf.save(fileName)
+      toast.success('PDF Exported', {
+        description: `Schedule exported as ${fileName}`,
+      })
     } catch (error) {
       console.error('Error exporting PDF:', error)
-      alert('Failed to export PDF')
+      toast.error('Export Failed', {
+        description: 'Failed to export schedule as PDF. Please try again.',
+      })
     }
   }
 
@@ -3739,7 +3829,9 @@ export default function GenerateSchedulePage() {
                     if (bypassTeacherCheck) {
                       executeScheduleGeneration()
                     } else {
-                      alert('Please enable the bypass option to proceed without assigned professors.')
+                      toast.warning('Bypass Required', {
+                        description: 'Please enable the bypass option to proceed without assigned professors.',
+                      })
                     }
                   }}
                   disabled={!bypassTeacherCheck}

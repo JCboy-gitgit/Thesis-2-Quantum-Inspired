@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic - disable caching to always get fresh data
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+// Cache-busting wrapper to prevent Next.js from caching Supabase requests
+const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
+  fetch(url, { ...options, cache: 'no-store' })
+
 // Use service role for admin operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  { global: { fetch: fetchWithNoCache } }
 )
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin123@ms.bulsu.edu.ph'
@@ -87,16 +96,32 @@ export async function GET(request: NextRequest) {
 
       // If we have a default schedule, fetch the allocations for it - FILTERED by teacher_name
       let allocations: any[] = []
-      if (defaultSchedule?.schedule_id) {
-        // Get allocations that match this faculty's name
+      let effectiveSchedule = defaultSchedule?.generated_schedules || null
+      let effectiveScheduleId = defaultSchedule?.schedule_id || null
+
+      if (!effectiveScheduleId) {
+        const { data: currentSchedule } = await supabaseAdmin
+          .from('generated_schedules')
+          .select('*')
+          .eq('is_current', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (currentSchedule) {
+          effectiveSchedule = currentSchedule
+          effectiveScheduleId = currentSchedule.id
+        }
+      }
+
+      if (effectiveScheduleId) {
         let query = supabaseAdmin
           .from('room_allocations')
           .select('*')
-          .eq('schedule_id', defaultSchedule.schedule_id)
+          .eq('schedule_id', effectiveScheduleId)
           .order('schedule_day', { ascending: true })
           .order('schedule_time', { ascending: true })
 
-        // Filter by teacher name if we have one
         if (facultyName) {
           query = query.ilike('teacher_name', `%${facultyName}%`)
         }
@@ -111,7 +136,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         defaultSchedule: defaultSchedule || null,
-        schedule: defaultSchedule?.generated_schedules || null,
+        schedule: effectiveSchedule,
         assignment: defaultSchedule ? {
           id: defaultSchedule.id,
           assigned_at: defaultSchedule.assigned_at,

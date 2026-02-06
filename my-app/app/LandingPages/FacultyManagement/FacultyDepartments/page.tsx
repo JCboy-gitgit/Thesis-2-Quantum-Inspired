@@ -248,26 +248,38 @@ export default function FacultyDepartmentsPage() {
       }
 
       if (modalMode === 'create') {
-        const { error } = await (supabase
+        console.log('Creating department:', formData)
+        const { data, error } = await (supabase
           .from('departments') as any)
           .insert([{
             ...formData,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }])
+          .select()
 
+        console.log('Insert result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
         setFormSuccess('Department created successfully!')
       } else {
-        const { error } = await (supabase
+        console.log('Updating department ID:', editingId)
+        const { data, error } = await (supabase
           .from('departments') as any)
           .update({
             ...formData,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingId)
+          .select()
 
+        console.log('Update result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
         setFormSuccess('Department updated successfully!')
       }
 
@@ -305,12 +317,18 @@ export default function FacultyDepartmentsPage() {
       }
 
       // Then delete the department
-      const { error } = await supabase
+      console.log('Deleting department ID:', deleteConfirm.id)
+      const { data, error } = await supabase
         .from('departments')
         .delete()
         .eq('id', deleteConfirm.id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       await fetchDepartments()
       setDeleteConfirm(null)

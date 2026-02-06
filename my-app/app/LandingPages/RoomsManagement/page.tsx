@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
@@ -212,6 +212,31 @@ export default function RoomsManagementPage() {
     checkAuth()
     fetchCampusFiles()
   }, [])
+
+  // ==================== REAL-TIME SUBSCRIPTION ====================
+  // Auto-refresh UI when database changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('rooms-realtime')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'campuses' },
+        (payload) => {
+          console.log('[Realtime] campuses change:', payload.eventType)
+          // Refetch data on any change
+          fetchCampusFiles()
+          if (selectedFile) {
+            fetchRoomsForFile(selectedFile.upload_group_id)
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Realtime] campuses subscription:', status)
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [selectedFile?.upload_group_id])
 
   const checkAuth = async () => {
     try {
@@ -551,6 +576,7 @@ export default function RoomsManagementPage() {
       resetForm()
       await fetchRoomsForFile(selectedFile.upload_group_id)
       await fetchCampusFiles()
+      router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error adding room:', error)
@@ -562,7 +588,7 @@ export default function RoomsManagementPage() {
     if (!editingRoom || !editingRoom.id) return
 
     try {
-      const { error } = await (supabase
+      const { data, error, count } = await (supabase
         .from('campuses') as any)
         .update({
           campus: formData.campus,
@@ -581,12 +607,19 @@ export default function RoomsManagementPage() {
           college: formData.college || null
         })
         .eq('id', editingRoom.id)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually updated (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Update failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
+      }
 
       setSuccessMessage('Room updated successfully!')
       resetForm()
       if (selectedFile) await fetchRoomsForFile(selectedFile.upload_group_id)
+      router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error updating room:', error)
@@ -612,16 +645,23 @@ export default function RoomsManagementPage() {
           original_id: String(room.id)
         })
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('campuses')
         .delete()
         .eq('id', room.id)
+        .select()
 
       if (error) throw error
+      
+      // Check if any rows were actually deleted (RLS may block silently)
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
+      }
 
       setSuccessMessage('Room deleted successfully!')
       if (selectedFile) await fetchRoomsForFile(selectedFile.upload_group_id)
       await fetchCampusFiles()
+      router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error deleting room:', error)
@@ -657,12 +697,18 @@ export default function RoomsManagementPage() {
         })
 
       // Delete all rooms in this file
-      const { error } = await supabase
+      console.log('Deleting file with upload_group_id:', fileToDelete.upload_group_id)
+      const { data, error } = await supabase
         .from('campuses')
         .delete()
         .eq('upload_group_id', fileToDelete.upload_group_id)
+        .select()
 
+      console.log('Delete file result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setSuccessMessage(`"${fileToDelete.school_name}" deleted successfully!`)
       setShowDeleteFileModal(false)

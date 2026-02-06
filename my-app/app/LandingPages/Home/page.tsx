@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import {
@@ -134,8 +135,8 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [calendarDate, setCalendarDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState<Date | null>(null) // Initialize as null to avoid hydration mismatch
+  const [calendarDate, setCalendarDate] = useState<Date | null>(null)
   const [onlineFaculty, setOnlineFaculty] = useState<OnlineFaculty[]>([])
   const [currentSchedule, setCurrentSchedule] = useState<ScheduleInfo | null>(null)
   const [stats, setStats] = useState<DashboardStats>({
@@ -148,6 +149,10 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
+    // Set initial date on client side only (avoids hydration mismatch)
+    setCurrentDate(new Date())
+    setCalendarDate(new Date())
+    
     checkAuth()
     fetchDashboardData()
     
@@ -221,11 +226,10 @@ export default function AdminDashboard() {
         supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'faculty'),
         supabase.from('section_courses').select('id', { count: 'exact', head: true }),
         supabase.from('sections').select('id', { count: 'exact', head: true }),
-        supabase.from('schedule_generations').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-        // Get default/current schedule
-        supabase.from('schedule_generations')
+        supabase.from('generated_schedules').select('id', { count: 'exact', head: true }),
+        supabase.from('generated_schedules')
           .select('*')
-          .eq('status', 'completed')
+          .order('is_current', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(1)
       ])
@@ -295,20 +299,19 @@ export default function AdminDashboard() {
       if (defaultScheduleResult.data && defaultScheduleResult.data.length > 0) {
         const schedule = defaultScheduleResult.data[0] as {
           id: number
-          name?: string
+          schedule_name?: string
           academic_year?: string
           semester?: string
           created_at: string
         }
-        // Get total classes for this schedule
         const { count } = await supabase
-          .from('teacher_schedules')
+          .from('room_allocations')
           .select('id', { count: 'exact', head: true })
-          .eq('schedule_generation_id', schedule.id)
-        
+          .eq('schedule_id', schedule.id)
+
         setCurrentSchedule({
           id: schedule.id,
-          name: schedule.name || `Schedule #${schedule.id}`,
+          name: schedule.schedule_name || `Schedule #${schedule.id}`,
           academic_year: schedule.academic_year || '2024-2025',
           semester: schedule.semester || '1st Semester',
           is_default: true,
@@ -344,11 +347,13 @@ export default function AdminDashboard() {
   }
 
   const getHolidayForDate = (day: number) => {
+    if (!calendarDate) return undefined
     const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return philippineHolidays[dateStr]
   }
 
   const isToday = (day: number) => {
+    if (!calendarDate) return false
     const today = new Date()
     return day === today.getDate() && 
            calendarDate.getMonth() === today.getMonth() && 
@@ -356,10 +361,12 @@ export default function AdminDashboard() {
   }
 
   const prevMonth = () => {
+    if (!calendarDate) return
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))
   }
 
   const nextMonth = () => {
+    if (!calendarDate) return
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))
   }
 
@@ -432,8 +439,8 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div className="header-time">
-                <div className="current-time">{currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                <div className="current-date">{currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div className="current-time">{currentDate ? currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</div>
+                <div className="current-date">{currentDate ? currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Loading...'}</div>
               </div>
             </div>
           </header>
@@ -640,7 +647,7 @@ export default function AdminDashboard() {
                     <div className="card-header">
                       <h2>
                         <Calendar size={22} />
-                        {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
+                        {calendarDate ? `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}` : 'Loading...'}
                       </h2>
                       <div className="calendar-nav">
                         <button onClick={prevMonth}><ChevronLeft size={20} /></button>
@@ -655,7 +662,7 @@ export default function AdminDashboard() {
                           ))}
                         </div>
                         <div className="calendar-days">
-                          {getDaysInMonth(calendarDate).map((day, idx) => {
+                          {calendarDate && getDaysInMonth(calendarDate).map((day, idx) => {
                             const holiday = day ? getHolidayForDate(day) : null
                             return (
                               <div 

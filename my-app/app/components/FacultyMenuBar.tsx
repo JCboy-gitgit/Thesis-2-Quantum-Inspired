@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
 import FacultySettingsModal from './FacultySettingsModal'
+import NotificationPanel from './NotificationPanel'
 
 interface FacultyMenuBarProps {
   onToggleSidebar: () => void
@@ -106,6 +107,8 @@ export default function FacultyMenuBar({
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [userAvatar, setUserAvatar] = useState<string | null>(null)
+  const [lastMetadata, setLastMetadata] = useState<number>(0)
 
   const isLightMode = theme === 'light'
   
@@ -123,6 +126,49 @@ export default function FacultyMenuBar({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Function to fetch user avatar
+  const fetchUserAvatar = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const { data: userData } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userData?.avatar_url) {
+        // Add cache bust parameter to force refresh
+        const avatarWithCacheBust = `${userData.avatar_url}?t=${Date.now()}`
+        setUserAvatar(avatarWithCacheBust)
+        setLastMetadata(Date.now())
+      }
+    } catch (error) {
+      console.error('Failed to fetch user avatar:', error)
+    }
+  }
+
+  // Fetch user avatar on mount and periodically (every 30 seconds) and when menu opens
+  useEffect(() => {
+    if (!mounted) return
+
+    // Fetch immediately
+    fetchUserAvatar()
+
+    // Set up periodic refresh every 30 seconds
+    const interval = setInterval(fetchUserAvatar, 30000)
+
+    return () => clearInterval(interval)
+  }, [mounted])
+
+  // Also fetch when menu opens to get latest image
+  useEffect(() => {
+    if (showUserMenu && mounted) {
+      fetchUserAvatar()
+    }
+  }, [showUserMenu, mounted])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -194,17 +240,7 @@ export default function FacultyMenuBar({
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Notifications */}
-          <button 
-            className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${colors.bg} ${colors.text} hover:${colors.bgSolid} hover:text-white`}
-            title="Notifications"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowNotifications(!showNotifications)
-              setShowUserMenu(false)
-            }}
-          >
-            <Bell size={18} className="sm:w-5 sm:h-5" />
-          </button>
+          <NotificationPanel userRole="faculty" userEmail={userEmail} />
 
           {/* User Dropdown Button */}
           <button
@@ -216,7 +252,15 @@ export default function FacultyMenuBar({
             }}
             title="Account Menu"
           >
-            <User size={18} className="sm:w-5 sm:h-5" />
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt="Profile"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <User size={18} className="sm:w-5 sm:h-5" />
+            )}
           </button>
         </div>
 

@@ -221,7 +221,8 @@ export default function AddEditRoomsPage() {
 
       if (editingRoom) {
         // Update existing room
-        const { error } = await (supabase
+        console.log('Updating room ID:', editingRoom.id)
+        const { data, error } = await (supabase
           .from('campuses') as any)
           .update({
             campus: formData.campus,
@@ -240,12 +241,18 @@ export default function AddEditRoomsPage() {
             notes: formData.notes || null
           })
           .eq('id', editingRoom.id)
+          .select()
 
+        console.log('Update result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
         setSuccessMessage('Room updated successfully!')
       } else {
         // Add new room
-        const { error } = await (supabase
+        console.log('Inserting new room')
+        const { data, error } = await (supabase
           .from('campuses') as any)
           .insert({
             upload_group_id: selectedGroup,
@@ -266,14 +273,20 @@ export default function AddEditRoomsPage() {
             notes: formData.notes || null,
             file_name: 'Manual Entry'
           })
+          .select()
 
+        console.log('Insert result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
         setSuccessMessage('Room added successfully!')
       }
 
       resetForm()
       fetchRooms(selectedGroup)
       fetchCampusGroups() // Refresh counts
+      router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error saving room:', error)
@@ -305,17 +318,24 @@ export default function AddEditRoomsPage() {
     if (!confirm('Are you sure you want to delete this room?')) return
 
     try {
-      const { error } = await (supabase
+      console.log('Deleting room ID:', id)
+      const { data, error } = await (supabase
         .from('campuses') as any)
         .delete()
         .eq('id', id)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
       setSuccessMessage('Room deleted successfully!')
       if (selectedGroup) {
         fetchRooms(selectedGroup)
         fetchCampusGroups()
       }
+      router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       console.error('Error deleting room:', error)

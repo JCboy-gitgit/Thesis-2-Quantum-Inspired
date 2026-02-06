@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "./components/Providers";
+import { Toaster } from "./components/Toaster";
 import "./globals.css";
 import "./styles/green-theme.css";
 
@@ -17,6 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Qtime Scheduler",
   description: "Quantum-Inspired Room Scheduling System",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#10b981",
 };
 
 export default function RootLayout({
@@ -64,6 +67,7 @@ export default function RootLayout({
         style={{ backgroundColor: 'var(--background, #00331a)' }}
       >
         <Providers>
+          <Toaster />
           {children}
         </Providers>
       </body>

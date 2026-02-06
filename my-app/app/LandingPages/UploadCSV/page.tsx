@@ -421,14 +421,21 @@ export default function UploadCSVPage(): JSX.Element {
 
       console.log('Inserting room data:', roomData.length, 'rows')
 
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('campuses' as any)
         .insert(roomData as any)
+        .select()
 
       if (insertError) {
         console.error('Room insert error:', insertError)
         throw insertError
       }
+      
+      if (!insertedData || insertedData.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+      
+      console.log('Room insert result:', insertedData.length, 'rows inserted')
 
       setRoomMessage(
         `Rooms uploaded successfully!\n` +
@@ -443,6 +450,7 @@ export default function UploadCSVPage(): JSX.Element {
       setRoomCampusName('')
       const fileInput = document.getElementById('roomFile') as HTMLInputElement
       if (fileInput) fileInput.value = ''
+      router.refresh() // Force refresh cached data
     } catch (err: any) {
       console.error('Room upload error:', err)
       setRoomError(err?.message ?? String(err))
@@ -630,14 +638,21 @@ export default function UploadCSVPage(): JSX.Element {
 
       console.log('Inserting class schedule data:', classData.length, 'rows')
 
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('class_schedules')
         .insert(classData as any)
+        .select()
 
       if (insertError) {
         console.error('Class schedule insert error:', insertError)
         throw insertError
       }
+      
+      if (!insertedData || insertedData.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+      
+      console.log('Class schedule insert result:', insertedData.length, 'rows inserted')
 
       setClassMessage(
         `✅ Degree Program Courses uploaded successfully!\n` +
@@ -650,6 +665,7 @@ export default function UploadCSVPage(): JSX.Element {
       setDegreeProgramName('')
       const fileInput = document.getElementById('classFile') as HTMLInputElement
       if (fileInput) fileInput.value = ''
+      router.refresh() // Force refresh cached data
     } catch (err: any) {
       console.error('Class upload error:', err)
       setClassError(err?.message ?? String(err))
@@ -734,14 +750,21 @@ export default function UploadCSVPage(): JSX.Element {
       console.log('Inserting faculty profiles data:', facultyData.length, 'rows with upload_group_id:', nextGroupId)
 
       // Insert into faculty_profiles table (each upload is a separate group)
-      const { error: insertError } = await supabase
+      const { data: insertedData, error: insertError } = await supabase
         .from('faculty_profiles')
         .insert(facultyData as any)
+        .select()
 
       if (insertError) {
         console.error('Faculty profiles insert error:', insertError)
         throw insertError
       }
+      
+      if (!insertedData || insertedData.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
+      
+      console.log('Faculty profiles insert result:', insertedData.length, 'rows inserted')
 
       // Count by type
       const typeCounts = facultyData.reduce((acc: any, f) => {
@@ -763,6 +786,7 @@ export default function UploadCSVPage(): JSX.Element {
       setFacultyCollegeName('')
       const fileInput = document.getElementById('facultyFile') as HTMLInputElement
       if (fileInput) fileInput.value = ''
+      router.refresh() // Force refresh cached data
     } catch (err: any) {
       console.error('Faculty upload error:', err)
       setFacultyError(err?.message ?? String(err))

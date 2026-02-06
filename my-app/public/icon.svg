@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Qtime">
+  <defs>
+    <linearGradient id="grad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#00d4ff" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0a0e27" />
+  <circle cx="256" cy="256" r="160" fill="url(#grad)" opacity="0.9" />
+  <text x="256" y="300" text-anchor="middle" font-size="180" font-family="Arial, sans-serif" font-weight="700" fill="#0a0e27">Q</text>
+</svg>

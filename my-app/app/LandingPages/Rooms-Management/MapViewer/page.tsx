@@ -1366,7 +1366,8 @@ export default function MapViewerPage() {
 
       if (currentFloorPlan?.id) {
         // Update existing
-        const { error } = await db
+        console.log('Updating floor plan ID:', currentFloorPlan.id)
+        const { data, error } = await db
           .from('floor_plans')
           .update({
             floor_name: floorPlanName,
@@ -1378,8 +1379,13 @@ export default function MapViewerPage() {
             updated_at: new Date().toISOString()
           })
           .eq('id', currentFloorPlan.id)
+          .select()
 
+        console.log('Update result:', { data, error })
         if (error) throw error
+        if (!data || data.length === 0) {
+          throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
+        }
         showNotification('success', 'Floor plan updated!')
       } else {
         // Create new

@@ -617,13 +617,19 @@ function TeachingLoadAssignmentContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Inserting teaching loads:', dedupedAssignments)
+      const { data, error } = await (supabase as any)
         .from('teaching_loads')
         .insert(dedupedAssignments)
+        .select()
 
+      console.log('Insert result:', { data, error })
       if (error) {
         console.error('Error saving assignments:', error?.message || error)
         throw error
+      }
+      if (!data || data.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       setNotification({ type: 'success', message: `Assigned ${dedupedAssignments.length} course(s) successfully!` })
@@ -642,12 +648,18 @@ function TeachingLoadAssignmentContent() {
   const deleteTeachingLoad = async (loadId: number) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Deleting teaching load ID:', loadId)
+      const { data, error } = await (supabase as any)
         .from('teaching_loads')
         .delete()
         .eq('id', loadId)
+        .select()
 
+      console.log('Delete result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setNotification({ type: 'success', message: 'Course assignment removed successfully!' })
       setShowDeleteConfirm(null)
@@ -722,11 +734,17 @@ function TeachingLoadAssignmentContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      console.log('Inserting teaching loads from CSV:', assignments)
+      const { data, error } = await (supabase as any)
         .from('teaching_loads')
         .insert(assignments)
+        .select()
 
+      console.log('Insert result:', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) {
+        throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
+      }
 
       setNotification({ type: 'success', message: `Imported ${assignments.length} teaching assignments!` })
       setShowUploadCSVModal(false)
