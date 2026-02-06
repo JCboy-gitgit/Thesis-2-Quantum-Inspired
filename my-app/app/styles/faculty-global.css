@@ -1,6 +1,6 @@
 /* ==================== Faculty-Specific Global Styles ==================== */
 /* This file contains styles STRICTLY scoped to faculty pages only */
-/* All rules must be scoped to .faculty-page-wrapper or .faculty-login-wrapper */
+/* Theme styles apply to .faculty-page-wrapper ONLY - login page has its own fixed styling */
 /* NO body-level selectors or :has() selectors that could affect admin pages */
 
 /* ==================== COLLEGE THEME COLOR SYSTEM ==================== */
@@ -8,7 +8,6 @@
 
 /* DEFAULT THEME (Quantum/Cyan) - Optimized for Light Mode */
 .faculty-page-wrapper,
-.faculty-login-wrapper,
 [data-college-theme="default"] .faculty-page-wrapper {
   --college-primary: #0891b2;
   --college-primary-rgb: 8, 145, 178;
@@ -177,7 +176,6 @@
 
 /* ==================== LIGHT MODE BASE STYLES (DEFAULT - SUPER LIGHT) ==================== */
 .faculty-page-wrapper,
-.faculty-login-wrapper,
 .faculty-page-wrapper[data-theme="light"],
 [data-theme="light"] .faculty-page-wrapper {
   --page-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
