@@ -6,10 +6,24 @@
 /* ==================== COLLEGE THEME COLOR SYSTEM ==================== */
 /* These CSS variables cascade to ALL faculty elements */
 
-/* DEFAULT THEME (Quantum/Cyan) - Dark Mode */
+/* DEFAULT THEME (Quantum/Cyan) - Optimized for Light Mode */
 .faculty-page-wrapper,
 .faculty-login-wrapper,
 [data-college-theme="default"] .faculty-page-wrapper {
+  --college-primary: #0891b2;
+  --college-primary-rgb: 8, 145, 178;
+  --college-primary-light: rgba(8, 145, 178, 0.15);
+  --college-primary-dark: #0e7490;
+  --college-accent: #06b6d4;
+  --college-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  --college-glow: rgba(8, 145, 178, 0.3);
+  --college-text: #0891b2;
+}
+
+/* DEFAULT THEME - Dark Mode Override (Brighter Cyan) */
+[data-theme="dark"][data-college-theme="default"] .faculty-page-wrapper,
+[data-theme="dark"] .faculty-page-wrapper[data-college-theme="default"],
+.faculty-page-wrapper[data-theme="dark"][data-college-theme="default"] {
   --college-primary: #00d4ff;
   --college-primary-rgb: 0, 212, 255;
   --college-primary-light: rgba(0, 212, 255, 0.2);
@@ -161,28 +175,9 @@
   --college-text: #ef4444;
 }
 
-/* ==================== DARK MODE BASE STYLES ==================== */
+/* ==================== LIGHT MODE BASE STYLES (DEFAULT - SUPER LIGHT) ==================== */
 .faculty-page-wrapper,
-.faculty-page-wrapper[data-theme="dark"],
-[data-theme="dark"] .faculty-page-wrapper {
-  --page-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
-  --card-bg: rgba(20, 26, 50, 0.95);
-  --card-border: var(--college-primary-light);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-muted: rgba(255, 255, 255, 0.5);
-  --divider-color: var(--college-primary-light);
-  --sidebar-bg: rgba(20, 26, 50, 0.98);
-  --header-bg: rgba(15, 23, 42, 0.95);
-  --button-bg: var(--college-primary-light);
-  --button-hover-bg: var(--college-primary);
-  --icon-color: var(--college-primary);
-  --active-bg: var(--college-primary-light);
-  background: var(--page-bg) !important;
-  color: var(--text-primary);
-}
-
-/* ==================== LIGHT MODE BASE STYLES (SUPER LIGHT) ==================== */
+.faculty-login-wrapper,
 .faculty-page-wrapper[data-theme="light"],
 [data-theme="light"] .faculty-page-wrapper {
   --page-bg: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
@@ -198,6 +193,26 @@
   --button-hover-bg: var(--college-primary);
   --icon-color: var(--college-primary);
   --active-bg: rgba(var(--college-primary-rgb), 0.15);
+  background: var(--page-bg) !important;
+  color: var(--text-primary);
+}
+
+/* ==================== DARK MODE BASE STYLES (OPTIONAL) ==================== */
+.faculty-page-wrapper[data-theme="dark"],
+[data-theme="dark"] .faculty-page-wrapper {
+  --page-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  --card-bg: rgba(20, 26, 50, 0.95);
+  --card-border: var(--college-primary-light);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --divider-color: var(--college-primary-light);
+  --sidebar-bg: rgba(20, 26, 50, 0.98);
+  --header-bg: rgba(15, 23, 42, 0.95);
+  --button-bg: var(--college-primary-light);
+  --button-hover-bg: var(--college-primary);
+  --icon-color: var(--college-primary);
+  --active-bg: var(--college-primary-light);
   background: var(--page-bg) !important;
   color: var(--text-primary);
 }

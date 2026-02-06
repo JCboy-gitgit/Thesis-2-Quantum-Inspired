@@ -20,8 +20,8 @@ export default function FacultyLayout({
   children: React.ReactNode
 }) {
   const [mounted, setMounted] = useState(false)
-  // Always start with dark to match SSR, update after mount
-  const [isLightMode, setIsLightMode] = useState(false)
+  // Always start with light to match SSR, update after mount
+  const [isLightMode, setIsLightMode] = useState(true)
   const pathname = usePathname()
 
   // Login and reset-password pages handle their own loading states
@@ -32,7 +32,7 @@ export default function FacultyLayout({
     const savedTheme = localStorage.getItem('faculty-base-theme')
     const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
 
-    // Faculty uses light/dark only - convert green to light
+    // Faculty defaults to light mode - only use dark if explicitly set
     const effectiveTheme = savedTheme === 'dark' ? 'dark' : 'light'
     setIsLightMode(effectiveTheme === 'light')
     document.documentElement.setAttribute('data-theme', effectiveTheme)

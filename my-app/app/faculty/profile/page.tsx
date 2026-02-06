@@ -75,6 +75,7 @@ export default function FacultyProfilePage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
   const [assignedSchedule, setAssignedSchedule] = useState<AssignedScheduleInfo | null>(null)
@@ -575,7 +576,6 @@ export default function FacultyProfilePage() {
           userEmail={user?.email}
         />
 
-<<<<<<< HEAD
           {showProfileMenu && (
             <div className={styles.profileMenuWrapper}>
               <div 
@@ -610,15 +610,9 @@ export default function FacultyProfilePage() {
               </div>
             </div>
           )}
-        </div>
-      </header>
 
       {/* Main Content */}
-      <main className={styles.mainContent}>
-=======
-        {/* Main Content */}
-        <main className={`${styles.mainContent} ${isMenuBarHidden ? 'pt-10 sm:pt-12' : 'pt-16 sm:pt-20 md:pt-24'}`}>
->>>>>>> e6c4c58146ceca6140ccafe5d71ada42c3ed4b5a
+      <main className={`${styles.mainContent} ${isMenuBarHidden ? 'pt-10 sm:pt-12' : 'pt-16 sm:pt-20 md:pt-24'}`}>
         {/* Message Toast */}
         {message && (
           <div className={`${styles.toast} ${styles[message.type]}`}>

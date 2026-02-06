@@ -992,8 +992,6 @@
   .searchBar input {
     font-size: 0.875rem;
   }
-<<<<<<< HEAD
-=======
 
   /* Side Panel Mobile Styles */
   .sidePanel {
@@ -1038,5 +1036,4 @@
   .panelBody {
     padding: 1rem 1.5rem;
   }
->>>>>>> e6c4c58146ceca6140ccafe5d71ada42c3ed4b5a
 }

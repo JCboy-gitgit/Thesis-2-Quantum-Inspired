@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * Middleware to add cache-control headers to all API responses
+ * Proxy to add cache-control headers to all API responses
  * This ensures fresh data is always fetched from the database
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Clone the request headers so we can modify them
   const requestHeaders = new Headers(request.headers)
   

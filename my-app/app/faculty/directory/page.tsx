@@ -502,25 +502,18 @@ function FacultyDirectoryContent() {
             <button className={styles.closeButton} onClick={() => setSelectedFaculty(null)}>
               <X size={24} />
             </button>
-<<<<<<< HEAD
             <div className={styles.modalHeader}>
-              <div className={styles.modalAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
-                {getInitials(selectedFaculty.full_name)}
-              </div>
-=======
-            <div className={styles.panelHeader}>
               {selectedFaculty.profile_image ? (
                 <img 
                   src={selectedFaculty.profile_image} 
                   alt={selectedFaculty.full_name}
-                  className={styles.panelAvatarImg}
+                  className={styles.modalAvatarImg}
                 />
               ) : (
-                <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                <div className={styles.modalAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                   {getInitials(selectedFaculty.full_name)}
                 </div>
               )}
->>>>>>> e6c4c58146ceca6140ccafe5d71ada42c3ed4b5a
               <div>
                 <h2 className={styles.modalName}>{selectedFaculty.full_name}</h2>
                 <p className={styles.modalPosition}>{selectedFaculty.position}</p>

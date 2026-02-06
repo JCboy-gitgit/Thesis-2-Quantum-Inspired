@@ -406,7 +406,26 @@ export default function FacultyApprovalPage() {
                         </>
                       )}
                     </>
-                  ) : (
+                  ) : reg.status === 'rejected' ? (
+                    <>
+                      <button
+                        className={styles.approveBtn}
+                        onClick={() => handleApproval(reg.id, 'approve')}
+                        disabled={actionLoading === reg.id}
+                      >
+                        {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserCheck size={16} />}
+                        Approve
+                      </button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handleDelete(reg.id)}
+                        disabled={actionLoading === reg.id}
+                      >
+                        {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
+                        Delete
+                      </button>
+                    </>
+                  ) : reg.status === 'approved' ? (
                     <button
                       className={styles.rejectBtn}
                       onClick={() => handleApproval(reg.id, 'reject')}
@@ -414,6 +433,15 @@ export default function FacultyApprovalPage() {
                     >
                       {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserX size={16} />}
                       Reject
+                    </button>
+                  ) : (
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={() => handleDelete(reg.id)}
+                      disabled={actionLoading === reg.id}
+                    >
+                      {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
+                      Delete
                     </button>
                   )}
                 </div>
