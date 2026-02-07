@@ -28,6 +28,7 @@ import {
   LogOut
 } from 'lucide-react'
 import styles from './styles.module.css'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
 import FacultySettingsModal from '@/app/components/FacultySettingsModal'
 import FacultySidebar from '@/app/components/FacultySidebar'
@@ -168,6 +169,7 @@ export default function FacultyProfilePage() {
         .single() as { data: UserProfile | null; error: any }
 
       if (userError || !userData || !userData.is_active) {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         router.push('/')
         return
@@ -552,8 +554,7 @@ export default function FacultyProfilePage() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('faculty_session_token')
-      localStorage.removeItem('faculty_keep_signed_in')
+      await clearBrowserCaches()
       await supabase.auth.signOut()
       router.push('/')
     } catch (error) {

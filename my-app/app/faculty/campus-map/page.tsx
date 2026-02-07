@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import { Map } from 'lucide-react'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
@@ -89,6 +90,7 @@ export default function FacultyCampusMapPage() {
         .single() as { data: UserProfile | null; error: any }
 
       if (userError || !userData || !userData.is_active) {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         router.push('/')
         return

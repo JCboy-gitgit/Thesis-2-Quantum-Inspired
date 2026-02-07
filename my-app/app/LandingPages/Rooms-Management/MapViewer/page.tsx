@@ -236,11 +236,11 @@ export default function MapViewerPage() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('')
 
   // Canvas state
-  const [zoom, setZoom] = useState(100)
+  const [zoom, setZoom] = useState(75)
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [gridSize, setGridSize] = useState(20)
-  const [canvasSize, setCanvasSize] = useState({ width: 1056, height: 816 }) // Short Bond Paper (8.5x11") landscape at ~1.3x scale
+  const [canvasSize, setCanvasSize] = useState({ width: 1056, height: 816 }) // Letter Bond Paper 11x8.5" landscape at 96 DPI
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [canvasBackground, setCanvasBackground] = useState('#ffffff')
 
@@ -396,6 +396,8 @@ export default function MapViewerPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<number>>(new Set())
+  const [draftMultiSelectMode, setDraftMultiSelectMode] = useState(false)
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'layers'>('properties')
 
   // Auth state to prevent rendering before auth check completes
@@ -697,7 +699,19 @@ export default function MapViewerPage() {
     setFloorPlanName(floorPlan.floor_name)
     setIsDefault(floorPlan.is_default_view)
     if (floorPlan.canvas_data?.elements) {
-      setCanvasElements(floorPlan.canvas_data.elements)
+      // Normalize element data to fix missing/undefined fields from older saves
+      const normalizedElements = floorPlan.canvas_data.elements.map((el: any) => ({
+        ...el,
+        x: Number(el.x) || 0,
+        y: Number(el.y) || 0,
+        width: Number(el.width) || 100,
+        height: Number(el.height) || 60,
+        rotation: Number(el.rotation) || 0,
+        zIndex: Number(el.zIndex) || 1,
+        opacity: el.opacity != null ? Number(el.opacity) : 100,
+        borderWidth: el.borderWidth != null ? Number(el.borderWidth) : 2,
+      }))
+      setCanvasElements(normalizedElements)
     }
     if (floorPlan.canvas_data?.canvasSize) {
       setCanvasSize(floorPlan.canvas_data.canvasSize)
@@ -1421,6 +1435,87 @@ export default function MapViewerPage() {
     }
   }
 
+  // Create a new blank draft
+  const createNewDraft = () => {
+    setCanvasElements([])
+    setSelectedElements([])
+    setFloorPlanName('')
+    setCurrentFloorPlan(null)
+    setIsDefault(false)
+    setShowLoadModal(false)
+    showNotification('success', 'Canvas cleared — ready for a new draft')
+  }
+
+  // Toggle draft selection in multi-select mode
+  const toggleDraftSelection = (id: number) => {
+    setSelectedDraftIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  // Set selected drafts as default
+  const setSelectedDraftsAsDefault = async () => {
+    if (selectedDraftIds.size === 0) return
+    try {
+      // First, clear all defaults for this building
+      const { error: clearError } = await db
+        .from('floor_plans')
+        .update({ is_default_view: false })
+        .eq('building_id', buildings.indexOf(selectedBuilding) + 1)
+      
+      if (clearError) console.warn('Could not clear old defaults:', clearError)
+
+      // Set selected ones as default
+      for (const id of selectedDraftIds) {
+        await db
+          .from('floor_plans')
+          .update({ is_default_view: true })
+          .eq('id', id)
+      }
+
+      showNotification('success', `${selectedDraftIds.size} floor plan(s) set as default`)
+      setSelectedDraftIds(new Set())
+      setDraftMultiSelectMode(false)
+      fetchSavedFloorPlans()
+    } catch (error) {
+      console.error('Error setting defaults:', error)
+      showNotification('error', 'Failed to set default floor plans')
+    }
+  }
+
+  // Delete selected drafts
+  const deleteSelectedDrafts = async () => {
+    if (selectedDraftIds.size === 0) return
+    if (!confirm(`Delete ${selectedDraftIds.size} floor plan(s)? This cannot be undone.`)) return
+    try {
+      for (const id of selectedDraftIds) {
+        await db
+          .from('floor_plans')
+          .delete()
+          .eq('id', id)
+      }
+
+      showNotification('success', `${selectedDraftIds.size} floor plan(s) deleted`)
+      setSelectedDraftIds(new Set())
+      setDraftMultiSelectMode(false)
+      fetchSavedFloorPlans()
+
+      // If the currently loaded plan was deleted, clear it
+      if (currentFloorPlan && selectedDraftIds.has(currentFloorPlan.id)) {
+        setCanvasElements([])
+        setCurrentFloorPlan(null)
+      }
+    } catch (error) {
+      console.error('Error deleting floor plans:', error)
+      showNotification('error', 'Failed to delete floor plans')
+    }
+  }
   // Export as PDF with QTime logo - Landscape orientation
   const exportPDF = async () => {
     try {
@@ -2091,7 +2186,8 @@ export default function MapViewerPage() {
             </div>
           )}
 
-          {/* Main Canvas */}
+          {/* Main Canvas Area */}
+          <div className={styles.canvasArea}>
           <div
             ref={canvasContainerRef}
             className={`${styles.canvasContainer} ${viewMode !== 'editor' ? styles.viewOnly : ''}`}
@@ -2167,8 +2263,8 @@ export default function MapViewerPage() {
                         borderColor: element.borderColor,
                         borderWidth: element.borderWidth ?? 2,
                         opacity: (element.opacity ?? 100) / 100,
-                        transform: `rotate(${element.rotation}deg)`,
-                        zIndex: element.zIndex
+                        transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+                        zIndex: element.zIndex ?? 1
                       }}
                       onClick={(e) => handleElementClick(element, e)}
                       onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
@@ -2288,8 +2384,9 @@ export default function MapViewerPage() {
                 )
               })()}
             </div>
+          </div>
 
-            {/* Canvas Controls */}
+            {/* Floating Canvas Controls */}
             <div className={styles.canvasControls}>
               <div className={styles.zoomControls}>
                 <button onClick={() => setZoom(z => Math.max(25, z - 25))}>
@@ -3002,29 +3099,84 @@ export default function MapViewerPage() {
 
       {/* Load Modal */}
       {showLoadModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowLoadModal(false)}>
+        <div className={styles.modalOverlay} onClick={() => { setShowLoadModal(false); setDraftMultiSelectMode(false); setSelectedDraftIds(new Set()) }}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2><FileText size={20} /> Load Floor Plan</h2>
-              <button onClick={() => setShowLoadModal(false)}><X size={20} /></button>
+              <h2><FileText size={20} /> Floor Plans &amp; Drafts</h2>
+              <button onClick={() => { setShowLoadModal(false); setDraftMultiSelectMode(false); setSelectedDraftIds(new Set()) }}><X size={20} /></button>
             </div>
             <div className={styles.modalBody}>
+              {/* Action bar */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  className={styles.saveModalBtn}
+                  style={{ padding: '8px 16px', fontSize: 13 }}
+                  onClick={createNewDraft}
+                >
+                  <Plus size={16} /> New Draft
+                </button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    className={draftMultiSelectMode ? styles.saveModalBtn : styles.cancelBtn}
+                    style={{ padding: '8px 12px', fontSize: 12 }}
+                    onClick={() => {
+                      setDraftMultiSelectMode(!draftMultiSelectMode)
+                      setSelectedDraftIds(new Set())
+                    }}
+                  >
+                    <BoxSelect size={14} /> {draftMultiSelectMode ? 'Cancel Select' : 'Multi-Select'}
+                  </button>
+                  {draftMultiSelectMode && selectedDraftIds.size > 0 && (
+                    <>
+                      <button
+                        className={styles.saveModalBtn}
+                        style={{ padding: '8px 12px', fontSize: 12 }}
+                        onClick={setSelectedDraftsAsDefault}
+                      >
+                        <Star size={14} /> Set Default ({selectedDraftIds.size})
+                      </button>
+                      <button
+                        className={styles.cancelBtn}
+                        style={{ padding: '8px 12px', fontSize: 12, color: '#ef4444', borderColor: '#ef4444' }}
+                        onClick={deleteSelectedDrafts}
+                      >
+                        <Trash2 size={14} /> Delete ({selectedDraftIds.size})
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {savedFloorPlans.length === 0 ? (
                 <div className={styles.emptyState}>
                   <Info size={32} />
                   <p>No saved floor plans found</p>
+                  <p style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>Click &quot;New Draft&quot; to create your first floor plan</p>
                 </div>
               ) : (
                 <div className={styles.floorPlanList}>
                   {savedFloorPlans.map(fp => (
                     <div
                       key={fp.id}
-                      className={`${styles.floorPlanItem} ${currentFloorPlan?.id === fp.id ? styles.active : ''}`}
+                      className={`${styles.floorPlanItem} ${currentFloorPlan?.id === fp.id ? styles.active : ''} ${selectedDraftIds.has(fp.id) ? styles.active : ''}`}
                       onClick={() => {
-                        loadFloorPlan(fp)
-                        setShowLoadModal(false)
+                        if (draftMultiSelectMode) {
+                          toggleDraftSelection(fp.id)
+                        } else {
+                          loadFloorPlan(fp)
+                          setShowLoadModal(false)
+                        }
                       }}
                     >
+                      {draftMultiSelectMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedDraftIds.has(fp.id)}
+                          onChange={() => toggleDraftSelection(fp.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ marginRight: 8, width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
+                        />
+                      )}
                       <div className={styles.floorPlanInfo}>
                         <span className={styles.floorPlanName}>
                           {fp.floor_name}
@@ -3047,7 +3199,7 @@ export default function MapViewerPage() {
               )}
             </div>
             <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setShowLoadModal(false)}>
+              <button className={styles.cancelBtn} onClick={() => { setShowLoadModal(false); setDraftMultiSelectMode(false); setSelectedDraftIds(new Set()) }}>
                 Close
               </button>
             </div>

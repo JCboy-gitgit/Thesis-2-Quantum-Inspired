@@ -62,6 +62,15 @@ LUNCH_MODE_STRICT = 'strict'  # No classes during lunch (HARD constraint)
 LUNCH_MODE_FLEXIBLE = 'flexible'  # Avoid lunch but allow if necessary (SOFT constraint)
 LUNCH_MODE_NONE = 'none'  # No lunch restriction
 
+# NON-CONSECUTIVE DAY CONSTRAINT
+SOFT_CONSECUTIVE_DAY_PENALTY = 0  # Not used as soft - enforced as HARD
+HARD_CONSECUTIVE_DAY_PENALTY = HARD_CONSTRAINT_PENALTY  # Same subject on consecutive days
+HARD_EQUIPMENT_MISMATCH_PENALTY = HARD_CONSTRAINT_PENALTY  # Room missing required equipment
+MAX_SUBJECT_SESSIONS_PER_WEEK = 2  # Max 2 sessions (LEC+LAB) per subject per student group per week
+
+# Day index for ordering / consecutive-day checking
+DAY_INDEX = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6}
+
 
 # ==================== Data Validation ====================
 
@@ -376,6 +385,7 @@ class ScheduleSlot:
     is_lab: bool = False
     is_online: bool = False
     is_pinned: bool = False
+    actual_duration_minutes: int = 0  # Exact scheduled minutes (for accurate end-time reporting)
 
 
 @dataclass
@@ -546,6 +556,17 @@ class EnhancedQuantumScheduler:
         # Section assignments tracking
         # section_id -> list of (room_id, day, start_slot_id, slot_count)
         self.section_assignments: Dict[int, List[Tuple[Optional[int], str, int, int]]] = defaultdict(list)
+        
+        # Actual duration tracking per assignment (for accurate end-time reporting)
+        # Key: (section_id, room_id, day, start_slot_id) -> actual_duration_minutes
+        self.assignment_durations: Dict[Tuple[int, Optional[int], str, int], int] = {}
+        
+        # Slot duration in minutes (from time slots configuration)
+        self.slot_duration_minutes = time_slots[0].duration_minutes if time_slots else 90
+        
+        # Subject-day tracking for non-consecutive day constraint (O(1) lookups)
+        # Key: subject_key (base_section::subject_code) -> set of scheduled days
+        self.subject_scheduled_days: Dict[str, Set[str]] = defaultdict(set)
         
         # Conflict heatmap data
         self.conflict_heatmap: Dict[Tuple[str, int], int] = defaultdict(int)  # (day, slot) -> conflict count
@@ -1001,6 +1022,145 @@ class EnhancedQuantumScheduler:
             return False
         return self._is_during_lunch(start_slot_id, slot_count)
     
+    # ==================== Hour-Accurate Slot Calculation ====================
+    
+    def _get_required_slot_count(self, section: Section) -> int:
+        """
+        Calculate how many time slots a section needs using the ACTUAL slot duration.
+        Replaces Section.required_slots which wrongly assumes 30-min slots.
+        """
+        total_hours = (section.lec_hours or 0) + (section.lab_hours or 0)
+        if total_hours <= 0:
+            total_hours = section.weekly_hours or 3
+        total_minutes = total_hours * 60
+        return max(1, math.ceil(total_minutes / self.slot_duration_minutes))
+    
+    def _split_hours_into_sessions(self, total_minutes: int) -> List[Tuple[int, int]]:
+        """
+        Split total_minutes into sessions, each fitting into consecutive time slots.
+        Returns list of (slot_count, actual_session_minutes) tuples.
+        
+        Rules:
+        - Up to 3h (180min): 1 session (straight block)
+        - 3.5h-6h (210-360min): 2 sessions (split as evenly as possible)
+        - 6.5h+ (390+min): 3 sessions
+        
+        Each session's slot_count = ceil(session_minutes / slot_duration)
+        """
+        slot_dur = self.slot_duration_minutes
+        max_session_minutes = 180  # 3 hours max per session
+        
+        if total_minutes <= max_session_minutes:
+            # Single session
+            slots = math.ceil(total_minutes / slot_dur)
+            return [(slots, total_minutes)]
+        
+        # Determine number of sessions
+        if total_minutes <= max_session_minutes * 2:
+            num_sessions = 2
+        else:
+            num_sessions = math.ceil(total_minutes / max_session_minutes)
+        
+        # Split evenly
+        base_minutes = total_minutes // num_sessions
+        remainder = total_minutes % num_sessions
+        
+        sessions = []
+        for i in range(num_sessions):
+            session_minutes = base_minutes + (1 if i < remainder else 0)
+            slots = math.ceil(session_minutes / slot_dur)
+            sessions.append((slots, session_minutes))
+        
+        return sessions
+    
+    # ==================== Non-Consecutive Day Constraint ====================
+    
+    def _get_subject_key(self, section: Section) -> str:
+        """Get a unique key for subject+student_group to track per-subject constraints."""
+        base_section = self._get_base_section_code(section.section_code)
+        subject = section.subject_code or section.course_code
+        return f"{base_section}::{subject}"
+    
+    def _update_subject_days_index(self, section: Section, day: str, add: bool = True):
+        """Update the fast subject-day lookup index."""
+        subject_key = self._get_subject_key(section)
+        if add:
+            self.subject_scheduled_days[subject_key].add(day.lower())
+        else:
+            # Only remove if no other assignments remain on that day
+            still_on_day = False
+            for sid in self._get_related_section_ids(section):
+                for _, d, _, _ in self.section_assignments.get(sid, []):
+                    if d.lower() == day.lower() and sid != section.id:
+                        still_on_day = True
+                        break
+                if still_on_day:
+                    break
+            # Check own remaining assignments
+            if not still_on_day:
+                for _, d, _, _ in self.section_assignments.get(section.id, []):
+                    if d.lower() == day.lower():
+                        still_on_day = True
+                        break
+            if not still_on_day:
+                self.subject_scheduled_days[subject_key].discard(day.lower())
+    
+    def _get_related_section_ids(self, section: Section) -> List[int]:
+        """Get all section IDs related to the same subject+student_group (incl. siblings)."""
+        subject_key = self._get_subject_key(section)
+        related = []
+        for sid, s in self.sections.items():
+            if self._get_subject_key(s) == subject_key:
+                related.append(sid)
+        return related
+    
+    def _check_non_consecutive_day_violation(self, section: Section, proposed_day: str) -> bool:
+        """
+        Returns True if scheduling this subject on proposed_day would violate
+        the non-consecutive day rule: same subject sessions must skip at least 1 day.
+        O(1) using pre-computed subject_scheduled_days index.
+        """
+        proposed_idx = DAY_INDEX.get(proposed_day.lower(), -1)
+        if proposed_idx < 0:
+            return False
+        
+        subject_key = self._get_subject_key(section)
+        existing_days = self.subject_scheduled_days.get(subject_key, set())
+        
+        for day in existing_days:
+            day_idx = DAY_INDEX.get(day.lower(), -1)
+            if day_idx >= 0 and day != proposed_day.lower() and abs(proposed_idx - day_idx) == 1:
+                return True  # Consecutive day violation!
+        
+        return False
+    
+    def _check_max_subject_sessions_per_week(self, section: Section) -> bool:
+        """
+        Returns True if the subject already has the maximum allowed sessions this week.
+        Max is 2 sessions per subject per student-group per week (LEC + LAB combined).
+        """
+        subject_key = self._get_subject_key(section)
+        existing_days = self.subject_scheduled_days.get(subject_key, set())
+        return len(existing_days) >= MAX_SUBJECT_SESSIONS_PER_WEEK
+    
+    # ==================== Equipment Constraint ====================
+    
+    def _check_room_equipment(self, section: Section, room_id: Optional[int]) -> bool:
+        """
+        Returns True if the room has ALL required equipment/features.
+        Room features must be a SUPERSET of section's required features.
+        """
+        if room_id is None:
+            return True  # Online classes don't need room equipment
+        required = section.required_features
+        if not required:
+            return True  # No equipment required
+        room = self.rooms.get(room_id)
+        if not room:
+            return False
+        room_features = room.feature_tags or set()
+        return required.issubset(room_features)
+    
     def _calculate_cost(self) -> float:
         """
         Calculate total cost using QUBO-inspired energy function.
@@ -1169,13 +1329,48 @@ class EnhancedQuantumScheduler:
                 base_section, day, slot_id = key
                 self.conflict_heatmap[(day, slot_id)] += len(unique_ids)
         
-        # Penalty for unscheduled sections
+        # Penalty for unscheduled sections (use dynamic slot count)
         for section_id, section in self.sections.items():
             assigned_slots = sum(
                 count for _, _, _, count in self.section_assignments.get(section_id, [])
             )
-            if assigned_slots < section.required_slots:
-                cost += 1000 * (section.required_slots - assigned_slots)
+            needed_slots = self._get_required_slot_count(section)
+            if assigned_slots < needed_slots:
+                cost += 1000 * (needed_slots - assigned_slots)
+        
+        # HARD: Non-consecutive day constraint (same subject must skip at least 1 day)
+        checked_subjects = set()
+        for section_id, section in self.sections.items():
+            subject_key = self._get_subject_key(section)
+            if subject_key in checked_subjects:
+                continue
+            checked_subjects.add(subject_key)
+            
+            # Get all scheduled days for this subject+student_group
+            scheduled_days = self.subject_scheduled_days.get(subject_key, set())
+            day_indices = sorted([DAY_INDEX.get(d, -1) for d in scheduled_days if DAY_INDEX.get(d, -1) >= 0])
+            
+            # Check consecutive pairs
+            for i in range(len(day_indices) - 1):
+                if day_indices[i + 1] - day_indices[i] == 1:
+                    cost += HARD_CONSECUTIVE_DAY_PENALTY
+                    conflict_detected = True
+            
+            # Check max sessions per week
+            if len(scheduled_days) > MAX_SUBJECT_SESSIONS_PER_WEEK:
+                cost += HARD_CONSTRAINT_PENALTY * (len(scheduled_days) - MAX_SUBJECT_SESSIONS_PER_WEEK)
+                conflict_detected = True
+        
+        # HARD: Room equipment mismatch (room must have ALL required features)
+        for key, slot in self.schedule.items():
+            room_id, day, slot_id = key
+            if slot.is_online or room_id is None:
+                continue
+            section = self.sections.get(slot.section_id)
+            if section and section.required_features:
+                if not self._check_room_equipment(section, room_id):
+                    cost += HARD_EQUIPMENT_MISMATCH_PENALTY
+                    conflict_detected = True
         
         # SOFT: Swiss Cheese Gap Detection (simplified)
         for (section_code, day), slots in section_day_slots.items():
@@ -1302,8 +1497,8 @@ class EnhancedQuantumScheduler:
                 if has_morning_class and has_afternoon_class and has_class_during_lunch:
                     cost += SOFT_TEACHER_NO_BREAK
         
-        # SOFT: Sibling sections (LEC/LAB split from hybrid courses) should be on same day
-        # This is a preference, not a hard constraint - allows flexibility if needed
+        # SOFT: Sibling sections (LEC/LAB split from hybrid courses) should be on DIFFERENT 
+        # non-consecutive days. Penalty if on same day or consecutive days.
         checked_siblings = set()
         for section_id, sibling_id in self.sibling_pairs.items():
             # Avoid double counting (A->B and B->A)
@@ -1316,8 +1511,8 @@ class EnhancedQuantumScheduler:
             section_days = set(day for _, day, _, _ in self.section_assignments.get(section_id, []))
             sibling_days = set(day for _, day, _, _ in self.section_assignments.get(sibling_id, []))
             
-            # Penalty if they have NO overlapping days (we prefer at least one shared day)
-            if section_days and sibling_days and not section_days.intersection(sibling_days):
+            # Penalty if they overlap on same day (we want them on DIFFERENT days)
+            if section_days and sibling_days and section_days.intersection(sibling_days):
                 cost += SOFT_SIBLING_DIFFERENT_DAY
         
         if conflict_detected:
@@ -1333,11 +1528,13 @@ class EnhancedQuantumScheduler:
         day: str, 
         start_slot_id: int, 
         slot_count: int,
-        force_online: bool = False
+        force_online: bool = False,
+        actual_duration_minutes: int = 0
     ) -> bool:
         """
         Allocate a section to a time range.
         For online days, room_id should be None.
+        actual_duration_minutes: exact minutes for this session (0 = use slot_count * slot_duration).
         """
         is_online = self._is_online_day(day) or force_online
         
@@ -1374,7 +1571,8 @@ class EnhancedQuantumScheduler:
             slot_count=slot_count,
             teacher_id=section.teacher_id,
             is_lab=section.requires_lab,
-            is_online=is_online
+            is_online=is_online,
+            actual_duration_minutes=actual_duration_minutes
         )
         
         # Mark all slots as occupied
@@ -1386,6 +1584,12 @@ class EnhancedQuantumScheduler:
         self.section_assignments[section.id].append(
             (effective_room_id, day, start_slot_id, slot_count)
         )
+        
+        # Track actual duration for accurate end-time reporting
+        self.assignment_durations[(section.id, effective_room_id, day, start_slot_id)] = actual_duration_minutes
+        
+        # Update subject-day index for non-consecutive day constraint
+        self._update_subject_days_index(section, day, add=True)
         
         if is_online:
             self.stats.online_classes += 1
@@ -1413,23 +1617,32 @@ class EnhancedQuantumScheduler:
             a for a in assignments 
             if not (a[0] == room_id and a[1] == day and a[2] == start_slot_id)
         ]
+        
+        # Remove from duration tracking
+        dur_key = (section_id, room_id, day, start_slot_id)
+        self.assignment_durations.pop(dur_key, None)
+        
+        # Update subject-day index
+        section = self.sections.get(section_id)
+        if section:
+            self._update_subject_days_index(section, day, add=False)
     
-    def _calculate_sessions(self, section: Section) -> List[Tuple[int, bool]]:
+    def _calculate_sessions(self, section: Section) -> List[Tuple[int, bool, int]]:
         """
         Calculate how to split section into sessions based on lec and lab hours.
-        Returns list of (slot_count, is_lab) tuples.
+        Returns list of (slot_count, is_lab, actual_duration_minutes) tuples.
         
-        SIMPLE APPROACH - Constraints depend ONLY on:
-        1. Room availability (no double-booking)
-        2. Faculty availability (no double-booking)
+        HOUR-ACCURATE APPROACH:
+        - Uses actual slot duration (configurable, default 90 min)
+        - Splits long classes into 2 sessions on different non-consecutive days
+        - Tracks exact minutes so end-time reporting is accurate (no rounding up)
         
-        Each session = 1 slot (which is 90 minutes / 1.5 hours by default)
-        The slot duration is configurable from frontend.
+        Split rules (per component: lec or lab separately):
+        - Up to 3h: 1 session (straight block)
+        - 3.5h-6h: 2 sessions (split evenly)
+        - 6.5h+: 3 sessions (split evenly)
         """
         sessions = []
-        
-        # Get slot duration in hours (default 90 min = 1.5 hours)
-        slot_duration_hours = 1.5  # Will be used as-is; actual duration comes from time_slots
         
         lec_hours = section.lec_hours or 0
         lab_hours = section.lab_hours or 0
@@ -1438,18 +1651,19 @@ class EnhancedQuantumScheduler:
         if lec_hours == 0 and lab_hours == 0:
             lec_hours = section.weekly_hours or 3
         
-        # Calculate how many slots needed for lecture
-        # Each slot is 1.5 hours (90 min), so lec_hours / 1.5 = number of slots
+        # Calculate lecture sessions with accurate duration tracking
         if lec_hours > 0:
-            lec_slots = max(1, int((lec_hours + slot_duration_hours - 0.01) // slot_duration_hours))
-            for _ in range(lec_slots):
-                sessions.append((1, False))  # 1 slot per session, is_lab=False
+            lec_minutes = int(lec_hours * 60)
+            lec_sessions = self._split_hours_into_sessions(lec_minutes)
+            for slot_count, actual_mins in lec_sessions:
+                sessions.append((slot_count, False, actual_mins))  # is_lab=False
         
-        # Calculate how many slots needed for lab
+        # Calculate lab sessions with accurate duration tracking
         if lab_hours > 0:
-            lab_slots = max(1, int((lab_hours + slot_duration_hours - 0.01) // slot_duration_hours))
-            for _ in range(lab_slots):
-                sessions.append((1, True))  # 1 slot per session, is_lab=True
+            lab_minutes = int(lab_hours * 60)
+            lab_sessions = self._split_hours_into_sessions(lab_minutes)
+            for slot_count, actual_mins in lab_sessions:
+                sessions.append((slot_count, True, actual_mins))  # is_lab=True
         
         return sessions
     
@@ -1488,6 +1702,8 @@ class EnhancedQuantumScheduler:
         """
         self.schedule.clear()
         self.section_assignments.clear()
+        self.assignment_durations.clear()
+        self.subject_scheduled_days.clear()
         self.conflict_heatmap.clear()
         self.stats.online_classes = 0
         
@@ -1510,12 +1726,13 @@ class EnhancedQuantumScheduler:
             # Handle pinned sections
             if getattr(section, 'is_pinned', False):
                 if section.pinned_day and section.pinned_room_id and section.pinned_time_slot:
+                    pinned_slots = self._get_required_slot_count(section)
                     self._allocate_section(
                         section,
                         section.pinned_room_id,
                         section.pinned_day,
                         section.pinned_time_slot,
-                        section.required_slots
+                        pinned_slots
                     )
                     continue
             
@@ -1524,7 +1741,7 @@ class EnhancedQuantumScheduler:
                 compatible_rooms = list(self.rooms.keys())
             
             # Calculate sessions with proper lec/lab separation
-            # Returns list of (slot_count, is_lab) tuples
+            # Returns list of (slot_count, is_lab, actual_duration_minutes) tuples
             sessions = self._calculate_sessions(section)
             
             # Track how many sessions we have - used to enforce different days for splits
@@ -1532,13 +1749,17 @@ class EnhancedQuantumScheduler:
             require_different_days = total_sessions > 1  # If split, prefer different days
             
             slots_assigned = 0
-            total_slots_needed = section.required_slots
+            total_slots_needed = self._get_required_slot_count(section)
             days_used = []
             lab_days_used = []  # Track days used for lab separately
             session_index = 0  # Track current session for day distribution
             
-            for session_slots, is_lab_session in sessions:
+            for session_slots, is_lab_session, session_actual_minutes in sessions:
                 if slots_assigned >= total_slots_needed:
+                    break
+                
+                # Check max subject sessions per week BEFORE trying to place
+                if self._check_max_subject_sessions_per_week(section):
                     break
                 
                 session_index += 1
@@ -1593,6 +1814,10 @@ class EnhancedQuantumScheduler:
                             # If there are fresh days available, skip days already used
                             if available_fresh_days and day in all_days_used:
                                 continue
+                        
+                        # NON-CONSECUTIVE DAY CONSTRAINT (pass 0 = strict enforcement)
+                        if pass_num == 0 and self._check_non_consecutive_day_violation(section, day):
+                            continue
                         
                         # Prefer different days for distribution (legacy behavior)
                         # Lab should be on different day from lectures when possible
@@ -1688,7 +1913,7 @@ class EnhancedQuantumScheduler:
                 
                 if best_assignment:
                     room_id, day, start_slot, slot_count, is_online = best_assignment
-                    if self._allocate_section(section, room_id, day, start_slot, slot_count, is_online):
+                    if self._allocate_section(section, room_id, day, start_slot, slot_count, is_online, actual_duration_minutes=session_actual_minutes):
                         slots_assigned += slot_count
                         if is_lab_session:
                             lab_days_used.append(day)
@@ -1708,6 +1933,9 @@ class EnhancedQuantumScheduler:
         - Lectures should still not be in lab rooms  
         - Strict lunch mode is still enforced
         - Room conflicts are never allowed
+        - Room equipment must be >= course requirements (HARD)
+        - Non-consecutive day rule respected (HARD)
+        - Max 2 subject sessions per week (HARD)
         """
         print(f"🔥 Running aggressive scheduling pass...")
         scheduled_in_pass = 0
@@ -1718,26 +1946,46 @@ class EnhancedQuantumScheduler:
                 continue
                 
             assigned = sum(c for _, _, _, c in self.section_assignments.get(section.id, []))
-            needed = section.required_slots
+            needed = self._get_required_slot_count(section)
             
             if assigned >= needed:
+                continue
+            
+            # Check max subject sessions per week before even trying
+            if self._check_max_subject_sessions_per_week(section):
                 continue
             
             remaining_slots = needed - assigned
             is_lab_class = section.requires_lab or section.lab_hours > 0
             
-            # Determine which rooms to try based on lab/lecture
+            # Use equipment-compatible rooms (pre-computed), filtered by lab/lecture type
+            compatible = self.compatible_rooms.get(section.id, [])
             if is_lab_class:
-                # Lab classes can ONLY be in lab rooms - no exceptions
-                rooms_to_try = [r for r in self.rooms.keys() if self._is_lab_room(r)]
+                rooms_to_try = [r for r in compatible if self._is_lab_room(r)]
+                if not rooms_to_try:
+                    # Fallback: any lab room (equipment may not match but lab-type is HARD)
+                    rooms_to_try = [r for r in self.rooms.keys() if self._is_lab_room(r)]
             else:
-                # Lecture classes prefer non-lab rooms, but can use lab rooms if needed
-                lecture_rooms = [r for r in self.rooms.keys() if not self._is_lab_room(r)]
-                rooms_to_try = lecture_rooms if lecture_rooms else list(self.rooms.keys())
+                rooms_to_try = [r for r in compatible if not self._is_lab_room(r)]
+                if not rooms_to_try:
+                    # Fallback to any compatible room (including lab rooms)
+                    rooms_to_try = compatible if compatible else [r for r in self.rooms.keys() if not self._is_lab_room(r)]
+            
+            # Calculate session info for proper duration tracking
+            sessions = self._calculate_sessions(section)
+            session_idx = 0
             
             # Try ANY available slot without soft constraints
             for day in self.active_days:
                 if remaining_slots <= 0:
+                    break
+                
+                # Non-consecutive day check (HARD)
+                if self._check_non_consecutive_day_violation(section, day):
+                    continue
+                
+                # Max sessions per week check (HARD)
+                if self._check_max_subject_sessions_per_week(section):
                     break
                 
                 # Lab classes cannot be on online days
@@ -1755,16 +2003,23 @@ class EnhancedQuantumScheduler:
                         if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, 2):
                             continue
                         
-                        # Schedule 1-2 slots at a time to fit more
-                        slots_to_assign = min(remaining_slots, 2)
+                        # Determine slot count and actual minutes from session plan
+                        if session_idx < len(sessions):
+                            slots_to_assign = sessions[session_idx][0]
+                            actual_mins = sessions[session_idx][2]
+                        else:
+                            slots_to_assign = min(remaining_slots, 2)
+                            actual_mins = slots_to_assign * self.slot_duration_minutes
+                        slots_to_assign = min(slots_to_assign, remaining_slots)
                         
                         # Check teacher conflict only
                         if section.teacher_id and self._check_teacher_conflict(
                             section.teacher_id, day, slot.id, slots_to_assign, section.id
                         ):
                             continue
-                        if self._allocate_section(section, None, day, slot.id, slots_to_assign, True):
+                        if self._allocate_section(section, None, day, slot.id, slots_to_assign, True, actual_duration_minutes=actual_mins):
                             remaining_slots -= slots_to_assign
+                            session_idx += 1
                             scheduled_in_pass += 1
                 else:
                     # For face-to-face days - try compatible rooms only
@@ -1779,8 +2034,14 @@ class EnhancedQuantumScheduler:
                             if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, 2):
                                 continue
                             
-                            # Try to fit at least 1 slot at a time
-                            slots_to_assign = min(remaining_slots, 2)
+                            # Determine slot count and actual minutes from session plan
+                            if session_idx < len(sessions):
+                                slots_to_assign = sessions[session_idx][0]
+                                actual_mins = sessions[session_idx][2]
+                            else:
+                                slots_to_assign = min(remaining_slots, 2)
+                                actual_mins = slots_to_assign * self.slot_duration_minutes
+                            slots_to_assign = min(slots_to_assign, remaining_slots)
                                 
                             if self._is_slot_range_available(room_id, day, slot.id, slots_to_assign):
                                 # Check teacher conflict
@@ -1789,8 +2050,9 @@ class EnhancedQuantumScheduler:
                                 ):
                                     continue
                                     
-                                if self._allocate_section(section, room_id, day, slot.id, slots_to_assign):
+                                if self._allocate_section(section, room_id, day, slot.id, slots_to_assign, actual_duration_minutes=actual_mins):
                                     remaining_slots -= slots_to_assign
+                                    session_idx += 1
                                     scheduled_in_pass += 1
         
         print(f"✅ Aggressive pass scheduled {scheduled_in_pass} session blocks")
@@ -1822,7 +2084,8 @@ class EnhancedQuantumScheduler:
                         'day': day,
                         'start_slot': start_slot,
                         'slot_count': slot_count,
-                        'is_online': self._is_online_day(day)
+                        'is_online': self._is_online_day(day),
+                        'actual_duration_minutes': self.assignment_durations.get(key, 0)
                     })
         
         if not assignments:
@@ -1862,6 +2125,8 @@ class EnhancedQuantumScheduler:
             # For labs, exclude online days
             if section.requires_lab:
                 other_days = [d for d in other_days if not self._is_online_day(d)]
+            # Exclude days that would violate non-consecutive day constraint
+            other_days = [d for d in other_days if not self._check_non_consecutive_day_violation(section, d)]
             if other_days:
                 new_day = random.choice(other_days)
                 new_is_online = self._is_online_day(new_day)
@@ -1913,26 +2178,32 @@ class EnhancedQuantumScheduler:
         if not section:
             return False  # Skip if section not found
         
+        # Preserve actual_duration_minutes from old assignment
+        old_actual_minutes = old.get('actual_duration_minutes', 0)
+        
         # Remove old assignment
         self._deallocate_section_assignment(
             old['section_id'], old['room_id'], old['day'], old['start_slot'], old['slot_count']
         )
         
-        # Apply new assignment
+        # Apply new assignment with preserved duration
         if move['type'] == 'change_room':
             return self._allocate_section(
-                section, move['new_room'], old['day'], old['start_slot'], old['slot_count']
+                section, move['new_room'], old['day'], old['start_slot'], old['slot_count'],
+                actual_duration_minutes=old_actual_minutes
             )
         elif move['type'] == 'change_day':
             new_is_online = move.get('new_is_online', self._is_online_day(move['new_day']))
             new_room = None if new_is_online else old['room_id']
             return self._allocate_section(
-                section, new_room, move['new_day'], old['start_slot'], old['slot_count'], new_is_online
+                section, new_room, move['new_day'], old['start_slot'], old['slot_count'], new_is_online,
+                actual_duration_minutes=old_actual_minutes
             )
         elif move['type'] == 'change_time':
             is_online = old.get('is_online', self._is_online_day(old['day']))
             return self._allocate_section(
-                section, old['room_id'], old['day'], move['new_slot'], old['slot_count'], is_online
+                section, old['room_id'], old['day'], move['new_slot'], old['slot_count'], is_online,
+                actual_duration_minutes=old_actual_minutes
             )
         
         return False
@@ -1944,6 +2215,18 @@ class EnhancedQuantumScheduler:
         if not section:
             return  # Skip if section not found
         is_old_online = old.get('is_online', self._is_online_day(old['day']))
+        old_actual_minutes = old.get('actual_duration_minutes', 0)
+        
+        # Get actual_minutes from the new assignment before removing it
+        if move['type'] == 'change_room':
+            new_key = (old['section_id'], move['new_room'], old['day'], old['start_slot'])
+        elif move['type'] == 'change_day':
+            new_room = None if move.get('new_is_online') else old['room_id']
+            new_key = (old['section_id'], new_room, move['new_day'], old['start_slot'])
+        elif move['type'] == 'change_time':
+            new_key = (old['section_id'], old['room_id'], old['day'], move['new_slot'])
+        else:
+            new_key = None
         
         # Remove the new assignment
         if move['type'] == 'change_room':
@@ -1961,9 +2244,10 @@ class EnhancedQuantumScheduler:
                 old['section_id'], old['room_id'], old['day'], move['new_slot'], old['slot_count']
             )
         
-        # Restore original
+        # Restore original with preserved duration
         self._allocate_section(
-            section, old['room_id'], old['day'], old['start_slot'], old['slot_count'], is_old_online
+            section, old['room_id'], old['day'], old['start_slot'], old['slot_count'], is_old_online,
+            actual_duration_minutes=old_actual_minutes
         )
     
     def _block_swap(self, department: str, day1: str, day2: str) -> bool:
@@ -1995,6 +2279,12 @@ class EnhancedQuantumScheduler:
         if not day1_assignments and not day2_assignments:
             return False
         
+        # Save actual_duration_minutes for each assignment before deallocating
+        assignment_durations_backup = {}
+        for section_id, room_id, day, start_slot, slot_count in day1_assignments + day2_assignments:
+            dur_key = (section_id, room_id, day, start_slot)
+            assignment_durations_backup[dur_key] = self.assignment_durations.get(dur_key, 0)
+        
         # Remove all assignments from both days
         for section_id, room_id, day, start_slot, slot_count in day1_assignments + day2_assignments:
             self._deallocate_section_assignment(section_id, room_id, day, start_slot, slot_count)
@@ -2007,7 +2297,9 @@ class EnhancedQuantumScheduler:
                 continue  # Skip if section not found
             is_online = self._is_online_day(day2)
             effective_room = None if is_online else room_id
-            if not self._allocate_section(section, effective_room, day2, start_slot, slot_count, is_online):
+            dur_key = (section_id, room_id, day, start_slot)
+            actual_mins = assignment_durations_backup.get(dur_key, 0)
+            if not self._allocate_section(section, effective_room, day2, start_slot, slot_count, is_online, actual_duration_minutes=actual_mins):
                 success = False
         
         for section_id, room_id, day, start_slot, slot_count in day2_assignments:
@@ -2016,7 +2308,9 @@ class EnhancedQuantumScheduler:
                 continue  # Skip if section not found
             is_online = self._is_online_day(day1)
             effective_room = None if is_online else room_id
-            if not self._allocate_section(section, effective_room, day1, start_slot, slot_count, is_online):
+            dur_key = (section_id, room_id, day, start_slot)
+            actual_mins = assignment_durations_backup.get(dur_key, 0)
+            if not self._allocate_section(section, effective_room, day1, start_slot, slot_count, is_online, actual_duration_minutes=actual_mins):
                 success = False
         
         if success:
@@ -2079,17 +2373,21 @@ class EnhancedQuantumScheduler:
                         return False  # Skip if section not found
                     online_day = random.choice(self.online_days)
                     
+                    # Preserve actual_duration_minutes
+                    dur_key = (section_id, room_id, day, start_slot)
+                    actual_mins = self.assignment_durations.get(dur_key, 0)
+                    
                     self._deallocate_section_assignment(section_id, room_id, day, start_slot, slot_count)
                     
                     # Try to schedule on online day
                     for slot in self.time_slots:
                         if not self._check_teacher_conflict(section.teacher_id, online_day, slot.id, slot_count, section_id):
-                            if self._allocate_section(section, None, online_day, slot.id, slot_count, True):
+                            if self._allocate_section(section, None, online_day, slot.id, slot_count, True, actual_duration_minutes=actual_mins):
                                 self.stats.quantum_tunnels += 1
                                 return True
                     
                     # Failed - restore
-                    self._allocate_section(section, room_id, day, start_slot, slot_count)
+                    self._allocate_section(section, room_id, day, start_slot, slot_count, actual_duration_minutes=actual_mins)
         
         else:
             # Standard relocate: reschedule a random section
@@ -2104,6 +2402,10 @@ class EnhancedQuantumScheduler:
                 section = self.sections.get(section_id)
                 if not section:
                     return False  # Skip if section not found
+                
+                # Preserve actual_duration_minutes
+                dur_key = (section_id, room_id, day, start_slot)
+                actual_mins = self.assignment_durations.get(dur_key, 0)
                 
                 self._deallocate_section_assignment(section_id, room_id, day, start_slot, slot_count)
                 
@@ -2144,12 +2446,12 @@ class EnhancedQuantumScheduler:
                     candidates.sort(key=lambda x: x[0])
                     _, new_room, new_day, new_slot_id, is_online = candidates[0]
                     
-                    if self._allocate_section(section, new_room, new_day, new_slot_id, slot_count, is_online):
+                    if self._allocate_section(section, new_room, new_day, new_slot_id, slot_count, is_online, actual_duration_minutes=actual_mins):
                         self.stats.quantum_tunnels += 1
                         return True
                 
                 # Failed - restore
-                self._allocate_section(section, room_id, day, start_slot, slot_count)
+                self._allocate_section(section, room_id, day, start_slot, slot_count, actual_duration_minutes=actual_mins)
         
         return False
     
@@ -2196,6 +2498,8 @@ class EnhancedQuantumScheduler:
         best_cost = current_cost
         best_schedule = dict(self.schedule)
         best_assignments = {k: list(v) for k, v in self.section_assignments.items()}
+        best_durations = dict(self.assignment_durations)
+        best_subject_days = {k: set(v) for k, v in self.subject_scheduled_days.items()}
         
         print(f"📊 Initial cost: {self.stats.initial_cost:.2f}")
         
@@ -2247,6 +2551,8 @@ class EnhancedQuantumScheduler:
                             best_cost = new_cost
                             best_schedule = dict(self.schedule)
                             best_assignments = {k: list(v) for k, v in self.section_assignments.items()}
+                            best_durations = dict(self.assignment_durations)
+                            best_subject_days = {k: set(v) for k, v in self.subject_scheduled_days.items()}
                             self.stats.improvements += 1
                             last_improvement = iteration
                     else:
@@ -2290,6 +2596,10 @@ class EnhancedQuantumScheduler:
         self.section_assignments = defaultdict(list)
         for k, v in best_assignments.items():
             self.section_assignments[k] = v
+        self.assignment_durations = best_durations
+        self.subject_scheduled_days = defaultdict(set)
+        for k, v in best_subject_days.items():
+            self.subject_scheduled_days[k] = v
         self.stats.final_cost = best_cost
         
         # Final aggressive pass to try to schedule any remaining sections
@@ -2307,7 +2617,7 @@ class EnhancedQuantumScheduler:
         
         for s in self.sections.values():
             assigned_slots = sum(c for _, _, _, c in self.section_assignments.get(s.id, []))
-            required = s.required_slots
+            required = self._get_required_slot_count(s)
             total_slots_scheduled += assigned_slots
             total_slots_needed += required
             
@@ -2385,6 +2695,18 @@ class EnhancedQuantumScheduler:
                 if not start_time_slot or not end_time_slot:
                     continue
                 
+                # Compute accurate end_time using actual session duration (not slot boundary)
+                duration_key = (section_id, room_id, day, start_slot)
+                actual_minutes = self.assignment_durations.get(duration_key, 0)
+                
+                if actual_minutes > 0:
+                    # Use exact duration for precise end time
+                    end_minutes = start_time_slot.start_minutes + actual_minutes
+                    end_time = minutes_to_time(end_minutes)
+                else:
+                    # Fallback: use slot boundary end time
+                    end_time = end_time_slot.end_time
+                
                 results.append({
                     'section_id': section_id,
                     'section_code': section.section_code,
@@ -2400,7 +2722,7 @@ class EnhancedQuantumScheduler:
                     'capacity': capacity,
                     'day_of_week': day,
                     'start_time': start_time_slot.start_time,
-                    'end_time': end_time_slot.end_time,
+                    'end_time': end_time,
                     'start_slot_id': start_slot,
                     'slot_count': slot_count,
                     'teacher_id': section.teacher_id,
@@ -2743,7 +3065,8 @@ def run_enhanced_scheduler(
         assigned = sum(
             c for _, _, _, c in scheduler.section_assignments.get(section.id, [])
         )
-        if assigned < section.required_slots:
+        needed = scheduler._get_required_slot_count(section)
+        if assigned < needed:
             # Determine reason
             compatible_rooms = scheduler.compatible_rooms.get(section.id, [])
             if not compatible_rooms:
@@ -2751,7 +3074,7 @@ def run_enhanced_scheduler(
             elif assigned == 0:
                 reason = "Could not find any available time slot"
             else:
-                reason = f"Partially scheduled ({assigned}/{section.required_slots} slots)"
+                reason = f"Partially scheduled ({assigned}/{needed} slots)"
             
             unscheduled.append({
                 'id': section.id,
@@ -2760,7 +3083,7 @@ def run_enhanced_scheduler(
                 'course_name': section.course_name,
                 'subject_code': section.subject_code,
                 'teacher_name': section.teacher_name,
-                'needed_slots': section.required_slots,
+                'needed_slots': needed,
                 'assigned_slots': assigned,
                 'reason': reason
             })

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import type { User, Session } from '@supabase/supabase-js'
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin123@ms.bulsu.edu.ph'
@@ -115,6 +116,9 @@ export function useAuth(options: UseAuthOptions = {}) {
           userEmail: session.user.email || null
         })
       } else {
+        // User is signed out — clear all browser caches to avoid stale data
+        clearBrowserCaches()
+
         setAuthState({
           user: null,
           session: null,
@@ -137,6 +141,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   }, [checkAuth, requireAuth, requireAdmin, requireFaculty, redirectTo, router])
 
   const signOut = async () => {
+    await clearBrowserCaches()
     await supabase.auth.signOut()
     router.push('/')
   }

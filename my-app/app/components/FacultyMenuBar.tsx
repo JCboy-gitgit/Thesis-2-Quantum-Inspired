@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { 
@@ -11,7 +12,8 @@ import {
   LogOut, 
   ChevronUp, 
   ChevronDown, 
-  X 
+  X,
+  Download 
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
@@ -109,6 +111,8 @@ export default function FacultyMenuBar({
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [userAvatar, setUserAvatar] = useState<string | null>(null)
   const [lastMetadata, setLastMetadata] = useState<number>(0)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstallable, setIsInstallable] = useState(false)
 
   // Faculty pages treat 'green' as 'light' mode (green is only for admin pages)
   const isLightMode = theme === 'light' || theme === 'green'
@@ -127,6 +131,35 @@ export default function FacultyMenuBar({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // PWA Install prompt listener
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+
+    // Check if already installed
+    const mediaQuery = window.matchMedia('(display-mode: standalone)')
+    if (mediaQuery.matches) {
+      setIsInstallable(false)
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setIsInstallable(false)
+    }
+    setDeferredPrompt(null)
+    setShowUserMenu(false)
+  }
 
   // Function to fetch user avatar
   const fetchUserAvatar = async () => {
@@ -192,8 +225,7 @@ export default function FacultyMenuBar({
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('faculty_session_token')
-      localStorage.removeItem('faculty_keep_signed_in')
+      await clearBrowserCaches()
       await supabase.auth.signOut()
       router.push('/')
     } catch (error) {
@@ -423,6 +455,22 @@ export default function FacultyMenuBar({
               <Settings size={16} />
               Settings
             </button>
+
+            {/* Install App Button (PWA) */}
+            {isInstallable && (
+              <button
+                className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left ${
+                  isLightMode
+                    ? `text-gray-700 hover:bg-current/10 hover:${colors.text}`
+                    : `text-white/90 hover:bg-current/10 hover:${colors.text}`
+                }`}
+                onClick={handleInstallClick}
+                type="button"
+              >
+                <Download size={16} />
+                Install App
+              </button>
+            )}
 
             <div className={`h-px my-1`} style={{ backgroundColor: `rgba(${colors.primaryRgb}, 0.2)` }} />
 

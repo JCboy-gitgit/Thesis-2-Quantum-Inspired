@@ -399,13 +399,11 @@
   color: #64748b;
 }
 
-/* Green theme - Canvas Controls (bottom toolbar) */
+/* Green theme - Canvas Controls (floating overlay) */
 [data-theme="green"] .canvasControls {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-  position: relative;
-  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="green"] .zoomControls span {
@@ -435,6 +433,232 @@
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   border-color: #34d399;
   color: #ffffff;
+}
+
+/* Green Theme - Mode Toggle & Mode Buttons */
+[data-theme="green"] .modeToggle {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="green"] .modeBtn {
+  background: #ffffff;
+  color: #475569;
+}
+
+[data-theme="green"] .modeBtn:hover {
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+}
+
+[data-theme="green"] .modeBtn.active {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Green Theme - Floor Plan List & Items */
+[data-theme="green"] .floorPlanList {
+  scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
+}
+
+[data-theme="green"] .floorPlanItem {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #334155;
+}
+
+[data-theme="green"] .floorPlanItem:hover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.03);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+}
+
+[data-theme="green"] .floorPlanItem.active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+[data-theme="green"] .floorPlanInfo {
+  color: #334155;
+}
+
+[data-theme="green"] .floorPlanName {
+  color: #1e293b;
+}
+
+[data-theme="green"] .floorPlanMeta {
+  color: #64748b;
+}
+
+[data-theme="green"] .defaultIcon,
+[data-theme="green"] .defaultStar {
+  color: #f59e0b;
+}
+
+/* Green Theme - Modal Elements */
+[data-theme="green"] .modalOverlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="green"] .modalHeader {
+  background: #ffffff;
+  border-bottom-color: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="green"] .modalHeader button {
+  background: rgba(16, 185, 129, 0.08);
+  color: #475569;
+}
+
+[data-theme="green"] .modalHeader button:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+[data-theme="green"] .modalBody {
+  background: #ffffff;
+  color: #334155;
+}
+
+[data-theme="green"] .modalFooter {
+  background: #f8fafc;
+  border-top-color: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="green"] .modalSelect {
+  background: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #1e293b;
+}
+
+[data-theme="green"] .modalSelect:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Green Theme - Modal Buttons */
+[data-theme="green"] .cancelBtn {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+[data-theme="green"] .cancelBtn:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+[data-theme="green"] .saveModalBtn {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+}
+
+[data-theme="green"] .saveModalBtn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Green Theme - Load Button & Clear Button */
+[data-theme="green"] .loadBtn {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #475569;
+}
+
+[data-theme="green"] .loadBtn:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+[data-theme="green"] .clearBtn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+[data-theme="green"] .clearBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Green Theme - Checkbox & Form Elements */
+[data-theme="green"] .checkboxGroup {
+  background: #f8fafc;
+  color: #334155;
+}
+
+[data-theme="green"] .checkboxGroup label {
+  color: #334155;
+}
+
+[data-theme="green"] .formGroup label {
+  color: #475569;
+}
+
+/* Green Theme - Empty State & Loading */
+[data-theme="green"] .emptyState {
+  color: #64748b;
+}
+
+[data-theme="green"] .loading {
+  color: #64748b;
+}
+
+/* Green Theme - Select Mode & Canvas Controls */
+[data-theme="green"] .selectModeBtn {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #475569;
+}
+
+[data-theme="green"] .selectModeBtn:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+[data-theme="green"] .selectModeBtn.active {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+  border-color: #34d399;
+}
+
+[data-theme="green"] .selectedCount {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Green Theme - Schedule Selector */
+[data-theme="green"] .overlayToggle {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #475569;
+}
+
+[data-theme="green"] .overlayToggle:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+[data-theme="green"] .overlayToggle.active {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Green Theme - Select Options */
+[data-theme="green"] .select option {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+/* Green Theme - Back Button */
+[data-theme="green"] .backBtn {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  color: #ffffff;
+}
+
+[data-theme="green"] .backBtn:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
 /* Dark Theme */
@@ -1149,13 +1373,19 @@
   padding: 16px 24px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
-  gap: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: 60px;
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .buildingSelector {
@@ -1194,6 +1424,8 @@
 .headerCenter {
   flex: 1;
   text-align: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .title {
@@ -1201,12 +1433,17 @@
   font-weight: 700;
   color: var(--content-text);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .clearBtn,
@@ -1287,18 +1524,24 @@
 
 /* ==================== Left Panel ==================== */
 .leftPanel {
-  width: 300px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
   background: var(--card-bg);
   border-right: 1px solid var(--card-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   overflow: hidden;
   position: relative;
+  flex-shrink: 0;
+  z-index: 5;
 }
 
 .leftPanel.collapsed {
   width: 0;
+  min-width: 0;
+  max-width: 0;
   padding: 0;
   border: none;
 }
@@ -1581,6 +1824,15 @@
   text-align: center;
 }
 
+/* ==================== Canvas Area (wrapper for scrollable canvas + floating controls) ==================== */
+.canvasArea {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  min-width: 0;
+}
+
 /* ==================== Canvas Container ==================== */
 .canvasContainer {
   flex: 1;
@@ -1590,7 +1842,7 @@
   background: var(--bg-gray-100);
   overflow: auto;
   position: relative;
-  padding: 40px;
+  padding: 20px;
 }
 
 .canvas {
@@ -1604,8 +1856,9 @@
   transform-origin: top left;
   transition: transform 0.2s ease;
   flex-shrink: 0;
-  /* Prevent canvas from shrinking with screen */
-  /* Fixed dimensions are set inline via style prop */
+  /* Fixed letter bond paper size (11 x 8.5 inch) landscape - zoom only via transform */
+  min-width: 1056px;
+  min-height: 816px;
 }
 
 /* ==================== Canvas Elements ==================== */
@@ -1887,38 +2140,44 @@
   border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
 }
 
-/* ==================== Canvas Controls ==================== */
+/* ==================== Canvas Controls (Floating Overlay) ==================== */
 .canvasControls {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
   background: var(--card-bg);
-  border-radius: 10px;
-  margin-top: 16px;
-  position: relative;
-  z-index: 100;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 200;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(12px);
+  max-width: 220px;
 }
 
 .zoomControls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  width: 100%;
 }
 
 .zoomControls button {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-white);
-  border: 2px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   border-radius: 6px;
   color: var(--content-text);
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .zoomControls button:hover {
@@ -1927,24 +2186,26 @@
 }
 
 .zoomControls span {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--content-text);
-  min-width: 80px;
+  min-width: 60px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .snapControl {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--content-text);
+  width: 100%;
 }
 
 .gridToggleBtn {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1986,25 +2247,32 @@
 }
 
 .elementCount {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--content-text);
+  opacity: 0.7;
 }
 
 /* ==================== Right Panel ==================== */
 .rightPanel {
-  width: 320px;
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
   background: var(--card-bg);
   border-left: 1px solid var(--card-border);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   overflow: hidden;
   position: relative;
+  flex-shrink: 0;
+  z-index: 5;
 }
 
 .rightPanel.collapsed {
   width: 0;
+  min-width: 0;
+  max-width: 0;
   padding: 0;
   border: none;
 }
@@ -3724,9 +3992,11 @@
   }
 
   .canvasControls {
-    flex-wrap: wrap;
-    padding: 8px 12px;
-    gap: 8px;
+    bottom: 10px;
+    right: 10px;
+    padding: 8px 10px;
+    gap: 6px;
+    max-width: 180px;
   }
 
   .zoomControls {
@@ -3734,11 +4004,12 @@
   }
 
   .zoomControls span {
-    font-size: 11px;
+    font-size: 10px;
+    min-width: 50px;
   }
 
   .snapControl span {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .clearBtn,
@@ -3958,19 +4229,21 @@
 .selectControl {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .selectModeBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-white);
   color: var(--content-text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;

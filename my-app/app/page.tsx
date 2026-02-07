@@ -5,6 +5,7 @@ import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import './styles/login.css'
 import { supabase } from '@/lib/supabaseClient'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import { fetchNoCache } from '@/lib/fetchUtils'
 
 type ActiveTab = 'login' | 'signup'
@@ -269,6 +270,7 @@ function PageContent(): JSX.Element {
         .single() as { data: { id: string; is_active: boolean; full_name: string } | null; error: any }
 
       if (!userData) {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         setLoginError('Account not found. Please register first.')
         setLoginLoading(false)
@@ -283,6 +285,7 @@ function PageContent(): JSX.Element {
         .single() as { data: { position: string } | null; error: any }
 
       if (profileData?.position === 'REJECTED') {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         setLoginError('Your registration was not approved. Please contact the administrator.')
         setLoginLoading(false)
@@ -290,6 +293,7 @@ function PageContent(): JSX.Element {
       }
 
       if (!userData.is_active) {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         setLoginError('Your account is pending admin approval. Please wait for confirmation.')
         setLoginLoading(false)

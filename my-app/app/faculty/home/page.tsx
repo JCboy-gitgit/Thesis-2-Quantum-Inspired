@@ -16,6 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import styles from './styles.module.css'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
@@ -228,9 +229,8 @@ export default function FacultyHomePage() {
             setSessionInvalid(true)
             // Wait a moment then redirect to login
             setTimeout(async () => {
+              await clearBrowserCaches()
               await supabase.auth.signOut()
-              localStorage.removeItem('faculty_session_token')
-              localStorage.removeItem('faculty_keep_signed_in')
               router.push('/?reason=session_expired')
             }, 3000)
           }
@@ -331,6 +331,7 @@ export default function FacultyHomePage() {
         .single() as { data: UserProfile | null; error: any }
 
       if (userError || !userData || !userData.is_active) {
+        await clearBrowserCaches()
         await supabase.auth.signOut()
         router.push('/')
         return
@@ -531,6 +532,7 @@ export default function FacultyHomePage() {
 
   const handleLogout = async () => {
     try {
+      await clearBrowserCaches()
       await supabase.auth.signOut()
       router.push('/')
     } catch (error) {
@@ -942,8 +944,7 @@ export default function FacultyHomePage() {
             <button
               className="w-full py-3 px-6 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-cyan-500/30 active:scale-[0.98]"
               onClick={async () => {
-                localStorage.removeItem('faculty_session_token')
-                localStorage.removeItem('faculty_keep_signed_in')
+                await clearBrowserCaches()
                 await supabase.auth.signOut()
                 router.push('/')
               }}

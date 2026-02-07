@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown, Archive } from 'lucide-react'
+import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown, Archive, Download } from 'lucide-react'
+import { clearBrowserCaches } from '@/lib/clearCache'
 import SettingsModal from './SettingsModal'
 import ArchiveModal from './ArchiveModal'
 import ProfileModal from './ProfileModal'
@@ -28,6 +29,8 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstallable, setIsInstallable] = useState(false)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
@@ -76,6 +79,35 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
     }
   }, [isAdmin])
 
+  // PWA Install prompt listener
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+
+    // Check if already installed
+    const mediaQuery = window.matchMedia('(display-mode: standalone)')
+    if (mediaQuery.matches) {
+      setIsInstallable(false)
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setIsInstallable(false)
+    }
+    setDeferredPrompt(null)
+    setShowAccountMenu(false)
+  }
+
   // Close account menu when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -102,6 +134,7 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   }
 
   const handleLogout = async () => {
+    await clearBrowserCaches()
     await supabase.auth.signOut()
     router.push('/')
   }
@@ -196,6 +229,15 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                     <SettingsIcon size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                     Settings
                   </div>
+                  {isInstallable && (
+                    <div
+                      className="account-menu-item"
+                      onClick={handleInstallClick}
+                    >
+                      <Download size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                      Install App
+                    </div>
+                  )}
                   <div className="account-menu-divider"></div>
                   <div
                     className="account-menu-item logout-item"
