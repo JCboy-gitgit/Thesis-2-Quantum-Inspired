@@ -656,6 +656,20 @@
   flex-shrink: 0;
 }
 
+.modalAvatarImg {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 3px solid var(--card-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .modalName {
   font-size: 1.5rem;
   font-weight: 700;
@@ -926,20 +940,38 @@
   }
 
   .modalHeader {
-    padding: 1rem;
+    padding: 1.5rem;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 1rem;
+  }
+  
+  .modalHeader > div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .modalAvatar {
-    width: 60px;
-    height: 60px;
-    font-size: 1.25rem;
+    width: 70px;
+    height: 70px;
+    font-size: 1.5rem;
+  }
+  
+  .modalAvatarImg {
+    width: 70px;
+    height: 70px;
+    min-width: 70px;
+    min-height: 70px;
+    max-width: 70px;
+    max-height: 70px;
   }
 
   .modalName {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    word-break: break-word;
   }
 
   .modalPosition {
@@ -951,12 +983,21 @@
   }
 
   .modalBody {
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .infoItem {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .infoItem strong {
+    min-width: fit-content;
+  }
+  
+  .infoItem span {
+    word-break: break-word;
   }
 
   .section h3 {

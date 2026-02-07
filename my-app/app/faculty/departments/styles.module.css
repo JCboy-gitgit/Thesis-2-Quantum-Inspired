@@ -666,23 +666,41 @@
   }
 
   .modalHeader {
-    padding: 1rem;
+    padding: 1.5rem;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 1rem;
+  }
+  
+  .modalHeader > div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .modalName {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    word-break: break-word;
   }
 
   .modalBody {
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .infoItem {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  
+  .infoItem strong {
+    min-width: fit-content;
+  }
+  
+  .infoItem span {
+    word-break: break-word;
   }
 
   .section h3 {

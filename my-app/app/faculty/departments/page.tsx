@@ -136,7 +136,7 @@ function DepartmentsViewContent() {
       })
 
       const { count: facultyCount } = await supabase
-        .from('faculty')
+        .from('faculty_profiles')
         .select('*', { count: 'exact', head: true })
       
       const { count: coursesCount } = await supabase

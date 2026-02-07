@@ -26,7 +26,7 @@ export default function FacultyCampusMapPage() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
   const [loading, setLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [mounted, setMounted] = useState(false)

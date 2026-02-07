@@ -25,7 +25,7 @@ export default function FacultyAlertsPage() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
   const [loading, setLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)

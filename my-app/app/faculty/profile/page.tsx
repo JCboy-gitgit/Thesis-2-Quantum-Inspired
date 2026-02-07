@@ -74,7 +74,7 @@ export default function FacultyProfilePage() {
   const [editing, setEditing] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [editForm, setEditForm] = useState<UserProfile | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
