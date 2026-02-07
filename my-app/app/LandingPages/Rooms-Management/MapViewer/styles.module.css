@@ -825,6 +825,149 @@
   color: #1e293b;
 }
 
+/* ==================== Comprehensive Theme Fixes for All Elements ==================== */
+
+/* Dark Theme - Complete text, icon, and element visibility fixes */
+[data-theme="dark"] .sizeInput span,
+[data-theme="dark"] .propertyRow span {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .propertyLabel,
+[data-theme="dark"] .propertyGroup label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .toolItem span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .toolItem svg {
+  color: #a0aec0;
+}
+
+[data-theme="dark"] .toolItem:hover svg {
+  color: #00d4ff;
+}
+
+[data-theme="dark"] .sectionTitle,
+[data-theme="dark"] .sectionHeader span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .canvasSizeControl label,
+[data-theme="dark"] .canvasSizeControl span {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .colorPicker input[type="color"] {
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+[data-theme="dark"] .rotationInput span {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+[data-theme="dark"] .elementLabel,
+[data-theme="dark"] .textLabel {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .canvasContainer {
+  background: #0d1117;
+}
+
+[data-theme="dark"] .noSelection p,
+[data-theme="dark"] .noSelection span {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Green Theme - Complete text, icon, and element visibility fixes */
+[data-theme="green"] .sizeInput span,
+[data-theme="green"] .propertyRow span {
+  color: #475569;
+}
+
+[data-theme="green"] .toolItem span {
+  color: #475569;
+}
+
+[data-theme="green"] .toolItem svg {
+  color: #64748b;
+}
+
+[data-theme="green"] .toolItem:hover svg {
+  color: #10b981;
+}
+
+[data-theme="green"] .rotationInput span {
+  color: #1e293b;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="green"] .colorPicker input[type="color"] {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="green"] .canvasSizeControl label,
+[data-theme="green"] .canvasSizeControl span {
+  color: #334155;
+}
+
+[data-theme="green"] .elementLabel {
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="green"] .noSelection p,
+[data-theme="green"] .noSelection span {
+  color: #64748b;
+}
+
+/* Light Theme - Complete text, icon, and element visibility fixes */
+[data-theme="light"] .sizeInput span,
+[data-theme="light"] .propertyRow span {
+  color: #64748b;
+}
+
+[data-theme="light"] .toolItem span {
+  color: #475569;
+}
+
+[data-theme="light"] .toolItem svg {
+  color: #64748b;
+}
+
+[data-theme="light"] .toolItem:hover svg {
+  color: #22c55e;
+}
+
+[data-theme="light"] .rotationInput span {
+  color: #1e293b;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+[data-theme="light"] .colorPicker input[type="color"] {
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .canvasSizeControl label,
+[data-theme="light"] .canvasSizeControl span {
+  color: #334155;
+}
+
+[data-theme="light"] .elementLabel {
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .noSelection p,
+[data-theme="light"] .noSelection span {
+  color: #64748b;
+}
+
 /* ==================== Layout ==================== */
 .layout {
   height: 100vh;
@@ -910,6 +1053,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1342,13 +1486,15 @@
 .roomName {
   font-size: 13px;
 
-@media (max-width: 768px) {
-  .roomItem,
-  .toolItem,
-  .iconItem {
-    touch-action: none;
+  @media (max-width: 768px) {
+
+    .roomItem,
+    .toolItem,
+    .iconItem {
+      touch-action: none;
+    }
   }
-}
+
   font-weight: 600;
   color: var(--content-text);
   white-space: nowrap;
@@ -1439,11 +1585,12 @@
 .canvasContainer {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   background: var(--bg-gray-100);
   overflow: auto;
   position: relative;
-  padding: 20px;
+  padding: 40px;
 }
 
 .canvas {
@@ -1453,11 +1600,12 @@
     linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   transform-origin: top left;
   transition: transform 0.2s ease;
-  min-width: 100%;
-  min-height: 100%;
+  flex-shrink: 0;
+  /* Prevent canvas from shrinking with screen */
+  /* Fixed dimensions are set inline via style prop */
 }
 
 /* ==================== Canvas Elements ==================== */
@@ -1543,7 +1691,10 @@
 }
 
 /* Corner handles */
-.resizeNE, .resizeNW, .resizeSE, .resizeSW {
+.resizeNE,
+.resizeNW,
+.resizeSE,
+.resizeSW {
   width: 12px;
   height: 12px;
   border-radius: 3px;
@@ -1574,7 +1725,8 @@
 }
 
 /* Edge handles */
-.resizeN, .resizeS {
+.resizeN,
+.resizeS {
   width: 30px;
   height: 8px;
   left: 50%;
@@ -1592,7 +1744,8 @@
   cursor: s-resize;
 }
 
-.resizeE, .resizeW {
+.resizeE,
+.resizeW {
   width: 8px;
   height: 30px;
   top: 50%;
@@ -2722,8 +2875,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* ==================== Availability Status ==================== */
@@ -2735,7 +2895,7 @@
   height: 12px;
   border-radius: 50%;
   border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .availabilityDot.available {
@@ -2749,13 +2909,27 @@
 }
 
 @keyframes glow-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-  50% { box-shadow: 0 0 10px 4px rgba(34, 197, 94, 0.2); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 10px 4px rgba(34, 197, 94, 0.2);
+  }
 }
 
 @keyframes glow-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.2); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.2);
+  }
 }
 
 /* Live mode room styling */
@@ -2818,7 +2992,7 @@
   bottom: 4px;
   left: 4px;
   right: 4px;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   border-radius: 4px;
   padding: 4px 6px;
   display: flex;
@@ -2834,7 +3008,7 @@
 
 .classSection {
   font-size: 9px;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* ==================== Live Room Status ==================== */
@@ -2941,7 +3115,7 @@
   position: absolute;
   top: 4px;
   left: 4px;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ==================== Edit Room Link ==================== */
@@ -3355,29 +3529,29 @@
     margin-left: 0;
     width: 100%;
   }
-  
+
   .header {
     padding: 12px 16px;
     flex-wrap: wrap;
     gap: 12px;
   }
-  
+
   .headerLeft,
   .headerRight {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .headerCenter {
     order: -1;
     width: 100%;
     text-align: left;
   }
-  
+
   .title {
     font-size: 16px;
   }
-  
+
   .leftPanel,
   .rightPanel {
     width: 260px;
@@ -3389,26 +3563,26 @@
   .header {
     padding: 10px 12px;
   }
-  
+
   .buildingSelector {
     flex-wrap: wrap;
     gap: 8px;
   }
-  
+
   .select {
     padding: 6px 12px;
     font-size: 13px;
   }
-  
+
   .modeToggle {
     flex-wrap: wrap;
   }
-  
+
   .modeBtn {
     padding: 8px 12px;
     font-size: 12px;
   }
-  
+
   .leftPanel,
   .rightPanel {
     position: fixed;
@@ -3417,33 +3591,33 @@
     top: 70px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   }
-  
+
   .leftPanel {
     left: 0;
     width: 280px;
   }
-  
+
   .rightPanel {
     right: 0;
     width: 300px;
   }
-  
+
   .leftPanel.collapsed {
     left: -280px;
   }
-  
+
   .rightPanel.collapsed {
     right: -300px;
   }
-  
+
   .workspaceWrapper {
     flex-direction: column;
   }
-  
+
   .canvasContainer {
     height: calc(100vh - 200px);
   }
-  
+
   .headerRight .saveBtn,
   .headerRight .exportBtn,
   .headerRight .shareBtn {
@@ -3461,55 +3635,55 @@
     max-height: calc(100vh - 60px);
     width: 100%;
   }
-  
+
   .header {
     padding: 8px 10px;
     gap: 8px;
   }
-  
+
   .headerLeft {
     width: 100%;
     overflow-x: auto;
     padding-bottom: 4px;
   }
-  
+
   .headerCenter {
     display: none;
   }
-  
+
   .headerRight {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .buildingSelector {
     font-size: 12px;
   }
-  
+
   .select {
     padding: 6px 8px;
     font-size: 12px;
     min-width: auto;
   }
-  
+
   .divider {
     display: none;
   }
-  
+
   .modeToggle {
     gap: 4px;
   }
-  
+
   .modeBtn {
     padding: 6px 10px;
     font-size: 11px;
   }
-  
+
   .modeBtn svg {
     width: 14px;
     height: 14px;
   }
-  
+
   .leftPanel,
   .rightPanel {
     width: 100%;
@@ -3519,14 +3693,14 @@
     bottom: 0;
     border-radius: 16px 16px 0 0;
   }
-  
+
   .leftPanel.collapsed,
   .rightPanel.collapsed {
     bottom: -50vh;
     left: 0;
     right: 0;
   }
-  
+
   .panelToggle {
     top: -40px;
     right: 50%;
@@ -3535,7 +3709,7 @@
     width: 60px;
     height: 32px;
   }
-  
+
   .panelToggleRight {
     top: -40px;
     left: 50%;
@@ -3544,29 +3718,29 @@
     width: 60px;
     height: 32px;
   }
-  
+
   .canvasContainer {
     padding: 10px;
   }
-  
+
   .canvasControls {
     flex-wrap: wrap;
     padding: 8px 12px;
     gap: 8px;
   }
-  
+
   .zoomControls {
     flex-wrap: nowrap;
   }
-  
+
   .zoomControls span {
     font-size: 11px;
   }
-  
+
   .snapControl span {
     font-size: 11px;
   }
-  
+
   .clearBtn,
   .saveBtn,
   .exportBtn,
@@ -3574,7 +3748,7 @@
     padding: 8px;
     font-size: 0;
   }
-  
+
   .clearBtn svg,
   .saveBtn svg,
   .exportBtn svg,
@@ -3582,61 +3756,66 @@
     width: 16px;
     height: 16px;
   }
-  
+
   /* Larger touch targets for mobile */
   .resizeHandle {
     width: 16px;
     height: 16px;
   }
-  
-  .resizeNE, .resizeNW, .resizeSE, .resizeSW {
+
+  .resizeNE,
+  .resizeNW,
+  .resizeSE,
+  .resizeSW {
     width: 18px;
     height: 18px;
   }
-  
-  .resizeN, .resizeS {
+
+  .resizeN,
+  .resizeS {
     width: 40px;
     height: 12px;
   }
-  
-  .resizeE, .resizeW {
+
+  .resizeE,
+  .resizeW {
     width: 12px;
     height: 40px;
   }
-  
+
   /* Room items */
   .roomItem {
     padding: 10px;
     touch-action: none;
   }
-  
+
   .toolItem {
     padding: 12px 8px;
     touch-action: none;
   }
-  
+
   /* Properties panel */
   .propertyGroup label {
     font-size: 11px;
   }
-  
+
   .propertyInput,
   .propertySelect {
     padding: 8px 10px;
     font-size: 13px;
   }
-  
+
   /* Modal adjustments */
   .modal {
     padding: 10px;
   }
-  
+
   .modalContent {
     width: 95%;
     max-height: 90vh;
     padding: 16px;
   }
-  
+
   .modalContent h2 {
     font-size: 18px;
   }
@@ -3648,86 +3827,91 @@
     padding: 6px 8px;
     gap: 6px;
   }
-  
+
   .modeToggle {
     width: 100%;
     justify-content: center;
   }
-  
+
   .modeBtn {
     flex: 1;
     justify-content: center;
   }
-  
+
   .select {
     padding: 5px 6px;
     font-size: 11px;
     max-width: 100px;
   }
-  
+
   .leftPanel,
   .rightPanel {
     height: 60vh;
   }
-  
+
   .leftPanel.collapsed,
   .rightPanel.collapsed {
     bottom: -60vh;
   }
-  
+
   .toolboxContent {
     padding: 6px;
   }
-  
+
   .sectionHeader {
     padding: 10px 12px;
     font-size: 13px;
   }
-  
+
   .toolGrid {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
-  
+
   .toolItem {
     padding: 10px 6px;
   }
-  
+
   .toolItem svg {
     width: 20px;
     height: 20px;
   }
-  
+
   .toolItem span {
     font-size: 10px;
   }
-  
+
   /* Canvas element minimum sizes for touch */
   .canvasElement {
     min-width: 60px;
     min-height: 40px;
   }
-  
+
   .elementLabel {
     font-size: 10px;
   }
-  
+
   .elementCapacity {
     font-size: 9px;
   }
-  
+
   /* Larger touch targets */
-  .resizeNE, .resizeNW, .resizeSE, .resizeSW {
+  .resizeNE,
+  .resizeNW,
+  .resizeSE,
+  .resizeSW {
     width: 22px;
     height: 22px;
   }
-  
-  .resizeN, .resizeS {
+
+  .resizeN,
+  .resizeS {
     width: 50px;
     height: 16px;
   }
-  
-  .resizeE, .resizeW {
+
+  .resizeE,
+  .resizeW {
     width: 16px;
     height: 50px;
   }
@@ -3738,18 +3922,18 @@
   .canvasElement {
     touch-action: none;
   }
-  
+
   .resizeHandle {
     background: #2563eb;
   }
-  
+
   .roomItem,
   .toolItem {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
   }
-  
+
   .orientationBtn {
     opacity: 1;
     width: 28px;
@@ -3877,30 +4061,31 @@
 
 /* Hide desktop panel toggles on mobile, show FAB instead */
 @media (max-width: 768px) {
+
   .panelToggle,
   .panelToggleRight {
     display: none;
   }
-  
+
   .leftPanel,
   .rightPanel {
     z-index: 110;
     transition: transform 0.3s ease;
   }
-  
+
   .leftPanel.collapsed,
   .rightPanel.collapsed {
     transform: translateY(100%);
   }
-  
+
   .selectControl span {
     display: none;
   }
-  
+
   .selectModeBtn span {
     display: none;
   }
-  
+
   .selectedCount {
     display: none;
   }

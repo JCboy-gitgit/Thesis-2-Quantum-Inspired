@@ -193,7 +193,7 @@ export default function MapViewerPage() {
   // Panel state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
-  
+
   // Resizing state
   const [resizingElement, setResizingElement] = useState<string | null>(null)
   const [resizeHandle, setResizeHandle] = useState<string | null>(null)
@@ -240,7 +240,7 @@ export default function MapViewerPage() {
   const [snapToGrid, setSnapToGrid] = useState(true)
   const [showGrid, setShowGrid] = useState(true)
   const [gridSize, setGridSize] = useState(20)
-  const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 })
+  const [canvasSize, setCanvasSize] = useState({ width: 1056, height: 816 }) // Short Bond Paper (8.5x11") landscape at ~1.3x scale
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [canvasBackground, setCanvasBackground] = useState('#ffffff')
 
@@ -482,7 +482,7 @@ export default function MapViewerPage() {
   // Auth check - sequential initialization
   useEffect(() => {
     let isMounted = true
-    
+
     const initPage = async () => {
       const authorized = await checkAuth()
       if (isMounted && authorized) {
@@ -493,9 +493,9 @@ export default function MapViewerPage() {
         setAuthChecked(true)
       }
     }
-    
+
     initPage()
-    
+
     return () => {
       isMounted = false
     }
@@ -538,7 +538,7 @@ export default function MapViewerPage() {
         .map((d: { building: string }) => d.building)
         .filter(Boolean)
       )] as string[]
-      
+
       console.log('Fetched buildings:', uniqueBuildings)
       setBuildings(uniqueBuildings)
 
@@ -646,9 +646,9 @@ export default function MapViewerPage() {
           .map((r: { floor_number: number }) => r.floor_number)
           .filter(f => f != null && f > 0)
       )] as number[]
-      
+
       setFloors(roomFloors.sort((a, b) => a - b))
-      
+
       // If no floor selected and we have floors, select the first one
       if (!selectedFloor && roomFloors.length > 0) {
         setSelectedFloor(roomFloors[0])
@@ -679,8 +679,8 @@ export default function MapViewerPage() {
       setSavedFloorPlans(floorPlanData)
 
       // Find matching floor plan for current building/floor
-      const match = floorPlanData.find(fp => 
-        fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase()) && 
+      const match = floorPlanData.find(fp =>
+        fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase()) &&
         fp.floor_number === selectedFloor
       )
       if (match) {
@@ -729,7 +729,7 @@ export default function MapViewerPage() {
     // Check if room has any allocation at current time
     const isOccupied = roomAllocations.some(alloc => {
       if (alloc.room !== roomName) return false
-      
+
       const allocDay = alloc.schedule_day?.toLowerCase()
       if (!allocDay?.includes(currentDay)) return false
 
@@ -772,7 +772,7 @@ export default function MapViewerPage() {
 
     return roomAllocations.find(alloc => {
       if (alloc.room !== roomName) return false
-      
+
       const allocDay = alloc.schedule_day?.toLowerCase()
       if (!allocDay?.includes(currentDay)) return false
 
@@ -906,17 +906,17 @@ export default function MapViewerPage() {
     e.stopPropagation()
     if (viewMode !== 'editor' || element.isLocked) return
     setDraggingElement(element.id)
-    
+
     // Get the canvas rect and calculate the click position relative to the element
     // Use the canvas ref to get accurate position regardless of which child element was clicked
     if (!canvasRef.current) return
     const canvasRect = canvasRef.current.getBoundingClientRect()
     const scale = zoom / 100
-    
+
     // Calculate click position in canvas coordinates
     const clickX = (e.clientX - canvasRect.left) / scale
     const clickY = (e.clientY - canvasRect.top) / scale
-    
+
     // Calculate offset from element's top-left corner
     setDragOffset({
       x: clickX - element.x,
@@ -929,7 +929,7 @@ export default function MapViewerPage() {
 
     const rect = canvasRef.current.getBoundingClientRect()
     const scale = zoom / 100
-    
+
     // Calculate new position: mouse position in canvas coords minus offset
     let x = (e.clientX - rect.left) / scale - dragOffset.x
     let y = (e.clientY - rect.top) / scale - dragOffset.y
@@ -951,10 +951,10 @@ export default function MapViewerPage() {
     e.stopPropagation()
     e.preventDefault()
     if (viewMode !== 'editor') return
-    
+
     const element = canvasElements.find(el => el.id === elementId)
     if (!element || element.isLocked) return
-    
+
     setResizingElement(elementId)
     setResizeHandle(handle)
     setResizeStart({
@@ -1018,16 +1018,16 @@ export default function MapViewerPage() {
     e.preventDefault()
     const touch = e.touches[0]
     setDraggingElement(element.id)
-    
+
     // Use canvas ref to get accurate position
     if (!canvasRef.current) return
     const canvasRect = canvasRef.current.getBoundingClientRect()
     const scale = zoom / 100
-    
+
     // Calculate touch position in canvas coordinates
     const touchX = (touch.clientX - canvasRect.left) / scale
     const touchY = (touch.clientY - canvasRect.top) / scale
-    
+
     // Calculate offset from element's top-left corner
     setDragOffset({
       x: touchX - element.x,
@@ -1038,7 +1038,7 @@ export default function MapViewerPage() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!draggingElement && !resizingElement) return
     if (!canvasRef.current || viewMode !== 'editor') return
-    
+
     const touch = e.touches[0]
     const rect = canvasRef.current.getBoundingClientRect()
     const scale = zoom / 100
@@ -1099,10 +1099,10 @@ export default function MapViewerPage() {
     e.stopPropagation()
     e.preventDefault()
     if (viewMode !== 'editor') return
-    
+
     const element = canvasElements.find(el => el.id === elementId)
     if (!element || element.isLocked) return
-    
+
     const touch = e.touches[0]
     setResizingElement(elementId)
     setResizeHandle(handle)
@@ -1120,14 +1120,14 @@ export default function MapViewerPage() {
   const handleMarqueeStart = (e: React.MouseEvent) => {
     if (viewMode !== 'editor' || selectMode !== 'multi') return
     if ((e.target as HTMLElement).closest(`.${styles.canvasElement}`)) return // Don't start if clicking on an element
-    
+
     const rect = canvasRef.current?.getBoundingClientRect()
     if (!rect) return
-    
+
     const scale = zoom / 100
     const x = (e.clientX - rect.left) / scale
     const y = (e.clientY - rect.top) / scale
-    
+
     setIsMarqueeSelecting(true)
     setMarqueeStart({ x, y })
     setMarqueeEnd({ x, y })
@@ -1135,12 +1135,12 @@ export default function MapViewerPage() {
 
   const handleMarqueeMove = (e: React.MouseEvent) => {
     if (!isMarqueeSelecting || !canvasRef.current) return
-    
+
     const rect = canvasRef.current.getBoundingClientRect()
     const scale = zoom / 100
     const x = (e.clientX - rect.left) / scale
     const y = (e.clientY - rect.top) / scale
-    
+
     setMarqueeEnd({ x, y })
   }
 
@@ -1160,7 +1160,7 @@ export default function MapViewerPage() {
     const selected = canvasElements.filter(el => {
       const elRight = el.x + el.width
       const elBottom = el.y + el.height
-      
+
       // Check if element intersects with selection box
       return el.x < right && elRight > left && el.y < bottom && elBottom > top
     }).map(el => el.id)
@@ -1443,13 +1443,13 @@ export default function MapViewerPage() {
       // Green rounded rectangle for Q
       pdf.setFillColor(22, 163, 74)
       pdf.roundedRect(logoX, logoY, logoSize, logoSize, 2, 2, 'F')
-      
+
       // "Q" letter in white
       pdf.setTextColor(255, 255, 255)
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'bold')
       pdf.text('Q', logoX + 3.5, logoY + 7)
-      
+
       // "Qtime Scheduler" text
       pdf.setTextColor(0, 0, 0)
       pdf.setFontSize(12)
@@ -1547,16 +1547,16 @@ export default function MapViewerPage() {
       const legendItems = getLegendItems()
       let legendX = margin
       let currentLegendY = legendY + 6
-      
+
       legendItems.forEach((item, idx) => {
         const rgb = hexToRgb(item.bg)
         pdf.setFillColor(rgb.r, rgb.g, rgb.b)
         pdf.rect(legendX, currentLegendY, 8, 5, 'F')
-        
+
         pdf.setFontSize(8)
         pdf.setFont('helvetica', 'normal')
         pdf.text(item.label, legendX + 10, currentLegendY + 4)
-        
+
         legendX += 50
         if (legendX > pageWidth - margin - 50) {
           legendX = margin
@@ -1570,12 +1570,12 @@ export default function MapViewerPage() {
         pdf.setFontSize(9)
         pdf.setFont('helvetica', 'bold')
         pdf.text('Room Status:', margin, currentLegendY)
-        
+
         pdf.setFillColor(34, 197, 94)
         pdf.circle(margin + 40, currentLegendY - 1.5, 3, 'F')
         pdf.setFont('helvetica', 'normal')
         pdf.text('Available', margin + 45, currentLegendY)
-        
+
         pdf.setFillColor(239, 68, 68)
         pdf.circle(margin + 80, currentLegendY - 1.5, 3, 'F')
         pdf.text('Occupied', margin + 85, currentLegendY)
@@ -1690,7 +1690,7 @@ export default function MapViewerPage() {
           </div>
         </div>
       )}
-      
+
       <MenuBar onToggleSidebar={toggleSidebar} showSidebarToggle={true} onMenuBarToggle={handleMenuBarToggle} />
       <Sidebar isOpen={sidebarOpen} />
 
@@ -1807,7 +1807,7 @@ export default function MapViewerPage() {
                 )}
               </div>
             )}
-            
+
             {viewMode === 'editor' && (
               <button className={styles.clearBtn} onClick={clearCanvas} title="Clear Canvas">
                 <RotateCcw size={18} />
@@ -2107,7 +2107,7 @@ export default function MapViewerPage() {
                 height: canvasSize.height,
                 transform: `scale(${zoom / 100})`,
                 backgroundColor: canvasBackground,
-                backgroundImage: showGrid && viewMode === 'editor' 
+                backgroundImage: showGrid && viewMode === 'editor'
                   ? `linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px)`
                   : 'none',
                 backgroundSize: showGrid && viewMode === 'editor' ? `${gridSize}px ${gridSize}px` : 'none'
@@ -2147,112 +2147,112 @@ export default function MapViewerPage() {
               {canvasElements
                 .filter(element => isLayerVisible(element.id))
                 .map(element => {
-                const isSelected = selectedElement?.id === element.id
-                const isMultiSelected = selectedElements.includes(element.id)
-                const isDraggingEl = draggingElement === element.id
-                const isResizing = resizingElement === element.id
-                const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
-                const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
+                  const isSelected = selectedElement?.id === element.id
+                  const isMultiSelected = selectedElements.includes(element.id)
+                  const isDraggingEl = draggingElement === element.id
+                  const isResizing = resizingElement === element.id
+                  const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
+                  const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
 
-                return (
-                  <div
-                    key={element.id}
-                    className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected || isMultiSelected ? styles.selected : ''} ${isDraggingEl ? styles.dragging : ''} ${isResizing ? styles.resizing : ''} ${element.isLocked ? styles.locked : ''} ${viewMode === 'live' && showScheduleOverlay ? styles[availability] : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
-                    style={{
-                      left: element.x,
-                      top: element.y,
-                      width: element.width,
-                      height: element.height,
-                      backgroundColor: element.color,
-                      borderColor: element.borderColor,
-                      borderWidth: element.borderWidth ?? 2,
-                      opacity: (element.opacity ?? 100) / 100,
-                      transform: `rotate(${element.rotation}deg)`,
-                      zIndex: element.zIndex
-                    }}
-                    onClick={(e) => handleElementClick(element, e)}
-                    onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
-                    onTouchStart={(e) => viewMode === 'editor' && !element.isLocked && handleTouchStart(e, element)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    {element.type === 'room' && (
-                      <>
-                        <span className={styles.elementLabel}>{element.label}</span>
-                        {element.linkedRoomData && (
-                          <span className={styles.elementCapacity}>
-                            <Users size={10} /> {element.linkedRoomData.capacity}
-                          </span>
-                        )}
-                        {showScheduleOverlay && availability !== 'unknown' && (
-                          <div className={`${styles.availabilityDot} ${styles[availability]}`} />
-                        )}
-                        {currentClass && viewMode === 'live' && (
-                          <div className={styles.currentClassInfo}>
-                            <span className={styles.classCode}>{currentClass.course_code}</span>
-                            <span className={styles.classSection}>{currentClass.section}</span>
-                          </div>
-                        )}
-                        {element.isLocked && <Lock size={12} className={styles.lockIcon} />}
-                      </>
-                    )}
-                    {element.type === 'text' && (
-                      <span className={styles.textLabel} style={{ fontSize: element.fontSize }}>{element.label}</span>
-                    )}
-                    {element.type === 'hallway' && (
-                      <>
-                        <span className={styles.hallwayLabel}>{element.label}</span>
-                        {viewMode === 'editor' && (
-                          <button 
-                            className={styles.orientationBtn}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleHallwayOrientation(element.id)
-                            }}
-                            title={`Switch to ${element.orientation === 'vertical' ? 'horizontal' : 'vertical'}`}
-                          >
-                            <RotateCcw size={12} />
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {element.type === 'stair' && (
-                      <>
-                        <Footprints size={20} />
-                        <span>{element.label}</span>
-                      </>
-                    )}
-                    {element.type === 'door' && (
-                      <DoorOpen size={16} />
-                    )}
-                    {element.type === 'icon' && (
-                      <div className={styles.iconElement}>
-                        {getIconComponent(element.iconType || 'info', 28)}
-                        {element.label && <span>{element.label}</span>}
-                      </div>
-                    )}
-                    {element.type === 'shape' && (
-                      <div className={styles.shapeElement}>
-                        {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7)}
-                      </div>
-                    )}
+                  return (
+                    <div
+                      key={element.id}
+                      className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected || isMultiSelected ? styles.selected : ''} ${isDraggingEl ? styles.dragging : ''} ${isResizing ? styles.resizing : ''} ${element.isLocked ? styles.locked : ''} ${viewMode === 'live' && showScheduleOverlay ? styles[availability] : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
+                      style={{
+                        left: element.x,
+                        top: element.y,
+                        width: element.width,
+                        height: element.height,
+                        backgroundColor: element.color,
+                        borderColor: element.borderColor,
+                        borderWidth: element.borderWidth ?? 2,
+                        opacity: (element.opacity ?? 100) / 100,
+                        transform: `rotate(${element.rotation}deg)`,
+                        zIndex: element.zIndex
+                      }}
+                      onClick={(e) => handleElementClick(element, e)}
+                      onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
+                      onTouchStart={(e) => viewMode === 'editor' && !element.isLocked && handleTouchStart(e, element)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      {element.type === 'room' && (
+                        <>
+                          <span className={styles.elementLabel}>{element.label}</span>
+                          {element.linkedRoomData && (
+                            <span className={styles.elementCapacity}>
+                              <Users size={10} /> {element.linkedRoomData.capacity}
+                            </span>
+                          )}
+                          {showScheduleOverlay && availability !== 'unknown' && (
+                            <div className={`${styles.availabilityDot} ${styles[availability]}`} />
+                          )}
+                          {currentClass && viewMode === 'live' && (
+                            <div className={styles.currentClassInfo}>
+                              <span className={styles.classCode}>{currentClass.course_code}</span>
+                              <span className={styles.classSection}>{currentClass.section}</span>
+                            </div>
+                          )}
+                          {element.isLocked && <Lock size={12} className={styles.lockIcon} />}
+                        </>
+                      )}
+                      {element.type === 'text' && (
+                        <span className={styles.textLabel} style={{ fontSize: element.fontSize }}>{element.label}</span>
+                      )}
+                      {element.type === 'hallway' && (
+                        <>
+                          <span className={styles.hallwayLabel}>{element.label}</span>
+                          {viewMode === 'editor' && (
+                            <button
+                              className={styles.orientationBtn}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleHallwayOrientation(element.id)
+                              }}
+                              title={`Switch to ${element.orientation === 'vertical' ? 'horizontal' : 'vertical'}`}
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {element.type === 'stair' && (
+                        <>
+                          <Footprints size={20} />
+                          <span>{element.label}</span>
+                        </>
+                      )}
+                      {element.type === 'door' && (
+                        <DoorOpen size={16} />
+                      )}
+                      {element.type === 'icon' && (
+                        <div className={styles.iconElement}>
+                          {getIconComponent(element.iconType || 'info', 28)}
+                          {element.label && <span>{element.label}</span>}
+                        </div>
+                      )}
+                      {element.type === 'shape' && (
+                        <div className={styles.shapeElement}>
+                          {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7)}
+                        </div>
+                      )}
 
-                    {/* Resize handles - only show when selected and in editor mode */}
-                    {isSelected && viewMode === 'editor' && !element.isLocked && (
-                      <>
-                        <div className={`${styles.resizeHandle} ${styles.resizeN}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'n')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'n')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeS}`} onMouseDown={(e) => handleResizeStart(e, element.id, 's')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 's')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'e')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'e')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'w')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'w')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeNE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'ne')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeNW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'nw')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeSE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'se')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'se')} />
-                        <div className={`${styles.resizeHandle} ${styles.resizeSW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'sw')} />
-                      </>
-                    )}
-                  </div>
-                )
-              })}
+                      {/* Resize handles - only show when selected and in editor mode */}
+                      {isSelected && viewMode === 'editor' && !element.isLocked && (
+                        <>
+                          <div className={`${styles.resizeHandle} ${styles.resizeN}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'n')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'n')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeS}`} onMouseDown={(e) => handleResizeStart(e, element.id, 's')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 's')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'e')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'e')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'w')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'w')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeNE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'ne')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeNW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'nw')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeSE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'se')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'se')} />
+                          <div className={`${styles.resizeHandle} ${styles.resizeSW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'sw')} />
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
 
               {/* Drag ghost */}
               {dragGhost && dragItem && viewMode === 'editor' && (
@@ -2403,341 +2403,341 @@ export default function MapViewerPage() {
                     </div>
 
                     <div className={styles.propertiesContent}>
-                  {selectedElement ? (
-                    <>
-                      {viewMode === 'editor' && (
+                      {selectedElement ? (
                         <>
-                          <div className={styles.propertyGroup}>
-                            <label>Label Name</label>
-                            <input
-                              type="text"
-                              value={editForm.label}
-                              onChange={(e) => setEditForm(p => ({ ...p, label: e.target.value }))}
-                              className={styles.propertyInput}
-                            />
-                          </div>
-
-                          <div className={styles.propertyGroup}>
-                            <label>Type</label>
-                            <div className={styles.typeDisplay}>
-                              {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)}
-                            </div>
-                          </div>
-
-                          <div className={styles.propertyRow}>
-                            <div className={styles.propertyGroup}>
-                              <label>Width</label>
-                              <div className={styles.sizeInput}>
+                          {viewMode === 'editor' && (
+                            <>
+                              <div className={styles.propertyGroup}>
+                                <label>Label Name</label>
                                 <input
-                                  type="number"
-                                  value={editForm.width}
-                                  onChange={(e) => setEditForm(p => ({ ...p, width: Number(e.target.value) }))}
+                                  type="text"
+                                  value={editForm.label}
+                                  onChange={(e) => setEditForm(p => ({ ...p, label: e.target.value }))}
                                   className={styles.propertyInput}
                                 />
-                                <span>px</span>
                               </div>
-                            </div>
-                            <div className={styles.propertyGroup}>
-                              <label>Height</label>
-                              <div className={styles.sizeInput}>
-                                <input
-                                  type="number"
-                                  value={editForm.height}
-                                  onChange={(e) => setEditForm(p => ({ ...p, height: Number(e.target.value) }))}
-                                  className={styles.propertyInput}
-                                />
-                                <span>px</span>
+
+                              <div className={styles.propertyGroup}>
+                                <label>Type</label>
+                                <div className={styles.typeDisplay}>
+                                  {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)}
+                                </div>
                               </div>
-                            </div>
-                          </div>
 
-                          <div className={styles.propertyGroup}>
-                            <label>Color</label>
-                            <div className={styles.colorPicker}>
-                              <div
-                                className={styles.colorPreview}
-                                style={{ backgroundColor: editForm.color }}
-                              />
-                              <input
-                                type="color"
-                                value={editForm.color}
-                                onChange={(e) => setEditForm(p => ({ ...p, color: e.target.value }))}
-                              />
-                            </div>
-                          </div>
-
-                          <div className={styles.propertyGroup}>
-                            <label>Rotation</label>
-                            <div className={styles.rotationInput}>
-                              <input
-                                type="range"
-                                min="0"
-                                max="360"
-                                value={editForm.rotation}
-                                onChange={(e) => setEditForm(p => ({ ...p, rotation: Number(e.target.value) }))}
-                              />
-                              <span>{editForm.rotation}°</span>
-                            </div>
-                          </div>
-
-                          {/* Opacity/Transparency Control */}
-                          <div className={styles.propertyGroup}>
-                            <label>Opacity</label>
-                            <div className={styles.rotationInput}>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={editForm.opacity}
-                                onChange={(e) => setEditForm(p => ({ ...p, opacity: Number(e.target.value) }))}
-                              />
-                              <span>{editForm.opacity}%</span>
-                            </div>
-                          </div>
-
-                          {/* Border Width Control */}
-                          <div className={styles.propertyGroup}>
-                            <label>Border Width</label>
-                            <div className={styles.sizeInput}>
-                              <input
-                                type="number"
-                                min="0"
-                                max="10"
-                                value={editForm.borderWidth}
-                                onChange={(e) => setEditForm(p => ({ ...p, borderWidth: Number(e.target.value) }))}
-                                className={styles.propertyInput}
-                              />
-                              <span>px</span>
-                            </div>
-                          </div>
-
-                          {/* Font Size Control for text and labels */}
-                          {(selectedElement.type === 'text' || selectedElement.type === 'room') && (
-                            <div className={styles.propertyGroup}>
-                              <label>Font Size</label>
-                              <div className={styles.sizeInput}>
-                                <input
-                                  type="number"
-                                  min="8"
-                                  max="48"
-                                  value={editForm.fontSize}
-                                  onChange={(e) => setEditForm(p => ({ ...p, fontSize: Number(e.target.value) }))}
-                                  className={styles.propertyInput}
-                                />
-                                <span>px</span>
+                              <div className={styles.propertyRow}>
+                                <div className={styles.propertyGroup}>
+                                  <label>Width</label>
+                                  <div className={styles.sizeInput}>
+                                    <input
+                                      type="number"
+                                      value={editForm.width}
+                                      onChange={(e) => setEditForm(p => ({ ...p, width: Number(e.target.value) }))}
+                                      className={styles.propertyInput}
+                                    />
+                                    <span>px</span>
+                                  </div>
+                                </div>
+                                <div className={styles.propertyGroup}>
+                                  <label>Height</label>
+                                  <div className={styles.sizeInput}>
+                                    <input
+                                      type="number"
+                                      value={editForm.height}
+                                      onChange={(e) => setEditForm(p => ({ ...p, height: Number(e.target.value) }))}
+                                      className={styles.propertyInput}
+                                    />
+                                    <span>px</span>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+
+                              <div className={styles.propertyGroup}>
+                                <label>Color</label>
+                                <div className={styles.colorPicker}>
+                                  <div
+                                    className={styles.colorPreview}
+                                    style={{ backgroundColor: editForm.color }}
+                                  />
+                                  <input
+                                    type="color"
+                                    value={editForm.color}
+                                    onChange={(e) => setEditForm(p => ({ ...p, color: e.target.value }))}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className={styles.propertyGroup}>
+                                <label>Rotation</label>
+                                <div className={styles.rotationInput}>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="360"
+                                    value={editForm.rotation}
+                                    onChange={(e) => setEditForm(p => ({ ...p, rotation: Number(e.target.value) }))}
+                                  />
+                                  <span>{editForm.rotation}°</span>
+                                </div>
+                              </div>
+
+                              {/* Opacity/Transparency Control */}
+                              <div className={styles.propertyGroup}>
+                                <label>Opacity</label>
+                                <div className={styles.rotationInput}>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={editForm.opacity}
+                                    onChange={(e) => setEditForm(p => ({ ...p, opacity: Number(e.target.value) }))}
+                                  />
+                                  <span>{editForm.opacity}%</span>
+                                </div>
+                              </div>
+
+                              {/* Border Width Control */}
+                              <div className={styles.propertyGroup}>
+                                <label>Border Width</label>
+                                <div className={styles.sizeInput}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    value={editForm.borderWidth}
+                                    onChange={(e) => setEditForm(p => ({ ...p, borderWidth: Number(e.target.value) }))}
+                                    className={styles.propertyInput}
+                                  />
+                                  <span>px</span>
+                                </div>
+                              </div>
+
+                              {/* Font Size Control for text and labels */}
+                              {(selectedElement.type === 'text' || selectedElement.type === 'room') && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Font Size</label>
+                                  <div className={styles.sizeInput}>
+                                    <input
+                                      type="number"
+                                      min="8"
+                                      max="48"
+                                      value={editForm.fontSize}
+                                      onChange={(e) => setEditForm(p => ({ ...p, fontSize: Number(e.target.value) }))}
+                                      className={styles.propertyInput}
+                                    />
+                                    <span>px</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {selectedElement.type === 'icon' && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Icon Type</label>
+                                  <select
+                                    value={editForm.iconType}
+                                    onChange={(e) => setEditForm(p => ({ ...p, iconType: e.target.value }))}
+                                    className={styles.propertySelect}
+                                  >
+                                    {ICON_OPTIONS.map(opt => (
+                                      <option key={opt.name} value={opt.name}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+
+                              {selectedElement.type === 'hallway' && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Orientation</label>
+                                  <div className={styles.orientationToggleWrapper}>
+                                    <button
+                                      className={`${styles.orientationOption} ${selectedElement.orientation !== 'vertical' ? styles.active : ''}`}
+                                      onClick={() => {
+                                        if (selectedElement.orientation === 'vertical') {
+                                          toggleHallwayOrientation(selectedElement.id)
+                                        }
+                                      }}
+                                    >
+                                      <span>━</span> Horizontal
+                                    </button>
+                                    <button
+                                      className={`${styles.orientationOption} ${selectedElement.orientation === 'vertical' ? styles.active : ''}`}
+                                      onClick={() => {
+                                        if (selectedElement.orientation !== 'vertical') {
+                                          toggleHallwayOrientation(selectedElement.id)
+                                        }
+                                      }}
+                                    >
+                                      <span>┃</span> Vertical
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
 
-                          {selectedElement.type === 'icon' && (
-                            <div className={styles.propertyGroup}>
-                              <label>Icon Type</label>
-                              <select
-                                value={editForm.iconType}
-                                onChange={(e) => setEditForm(p => ({ ...p, iconType: e.target.value }))}
-                                className={styles.propertySelect}
+                          {selectedElement.linkedRoomData && (
+                            <div className={styles.roomDetails}>
+                              <h4>Room Details</h4>
+                              <div className={styles.detailItem}>
+                                <Building size={16} />
+                                <span>{selectedElement.linkedRoomData.room}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <Users size={16} />
+                                <span>Capacity: {selectedElement.linkedRoomData.capacity || 30}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <Layers size={16} />
+                                <span>Floor: {selectedElement.linkedRoomData.floor_number || 1}</span>
+                              </div>
+                              {selectedElement.linkedRoomData.room_type && (
+                                <div className={styles.detailItem}>
+                                  <Square size={16} style={{ color: getRoomColor(selectedElement.linkedRoomData.room_type).bg }} />
+                                  <span>{selectedElement.linkedRoomData.room_type}</span>
+                                </div>
+                              )}
+                              {selectedElement.linkedRoomData.has_ac && (
+                                <div className={styles.detailItem}>
+                                  <Wind size={16} />
+                                  <span>Air Conditioned</span>
+                                </div>
+                              )}
+                              {selectedElement.linkedRoomData.has_projector && (
+                                <div className={styles.detailItem}>
+                                  <Projector size={16} />
+                                  <span>Has Projector</span>
+                                </div>
+                              )}
+                              {selectedElement.linkedRoomData.has_wifi && (
+                                <div className={styles.detailItem}>
+                                  <Wifi size={16} />
+                                  <span>WiFi Available</span>
+                                </div>
+                              )}
+
+                              {/* Current schedule info in live mode */}
+                              {viewMode === 'live' && showScheduleOverlay && (
+                                <div className={styles.liveRoomStatus}>
+                                  <h5>Current Status</h5>
+                                  {(() => {
+                                    const currentClass = getCurrentClass(selectedElement.linkedRoomData.room)
+                                    const availability = getRoomAvailability(selectedElement.linkedRoomData.room)
+                                    return currentClass ? (
+                                      <div className={styles.occupiedInfo}>
+                                        <div className={`${styles.statusBadge} ${styles.occupied}`}>
+                                          <Clock size={14} /> Occupied
+                                        </div>
+                                        <div className={styles.classDetails}>
+                                          <span className={styles.courseCode}>{currentClass.course_code}</span>
+                                          <span className={styles.section}>{currentClass.section}</span>
+                                          <span className={styles.time}>{currentClass.schedule_time}</span>
+                                          {currentClass.teacher_name && (
+                                            <span className={styles.teacher}>{currentClass.teacher_name}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className={`${styles.statusBadge} ${styles.available}`}>
+                                        <Check size={14} /> Available
+                                      </div>
+                                    )
+                                  })()}
+                                </div>
+                              )}
+
+                              <a
+                                href={`/LandingPages/Rooms-Management?room=${selectedElement.linkedRoomData.id}`}
+                                target="_blank"
+                                className={styles.editRoomLink}
                               >
-                                {ICON_OPTIONS.map(opt => (
-                                  <option key={opt.name} value={opt.name}>{opt.label}</option>
-                                ))}
-                              </select>
+                                <ExternalLink size={14} />
+                                Edit in Rooms Management
+                              </a>
                             </div>
                           )}
 
-                          {selectedElement.type === 'hallway' && (
-                            <div className={styles.propertyGroup}>
-                              <label>Orientation</label>
-                              <div className={styles.orientationToggleWrapper}>
-                                <button
-                                  className={`${styles.orientationOption} ${selectedElement.orientation !== 'vertical' ? styles.active : ''}`}
-                                  onClick={() => {
-                                    if (selectedElement.orientation === 'vertical') {
-                                      toggleHallwayOrientation(selectedElement.id)
-                                    }
-                                  }}
-                                >
-                                  <span>━</span> Horizontal
-                                </button>
-                                <button
-                                  className={`${styles.orientationOption} ${selectedElement.orientation === 'vertical' ? styles.active : ''}`}
-                                  onClick={() => {
-                                    if (selectedElement.orientation !== 'vertical') {
-                                      toggleHallwayOrientation(selectedElement.id)
-                                    }
-                                  }}
-                                >
-                                  <span>┃</span> Vertical
-                                </button>
-                              </div>
-                            </div>
+                          {viewMode === 'editor' && (
+                            <>
+                              <button
+                                className={styles.applyBtn}
+                                onClick={() => {
+                                  updateElement(selectedElement.id, {
+                                    label: editForm.label,
+                                    width: editForm.width,
+                                    height: editForm.height,
+                                    color: editForm.color,
+                                    rotation: editForm.rotation,
+                                    iconType: editForm.iconType,
+                                    fontSize: editForm.fontSize,
+                                    opacity: editForm.opacity,
+                                    borderWidth: editForm.borderWidth
+                                  })
+                                  showNotification('success', 'Element updated!')
+                                }}
+                              >
+                                <Check size={16} />
+                                Apply Changes
+                              </button>
+
+                              <button
+                                className={styles.lockBtn}
+                                onClick={() => toggleElementLock(selectedElement.id)}
+                              >
+                                {selectedElement.isLocked ? <Unlock size={16} /> : <Lock size={16} />}
+                                {selectedElement.isLocked ? 'Unlock' : 'Lock'} Element
+                              </button>
+
+                              <button
+                                className={styles.deleteBtn}
+                                onClick={() => removeElement(selectedElement.id)}
+                              >
+                                <Trash2 size={16} />
+                                Remove Element
+                              </button>
+                            </>
                           )}
                         </>
-                      )}
-
-                      {selectedElement.linkedRoomData && (
-                        <div className={styles.roomDetails}>
-                          <h4>Room Details</h4>
-                          <div className={styles.detailItem}>
-                            <Building size={16} />
-                            <span>{selectedElement.linkedRoomData.room}</span>
-                          </div>
-                          <div className={styles.detailItem}>
-                            <Users size={16} />
-                            <span>Capacity: {selectedElement.linkedRoomData.capacity || 30}</span>
-                          </div>
-                          <div className={styles.detailItem}>
-                            <Layers size={16} />
-                            <span>Floor: {selectedElement.linkedRoomData.floor_number || 1}</span>
-                          </div>
-                          {selectedElement.linkedRoomData.room_type && (
-                            <div className={styles.detailItem}>
-                              <Square size={16} style={{ color: getRoomColor(selectedElement.linkedRoomData.room_type).bg }} />
-                              <span>{selectedElement.linkedRoomData.room_type}</span>
-                            </div>
-                          )}
-                          {selectedElement.linkedRoomData.has_ac && (
-                            <div className={styles.detailItem}>
-                              <Wind size={16} />
-                              <span>Air Conditioned</span>
-                            </div>
-                          )}
-                          {selectedElement.linkedRoomData.has_projector && (
-                            <div className={styles.detailItem}>
-                              <Projector size={16} />
-                              <span>Has Projector</span>
-                            </div>
-                          )}
-                          {selectedElement.linkedRoomData.has_wifi && (
-                            <div className={styles.detailItem}>
-                              <Wifi size={16} />
-                              <span>WiFi Available</span>
-                            </div>
-                          )}
-
-                          {/* Current schedule info in live mode */}
-                          {viewMode === 'live' && showScheduleOverlay && (
-                            <div className={styles.liveRoomStatus}>
-                              <h5>Current Status</h5>
-                              {(() => {
-                                const currentClass = getCurrentClass(selectedElement.linkedRoomData.room)
-                                const availability = getRoomAvailability(selectedElement.linkedRoomData.room)
-                                return currentClass ? (
-                                  <div className={styles.occupiedInfo}>
-                                    <div className={`${styles.statusBadge} ${styles.occupied}`}>
-                                      <Clock size={14} /> Occupied
-                                    </div>
-                                    <div className={styles.classDetails}>
-                                      <span className={styles.courseCode}>{currentClass.course_code}</span>
-                                      <span className={styles.section}>{currentClass.section}</span>
-                                      <span className={styles.time}>{currentClass.schedule_time}</span>
-                                      {currentClass.teacher_name && (
-                                        <span className={styles.teacher}>{currentClass.teacher_name}</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className={`${styles.statusBadge} ${styles.available}`}>
-                                    <Check size={14} /> Available
-                                  </div>
-                                )
-                              })()}
-                            </div>
-                          )}
-
-                          <a
-                            href={`/LandingPages/Rooms-Management?room=${selectedElement.linkedRoomData.id}`}
-                            target="_blank"
-                            className={styles.editRoomLink}
-                          >
-                            <ExternalLink size={14} />
-                            Edit in Rooms Management
-                          </a>
+                      ) : (
+                        <div className={styles.noSelection}>
+                          <MousePointer size={32} />
+                          <p>Select an element to view {viewMode === 'live' ? 'room info' : 'properties'}</p>
                         </div>
                       )}
 
-                      {viewMode === 'editor' && (
-                        <>
-                          <button
-                            className={styles.applyBtn}
-                            onClick={() => {
-                              updateElement(selectedElement.id, {
-                                label: editForm.label,
-                                width: editForm.width,
-                                height: editForm.height,
-                                color: editForm.color,
-                                rotation: editForm.rotation,
-                                iconType: editForm.iconType,
-                                fontSize: editForm.fontSize,
-                                opacity: editForm.opacity,
-                                borderWidth: editForm.borderWidth
-                              })
-                              showNotification('success', 'Element updated!')
-                            }}
-                          >
-                            <Check size={16} />
-                            Apply Changes
-                          </button>
-
-                          <button
-                            className={styles.lockBtn}
-                            onClick={() => toggleElementLock(selectedElement.id)}
-                          >
-                            {selectedElement.isLocked ? <Unlock size={16} /> : <Lock size={16} />}
-                            {selectedElement.isLocked ? 'Unlock' : 'Lock'} Element
-                          </button>
-
-                          <button
-                            className={styles.deleteBtn}
-                            onClick={() => removeElement(selectedElement.id)}
-                          >
-                            <Trash2 size={16} />
-                            Remove Element
-                          </button>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <div className={styles.noSelection}>
-                      <MousePointer size={32} />
-                      <p>Select an element to view {viewMode === 'live' ? 'room info' : 'properties'}</p>
-                    </div>
-                  )}
-
-                  {/* Legend */}
-                  <div className={styles.legend}>
-                    <h4>LEGEND</h4>
-                    {showScheduleOverlay && (viewMode === 'live' || viewMode === 'floorplan') && (
-                      <div className={styles.availabilityLegend}>
-                        <div className={styles.legendItem}>
-                          <div className={`${styles.availabilityDotLegend} ${styles.available}`} />
-                          <span>Available</span>
-                        </div>
-                        <div className={styles.legendItem}>
-                          <div className={`${styles.availabilityDotLegend} ${styles.occupied}`} />
-                          <span>Occupied</span>
+                      {/* Legend */}
+                      <div className={styles.legend}>
+                        <h4>LEGEND</h4>
+                        {showScheduleOverlay && (viewMode === 'live' || viewMode === 'floorplan') && (
+                          <div className={styles.availabilityLegend}>
+                            <div className={styles.legendItem}>
+                              <div className={`${styles.availabilityDotLegend} ${styles.available}`} />
+                              <span>Available</span>
+                            </div>
+                            <div className={styles.legendItem}>
+                              <div className={`${styles.availabilityDotLegend} ${styles.occupied}`} />
+                              <span>Occupied</span>
+                            </div>
+                          </div>
+                        )}
+                        <p className={styles.legendHint}>
+                          Colors based on room types on canvas.
+                        </p>
+                        <div className={styles.legendItems}>
+                          {getLegendItems().length > 0 ? getLegendItems().map(item => (
+                            <div key={item.type} className={styles.legendItem}>
+                              <div
+                                className={styles.legendColor}
+                                style={{ backgroundColor: item.bg }}
+                              />
+                              <span>- {item.label}</span>
+                            </div>
+                          )) : (
+                            <div className={styles.legendEmpty}>
+                              Add rooms to see legend
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                    <p className={styles.legendHint}>
-                      Colors based on room types on canvas.
-                    </p>
-                    <div className={styles.legendItems}>
-                      {getLegendItems().length > 0 ? getLegendItems().map(item => (
-                        <div key={item.type} className={styles.legendItem}>
-                          <div
-                            className={styles.legendColor}
-                            style={{ backgroundColor: item.bg }}
-                          />
-                          <span>- {item.label}</span>
-                        </div>
-                      )) : (
-                        <div className={styles.legendEmpty}>
-                          Add rooms to see legend
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </div>
                   </>
                 )}
 
@@ -3120,13 +3120,13 @@ export default function MapViewerPage() {
 
       {/* Mobile Panel Overlay */}
       {showMobileFAB && activeMobilePanel !== 'none' && (
-        <div 
-          className={styles.mobileOverlay} 
+        <div
+          className={styles.mobileOverlay}
           onClick={() => {
             setActiveMobilePanel('none')
             setLeftPanelOpen(false)
             setRightPanelOpen(false)
-          }} 
+          }}
         />
       )}
 

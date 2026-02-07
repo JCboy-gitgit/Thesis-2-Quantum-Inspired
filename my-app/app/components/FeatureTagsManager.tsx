@@ -115,7 +115,7 @@ export default function FeatureTagsManager({
 }: FeatureTagsManagerProps) {
   // State
   const [allTags, setAllTags] = useState<FeatureTag[]>([])
-  const [availableTagsForCourse, setAvailableTagsForCourse] = useState<Set<number>>(new Set())
+
   const [assignedFeatures, setAssignedFeatures] = useState<(RoomFeature | SubjectRequirement)[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -137,30 +137,16 @@ export default function FeatureTagsManager({
       // Fetch all available tags
       const tagsResponse = await fetch('/api/room-features?action=tags')
       const tagsData = await tagsResponse.json()
-      
+
       if (!tagsData.success) throw new Error(tagsData.error)
       setAllTags(tagsData.data || [])
-
-      // For course mode, fetch all room features to determine which tags are actually available
-      if (mode === 'course') {
-        const roomFeaturesResponse = await fetch('/api/room-features?action=all_room_features')
-        const roomFeaturesData = await roomFeaturesResponse.json()
-        
-        if (roomFeaturesData.success && roomFeaturesData.data) {
-          // Create a set of tag IDs that exist in at least one room
-          const availableIds = new Set<number>(
-            roomFeaturesData.data.map((rf: RoomFeature) => rf.feature_tag_id)
-          )
-          setAvailableTagsForCourse(availableIds)
-        }
-      }
 
       // Fetch assigned features/requirements
       const action = mode === 'room' ? 'room_features' : 'subject_requirements'
       const paramName = mode === 'room' ? 'room_id' : 'course_id'
       const featuresResponse = await fetch(`/api/room-features?action=${action}&${paramName}=${entityId}`)
       const featuresData = await featuresResponse.json()
-      
+
       if (!featuresData.success) throw new Error(featuresData.error)
       setAssignedFeatures(featuresData.data || [])
     } catch (err: any) {
@@ -177,7 +163,7 @@ export default function FeatureTagsManager({
     setSaving(true)
     try {
       const action = mode === 'room' ? 'add_room_feature' : 'add_subject_requirement'
-      const payload = mode === 'room' 
+      const payload = mode === 'room'
         ? { action, room_id: entityId, feature_tag_id: tagId, quantity: 1 }
         : { action, course_id: entityId, feature_tag_id: tagId, is_mandatory: true, min_quantity: 1 }
 
@@ -205,7 +191,7 @@ export default function FeatureTagsManager({
     setSaving(true)
     try {
       const action = mode === 'room' ? 'remove_room_feature' : 'remove_subject_requirement'
-      
+
       const response = await fetch(`/api/room-features?action=${action}&id=${featureId}`, {
         method: 'DELETE'
       })
@@ -226,7 +212,7 @@ export default function FeatureTagsManager({
 
   const handleToggleMandatory = async (feature: SubjectRequirement) => {
     if (mode !== 'course') return
-    
+
     setSaving(true)
     try {
       const response = await fetch('/api/room-features', {
@@ -268,24 +254,23 @@ export default function FeatureTagsManager({
   const getAvailableTags = (): FeatureTag[] => {
     const assignedIds = getAssignedTagIds()
     let filtered = allTags.filter(t => !assignedIds.has(t.id))
-    
-    // In course mode, only show tags that exist in at least one room
-    if (mode === 'course' && availableTagsForCourse.size > 0) {
-      filtered = filtered.filter(t => availableTagsForCourse.has(t.id))
-    }
-    
+
+    // In course mode, don't filter by what exists in rooms - allow courses to require any equipment
+    // This allows courses to specify requirements even before rooms have been set up with equipment
+    // The scheduler will then find matching rooms or report if no rooms meet the requirements
+
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(t => t.tag_category === selectedCategory)
     }
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.tag_name.toLowerCase().includes(term) ||
         t.description?.toLowerCase().includes(term)
       )
     }
-    
+
     return filtered
   }
 
@@ -293,7 +278,7 @@ export default function FeatureTagsManager({
   const getGroupedAvailableTags = (): Map<string, FeatureTag[]> => {
     const grouped = new Map<string, FeatureTag[]>()
     const available = getAvailableTags()
-    
+
     available.forEach(tag => {
       const category = tag.tag_category
       if (!grouped.has(category)) {
@@ -301,7 +286,7 @@ export default function FeatureTagsManager({
       }
       grouped.get(category)!.push(tag)
     })
-    
+
     return grouped
   }
 
@@ -358,11 +343,11 @@ export default function FeatureTagsManager({
             {assignedFeatures.map((feature) => {
               const tag = feature.feature_tags as FeatureTag | undefined
               if (!tag) return null
-              
+
               const categoryColor = getCategoryColor(tag.tag_category)
               const isRequirement = mode === 'course'
               const requirement = feature as SubjectRequirement
-              
+
               return (
                 <div
                   key={feature.id}
@@ -410,7 +395,7 @@ export default function FeatureTagsManager({
           <div className={styles.addPanelHeader}>
             <h4>Add {mode === 'room' ? 'Equipment/Feature' : 'Requirement'}</h4>
           </div>
-          
+
           {/* Search & Filter */}
           <div className={styles.searchRow}>
             <div className={styles.searchInput}>
@@ -462,7 +447,7 @@ export default function FeatureTagsManager({
                 </div>
               </div>
             ))}
-            
+
             {getAvailableTags().length === 0 && (
               <div className={styles.noResults}>
                 <p>No matching features found</p>
