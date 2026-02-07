@@ -138,7 +138,7 @@ const getRoomStatusInfo = (status: string | null | undefined) => {
 
 export default function RoomsManagementPage() {
   const router = useRouter()
-  
+
   // Get colleges from context
   const { activeColleges: bulsuColleges } = useColleges()
 
@@ -218,7 +218,7 @@ export default function RoomsManagementPage() {
   useEffect(() => {
     const channel = supabase
       .channel('rooms-realtime')
-      .on('postgres_changes', 
+      .on('postgres_changes',
         { event: '*', schema: 'public', table: 'campuses' },
         (payload) => {
           console.log('[Realtime] campuses change:', payload.eventType)
@@ -304,7 +304,7 @@ export default function RoomsManagementPage() {
 
       if (error) throw error
       setAllRooms(data || [])
-      
+
       // Fetch feature counts for all rooms
       const roomIds = (data || []).map((r: CampusRoom) => r.id).filter(Boolean)
       if (roomIds.length > 0) {
@@ -312,7 +312,7 @@ export default function RoomsManagementPage() {
           .from('room_features')
           .select('room_id')
           .in('room_id', roomIds)
-        
+
         if (features) {
           const counts: Record<number, number> = {}
           features.forEach((f: { room_id: number }) => {
@@ -629,7 +629,7 @@ export default function RoomsManagementPage() {
         .select()
 
       if (error) throw error
-      
+
       // Check if any rows were actually updated (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Update failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
@@ -671,7 +671,7 @@ export default function RoomsManagementPage() {
         .select()
 
       if (error) throw error
-      
+
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Delete failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
@@ -1009,15 +1009,15 @@ export default function RoomsManagementPage() {
                   {campusFiles.map(file => {
                     const fileKey = `file-${file.upload_group_id}`
                     return (
-                      <div 
-                        key={file.upload_group_id} 
-                        className={styles.fileCard} 
+                      <div
+                        key={file.upload_group_id}
+                        className={styles.fileCard}
                         style={{ background: getFolderColor(fileKey) }}
                         onClick={() => handleSelectFile(file)}
                       >
                         {/* Color Picker */}
                         <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                          <button 
+                          <button
                             className={styles.colorPickerBtn}
                             style={{ background: getFolderColor(fileKey) }}
                             onClick={() => setShowColorPicker(showColorPicker === fileKey ? null : fileKey)}
@@ -1076,15 +1076,15 @@ export default function RoomsManagementPage() {
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
                 const campusKey = `campus-${campusName}`
                 return (
-                  <div 
-                    key={campusName} 
+                  <div
+                    key={campusName}
                     className={styles.campusCard}
                     style={{ background: getFolderColor(campusKey) }}
                     onClick={() => handleSelectCampus(campusName)}
                   >
                     {/* Color Picker */}
                     <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                      <button 
+                      <button
                         className={styles.colorPickerBtn}
                         style={{ background: getFolderColor(campusKey) }}
                         onClick={() => setShowColorPicker(showColorPicker === campusKey ? null : campusKey)}
@@ -1132,15 +1132,15 @@ export default function RoomsManagementPage() {
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
                 const buildingKey = `building-${selectedCampusName}-${buildingName}`
                 return (
-                  <div 
-                    key={buildingName} 
+                  <div
+                    key={buildingName}
                     className={styles.buildingCard}
                     style={{ background: getFolderColor(buildingKey) }}
                     onClick={() => handleSelectBuilding(buildingName)}
                   >
                     {/* Color Picker */}
                     <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                      <button 
+                      <button
                         className={styles.colorPickerBtn}
                         style={{ background: getFolderColor(buildingKey) }}
                         onClick={() => setShowColorPicker(showColorPicker === buildingKey ? null : buildingKey)}
@@ -1230,11 +1230,11 @@ export default function RoomsManagementPage() {
                         <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
                         <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
                         {room.id && roomFeatureCounts[room.id] && (
-                          <span 
-                            className={styles.hasAmenity} 
+                          <span
+                            className={styles.hasAmenity}
                             title={`${roomFeatureCounts[room.id]} equipment tags`}
-                            style={{ 
-                              background: 'rgba(16, 185, 129, 0.2)', 
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.2)',
                               color: '#10b981',
                               padding: '2px 6px',
                               borderRadius: '4px',
@@ -1264,7 +1264,7 @@ export default function RoomsManagementPage() {
           )}
 
           {/* FILTERED SEARCH RESULTS */}
-          {selectedFile && (searchTerm || hasActiveFilters) && currentView !== 'rooms' && (
+          {!loadingData && selectedFile && (searchTerm || hasActiveFilters) && currentView !== 'rooms' && (
             <div className={styles.searchResults}>
               <h3>Search Results: {filteredRooms.length} rooms found</h3>
               <div className={styles.roomsGrid}>
@@ -1292,11 +1292,11 @@ export default function RoomsManagementPage() {
                         <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
                         <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
                         {room.id && roomFeatureCounts[room.id] && (
-                          <span 
-                            className={styles.hasAmenity} 
+                          <span
+                            className={styles.hasAmenity}
                             title={`${roomFeatureCounts[room.id]} equipment tags`}
-                            style={{ 
-                              background: 'rgba(16, 185, 129, 0.2)', 
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.2)',
                               color: '#10b981',
                               padding: '2px 6px',
                               borderRadius: '4px',
@@ -1493,19 +1493,19 @@ export default function RoomsManagementPage() {
                 <div className={styles.formGroup}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <Tag size={16} /> Equipment & Feature Tags
-                    <span style={{ 
-                      fontSize: '11px', 
-                      color: 'var(--emerald-500)', 
-                      background: 'rgba(16, 185, 129, 0.1)', 
-                      padding: '2px 8px', 
-                      borderRadius: '4px' 
+                    <span style={{
+                      fontSize: '11px',
+                      color: 'var(--emerald-500)',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      padding: '2px 8px',
+                      borderRadius: '4px'
                     }}>
                       Used for course matching
                     </span>
                   </label>
-                  <div style={{ 
-                    background: 'var(--bg-tertiary)', 
-                    borderRadius: '12px', 
+                  <div style={{
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: '12px',
                     padding: '16px',
                     border: '1px solid var(--border-color)'
                   }}>
@@ -1532,7 +1532,7 @@ export default function RoomsManagementPage() {
                 }}>
                   <Info size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    <strong>Equipment & Feature Tags</strong> can be added after the room is created. 
+                    <strong>Equipment & Feature Tags</strong> can be added after the room is created.
                     These tags are used by the scheduler to match courses with compatible rooms.
                   </span>
                 </div>
