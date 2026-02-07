@@ -6,13 +6,13 @@
   top: 70px;
   height: calc(100vh - 70px);
   width: 250px;
-  background: rgba(20, 26, 50, 0.98);
+  background: var(--sidebar-bg, rgba(20, 26, 50, 0.98));
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-right: 2px solid var(--college-primary-light, rgba(0, 212, 255, 0.3));
+  border-right: 2px solid var(--college-border, var(--college-primary-light, rgba(0, 212, 255, 0.3)));
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, top 0.3s ease, height 0.3s ease, background 0.3s ease;
+  transition: transform 0.3s ease, top 0.3s ease, height 0.3s ease, background 0.3s ease, border-color 0.3s ease;
   z-index: 89;
   overflow-y: auto;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
@@ -27,8 +27,8 @@
 /* Light theme sidebar - proper background */
 :global([data-theme="light"]) .sidebar,
 :global([data-theme="green"]) .sidebar {
-  background: rgba(255, 255, 255, 0.98);
-  border-right: 2px solid var(--college-primary-light, rgba(0, 212, 255, 0.25));
+  background: var(--sidebar-bg, rgba(255, 255, 255, 0.98));
+  border-right: 2px solid var(--college-border, var(--college-primary-light, rgba(8, 145, 178, 0.25)));
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -77,12 +77,12 @@
 /* Header */
 .sidebarHeader {
   padding: 20px;
-  border-bottom: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  border-bottom: 1px solid var(--college-border, var(--college-primary-light, rgba(0, 212, 255, 0.2)));
 }
 
 :global([data-theme="light"]) .sidebarHeader,
 :global([data-theme="green"]) .sidebarHeader {
-  border-bottom: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  border-bottom: 1px solid var(--college-border, var(--college-primary-light, rgba(8, 145, 178, 0.2)));
 }
 
 .logo {
@@ -140,7 +140,7 @@
   background: transparent;
   border: none;
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
@@ -151,30 +151,30 @@
 
 :global([data-theme="light"]) .menuItem,
 :global([data-theme="green"]) .menuItem {
-  color: #64748b;
+  color: var(--text-secondary, #64748b);
 }
 
 .menuItem:hover {
-  background: var(--college-primary-light, rgba(0, 212, 255, 0.1));
-  color: var(--college-primary, #00d4ff);
+  background: var(--button-bg, var(--college-primary-light, rgba(0, 212, 255, 0.1)));
+  color: var(--icon-color, var(--college-primary, #00d4ff));
 }
 
 :global([data-theme="light"]) .menuItem:hover,
 :global([data-theme="green"]) .menuItem:hover {
-  background: var(--college-primary-light, rgba(0, 212, 255, 0.1));
-  color: var(--college-primary, #00d4ff);
+  background: var(--button-bg, var(--college-primary-light, rgba(8, 145, 178, 0.1)));
+  color: var(--icon-color, var(--college-primary, #0891b2));
 }
 
 .menuItem.active {
-  background: var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  background: var(--active-bg, var(--college-primary-light, rgba(0, 212, 255, 0.2)));
   color: var(--college-primary, #00d4ff);
   font-weight: 600;
 }
 
 :global([data-theme="light"]) .menuItem.active,
 :global([data-theme="green"]) .menuItem.active {
-  background: var(--college-primary-light, rgba(0, 212, 255, 0.15));
-  color: var(--college-primary, #00d4ff);
+  background: var(--active-bg, var(--college-primary-light, rgba(8, 145, 178, 0.15)));
+  color: var(--college-primary, #0891b2);
 }
 
 .menuItem svg {
@@ -184,7 +184,7 @@
 /* Footer */
 .sidebarFooter {
   padding: 10px;
-  border-top: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  border-top: 1px solid var(--college-border, var(--college-primary-light, rgba(0, 212, 255, 0.2)));
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -192,7 +192,7 @@
 
 :global([data-theme="light"]) .sidebarFooter,
 :global([data-theme="green"]) .sidebarFooter {
-  border-top: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.2));
+  border-top: 1px solid var(--college-border, var(--college-primary-light, rgba(8, 145, 178, 0.2)));
 }
 
 .logoutBtn {
