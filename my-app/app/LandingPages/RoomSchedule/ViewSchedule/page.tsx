@@ -469,17 +469,54 @@ function ViewSchedulePage() {
             .limit(1)
             .single()
 
-          const { data: classData } = await db
-            .from('class_schedules')
+          // Try to get college from sections table (class_group_id is actually year_batch_id)
+          let collegeName = 'All Colleges'
+          
+          // First try: look up sections linked to this year batch
+          const { data: sectionData } = await db
+            .from('sections')
             .select('college')
-            .eq('upload_group_id', schedule.class_group_id)
+            .eq('year_batch_id', schedule.class_group_id)
+            .not('college', 'is', null)
             .limit(1)
             .single()
+          
+          if (sectionData?.college) {
+            collegeName = sectionData.college
+          } else {
+            // Fallback: try class_schedules with upload_group_id
+            const { data: classData } = await db
+              .from('class_schedules')
+              .select('college')
+              .eq('upload_group_id', schedule.class_group_id)
+              .limit(1)
+              .single()
+            
+            if (classData?.college) {
+              collegeName = classData.college
+            }
+          }
+
+          // Check if multiple colleges are in this year batch
+          const { data: allSectionColleges } = await db
+            .from('sections')
+            .select('college')
+            .eq('year_batch_id', schedule.class_group_id)
+            .not('college', 'is', null)
+          
+          if (allSectionColleges && allSectionColleges.length > 0) {
+            const uniqueColleges = [...new Set(allSectionColleges.map((s: any) => s.college).filter(Boolean))]
+            if (uniqueColleges.length > 1) {
+              collegeName = uniqueColleges.join(', ')
+            } else if (uniqueColleges.length === 1) {
+              collegeName = uniqueColleges[0]
+            }
+          }
 
           return {
             ...schedule,
             school_name: campusData?.school_name || 'Unknown School',
-            college: classData?.college || 'Unknown College'
+            college: collegeName
           }
         }))
 
@@ -1343,6 +1380,10 @@ function ViewSchedulePage() {
       const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
         const blocks: any[] = []
         const groupedMap = new Map()
+        
+        // Maximum block duration in minutes (4 hours = 240 minutes)
+        // This prevents merging allocations into impossibly long blocks
+        const MAX_BLOCK_DURATION_MINUTES = 240
 
         allocs.forEach(alloc => {
           const days = expandDays(alloc.schedule_day || '')
@@ -1367,7 +1408,13 @@ function ViewSchedulePage() {
             const endMins = parseTimeToMinutes(timeParts[1])
             if (startMins === 0 && endMins === 0) return
 
-            if (currentBlock && currentBlock.endMinutes === startMins) {
+            // Check if we should merge with current block
+            // Only merge if: consecutive AND merged duration wouldn't exceed max
+            const shouldMerge = currentBlock && 
+              currentBlock.endMinutes === startMins &&
+              (endMins - currentBlock.startMinutes) <= MAX_BLOCK_DURATION_MINUTES
+
+            if (shouldMerge) {
               currentBlock.endMinutes = endMins
             } else {
               if (currentBlock) blocks.push(currentBlock)
@@ -1420,8 +1467,27 @@ function ViewSchedulePage() {
         }
       } else if (exportType === 'all-sections') {
         // Export all sections as pages in one PDF
+        // Helper to get base section (strip LAB/LEC suffixes including all variants)
+        const getBaseSection = (s: string) => {
+          if (!s) return ''
+          return s
+            .replace(/_LAB$/i, '')
+            .replace(/_LEC$/i, '')
+            .replace(/_LECTURE$/i, '')
+            .replace(/_LABORATORY$/i, '')
+            .replace(/, LAB$/i, '')
+            .replace(/, LEC$/i, '')
+            .replace(/, LECTURE$/i, '')
+            .replace(/, LABORATORY$/i, '')
+            .replace(/ LAB$/i, '')
+            .replace(/ LEC$/i, '')
+            .replace(/-LAB$/i, '')
+            .replace(/-LEC$/i, '')
+            .trim()
+        }
         for (const section of sections) {
-          const sectionAllocs = allocations.filter(a => a.section === section)
+          // Match allocations where base section matches (includes both LAB and LEC variants)
+          const sectionAllocs = allocations.filter(a => getBaseSection(a.section) === section)
           if (sectionAllocs.length > 0) {
             drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
           }

@@ -278,13 +278,18 @@ export default function GenerateSchedulePage() {
   const [sections, setSections] = useState<Section[]>([])
   const [courses, setCourses] = useState<SectionCourse[]>([])
 
-  // Selected data - support multiple campus groups
+  // Selected data - support multiple campus groups and year batches
   const [selectedCampusGroups, setSelectedCampusGroups] = useState<number[]>([])
-  const [selectedYearBatch, setSelectedYearBatch] = useState<number | null>(null)
+  const [selectedYearBatches, setSelectedYearBatches] = useState<number[]>([])
   const [selectedCollege, setSelectedCollege] = useState<string>('all') // College filter for scheduling
+
+  // Multi-select sections & courses
+  const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]) // Selected section IDs (empty = all)
+  const [excludedCourseKeys, setExcludedCourseKeys] = useState<Set<string>>(new Set()) // "sectionId-courseId" keys to exclude
 
   // Loaded detailed data
   const [rooms, setRooms] = useState<CampusRoom[]>([])
+  const [allLoadedClasses, setAllLoadedClasses] = useState<ClassSchedule[]>([]) // All classes before section/course filtering
   const [classes, setClasses] = useState<ClassSchedule[]>([])
   const [teachers, setTeachers] = useState<TeacherSchedule[]>([])
 
@@ -403,6 +408,33 @@ export default function GenerateSchedulePage() {
     setActiveStep(step)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  // Filter classes based on selected sections and excluded courses
+  useEffect(() => {
+    if (allLoadedClasses.length === 0) {
+      setClasses([])
+      return
+    }
+    let filtered = allLoadedClasses
+    // Filter by selected sections (if any are selected)
+    if (selectedSectionIds.length > 0) {
+      const selectedSectionNames = sections
+        .filter(s => selectedSectionIds.includes(s.id))
+        .map(s => s.section_name)
+      filtered = filtered.filter(cls => selectedSectionNames.includes(cls.section))
+    }
+    // Exclude specific course-section combos
+    if (excludedCourseKeys.size > 0) {
+      filtered = filtered.filter(cls => {
+        // Find the section id by name
+        const sec = sections.find(s => s.section_name === cls.section)
+        if (!sec) return true
+        const key = `${sec.id}-${cls.course_code}`
+        return !excludedCourseKeys.has(key)
+      })
+    }
+    setClasses(filtered)
+  }, [allLoadedClasses, selectedSectionIds, excludedCourseKeys, sections])
 
   // Load initial data
   useEffect(() => {
@@ -531,6 +563,11 @@ export default function GenerateSchedulePage() {
           !r.college // Include rooms without college (legacy data)
         )
       }
+      // Exclude unusable rooms
+      filteredData = filteredData.filter((r: any) => {
+        const status = (r.status || '').toLowerCase()
+        return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
+      })
       
       setRooms(filteredData.map((r: any) => ({
         id: r.id,
@@ -559,7 +596,7 @@ export default function GenerateSchedulePage() {
       }
 
       if (batchSections.length === 0) {
-        setClasses([])
+        setAllLoadedClasses([])
         setCourses([])
         setUnassignedCourses([])
         return
@@ -691,8 +728,12 @@ export default function GenerateSchedulePage() {
         }
       }
 
-      setClasses(classSchedules)
+      setAllLoadedClasses(classSchedules)
       setUnassignedCourses(unassigned)
+
+      // Select all sections by default
+      setSelectedSectionIds(batchSections.map(s => s.id))
+      setExcludedCourseKeys(new Set())
 
       // Auto-fill semester and academic year from batch
       if (batch) {
@@ -706,7 +747,7 @@ export default function GenerateSchedulePage() {
       }
     } catch (error) {
       console.error('Error loading class data:', error)
-      setClasses([])
+      setAllLoadedClasses([])
       setCourses([])
       setUnassignedCourses([])
     }
@@ -723,7 +764,7 @@ export default function GenerateSchedulePage() {
       }
       
       if (batchSections.length === 0) {
-        setClasses([])
+        setAllLoadedClasses([])
         setCourses([])
         setUnassignedCourses([])
         return
@@ -833,7 +874,7 @@ export default function GenerateSchedulePage() {
         }
       }
 
-      setClasses(classSchedules)
+      setAllLoadedClasses(classSchedules)
       setUnassignedCourses(unassigned)
     } catch (error) {
       console.error('Error loading class data with semester:', error)
@@ -892,6 +933,11 @@ export default function GenerateSchedulePage() {
             !r.college // Include rooms without college (legacy data)
           )
         }
+        // Exclude unusable rooms
+        filteredData = filteredData.filter((r: any) => {
+          const status = (r.status || '').toLowerCase()
+          return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
+        })
         
         const mappedRooms = filteredData.map((r: any) => ({
           id: r.id,
@@ -913,14 +959,269 @@ export default function GenerateSchedulePage() {
     setRooms(allRooms)
   }
 
-  const handleSelectClassGroup = (batchId: number) => {
-    if (selectedYearBatch === batchId) {
-      setSelectedYearBatch(null)
-      setClasses([])
-      setCourses([])
+  const handleSelectClassGroup = async (batchId: number) => {
+    if (selectedYearBatches.includes(batchId)) {
+      // Deselect - remove from array
+      const newSelected = selectedYearBatches.filter(id => id !== batchId)
+      setSelectedYearBatches(newSelected)
+      setSelectedSectionIds([])
+      setExcludedCourseKeys(new Set())
+
+      if (newSelected.length > 0) {
+        await loadMultipleClassData(newSelected, selectedCollege)
+      } else {
+        setAllLoadedClasses([])
+        setCourses([])
+        setUnassignedCourses([])
+      }
     } else {
-      setSelectedYearBatch(batchId)
-      loadClassData(batchId, selectedCollege)
+      // Add to selection
+      const newSelected = [...selectedYearBatches, batchId]
+      setSelectedYearBatches(newSelected)
+      setSelectedSectionIds([])
+      setExcludedCourseKeys(new Set())
+      await loadMultipleClassData(newSelected, selectedCollege)
+    }
+  }
+
+  // Load class data from multiple year batches
+  const loadMultipleClassData = async (yearBatchIds: number[], collegeFilter?: string) => {
+    try {
+      const allClassSchedules: ClassSchedule[] = []
+      const allCoursesList: SectionCourse[] = []
+      const allUnassigned: typeof unassignedCourses = []
+      let autoId = 1
+
+      for (const yearBatchId of yearBatchIds) {
+        let batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
+        if (collegeFilter && collegeFilter !== 'all') {
+          batchSections = batchSections.filter(s => s.college === collegeFilter || !s.college)
+        }
+        if (batchSections.length === 0) continue
+
+        const batch = yearBatches.find(b => b.id === yearBatchId)
+        let targetSemester = ''
+        if (batch) {
+          if (batch.year_batch.toLowerCase().includes('first') || batch.year_batch.includes('1st')) targetSemester = '1st Semester'
+          else if (batch.year_batch.toLowerCase().includes('second') || batch.year_batch.includes('2nd')) targetSemester = '2nd Semester'
+          else if (batch.year_batch.toLowerCase().includes('summer')) targetSemester = 'Summer'
+        }
+
+        const { data: assignments, error: assignmentsError } = await (supabase
+          .from('section_course_assignments') as any)
+          .select('*')
+          .in('section_id', batchSections.map(s => s.id))
+        if (assignmentsError) continue
+
+        const courseIds = assignments.map((a: any) => a.course_id)
+        if (courseIds.length === 0) continue
+        const { data: coursesData, error: coursesError } = await (supabase
+          .from('class_schedules') as any)
+          .select('*')
+          .in('id', courseIds)
+        if (coursesError) continue
+
+        let filteredCourses = coursesData || []
+        if (targetSemester) {
+          filteredCourses = filteredCourses.filter((c: any) => {
+            const courseSem = (c.semester || '').toLowerCase()
+            const targetSemLower = targetSemester.toLowerCase()
+            if (targetSemLower.includes('1st') || targetSemLower.includes('first')) {
+              return courseSem.includes('1st') || courseSem.includes('first') || courseSem === '1'
+            } else if (targetSemLower.includes('2nd') || targetSemLower.includes('second')) {
+              return courseSem.includes('2nd') || courseSem.includes('second') || courseSem === '2'
+            } else if (targetSemLower.includes('summer')) {
+              return courseSem.includes('summer')
+            }
+            return true
+          })
+        }
+        allCoursesList.push(...filteredCourses)
+
+        const { data: teachingLoads } = await (supabase
+          .from('teaching_loads') as any)
+          .select('*, faculty_profiles(*)')
+          .in('course_id', filteredCourses.map((c: any) => c.id))
+        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+        if (teachingLoads) {
+          teachingLoads.forEach((load: any) => {
+            const key = `${load.course_id}-${load.section || ''}`
+            teachingLoadsMap.set(key, {
+              faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
+              section: load.section || ''
+            })
+          })
+        }
+
+        for (const section of batchSections) {
+          const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
+          const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
+          for (const course of sectionCourses) {
+            const teacherKey = `${course.id}-${section.section_name}`
+            const teacherKeyNoSection = `${course.id}-`
+            const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            if (!assignedTeacher) {
+              allUnassigned.push({
+                course_code: course.course_code || '',
+                course_name: course.course_name || '',
+                section: section.section_name || '',
+                semester: course.semester || targetSemester || '',
+                department: course.department || section.department || ''
+              })
+            }
+            allClassSchedules.push({
+              id: autoId++,
+              course_code: course.course_code || '',
+              course_name: course.course_name || '',
+              section: section.section_name || '',
+              year_level: section.year_level || 1,
+              student_count: section.student_count || 30,
+              schedule_day: '',
+              schedule_time: '',
+              lec_hours: course.lec_hours || 0,
+              lab_hours: course.lab_hours || 0,
+              total_hours: (course.lec_hours || 0) + (course.lab_hours || 0),
+              department: course.department || section.department || '',
+              semester: course.semester || '',
+              academic_year: course.academic_year || '',
+              teacher_name: assignedTeacher?.faculty_name || ''
+            })
+          }
+        }
+      }
+
+      // Deduplicate courses
+      const uniqueCourses = allCoursesList.filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i)
+      setCourses(uniqueCourses)
+      setAllLoadedClasses(allClassSchedules)
+      setUnassignedCourses(allUnassigned)
+
+      // Select all sections from all batches by default
+      const allBatchSections = sections.filter(s => yearBatchIds.includes(s.year_batch_id))
+      setSelectedSectionIds(allBatchSections.map(s => s.id))
+      setExcludedCourseKeys(new Set())
+
+      // Auto-fill semester and academic year from first batch
+      const firstBatch = yearBatches.find(b => b.id === yearBatchIds[0])
+      if (firstBatch) {
+        setConfig(prev => ({
+          ...prev,
+          semester: firstBatch.year_batch.includes('First') || firstBatch.year_batch.includes('1st') ? 'First Semester' :
+            firstBatch.year_batch.includes('Second') || firstBatch.year_batch.includes('2nd') ? 'Second Semester' :
+              firstBatch.year_batch.includes('Summer') ? 'Summer' : prev.semester,
+          academicYear: firstBatch.academic_year || prev.academicYear
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading multiple class data:', error)
+    }
+  }
+
+  // Load class data from multiple year batches with explicit semester filter
+  const loadMultipleClassDataWithSemester = async (yearBatchIds: number[], selectedSemester: string, collegeFilter?: string) => {
+    try {
+      const allClassSchedules: ClassSchedule[] = []
+      const allCoursesList: SectionCourse[] = []
+      const allUnassigned: typeof unassignedCourses = []
+      let autoId = 1
+
+      for (const yearBatchId of yearBatchIds) {
+        let batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
+        if (collegeFilter && collegeFilter !== 'all') {
+          batchSections = batchSections.filter(s => s.college === collegeFilter || !s.college)
+        }
+        if (batchSections.length === 0) continue
+
+        const { data: assignments, error: assignmentsError } = await (supabase
+          .from('section_course_assignments') as any)
+          .select('*')
+          .in('section_id', batchSections.map(s => s.id))
+        if (assignmentsError) continue
+
+        const courseIds = assignments.map((a: any) => a.course_id)
+        if (courseIds.length === 0) continue
+        const { data: coursesData, error: coursesError } = await (supabase
+          .from('class_schedules') as any)
+          .select('*')
+          .in('id', courseIds)
+        if (coursesError) continue
+
+        const filteredCourses = (coursesData || []).filter((c: any) => {
+          const courseSem = (c.semester || '').toLowerCase()
+          const targetSemLower = selectedSemester.toLowerCase()
+          if (targetSemLower.includes('first') || targetSemLower.includes('1st')) {
+            return courseSem.includes('1st') || courseSem.includes('first') || courseSem === '1'
+          } else if (targetSemLower.includes('second') || targetSemLower.includes('2nd')) {
+            return courseSem.includes('2nd') || courseSem.includes('second') || courseSem === '2'
+          } else if (targetSemLower.includes('summer')) {
+            return courseSem.includes('summer')
+          }
+          return true
+        })
+        allCoursesList.push(...filteredCourses)
+
+        const { data: teachingLoads } = await (supabase
+          .from('teaching_loads') as any)
+          .select('*, faculty_profiles(*)')
+          .in('course_id', filteredCourses.map((c: any) => c.id))
+        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+        if (teachingLoads) {
+          teachingLoads.forEach((load: any) => {
+            const key = `${load.course_id}-${load.section || ''}`
+            teachingLoadsMap.set(key, {
+              faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || 'Unknown',
+              section: load.section || ''
+            })
+          })
+        }
+
+        for (const section of batchSections) {
+          const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
+          const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
+          for (const course of sectionCourses) {
+            const teacherKey = `${course.id}-${section.section_name}`
+            const teacherKeyNoSection = `${course.id}-`
+            const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            if (!assignedTeacher) {
+              allUnassigned.push({
+                course_code: course.course_code || '',
+                course_name: course.course_name || '',
+                section: section.section_name || '',
+                semester: course.semester || selectedSemester,
+                department: course.department || section.department || ''
+              })
+            }
+            allClassSchedules.push({
+              id: autoId++,
+              course_code: course.course_code || '',
+              course_name: course.course_name || '',
+              section: section.section_name || '',
+              year_level: section.year_level || 1,
+              student_count: section.student_count || 30,
+              schedule_day: '',
+              schedule_time: '',
+              lec_hours: course.lec_hours || 0,
+              lab_hours: course.lab_hours || 0,
+              total_hours: (course.lec_hours || 0) + (course.lab_hours || 0),
+              department: course.department || section.department || '',
+              semester: course.semester || selectedSemester,
+              academic_year: course.academic_year || '',
+              teacher_name: assignedTeacher?.faculty_name || ''
+            })
+          }
+        }
+      }
+
+      const uniqueCourses = allCoursesList.filter((c, i, arr) => arr.findIndex(x => x.id === c.id) === i)
+      setCourses(uniqueCourses)
+      setAllLoadedClasses(allClassSchedules)
+      setUnassignedCourses(allUnassigned)
+
+      const allBatchSections = sections.filter(s => yearBatchIds.includes(s.year_batch_id))
+      setSelectedSectionIds(allBatchSections.map(s => s.id))
+      setExcludedCourseKeys(new Set())
+    } catch (error) {
+      console.error('Error loading multiple class data with semester:', error)
     }
   }
 
@@ -1063,13 +1364,14 @@ export default function GenerateSchedulePage() {
   }
 
   // Validation - now checks for array length
-  const canProceedToStep2 = selectedCampusGroups.length > 0 && selectedYearBatch !== null
+  const canProceedToStep2 = selectedCampusGroups.length > 0 && selectedYearBatches.length > 0
   const canProceedToStep3 = canProceedToStep2 && rooms.length > 0 && classes.length > 0
   const canGenerate = canProceedToStep3 && config.scheduleName.trim() !== ''
 
   // Get selected group info - for multiple groups, show combined info
   const selectedCampusInfoList = campusGroups.filter(g => selectedCampusGroups.includes(g.upload_group_id))
-  const selectedBatchInfo = yearBatches.find(b => b.id === selectedYearBatch)
+  const selectedBatchInfoList = yearBatches.filter(b => selectedYearBatches.includes(b.id))
+  const selectedBatchInfo = selectedBatchInfoList.length > 0 ? selectedBatchInfoList[0] : undefined
   const selectedTeacherInfo = undefined
 
   // Calculate stats
@@ -1127,7 +1429,8 @@ export default function GenerateSchedulePage() {
         semester: config.semester,
         academic_year: config.academicYear,
         campus_group_ids: selectedCampusGroups, // Now supports multiple campus groups
-        year_batch_id: selectedYearBatch,
+        year_batch_id: selectedYearBatches[0] || null,
+        year_batch_ids: selectedYearBatches,
         teacher_group_id: null,
         college: selectedCollege, // College filter for scheduling
         rooms: filteredRooms, // Use filtered rooms instead of all rooms
@@ -1334,7 +1637,26 @@ export default function GenerateSchedulePage() {
 
       // Get unique values for export all
       const rooms = [...new Set(scheduleResult.allocations.map(a => a.room))].filter(Boolean).sort()
-      const sections = [...new Set(scheduleResult.allocations.map(a => a.section))].filter(Boolean).sort()
+      // Helper to get base section (strip LAB/LEC suffixes including comma-separated variants)
+      const getBaseSection = (s: string) => {
+        if (!s) return ''
+        return s
+          .replace(/_LAB$/i, '')
+          .replace(/_LEC$/i, '')
+          .replace(/_LECTURE$/i, '')
+          .replace(/_LABORATORY$/i, '')
+          .replace(/, LAB$/i, '')
+          .replace(/, LEC$/i, '')
+          .replace(/, LECTURE$/i, '')
+          .replace(/, LABORATORY$/i, '')
+          .replace(/ LAB$/i, '')
+          .replace(/ LEC$/i, '')
+          .replace(/-LAB$/i, '')
+          .replace(/-LEC$/i, '')
+          .trim()
+      }
+      // Get unique base sections (combining LAB and LEC into one)
+      const sections = [...new Set(scheduleResult.allocations.map(a => getBaseSection(a.section)))].filter(Boolean).sort()
       const teachers = [...new Set(scheduleResult.allocations.map(a => a.teacher_name))].filter(Boolean).sort()
       const courses = [...new Set(scheduleResult.allocations.map(a => a.course_code))].filter(Boolean).sort()
 
@@ -1426,6 +1748,10 @@ export default function GenerateSchedulePage() {
       const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
         const blocks: any[] = []
         const groupedMap = new Map()
+        
+        // Maximum block duration in minutes (4 hours = 240 minutes)
+        // This prevents merging allocations into impossibly long blocks
+        const MAX_BLOCK_DURATION_MINUTES = 240
 
         allocs.forEach(alloc => {
           const days = expandDays(alloc.schedule_day || '')
@@ -1452,7 +1778,13 @@ export default function GenerateSchedulePage() {
             const endMins = parseTimeToMinutes(endTime)
             if (startMins === 0 && endMins === 0) return
 
-            if (currentBlock && currentBlock.endMinutes === startMins) {
+            // Check if we should merge with current block
+            // Only merge if: consecutive AND merged duration wouldn't exceed max
+            const shouldMerge = currentBlock && 
+              currentBlock.endMinutes === startMins &&
+              (endMins - currentBlock.startMinutes) <= MAX_BLOCK_DURATION_MINUTES
+
+            if (shouldMerge) {
               currentBlock.endMinutes = endMins
             } else {
               if (currentBlock) blocks.push(currentBlock)
@@ -1463,7 +1795,7 @@ export default function GenerateSchedulePage() {
                 room: alloc.room,
                 building: alloc.building,
                 teacher_name: alloc.teacher_name,
-                day: alloc.schedule_day,
+                day: (alloc.schedule_day || '').toLowerCase(),
                 startMinutes: startMins,
                 endMinutes: endMins
               }
@@ -1707,7 +2039,8 @@ export default function GenerateSchedulePage() {
         }
       } else if (exportType === 'all-sections') {
         for (const section of sections) {
-          const sectionAllocs = scheduleResult.allocations.filter(a => a.section === section)
+          // Match allocations where base section matches (includes both LAB and LEC variants)
+          const sectionAllocs = scheduleResult.allocations.filter(a => getBaseSection(a.section) === section)
           if (sectionAllocs.length > 0) {
             drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
           }
@@ -2422,8 +2755,8 @@ export default function GenerateSchedulePage() {
                           if (selectedCampusGroups.length > 0) {
                             selectedCampusGroups.forEach(groupId => loadCampusData(groupId, e.target.value))
                           }
-                          if (selectedYearBatch) {
-                            loadClassData(selectedYearBatch, e.target.value)
+                          if (selectedYearBatches.length > 0) {
+                            loadMultipleClassData(selectedYearBatches, e.target.value)
                           }
                         }}
                         style={{
@@ -2553,9 +2886,9 @@ export default function GenerateSchedulePage() {
                         </div>
                       </div>
                       <div className={styles.dataSourceStatus}>
-                        {selectedYearBatch ? (
+                        {selectedYearBatches.length > 0 ? (
                           <span className={styles.selectedBadge}>
-                            <CheckCircle2 size={16} /> Selected
+                            <CheckCircle2 size={16} /> {selectedYearBatches.length} Selected
                           </span>
                         ) : (
                           <span className={styles.requiredBadge}>Required</span>
@@ -2579,13 +2912,22 @@ export default function GenerateSchedulePage() {
                             {yearBatches.map(batch => {
                               const batchSections = sections.filter(s => s.year_batch_id === batch.id)
                               const totalStudents = batchSections.reduce((sum, s) => sum + (s.student_count || 0), 0)
+                              const isSelected = selectedYearBatches.includes(batch.id)
 
                               return (
                                 <div
                                   key={batch.id}
-                                  className={`${styles.dataCard} ${selectedYearBatch === batch.id ? styles.selected : ''}`}
+                                  className={`${styles.dataCard} ${isSelected ? styles.selected : ''}`}
                                   onClick={() => handleSelectClassGroup(batch.id)}
                                 >
+                                  <div className={styles.dataCardCheckbox}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => { }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
                                   <div className={styles.dataCardHeader}>
                                     <GraduationCap size={20} />
                                     <h4>{batch.year_batch}</h4>
@@ -2602,7 +2944,7 @@ export default function GenerateSchedulePage() {
                                   <div className={styles.dataCardDate}>
                                     {new Date(batch.created_at).toLocaleDateString()}
                                   </div>
-                                  {selectedYearBatch === batch.id && (
+                                  {isSelected && (
                                     <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
                                   )}
                                 </div>
@@ -2661,8 +3003,17 @@ export default function GenerateSchedulePage() {
                         <BookOpen size={24} />
                       </div>
                       <div className={styles.summaryInfo}>
-                        <h4>{selectedBatchInfo?.year_batch}</h4>
-                        <p>{classes.length} classes • {sections.filter(s => s.year_batch_id === selectedYearBatch).length} sections</p>
+                        <h4>
+                          {selectedBatchInfoList.length === 1
+                            ? selectedBatchInfoList[0]?.year_batch
+                            : `${selectedBatchInfoList.length} Year Batches`}
+                        </h4>
+                        <p>{classes.length} classes • {sections.filter(s => selectedYearBatches.includes(s.year_batch_id)).length} sections</p>
+                        {selectedBatchInfoList.length > 1 && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
+                            {selectedBatchInfoList.map(b => b.year_batch).join(', ')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {selectedTeacherInfo && teachers.length > 0 && (
@@ -2677,6 +3028,189 @@ export default function GenerateSchedulePage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Section & Course Multi-Select Filter */}
+                  {selectedYearBatches.length > 0 && (
+                    <div className={styles.filterSection}>
+                      <div className={styles.filterHeader} onClick={() => {}}>
+                        <div className={styles.filterTitle}>
+                          <Users size={18} />
+                          <h3>Select Sections & Courses</h3>
+                        </div>
+                        <div className={styles.filterStatus}>
+                          {(() => {
+                            const batchSections = sections.filter(s => selectedYearBatches.includes(s.year_batch_id))
+                            const allSelected = selectedSectionIds.length === batchSections.length || selectedSectionIds.length === 0
+                            return allSelected && excludedCourseKeys.size === 0 ? (
+                              <span className={styles.filterInactiveBadge}>All sections & courses included</span>
+                            ) : (
+                              <span className={styles.filterActiveBadge}>
+                                {selectedSectionIds.length} section(s) • {excludedCourseKeys.size > 0 ? `${excludedCourseKeys.size} course(s) excluded` : 'all courses'}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className={styles.filterContent}>
+                        <p className={styles.filterDescription}>
+                          Select which sections to include in the schedule and optionally exclude specific courses.
+                        </p>
+
+                        {/* Quick Actions */}
+                        <div className={styles.quickActionsBox}>
+                          <div className={styles.quickActionsContent}>
+                            <span className={styles.quickActionsLabel}>Quick Actions:</span>
+                            <button
+                              onClick={() => {
+                                const batchSections = sections.filter(s => selectedYearBatches.includes(s.year_batch_id))
+                                setSelectedSectionIds(batchSections.map(s => s.id))
+                                setExcludedCourseKeys(new Set())
+                              }}
+                              className={`${styles.quickActionBtn} ${styles.selectAllBuildings}`}
+                            >
+                              ✓ Select All
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedSectionIds([])
+                                setExcludedCourseKeys(new Set())
+                              }}
+                              className={`${styles.quickActionBtn} ${styles.clearAll}`}
+                            >
+                              ✕ Deselect All
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Sections List */}
+                        <div className={styles.buildingGrid}>
+                          {sections
+                            .filter(s => selectedYearBatches.includes(s.year_batch_id))
+                            .map(section => {
+                              const isSelected = selectedSectionIds.includes(section.id)
+                              const sectionCourses = allLoadedClasses.filter(cls => cls.section === section.section_name)
+                              const excludedCount = sectionCourses.filter(cls => excludedCourseKeys.has(`${section.id}-${cls.course_code}`)).length
+                              
+                              return (
+                                <div key={section.id} className={`${styles.buildingCard} ${isSelected ? styles.selected : ''}`}>
+                                  <div className={styles.buildingHeader} style={{ marginBottom: '8px' }}>
+                                    <label className={styles.buildingCheckbox} style={{ width: '100%' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                          setSelectedSectionIds(prev =>
+                                            prev.includes(section.id)
+                                              ? prev.filter(id => id !== section.id)
+                                              : [...prev, section.id]
+                                          )
+                                        }}
+                                        style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#16a34a' }}
+                                      />
+                                      <GraduationCap size={16} />
+                                      <strong style={{ flex: 1 }}>{section.section_name}</strong>
+                                      {isSelected && (
+                                        <span style={{
+                                          fontSize: '11px',
+                                          backgroundColor: '#16a34a',
+                                          color: 'white',
+                                          padding: '2px 8px',
+                                          borderRadius: '4px',
+                                          fontWeight: 600
+                                        }}>
+                                          ✓
+                                        </span>
+                                      )}
+                                    </label>
+                                  </div>
+
+                                  <div className={styles.buildingStats} style={{ marginBottom: '0' }}>
+                                    <span><BookOpen size={14} /> {sectionCourses.length - excludedCount}/{sectionCourses.length} courses</span>
+                                    <span><Users size={14} /> {section.student_count} students</span>
+                                    {section.college && <span style={{ fontSize: '11px', color: '#6366f1' }}>{section.college}</span>}
+                                  </div>
+
+                                  {/* Collapsible course list */}
+                                  {isSelected && sectionCourses.length > 0 && (
+                                    <details style={{ marginTop: '10px', cursor: 'pointer' }}>
+                                      <summary style={{
+                                        fontWeight: '500',
+                                        color: 'var(--text-medium)',
+                                        fontSize: '12px',
+                                        userSelect: 'none',
+                                        padding: '4px 0',
+                                        opacity: 0.8
+                                      }}>
+                                        {excludedCount > 0
+                                          ? `${sectionCourses.length - excludedCount}/${sectionCourses.length} courses included`
+                                          : `View ${sectionCourses.length} assigned courses`}
+                                      </summary>
+                                      <div style={{ marginTop: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                                        {sectionCourses.map((cls, idx) => {
+                                          const courseKey = `${section.id}-${cls.course_code}`
+                                          const isExcluded = excludedCourseKeys.has(courseKey)
+                                          return (
+                                            <label key={idx} style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              padding: '6px 8px',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer',
+                                              backgroundColor: isExcluded ? 'rgba(239, 68, 68, 0.08)' : 'rgba(22, 163, 74, 0.05)',
+                                              marginBottom: '4px',
+                                              fontSize: '12px',
+                                              gap: '6px'
+                                            }}>
+                                              <input
+                                                type="checkbox"
+                                                checked={!isExcluded}
+                                                onChange={() => {
+                                                  setExcludedCourseKeys(prev => {
+                                                    const next = new Set(prev)
+                                                    if (next.has(courseKey)) {
+                                                      next.delete(courseKey)
+                                                    } else {
+                                                      next.add(courseKey)
+                                                    }
+                                                    return next
+                                                  })
+                                                }}
+                                                style={{ cursor: 'pointer', width: '14px', height: '14px', accentColor: '#16a34a' }}
+                                              />
+                                              <span style={{ flex: 1, color: isExcluded ? '#9ca3af' : 'var(--text-dark)', textDecoration: isExcluded ? 'line-through' : 'none' }}>
+                                                {cls.course_code} — {cls.course_name}
+                                              </span>
+                                              <span style={{
+                                                fontSize: '10px',
+                                                color: 'var(--text-light)',
+                                                backgroundColor: 'var(--bg-gray-100)',
+                                                padding: '1px 5px',
+                                                borderRadius: '3px'
+                                              }}>
+                                                {cls.lec_hours + cls.lab_hours}h
+                                              </span>
+                                            </label>
+                                          )
+                                        })}
+                                      </div>
+                                    </details>
+                                  )}
+                                </div>
+                              )
+                            })}
+                        </div>
+
+                        {/* Summary */}
+                        <div className={styles.filterSummary} style={{ marginTop: '12px' }}>
+                          <p>
+                            <strong>Selection:</strong> {classes.length} classes from {selectedSectionIds.length} section(s) will be scheduled
+                            {excludedCourseKeys.size > 0 && ` (${excludedCourseKeys.size} course assignment(s) excluded)`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Building and Room Filter */}
                   <div className={styles.filterSection}>
@@ -3096,8 +3630,8 @@ export default function GenerateSchedulePage() {
                           onChange={(e) => {
                             setConfig(prev => ({ ...prev, semester: e.target.value }))
                             // Re-filter classes based on selected semester
-                            if (selectedYearBatch) {
-                              loadClassDataWithSemester(selectedYearBatch, e.target.value)
+                            if (selectedYearBatches.length > 0) {
+                              loadMultipleClassDataWithSemester(selectedYearBatches, e.target.value)
                             }
                           }}
                         >
@@ -3672,7 +4206,9 @@ export default function GenerateSchedulePage() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>
-                <BookOpen size={24} /> Sections & Assigned Courses: {selectedBatchInfo?.year_batch}
+                <BookOpen size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
+                  ? selectedBatchInfoList[0]?.year_batch
+                  : `${selectedBatchInfoList.length} Year Batches`}
               </h2>
               <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
                 <X size={24} />
