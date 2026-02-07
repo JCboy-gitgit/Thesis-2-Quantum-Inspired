@@ -112,7 +112,6 @@ const emptySectionForm: SectionFormData = {
   college: '',
   max_capacity: 40
 }
-
 // ==================== Main Component ====================
 function ClassSectionAssigningContent() {
   const router = useRouter()
@@ -1044,18 +1043,6 @@ function ClassSectionAssigningContent() {
               {bulsuColleges.map(c => (
                 <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
               ))}
-              <option value="CAFA">CAFA</option>
-              <option value="CAL">CAL</option>
-              <option value="CBA">CBA</option>
-              <option value="COE">COE</option>
-              <option value="CICT">CICT</option>
-              <option value="CIT">CIT</option>
-              <option value="CON">CON</option>
-              <option value="CED">CED</option>
-              <option value="CHASS">CHASS</option>
-              {getColleges().filter(c => !['CS', 'CAFA', 'CAL', 'CBA', 'COE', 'CICT', 'CIT', 'CON', 'CED', 'CHASS'].includes(c)).map(college => (
-                <option key={college} value={college}>{college}</option>
-              ))}
             </select>
           </div>
 
@@ -1905,25 +1892,6 @@ function ClassSectionAssigningContent() {
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
-                  Degree Program *
-                </label>
-                <input
-                  type="text"
-                  value={sectionForm.degree_program}
-                  onChange={(e) => setSectionForm(prev => ({ ...prev, degree_program: e.target.value }))}
-                  placeholder="e.g., BS Computer Science"
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px',
-                    border: '2px solid var(--border-color, #e2e8f0)',
-                    borderRadius: '10px',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
                   College *
                 </label>
                 <select
@@ -1941,6 +1909,29 @@ function ClassSectionAssigningContent() {
                   <option value="">-- Select College --</option>
                   {bulsuColleges.map(c => (
                     <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
+                  Degree Program *
+                </label>
+                <select
+                  value={sectionForm.degree_program}
+                  onChange={(e) => setSectionForm(prev => ({ ...prev, degree_program: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    border: '2px solid var(--border-color, #e2e8f0)',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">-- Select Degree Program --</option>
+                  {[...new Set([...getCourseDegreePrograms(), ...getDegreePrograms()])].sort().map(dp => (
+                    <option key={dp} value={dp}>{dp}</option>
                   ))}
                 </select>
               </div>

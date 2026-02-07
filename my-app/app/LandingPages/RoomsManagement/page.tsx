@@ -459,12 +459,31 @@ export default function RoomsManagementPage() {
     return buildings
   }, [campusGroups, selectedCampusName])
 
-  // Get rooms for selected building
+  // Get rooms for selected building (with filters applied)
   const roomsForBuilding = useMemo(() => {
     if (!selectedCampusName || !selectedBuildingName) return []
     const buildings = buildingsForCampus
-    return buildings.get(selectedBuildingName) || []
-  }, [buildingsForCampus, selectedBuildingName])
+    const rooms = buildings.get(selectedBuildingName) || []
+    return rooms.filter(room => {
+      if (searchTerm) {
+        const query = searchTerm.toLowerCase()
+        const matchesSearch =
+          room.room.toLowerCase().includes(query) ||
+          room.building.toLowerCase().includes(query) ||
+          room.campus.toLowerCase().includes(query) ||
+          (room.room_code && room.room_code.toLowerCase().includes(query)) ||
+          (room.room_type && room.room_type.toLowerCase().includes(query))
+        if (!matchesSearch) return false
+      }
+      if (filterFloor !== 'all' && room.floor_number !== parseInt(filterFloor)) return false
+      if (filterRoomType !== 'all' && room.room_type !== filterRoomType) return false
+      if (filterCollege !== 'all' && room.college !== filterCollege) return false
+      if (filterAC && !room.has_ac) return false
+      if (filterTV && !room.has_tv) return false
+      if (filterWhiteboard && !room.has_whiteboard) return false
+      return true
+    })
+  }, [buildingsForCampus, selectedBuildingName, searchTerm, filterFloor, filterRoomType, filterCollege, filterAC, filterTV, filterWhiteboard])
 
   // Get unique values for filters
   const uniqueBuildings = useMemo(() => [...new Set(allRooms.map(r => r.building))].sort(), [allRooms])
@@ -1050,7 +1069,7 @@ export default function RoomsManagementPage() {
           )}
 
           {/* CAMPUSES VIEW */}
-          {!loadingData && currentView === 'campuses' && (
+          {!loadingData && currentView === 'campuses' && !searchTerm && !hasActiveFilters && (
             <div className={styles.campusGrid}>
               {Array.from(campusGroups.entries()).map(([campusName, rooms]) => {
                 const buildings = new Set(rooms.map(r => r.building)).size
@@ -1106,7 +1125,7 @@ export default function RoomsManagementPage() {
           )}
 
           {/* BUILDINGS VIEW */}
-          {!loadingData && currentView === 'buildings' && (
+          {!loadingData && currentView === 'buildings' && !searchTerm && !hasActiveFilters && (
             <div className={styles.buildingGrid}>
               {Array.from(buildingsForCampus.entries()).map(([buildingName, rooms]) => {
                 const floors = new Set(rooms.map(r => r.floor_number).filter(f => f !== null)).size
@@ -1245,7 +1264,7 @@ export default function RoomsManagementPage() {
           )}
 
           {/* FILTERED SEARCH RESULTS */}
-          {selectedFile && searchTerm && (
+          {selectedFile && (searchTerm || hasActiveFilters) && currentView !== 'rooms' && (
             <div className={styles.searchResults}>
               <h3>Search Results: {filteredRooms.length} rooms found</h3>
               <div className={styles.roomsGrid}>

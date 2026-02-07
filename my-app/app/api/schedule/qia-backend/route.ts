@@ -185,6 +185,80 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   // Track room-day-time occupancy
   const occupancy = new Map<string, boolean>()
   
+  // Helper: parse time string "7:00 AM" → minutes since midnight
+  const parseTimeToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 0
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    if (!match) return 0
+    let hours = parseInt(match[1])
+    const mins = parseInt(match[2])
+    const ampm = (match[3] || '').toUpperCase()
+    if (ampm === 'PM' && hours !== 12) hours += 12
+    if (ampm === 'AM' && hours === 12) hours = 0
+    return hours * 60 + mins
+  }
+  
+  // Student group helper
+  const getStudentGroup = (sectionCode: string): string => {
+    let code = (sectionCode || '').trim()
+    for (const suffix of ['_LAB', '_LEC', '_lab', '_lec', '_Lab', '_Lec']) {
+      if (code.endsWith(suffix)) return code.slice(0, -suffix.length)
+    }
+    return code
+  }
+  
+  // Constants
+  const LUNCH_START = 13 * 60     // 1:00 PM
+  const LUNCH_END = 14 * 60       // 2:00 PM
+  const NIGHT_THRESHOLD = 17 * 60 // 5:00 PM
+  const LATE_START_THRESHOLD = 8 * 60 + 30 // 8:30 AM
+  const MAX_CLASSES_PER_DAY = 4
+  
+  // Track group→day→count and group→day→latest_end
+  const groupDayCounts = new Map<string, Map<string, number>>()    // group → day → count
+  const groupDayLatestEnd = new Map<string, Map<string, number>>() // group → day → latest end minute
+  const groupDayEarliestStart = new Map<string, Map<string, number>>() // group → day → earliest start minute
+  
+  const updateGroupTracking = (group: string, day: string, slotStart: number, slotEnd: number) => {
+    if (!groupDayCounts.has(group)) groupDayCounts.set(group, new Map())
+    const dc = groupDayCounts.get(group)!
+    dc.set(day, (dc.get(day) || 0) + 1)
+    
+    if (!groupDayLatestEnd.has(group)) groupDayLatestEnd.set(group, new Map())
+    const le = groupDayLatestEnd.get(group)!
+    le.set(day, Math.max(le.get(day) || 0, slotEnd))
+    
+    if (!groupDayEarliestStart.has(group)) groupDayEarliestStart.set(group, new Map())
+    const es = groupDayEarliestStart.get(group)!
+    es.set(day, Math.min(es.get(day) ?? 24 * 60, slotStart))
+  }
+  
+  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const getDayIndex = (d: string) => dayOrder.indexOf(d)
+  const getPrevDay = (d: string) => {
+    const idx = getDayIndex(d)
+    return idx > 0 ? dayOrder[idx - 1] : null
+  }
+  const getNextDay = (d: string) => {
+    const idx = getDayIndex(d)
+    return idx >= 0 && idx < dayOrder.length - 1 ? dayOrder[idx + 1] : null
+  }
+
+  // Track group→day→courses (for same-course-same-day constraint)
+  const groupDayCourses = new Map<string, Map<string, Set<string>>>() // group → day → set of course_codes
+  
+  const updateGroupCourseTracking = (group: string, day: string, courseCode: string) => {
+    if (!courseCode) return
+    if (!groupDayCourses.has(group)) groupDayCourses.set(group, new Map())
+    const dc = groupDayCourses.get(group)!
+    if (!dc.has(day)) dc.set(day, new Set())
+    dc.get(day)!.add(courseCode)
+  }
+
+  // Track which days each course has been scheduled on (for 2-day gap constraint)
+  const courseDayIndices = new Map<string, Set<number>>() // "group:courseCode" → set of day indices
+  const MIN_COURSE_DAY_GAP = 2
+
   // Sort rooms by capacity (largest first) and sections by student count (largest first)
   const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity)
   const sortedSections = [...sections].sort((a, b) => b.student_count - a.student_count)
@@ -195,12 +269,48 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
     // Calculate required slots (minimum 2 = 1 hour)
     const requiredSlots = Math.max(2, Math.ceil((section.weekly_hours || 180) / 30))
     let slotsAssigned = 0
+    const group = getStudentGroup(section.section_code || '')
+    const courseCode = section.course_code || ''
+    const courseKey = `${group}:${courseCode}`
     
     // Try each day
     for (const day of activeDays) {
       if (slotsAssigned >= requiredSlots) break
       
       const isOnline = onlineDays.includes(day)
+      const thisDayIdx = getDayIndex(day)
+      
+      // === Max 5 classes per day ===
+      const currentDayCount = groupDayCounts.get(group)?.get(day.toLowerCase()) || 0
+      if (currentDayCount >= MAX_CLASSES_PER_DAY) continue
+      
+      // === Same course must not appear twice on the same day ===
+      if (courseCode && groupDayCourses.get(group)?.get(day.toLowerCase())?.has(courseCode)) continue
+      
+      // === Same course must be at least 2 days apart ===
+      if (courseCode && courseDayIndices.has(courseKey)) {
+        let tooClose = false
+        for (const existingIdx of courseDayIndices.get(courseKey)!) {
+          if (Math.abs(thisDayIdx - existingIdx) < MIN_COURSE_DAY_GAP) {
+            tooClose = true
+            break
+          }
+        }
+        if (tooClose) continue
+      }
+      
+      // === Night→morning constraint ===
+      const prevDay = getPrevDay(day)
+      if (prevDay) {
+        const prevLatest = groupDayLatestEnd.get(group)?.get(prevDay.toLowerCase()) || 0
+        if (prevLatest >= NIGHT_THRESHOLD) {
+          // Previous day had a night class — check if this would be too early
+          const earliest = groupDayEarliestStart.get(group)?.get(day.toLowerCase())
+          if (earliest === undefined || earliest >= LATE_START_THRESHOLD) {
+            // No classes yet or existing classes are late enough — only allow late starts
+          }
+        }
+      }
       
       // Find compatible room
       const compatibleRoom = isOnline ? null : sortedRooms.find(r => {
@@ -216,49 +326,165 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
       // Find available time slot
       for (let i = 0; i < timeSlots.length - 1; i++) {
         const slot = timeSlots[i]
+        const nextSlot = timeSlots[i + 1]
+        if (!nextSlot) continue
+        
         const roomId = compatibleRoom?.id || 0
         const key = `${roomId}-${day}-${slot.id}`
+        const nextKey = `${roomId}-${day}-${nextSlot?.id}`
         
-        if (!occupancy.get(key)) {
-          // Allocate 2 consecutive slots (1 hour)
-          const nextSlot = timeSlots[i + 1]
-          const nextKey = `${roomId}-${day}-${nextSlot?.id}`
-          
-          if (!nextSlot || occupancy.get(nextKey)) continue
-          
-          // Mark as occupied
-          occupancy.set(key, true)
-          occupancy.set(nextKey, true)
-          
-          allocations.push({
-            class_id: section.id,
-            room_id: roomId,
-            course_code: section.course_code || '',
-            course_name: section.course_name || '',
-            section: section.section_code || '',
-            year_level: section.year_level || 1,
-            schedule_day: day,
-            schedule_time: `${slot.start_time} - ${nextSlot.end_time}`,
-            campus: compatibleRoom?.campus || 'Online',
-            building: compatibleRoom?.building || 'Virtual',
-            room: compatibleRoom?.room_name || 'Online Class',
-            capacity: compatibleRoom?.capacity || 0,
-            teacher_name: section.teacher_name || '',
-            department: section.department || '',
-            lec_hours: section.lec_hours || 0,
-            lab_hours: section.lab_hours || 0,
-            is_online: isOnline
-          })
-          
-          slotsAssigned += 2
-          break
+        if (occupancy.get(key) || occupancy.get(nextKey)) continue
+        
+        const slotStart = parseTimeToMinutes(slot.start_time)
+        const slotEnd = parseTimeToMinutes(nextSlot.end_time)
+        
+        // === Skip lunch break ===
+        if (slotStart < LUNCH_END && slotEnd > LUNCH_START) continue
+        
+        // === Night→morning: skip too-early slots if previous day had night class ===
+        if (prevDay) {
+          const prevLatest = groupDayLatestEnd.get(group)?.get(prevDay.toLowerCase()) || 0
+          if (prevLatest >= NIGHT_THRESHOLD && slotStart < LATE_START_THRESHOLD) continue
         }
+        
+        // === If this slot ends late (night), check next day ===
+        if (slotEnd >= NIGHT_THRESHOLD) {
+          const nd = getNextDay(day)
+          if (nd) {
+            const nextEarliest = groupDayEarliestStart.get(group)?.get(nd.toLowerCase())
+            if (nextEarliest !== undefined && nextEarliest < LATE_START_THRESHOLD) continue
+          }
+        }
+        
+        // Mark as occupied
+        occupancy.set(key, true)
+        occupancy.set(nextKey, true)
+        
+        // Update tracking
+        updateGroupTracking(group, day.toLowerCase(), slotStart, slotEnd)
+        updateGroupCourseTracking(group, day.toLowerCase(), courseCode)
+        // Track course day indices for gap constraint
+        if (courseCode) {
+          if (!courseDayIndices.has(courseKey)) courseDayIndices.set(courseKey, new Set())
+          courseDayIndices.get(courseKey)!.add(thisDayIdx)
+        }
+        
+        allocations.push({
+          class_id: section.id,
+          room_id: roomId,
+          course_code: section.course_code || '',
+          course_name: section.course_name || '',
+          section: section.section_code || '',
+          year_level: section.year_level || 1,
+          schedule_day: day,
+          schedule_time: `${slot.start_time} - ${nextSlot.end_time}`,
+          campus: compatibleRoom?.campus || 'Online',
+          building: compatibleRoom?.building || 'Virtual',
+          room: compatibleRoom?.room_name || 'Online Class',
+          capacity: compatibleRoom?.capacity || 0,
+          teacher_name: section.teacher_name || '',
+          department: section.department || '',
+          lec_hours: section.lec_hours || 0,
+          lab_hours: section.lab_hours || 0,
+          is_online: isOnline
+        })
+        
+        slotsAssigned += 2
+        break
       }
     }
     
     if (slotsAssigned > 0) scheduledCount++
   }
   
+  // ====================================================================
+  // SINGLE-CLASS-DAY CONSOLIDATION
+  // Post-process: detect student groups with only 1 class on a day
+  // and attempt to move them to a day where the same group already has classes.
+  // ====================================================================
+
+  // Build group->day->allocations map
+  const groupDayMapPost = new Map<string, Map<string, number[]>>() // group -> day -> allocation indices
+  allocations.forEach((alloc, idx) => {
+    const group = getStudentGroup(alloc.section)
+    if (!groupDayMapPost.has(group)) groupDayMapPost.set(group, new Map())
+    const dayMap = groupDayMapPost.get(group)!
+    const day = (alloc.schedule_day || '').toLowerCase()
+    if (!dayMap.has(day)) dayMap.set(day, [])
+    dayMap.get(day)!.push(idx)
+  })
+
+  // For each group, find single-class days and try to move them
+  for (const [group, dayMap] of groupDayMapPost) {
+    const singleDays: string[] = []
+    const multiDays: string[] = []
+    for (const [day, indices] of dayMap) {
+      if (indices.length === 1) singleDays.push(day)
+      else if (indices.length >= 2 && indices.length < MAX_CLASSES_PER_DAY) multiDays.push(day)
+    }
+
+    for (const singleDay of singleDays) {
+      const allocIdx = dayMap.get(singleDay)![0]
+      const alloc = allocations[allocIdx]
+      const roomId = alloc.room_id
+      const allocCourseCode = alloc.course_code || ''
+
+      // Try to move to a day where this group already has 2+ classes
+      let moved = false
+      for (const targetDay of multiDays) {
+        // === Same course must not appear twice on the same day ===
+        if (allocCourseCode) {
+          const targetIndices = dayMap.get(targetDay) || []
+          const targetCourses = new Set(targetIndices.map((idx: number) => allocations[idx].course_code || ''))
+          if (targetCourses.has(allocCourseCode)) continue
+        }
+        
+        // === Same course must be at least 2 days apart ===
+        if (allocCourseCode) {
+          const targetDayIdx = getDayIndex(targetDay.charAt(0).toUpperCase() + targetDay.slice(1))
+          const sameCourseKey = `${group}:${allocCourseCode}`
+          const existingDays = courseDayIndices.get(sameCourseKey)
+          if (existingDays) {
+            let tooClose = false
+            for (const edi of existingDays) {
+              if (Math.abs(targetDayIdx - edi) < MIN_COURSE_DAY_GAP && edi !== getDayIndex(singleDay.charAt(0).toUpperCase() + singleDay.slice(1))) {
+                tooClose = true
+                break
+              }
+            }
+            if (tooClose) continue
+          }
+        }
+        
+        // Find a free time slot on the target day in the same or compatible room
+        for (let i = 0; i < timeSlots.length - 1; i++) {
+          const slot = timeSlots[i]
+          const nextSlot = timeSlots[i + 1]
+          if (!nextSlot) continue
+          
+          const slotStart = parseTimeToMinutes(slot.start_time)
+          const slotEnd = parseTimeToMinutes(nextSlot.end_time)
+          
+          // Skip lunch break
+          if (slotStart < LUNCH_END && slotEnd > LUNCH_START) continue
+          
+          const key1 = `${roomId}-${targetDay}-${slot.id}`
+          const key2 = `${roomId}-${targetDay}-${nextSlot.id}`
+          if (!occupancy.get(key1) && !occupancy.get(key2)) {
+            // Free slot found — move the allocation
+            alloc.schedule_day = targetDay.charAt(0).toUpperCase() + targetDay.slice(1)
+            alloc.schedule_time = `${slot.start_time} - ${nextSlot.end_time}`
+            occupancy.set(key1, true)
+            occupancy.set(key2, true)
+            moved = true
+            break
+          }
+        }
+        if (moved) break
+      }
+    }
+  }
+
   const elapsed = Date.now() - startTime
   const successRate = (scheduledCount / Math.max(sortedSections.length, 1)) * 100
   
