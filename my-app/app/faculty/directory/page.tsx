@@ -153,55 +153,21 @@ function FacultyDirectoryContent() {
     applyFilters()
   }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedCollege])
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open - simpler approach
   useEffect(() => {
     if (selectedFaculty && isMobile) {
-      // Store current scroll position in ref
-      scrollPositionRef.current = window.scrollY
-      
-      // Store original styles
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      
-      // Prevent scrolling and layout shift
+      // Simply prevent scrolling without changing position
       document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
-      document.body.style.top = `-${scrollPositionRef.current}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
-      document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px'
-      
-      // Also lock the html element
-      document.documentElement.style.overflow = 'hidden'
-    } else if (!selectedFaculty && isMobile && scrollPositionRef.current > 0) {
-      // Restore scroll position FIRST before removing fixed positioning
-      const savedScrollPos = scrollPositionRef.current
-      
-      // Restore original styles
+      document.body.style.touchAction = 'none'
+    } else {
+      // Restore scrolling
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-      document.body.style.top = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
-      document.body.style.paddingRight = ''
-      document.documentElement.style.overflow = ''
-      
-      // Immediately restore scroll - no animation frame needed
-      window.scrollTo(0, savedScrollPos)
+      document.body.style.touchAction = ''
     }
     
     return () => {
-      if (isMobile) {
-        document.body.style.overflow = ''
-        document.body.style.position = ''
-        document.body.style.width = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        document.body.style.paddingRight = ''
-        document.documentElement.style.overflow = ''
-      }
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
     }
   }, [selectedFaculty, isMobile])
 
