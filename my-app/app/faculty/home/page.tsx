@@ -113,16 +113,19 @@ export default function FacultyHomePage() {
     document.body.classList.add('faculty-page', 'faculty-loaded')
     
     // Force body background based on faculty theme
-    const bgColor = themeToApply === 'light' ? '#f8fafc' : '#0a0e27'
+    const bgColor = themeToApply === 'light' ? '#ffffff' : '#0a0e27'
     const textColor = themeToApply === 'light' ? '#1e293b' : '#ffffff'
     document.documentElement.style.setProperty('background', bgColor, 'important')
     document.body.style.setProperty('background', bgColor, 'important')
     document.body.style.setProperty('color', textColor, 'important')
     
     // Reset CSS variables on root
+    document.documentElement.style.setProperty('--page-bg', bgColor)
     document.documentElement.style.setProperty('--bg-primary', bgColor)
-    document.documentElement.style.setProperty('--bg-secondary', themeToApply === 'light' ? '#ffffff' : '#1a1f3a')
+    document.documentElement.style.setProperty('--bg-secondary', themeToApply === 'light' ? '#f8fafc' : '#1a1f3a')
+    document.documentElement.style.setProperty('--card-bg', themeToApply === 'light' ? 'rgba(255, 255, 255, 0.98)' : 'rgba(20, 26, 50, 0.95)')
     document.documentElement.style.setProperty('--text-primary', textColor)
+    document.documentElement.style.setProperty('--text-secondary', themeToApply === 'light' ? '#64748b' : 'rgba(255, 255, 255, 0.7)')
 
     setMounted(true)
     // Force a style recalculation
@@ -568,8 +571,8 @@ export default function FacultyHomePage() {
         className="min-h-screen flex flex-col items-center justify-center gap-5"
         style={{
           background: loadingIsLight
-            ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
-            : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+            ? '#ffffff'
+            : '#0a0e27',
           color: loadingIsLight ? '#1e293b' : '#ffffff',
           position: 'fixed',
           top: 0,
@@ -599,7 +602,7 @@ export default function FacultyHomePage() {
       data-theme={effectiveTheme}
       data-college-theme={collegeTheme}
       style={{
-        backgroundColor: isLightMode ? '#f8fafc' : '#0a0e27',
+        backgroundColor: isLightMode ? '#ffffff' : '#0a0e27',
         minHeight: '100vh'
       }}
     >

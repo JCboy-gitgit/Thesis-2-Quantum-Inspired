@@ -51,19 +51,23 @@ function applyFacultyStyles(isLightMode: boolean) {
   body.classList.add('faculty-page')
   
   // Force correct background and text colors
-  const bgColor = isLightMode ? '#f8fafc' : '#0a0e27'
+  const bgColor = isLightMode ? '#ffffff' : '#0a0e27'
   const textColor = isLightMode ? '#1e293b' : '#ffffff'
   
   html.style.setProperty('background', bgColor, 'important')
   body.style.setProperty('background', bgColor, 'important')
   body.style.setProperty('color', textColor, 'important')
   
-  // Set faculty CSS variables
+  // Set faculty CSS variables for proper theming
+  html.style.setProperty('--page-bg', bgColor)
   html.style.setProperty('--bg-primary', bgColor)
-  html.style.setProperty('--bg-secondary', isLightMode ? '#ffffff' : '#1a1f3a')
+  html.style.setProperty('--bg-secondary', isLightMode ? '#f8fafc' : '#1a1f3a')
+  html.style.setProperty('--card-bg', isLightMode ? 'rgba(255, 255, 255, 0.98)' : 'rgba(20, 26, 50, 0.95)')
   html.style.setProperty('--text-primary', textColor)
-  html.style.setProperty('--text-secondary', isLightMode ? '#64748b' : '#a0aec0')
-  html.style.setProperty('--primary', isLightMode ? '#10b981' : '#00d4ff')
+  html.style.setProperty('--text-secondary', isLightMode ? '#64748b' : 'rgba(255, 255, 255, 0.7)')
+  html.style.setProperty('--text-muted', isLightMode ? '#94a3b8' : 'rgba(255, 255, 255, 0.5)')
+  html.style.setProperty('--border-color', isLightMode ? '#e2e8f0' : 'rgba(0, 212, 255, 0.2)')
+  html.style.setProperty('--divider-color', isLightMode ? '#e2e8f0' : 'rgba(0, 212, 255, 0.2)')
 }
 
 export default function FacultyLayout({
@@ -123,8 +127,8 @@ export default function FacultyLayout({
           right: 0,
           bottom: 0,
           background: isLightMode
-            ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
-            : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+            ? '#ffffff'
+            : '#0a0e27',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

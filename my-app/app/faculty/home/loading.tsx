@@ -32,7 +32,7 @@ export default function FacultyHomeLoading() {
   // Faculty pages treat 'green' as 'light' mode (already normalized above)
   const isLight = theme === 'light'
 
-  return (
+      return (
     <div 
       style={{
         position: 'fixed',
@@ -47,8 +47,8 @@ export default function FacultyHomeLoading() {
         gap: '20px',
         zIndex: 9999,
         background: isLight 
-          ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%)'
-          : 'linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%)',
+          ? '#ffffff'
+          : '#0a0e27',
         color: isLight ? '#1e293b' : '#ffffff',
       }}
     >
