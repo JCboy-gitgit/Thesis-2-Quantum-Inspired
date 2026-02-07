@@ -156,10 +156,14 @@ export default function FacultyHomePage() {
       // Trigger a reflow to force CSS application
       document.body.offsetHeight
 
-      // Open sidebar after a short delay to ensure CSS is fully applied
+      // Open sidebar after a short delay on DESKTOP only to ensure CSS is fully applied
       // This prevents the broken layout on first login
+      // On mobile, keep it closed to avoid covering the content
       const timer = setTimeout(() => {
-        setSidebarOpen(true)
+        const isMobileView = window.innerWidth <= 768
+        if (!isMobileView) {
+          setSidebarOpen(true)
+        }
       }, 100)
 
       return () => clearTimeout(timer)

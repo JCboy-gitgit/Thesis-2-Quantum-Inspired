@@ -128,6 +128,7 @@ function RoomSchedulesViewContent() {
   const [filterDay, setFilterDay] = useState<string>('all')
   const [filterTeacher, setFilterTeacher] = useState<string>('all')
   const [selectedAllocation, setSelectedAllocation] = useState<RoomAllocation | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
   
   // Filter options
   const [buildings, setBuildings] = useState<string[]>([])
@@ -151,6 +152,69 @@ function RoomSchedulesViewContent() {
   useEffect(() => {
     checkAuth()
   }, [])
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Prevent body scroll when modal is open on mobile
+  useEffect(() => {
+    if (selectedAllocation && isMobile) {
+      // Store current scroll position
+      const scrollY = window.scrollY
+      
+      // Store original styles
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      
+      // Prevent scrolling and layout shift
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px'
+      
+      // Also lock the html element
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      // Get the stored scroll position
+      const scrollY = document.body.style.top
+      
+      // Restore original styles
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.paddingRight = ''
+      document.documentElement.style.overflow = ''
+      
+      // Restore scroll position
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1)
+      }
+    }
+    
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.paddingRight = ''
+      document.documentElement.style.overflow = ''
+    }
+  }, [selectedAllocation, isMobile])
 
   // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
   useEffect(() => {
@@ -1768,8 +1832,8 @@ function RoomSchedulesViewContent() {
         </div>
       )}
 
-      {/* Detail Modal */}
-      {selectedAllocation && (
+      {/* Mobile Modal */}
+      {isMobile && selectedAllocation && (
         <div className={styles.modalOverlay} onClick={() => setSelectedAllocation(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setSelectedAllocation(null)}>
@@ -1782,68 +1846,195 @@ function RoomSchedulesViewContent() {
             <div className={styles.modalBody}>
               <div className={styles.detailsGrid}>
                 <div className={styles.detailItem}>
-                  <strong>Section:</strong>
-                  <span>{selectedAllocation.section}</span>
+                  <BookOpen size={18} />
+                  <div>
+                    <strong>Section</strong>
+                    <span>{selectedAllocation.section}</span>
+                  </div>
                 </div>
                 {selectedAllocation.year_level && (
                   <div className={styles.detailItem}>
-                    <strong>Year Level:</strong>
-                    <span>Year {selectedAllocation.year_level}</span>
+                    <GraduationCap size={18} />
+                    <div>
+                      <strong>Year Level</strong>
+                      <span>Year {selectedAllocation.year_level}</span>
+                    </div>
                   </div>
                 )}
                 <div className={styles.detailItem}>
-                  <Calendar size={16} />
-                  <strong>Day:</strong>
-                  <span>{selectedAllocation.schedule_day}</span>
+                  <Calendar size={18} />
+                  <div>
+                    <strong>Day</strong>
+                    <span>{selectedAllocation.schedule_day}</span>
+                  </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Clock size={16} />
-                  <strong>Time:</strong>
-                  <span>{selectedAllocation.schedule_time}</span>
+                  <Clock size={18} />
+                  <div>
+                    <strong>Time</strong>
+                    <span>{selectedAllocation.schedule_time}</span>
+                  </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Building2 size={16} />
-                  <strong>Building:</strong>
-                  <span>{selectedAllocation.building}</span>
+                  <Building2 size={18} />
+                  <div>
+                    <strong>Building</strong>
+                    <span>{selectedAllocation.building}</span>
+                  </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <DoorOpen size={16} />
-                  <strong>Room:</strong>
-                  <span>{selectedAllocation.room}</span>
+                  <DoorOpen size={18} />
+                  <div>
+                    <strong>Room</strong>
+                    <span>{selectedAllocation.room}</span>
+                  </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Users size={16} />
-                  <strong>Capacity:</strong>
-                  <span>{selectedAllocation.capacity} students</span>
+                  <Users size={18} />
+                  <div>
+                    <strong>Capacity</strong>
+                    <span>{selectedAllocation.capacity} students</span>
+                  </div>
                 </div>
                 {selectedAllocation.teacher_name && (
                   <div className={styles.detailItem}>
-                    <Users size={16} />
-                    <strong>Teacher:</strong>
-                    <span>{selectedAllocation.teacher_name}</span>
+                    <User size={18} />
+                    <div>
+                      <strong>Teacher</strong>
+                      <span>{selectedAllocation.teacher_name}</span>
+                    </div>
                   </div>
                 )}
                 {selectedAllocation.department && (
                   <div className={styles.detailItem}>
-                    <Building2 size={16} />
-                    <strong>Department:</strong>
-                    <span>{selectedAllocation.department}</span>
+                    <Building2 size={18} />
+                    <div>
+                      <strong>Department</strong>
+                      <span>{selectedAllocation.department}</span>
+                    </div>
                   </div>
                 )}
                 {(selectedAllocation.lec_hours || selectedAllocation.lab_hours) && (
                   <div className={styles.detailItem}>
-                    <Clock size={16} />
-                    <strong>Hours:</strong>
-                    <span>
-                      {selectedAllocation.lec_hours ? `${selectedAllocation.lec_hours}h Lecture` : ''}
-                      {selectedAllocation.lec_hours && selectedAllocation.lab_hours ? ' + ' : ''}
-                      {selectedAllocation.lab_hours ? `${selectedAllocation.lab_hours}h Lab` : ''}
-                    </span>
+                    <Clock size={18} />
+                    <div>
+                      <strong>Hours</strong>
+                      <span>
+                        {selectedAllocation.lec_hours ? `${selectedAllocation.lec_hours}h Lecture` : ''}
+                        {selectedAllocation.lec_hours && selectedAllocation.lab_hours ? ' + ' : ''}
+                        {selectedAllocation.lab_hours ? `${selectedAllocation.lab_hours}h Lab` : ''}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Desktop Side Panel */}
+      {!isMobile && (
+        <div className={`${styles.sidePanel} ${selectedAllocation ? styles.sidePanelOpen : ''}`}>
+          {selectedAllocation && (
+            <>
+              <button className={styles.closePanelButton} onClick={() => setSelectedAllocation(null)}>
+                <X size={24} />
+              </button>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelTitle}>
+                  <h2 className={styles.panelCourseCode}>{selectedAllocation.course_code}</h2>
+                  <p className={styles.panelCourseName}>{selectedAllocation.course_name}</p>
+                </div>
+              </div>
+              <div className={styles.panelBody}>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoItem}>
+                    <BookOpen size={18} />
+                    <div>
+                      <strong>Section</strong>
+                      <span>{selectedAllocation.section}</span>
+                    </div>
+                  </div>
+                  {selectedAllocation.year_level && (
+                    <div className={styles.infoItem}>
+                      <GraduationCap size={18} />
+                      <div>
+                        <strong>Year Level</strong>
+                        <span>Year {selectedAllocation.year_level}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className={styles.infoItem}>
+                    <Calendar size={18} />
+                    <div>
+                      <strong>Day</strong>
+                      <span>{selectedAllocation.schedule_day}</span>
+                    </div>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <Clock size={18} />
+                    <div>
+                      <strong>Time</strong>
+                      <span>{selectedAllocation.schedule_time}</span>
+                    </div>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <Building2 size={18} />
+                    <div>
+                      <strong>Building</strong>
+                      <span>{selectedAllocation.building}</span>
+                    </div>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <DoorOpen size={18} />
+                    <div>
+                      <strong>Room</strong>
+                      <span>{selectedAllocation.room}</span>
+                    </div>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <Users size={18} />
+                    <div>
+                      <strong>Capacity</strong>
+                      <span>{selectedAllocation.capacity} students</span>
+                    </div>
+                  </div>
+                  {selectedAllocation.teacher_name && (
+                    <div className={styles.infoItem}>
+                      <User size={18} />
+                      <div>
+                        <strong>Teacher</strong>
+                        <span>{selectedAllocation.teacher_name}</span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedAllocation.department && (
+                    <div className={styles.infoItem}>
+                      <Building2 size={18} />
+                      <div>
+                        <strong>Department</strong>
+                        <span>{selectedAllocation.department}</span>
+                      </div>
+                    </div>
+                  )}
+                  {(selectedAllocation.lec_hours || selectedAllocation.lab_hours) && (
+                    <div className={styles.infoItem}>
+                      <Clock size={18} />
+                      <div>
+                        <strong>Hours</strong>
+                        <span>
+                          {selectedAllocation.lec_hours ? `${selectedAllocation.lec_hours}h Lecture` : ''}
+                          {selectedAllocation.lec_hours && selectedAllocation.lab_hours ? ' + ' : ''}
+                          {selectedAllocation.lab_hours ? `${selectedAllocation.lab_hours}h Lab` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

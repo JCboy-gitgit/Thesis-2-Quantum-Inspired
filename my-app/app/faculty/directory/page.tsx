@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
@@ -140,6 +140,9 @@ function FacultyDirectoryContent() {
   
   const [currentPage, setCurrentPage] = useState(1)
   const PAGE_SIZE = 12
+  
+  // Store scroll position in a ref to preserve it across renders
+  const scrollPositionRef = useRef<number>(0)
 
   useEffect(() => {
     checkAuth()
@@ -149,6 +152,58 @@ function FacultyDirectoryContent() {
   useEffect(() => {
     applyFilters()
   }, [allFaculty, searchTerm, filterRole, filterEmployment, filterDepartment, selectedCollege])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedFaculty && isMobile) {
+      // Store current scroll position in ref
+      scrollPositionRef.current = window.scrollY
+      
+      // Store original styles
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      
+      // Prevent scrolling and layout shift
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+      document.body.style.top = `-${scrollPositionRef.current}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px'
+      
+      // Also lock the html element
+      document.documentElement.style.overflow = 'hidden'
+    } else if (!selectedFaculty && isMobile && scrollPositionRef.current > 0) {
+      // Restore scroll position FIRST before removing fixed positioning
+      const savedScrollPos = scrollPositionRef.current
+      
+      // Restore original styles
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.paddingRight = ''
+      document.documentElement.style.overflow = ''
+      
+      // Immediately restore scroll - no animation frame needed
+      window.scrollTo(0, savedScrollPos)
+    }
+    
+    return () => {
+      if (isMobile) {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.width = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.paddingRight = ''
+        document.documentElement.style.overflow = ''
+      }
+    }
+  }, [selectedFaculty, isMobile])
 
   useEffect(() => {
     const checkMobile = () => {
