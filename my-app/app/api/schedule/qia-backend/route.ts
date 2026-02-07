@@ -124,13 +124,13 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
     const labHours = cls.lab_hours || 0
     // Total weekly contact hours = lec + lab hours
     const weeklyHours = lecHours + labHours
-    
+
     // Use teacher_name from class data if available, otherwise 'TBD'
     const teacherName = (cls as any).teacher_name || 'TBD'
-    
+
     // Get required features for this course (based on course_id from class_schedules table)
     const courseId = (cls as any).course_id || cls.id
-    
+
     return {
       id: typeof cls.id === 'number' ? cls.id : index + 1, // Ensure numeric ID
       section_code: cls.section || `SEC-${index + 1}`,
@@ -181,10 +181,10 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   const allocations: any[] = []
   const activeDays = body.active_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
   const onlineDays = body.online_days || []
-  
+
   // Track room-day-time occupancy
   const occupancy = new Map<string, boolean>()
-  
+
   // Helper: parse time string "7:00 AM" → minutes since midnight
   const parseTimeToMinutes = (timeStr: string): number => {
     if (!timeStr) return 0
@@ -197,7 +197,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
     if (ampm === 'AM' && hours === 12) hours = 0
     return hours * 60 + mins
   }
-  
+
   // Student group helper
   const getStudentGroup = (sectionCode: string): string => {
     let code = (sectionCode || '').trim()
@@ -206,33 +206,33 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
     }
     return code
   }
-  
+
   // Constants
   const LUNCH_START = 13 * 60     // 1:00 PM
   const LUNCH_END = 14 * 60       // 2:00 PM
   const NIGHT_THRESHOLD = 17 * 60 // 5:00 PM
   const LATE_START_THRESHOLD = 8 * 60 + 30 // 8:30 AM
   const MAX_CLASSES_PER_DAY = 4
-  
+
   // Track group→day→count and group→day→latest_end
   const groupDayCounts = new Map<string, Map<string, number>>()    // group → day → count
   const groupDayLatestEnd = new Map<string, Map<string, number>>() // group → day → latest end minute
   const groupDayEarliestStart = new Map<string, Map<string, number>>() // group → day → earliest start minute
-  
+
   const updateGroupTracking = (group: string, day: string, slotStart: number, slotEnd: number) => {
     if (!groupDayCounts.has(group)) groupDayCounts.set(group, new Map())
     const dc = groupDayCounts.get(group)!
     dc.set(day, (dc.get(day) || 0) + 1)
-    
+
     if (!groupDayLatestEnd.has(group)) groupDayLatestEnd.set(group, new Map())
     const le = groupDayLatestEnd.get(group)!
     le.set(day, Math.max(le.get(day) || 0, slotEnd))
-    
+
     if (!groupDayEarliestStart.has(group)) groupDayEarliestStart.set(group, new Map())
     const es = groupDayEarliestStart.get(group)!
     es.set(day, Math.min(es.get(day) ?? 24 * 60, slotStart))
   }
-  
+
   const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const getDayIndex = (d: string) => dayOrder.indexOf(d)
   const getPrevDay = (d: string) => {
@@ -246,7 +246,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
 
   // Track group→day→courses (for same-course-same-day constraint)
   const groupDayCourses = new Map<string, Map<string, Set<string>>>() // group → day → set of course_codes
-  
+
   const updateGroupCourseTracking = (group: string, day: string, courseCode: string) => {
     if (!courseCode) return
     if (!groupDayCourses.has(group)) groupDayCourses.set(group, new Map())
@@ -262,9 +262,9 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   // Sort rooms by capacity (largest first) and sections by student count (largest first)
   const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity)
   const sortedSections = [...sections].sort((a, b) => b.student_count - a.student_count)
-  
+
   let scheduledCount = 0
-  
+
   for (const section of sortedSections) {
     // Calculate required slots (minimum 2 = 1 hour)
     const requiredSlots = Math.max(2, Math.ceil((section.weekly_hours || 180) / 30))
@@ -272,21 +272,21 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
     const group = getStudentGroup(section.section_code || '')
     const courseCode = section.course_code || ''
     const courseKey = `${group}:${courseCode}`
-    
+
     // Try each day
     for (const day of activeDays) {
       if (slotsAssigned >= requiredSlots) break
-      
+
       const isOnline = onlineDays.includes(day)
       const thisDayIdx = getDayIndex(day)
-      
+
       // === Max 5 classes per day ===
       const currentDayCount = groupDayCounts.get(group)?.get(day.toLowerCase()) || 0
       if (currentDayCount >= MAX_CLASSES_PER_DAY) continue
-      
+
       // === Same course must not appear twice on the same day ===
       if (courseCode && groupDayCourses.get(group)?.get(day.toLowerCase())?.has(courseCode)) continue
-      
+
       // === Same course must be at least 2 days apart ===
       if (courseCode && courseDayIndices.has(courseKey)) {
         let tooClose = false
@@ -298,7 +298,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
         }
         if (tooClose) continue
       }
-      
+
       // === Night→morning constraint ===
       const prevDay = getPrevDay(day)
       if (prevDay) {
@@ -311,42 +311,56 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
           }
         }
       }
-      
+
       // Find compatible room
       const compatibleRoom = isOnline ? null : sortedRooms.find(r => {
-        // Room must have capacity >= student count (with 10% tolerance)
+        // 1. Room must have capacity >= student count (with 10% tolerance)
         const hasCapacity = r.capacity >= section.student_count * 0.9
-        // Match room type for labs
+
+        // 2. Match room type for labs
         const typeMatch = !section.requires_lab || r.room_type?.toLowerCase().includes('lab')
-        return hasCapacity && typeMatch
+
+        // 3. Feature matching - room must have ALL required features (equipment tags)
+        const sectionFeatures: string[] = section.required_features || []
+        const roomFeatures: string[] = r.feature_tags || []
+        const hasAllFeatures = sectionFeatures.length === 0 ||
+          sectionFeatures.every((f: string) => roomFeatures.includes(f))
+
+        // 4. College matching - room must match section college or be "Shared"
+        const sectionCollege = section.college
+        const roomCollege = r.college
+        const collegeMatches = !sectionCollege || !roomCollege ||
+          roomCollege === 'Shared' || roomCollege === sectionCollege
+
+        return hasCapacity && typeMatch && hasAllFeatures && collegeMatches
       })
-      
+
       if (!isOnline && !compatibleRoom) continue
-      
+
       // Find available time slot
       for (let i = 0; i < timeSlots.length - 1; i++) {
         const slot = timeSlots[i]
         const nextSlot = timeSlots[i + 1]
         if (!nextSlot) continue
-        
+
         const roomId = compatibleRoom?.id || 0
         const key = `${roomId}-${day}-${slot.id}`
         const nextKey = `${roomId}-${day}-${nextSlot?.id}`
-        
+
         if (occupancy.get(key) || occupancy.get(nextKey)) continue
-        
+
         const slotStart = parseTimeToMinutes(slot.start_time)
         const slotEnd = parseTimeToMinutes(nextSlot.end_time)
-        
+
         // === Skip lunch break ===
         if (slotStart < LUNCH_END && slotEnd > LUNCH_START) continue
-        
+
         // === Night→morning: skip too-early slots if previous day had night class ===
         if (prevDay) {
           const prevLatest = groupDayLatestEnd.get(group)?.get(prevDay.toLowerCase()) || 0
           if (prevLatest >= NIGHT_THRESHOLD && slotStart < LATE_START_THRESHOLD) continue
         }
-        
+
         // === If this slot ends late (night), check next day ===
         if (slotEnd >= NIGHT_THRESHOLD) {
           const nd = getNextDay(day)
@@ -355,11 +369,11 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
             if (nextEarliest !== undefined && nextEarliest < LATE_START_THRESHOLD) continue
           }
         }
-        
+
         // Mark as occupied
         occupancy.set(key, true)
         occupancy.set(nextKey, true)
-        
+
         // Update tracking
         updateGroupTracking(group, day.toLowerCase(), slotStart, slotEnd)
         updateGroupCourseTracking(group, day.toLowerCase(), courseCode)
@@ -368,7 +382,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
           if (!courseDayIndices.has(courseKey)) courseDayIndices.set(courseKey, new Set())
           courseDayIndices.get(courseKey)!.add(thisDayIdx)
         }
-        
+
         allocations.push({
           class_id: section.id,
           room_id: roomId,
@@ -388,15 +402,15 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
           lab_hours: section.lab_hours || 0,
           is_online: isOnline
         })
-        
+
         slotsAssigned += 2
         break
       }
     }
-    
+
     if (slotsAssigned > 0) scheduledCount++
   }
-  
+
   // ====================================================================
   // SINGLE-CLASS-DAY CONSOLIDATION
   // Post-process: detect student groups with only 1 class on a day
@@ -438,7 +452,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
           const targetCourses = new Set(targetIndices.map((idx: number) => allocations[idx].course_code || ''))
           if (targetCourses.has(allocCourseCode)) continue
         }
-        
+
         // === Same course must be at least 2 days apart ===
         if (allocCourseCode) {
           const targetDayIdx = getDayIndex(targetDay.charAt(0).toUpperCase() + targetDay.slice(1))
@@ -455,19 +469,19 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
             if (tooClose) continue
           }
         }
-        
+
         // Find a free time slot on the target day in the same or compatible room
         for (let i = 0; i < timeSlots.length - 1; i++) {
           const slot = timeSlots[i]
           const nextSlot = timeSlots[i + 1]
           if (!nextSlot) continue
-          
+
           const slotStart = parseTimeToMinutes(slot.start_time)
           const slotEnd = parseTimeToMinutes(nextSlot.end_time)
-          
+
           // Skip lunch break
           if (slotStart < LUNCH_END && slotEnd > LUNCH_START) continue
-          
+
           const key1 = `${roomId}-${targetDay}-${slot.id}`
           const key2 = `${roomId}-${targetDay}-${nextSlot.id}`
           if (!occupancy.get(key1) && !occupancy.get(key2)) {
@@ -487,16 +501,16 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
 
   const elapsed = Date.now() - startTime
   const successRate = (scheduledCount / Math.max(sortedSections.length, 1)) * 100
-  
+
   // Save to database
   let scheduleId = 0
   let savedToDatabase = false
-  
+
   // Resolve the correct group IDs from the request
   // Frontend sends campus_group_ids (array) and year_batch_id
   const resolvedCampusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
   const resolvedClassGroupId = body.class_group_id || body.year_batch_id || 1
-  
+
   try {
     // Create schedule record
     const { data: scheduleData, error: scheduleError } = await supabase
@@ -523,10 +537,10 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
       })
       .select('id')
       .single()
-    
+
     if (!scheduleError && scheduleData) {
       scheduleId = scheduleData.id
-      
+
       // Save room allocations
       const roomAllocations = allocations.map(a => ({
         schedule_id: scheduleId,
@@ -548,12 +562,12 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
         lab_hours: a.lab_hours,
         status: 'scheduled'
       }))
-      
+
       if (roomAllocations.length > 0) {
         const { error: allocError } = await supabase
           .from('room_allocations')
           .insert(roomAllocations)
-        
+
         if (!allocError) {
           savedToDatabase = true
           console.log(`✅ Saved ${roomAllocations.length} allocations to database`)
@@ -567,7 +581,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   } catch (dbError) {
     console.error('Database error:', dbError)
   }
-  
+
   return {
     success: scheduledCount === sortedSections.length,
     schedule_id: scheduleId,
@@ -635,7 +649,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
   const allocations = backendResult.schedule_entries?.map((entry: any) => {
     const classData = originalClasses.find(c => c.id === entry.section_id)
     const roomData = originalRooms.find(r => r.id === entry.room_id)
-    
+
     return {
       class_id: entry.section_id,
       room_id: entry.room_id,
@@ -658,8 +672,8 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
   }) || []
 
   // Calculate success rate
-  const successRate = backendResult.total_sections > 0 
-    ? (backendResult.scheduled_sections / backendResult.total_sections * 100) 
+  const successRate = backendResult.total_sections > 0
+    ? (backendResult.scheduled_sections / backendResult.total_sections * 100)
     : 0
 
   return {
@@ -732,11 +746,11 @@ export async function POST(request: NextRequest) {
 
     // ==================== Fetch Feature Tags from Database ====================
     console.log('🏷️ Fetching room features and course requirements...')
-    
+
     // Fetch room features (room_id -> list of feature tag names)
     const roomIds = body.rooms.map(r => r.id)
     let roomFeatures = new Map<number, string[]>()
-    
+
     try {
       const { data: roomFeaturesData, error: roomFeaturesError } = await supabase
         .from('room_features')
@@ -745,7 +759,7 @@ export async function POST(request: NextRequest) {
           feature_tags (tag_name)
         `)
         .in('room_id', roomIds)
-      
+
       if (!roomFeaturesError && roomFeaturesData) {
         // Group by room_id
         roomFeaturesData.forEach((rf: any) => {
@@ -763,12 +777,12 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       console.warn('   ⚠️ Could not fetch room features (table may not exist yet)')
     }
-    
+
     // Fetch course requirements (course_id -> list of required feature tag names)
     // Using the teaching_loads course_id (which links to class_schedules.id)
     const courseIds = body.classes.map(c => (c as any).course_id || c.id)
     let courseRequirements = new Map<number, string[]>()
-    
+
     try {
       const { data: courseReqData, error: courseReqError } = await supabase
         .from('subject_room_requirements')
@@ -779,7 +793,7 @@ export async function POST(request: NextRequest) {
         `)
         .in('course_id', courseIds)
         .eq('is_mandatory', true)  // Only get mandatory requirements
-      
+
       if (!courseReqError && courseReqData) {
         // Group by course_id
         courseReqData.forEach((cr: any) => {
@@ -824,14 +838,14 @@ export async function POST(request: NextRequest) {
       const parts = timeStr.split(':')
       return parseInt(parts[0], 10) || defaultHour
     }
-    
+
     const lunchStartHour = parseLunchHour(body.config.lunch_start_hour, 13) // Default 1:00 PM
     const lunchEndHour = parseLunchHour(body.config.lunch_end_hour, 14) // Default 2:00 PM
-    
+
     // Resolve the correct group IDs for Python backend
     const campusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
     const classGroupId = body.class_group_id || body.year_batch_id || 1
-    
+
     const backendPayload = {
       schedule_name: body.schedule_name,
       semester: body.semester,
@@ -868,34 +882,34 @@ export async function POST(request: NextRequest) {
     console.log('🔬 Strict Lab Matching:', backendPayload.strict_lab_room_matching)
     console.log('✂️ Allow Split Sessions:', backendPayload.allow_split_sessions)
     console.log('🌍 Environment:', isProduction ? 'Production' : 'Development')
-    
+
     // In production (Vercel): Try Render first, then env URL
     // In development: Try local first, then Render
     const backendUrls = isProduction
       ? [
-          // Production: Render first (most reliable for production)
-          { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: 300000 },
-          { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: 300000 }
-        ]
+        // Production: Render first (most reliable for production)
+        { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: 300000 },
+        { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: 300000 }
+      ]
       : [
-          // Development: Local first, then Render
-          { url: LOCAL_BACKEND_URL, type: 'Local', timeout: 180000 },
-          { url: RENDER_BACKEND_URL, type: 'Render', timeout: 300000 }
-        ]
-    
+        // Development: Local first, then Render
+        { url: LOCAL_BACKEND_URL, type: 'Local', timeout: 180000 },
+        { url: RENDER_BACKEND_URL, type: 'Render', timeout: 300000 }
+      ]
+
     // Remove duplicate URLs
-    const uniqueBackendUrls = backendUrls.filter((backend, index, arr) => 
+    const uniqueBackendUrls = backendUrls.filter((backend, index, arr) =>
       arr.findIndex(b => b.url === backend.url) === index
     )
-    
+
     let backendResponse
     let usedBackendUrl = ''
     let lastError: any = null
-    
+
     for (const backend of uniqueBackendUrls) {
       try {
         console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
-        
+
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
           headers: {
@@ -905,22 +919,22 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(backendPayload),
           signal: AbortSignal.timeout(backend.timeout)
         })
-        
+
         usedBackendUrl = backend.url
         console.log(`✅ Connected to ${backend.type} backend successfully`)
         break // Success, exit the loop
-        
+
       } catch (fetchError: any) {
         lastError = fetchError
         console.warn(`⚠️ ${backend.type} backend failed:`, fetchError.message)
-        
+
         // Continue to next backend
         if (backend === uniqueBackendUrls[uniqueBackendUrls.length - 1]) {
           // This was the last backend, throw error
           console.error('❌ All backends failed')
-          
+
           return NextResponse.json(
-            { 
+            {
               success: false,
               error: `Cannot connect to any Python backend. Tried: ${uniqueBackendUrls.map(b => b.url).join(', ')}`,
               details: 'Ensure at least one backend server is running. Using fallback scheduler...',
@@ -932,7 +946,7 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    
+
     if (!backendResponse) {
       // Fallback: Generate schedule locally using simple round-robin
       console.log('⚠️ No backend available, using fallback local scheduler')
@@ -946,16 +960,16 @@ export async function POST(request: NextRequest) {
     if (!backendResponse.ok) {
       const errorText = await backendResponse.text()
       console.error('❌ Backend error response:', errorText)
-      
+
       let errorData
       try {
         errorData = JSON.parse(errorText)
       } catch {
         errorData = { error: errorText }
       }
-      
+
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: errorData.detail || errorData.error || 'Backend processing failed',
           backend_status: backendResponse.status
@@ -986,9 +1000,9 @@ export async function POST(request: NextRequest) {
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.error('❌ [QIA Backend Bridge] Fatal error:', error)
     console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: error.message || 'Internal server error',
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
