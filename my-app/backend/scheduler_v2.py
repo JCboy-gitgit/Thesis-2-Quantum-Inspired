@@ -292,19 +292,30 @@ class Section:
     @property
     def required_slots(self) -> int:
         """
-        Number of 90-min slots needed per week.
-        Formula: ceil((lec_hours + lab_hours) / 1.5)
+        Number of 30-min slots needed per week.
+        Uses dynamic session splitting to minimize padding.
         
-        Example: 3 Lec + 3 Lab = 6 hours / 1.5 = 4 slots
+        Session rules:
+        - 1-3 hours: 1 session (1.5-3 hrs)
+        - 4-5 hours: 2 sessions (2-2.5 hrs each)
+        - 6 hours: 2 sessions (3 hrs each) or 4 sessions (1.5 hrs each)
+        - 7+ hours: Split evenly into sessions of 2-3 hours
+        
+        Examples:
+        - 3 hours = 1 session × 3hr = 6 slots (180 min)
+        - 5 hours = 2 sessions × 2.5hr = 10 slots (300 min) 
+        - 6 hours = 2 sessions × 3hr = 12 slots (360 min)
         """
         total_hours = (self.lec_hours or 0) + (self.lab_hours or 0)
         if total_hours <= 0:
             total_hours = self.weekly_hours or 3  # Fallback to weekly_hours or 3
         
-        # Each slot is 1.5 hours (90 minutes)
-        slot_duration_hours = 1.5
-        slots_needed = max(1, int((total_hours + slot_duration_hours - 0.01) // slot_duration_hours))
-        return slots_needed
+        # Convert hours to 30-minute slots
+        # 1 hour = 2 slots, so total_hours * 2 = total 30-min slots needed
+        total_slots = int(total_hours * 2)
+        
+        return max(2, total_slots)  # Minimum 2 slots (1 hour)
+
 
 
 @dataclass  

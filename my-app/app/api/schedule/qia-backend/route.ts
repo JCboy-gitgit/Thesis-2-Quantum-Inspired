@@ -266,8 +266,10 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   let scheduledCount = 0
 
   for (const section of sortedSections) {
-    // Calculate required slots (minimum 2 = 1 hour)
-    const requiredSlots = Math.max(2, Math.ceil((section.weekly_hours || 180) / 30))
+    // Calculate required 30-min slots: hours * 2 (since each hour = 2 thirty-minute slots)
+    // Example: 5 hours = 10 slots = 2 sessions of 2.5 hours (5 slots each)
+    const weeklyHours = section.weekly_hours || ((section.lec_hours || 0) + (section.lab_hours || 0)) || 3
+    const requiredSlots = Math.max(2, weeklyHours * 2)
     let slotsAssigned = 0
     const group = getStudentGroup(section.section_code || '')
     const courseCode = section.course_code || ''
