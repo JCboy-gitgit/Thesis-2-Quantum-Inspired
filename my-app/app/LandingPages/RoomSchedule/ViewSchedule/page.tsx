@@ -156,18 +156,18 @@ const parseTimeToMinutes = (timeStr: string): number => {
 const allocationCoversSlot = (allocation: RoomAllocation, slotTime: string): boolean => {
   const scheduleTime = allocation.schedule_time
   if (!scheduleTime) return false
-  
+
   // Parse schedule_time which can be "7:00-8:30" or "7:00 AM - 8:30 AM"
   const timeParts = scheduleTime.split('-').map(t => t.trim())
   if (timeParts.length !== 2) return false
-  
+
   const startMinutes = parseTimeToMinutes(timeParts[0])
   const endMinutes = parseTimeToMinutes(timeParts[1])
-  
+
   // Parse slot time (e.g., "07:00")
   const [slotHour, slotMinute] = slotTime.split(':').map(Number)
   const slotMinutes = slotHour * 60 + slotMinute
-  
+
   // Check if slot falls within the allocation time range
   return slotMinutes >= startMinutes && slotMinutes < endMinutes
 }
@@ -253,7 +253,7 @@ function ViewSchedulePage() {
 
   useEffect(() => {
     let isMounted = true
-    
+
     const initPage = async () => {
       const authorized = await checkAuth()
       if (isMounted && authorized) {
@@ -264,9 +264,9 @@ function ViewSchedulePage() {
         setAuthChecked(true)
       }
     }
-    
+
     initPage()
-    
+
     return () => {
       isMounted = false
     }
@@ -291,7 +291,7 @@ function ViewSchedulePage() {
         router.push('/faculty/home')
         return false
       }
-      
+
       return true
     } catch (error) {
       console.error('Auth check error:', error)
@@ -306,7 +306,7 @@ function ViewSchedulePage() {
     try {
       const response = await fetchNoCache('/api/faculty-default-schedule?action=approved-faculty')
       const data = await response.json()
-      
+
       if (data.success && data.approvedFaculty) {
         setApprovedFaculty(data.approvedFaculty)
       } else {
@@ -330,7 +330,7 @@ function ViewSchedulePage() {
 
   // Toggle faculty selection
   const toggleFacultySelection = (facultyId: string) => {
-    setSelectedFacultyIds(prev => 
+    setSelectedFacultyIds(prev =>
       prev.includes(facultyId)
         ? prev.filter(id => id !== facultyId)
         : [...prev, facultyId]
@@ -358,9 +358,9 @@ function ViewSchedulePage() {
       const data = await response.json()
 
       if (data.success) {
-        setAssignmentMessage({ 
-          type: 'success', 
-          text: `✅ ${data.message}` 
+        setAssignmentMessage({
+          type: 'success',
+          text: `✅ ${data.message}`
         })
         setTimeout(() => {
           setShowFacultyAssignModal(false)
@@ -380,8 +380,8 @@ function ViewSchedulePage() {
   const filteredApprovedFaculty = approvedFaculty.filter(f => {
     if (!facultySearchQuery) return true
     const query = facultySearchQuery.toLowerCase()
-    return f.full_name?.toLowerCase().includes(query) || 
-           f.email?.toLowerCase().includes(query)
+    return f.full_name?.toLowerCase().includes(query) ||
+      f.email?.toLowerCase().includes(query)
   })
 
   // Filter and sort schedules when filters change
@@ -471,7 +471,7 @@ function ViewSchedulePage() {
 
           // Try to get college from sections table (class_group_id is actually year_batch_id)
           let collegeName = 'All Colleges'
-          
+
           // First try: look up sections linked to this year batch
           const { data: sectionData } = await db
             .from('sections')
@@ -480,7 +480,7 @@ function ViewSchedulePage() {
             .not('college', 'is', null)
             .limit(1)
             .single()
-          
+
           if (sectionData?.college) {
             collegeName = sectionData.college
           } else {
@@ -491,7 +491,7 @@ function ViewSchedulePage() {
               .eq('upload_group_id', schedule.class_group_id)
               .limit(1)
               .single()
-            
+
             if (classData?.college) {
               collegeName = classData.college
             }
@@ -503,13 +503,16 @@ function ViewSchedulePage() {
             .select('college')
             .eq('year_batch_id', schedule.class_group_id)
             .not('college', 'is', null)
-          
+
           if (allSectionColleges && allSectionColleges.length > 0) {
-            const uniqueColleges = [...new Set(allSectionColleges.map((s: any) => s.college).filter(Boolean))]
+            const collegeNames: string[] = allSectionColleges
+              .map((s: any) => s.college)
+              .filter((c: any): c is string => typeof c === 'string' && c.length > 0)
+            const uniqueColleges: string[] = Array.from(new Set(collegeNames))
             if (uniqueColleges.length > 1) {
               collegeName = uniqueColleges.join(', ')
             } else if (uniqueColleges.length === 1) {
-              collegeName = uniqueColleges[0]
+              collegeName = uniqueColleges[0] as string
             }
           }
 
@@ -554,9 +557,9 @@ function ViewSchedulePage() {
       if (!allocationError && allocationData && allocationData.length > 0) {
         // Check if any allocations are missing teacher_name
         const hasMissingTeachers = allocationData.some((a: any) => !a.teacher_name)
-        
+
         let enrichedAllocations: any[] = allocationData
-        
+
         // If teacher names are missing, try to fetch from teaching_loads
         if (hasMissingTeachers) {
           const { data: teachingLoadsData } = await db
@@ -592,9 +595,9 @@ function ViewSchedulePage() {
             })
           }
         }
-        
+
         setAllocations(enrichedAllocations)
-        
+
         // Debug: Log all allocations
         console.log('=== ViewSchedule Data Debug ===');
         console.log('Total allocations fetched:', enrichedAllocations.length);
@@ -607,12 +610,12 @@ function ViewSchedulePage() {
         const uniqueBuildings: string[] = [...new Set(enrichedAllocations.map((a: any) => a.building).filter((b: any): b is string => !!b))]
         const uniqueRooms: string[] = [...new Set(enrichedAllocations.map((a: any) => a.room).filter((r: any): r is string => !!r))]
         // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
-        const uniqueSections: string[] = [...new Set(enrichedAllocations.map((a: any) => 
+        const uniqueSections: string[] = [...new Set(enrichedAllocations.map((a: any) =>
           a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
         ).filter((s: any): s is string => !!s))]
         const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
         const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
-        
+
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
         enrichedAllocations.forEach((a: any) => {
@@ -625,7 +628,7 @@ function ViewSchedulePage() {
             }
           }
         })
-        
+
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
         setFilteredRooms(uniqueRooms)
@@ -689,7 +692,7 @@ function ViewSchedulePage() {
           // Try to find teacher from teaching_loads using course_code
           const teacherKey = `${(cls.course_code || '').toLowerCase()}|${(cls.section || '').toLowerCase()}`
           const teacherName = teacherMap.get(teacherKey) || ''
-          
+
           return {
             id: idx + 1,
             schedule_id: schedule.id,
@@ -717,7 +720,7 @@ function ViewSchedulePage() {
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
         // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
-        const uniqueSections = [...new Set(mockAllocations.map(a => 
+        const uniqueSections = [...new Set(mockAllocations.map(a =>
           a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
         ).filter((s): s is string => !!s))]
         const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
@@ -825,7 +828,7 @@ function ViewSchedulePage() {
           const allocationDays = expandDays(allocation.schedule_day || '')
           return allocationDays.includes(day) && allocationCoversSlot(allocation, slotTime)
         })
-        
+
         if (matchingAllocations.length > 0) {
           timetable.set(key, { allocations: matchingAllocations })
         }
@@ -961,7 +964,7 @@ function ViewSchedulePage() {
         console.error('Error deleting from generated_schedules:', error)
         throw new Error(`Failed to delete schedule: ${error.message}`)
       }
-      
+
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
@@ -1006,7 +1009,7 @@ function ViewSchedulePage() {
       if (setError) {
         throw setError
       }
-      
+
       // Check if any rows were actually updated (RLS may block silently)
       if (!setData || setData.length === 0) {
         throw new Error('Update failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
@@ -1112,7 +1115,7 @@ function ViewSchedulePage() {
       const generateColorPalette = (allocs: RoomAllocation[]) => {
         const uniqueCourses = new Set(allocs.map(a => a.course_code))
         const colorMap = new Map<string, { r: number; g: number; b: number }>()
-        
+
         const colors = [
           { r: 25, g: 118, b: 210 },   // Blue
           { r: 56, g: 142, b: 60 },    // Green
@@ -1135,18 +1138,18 @@ function ViewSchedulePage() {
           { r: 78, g: 52, b: 46 },     // Dark Brown
           { r: 1, g: 87, b: 155 }      // Dark Blue
         ]
-        
+
         let colorIdx = 0
         uniqueCourses.forEach(course => {
           colorMap.set(course, colors[colorIdx % colors.length])
           colorIdx++
         })
-        
+
         return colorMap
       }
 
       // Helper: Draw timetable for specific view (works with any PDF instance)
-      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, {r: number, g: number, b: number}>) => {
+      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, { r: number, g: number, b: number }>) => {
         // QTime Logo - Green Q box with "Qtime Scheduler" text
         const logoSize = 8
         const logoTextSize = 10
@@ -1157,24 +1160,24 @@ function ViewSchedulePage() {
         const totalWidth = logoSize + 2 + textWidth  // logo + spacing + text
         const startX = (pageWidth - totalWidth) / 2
         const logoY = margin
-        
+
         // Green rounded rectangle for Q
         pdfDoc.setFillColor(22, 163, 74) // Green (#16a34a)
         pdfDoc.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
-        
+
         // "Q" letter in white
         pdfDoc.setTextColor(255, 255, 255)
         pdfDoc.setFontSize(6)
         pdfDoc.setFont('helvetica', 'bold')
         const qWidth = pdfDoc.getTextWidth('Q')
         pdfDoc.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
-        
+
         // "Qtime Scheduler" text in black
         pdfDoc.setTextColor(0, 0, 0)
         pdfDoc.setFontSize(logoTextSize)
         pdfDoc.setFont('helvetica', 'bold')
         pdfDoc.text(logoText, startX + logoSize + 2, logoY + 6)
-        
+
         // Reset text color
         pdfDoc.setTextColor(0, 0, 0)
 
@@ -1183,7 +1186,7 @@ function ViewSchedulePage() {
         pdfDoc.setFont('helvetica', 'bold')
         const titleWidth = pdfDoc.getTextWidth(title)
         pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 14)
-        
+
         // Subtitle - centered
         pdfDoc.setFontSize(8)
         pdfDoc.setFont('helvetica', 'normal')
@@ -1196,7 +1199,7 @@ function ViewSchedulePage() {
 
         // Process allocations into blocks
         const blocks = processAllocationsToBlocks(allocData)
-        
+
         // Table dimensions - portrait (adjusted for logo space)
         const startY = margin + 22
         const timeColWidth = 18
@@ -1207,11 +1210,11 @@ function ViewSchedulePage() {
         // Draw header grid and labels
         pdfDoc.setDrawColor(100, 100, 100)
         pdfDoc.setLineWidth(0.5)
-        
+
         // Header row background
         pdfDoc.setFillColor(240, 240, 240)
         pdfDoc.rect(margin, startY, usableWidth, rowHeight, 'F')
-        
+
         // Draw header border
         pdfDoc.setDrawColor(150, 150, 150)
         pdfDoc.rect(margin, startY, usableWidth, rowHeight)
@@ -1223,7 +1226,7 @@ function ViewSchedulePage() {
         // Center "Time" header
         const timeHeaderWidth = pdfDoc.getTextWidth('Time')
         pdfDoc.text('Time', margin + (timeColWidth - timeHeaderWidth) / 2, startY + 5.5)
-        
+
         const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         weekdays.forEach((day, idx) => {
           const x = margin + timeColWidth + (idx * dayColWidth)
@@ -1255,15 +1258,15 @@ function ViewSchedulePage() {
           // Draw day cells - blocks on top of lines
           weekdays.forEach((day, dayIdx) => {
             const x = margin + timeColWidth + (dayIdx * dayColWidth)
-            
+
             // Find blocks for this day/time
             const dayLower = day.toLowerCase()
             const slotMinutes = hour * 60 + min
 
             // Check if this slot is covered by any block (to skip drawing line)
-            const isCoveredByBlock = blocks.some(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const isCoveredByBlock = blocks.some(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1274,9 +1277,9 @@ function ViewSchedulePage() {
               pdfDoc.line(x, y + rowHeight, x + dayColWidth, y + rowHeight)
             }
 
-            const relevantBlocks = blocks.filter(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const relevantBlocks = blocks.filter(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1296,14 +1299,14 @@ function ViewSchedulePage() {
               // Text on top of colored background - CENTERED
               pdfDoc.setTextColor(255, 255, 255)
               let textY = y + 3
-              
+
               // 1. Course Code (bold, larger) - centered
               pdfDoc.setFontSize(7)
               pdfDoc.setFont('helvetica', 'bold')
               const courseText = block.course_code || 'N/A'
               pdfDoc.text(courseText, centerX, textY, { align: 'center' })
               textY += 2.8
-              
+
               // 2. Course Name - centered
               if (blockHeight > 8) {
                 pdfDoc.setFontSize(5.5)
@@ -1313,7 +1316,7 @@ function ViewSchedulePage() {
                 pdfDoc.text(courseNameLines.slice(0, 1), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // 3. Time Range - centered
               if (blockHeight > 12) {
                 pdfDoc.setFontSize(5)
@@ -1331,7 +1334,7 @@ function ViewSchedulePage() {
                 pdfDoc.text(timeText, centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // 4. Section - centered
               if (blockHeight > 16) {
                 pdfDoc.setFontSize(5.5)
@@ -1340,7 +1343,7 @@ function ViewSchedulePage() {
                 pdfDoc.text(sectionText.substring(0, 20), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // 5. Room (just room code, strip building name if present) - centered
               if (blockHeight > 20) {
                 pdfDoc.setFontSize(5)
@@ -1351,7 +1354,7 @@ function ViewSchedulePage() {
                 pdfDoc.text(roomText.substring(0, 25), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // 6. Teacher Name - centered
               if (blockHeight > 24) {
                 pdfDoc.setFontSize(5)
@@ -1369,7 +1372,7 @@ function ViewSchedulePage() {
           // Lines are already drawn as background before blocks - no need to draw again
         })
       }
-      
+
       // Legacy wrapper for backward compatibility with pageNum
       const drawTimetable = (allocData: RoomAllocation[], title: string, pageNum: number) => {
         if (pageNum > 1) pdf.addPage()
@@ -1380,7 +1383,7 @@ function ViewSchedulePage() {
       const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
         const blocks: any[] = []
         const groupedMap = new Map()
-        
+
         // Maximum block duration in minutes (4 hours = 240 minutes)
         // This prevents merging allocations into impossibly long blocks
         const MAX_BLOCK_DURATION_MINUTES = 240
@@ -1410,7 +1413,7 @@ function ViewSchedulePage() {
 
             // Check if we should merge with current block
             // Only merge if: consecutive AND merged duration wouldn't exceed max
-            const shouldMerge = currentBlock && 
+            const shouldMerge = currentBlock &&
               currentBlock.endMinutes === startMins &&
               (endMins - currentBlock.startMinutes) <= MAX_BLOCK_DURATION_MINUTES
 
@@ -2215,7 +2218,7 @@ function ViewSchedulePage() {
                         } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
                           if (a.course_code !== selectedCourse) return false;
                         }
-                        
+
                         // Apply additional filters
                         if (filterBuilding !== 'all' && a.building !== filterBuilding) return false;
                         if (filterRoom !== 'all' && a.room !== filterRoom) return false;
@@ -2223,10 +2226,10 @@ function ViewSchedulePage() {
                         if (searchQuery) {
                           const query = searchQuery.toLowerCase();
                           if (!a.course_code?.toLowerCase().includes(query) &&
-                              !a.course_name?.toLowerCase().includes(query) &&
-                              !a.section?.toLowerCase().includes(query) &&
-                              !a.room?.toLowerCase().includes(query) &&
-                              !a.teacher_name?.toLowerCase().includes(query)) {
+                            !a.course_name?.toLowerCase().includes(query) &&
+                            !a.section?.toLowerCase().includes(query) &&
+                            !a.room?.toLowerCase().includes(query) &&
+                            !a.teacher_name?.toLowerCase().includes(query)) {
                             return false;
                           }
                         }
@@ -2259,7 +2262,7 @@ function ViewSchedulePage() {
                           const timeStr = alloc.schedule_time || '';
                           const timeParts = timeStr.split(/\s*-\s*/);
                           if (timeParts.length !== 2) return;
-                          
+
                           const startMins = parseToMinutes(timeParts[0]);
                           const endMins = parseToMinutes(timeParts[1]);
                           if (startMins === 0 && endMins === 0) return;
@@ -2315,7 +2318,7 @@ function ViewSchedulePage() {
                         '#c2185b', '#5d4037', '#455a64', '#d32f2f', '#303f9f',
                         '#0097a7', '#689f38', '#ffa000', '#512da8', '#e64a19', '#00838f'
                       ];
-                      
+
                       const courseColorMap = new Map<string, string>();
                       const uniqueCourseCodes = [...new Set(finalBlocks.map(b => b.course_code))];
                       uniqueCourseCodes.forEach((code, idx) => {
@@ -2344,7 +2347,7 @@ function ViewSchedulePage() {
                               const minute = (i % 2) * 30;
                               const isHourMark = minute === 0;
                               const displayTime = formatTimeAMPM(hour, minute);
-                              
+
                               return (
                                 <tr key={i} className={isHourMark ? styles.hourRow : styles.halfHourRow}>
                                   <td className={`${styles.timeCell} ${isHourMark ? styles.hourMark : styles.halfHourMark}`}>
@@ -2354,34 +2357,34 @@ function ViewSchedulePage() {
                                     const blocksStartingHere = finalBlocks.filter(block => {
                                       const blockStartHour = Math.floor(block.startMinutes / 60);
                                       const blockStartMin = block.startMinutes % 60;
-                                      return block.day === day.toLowerCase() && 
-                                             blockStartHour === hour && 
-                                             blockStartMin === minute;
+                                      return block.day === day.toLowerCase() &&
+                                        blockStartHour === hour &&
+                                        blockStartMin === minute;
                                     });
-                                    
+
                                     const isCoveredByBlock = finalBlocks.some(block => {
                                       if (block.day !== day.toLowerCase()) return false;
                                       const currentMinutes = hour * 60 + minute;
                                       return block.startMinutes < currentMinutes && currentMinutes < block.endMinutes;
                                     });
-                                    
-                                    const cellStyle = isCoveredByBlock 
+
+                                    const cellStyle = isCoveredByBlock
                                       ? { position: 'relative' as const, height: `${ROW_HEIGHT}px`, background: 'transparent' }
                                       : { position: 'relative' as const, height: `${ROW_HEIGHT}px` };
-                                    
+
                                     return (
                                       <td key={`${day}-${i}`} className={styles.dataCell} style={cellStyle}>
                                         {blocksStartingHere.map((block, idx) => {
                                           const durationMinutes = block.endMinutes - block.startMinutes;
                                           const durationSlots = Math.ceil(durationMinutes / 30);
                                           const spanHeight = durationSlots * ROW_HEIGHT;
-                                          
+
                                           const startH = Math.floor(block.startMinutes / 60);
                                           const startM = block.startMinutes % 60;
                                           const endH = Math.floor(block.endMinutes / 60);
                                           const endM = block.endMinutes % 60;
                                           const displayTimeRange = `${formatTimeAMPM(startH, startM)} - ${formatTimeAMPM(endH, endM)}`;
-                                          
+
                                           return (
                                             <div
                                               key={idx}
@@ -2488,7 +2491,7 @@ function ViewSchedulePage() {
                 <UserPlus size={24} style={{ marginRight: '10px', verticalAlign: 'middle' }} />
                 Assign Schedule to Faculty
               </h3>
-              <button 
+              <button
                 className={styles.modalCloseBtn}
                 onClick={() => setShowFacultyAssignModal(false)}
               >
@@ -2505,7 +2508,7 @@ function ViewSchedulePage() {
               )}
 
               <p className={styles.modalDescription}>
-                Select approved faculty members to assign <strong>&quot;{selectedSchedule?.schedule_name}&quot;</strong> as their default schedule. 
+                Select approved faculty members to assign <strong>&quot;{selectedSchedule?.schedule_name}&quot;</strong> as their default schedule.
                 Faculty will see this schedule on their home page.
               </p>
 
@@ -2534,7 +2537,7 @@ function ViewSchedulePage() {
                   </div>
                 ) : (
                   filteredApprovedFaculty.map(faculty => (
-                    <div 
+                    <div
                       key={faculty.id}
                       className={`${styles.facultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.selected : ''}`}
                       onClick={() => toggleFacultySelection(faculty.id)}
@@ -2565,13 +2568,13 @@ function ViewSchedulePage() {
             </div>
 
             <div className={styles.modalFooter}>
-              <button 
+              <button
                 className={styles.cancelBtn}
                 onClick={() => setShowFacultyAssignModal(false)}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className={styles.assignBtn}
                 onClick={handleAssignScheduleToFaculty}
                 disabled={selectedFacultyIds.length === 0 || assigningSchedule}
