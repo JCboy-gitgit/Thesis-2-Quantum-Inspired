@@ -78,55 +78,21 @@ function DepartmentsViewContent() {
     }
   }, [searchTerm, departments])
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open - simpler approach
   useEffect(() => {
     if (selectedDept && isMobile) {
-      // Store current scroll position
-      const scrollY = window.scrollY
-      
-      // Store original styles
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
-      
-      // Prevent scrolling and layout shift
+      // Simply prevent scrolling without changing position
       document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
-      document.body.style.paddingRight = scrollbarWidth > 0 ? `${scrollbarWidth}px` : '0px'
-      
-      // Also lock the html element
-      document.documentElement.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
     } else {
-      // Get the stored scroll position
-      const scrollY = document.body.style.top
-      
-      // Restore original styles
+      // Restore scrolling
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-      document.body.style.top = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
-      document.body.style.paddingRight = ''
-      document.documentElement.style.overflow = ''
-      
-      // Restore scroll position
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1)
-      }
+      document.body.style.touchAction = ''
     }
     
     return () => {
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.width = ''
-      document.body.style.top = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
-      document.body.style.paddingRight = ''
-      document.documentElement.style.overflow = ''
+      document.body.style.touchAction = ''
     }
   }, [selectedDept, isMobile])
 
