@@ -383,16 +383,16 @@ export default function AdminDashboard() {
     return date.toLocaleDateString()
   }
 
-  // Quick navigation items - using green theme colors
+  // Quick navigation items - using nature-inspired theme colors
   const quickNavItems = [
     { icon: DoorOpen, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: '#2EAF7D', desc: 'Manage rooms & buildings' },
     { icon: Users, label: 'Faculty Management', path: '/LandingPages/FacultyManagement/FacultyApproval', color: '#449342', desc: 'Approve & manage faculty' },
     { icon: BookOpen, label: 'Courses Management', path: '/LandingPages/CoursesManagement', color: '#3FD0C9', desc: 'Manage courses & sections' },
-    { icon: Zap, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: '#02353C', desc: 'Create new schedules' },
-    { icon: Eye, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: '#2EAF7D', desc: 'View generated schedules' },
-    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: '#449342', desc: 'Import data from CSV' },
-    { icon: GraduationCap, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: '#3FD0C9', desc: 'Manage college assignments' },
-    { icon: MapPin, label: 'Floor Plans', path: '/floor-plan/admin', color: '#02353C', desc: 'View & edit floor plans' },
+    { icon: Zap, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: '#2EAF7D', desc: 'Create new schedules' },
+    { icon: Eye, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: '#449342', desc: 'View generated schedules' },
+    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: '#3FD0C9', desc: 'Import data from CSV' },
+    { icon: GraduationCap, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: '#2EAF7D', desc: 'Manage college assignments' },
+    { icon: MapPin, label: 'Floor Plans', path: '/floor-plan/admin', color: '#449342', desc: 'View & edit floor plans' },
   ]
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

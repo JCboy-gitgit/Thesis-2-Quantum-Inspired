@@ -21,8 +21,8 @@
   gap: 8px;
   padding: 10px 18px;
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary, #ffffff);
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  color: var(--text-primary);
+  border: 2px solid var(--card-border);
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
@@ -32,8 +32,8 @@
 }
 
 .back-button:hover {
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.15));
-  border-color: var(--primary, #00a651);
+  background: var(--primary-alpha);
+  border-color: var(--primary);
   transform: translateX(-4px);
 }
 
@@ -59,15 +59,15 @@
 
 /* Profile Cards */
 .profile-card {
-  background: var(--card-bg, rgba(0, 88, 38, 0.95));
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   border-radius: 20px;
   padding: 32px;
   margin-bottom: 24px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
-    inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
+    var(--shadow-md),
+    0 0 0 1px var(--primary-alpha),
+    inset 0 0 40px var(--primary-alpha);
 }
 
 .card-header {
@@ -77,23 +77,23 @@
   gap: 12px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  border-bottom: 2px solid var(--card-border);
+  background: var(--primary-alpha);
   margin: -32px -32px 24px -32px;
   padding: 20px 32px;
   border-radius: 20px 20px 0 0;
-  border-bottom: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  border-bottom: 2px solid var(--card-border);
 }
 
 .card-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .card-icon {
-  color: var(--primary, #00a651);
+  color: var(--primary);
   font-size: 24px;
 }
 
@@ -102,7 +102,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: linear-gradient(135deg, var(--primary, #00a651), var(--primary-dark, #005826));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   border: none;
   border-radius: 10px;
@@ -117,7 +117,7 @@
 
 .edit-profile-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  box-shadow: 0 8px 24px var(--primary-alpha);
 }
 
 .edit-profile-btn:active {
@@ -199,16 +199,16 @@
 
 .info-value {
   font-size: 16px;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  border: 2px solid var(--card-border);
   transition: all 0.2s ease;
 }
 
 .info-value:hover {
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  background: var(--primary-alpha);
 }
 
 /* Role Badge */
@@ -232,7 +232,7 @@
 /* Security Section */
 .security-description {
   font-size: 14px;
-  color: var(--text-secondary, #a8e6c0);
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 
@@ -241,7 +241,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  background: linear-gradient(135deg, var(--primary, #00a651), var(--primary-dark, #005826));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   border: none;
   border-radius: 10px;
@@ -257,7 +257,7 @@
 
 .change-password-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  box-shadow: 0 8px 24px var(--primary-alpha);
 }
 
 .change-password-btn:active {
@@ -293,8 +293,8 @@
 
 /* Floating Modal - Matching Settings Modal Style */
 .floating-modal {
-  background: var(--card-bg, rgba(0, 88, 38, 0.95));
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
   border-radius: 20px;
   width: 100%;
   max-width: 600px;
@@ -304,8 +304,8 @@
   flex-direction: column;
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px var(--primary-alpha, rgba(0, 166, 81, 0.15)),
-    inset 0 0 40px var(--primary-alpha, rgba(0, 166, 81, 0.15));
+    0 0 0 1px var(--primary-alpha),
+    inset 0 0 40px var(--primary-alpha);
   animation: slideUp 0.3s ease-out;
   margin: auto;
 }
@@ -327,8 +327,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  border-bottom: 2px solid var(--card-border);
+  background: var(--primary-alpha);
   flex-shrink: 0;
 }
 
@@ -339,12 +339,12 @@
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
 }
 
 .modal-icon {
   font-size: 20px;
-  color: var(--primary, #00a651);
+  color: var(--primary);
 }
 
 .modal-close-btn {
@@ -357,7 +357,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary, #a8e6c0);
+  color: var(--text-secondary);
   transition: all 0.2s ease;
 }
 
@@ -382,7 +382,7 @@
   align-items: center;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -396,24 +396,24 @@
   width: 100%;
   padding: 12px 44px 12px 14px;
   background: rgba(255, 255, 255, 0.05);
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  border: 2px solid var(--card-border);
   border-radius: 10px;
   font-size: 14px;
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .password-input-wrapper input:focus {
   outline: none;
-  border-color: var(--primary, #00a651);
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  border-color: var(--primary);
+  background: var(--primary-alpha);
 }
 
 .floating-modal-footer {
   display: flex;
   gap: 12px;
   padding: 16px 24px;
-  border-top: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  border-top: 2px solid var(--card-border);
   justify-content: flex-end;
   flex-shrink: 0;
 }
@@ -423,7 +423,7 @@
   right: 12px;
   background: none;
   border: none;
-  color: var(--text-secondary, #a8e6c0);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -433,7 +433,7 @@
 }
 
 .password-toggle:hover {
-  color: var(--primary, #00a651);
+  color: var(--primary);
 }
 
 /* Alerts */
@@ -475,8 +475,8 @@
 
 .btn-cancel {
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary, #a8e6c0);
-  border: 2px solid var(--card-border, rgba(0, 166, 81, 0.3));
+  color: var(--text-secondary);
+  border: 2px solid var(--card-border);
 }
 
 .btn-cancel:hover {
@@ -484,14 +484,14 @@
 }
 
 .btn-save {
-  background: linear-gradient(135deg, var(--primary, #00a651), var(--primary-dark, #005826));
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--primary-alpha, rgba(0, 166, 81, 0.15));
+  box-shadow: 0 8px 24px var(--primary-alpha);
 }
 
 .btn-save:disabled,
@@ -530,101 +530,101 @@
 }
 
 /* ==================== Light Theme Support ==================== */
-[data-theme="light"] .profile-card {
+:global([data-theme="light"]) .profile-card {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="light"] .card-header {
+:global([data-theme="light"]) .card-header {
   background: rgba(0, 166, 81, 0.06);
   border-bottom-color: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .card-header h2 {
+:global([data-theme="light"]) .card-header h2 {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .profile-title {
+:global([data-theme="light"]) .profile-title {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .profile-subtitle {
+:global([data-theme="light"]) .profile-subtitle {
   color: #4a5568;
 }
 
-[data-theme="light"] .info-value {
+:global([data-theme="light"]) .info-value {
   background: rgba(0, 0, 0, 0.03);
   color: #1a1a1a;
   border-color: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .info-value:hover {
+:global([data-theme="light"]) .info-value:hover {
   background: rgba(0, 166, 81, 0.06);
 }
 
-[data-theme="light"] .back-button {
+:global([data-theme="light"]) .back-button {
   background: rgba(0, 0, 0, 0.03);
   color: #1a1a1a;
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .back-button:hover {
+:global([data-theme="light"]) .back-button:hover {
   background: rgba(0, 166, 81, 0.08);
 }
 
-[data-theme="light"] .security-description {
+:global([data-theme="light"]) .security-description {
   color: #4a5568;
 }
 
-[data-theme="light"] .floating-modal {
+:global([data-theme="light"]) .floating-modal {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-[data-theme="light"] .floating-modal-header {
+:global([data-theme="light"]) .floating-modal-header {
   background: rgba(0, 166, 81, 0.06);
   border-bottom-color: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .floating-modal-header h2 {
+:global([data-theme="light"]) .floating-modal-header h2 {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .modal-close-btn {
+:global([data-theme="light"]) .modal-close-btn {
   background: rgba(0, 0, 0, 0.05);
   color: #4a5568;
 }
 
-[data-theme="light"] .form-group label {
+:global([data-theme="light"]) .form-group label {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .password-input-wrapper input {
+:global([data-theme="light"]) .password-input-wrapper input {
   background: rgba(0, 0, 0, 0.03);
   color: #1a1a1a;
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .password-input-wrapper input:focus {
+:global([data-theme="light"]) .password-input-wrapper input:focus {
   background: rgba(0, 166, 81, 0.06);
 }
 
-[data-theme="light"] .password-toggle {
+:global([data-theme="light"]) .password-toggle {
   color: #4a5568;
 }
 
-[data-theme="light"] .floating-modal-footer {
+:global([data-theme="light"]) .floating-modal-footer {
   border-top-color: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .btn-cancel {
+:global([data-theme="light"]) .btn-cancel {
   background: rgba(0, 0, 0, 0.03);
   color: #4a5568;
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .btn-cancel:hover {
+:global([data-theme="light"]) .btn-cancel:hover {
   background: rgba(0, 0, 0, 0.06);
 }

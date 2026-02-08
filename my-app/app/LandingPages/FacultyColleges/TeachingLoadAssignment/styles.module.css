@@ -557,3 +557,137 @@
     max-height: 300px;
   }
 }
+
+/* ==================== Dark Theme ==================== */
+:global([data-theme="dark"]) .facultyCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .facultyInfo h3,
+:global([data-theme="dark"]) .courseHeader strong,
+:global([data-theme="dark"]) .courseSelection h3 {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .facultyMeta,
+:global([data-theme="dark"]) .summaryItem,
+:global([data-theme="dark"]) .courseName,
+:global([data-theme="dark"]) .courseNotes {
+  color: var(--text-secondary);
+}
+
+:global([data-theme="dark"]) .facultyEmail,
+:global([data-theme="dark"]) .courseMeta,
+:global([data-theme="dark"]) .noLoads {
+  color: var(--text-light);
+}
+
+:global([data-theme="dark"]) .summaryItem svg {
+  color: var(--text-light);
+}
+
+:global([data-theme="dark"]) .loadSummary {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global([data-theme="dark"]) .courseItem {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global([data-theme="dark"]) .courseItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .coursesList {
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .courseUnits {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+:global([data-theme="dark"]) .courseCheckboxList {
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .courseCheckboxItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global([data-theme="dark"]) .uploadInstructions {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.2);
+}
+
+:global([data-theme="dark"]) .uploadInstructions h4 {
+  color: var(--primary);
+}
+
+/* ==================== Green Theme ==================== */
+:global([data-theme="green"]) .facultyCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="green"]) .facultyInfo h3,
+:global([data-theme="green"]) .courseHeader strong,
+:global([data-theme="green"]) .courseSelection h3 {
+  color: var(--text-primary);
+}
+
+:global([data-theme="green"]) .facultyMeta,
+:global([data-theme="green"]) .summaryItem,
+:global([data-theme="green"]) .courseName,
+:global([data-theme="green"]) .courseNotes {
+  color: var(--text-secondary);
+}
+
+:global([data-theme="green"]) .facultyEmail,
+:global([data-theme="green"]) .courseMeta,
+:global([data-theme="green"]) .noLoads {
+  color: var(--text-light);
+}
+
+:global([data-theme="green"]) .summaryItem svg {
+  color: var(--text-light);
+}
+
+:global([data-theme="green"]) .loadSummary {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="green"]) .courseItem {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="green"]) .courseItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:global([data-theme="green"]) .coursesList {
+  border-color: var(--card-border);
+}
+
+:global([data-theme="green"]) .courseUnits {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+:global([data-theme="green"]) .courseCheckboxList {
+  border-color: var(--card-border);
+}
+
+:global([data-theme="green"]) .courseCheckboxItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="green"]) .uploadInstructions {
+  background: rgba(46, 175, 125, 0.08);
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .uploadInstructions h4 {
+  color: var(--primary);
+}

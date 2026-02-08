@@ -6,7 +6,7 @@
 /* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
 
 /* Main Layout with Nature/Leaf Background */
-[data-theme="green"] .scheduleLayout {
+:global([data-theme="green"]) .scheduleLayout {
   background:
     /* Leaf pattern overlay */
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%2316a34a' fill-opacity='0.03' d='M50 5c-10 15-25 20-25 40s15 30 25 50c10-20 25-30 25-50S60 20 50 5z'/%3E%3C/svg%3E") 0 0 / 120px 120px,
@@ -15,7 +15,7 @@
   position: relative;
 }
 
-[data-theme="green"] .scheduleLayout::before {
+:global([data-theme="green"]) .scheduleLayout::before {
   content: '';
   position: fixed;
   top: 0;
@@ -29,7 +29,7 @@
   opacity: 0.5;
 }
 
-[data-theme="green"] .scheduleLayout::after {
+:global([data-theme="green"]) .scheduleLayout::after {
   content: '';
   position: fixed;
   bottom: 0;
@@ -44,541 +44,541 @@
   transform: rotate(180deg);
 }
 
-[data-theme="green"] .scheduleHeader,
-[data-theme="green"] .headerTitleSection {
+:global([data-theme="green"]) .scheduleHeader,
+:global([data-theme="green"]) .headerTitleSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.4) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
 }
 
-[data-theme="green"] .scheduleTitle {
+:global([data-theme="green"]) .scheduleTitle {
   color: #02353C;
 }
 
-[data-theme="green"] .scheduleSubtitle {
+:global([data-theme="green"]) .scheduleSubtitle {
   color: #166534;
 }
 
-[data-theme="green"] .headerIconWrapper {
+:global([data-theme="green"]) .headerIconWrapper {
   background: rgba(46, 175, 125, 0.12);
   box-shadow: none;
 }
 
-[data-theme="green"] .headerLargeIcon {
+:global([data-theme="green"]) .headerLargeIcon {
   color: #2EAF7D;
 }
 
 /* Back Button */
-[data-theme="green"] .backButton {
+:global([data-theme="green"]) .backButton {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .backButton:hover {
+:global([data-theme="green"]) .backButton:hover {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #2EAF7D;
 }
 
 /* Configuration Cards */
-[data-theme="green"] .configurationCard,
-[data-theme="green"] .formCard {
+:global([data-theme="green"]) .configurationCard,
+:global([data-theme="green"]) .formCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12);
 }
 
-[data-theme="green"] .formSectionTitle {
+:global([data-theme="green"]) .formSectionTitle {
   color: #02353C;
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .formSectionTitle svg {
+:global([data-theme="green"]) .formSectionTitle svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .formLabel {
+:global([data-theme="green"]) .formLabel {
   color: #02353C;
 }
 
-[data-theme="green"] .formHint {
+:global([data-theme="green"]) .formHint {
   color: #166534;
 }
 
-[data-theme="green"] .formInput,
-[data-theme="green"] .formSelect {
+:global([data-theme="green"]) .formInput,
+:global([data-theme="green"]) .formSelect {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .formInput:focus,
-[data-theme="green"] .formSelect:focus {
+:global([data-theme="green"]) .formInput:focus,
+:global([data-theme="green"]) .formSelect:focus {
   border-color: #2EAF7D;
   box-shadow: 0 0 0 4px rgba(46, 175, 125, 0.15);
 }
 
-[data-theme="green"] .formInput::placeholder {
+:global([data-theme="green"]) .formInput::placeholder {
   color: #166534;
 }
 
 /* Settings Cards */
-[data-theme="green"] .settingsCard,
-[data-theme="green"] .timeCard {
+:global([data-theme="green"]) .settingsCard,
+:global([data-theme="green"]) .timeCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
 }
 
-[data-theme="green"] .settingsCard:hover,
-[data-theme="green"] .timeCard:hover {
+:global([data-theme="green"]) .settingsCard:hover,
+:global([data-theme="green"]) .timeCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
 /* Generate Button */
-[data-theme="green"] .generateButton {
+:global([data-theme="green"]) .generateButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.5);
 }
 
-[data-theme="green"] .generateButton:hover {
+:global([data-theme="green"]) .generateButton:hover {
   box-shadow: 0 12px 40px rgba(46, 175, 125, 0.7);
   transform: translateY(-4px) scale(1.03);
 }
 
-[data-theme="green"] .generateButton:disabled {
+:global([data-theme="green"]) .generateButton:disabled {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.3) 0%, rgba(63, 208, 201, 0.3) 100%);
   box-shadow: none;
 }
 
 /* Tab Navigation */
-[data-theme="green"] .tabNavigation {
+:global([data-theme="green"]) .tabNavigation {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .tabButton {
+:global([data-theme="green"]) .tabButton {
   color: #02353C;
 }
 
-[data-theme="green"] .tabButton:hover {
+:global([data-theme="green"]) .tabButton:hover {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .tabButton.activeTab {
+:global([data-theme="green"]) .tabButton.activeTab {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
 }
 
 /* Summary Cards */
-[data-theme="green"] .summaryCard {
+:global([data-theme="green"]) .summaryCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .summaryCard:hover {
+:global([data-theme="green"]) .summaryCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .summaryIcon {
+:global([data-theme="green"]) .summaryIcon {
   background: rgba(46, 175, 125, 0.12);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .summaryIcon svg {
+:global([data-theme="green"]) .summaryIcon svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .summaryIcon.campusIcon,
-[data-theme="green"] .summaryIcon.classIcon,
-[data-theme="green"] .summaryIcon.teacherIcon {
+:global([data-theme="green"]) .summaryIcon.campusIcon,
+:global([data-theme="green"]) .summaryIcon.classIcon,
+:global([data-theme="green"]) .summaryIcon.teacherIcon {
   background: rgba(46, 175, 125, 0.12);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .summaryValue {
+:global([data-theme="green"]) .summaryValue {
   color: #02353C;
 }
 
-[data-theme="green"] .summaryLabel {
+:global([data-theme="green"]) .summaryLabel {
   color: #166534;
 }
 
 /* Selection Cards */
-[data-theme="green"] .selectionCard {
+:global([data-theme="green"]) .selectionCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .selectionCard:hover {
+:global([data-theme="green"]) .selectionCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .selectionCard.selected {
+:global([data-theme="green"]) .selectionCard.selected {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .selectionCheckbox {
+:global([data-theme="green"]) .selectionCheckbox {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
 }
 
-[data-theme="green"] .selectionTitle {
+:global([data-theme="green"]) .selectionTitle {
   color: #02353C;
 }
 
-[data-theme="green"] .selectionSubtitle {
+:global([data-theme="green"]) .selectionSubtitle {
   color: #166534;
 }
 
-[data-theme="green"] .selectionDetail {
+:global([data-theme="green"]) .selectionDetail {
   color: #166534;
 }
 
-[data-theme="green"] .selectionDetail svg {
+:global([data-theme="green"]) .selectionDetail svg {
   color: #2EAF7D;
 }
 
 /* Filter Row */
-[data-theme="green"] .filterRow {
+:global([data-theme="green"]) .filterRow {
   color: #02353C;
 }
 
-[data-theme="green"] .filterSelect {
+:global([data-theme="green"]) .filterSelect {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .filterSelect:focus {
+:global([data-theme="green"]) .filterSelect:focus {
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .filterStats {
+:global([data-theme="green"]) .filterStats {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #02353C;
 }
 
-[data-theme="green"] .selectAllButton {
+:global([data-theme="green"]) .selectAllButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .selectAllButton:hover {
+:global([data-theme="green"]) .selectAllButton:hover {
   box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
 }
 
 /* Algorithm Info */
-[data-theme="green"] .algorithmInfo {
+:global([data-theme="green"]) .algorithmInfo {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .algorithmInfoIcon {
+:global([data-theme="green"]) .algorithmInfoIcon {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .algorithmInfo p {
+:global([data-theme="green"]) .algorithmInfo p {
   color: #166534;
 }
 
 /* Checkbox Group */
-[data-theme="green"] .checkboxLabel {
+:global([data-theme="green"]) .checkboxLabel {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid transparent;
 }
 
-[data-theme="green"] .checkboxLabel:hover {
+:global([data-theme="green"]) .checkboxLabel:hover {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   border-color: rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .checkboxText {
+:global([data-theme="green"]) .checkboxText {
   color: #02353C;
 }
 
-[data-theme="green"] .checkboxLabel input[type="checkbox"] {
+:global([data-theme="green"]) .checkboxLabel input[type="checkbox"] {
   accent-color: #2EAF7D;
 }
 
 /* Time Configuration */
-[data-theme="green"] .timeConfigInfo {
+:global([data-theme="green"]) .timeConfigInfo {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   border-left: 4px solid #2EAF7D;
 }
 
-[data-theme="green"] .timeConfigInfo svg {
+:global([data-theme="green"]) .timeConfigInfo svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .timeConfigInfo p {
+:global([data-theme="green"]) .timeConfigInfo p {
   color: #166534;
 }
 
-[data-theme="green"] .timeSlotPreview {
+:global([data-theme="green"]) .timeSlotPreview {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px dashed rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .timeSlotPreview strong {
+:global([data-theme="green"]) .timeSlotPreview strong {
   color: #02353C;
 }
 
-[data-theme="green"] .timeSlotChip {
+:global([data-theme="green"]) .timeSlotChip {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #166534;
 }
 
-[data-theme="green"] .timeSlotChip:hover {
+:global([data-theme="green"]) .timeSlotChip:hover {
   border-color: #2EAF7D;
   color: #2EAF7D;
 }
 
-[data-theme="green"] .timeSlotMore {
+:global([data-theme="green"]) .timeSlotMore {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .timeSlotCount {
+:global([data-theme="green"]) .timeSlotCount {
   color: #166534;
   border-color: rgba(46, 175, 125, 0.2);
 }
 
 /* Loading Container */
-[data-theme="green"] .loadingContainer {
+:global([data-theme="green"]) .loadingContainer {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
   border: 2px solid rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .loadingContainer p {
+:global([data-theme="green"]) .loadingContainer p {
   color: #166534;
 }
 
-[data-theme="green"] .spinnerIcon {
+:global([data-theme="green"]) .spinnerIcon {
   color: #2EAF7D;
 }
 
 /* Step Progress */
-[data-theme="green"] .stepProgress {
+:global([data-theme="green"]) .stepProgress {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .step {
+:global([data-theme="green"]) .step {
   color: #166534;
 }
 
-[data-theme="green"] .step.active {
+:global([data-theme="green"]) .step.active {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .step.completed {
+:global([data-theme="green"]) .step.completed {
   color: #166534;
 }
 
-[data-theme="green"] .stepNumber {
+:global([data-theme="green"]) .stepNumber {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #02353C;
 }
 
-[data-theme="green"] .step.active .stepNumber {
+:global([data-theme="green"]) .step.active .stepNumber {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .step.completed .stepNumber {
+:global([data-theme="green"]) .step.completed .stepNumber {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   color: #ffffff;
 }
 
-[data-theme="green"] .stepLine {
+:global([data-theme="green"]) .stepLine {
   background: rgba(46, 175, 125, 0.3);
 }
 
 /* Data Source Cards */
-[data-theme="green"] .dataSourceCard {
+:global([data-theme="green"]) .dataSourceCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .dataSourceCard:hover {
+:global([data-theme="green"]) .dataSourceCard:hover {
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .dataSourceHeader:hover {
+:global([data-theme="green"]) .dataSourceHeader:hover {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.08) 0%, rgba(193, 246, 237, 0.15) 100%);
 }
 
-[data-theme="green"] .dataSourceTitle h3 {
+:global([data-theme="green"]) .dataSourceTitle h3 {
   color: #02353C;
 }
 
-[data-theme="green"] .dataSourceTitle p {
+:global([data-theme="green"]) .dataSourceTitle p {
   color: #166534;
 }
 
-[data-theme="green"] .dataSourceIcon {
+:global([data-theme="green"]) .dataSourceIcon {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataSourceIcon svg {
+:global([data-theme="green"]) .dataSourceIcon svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataSourceIcon.campusIcon,
-[data-theme="green"] .dataSourceIcon.classIcon,
-[data-theme="green"] .dataSourceIcon.teacherIcon {
+:global([data-theme="green"]) .dataSourceIcon.campusIcon,
+:global([data-theme="green"]) .dataSourceIcon.classIcon,
+:global([data-theme="green"]) .dataSourceIcon.teacherIcon {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataSourceIcon.campusIcon svg,
-[data-theme="green"] .dataSourceIcon.classIcon svg,
-[data-theme="green"] .dataSourceIcon.teacherIcon svg {
+:global([data-theme="green"]) .dataSourceIcon.campusIcon svg,
+:global([data-theme="green"]) .dataSourceIcon.classIcon svg,
+:global([data-theme="green"]) .dataSourceIcon.teacherIcon svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataSourceStatus {
+:global([data-theme="green"]) .dataSourceStatus {
   color: #166534;
 }
 
-[data-theme="green"] .requiredBadge {
+:global([data-theme="green"]) .requiredBadge {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
   color: #dc2626;
 }
 
-[data-theme="green"] .selectedBadge {
+:global([data-theme="green"]) .selectedBadge {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #166534;
 }
 
-[data-theme="green"] .optionalBadge {
+:global([data-theme="green"]) .optionalBadge {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #166534;
 }
 
 /* Data Cards */
-[data-theme="green"] .dataCard {
+:global([data-theme="green"]) .dataCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .dataCard:hover {
+:global([data-theme="green"]) .dataCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .dataCard.selected {
+:global([data-theme="green"]) .dataCard.selected {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .dataCardHeader h4 {
+:global([data-theme="green"]) .dataCardHeader h4 {
   color: #02353C;
 }
 
-[data-theme="green"] .dataCardHeader svg {
+:global([data-theme="green"]) .dataCardHeader svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .dataCardStats {
+:global([data-theme="green"]) .dataCardStats {
   color: #166534;
 }
 
-[data-theme="green"] .dataCardFile {
+:global([data-theme="green"]) .dataCardFile {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .dataCardDate {
+:global([data-theme="green"]) .dataCardDate {
   color: #166534;
 }
 
-[data-theme="green"] .selectedCheck {
+:global([data-theme="green"]) .selectedCheck {
   color: #2EAF7D;
 }
 
 /* Empty Data Source */
-[data-theme="green"] .emptyDataSource {
+:global([data-theme="green"]) .emptyDataSource {
   color: #166534;
 }
 
-[data-theme="green"] .emptyDataSource svg {
+:global([data-theme="green"]) .emptyDataSource svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .emptyDataSource button {
+:global([data-theme="green"]) .emptyDataSource button {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
 /* Step Navigation */
-[data-theme="green"] .nextButton {
+:global([data-theme="green"]) .nextButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .nextButton:hover:not(:disabled) {
+:global([data-theme="green"]) .nextButton:hover:not(:disabled) {
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.5);
 }
 
-[data-theme="green"] .backStepButton {
+:global([data-theme="green"]) .backStepButton {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .backStepButton:hover {
+:global([data-theme="green"]) .backStepButton:hover {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .navigationHint {
+:global([data-theme="green"]) .navigationHint {
   color: #166534;
 }
 
 /* Preview Section */
-[data-theme="green"] .previewCard {
+:global([data-theme="green"]) .previewCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
 }
 
 /* Generate Hint */
-[data-theme="green"] .generateHint {
+:global([data-theme="green"]) .generateHint {
   color: #166534;
 }
 
-[data-theme="green"] .generateInfo {
+:global([data-theme="green"]) .generateInfo {
   color: #166534;
 }
 
-[data-theme="green"] .generateInfo svg {
+:global([data-theme="green"]) .generateInfo svg {
   color: #2EAF7D;
 }
 
 /* Preset Section */
-[data-theme="green"] .presetLabel {
+:global([data-theme="green"]) .presetLabel {
   color: #02353C;
 }
 
-[data-theme="green"] .presetButton {
+:global([data-theme="green"]) .presetButton {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .presetButton:hover {
+:global([data-theme="green"]) .presetButton:hover {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #2EAF7D;
@@ -2852,148 +2852,148 @@
 }
 
 /* ==================== Dark Theme Stat Icons ==================== */
-[data-theme="dark"] .statIcon {
+:global([data-theme="dark"]) .statIcon {
   background: rgba(56, 189, 248, 0.15);
 }
 
-[data-theme="dark"] .statIcon svg {
+:global([data-theme="dark"]) .statIcon svg {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .headerIconWrapper {
+:global([data-theme="dark"]) .headerIconWrapper {
   background: rgba(56, 189, 248, 0.15);
 }
 
-[data-theme="dark"] .headerLargeIcon {
+:global([data-theme="dark"]) .headerLargeIcon {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .dataSourceIcon {
+:global([data-theme="dark"]) .dataSourceIcon {
   background: rgba(56, 189, 248, 0.15) !important;
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .dataSourceIcon svg {
+:global([data-theme="dark"]) .dataSourceIcon svg {
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .dataSourceIcon.campusIcon,
-[data-theme="dark"] .dataSourceIcon.classIcon,
-[data-theme="dark"] .dataSourceIcon.teacherIcon {
+:global([data-theme="dark"]) .dataSourceIcon.campusIcon,
+:global([data-theme="dark"]) .dataSourceIcon.classIcon,
+:global([data-theme="dark"]) .dataSourceIcon.teacherIcon {
   background: rgba(56, 189, 248, 0.15) !important;
   color: #38bdf8 !important;
 }
 
-[data-theme="dark"] .summaryIcon {
+:global([data-theme="dark"]) .summaryIcon {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
 }
 
-[data-theme="dark"] .summaryIcon svg {
+:global([data-theme="dark"]) .summaryIcon svg {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .summaryIcon.campusIcon,
-[data-theme="dark"] .summaryIcon.classIcon,
-[data-theme="dark"] .summaryIcon.teacherIcon {
+:global([data-theme="dark"]) .summaryIcon.campusIcon,
+:global([data-theme="dark"]) .summaryIcon.classIcon,
+:global([data-theme="dark"]) .summaryIcon.teacherIcon {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
 }
 
 /* ==================== Dark Theme Timetable Styles ==================== */
-[data-theme="dark"] .timetableSection {
+:global([data-theme="dark"]) .timetableSection {
   background: #1e1e2e;
   border-color: #3a3a4a;
 }
 
-[data-theme="dark"] .timetableContainer {
+:global([data-theme="dark"]) .timetableContainer {
   background: #252535;
   border-color: #3a3a4a;
 }
 
-[data-theme="dark"] .timetable th {
+:global([data-theme="dark"]) .timetable th {
   background: #3a3a5a;
   color: #ffffff;
   border-color: #4a4a6a;
 }
 
-[data-theme="dark"] .timeCell {
+:global([data-theme="dark"]) .timeCell {
   background: #2a2a3a;
   color: #e0e0e0;
   border-color: #3a3a4a;
 }
 
-[data-theme="dark"] .scheduleCell {
+:global([data-theme="dark"]) .scheduleCell {
   background: #1e1e2e;
   border-color: #3a3a4a;
 }
 
-[data-theme="dark"] .allocationCard {
+:global([data-theme="dark"]) .allocationCard {
   background: #2a2a4a;
   border-left-color: #6366f1;
 }
 
-[data-theme="dark"] .allocationCourse {
+:global([data-theme="dark"]) .allocationCourse {
   color: #ffffff;
 }
 
-[data-theme="dark"] .allocationRoom {
+:global([data-theme="dark"]) .allocationRoom {
   color: #818cf8;
 }
 
-[data-theme="dark"] .allocationSection {
+:global([data-theme="dark"]) .allocationSection {
   color: #a0a0b0;
 }
 
-[data-theme="dark"] .allocationSummary {
+:global([data-theme="dark"]) .allocationSummary {
   background: #2a2a3a;
 }
 
-[data-theme="dark"] .allocationSummary p {
+:global([data-theme="dark"]) .allocationSummary p {
   color: #d0d0e0;
 }
 
 /* ==================== Light Theme Timetable Styles ==================== */
-[data-theme="light"] .timetableSection {
+:global([data-theme="light"]) .timetableSection {
   background: #ffffff;
   border-color: #e5e7eb;
 }
 
-[data-theme="light"] .timetableContainer {
+:global([data-theme="light"]) .timetableContainer {
   background: #ffffff;
   border-color: #e5e7eb;
 }
 
-[data-theme="light"] .timetable th {
+:global([data-theme="light"]) .timetable th {
   background: #4f46e5;
   color: #ffffff;
 }
 
-[data-theme="light"] .timeCell {
+:global([data-theme="light"]) .timeCell {
   background: #f9fafb;
   color: #1f2937;
   border-color: #e5e7eb;
 }
 
-[data-theme="light"] .scheduleCell {
+:global([data-theme="light"]) .scheduleCell {
   background: #ffffff;
   border-color: #e5e7eb;
 }
 
-[data-theme="light"] .allocationCard {
+:global([data-theme="light"]) .allocationCard {
   background: #f0f9ff;
   border-left-color: #4f46e5;
 }
 
-[data-theme="light"] .allocationCourse {
+:global([data-theme="light"]) .allocationCourse {
   color: #1f2937;
 }
 
-[data-theme="light"] .allocationRoom {
+:global([data-theme="light"]) .allocationRoom {
   color: #4f46e5;
 }
 
-[data-theme="light"] .allocationSection {
+:global([data-theme="light"]) .allocationSection {
   color: #6b7280;
 }
 
@@ -3070,28 +3070,28 @@
 }
 
 /* Dark theme for unscheduled list */
-[data-theme="dark"] .unscheduledItem {
+:global([data-theme="dark"]) .unscheduledItem {
   background: #2a2a3a;
   border-left-color: #f59e0b;
 }
 
-[data-theme="dark"] .unscheduledItem:hover {
+:global([data-theme="dark"]) .unscheduledItem:hover {
   background: #3a3a4a;
 }
 
-[data-theme="dark"] .unscheduledCourse {
+:global([data-theme="dark"]) .unscheduledCourse {
   color: #ffffff;
 }
 
-[data-theme="dark"] .unscheduledName {
+:global([data-theme="dark"]) .unscheduledName {
   color: #d0d0e0;
 }
 
-[data-theme="dark"] .unscheduledTeacher {
+:global([data-theme="dark"]) .unscheduledTeacher {
   color: #a0a0b0;
 }
 
-[data-theme="dark"] .unscheduledReason {
+:global([data-theme="dark"]) .unscheduledReason {
   background: rgba(220, 38, 38, 0.2);
   color: #fca5a5;
 }
@@ -4311,142 +4311,142 @@
 }
 
 /* Dark theme adjustments */
-[data-theme="dark"] .onlineDaysSection {
+:global([data-theme="dark"]) .onlineDaysSection {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
   border-color: rgba(99, 102, 241, 0.3);
 }
 
-[data-theme="dark"] .onlineDayCheckbox {
+:global([data-theme="dark"]) .onlineDayCheckbox {
   background: rgba(15, 23, 42, 0.6);
   border-color: rgba(99, 102, 241, 0.3);
 }
 
-[data-theme="dark"] .onlineDayCheckbox:hover {
+:global([data-theme="dark"]) .onlineDayCheckbox:hover {
   background: rgba(99, 102, 241, 0.15);
 }
 
-[data-theme="dark"] .onlineDayCheckbox.active {
+:global([data-theme="dark"]) .onlineDayCheckbox.active {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.15) 100%);
 }
 
-[data-theme="dark"] .onlineDaysSummary {
+:global([data-theme="dark"]) .onlineDaysSummary {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
 }
 
-[data-theme="dark"] .onlineStatsCard {
+:global([data-theme="dark"]) .onlineStatsCard {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%);
 }
 
-[data-theme="dark"] .onlineStatItem {
+:global([data-theme="dark"]) .onlineStatItem {
   background: rgba(15, 23, 42, 0.6);
 }
 
 /* ==================== Dark Mode Comprehensive Styles ==================== */
-[data-theme="dark"] .scheduleLayout {
+:global([data-theme="dark"]) .scheduleLayout {
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
 }
 
-[data-theme="dark"] .scheduleHeader,
-[data-theme="dark"] .headerTitleSection {
+:global([data-theme="dark"]) .scheduleHeader,
+:global([data-theme="dark"]) .headerTitleSection {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
   border-color: rgba(59, 130, 246, 0.3);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="dark"] .scheduleTitle {
+:global([data-theme="dark"]) .scheduleTitle {
   color: #f8fafc;
 }
 
-[data-theme="dark"] .scheduleSubtitle {
+:global([data-theme="dark"]) .scheduleSubtitle {
   color: #94a3b8;
 }
 
-[data-theme="dark"] .backButton {
+:global([data-theme="dark"]) .backButton {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(59, 130, 246, 0.3);
   color: #e2e8f0;
 }
 
-[data-theme="dark"] .backButton:hover {
+:global([data-theme="dark"]) .backButton:hover {
   background: rgba(59, 130, 246, 0.2);
   border-color: #3b82f6;
   color: #60a5fa;
 }
 
-[data-theme="dark"] .formCard,
-[data-theme="dark"] .configurationCard,
-[data-theme="dark"] .dataSourceCard {
+:global([data-theme="dark"]) .formCard,
+:global([data-theme="dark"]) .configurationCard,
+:global([data-theme="dark"]) .dataSourceCard {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.85) 100%);
   border-color: rgba(59, 130, 246, 0.25);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="dark"] .dataCard {
+:global([data-theme="dark"]) .dataCard {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .dataCard:hover {
+:global([data-theme="dark"]) .dataCard:hover {
   border-color: #3b82f6;
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
 }
 
-[data-theme="dark"] .dataCard.selected {
+:global([data-theme="dark"]) .dataCard.selected {
   background: rgba(59, 130, 246, 0.15);
   border-color: #3b82f6;
 }
 
-[data-theme="dark"] .dataCardHeader h4 {
+:global([data-theme="dark"]) .dataCardHeader h4 {
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .dataCardStats {
+:global([data-theme="dark"]) .dataCardStats {
   color: #94a3b8;
 }
 
-[data-theme="dark"] .buildingCard {
+:global([data-theme="dark"]) .buildingCard {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .buildingCard:hover {
+:global([data-theme="dark"]) .buildingCard:hover {
   border-color: #3b82f6;
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
 }
 
-[data-theme="dark"] .filterSection {
+:global([data-theme="dark"]) .filterSection {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .summaryCard {
+:global([data-theme="dark"]) .summaryCard {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .summaryCard:hover {
+:global([data-theme="dark"]) .summaryCard:hover {
   border-color: #00d4ff;
 }
 
-[data-theme="dark"] .stepProgress .stepLine {
+:global([data-theme="dark"]) .stepProgress .stepLine {
   background: rgba(71, 85, 105, 0.5);
 }
 
 /* Dark theme step number styling */
-[data-theme="dark"] .stepNumber {
+:global([data-theme="dark"]) .stepNumber {
   background: rgba(51, 65, 85, 0.8);
   color: #94a3b8;
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .step.active .stepNumber {
+:global([data-theme="dark"]) .step.active .stepNumber {
   background: linear-gradient(135deg, #00d4ff 0%, #0891b2 100%);
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 4px 16px rgba(0, 212, 255, 0.4);
 }
 
-[data-theme="dark"] .step.completed .stepNumber {
+:global([data-theme="dark"]) .step.completed .stepNumber {
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: #ffffff;
   border-color: transparent;
@@ -4454,651 +4454,651 @@
 }
 
 /* Dark theme step text */
-[data-theme="dark"] .step {
+:global([data-theme="dark"]) .step {
   color: #64748b;
 }
 
-[data-theme="dark"] .step.active {
+:global([data-theme="dark"]) .step.active {
   color: #00d4ff;
 }
 
-[data-theme="dark"] .step.completed {
+:global([data-theme="dark"]) .step.completed {
   color: #22c55e;
 }
 
 /* Dark theme step progress container */
-[data-theme="dark"] .stepProgress {
+:global([data-theme="dark"]) .stepProgress {
   background: rgba(15, 23, 42, 0.8);
   border-color: rgba(0, 212, 255, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="dark"] .formInput,
-[data-theme="dark"] .formSelect {
+:global([data-theme="dark"]) .formInput,
+:global([data-theme="dark"]) .formSelect {
   background: rgba(15, 23, 42, 0.6);
   border-color: rgba(71, 85, 105, 0.5);
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .formInput:focus,
-[data-theme="dark"] .formSelect:focus {
+:global([data-theme="dark"]) .formInput:focus,
+:global([data-theme="dark"]) .formSelect:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
-[data-theme="dark"] .formLabel {
+:global([data-theme="dark"]) .formLabel {
   color: #e2e8f0;
 }
 
-[data-theme="dark"] .generateButton {
+:global([data-theme="dark"]) .generateButton {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
-[data-theme="dark"] .previewCard {
+:global([data-theme="dark"]) .previewCard {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .previewTable table {
+:global([data-theme="dark"]) .previewTable table {
   background: rgba(15, 23, 42, 0.5);
 }
 
-[data-theme="dark"] .previewTable th {
+:global([data-theme="dark"]) .previewTable th {
   background: rgba(30, 41, 59, 0.9);
   color: #e2e8f0;
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .previewTable td {
+:global([data-theme="dark"]) .previewTable td {
   color: #cbd5e1;
   border-color: rgba(71, 85, 105, 0.3);
 }
 
 /* Dark Theme - View All Modal */
-[data-theme="dark"] .viewAllModal {
+:global([data-theme="dark"]) .viewAllModal {
   background: rgba(15, 23, 42, 0.98);
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .viewAllModalHeader {
+:global([data-theme="dark"]) .viewAllModalHeader {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.15));
   border-color: rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .viewAllModalTitle {
+:global([data-theme="dark"]) .viewAllModalTitle {
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .viewAllModalTitle svg {
+:global([data-theme="dark"]) .viewAllModalTitle svg {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .viewAllModalSearch {
+:global([data-theme="dark"]) .viewAllModalSearch {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .viewAllSearchInput {
+:global([data-theme="dark"]) .viewAllSearchInput {
   background: rgba(15, 23, 42, 0.8);
   border-color: rgba(71, 85, 105, 0.5);
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .viewAllSearchInput:focus {
+:global([data-theme="dark"]) .viewAllSearchInput:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
 }
 
-[data-theme="dark"] .viewAllSearchInput::placeholder {
+:global([data-theme="dark"]) .viewAllSearchInput::placeholder {
   color: #64748b;
 }
 
-[data-theme="dark"] .viewAllModalBody {
+:global([data-theme="dark"]) .viewAllModalBody {
   background: rgba(15, 23, 42, 0.5);
 }
 
-[data-theme="dark"] .viewAllTable thead {
+:global([data-theme="dark"]) .viewAllTable thead {
   background: rgba(30, 41, 59, 0.95);
 }
 
-[data-theme="dark"] .viewAllTable th {
+:global([data-theme="dark"]) .viewAllTable th {
   background: rgba(30, 41, 59, 0.9);
   color: #e2e8f0;
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .viewAllTable td {
+:global([data-theme="dark"]) .viewAllTable td {
   color: #cbd5e1;
   border-color: rgba(71, 85, 105, 0.3);
 }
 
-[data-theme="dark"] .viewAllTable tbody tr:hover {
+:global([data-theme="dark"]) .viewAllTable tbody tr:hover {
   background: rgba(56, 189, 248, 0.1);
 }
 
-[data-theme="dark"] .viewAllModalFooter {
+:global([data-theme="dark"]) .viewAllModalFooter {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .closeBtn {
+:global([data-theme="dark"]) .closeBtn {
   background: linear-gradient(135deg, #38bdf8, #0ea5e9);
 }
 
-[data-theme="dark"] .closeBtn:hover {
+:global([data-theme="dark"]) .closeBtn:hover {
   background: linear-gradient(135deg, #0ea5e9, #0284c7);
   box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
 }
 
-[data-theme="dark"] .viewAllButton {
+:global([data-theme="dark"]) .viewAllButton {
   border-color: #38bdf8;
   color: #38bdf8;
 }
 
-[data-theme="dark"] .viewAllButton:hover {
+:global([data-theme="dark"]) .viewAllButton:hover {
   background: #38bdf8;
   color: #0f172a;
   box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
 }
 
-[data-theme="dark"] .viewMoreLink {
+:global([data-theme="dark"]) .viewMoreLink {
   color: #38bdf8;
 }
 
-[data-theme="dark"] .moreRow:hover {
+:global([data-theme="dark"]) .moreRow:hover {
   background: rgba(56, 189, 248, 0.1);
 }
 
 /* ==================== Light Mode Styles ==================== */
-[data-theme="light"] .scheduleLayout {
+:global([data-theme="light"]) .scheduleLayout {
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
 }
 
-[data-theme="light"] .scheduleHeader,
-[data-theme="light"] .headerTitleSection {
+:global([data-theme="light"]) .scheduleHeader,
+:global([data-theme="light"]) .headerTitleSection {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-color: rgba(59, 130, 246, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="light"] .scheduleTitle {
+:global([data-theme="light"]) .scheduleTitle {
   color: #1e293b;
 }
 
-[data-theme="light"] .scheduleSubtitle {
+:global([data-theme="light"]) .scheduleSubtitle {
   color: #64748b;
 }
 
-[data-theme="light"] .formCard,
-[data-theme="light"] .dataSourceCard {
+:global([data-theme="light"]) .formCard,
+:global([data-theme="light"]) .dataSourceCard {
   background: #ffffff;
   border-color: #e2e8f0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .dataCard {
+:global([data-theme="light"]) .dataCard {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .dataCard:hover {
+:global([data-theme="light"]) .dataCard:hover {
   border-color: #3b82f6;
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
 }
 
-[data-theme="light"] .dataCard.selected {
+:global([data-theme="light"]) .dataCard.selected {
   background: rgba(59, 130, 246, 0.08);
   border-color: #3b82f6;
 }
 
-[data-theme="light"] .buildingCard {
+:global([data-theme="light"]) .buildingCard {
   background: #ffffff;
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .buildingCard:hover {
+:global([data-theme="light"]) .buildingCard:hover {
   border-color: #3b82f6;
 }
 
-[data-theme="light"] .formInput,
-[data-theme="light"] .formSelect {
+:global([data-theme="light"]) .formInput,
+:global([data-theme="light"]) .formSelect {
   background: #ffffff;
   border-color: #e2e8f0;
   color: #1e293b;
 }
 
-[data-theme="light"] .formInput:focus,
-[data-theme="light"] .formSelect:focus {
+:global([data-theme="light"]) .formInput:focus,
+:global([data-theme="light"]) .formSelect:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 /* ==================== Dark Mode - Unassigned Modal & Quick Actions ==================== */
-[data-theme="dark"] .quickActionsBox,
-[data-theme="dark"] .filterControlsBox {
+:global([data-theme="dark"]) .quickActionsBox,
+:global([data-theme="dark"]) .filterControlsBox {
   background: rgba(30, 41, 59, 0.6);
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .quickActionsLabel {
+:global([data-theme="dark"]) .quickActionsLabel {
   color: #3b82f6;
 }
 
-[data-theme="dark"] .filterControlLabel {
+:global([data-theme="dark"]) .filterControlLabel {
   color: #94a3b8;
 }
 
-[data-theme="dark"] .unassignedModal {
+:global([data-theme="dark"]) .unassignedModal {
   background: #1e293b;
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
-[data-theme="dark"] .warningBox {
+:global([data-theme="dark"]) .warningBox {
   background: linear-gradient(135deg, rgba(245, 124, 0, 0.15), rgba(255, 167, 38, 0.15));
   border-color: rgba(245, 124, 0, 0.4);
 }
 
-[data-theme="dark"] .warningDescription {
+:global([data-theme="dark"]) .warningDescription {
   color: #cbd5e1;
 }
 
-[data-theme="dark"] .bypassSection {
+:global([data-theme="dark"]) .bypassSection {
   background: rgba(15, 23, 42, 0.6);
 }
 
-[data-theme="dark"] .bypassLabel span {
+:global([data-theme="dark"]) .bypassLabel span {
   color: #e2e8f0;
 }
 
-[data-theme="dark"] .cancelBtn {
+:global([data-theme="dark"]) .cancelBtn {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(71, 85, 105, 0.5);
   color: #94a3b8;
 }
 
-[data-theme="dark"] .cancelBtn:hover {
+:global([data-theme="dark"]) .cancelBtn:hover {
   background: rgba(71, 85, 105, 0.5);
   color: #f1f5f9;
 }
 
-[data-theme="dark"] .proceedBtn:disabled {
+:global([data-theme="dark"]) .proceedBtn:disabled {
   background: rgba(71, 85, 105, 0.5);
   color: #64748b;
 }
 
-[data-theme="dark"] .warningModalHeader,
-[data-theme="dark"] .warningModalFooter {
+:global([data-theme="dark"]) .warningModalHeader,
+:global([data-theme="dark"]) .warningModalFooter {
   border-color: rgba(71, 85, 105, 0.4);
 }
 
-[data-theme="dark"] .warningModalFooter {
+:global([data-theme="dark"]) .warningModalFooter {
   background: rgba(15, 23, 42, 0.6);
 }
 
-[data-theme="dark"] .closeModalButton {
+:global([data-theme="dark"]) .closeModalButton {
   background: rgba(71, 85, 105, 0.4);
   color: #94a3b8;
 }
 
-[data-theme="dark"] .tableScrollContainer {
+:global([data-theme="dark"]) .tableScrollContainer {
   border-color: rgba(71, 85, 105, 0.4);
 }
 
 /* ==================== Green Theme - Unassigned Modal & Quick Actions ==================== */
-[data-theme="green"] .quickActionsBox,
-[data-theme="green"] .filterControlsBox {
+:global([data-theme="green"]) .quickActionsBox,
+:global([data-theme="green"]) .filterControlsBox {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.3) 0%, rgba(240, 253, 244, 0.5) 100%);
   border-color: rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .quickActionsLabel {
+:global([data-theme="green"]) .quickActionsLabel {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .filterControlLabel {
+:global([data-theme="green"]) .filterControlLabel {
   color: #166534;
 }
 
-[data-theme="green"] .quickActionBtn.selectAllBuildings {
+:global([data-theme="green"]) .quickActionBtn.selectAllBuildings {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
 }
 
-[data-theme="green"] .quickActionBtn.selectAllBuildings:hover {
+:global([data-theme="green"]) .quickActionBtn.selectAllBuildings:hover {
   background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
 }
 
-[data-theme="green"] .unassignedModal {
+:global([data-theme="green"]) .unassignedModal {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .warningBox {
+:global([data-theme="green"]) .warningBox {
   background: linear-gradient(135deg, rgba(245, 124, 0, 0.08) 0%, rgba(255, 167, 38, 0.12) 100%);
   border-color: rgba(245, 124, 0, 0.35);
 }
 
-[data-theme="green"] .warningDescription {
+:global([data-theme="green"]) .warningDescription {
   color: #166534;
 }
 
-[data-theme="green"] .bypassSection {
+:global([data-theme="green"]) .bypassSection {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.25) 0%, rgba(240, 253, 244, 0.4) 100%);
 }
 
-[data-theme="green"] .bypassLabel span {
+:global([data-theme="green"]) .bypassLabel span {
   color: #02353C;
 }
 
-[data-theme="green"] .cancelBtn {
+:global([data-theme="green"]) .cancelBtn {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(46, 175, 125, 0.3);
   color: #166534;
 }
 
-[data-theme="green"] .cancelBtn:hover {
+:global([data-theme="green"]) .cancelBtn:hover {
   background: rgba(46, 175, 125, 0.1);
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .proceedBtn {
+:global([data-theme="green"]) .proceedBtn {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
 }
 
-[data-theme="green"] .proceedBtn:hover:not(:disabled) {
+:global([data-theme="green"]) .proceedBtn:hover:not(:disabled) {
   background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
 }
 
-[data-theme="green"] .proceedBtn:disabled {
+:global([data-theme="green"]) .proceedBtn:disabled {
   background: rgba(46, 175, 125, 0.2);
   color: #94a3b8;
 }
 
-[data-theme="green"] .warningModalHeader,
-[data-theme="green"] .warningModalFooter {
+:global([data-theme="green"]) .warningModalHeader,
+:global([data-theme="green"]) .warningModalFooter {
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .warningModalFooter {
+:global([data-theme="green"]) .warningModalFooter {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.2) 0%, rgba(240, 253, 244, 0.3) 100%);
 }
 
-[data-theme="green"] .closeModalButton {
+:global([data-theme="green"]) .closeModalButton {
   background: rgba(46, 175, 125, 0.1);
   color: #166534;
 }
 
-[data-theme="green"] .closeModalButton:hover {
+:global([data-theme="green"]) .closeModalButton:hover {
   background: #dc2626;
   color: white;
 }
 
-[data-theme="green"] .tableScrollContainer {
+:global([data-theme="green"]) .tableScrollContainer {
   border-color: rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .viewerTable thead {
+:global([data-theme="green"]) .viewerTable thead {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.3) 0%, rgba(240, 253, 244, 0.5) 100%);
 }
 
-[data-theme="green"] .viewerTable th {
+:global([data-theme="green"]) .viewerTable th {
   color: #02353C;
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .viewerTable td {
+:global([data-theme="green"]) .viewerTable td {
   color: #166534;
   border-color: rgba(46, 175, 125, 0.15);
 }
 
-[data-theme="green"] .viewerTable tbody tr:hover {
+:global([data-theme="green"]) .viewerTable tbody tr:hover {
   background: rgba(46, 175, 125, 0.08);
 }
 
 /* ==================== Light Theme Support ==================== */
-[data-theme="light"] .scheduleLayout {
+:global([data-theme="light"]) .scheduleLayout {
   background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
 }
 
-[data-theme="light"] .scheduleHeader,
-[data-theme="light"] .headerTitleSection,
-[data-theme="light"] .formCard,
-[data-theme="light"] .configurationCard {
+:global([data-theme="light"]) .scheduleHeader,
+:global([data-theme="light"]) .headerTitleSection,
+:global([data-theme="light"]) .formCard,
+:global([data-theme="light"]) .configurationCard {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="light"] .scheduleTitle,
-[data-theme="light"] .formSectionTitle {
+:global([data-theme="light"]) .scheduleTitle,
+:global([data-theme="light"]) .formSectionTitle {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .scheduleSubtitle,
-[data-theme="light"] .formHint {
+:global([data-theme="light"]) .scheduleSubtitle,
+:global([data-theme="light"]) .formHint {
   color: #4a5568;
 }
 
-[data-theme="light"] .headerIconWrapper {
+:global([data-theme="light"]) .headerIconWrapper {
   background: linear-gradient(135deg, #005826 0%, #00a651 100%);
 }
 
-[data-theme="light"] .backButton {
+:global([data-theme="light"]) .backButton {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   color: #1a1a1a;
 }
 
-[data-theme="light"] .backButton:hover {
+:global([data-theme="light"]) .backButton:hover {
   border-color: #00a651;
   color: #00a651;
 }
 
-[data-theme="light"] .formInput,
-[data-theme="light"] .formSelect {
+:global([data-theme="light"]) .formInput,
+:global([data-theme="light"]) .formSelect {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   color: #1a1a1a;
 }
 
-[data-theme="light"] .formInput:focus,
-[data-theme="light"] .formSelect:focus {
+:global([data-theme="light"]) .formInput:focus,
+:global([data-theme="light"]) .formSelect:focus {
   border-color: #00a651;
   box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .tabNavigation {
+:global([data-theme="light"]) .tabNavigation {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .tabButton {
+:global([data-theme="light"]) .tabButton {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .tabButton:hover {
+:global([data-theme="light"]) .tabButton:hover {
   background: rgba(0, 166, 81, 0.08);
   color: #00a651;
 }
 
-[data-theme="light"] .tabButton.activeTab {
+:global([data-theme="light"]) .tabButton.activeTab {
   background: linear-gradient(135deg, #005826 0%, #00a651 100%);
   color: white;
 }
 
-[data-theme="light"] .generateButton {
+:global([data-theme="light"]) .generateButton {
   background: linear-gradient(135deg, #005826 0%, #00a651 100%);
 }
 
-[data-theme="light"] .settingsCard,
-[data-theme="light"] .timeCard,
-[data-theme="light"] .summaryCard,
-[data-theme="light"] .selectionCard,
-[data-theme="light"] .dataCard,
-[data-theme="light"] .dataSourceCard {
+:global([data-theme="light"]) .settingsCard,
+:global([data-theme="light"]) .timeCard,
+:global([data-theme="light"]) .summaryCard,
+:global([data-theme="light"]) .selectionCard,
+:global([data-theme="light"]) .dataCard,
+:global([data-theme="light"]) .dataSourceCard {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .selectionTitle,
-[data-theme="light"] .summaryValue,
-[data-theme="light"] .dataCardHeader h4 {
+:global([data-theme="light"]) .selectionTitle,
+:global([data-theme="light"]) .summaryValue,
+:global([data-theme="light"]) .dataCardHeader h4 {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .selectionSubtitle,
-[data-theme="light"] .summaryLabel,
-[data-theme="light"] .selectionDetail {
+:global([data-theme="light"]) .selectionSubtitle,
+:global([data-theme="light"]) .summaryLabel,
+:global([data-theme="light"]) .selectionDetail {
   color: #4a5568;
 }
 
-[data-theme="light"] .loadingContainer {
+:global([data-theme="light"]) .loadingContainer {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .loadingContainer p {
+:global([data-theme="light"]) .loadingContainer p {
   color: #4a5568;
 }
 
-[data-theme="light"] .stepProgress {
+:global([data-theme="light"]) .stepProgress {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .step {
+:global([data-theme="light"]) .step {
   color: #4a5568;
 }
 
-[data-theme="light"] .step.active {
+:global([data-theme="light"]) .step.active {
   color: #00a651;
 }
 
-[data-theme="light"] .stepNumber {
+:global([data-theme="light"]) .stepNumber {
   background: rgba(0, 166, 81, 0.1);
   color: #1a1a1a;
 }
 
-[data-theme="light"] .step.active .stepNumber,
-[data-theme="light"] .step.completed .stepNumber {
+:global([data-theme="light"]) .step.active .stepNumber,
+:global([data-theme="light"]) .step.completed .stepNumber {
   background: linear-gradient(135deg, #005826 0%, #00a651 100%);
   color: white;
 }
 
 /* Additional Light Theme Coverage for Steps 2 & 3 */
-[data-theme="light"] .panelContainer,
-[data-theme="light"] .panel,
-[data-theme="light"] .contentPanel,
-[data-theme="light"] .dataPanel,
-[data-theme="light"] .sectionPanel,
-[data-theme="light"] .facultyPanel,
-[data-theme="light"] .roomPanel,
-[data-theme="light"] .coursePanel {
+:global([data-theme="light"]) .panelContainer,
+:global([data-theme="light"]) .panel,
+:global([data-theme="light"]) .contentPanel,
+:global([data-theme="light"]) .dataPanel,
+:global([data-theme="light"]) .sectionPanel,
+:global([data-theme="light"]) .facultyPanel,
+:global([data-theme="light"]) .roomPanel,
+:global([data-theme="light"]) .coursePanel {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .panelHeader,
-[data-theme="light"] .sectionHeader,
-[data-theme="light"] .cardHeader {
+:global([data-theme="light"]) .panelHeader,
+:global([data-theme="light"]) .sectionHeader,
+:global([data-theme="light"]) .cardHeader {
   background: rgba(0, 166, 81, 0.05);
   border-bottom-color: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .panelTitle,
-[data-theme="light"] .sectionTitle,
-[data-theme="light"] .cardTitle,
-[data-theme="light"] .labelTitle,
-[data-theme="light"] .dataLabel {
+:global([data-theme="light"]) .panelTitle,
+:global([data-theme="light"]) .sectionTitle,
+:global([data-theme="light"]) .cardTitle,
+:global([data-theme="light"]) .labelTitle,
+:global([data-theme="light"]) .dataLabel {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .panelSubtitle,
-[data-theme="light"] .sectionSubtitle,
-[data-theme="light"] .cardSubtitle,
-[data-theme="light"] .labelValue,
-[data-theme="light"] .dataValue {
+:global([data-theme="light"]) .panelSubtitle,
+:global([data-theme="light"]) .sectionSubtitle,
+:global([data-theme="light"]) .cardSubtitle,
+:global([data-theme="light"]) .labelValue,
+:global([data-theme="light"]) .dataValue {
   color: #4a5568;
 }
 
-[data-theme="light"] .itemCard,
-[data-theme="light"] .listCard,
-[data-theme="light"] .infoCard,
-[data-theme="light"] .facultyCard,
-[data-theme="light"] .roomCard,
-[data-theme="light"] .courseCard {
+:global([data-theme="light"]) .itemCard,
+:global([data-theme="light"]) .listCard,
+:global([data-theme="light"]) .infoCard,
+:global([data-theme="light"]) .facultyCard,
+:global([data-theme="light"]) .roomCard,
+:global([data-theme="light"]) .courseCard {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .itemCard:hover,
-[data-theme="light"] .listCard:hover {
+:global([data-theme="light"]) .itemCard:hover,
+:global([data-theme="light"]) .listCard:hover {
   border-color: #00a651;
   box-shadow: 0 8px 24px rgba(0, 166, 81, 0.12);
 }
 
-[data-theme="light"] .infoLabel,
-[data-theme="light"] .dataInfoLabel {
+:global([data-theme="light"]) .infoLabel,
+:global([data-theme="light"]) .dataInfoLabel {
   color: #4a5568;
 }
 
-[data-theme="light"] .infoValue,
-[data-theme="light"] .dataInfoValue {
+:global([data-theme="light"]) .infoValue,
+:global([data-theme="light"]) .dataInfoValue {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .checkbox,
-[data-theme="light"] .radioButton,
-[data-theme="light"] .selectBox {
+:global([data-theme="light"]) .checkbox,
+:global([data-theme="light"]) .radioButton,
+:global([data-theme="light"]) .selectBox {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   color: #1a1a1a;
 }
 
-[data-theme="light"] .badgeLabel,
-[data-theme="light"] .tagLabel {
+:global([data-theme="light"]) .badgeLabel,
+:global([data-theme="light"]) .tagLabel {
   background: rgba(0, 166, 81, 0.1);
   color: #00a651;
 }
 
-[data-theme="light"] .statusBadge {
+:global([data-theme="light"]) .statusBadge {
   color: #1a1a1a;
 }
 
-[data-theme="light"] .nextButton,
-[data-theme="light"] .prevButton,
-[data-theme="light"] .actionBtn {
+:global([data-theme="light"]) .nextButton,
+:global([data-theme="light"]) .prevButton,
+:global([data-theme="light"]) .actionBtn {
   background: linear-gradient(135deg, #005826 0%, #00a651 100%);
   color: white;
 }
 
-[data-theme="light"] .cancelButton,
-[data-theme="light"] .secondaryBtn {
+:global([data-theme="light"]) .cancelButton,
+:global([data-theme="light"]) .secondaryBtn {
   background: rgba(255, 255, 255, 0.98);
   border-color: rgba(0, 166, 81, 0.2);
   color: #1a1a1a;
 }
 
-[data-theme="light"] .emptyMessage,
-[data-theme="light"] .noDataMessage {
+:global([data-theme="light"]) .emptyMessage,
+:global([data-theme="light"]) .noDataMessage {
   color: #4a5568;
 }
 
-[data-theme="light"] .icon,
-[data-theme="light"] .panelIcon {
+:global([data-theme="light"]) .icon,
+:global([data-theme="light"]) .panelIcon {
   color: #00a651;
 }
 
 /* ==================== Light Theme - Step 2 & 3 Panels ==================== */
 /* Preview Section (Step 2) */
-[data-theme="light"] .previewSection {
+:global([data-theme="light"]) .previewSection {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-[data-theme="light"] .previewCard {
+:global([data-theme="light"]) .previewCard {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   border-radius: 12px;
@@ -5106,7 +5106,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .previewCard h3 {
+:global([data-theme="light"]) .previewCard h3 {
   color: #1a1a1a !important;
   display: flex;
   align-items: center;
@@ -5115,26 +5115,26 @@
   font-weight: 600;
 }
 
-[data-theme="light"] .previewCard h3 svg {
+:global([data-theme="light"]) .previewCard h3 svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .previewTable {
+:global([data-theme="light"]) .previewTable {
   background: rgba(255, 255, 255, 0.98) !important;
   border-radius: 8px;
   overflow: hidden;
 }
 
-[data-theme="light"] .previewTable table {
+:global([data-theme="light"]) .previewTable table {
   width: 100%;
   border-collapse: collapse;
 }
 
-[data-theme="light"] .previewTable thead {
+:global([data-theme="light"]) .previewTable thead {
   background: rgba(0, 166, 81, 0.08) !important;
 }
 
-[data-theme="light"] .previewTable th {
+:global([data-theme="light"]) .previewTable th {
   color: #1a1a1a !important;
   font-weight: 600;
   padding: 12px;
@@ -5142,144 +5142,144 @@
   border-bottom: 1px solid rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .previewTable td {
+:global([data-theme="light"]) .previewTable td {
   color: #4a5568 !important;
   padding: 10px 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .previewTable tbody tr:hover {
+:global([data-theme="light"]) .previewTable tbody tr:hover {
   background: rgba(0, 166, 81, 0.04);
 }
 
-[data-theme="light"] .moreRow td {
+:global([data-theme="light"]) .moreRow td {
   color: #00a651 !important;
   font-style: italic;
   background: rgba(0, 166, 81, 0.05);
 }
 
 /* Light Theme - View All Modal */
-[data-theme="light"] .viewAllModal {
+:global([data-theme="light"]) .viewAllModal {
   background: #ffffff !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
 }
 
-[data-theme="light"] .viewAllModalHeader {
+:global([data-theme="light"]) .viewAllModalHeader {
   background: linear-gradient(135deg, rgba(0, 166, 81, 0.05), rgba(0, 166, 81, 0.1)) !important;
   border-color: rgba(0, 166, 81, 0.15) !important;
 }
 
-[data-theme="light"] .viewAllModalTitle {
+:global([data-theme="light"]) .viewAllModalTitle {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .viewAllModalTitle svg {
+:global([data-theme="light"]) .viewAllModalTitle svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .viewAllModalSearch {
+:global([data-theme="light"]) .viewAllModalSearch {
   background: rgba(0, 166, 81, 0.03) !important;
   border-color: rgba(0, 166, 81, 0.1) !important;
 }
 
-[data-theme="light"] .viewAllSearchInput {
+:global([data-theme="light"]) .viewAllSearchInput {
   background: white !important;
   border-color: rgba(0, 166, 81, 0.2) !important;
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .viewAllSearchInput:focus {
+:global([data-theme="light"]) .viewAllSearchInput:focus {
   border-color: #00a651 !important;
   box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.1) !important;
 }
 
-[data-theme="light"] .viewAllTable thead {
+:global([data-theme="light"]) .viewAllTable thead {
   background: #ffffff !important;
 }
 
-[data-theme="light"] .viewAllTable th {
+:global([data-theme="light"]) .viewAllTable th {
   background: rgba(0, 166, 81, 0.08) !important;
   color: #1a1a1a !important;
   border-color: rgba(0, 166, 81, 0.15) !important;
 }
 
-[data-theme="light"] .viewAllTable td {
+:global([data-theme="light"]) .viewAllTable td {
   color: #374151 !important;
   border-color: rgba(0, 0, 0, 0.06) !important;
 }
 
-[data-theme="light"] .viewAllTable tbody tr:hover {
+:global([data-theme="light"]) .viewAllTable tbody tr:hover {
   background: rgba(0, 166, 81, 0.04) !important;
 }
 
-[data-theme="light"] .viewAllModalFooter {
+:global([data-theme="light"]) .viewAllModalFooter {
   background: rgba(0, 166, 81, 0.03) !important;
   border-color: rgba(0, 166, 81, 0.1) !important;
 }
 
-[data-theme="light"] .closeBtn {
+:global([data-theme="light"]) .closeBtn {
   background: linear-gradient(135deg, #00a651, #059669) !important;
 }
 
-[data-theme="light"] .closeBtn:hover {
+:global([data-theme="light"]) .closeBtn:hover {
   background: linear-gradient(135deg, #059669, #047857) !important;
 }
 
-[data-theme="light"] .viewAllButton {
+:global([data-theme="light"]) .viewAllButton {
   border-color: #00a651 !important;
   color: #00a651 !important;
 }
 
-[data-theme="light"] .viewAllButton:hover {
+:global([data-theme="light"]) .viewAllButton:hover {
   background: #00a651 !important;
   color: white !important;
 }
 
-[data-theme="light"] .viewMoreLink {
+:global([data-theme="light"]) .viewMoreLink {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .moreRow:hover {
+:global([data-theme="light"]) .moreRow:hover {
   background: rgba(0, 166, 81, 0.08) !important;
 }
 
 /* Filter Section (Step 2) */
-[data-theme="light"] .filterSection {
+:global([data-theme="light"]) .filterSection {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   border-radius: 12px;
   margin-bottom: 20px;
 }
 
-[data-theme="light"] .filterHeader {
+:global([data-theme="light"]) .filterHeader {
   background: transparent !important;
 }
 
-[data-theme="light"] .filterTitle h3 {
+:global([data-theme="light"]) .filterTitle h3 {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .filterTitle svg {
+:global([data-theme="light"]) .filterTitle svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .filterContent {
+:global([data-theme="light"]) .filterContent {
   padding: 20px 24px;
   background: rgba(255, 255, 255, 0.98) !important;
 }
 
-[data-theme="light"] .filterContent p,
-[data-theme="light"] .filterDescription {
+:global([data-theme="light"]) .filterContent p,
+:global([data-theme="light"]) .filterDescription {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .filterInactiveBadge {
+:global([data-theme="light"]) .filterInactiveBadge {
   background: rgba(0, 166, 81, 0.1) !important;
   color: #00a651 !important;
 }
 
 /* Compatibility Card (Step 2) */
-[data-theme="light"] .compatibilityCard {
+:global([data-theme="light"]) .compatibilityCard {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   border-radius: 12px;
@@ -5287,7 +5287,7 @@
   margin-top: 20px;
 }
 
-[data-theme="light"] .compatibilityCard h3 {
+:global([data-theme="light"]) .compatibilityCard h3 {
   color: #1a1a1a !important;
   display: flex;
   align-items: center;
@@ -5295,17 +5295,17 @@
   margin-bottom: 15px;
 }
 
-[data-theme="light"] .compatibilityCard h3 svg {
+:global([data-theme="light"]) .compatibilityCard h3 svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .compatibilityList {
+:global([data-theme="light"]) .compatibilityList {
   background: rgba(0, 166, 81, 0.04);
   border-radius: 8px;
   padding: 15px;
 }
 
-[data-theme="light"] .compatibilityItem {
+:global([data-theme="light"]) .compatibilityItem {
   color: #4a5568 !important;
   display: flex;
   align-items: center;
@@ -5313,20 +5313,20 @@
   padding: 8px 0;
 }
 
-[data-theme="light"] .compatibilityItem.success svg {
+:global([data-theme="light"]) .compatibilityItem.success svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .compatibilityItem.warning svg {
+:global([data-theme="light"]) .compatibilityItem.warning svg {
   color: #f59e0b !important;
 }
 
 /* Config Section (Step 3) */
-[data-theme="light"] .configSection {
+:global([data-theme="light"]) .configSection {
   background: transparent;
 }
 
-[data-theme="light"] .formCard {
+:global([data-theme="light"]) .formCard {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   border-radius: 12px;
@@ -5335,7 +5335,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .formSectionTitle {
+:global([data-theme="light"]) .formSectionTitle {
   color: #1a1a1a !important;
   display: flex;
   align-items: center;
@@ -5344,1530 +5344,1530 @@
   font-weight: 600;
 }
 
-[data-theme="light"] .formSectionTitle svg {
+:global([data-theme="light"]) .formSectionTitle svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .formLabel {
+:global([data-theme="light"]) .formLabel {
   color: #1a1a1a !important;
   font-weight: 500;
 }
 
-[data-theme="light"] .timeConfigInfo {
+:global([data-theme="light"]) .timeConfigInfo {
   background: rgba(0, 166, 81, 0.08) !important;
   border-color: rgba(0, 166, 81, 0.2) !important;
 }
 
-[data-theme="light"] .timeConfigInfo p {
+:global([data-theme="light"]) .timeConfigInfo p {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .timeConfigInfo svg {
+:global([data-theme="light"]) .timeConfigInfo svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .slotDurationInfo {
+:global([data-theme="light"]) .slotDurationInfo {
   background: rgba(0, 166, 81, 0.05) !important;
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .slotDurationNote {
+:global([data-theme="light"]) .slotDurationNote {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .timeSlotPreview {
+:global([data-theme="light"]) .timeSlotPreview {
   background: rgba(0, 166, 81, 0.04) !important;
   padding: 15px;
   border-radius: 8px;
   margin-top: 15px;
 }
 
-[data-theme="light"] .timeSlotPreview strong {
+:global([data-theme="light"]) .timeSlotPreview strong {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .timeSlotChip {
+:global([data-theme="light"]) .timeSlotChip {
   background: rgba(0, 166, 81, 0.15) !important;
   color: #00a651 !important;
 }
 
-[data-theme="light"] .timeSlotMore,
-[data-theme="light"] .timeSlotCount,
-[data-theme="light"] .slotAllocationNote {
+:global([data-theme="light"]) .timeSlotMore,
+:global([data-theme="light"]) .timeSlotCount,
+:global([data-theme="light"]) .slotAllocationNote {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .checkboxLabel {
+:global([data-theme="light"]) .checkboxLabel {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .checkboxLabel span {
+:global([data-theme="light"]) .checkboxLabel span {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .onlineDaysSummary {
+:global([data-theme="light"]) .onlineDaysSummary {
   background: rgba(0, 166, 81, 0.05) !important;
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .onlineDaysNote {
+:global([data-theme="light"]) .onlineDaysNote {
   color: #4a5568 !important;
 }
 
 /* Advanced Settings (Step 3) */
-[data-theme="light"] .advancedToggle {
+:global([data-theme="light"]) .advancedToggle {
   margin-bottom: 20px;
 }
 
-[data-theme="light"] .advancedToggleButton {
+:global([data-theme="light"]) .advancedToggleButton {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .advancedToggleButton:hover {
+:global([data-theme="light"]) .advancedToggleButton:hover {
   background: rgba(0, 166, 81, 0.05) !important;
   border-color: #00a651 !important;
 }
 
-[data-theme="light"] .advancedToggleButton svg {
+:global([data-theme="light"]) .advancedToggleButton svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .algorithmInfo {
+:global([data-theme="light"]) .algorithmInfo {
   background: rgba(0, 166, 81, 0.08) !important;
 }
 
-[data-theme="light"] .algorithmInfo p {
+:global([data-theme="light"]) .algorithmInfo p {
   color: #4a5568 !important;
 }
 
 /* Auto-Generate Section (Step 3) */
-[data-theme="light"] .autoGenerateSection,
-[data-theme="light"] .autoRegenerate {
+:global([data-theme="light"]) .autoGenerateSection,
+:global([data-theme="light"]) .autoRegenerate {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   border-radius: 12px;
   padding: 20px;
 }
 
-[data-theme="light"] .autoGenerateSection h4,
-[data-theme="light"] .autoRegenerate h4,
-[data-theme="light"] .autoGenerateTitle {
+:global([data-theme="light"]) .autoGenerateSection h4,
+:global([data-theme="light"]) .autoRegenerate h4,
+:global([data-theme="light"]) .autoGenerateTitle {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .autoGenerateSection p,
-[data-theme="light"] .autoRegenerate p,
-[data-theme="light"] .autoGenerateDescription {
+:global([data-theme="light"]) .autoGenerateSection p,
+:global([data-theme="light"]) .autoRegenerate p,
+:global([data-theme="light"]) .autoGenerateDescription {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .autoGenerateSection svg,
-[data-theme="light"] .autoRegenerate svg {
+:global([data-theme="light"]) .autoGenerateSection svg,
+:global([data-theme="light"]) .autoRegenerate svg {
   color: #00a651 !important;
 }
 
 /* Summary Cards (Step 2) */
-[data-theme="light"] .summaryCard {
+:global([data-theme="light"]) .summaryCard {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(0, 166, 81, 0.2) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .summaryInfo h4 {
+:global([data-theme="light"]) .summaryInfo h4 {
   color: #1a1a1a !important;
 }
 
-[data-theme="light"] .summaryInfo p {
+:global([data-theme="light"]) .summaryInfo p {
   color: #4a5568 !important;
 }
 
-[data-theme="light"] .summaryIcon {
+:global([data-theme="light"]) .summaryIcon {
   background: rgba(0, 166, 81, 0.1) !important;
 }
 
-[data-theme="light"] .summaryIcon svg {
+:global([data-theme="light"]) .summaryIcon svg {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .campusIcon {
+:global([data-theme="light"]) .campusIcon {
   background: rgba(0, 166, 81, 0.1) !important;
 }
 
-[data-theme="light"] .classIcon {
+:global([data-theme="light"]) .classIcon {
   background: rgba(46, 175, 125, 0.1) !important;
 }
 
 /* Quick Actions and Filter Controls */
-[data-theme="light"] .quickActionsBox,
-[data-theme="light"] .filterControlsBox {
+:global([data-theme="light"]) .quickActionsBox,
+:global([data-theme="light"]) .filterControlsBox {
   background: rgba(0, 166, 81, 0.04) !important;
   border-color: rgba(0, 166, 81, 0.15) !important;
 }
 
-[data-theme="light"] .quickActionsLabel {
+:global([data-theme="light"]) .quickActionsLabel {
   color: #00a651 !important;
 }
 
-[data-theme="light"] .filterControlLabel {
+:global([data-theme="light"]) .filterControlLabel {
   color: #1a1a1a !important;
 }
 
 /* ==================== Green Theme Support ==================== */
 /* Main container and background */
-[data-theme="green"] .container {
+:global([data-theme="green"]) .container {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 25%, #bbf7d0 50%, #dcfce7 75%, #f0fdf4 100%) !important;
 }
 
 /* Card backgrounds */
-[data-theme="green"] .card,
-[data-theme="green"] .sectionCard,
-[data-theme="green"] .stepCard,
-[data-theme="green"] .configCard,
-[data-theme="green"] .settingsCard {
+:global([data-theme="green"]) .card,
+:global([data-theme="green"]) .sectionCard,
+:global([data-theme="green"]) .stepCard,
+:global([data-theme="green"]) .configCard,
+:global([data-theme="green"]) .settingsCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
 /* All headings and titles */
-[data-theme="green"] .scheduleLayout h1,
-[data-theme="green"] .scheduleLayout h2,
-[data-theme="green"] .scheduleLayout h3,
-[data-theme="green"] .scheduleLayout h4,
-[data-theme="green"] .scheduleLayout h5,
-[data-theme="green"] .sectionTitle,
-[data-theme="green"] .stepTitle,
-[data-theme="green"] .cardTitle,
-[data-theme="green"] .headerTitle {
+:global([data-theme="green"]) .scheduleLayout h1,
+:global([data-theme="green"]) .scheduleLayout h2,
+:global([data-theme="green"]) .scheduleLayout h3,
+:global([data-theme="green"]) .scheduleLayout h4,
+:global([data-theme="green"]) .scheduleLayout h5,
+:global([data-theme="green"]) .sectionTitle,
+:global([data-theme="green"]) .stepTitle,
+:global([data-theme="green"]) .cardTitle,
+:global([data-theme="green"]) .headerTitle {
   color: #02353C !important;
 }
 
 /* All labels and form labels */
-[data-theme="green"] .scheduleLayout label,
-[data-theme="green"] .label,
-[data-theme="green"] .formLabel,
-[data-theme="green"] .fieldLabel,
-[data-theme="green"] .inputLabel,
-[data-theme="green"] .checkboxLabel,
-[data-theme="green"] .optionLabel {
+:global([data-theme="green"]) .scheduleLayout label,
+:global([data-theme="green"]) .label,
+:global([data-theme="green"]) .formLabel,
+:global([data-theme="green"]) .fieldLabel,
+:global([data-theme="green"]) .inputLabel,
+:global([data-theme="green"]) .checkboxLabel,
+:global([data-theme="green"]) .optionLabel {
   color: #02353C !important;
 }
 
 /* All paragraph text and descriptions */
-[data-theme="green"] .scheduleLayout p,
-[data-theme="green"] .description,
-[data-theme="green"] .subtitle,
-[data-theme="green"] .infoText,
-[data-theme="green"] .helperText,
-[data-theme="green"] .noteText {
+:global([data-theme="green"]) .scheduleLayout p,
+:global([data-theme="green"]) .description,
+:global([data-theme="green"]) .subtitle,
+:global([data-theme="green"]) .infoText,
+:global([data-theme="green"]) .helperText,
+:global([data-theme="green"]) .noteText {
   color: #166534 !important;
 }
 
 /* Info boxes and alerts */
-[data-theme="green"] .infoBox,
-[data-theme="green"] .alertBox,
-[data-theme="green"] .noteBox,
-[data-theme="green"] .tipBox,
-[data-theme="green"] .warningBox,
-[data-theme="green"] .hintBox {
+:global([data-theme="green"]) .infoBox,
+:global([data-theme="green"]) .alertBox,
+:global([data-theme="green"]) .noteBox,
+:global([data-theme="green"]) .tipBox,
+:global([data-theme="green"]) .warningBox,
+:global([data-theme="green"]) .hintBox {
   background: rgba(46, 175, 125, 0.1) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .infoBox p,
-[data-theme="green"] .alertBox p,
-[data-theme="green"] .noteBox p,
-[data-theme="green"] .warningBox p {
+:global([data-theme="green"]) .infoBox p,
+:global([data-theme="green"]) .alertBox p,
+:global([data-theme="green"]) .noteBox p,
+:global([data-theme="green"]) .warningBox p {
   color: #166534 !important;
 }
 
-[data-theme="green"] .infoBox svg,
-[data-theme="green"] .alertBox svg,
-[data-theme="green"] .noteBox svg {
+:global([data-theme="green"]) .infoBox svg,
+:global([data-theme="green"]) .alertBox svg,
+:global([data-theme="green"]) .noteBox svg {
   color: #2EAF7D !important;
 }
 
 /* Input fields */
-[data-theme="green"] .scheduleLayout input,
-[data-theme="green"] .scheduleLayout select,
-[data-theme="green"] .scheduleLayout textarea,
-[data-theme="green"] .input,
-[data-theme="green"] .select,
-[data-theme="green"] .textField {
+:global([data-theme="green"]) .scheduleLayout input,
+:global([data-theme="green"]) .scheduleLayout select,
+:global([data-theme="green"]) .scheduleLayout textarea,
+:global([data-theme="green"]) .input,
+:global([data-theme="green"]) .select,
+:global([data-theme="green"]) .textField {
   background: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .scheduleLayout input::placeholder,
-[data-theme="green"] .scheduleLayout textarea::placeholder {
+:global([data-theme="green"]) .scheduleLayout input::placeholder,
+:global([data-theme="green"]) .scheduleLayout textarea::placeholder {
   color: #166534 !important;
   opacity: 0.6 !important;
 }
 
 /* Checkbox and radio labels - IMPORTANT for day selections */
-[data-theme="green"] .scheduleLayout input[type="checkbox"]+label,
-[data-theme="green"] .scheduleLayout input[type="checkbox"]+span,
-[data-theme="green"] .scheduleLayout input[type="radio"]+label,
-[data-theme="green"] .scheduleLayout input[type="radio"]+span,
-[data-theme="green"] .checkboxText,
-[data-theme="green"] .radioText {
+:global([data-theme="green"]) .scheduleLayout input[type="checkbox"]+label,
+:global([data-theme="green"]) .scheduleLayout input[type="checkbox"]+span,
+:global([data-theme="green"]) .scheduleLayout input[type="radio"]+label,
+:global([data-theme="green"]) .scheduleLayout input[type="radio"]+span,
+:global([data-theme="green"]) .checkboxText,
+:global([data-theme="green"]) .radioText {
   color: #02353C !important;
 }
 
 /* Time slot items */
-[data-theme="green"] .timeSlot,
-[data-theme="green"] .slotItem,
-[data-theme="green"] .timeOption,
-[data-theme="green"] .slotLabel {
+:global([data-theme="green"]) .timeSlot,
+:global([data-theme="green"]) .slotItem,
+:global([data-theme="green"]) .timeOption,
+:global([data-theme="green"]) .slotLabel {
   color: #02353C !important;
   background: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
 /* Day selection checkboxes */
-[data-theme="green"] .dayRow,
-[data-theme="green"] .dayOption,
-[data-theme="green"] .dayItem,
-[data-theme="green"] .weekDay,
-[data-theme="green"] .scheduleDay {
+:global([data-theme="green"]) .dayRow,
+:global([data-theme="green"]) .dayOption,
+:global([data-theme="green"]) .dayItem,
+:global([data-theme="green"]) .weekDay,
+:global([data-theme="green"]) .scheduleDay {
   color: #02353C !important;
 }
 
-[data-theme="green"] .dayRow label,
-[data-theme="green"] .dayOption label,
-[data-theme="green"] .weekDay label {
+:global([data-theme="green"]) .dayRow label,
+:global([data-theme="green"]) .dayOption label,
+:global([data-theme="green"]) .weekDay label {
   color: #02353C !important;
 }
 
 /* Duration info and time slot preview */
-[data-theme="green"] .durationInfo,
-[data-theme="green"] .slotDuration,
-[data-theme="green"] .timeInfo,
-[data-theme="green"] .previewLabel {
+:global([data-theme="green"]) .durationInfo,
+:global([data-theme="green"]) .slotDuration,
+:global([data-theme="green"]) .timeInfo,
+:global([data-theme="green"]) .previewLabel {
   color: #166534 !important;
 }
 
-[data-theme="green"] .durationInfo span,
-[data-theme="green"] .slotDuration span {
+:global([data-theme="green"]) .durationInfo span,
+:global([data-theme="green"]) .slotDuration span {
   color: #02353C !important;
 }
 
 /* Section headers */
-[data-theme="green"] .sectionHeader,
-[data-theme="green"] .groupHeader,
-[data-theme="green"] .stepHeader {
+:global([data-theme="green"]) .sectionHeader,
+:global([data-theme="green"]) .groupHeader,
+:global([data-theme="green"]) .stepHeader {
   color: #02353C !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .sectionHeader svg,
-[data-theme="green"] .groupHeader svg {
+:global([data-theme="green"]) .sectionHeader svg,
+:global([data-theme="green"]) .groupHeader svg {
   color: #2EAF7D !important;
 }
 
 /* Advanced settings toggle */
-[data-theme="green"] .advancedToggleButton {
+:global([data-theme="green"]) .advancedToggleButton {
   background: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .advancedToggleButton:hover {
+:global([data-theme="green"]) .advancedToggleButton:hover {
   background: rgba(46, 175, 125, 0.1) !important;
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .advancedToggleButton svg {
+:global([data-theme="green"]) .advancedToggleButton svg {
   color: #2EAF7D !important;
 }
 
 /* Algorithm info panel */
-[data-theme="green"] .algorithmInfo {
+:global([data-theme="green"]) .algorithmInfo {
   background: rgba(46, 175, 125, 0.1) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .algorithmInfo p,
-[data-theme="green"] .algorithmInfo span {
+:global([data-theme="green"]) .algorithmInfo p,
+:global([data-theme="green"]) .algorithmInfo span {
   color: #166534 !important;
 }
 
 /* Summary cards */
-[data-theme="green"] .summaryCard {
+:global([data-theme="green"]) .summaryCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .summaryInfo h4,
-[data-theme="green"] .summaryTitle {
+:global([data-theme="green"]) .summaryInfo h4,
+:global([data-theme="green"]) .summaryTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .summaryInfo p,
-[data-theme="green"] .summaryDescription {
+:global([data-theme="green"]) .summaryInfo p,
+:global([data-theme="green"]) .summaryDescription {
   color: #166534 !important;
 }
 
-[data-theme="green"] .summaryIcon {
+:global([data-theme="green"]) .summaryIcon {
   background: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .summaryIcon svg {
+:global([data-theme="green"]) .summaryIcon svg {
   color: #2EAF7D !important;
 }
 
 /* Auto-generate section */
-[data-theme="green"] .autoGenerateSection,
-[data-theme="green"] .autoRegenerate {
+:global([data-theme="green"]) .autoGenerateSection,
+:global([data-theme="green"]) .autoRegenerate {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .autoGenerateSection h4,
-[data-theme="green"] .autoRegenerate h4,
-[data-theme="green"] .autoGenerateTitle {
+:global([data-theme="green"]) .autoGenerateSection h4,
+:global([data-theme="green"]) .autoRegenerate h4,
+:global([data-theme="green"]) .autoGenerateTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .autoGenerateSection p,
-[data-theme="green"] .autoRegenerate p,
-[data-theme="green"] .autoGenerateDescription {
+:global([data-theme="green"]) .autoGenerateSection p,
+:global([data-theme="green"]) .autoRegenerate p,
+:global([data-theme="green"]) .autoGenerateDescription {
   color: #166534 !important;
 }
 
-[data-theme="green"] .autoGenerateSection svg,
-[data-theme="green"] .autoRegenerate svg {
+:global([data-theme="green"]) .autoGenerateSection svg,
+:global([data-theme="green"]) .autoRegenerate svg {
   color: #2EAF7D !important;
 }
 
 /* Preview sections */
-[data-theme="green"] .previewSection,
-[data-theme="green"] .previewCard {
+:global([data-theme="green"]) .previewSection,
+:global([data-theme="green"]) .previewCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .previewCard h3,
-[data-theme="green"] .previewTitle {
+:global([data-theme="green"]) .previewCard h3,
+:global([data-theme="green"]) .previewTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .previewCard th,
-[data-theme="green"] .previewTable th {
+:global([data-theme="green"]) .previewCard th,
+:global([data-theme="green"]) .previewTable th {
   background: rgba(46, 175, 125, 0.15) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .previewCard td,
-[data-theme="green"] .previewTable td {
+:global([data-theme="green"]) .previewCard td,
+:global([data-theme="green"]) .previewTable td {
   color: #166534 !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
 /* Green Theme - View All Modal */
-[data-theme="green"] .viewAllModal {
+:global([data-theme="green"]) .viewAllModal {
   background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid rgba(46, 175, 125, 0.3) !important;
 }
 
-[data-theme="green"] .viewAllModalHeader {
+:global([data-theme="green"]) .viewAllModalHeader {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.08), rgba(46, 175, 125, 0.15)) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .viewAllModalTitle {
+:global([data-theme="green"]) .viewAllModalTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .viewAllModalTitle svg {
+:global([data-theme="green"]) .viewAllModalTitle svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .viewAllModalSearch {
+:global([data-theme="green"]) .viewAllModalSearch {
   background: rgba(46, 175, 125, 0.05) !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .viewAllSearchInput {
+:global([data-theme="green"]) .viewAllSearchInput {
   background: white !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .viewAllSearchInput:focus {
+:global([data-theme="green"]) .viewAllSearchInput:focus {
   border-color: #2EAF7D !important;
   box-shadow: 0 0 0 4px rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .viewAllTable thead {
+:global([data-theme="green"]) .viewAllTable thead {
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
-[data-theme="green"] .viewAllTable th {
+:global([data-theme="green"]) .viewAllTable th {
   background: rgba(46, 175, 125, 0.15) !important;
   color: #02353C !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .viewAllTable td {
+:global([data-theme="green"]) .viewAllTable td {
   color: #166534 !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .viewAllTable tbody tr:hover {
+:global([data-theme="green"]) .viewAllTable tbody tr:hover {
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
-[data-theme="green"] .viewAllModalFooter {
+:global([data-theme="green"]) .viewAllModalFooter {
   background: rgba(46, 175, 125, 0.05) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .closeBtn {
+:global([data-theme="green"]) .closeBtn {
   background: linear-gradient(135deg, #2EAF7D, #16a34a) !important;
 }
 
-[data-theme="green"] .closeBtn:hover {
+:global([data-theme="green"]) .closeBtn:hover {
   background: linear-gradient(135deg, #16a34a, #15803d) !important;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.3) !important;
 }
 
-[data-theme="green"] .viewAllButton {
+:global([data-theme="green"]) .viewAllButton {
   border-color: #2EAF7D !important;
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .viewAllButton:hover {
+:global([data-theme="green"]) .viewAllButton:hover {
   background: #2EAF7D !important;
   color: white !important;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.3) !important;
 }
 
-[data-theme="green"] .viewMoreLink {
+:global([data-theme="green"]) .viewMoreLink {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .moreRow:hover {
+:global([data-theme="green"]) .moreRow:hover {
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
 /* Filter and config sections */
-[data-theme="green"] .filterSection,
-[data-theme="green"] .configSection,
-[data-theme="green"] .formCard {
+:global([data-theme="green"]) .filterSection,
+:global([data-theme="green"]) .configSection,
+:global([data-theme="green"]) .formCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .filterHeader,
-[data-theme="green"] .configHeader {
+:global([data-theme="green"]) .filterHeader,
+:global([data-theme="green"]) .configHeader {
   color: #02353C !important;
 }
 
-[data-theme="green"] .filterHeader svg,
-[data-theme="green"] .configHeader svg {
+:global([data-theme="green"]) .filterHeader svg,
+:global([data-theme="green"]) .configHeader svg {
   color: #2EAF7D !important;
 }
 
 /* Quick actions box */
-[data-theme="green"] .quickActionsBox,
-[data-theme="green"] .filterControlsBox {
+:global([data-theme="green"]) .quickActionsBox,
+:global([data-theme="green"]) .filterControlsBox {
   background: rgba(46, 175, 125, 0.08) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .quickActionsLabel {
+:global([data-theme="green"]) .quickActionsLabel {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .filterControlLabel {
+:global([data-theme="green"]) .filterControlLabel {
   color: #02353C !important;
 }
 
 /* Building and room cards */
-[data-theme="green"] .buildingCard,
-[data-theme="green"] .roomCard,
-[data-theme="green"] .dataCard {
+:global([data-theme="green"]) .buildingCard,
+:global([data-theme="green"]) .roomCard,
+:global([data-theme="green"]) .dataCard {
   background: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .buildingCard h4,
-[data-theme="green"] .roomCard h4,
-[data-theme="green"] .dataCard h4 {
+:global([data-theme="green"]) .buildingCard h4,
+:global([data-theme="green"]) .roomCard h4,
+:global([data-theme="green"]) .dataCard h4 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .buildingCard p,
-[data-theme="green"] .roomCard p,
-[data-theme="green"] .dataCard p {
+:global([data-theme="green"]) .buildingCard p,
+:global([data-theme="green"]) .roomCard p,
+:global([data-theme="green"]) .dataCard p {
   color: #166534 !important;
 }
 
 /* Compatibility card */
-[data-theme="green"] .compatibilityCard,
-[data-theme="green"] .statsCard {
+:global([data-theme="green"]) .compatibilityCard,
+:global([data-theme="green"]) .statsCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .compatibilityCard h3,
-[data-theme="green"] .statsCard h3 {
+:global([data-theme="green"]) .compatibilityCard h3,
+:global([data-theme="green"]) .statsCard h3 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .compatibilityCard span,
-[data-theme="green"] .statsCard span {
+:global([data-theme="green"]) .compatibilityCard span,
+:global([data-theme="green"]) .statsCard span {
   color: #166534 !important;
 }
 
 /* Buttons - primary */
-[data-theme="green"] .primaryBtn,
-[data-theme="green"] .generateBtn,
-[data-theme="green"] .submitBtn,
-[data-theme="green"] .actionBtn {
+:global([data-theme="green"]) .primaryBtn,
+:global([data-theme="green"]) .generateBtn,
+:global([data-theme="green"]) .submitBtn,
+:global([data-theme="green"]) .actionBtn {
   background: linear-gradient(135deg, #449342, #2EAF7D) !important;
   color: white !important;
 }
 
-[data-theme="green"] .primaryBtn:hover,
-[data-theme="green"] .generateBtn:hover,
-[data-theme="green"] .submitBtn:hover,
-[data-theme="green"] .actionBtn:hover {
+:global([data-theme="green"]) .primaryBtn:hover,
+:global([data-theme="green"]) .generateBtn:hover,
+:global([data-theme="green"]) .submitBtn:hover,
+:global([data-theme="green"]) .actionBtn:hover {
   background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
 }
 
 /* Buttons - secondary */
-[data-theme="green"] .secondaryBtn,
-[data-theme="green"] .backBtn,
-[data-theme="green"] .cancelBtn {
+:global([data-theme="green"]) .secondaryBtn,
+:global([data-theme="green"]) .backBtn,
+:global([data-theme="green"]) .cancelBtn {
   background: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .secondaryBtn:hover,
-[data-theme="green"] .backBtn:hover {
+:global([data-theme="green"]) .secondaryBtn:hover,
+:global([data-theme="green"]) .backBtn:hover {
   background: rgba(46, 175, 125, 0.1) !important;
   border-color: #2EAF7D !important;
 }
 
 /* Step indicators and navigation */
-[data-theme="green"] .stepIndicator,
-[data-theme="green"] .progressStep {
+:global([data-theme="green"]) .stepIndicator,
+:global([data-theme="green"]) .progressStep {
   color: #02353C !important;
 }
 
-[data-theme="green"] .stepIndicator.active,
-[data-theme="green"] .progressStep.active {
+:global([data-theme="green"]) .stepIndicator.active,
+:global([data-theme="green"]) .progressStep.active {
   color: #2EAF7D !important;
 }
 
 /* Table styling */
-[data-theme="green"] .scheduleLayout table {
+:global([data-theme="green"]) .scheduleLayout table {
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .scheduleLayout th {
+:global([data-theme="green"]) .scheduleLayout th {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .scheduleLayout td {
+:global([data-theme="green"]) .scheduleLayout td {
   color: #166534 !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .scheduleLayout tr:hover td {
+:global([data-theme="green"]) .scheduleLayout tr:hover td {
   background: rgba(46, 175, 125, 0.05) !important;
 }
 
 /* Override any remaining white text */
-[data-theme="green"] .stepContent label,
-[data-theme="green"] .stepContent span,
-[data-theme="green"] .stepContent p,
-[data-theme="green"] .formGroup label,
-[data-theme="green"] .formGroup span {
+:global([data-theme="green"]) .stepContent label,
+:global([data-theme="green"]) .stepContent span,
+:global([data-theme="green"]) .stepContent p,
+:global([data-theme="green"]) .formGroup label,
+:global([data-theme="green"]) .formGroup span {
   color: #02353C !important;
 }
 
 /* ==================== Green Theme - Additional Component Fixes ==================== */
 
 /* Slot Duration Info Box */
-[data-theme="green"] .slotDurationInfo {
+:global([data-theme="green"]) .slotDurationInfo {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(46, 175, 125, 0.15) 100%) !important;
   border: 2px solid #2EAF7D !important;
   border-radius: 12px;
 }
 
-[data-theme="green"] .slotDurationInfo strong {
+:global([data-theme="green"]) .slotDurationInfo strong {
   color: #02353C !important;
   font-weight: 700;
 }
 
-[data-theme="green"] .slotDurationInfo svg {
+:global([data-theme="green"]) .slotDurationInfo svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .slotDurationNote {
+:global([data-theme="green"]) .slotDurationNote {
   color: #166534 !important;
 }
 
-[data-theme="green"] .slotAllocationNote {
+:global([data-theme="green"]) .slotAllocationNote {
   background: rgba(46, 175, 125, 0.1) !important;
   border-left-color: #2EAF7D !important;
   color: #166534 !important;
 }
 
 /* Time Slot Preview */
-[data-theme="green"] .timeSlotPreview {
+:global([data-theme="green"]) .timeSlotPreview {
   background: rgba(193, 246, 237, 0.25) !important;
   border: 2px dashed rgba(46, 175, 125, 0.4) !important;
 }
 
-[data-theme="green"] .timeSlotPreview strong {
+:global([data-theme="green"]) .timeSlotPreview strong {
   color: #02353C !important;
 }
 
-[data-theme="green"] .timeSlotChip {
+:global([data-theme="green"]) .timeSlotChip {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.35) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .timeSlotChip:hover {
+:global([data-theme="green"]) .timeSlotChip:hover {
   border-color: #2EAF7D !important;
   color: #2EAF7D !important;
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
-[data-theme="green"] .timeSlotMore {
+:global([data-theme="green"]) .timeSlotMore {
   background: rgba(46, 175, 125, 0.15) !important;
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .timeSlotCount {
+:global([data-theme="green"]) .timeSlotCount {
   color: #166534 !important;
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
 /* Form Hints */
-[data-theme="green"] .formHint {
+:global([data-theme="green"]) .formHint {
   color: #166534 !important;
 }
 
 /* Time Config Info */
-[data-theme="green"] .timeConfigInfo {
+:global([data-theme="green"]) .timeConfigInfo {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, transparent 100%) !important;
   border-left-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .timeConfigInfo svg {
+:global([data-theme="green"]) .timeConfigInfo svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .timeConfigInfo p {
+:global([data-theme="green"]) .timeConfigInfo p {
   color: #166534 !important;
 }
 
 /* Building Card Elements */
-[data-theme="green"] .buildingCard {
+:global([data-theme="green"]) .buildingCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .buildingCard:hover {
+:global([data-theme="green"]) .buildingCard:hover {
   border-color: #2EAF7D !important;
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .buildingCard.selected {
+:global([data-theme="green"]) .buildingCard.selected {
   border-color: #2EAF7D !important;
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
 }
 
-[data-theme="green"] .buildingHeader {
+:global([data-theme="green"]) .buildingHeader {
   border-bottom-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .buildingCheckbox {
+:global([data-theme="green"]) .buildingCheckbox {
   color: #02353C !important;
   font-weight: 600;
 }
 
-[data-theme="green"] .buildingCheckbox input[type="checkbox"] {
+:global([data-theme="green"]) .buildingCheckbox input[type="checkbox"] {
   accent-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .buildingStats {
+:global([data-theme="green"]) .buildingStats {
   color: #166534 !important;
 }
 
-[data-theme="green"] .buildingStats span {
+:global([data-theme="green"]) .buildingStats span {
   color: #166534 !important;
 }
 
-[data-theme="green"] .selectAllRoomsBtn {
+:global([data-theme="green"]) .selectAllRoomsBtn {
   background: rgba(46, 175, 125, 0.12) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .selectAllRoomsBtn:hover {
+:global([data-theme="green"]) .selectAllRoomsBtn:hover {
   background: linear-gradient(135deg, #449342, #2EAF7D) !important;
   color: white !important;
   border-color: #2EAF7D !important;
 }
 
 /* Room List and Checkboxes */
-[data-theme="green"] .roomList {
+:global([data-theme="green"]) .roomList {
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .roomCheckbox {
+:global([data-theme="green"]) .roomCheckbox {
   color: #02353C !important;
 }
 
-[data-theme="green"] .roomCheckbox:hover {
+:global([data-theme="green"]) .roomCheckbox:hover {
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
-[data-theme="green"] .roomCheckbox input[type="checkbox"] {
+:global([data-theme="green"]) .roomCheckbox input[type="checkbox"] {
   accent-color: #2EAF7D !important;
 }
 
 /* Filter Summary */
-[data-theme="green"] .filterSummary {
+:global([data-theme="green"]) .filterSummary {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.4) 0%, rgba(46, 175, 125, 0.15) 100%) !important;
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .filterSummary p {
+:global([data-theme="green"]) .filterSummary p {
   color: #02353C !important;
 }
 
-[data-theme="green"] .filterActiveBadge {
+:global([data-theme="green"]) .filterActiveBadge {
   background: linear-gradient(135deg, #449342, #2EAF7D) !important;
   color: white !important;
 }
 
-[data-theme="green"] .filterInactiveBadge {
+:global([data-theme="green"]) .filterInactiveBadge {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .clearFilterBtn {
+:global([data-theme="green"]) .clearFilterBtn {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .clearFilterBtn:hover {
+:global([data-theme="green"]) .clearFilterBtn:hover {
   background: #ef4444 !important;
   color: white !important;
   border-color: #ef4444 !important;
 }
 
 /* Filter Header and Title */
-[data-theme="green"] .filterHeader {
+:global([data-theme="green"]) .filterHeader {
   background: transparent !important;
 }
 
-[data-theme="green"] .filterHeader:hover {
+:global([data-theme="green"]) .filterHeader:hover {
   background: rgba(46, 175, 125, 0.05) !important;
 }
 
-[data-theme="green"] .filterTitle h3 {
+:global([data-theme="green"]) .filterTitle h3 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .filterTitle svg {
+:global([data-theme="green"]) .filterTitle svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .filterDescription {
+:global([data-theme="green"]) .filterDescription {
   color: #166534 !important;
 }
 
 /* Filter Status Icons */
-[data-theme="green"] .filterStatus svg {
+:global([data-theme="green"]) .filterStatus svg {
   color: #166534 !important;
 }
 
 /* Building Grid */
-[data-theme="green"] .buildingGrid {
+:global([data-theme="green"]) .buildingGrid {
   gap: 12px;
 }
 
 /* Data Source Cards */
-[data-theme="green"] .dataSourceCard {
+:global([data-theme="green"]) .dataSourceCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .dataSourceCard:hover {
+:global([data-theme="green"]) .dataSourceCard:hover {
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataSourceHeader {
+:global([data-theme="green"]) .dataSourceHeader {
   background: transparent !important;
 }
 
-[data-theme="green"] .dataSourceHeader:hover {
+:global([data-theme="green"]) .dataSourceHeader:hover {
   background: rgba(46, 175, 125, 0.05) !important;
 }
 
-[data-theme="green"] .dataSourceTitle h3 {
+:global([data-theme="green"]) .dataSourceTitle h3 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .dataSourceTitle p {
+:global([data-theme="green"]) .dataSourceTitle p {
   color: #166534 !important;
 }
 
-[data-theme="green"] .dataSourceStatus svg {
+:global([data-theme="green"]) .dataSourceStatus svg {
   color: #166534 !important;
 }
 
 /* Selected and Required Badges */
-[data-theme="green"] .selectedBadge {
+:global([data-theme="green"]) .selectedBadge {
   background: rgba(16, 185, 129, 0.15) !important;
   color: #059669 !important;
 }
 
-[data-theme="green"] .requiredBadge {
+:global([data-theme="green"]) .requiredBadge {
   background: rgba(245, 158, 11, 0.15) !important;
   color: #d97706 !important;
 }
 
-[data-theme="green"] .optionalBadge {
+:global([data-theme="green"]) .optionalBadge {
   background: rgba(46, 175, 125, 0.1) !important;
   color: #166534 !important;
 }
 
 /* Data Card Enhancements */
-[data-theme="green"] .dataCard {
+:global([data-theme="green"]) .dataCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .dataCard:hover {
+:global([data-theme="green"]) .dataCard:hover {
   border-color: #2EAF7D !important;
   box-shadow: 0 8px 20px rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .dataCard.selected {
+:global([data-theme="green"]) .dataCard.selected {
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.35) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataCardHeader h4 {
+:global([data-theme="green"]) .dataCardHeader h4 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .dataCardHeader svg {
+:global([data-theme="green"]) .dataCardHeader svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .dataCardStats {
+:global([data-theme="green"]) .dataCardStats {
   color: #166534 !important;
 }
 
-[data-theme="green"] .dataCardFile {
+:global([data-theme="green"]) .dataCardFile {
   color: #449342 !important;
 }
 
-[data-theme="green"] .dataCardDate {
+:global([data-theme="green"]) .dataCardDate {
   color: #166534 !important;
 }
 
-[data-theme="green"] .dataCardCheckbox input[type="checkbox"] {
+:global([data-theme="green"]) .dataCardCheckbox input[type="checkbox"] {
   accent-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .selectedCheck {
+:global([data-theme="green"]) .selectedCheck {
   color: #2EAF7D !important;
 }
 
 /* Empty Data Source */
-[data-theme="green"] .emptyDataSource {
+:global([data-theme="green"]) .emptyDataSource {
   color: #166534 !important;
 }
 
-[data-theme="green"] .emptyDataSource svg {
+:global([data-theme="green"]) .emptyDataSource svg {
   color: #2EAF7D !important;
   opacity: 0.5;
 }
 
-[data-theme="green"] .emptyDataSource button {
+:global([data-theme="green"]) .emptyDataSource button {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
 }
 
-[data-theme="green"] .emptyDataSource button:hover {
+:global([data-theme="green"]) .emptyDataSource button:hover {
   background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%) !important;
 }
 
 /* Modal Styles for Green Theme */
-[data-theme="green"] .modalContent {
+:global([data-theme="green"]) .modalContent {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.2) 100%) !important;
   border: 1px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .modalHeader {
+:global([data-theme="green"]) .modalHeader {
   border-bottom-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .modalHeader h2 {
+:global([data-theme="green"]) .modalHeader h2 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .modalCloseBtn {
+:global([data-theme="green"]) .modalCloseBtn {
   background: rgba(46, 175, 125, 0.1) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .modalCloseBtn:hover {
+:global([data-theme="green"]) .modalCloseBtn:hover {
   background: #dc2626 !important;
   color: white !important;
 }
 
-[data-theme="green"] .modalBody {
+:global([data-theme="green"]) .modalBody {
   color: #166534 !important;
 }
 
-[data-theme="green"] .modalFooter {
+:global([data-theme="green"]) .modalFooter {
   background: rgba(193, 246, 237, 0.2) !important;
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .modalFooter p {
+:global([data-theme="green"]) .modalFooter p {
   color: #166534 !important;
 }
 
 /* Table Wrapper in Modal */
-[data-theme="green"] .tableWrapper {
+:global([data-theme="green"]) .tableWrapper {
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
 /* Preset Section */
-[data-theme="green"] .presetSection {
+:global([data-theme="green"]) .presetSection {
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .presetLabel {
+:global([data-theme="green"]) .presetLabel {
   color: #166534 !important;
 }
 
-[data-theme="green"] .presetButton {
+:global([data-theme="green"]) .presetButton {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .presetButton:hover {
+:global([data-theme="green"]) .presetButton:hover {
   border-color: #2EAF7D !important;
   color: #2EAF7D !important;
   background: rgba(46, 175, 125, 0.1) !important;
 }
 
-[data-theme="green"] .presetButton.activePreset {
+:global([data-theme="green"]) .presetButton.activePreset {
   border-color: #2EAF7D !important;
   color: white !important;
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
 }
 
 /* Checkbox Group */
-[data-theme="green"] .checkboxGroup {
+:global([data-theme="green"]) .checkboxGroup {
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .checkboxLabel {
+:global([data-theme="green"]) .checkboxLabel {
   background: rgba(255, 255, 255, 0.9) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .checkboxLabel:hover {
+:global([data-theme="green"]) .checkboxLabel:hover {
   background: rgba(46, 175, 125, 0.08) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
 }
 
-[data-theme="green"] .checkboxLabel input[type="checkbox"] {
+:global([data-theme="green"]) .checkboxLabel input[type="checkbox"] {
   accent-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .checkboxText {
+:global([data-theme="green"]) .checkboxText {
   color: #02353C !important;
 }
 
 /* Generate Section */
-[data-theme="green"] .generateSection {
+:global([data-theme="green"]) .generateSection {
   background: transparent !important;
 }
 
-[data-theme="green"] .generateButton {
+:global([data-theme="green"]) .generateButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%) !important;
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.4) !important;
 }
 
-[data-theme="green"] .generateButton:hover:not(:disabled) {
+:global([data-theme="green"]) .generateButton:hover:not(:disabled) {
   box-shadow: 0 12px 32px rgba(46, 175, 125, 0.5) !important;
 }
 
-[data-theme="green"] .generateHint {
+:global([data-theme="green"]) .generateHint {
   color: #166534 !important;
 }
 
-[data-theme="green"] .generateInfo {
+:global([data-theme="green"]) .generateInfo {
   color: #166534 !important;
 }
 
-[data-theme="green"] .generateInfo svg {
+:global([data-theme="green"]) .generateInfo svg {
   color: #2EAF7D !important;
 }
 
 /* Step Navigation */
-[data-theme="green"] .stepNavigation {
+:global([data-theme="green"]) .stepNavigation {
   background: transparent !important;
 }
 
-[data-theme="green"] .nextButton {
+:global([data-theme="green"]) .nextButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35) !important;
 }
 
-[data-theme="green"] .nextButton:hover:not(:disabled) {
+:global([data-theme="green"]) .nextButton:hover:not(:disabled) {
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.45) !important;
 }
 
-[data-theme="green"] .backStepButton {
+:global([data-theme="green"]) .backStepButton {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .backStepButton:hover {
+:global([data-theme="green"]) .backStepButton:hover {
   border-color: #2EAF7D !important;
   background: rgba(46, 175, 125, 0.1) !important;
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .navigationHint {
+:global([data-theme="green"]) .navigationHint {
   color: #166534 !important;
 }
 
 /* Step Progress */
-[data-theme="green"] .stepProgress {
+:global([data-theme="green"]) .stepProgress {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .step {
+:global([data-theme="green"]) .step {
   color: #166534 !important;
 }
 
-[data-theme="green"] .step.active {
+:global([data-theme="green"]) .step.active {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .step.completed {
+:global([data-theme="green"]) .step.completed {
   color: #059669 !important;
 }
 
-[data-theme="green"] .stepNumber {
+:global([data-theme="green"]) .stepNumber {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .step.active .stepNumber {
+:global([data-theme="green"]) .step.active .stepNumber {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   color: white !important;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35) !important;
 }
 
-[data-theme="green"] .step.completed .stepNumber {
+:global([data-theme="green"]) .step.completed .stepNumber {
   background: #059669 !important;
   color: white !important;
 }
 
-[data-theme="green"] .stepLine {
+:global([data-theme="green"]) .stepLine {
   background: rgba(46, 175, 125, 0.25) !important;
 }
 
 /* Selection Cards */
-[data-theme="green"] .selectionCard {
+:global([data-theme="green"]) .selectionCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .selectionCard:hover {
+:global([data-theme="green"]) .selectionCard:hover {
   border-color: #2EAF7D !important;
   box-shadow: 0 8px 20px rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .selectionCard.selected {
+:global([data-theme="green"]) .selectionCard.selected {
   border-color: #2EAF7D !important;
   background: linear-gradient(135deg, rgba(193, 246, 237, 0.35) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
 }
 
-[data-theme="green"] .selectionTitle {
+:global([data-theme="green"]) .selectionTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .selectionSubtitle {
+:global([data-theme="green"]) .selectionSubtitle {
   color: #166534 !important;
 }
 
-[data-theme="green"] .selectionDetail {
+:global([data-theme="green"]) .selectionDetail {
   color: #166534 !important;
 }
 
-[data-theme="green"] .selectionDetail svg {
+:global([data-theme="green"]) .selectionDetail svg {
   color: #449342 !important;
 }
 
-[data-theme="green"] .selectionCheckbox {
+:global([data-theme="green"]) .selectionCheckbox {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
 }
 
 /* Filter Row and Stats */
-[data-theme="green"] .filterRow {
+:global([data-theme="green"]) .filterRow {
   background: transparent !important;
 }
 
-[data-theme="green"] .filterSelect {
+:global([data-theme="green"]) .filterSelect {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .filterSelect:focus {
+:global([data-theme="green"]) .filterSelect:focus {
   border-color: #2EAF7D !important;
   box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .selectAllButton {
+:global([data-theme="green"]) .selectAllButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
 }
 
-[data-theme="green"] .selectAllButton:hover {
+:global([data-theme="green"]) .selectAllButton:hover {
   box-shadow: 0 6px 16px rgba(46, 175, 125, 0.35) !important;
 }
 
-[data-theme="green"] .filterStats {
+:global([data-theme="green"]) .filterStats {
   background: rgba(46, 175, 125, 0.08) !important;
   color: #166534 !important;
 }
 
 /* Selection Grid Scrollbar */
-[data-theme="green"] .selectionGrid::-webkit-scrollbar-track {
+:global([data-theme="green"]) .selectionGrid::-webkit-scrollbar-track {
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
-[data-theme="green"] .selectionGrid::-webkit-scrollbar-thumb {
+:global([data-theme="green"]) .selectionGrid::-webkit-scrollbar-thumb {
   background: rgba(46, 175, 125, 0.35) !important;
 }
 
-[data-theme="green"] .selectionGrid::-webkit-scrollbar-thumb:hover {
+:global([data-theme="green"]) .selectionGrid::-webkit-scrollbar-thumb:hover {
   background: #2EAF7D !important;
 }
 
 /* Room Type Badges */
-[data-theme="green"] .roomTypeBadge {
+:global([data-theme="green"]) .roomTypeBadge {
   background: rgba(46, 175, 125, 0.12) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .roomTypeBadge.classroom {
+:global([data-theme="green"]) .roomTypeBadge.classroom {
   background: rgba(46, 175, 125, 0.15) !important;
   color: #059669 !important;
 }
 
-[data-theme="green"] .roomTypeBadge.laboratory,
-[data-theme="green"] .roomTypeBadge.computer_lab {
+:global([data-theme="green"]) .roomTypeBadge.laboratory,
+:global([data-theme="green"]) .roomTypeBadge.computer_lab {
   background: rgba(99, 102, 241, 0.15) !important;
   color: #4f46e5 !important;
 }
 
-[data-theme="green"] .roomTypeBadge.lecture_hall {
+:global([data-theme="green"]) .roomTypeBadge.lecture_hall {
   background: rgba(46, 175, 125, 0.2) !important;
   color: #047857 !important;
 }
 
-[data-theme="green"] .labBadge {
+:global([data-theme="green"]) .labBadge {
   background: rgba(245, 158, 11, 0.15) !important;
   color: #d97706 !important;
 }
 
 /* Timetable Section for Green Theme */
-[data-theme="green"] .timetableSection {
+:global([data-theme="green"]) .timetableSection {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .timetableContainer {
+:global([data-theme="green"]) .timetableContainer {
   background: rgba(255, 255, 255, 0.98) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .timetable th {
+:global([data-theme="green"]) .timetable th {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   color: white !important;
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .timeCell {
+:global([data-theme="green"]) .timeCell {
   background: rgba(193, 246, 237, 0.3) !important;
   color: #02353C !important;
   border-color: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .scheduleCell {
+:global([data-theme="green"]) .scheduleCell {
   background: rgba(255, 255, 255, 0.98) !important;
   border-color: rgba(46, 175, 125, 0.12) !important;
 }
 
-[data-theme="green"] .hourRow {
+:global([data-theme="green"]) .hourRow {
   background: rgba(255, 255, 255, 0.98) !important;
 }
 
-[data-theme="green"] .halfHourRow {
+:global([data-theme="green"]) .halfHourRow {
   background: rgba(193, 246, 237, 0.15) !important;
 }
 
-[data-theme="green"] .hourMark {
+:global([data-theme="green"]) .hourMark {
   background: rgba(193, 246, 237, 0.25) !important;
   border-top-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .halfHourMark {
+:global([data-theme="green"]) .halfHourMark {
   background: rgba(193, 246, 237, 0.1) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .allocationSummary {
+:global([data-theme="green"]) .allocationSummary {
   background: rgba(193, 246, 237, 0.25) !important;
 }
 
-[data-theme="green"] .allocationSummary p {
+:global([data-theme="green"]) .allocationSummary p {
   color: #166534 !important;
 }
 
 /* View Toggle Buttons */
-[data-theme="green"] .viewToggleBtn {
+:global([data-theme="green"]) .viewToggleBtn {
   border-color: rgba(46, 175, 125, 0.3) !important;
   background: rgba(255, 255, 255, 0.95) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .viewToggleBtn:hover {
+:global([data-theme="green"]) .viewToggleBtn:hover {
   border-color: #2EAF7D !important;
   color: #2EAF7D !important;
   background: rgba(46, 175, 125, 0.08) !important;
 }
 
-[data-theme="green"] .viewToggleBtn.active {
+:global([data-theme="green"]) .viewToggleBtn.active {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   color: white !important;
   border-color: #2EAF7D !important;
 }
 
 /* Unscheduled List */
-[data-theme="green"] .unscheduledItem {
+:global([data-theme="green"]) .unscheduledItem {
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
-[data-theme="green"] .unscheduledItem:hover {
+:global([data-theme="green"]) .unscheduledItem:hover {
   background: rgba(193, 246, 237, 0.2) !important;
 }
 
-[data-theme="green"] .unscheduledCourse {
+:global([data-theme="green"]) .unscheduledCourse {
   color: #02353C !important;
 }
 
-[data-theme="green"] .unscheduledName {
+:global([data-theme="green"]) .unscheduledName {
   color: #166534 !important;
 }
 
-[data-theme="green"] .unscheduledTeacher {
+:global([data-theme="green"]) .unscheduledTeacher {
   color: #449342 !important;
 }
 
 /* Stats Grid and Result Cards */
-[data-theme="green"] .statsGrid {
+:global([data-theme="green"]) .statsGrid {
   background: transparent !important;
 }
 
-[data-theme="green"] .statCard {
+:global([data-theme="green"]) .statCard {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.2) !important;
 }
 
-[data-theme="green"] .statIcon {
+:global([data-theme="green"]) .statIcon {
   background: rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .statIcon svg {
+:global([data-theme="green"]) .statIcon svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .statValue {
+:global([data-theme="green"]) .statValue {
   color: #02353C !important;
 }
 
-[data-theme="green"] .statLabel {
+:global([data-theme="green"]) .statLabel {
   color: #166534 !important;
 }
 
 /* Optimization Stats */
-[data-theme="green"] .optimizationStats {
+:global([data-theme="green"]) .optimizationStats {
   background: transparent !important;
 }
 
-[data-theme="green"] .optimizationStat {
+:global([data-theme="green"]) .optimizationStat {
   background: rgba(193, 246, 237, 0.2) !important;
 }
 
-[data-theme="green"] .optimizationLabel {
+:global([data-theme="green"]) .optimizationLabel {
   color: #166534 !important;
 }
 
-[data-theme="green"] .optimizationValue {
+:global([data-theme="green"]) .optimizationValue {
   color: #2EAF7D !important;
 }
 
 /* Result Card */
-[data-theme="green"] .resultCard {
+:global([data-theme="green"]) .resultCard {
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
-[data-theme="green"] .resultCard.success {
+:global([data-theme="green"]) .resultCard.success {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
 }
 
-[data-theme="green"] .resultContent h2 {
+:global([data-theme="green"]) .resultContent h2 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .resultContent p {
+:global([data-theme="green"]) .resultContent p {
   color: #166534 !important;
 }
 
 /* Action Buttons */
-[data-theme="green"] .primaryButton {
+:global([data-theme="green"]) .primaryButton {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35) !important;
 }
 
-[data-theme="green"] .primaryButton:hover {
+:global([data-theme="green"]) .primaryButton:hover {
   box-shadow: 0 6px 20px rgba(46, 175, 125, 0.45) !important;
 }
 
-[data-theme="green"] .secondaryButton {
+:global([data-theme="green"]) .secondaryButton {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.3) !important;
   color: #166534 !important;
 }
 
-[data-theme="green"] .secondaryButton:hover {
+:global([data-theme="green"]) .secondaryButton:hover {
   border-color: #2EAF7D !important;
   background: rgba(46, 175, 125, 0.1) !important;
   color: #2EAF7D !important;
 }
 
 /* Online Days Section */
-[data-theme="green"] .onlineDaysSection {
+:global([data-theme="green"]) .onlineDaysSection {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.08) 0%, rgba(193, 246, 237, 0.15) 100%) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .onlineDaysTitle {
+:global([data-theme="green"]) .onlineDaysTitle {
   color: #02353C !important;
 }
 
-[data-theme="green"] .onlineDaysTitle svg {
+:global([data-theme="green"]) .onlineDaysTitle svg {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .onlineDayCheckbox {
+:global([data-theme="green"]) .onlineDayCheckbox {
   background: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .onlineDayCheckbox:hover {
+:global([data-theme="green"]) .onlineDayCheckbox:hover {
   border-color: rgba(46, 175, 125, 0.5) !important;
   background: rgba(46, 175, 125, 0.1) !important;
 }
 
-[data-theme="green"] .onlineDayCheckbox.active {
+:global([data-theme="green"]) .onlineDayCheckbox.active {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.2) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
   border-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .onlineDayCheckbox input {
+:global([data-theme="green"]) .onlineDayCheckbox input {
   accent-color: #2EAF7D !important;
 }
 
-[data-theme="green"] .onlineDaysSummary {
+:global([data-theme="green"]) .onlineDaysSummary {
   background: rgba(46, 175, 125, 0.1) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
   color: #02353C !important;
 }
 
-[data-theme="green"] .onlineDaysSummary strong {
+:global([data-theme="green"]) .onlineDaysSummary strong {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .onlineDaysNote {
+:global([data-theme="green"]) .onlineDaysNote {
   color: #166534 !important;
 }
 
 /* Academic Badge */
-[data-theme="green"] .academicBadge {
+:global([data-theme="green"]) .academicBadge {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   color: white !important;
 }
 
 /* Auto Generate Section */
-[data-theme="green"] .autoGenerateSection {
+:global([data-theme="green"]) .autoGenerateSection {
   background: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .autoGenerateSection:hover {
+:global([data-theme="green"]) .autoGenerateSection:hover {
   border-color: #2EAF7D !important;
   box-shadow: 0 4px 20px rgba(46, 175, 125, 0.15) !important;
 }
 
-[data-theme="green"] .autoGenerateInfo h4 {
+:global([data-theme="green"]) .autoGenerateInfo h4 {
   color: #02353C !important;
 }
 
-[data-theme="green"] .autoGenerateInfo p {
+:global([data-theme="green"]) .autoGenerateInfo p {
   color: #166534 !important;
 }
 
-[data-theme="green"] .autoGenerateInfo svg {
+:global([data-theme="green"]) .autoGenerateInfo svg {
   color: #166534 !important;
 }
 
-[data-theme="green"] .autoGenerateInfo svg.autoSyncActive {
+:global([data-theme="green"]) .autoGenerateInfo svg.autoSyncActive {
   color: #2EAF7D !important;
 }
 
-[data-theme="green"] .toggleSlider {
+:global([data-theme="green"]) .toggleSlider {
   background-color: rgba(46, 175, 125, 0.25) !important;
 }
 
-[data-theme="green"] .toggleSwitch input:checked+.toggleSlider {
+:global([data-theme="green"]) .toggleSwitch input:checked+.toggleSlider {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%) !important;
   box-shadow: 0 0 12px rgba(46, 175, 125, 0.4) !important;
 }
 
-[data-theme="green"] .autoGenerateStatus {
+:global([data-theme="green"]) .autoGenerateStatus {
   background: rgba(16, 185, 129, 0.12) !important;
   border-color: rgba(16, 185, 129, 0.3) !important;
   color: #059669 !important;
@@ -6985,98 +6985,98 @@
 }
 
 /* Dark Theme - Lunch Break */
-[data-theme="dark"] .lunchBreakSection {
+:global([data-theme="dark"]) .lunchBreakSection {
   background: rgba(30, 41, 59, 0.5);
   border-color: rgba(99, 102, 241, 0.2);
 }
 
-[data-theme="dark"] .lunchBreakSettings {
+:global([data-theme="dark"]) .lunchBreakSettings {
   border-color: rgba(99, 102, 241, 0.2);
 }
 
-[data-theme="dark"] .lunchBreakInfo {
+:global([data-theme="dark"]) .lunchBreakInfo {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
 }
 
-[data-theme="dark"] .lunchBreakInfo p {
+:global([data-theme="dark"]) .lunchBreakInfo p {
   color: rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="dark"] .lunchBreakWarning {
+:global([data-theme="dark"]) .lunchBreakWarning {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
 }
 
-[data-theme="dark"] .lunchBreakWarning span {
+:global([data-theme="dark"]) .lunchBreakWarning span {
   color: #fbbf24;
 }
 
-[data-theme="dark"] .lunchBreakPreview {
+:global([data-theme="dark"]) .lunchBreakPreview {
   background: rgba(30, 41, 59, 0.8);
   border-color: rgba(99, 102, 241, 0.3);
   color: rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="dark"] .lunchBreakPreview strong {
+:global([data-theme="dark"]) .lunchBreakPreview strong {
   color: #fff;
 }
 
-[data-theme="dark"] .strictBadge {
+:global([data-theme="dark"]) .strictBadge {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%);
   color: #34d399;
 }
 
-[data-theme="dark"] .flexibleBadge {
+:global([data-theme="dark"]) .flexibleBadge {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(251, 191, 36, 0.15) 100%);
   color: #fbbf24;
 }
 
 /* Green Theme - Lunch Break */
-[data-theme="green"] .lunchBreakSection {
+:global([data-theme="green"]) .lunchBreakSection {
   background: rgba(240, 253, 244, 0.8);
   border-color: rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .lunchBreakSettings {
+:global([data-theme="green"]) .lunchBreakSettings {
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .lunchBreakInfo {
+:global([data-theme="green"]) .lunchBreakInfo {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .lunchBreakInfo svg {
+:global([data-theme="green"]) .lunchBreakInfo svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .lunchBreakInfo p {
+:global([data-theme="green"]) .lunchBreakInfo p {
   color: #166534;
 }
 
-[data-theme="green"] .lunchBreakWarning {
+:global([data-theme="green"]) .lunchBreakWarning {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
 }
 
-[data-theme="green"] .lunchBreakWarning span {
+:global([data-theme="green"]) .lunchBreakWarning span {
   color: #92400e;
 }
 
-[data-theme="green"] .lunchBreakPreview {
+:global([data-theme="green"]) .lunchBreakPreview {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(46, 175, 125, 0.35);
   color: #166534;
 }
 
-[data-theme="green"] .lunchBreakPreview strong {
+:global([data-theme="green"]) .lunchBreakPreview strong {
   color: #02353C;
 }
 
-[data-theme="green"] .strictBadge {
+:global([data-theme="green"]) .strictBadge {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.2) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #166534;
 }
 
-[data-theme="green"] .flexibleBadge {
+:global([data-theme="green"]) .flexibleBadge {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
   color: #d97706;
 }

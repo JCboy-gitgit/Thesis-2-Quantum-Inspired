@@ -3,1047 +3,1047 @@
 /* ==================== Theme Variables ==================== */
 
 /* Green Theme - Soft, eye-friendly nature theme */
-[data-theme="green"] .layout {
+:global([data-theme="green"]) .layout {
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
 }
 
-[data-theme="green"] .header {
+:global([data-theme="green"]) .header {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(16, 185, 129, 0.2);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="green"] .leftPanel,
-[data-theme="green"] .rightPanel {
+:global([data-theme="green"]) .leftPanel,
+:global([data-theme="green"]) .rightPanel {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(16, 185, 129, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="green"] .canvas {
+:global([data-theme="green"]) .canvas {
   background-color: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="green"] .title,
-[data-theme="green"] .panelHeader h3 {
+:global([data-theme="green"]) .title,
+:global([data-theme="green"]) .panelHeader h3 {
   color: #1e293b;
   font-weight: 600;
 }
 
-[data-theme="green"] .sectionHeader {
+:global([data-theme="green"]) .sectionHeader {
   color: #1e293b;
   background: rgba(16, 185, 129, 0.08);
 }
 
-[data-theme="green"] .sectionHeader:hover {
+:global([data-theme="green"]) .sectionHeader:hover {
   background: rgba(16, 185, 129, 0.12);
 }
 
-[data-theme="green"] .roomItem {
+:global([data-theme="green"]) .roomItem {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #334155;
 }
 
-[data-theme="green"] .roomItem span,
-[data-theme="green"] .roomItem .roomName {
+:global([data-theme="green"]) .roomItem span,
+:global([data-theme="green"]) .roomItem .roomName {
   color: #1e293b;
 }
 
-[data-theme="green"] .roomItem .roomType {
+:global([data-theme="green"]) .roomItem .roomType {
   color: #64748b;
 }
 
-[data-theme="green"] .roomItem:hover {
+:global([data-theme="green"]) .roomItem:hover {
   border-color: #10b981;
   background: rgba(16, 185, 129, 0.05);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="green"] .saveBtn {
+:global([data-theme="green"]) .saveBtn {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 }
 
-[data-theme="green"] .exportBtn,
-[data-theme="green"] .shareBtn {
+:global([data-theme="green"]) .exportBtn,
+:global([data-theme="green"]) .shareBtn {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: #334155;
 }
 
-[data-theme="green"] .exportBtn:hover,
-[data-theme="green"] .shareBtn:hover {
+:global([data-theme="green"]) .exportBtn:hover,
+:global([data-theme="green"]) .shareBtn:hover {
   background: rgba(16, 185, 129, 0.08);
   border-color: #10b981;
   color: #10b981;
 }
 
-[data-theme="green"] .toggleBtn.active {
+:global([data-theme="green"]) .toggleBtn.active {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: #ffffff;
 }
 
-[data-theme="green"] .panelToggle,
-[data-theme="green"] .panelToggleRight {
+:global([data-theme="green"]) .panelToggle,
+:global([data-theme="green"]) .panelToggleRight {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: white;
 }
 
-[data-theme="green"] .toolItem {
+:global([data-theme="green"]) .toolItem {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #334155;
 }
 
-[data-theme="green"] .toolItem span {
+:global([data-theme="green"]) .toolItem span {
   color: #334155;
 }
 
-[data-theme="green"] .toolItem:hover {
+:global([data-theme="green"]) .toolItem:hover {
   border-color: #10b981;
   color: #10b981;
   background: rgba(16, 185, 129, 0.05);
 }
 
-[data-theme="green"] .searchBox {
+:global([data-theme="green"]) .searchBox {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-[data-theme="green"] .searchBox input {
+:global([data-theme="green"]) .searchBox input {
   color: #1e293b;
 }
 
-[data-theme="green"] .searchBox input::placeholder {
+:global([data-theme="green"]) .searchBox input::placeholder {
   color: #94a3b8;
 }
 
-[data-theme="green"] .propertyInput,
-[data-theme="green"] .propertySelect {
+:global([data-theme="green"]) .propertyInput,
+:global([data-theme="green"]) .propertySelect {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #1e293b;
 }
 
-[data-theme="green"] .propertyInput:focus,
-[data-theme="green"] .propertySelect:focus {
+:global([data-theme="green"]) .propertyInput:focus,
+:global([data-theme="green"]) .propertySelect:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-[data-theme="green"] .propertyLabel,
-[data-theme="green"] .propertyGroup label {
+:global([data-theme="green"]) .propertyLabel,
+:global([data-theme="green"]) .propertyGroup label {
   color: #475569;
 }
 
-[data-theme="green"] .panelTabs {
+:global([data-theme="green"]) .panelTabs {
   background: rgba(16, 185, 129, 0.05);
   border-bottom: 1px solid rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="green"] .panelTab {
+:global([data-theme="green"]) .panelTab {
   color: #475569;
 }
 
-[data-theme="green"] .panelTab:hover {
+:global([data-theme="green"]) .panelTab:hover {
   background: rgba(16, 185, 129, 0.08);
 }
 
-[data-theme="green"] .panelTab.active {
+:global([data-theme="green"]) .panelTab.active {
   background: rgba(16, 185, 129, 0.12);
   color: #10b981;
   border-bottom-color: #10b981;
 }
 
-[data-theme="green"] .layerItem {
+:global([data-theme="green"]) .layerItem {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.15);
   color: #334155;
 }
 
-[data-theme="green"] .layerItem:hover {
+:global([data-theme="green"]) .layerItem:hover {
   background: rgba(16, 185, 129, 0.05);
 }
 
-[data-theme="green"] .layerItem.selected {
+:global([data-theme="green"]) .layerItem.selected {
   background: rgba(16, 185, 129, 0.1);
   border-color: #10b981;
 }
 
-[data-theme="green"] .layerControls button {
+:global([data-theme="green"]) .layerControls button {
   color: #475569;
 }
 
-[data-theme="green"] .layerControls button:hover {
+:global([data-theme="green"]) .layerControls button:hover {
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
 }
 
-[data-theme="green"] .gridToggleBtn {
+:global([data-theme="green"]) .gridToggleBtn {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #475569;
 }
 
-[data-theme="green"] .gridToggleBtn:hover {
+:global([data-theme="green"]) .gridToggleBtn:hover {
   background: rgba(16, 185, 129, 0.08);
 }
 
-[data-theme="green"] .gridToggleBtn.active {
+:global([data-theme="green"]) .gridToggleBtn.active {
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border-color: #10b981;
 }
 
-[data-theme="green"] .sectionTitle {
+:global([data-theme="green"]) .sectionTitle {
   color: #1e293b;
 }
 
-[data-theme="green"] .canvasContainer {
+:global([data-theme="green"]) .canvasContainer {
   background: #f1f5f9;
 }
 
-[data-theme="green"] .select {
+:global([data-theme="green"]) .select {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #1e293b;
 }
 
-[data-theme="green"] .select:focus {
+:global([data-theme="green"]) .select:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-[data-theme="green"] .divider {
+:global([data-theme="green"]) .divider {
   color: #94a3b8;
 }
 
-[data-theme="green"] .buildingSelector svg {
+:global([data-theme="green"]) .buildingSelector svg {
   color: #10b981;
 }
 
-[data-theme="green"] .zoomControls button {
+:global([data-theme="green"]) .zoomControls button {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #475569;
 }
 
-[data-theme="green"] .zoomControls button:hover {
+:global([data-theme="green"]) .zoomControls button:hover {
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
 }
 
-[data-theme="green"] .zoomLevel {
+:global([data-theme="green"]) .zoomLevel {
   color: #1e293b;
 }
 
-[data-theme="green"] .elementCount {
+:global([data-theme="green"]) .elementCount {
   color: #475569;
 }
 
-[data-theme="green"] .undoRedoBtn {
+:global([data-theme="green"]) .undoRedoBtn {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #475569;
 }
 
-[data-theme="green"] .undoRedoBtn:hover:not(:disabled) {
+:global([data-theme="green"]) .undoRedoBtn:hover:not(:disabled) {
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
 }
 
-[data-theme="green"] .layerName,
-[data-theme="green"] .layerType {
+:global([data-theme="green"]) .layerName,
+:global([data-theme="green"]) .layerType {
   color: #475569;
 }
 
-[data-theme="green"] .layerControlHeader {
+:global([data-theme="green"]) .layerControlHeader {
   color: #475569;
 }
 
-[data-theme="green"] .layerZIndex {
+:global([data-theme="green"]) .layerZIndex {
   color: #1e293b;
 }
 
-[data-theme="green"] .layerSection h4 {
+:global([data-theme="green"]) .layerSection h4 {
   color: #1e293b;
 }
 
-[data-theme="green"] .noLayers {
+:global([data-theme="green"]) .noLayers {
   color: #64748b;
 }
 
-[data-theme="green"] .noLayers p {
+:global([data-theme="green"]) .noLayers p {
   color: #64748b;
 }
 
-[data-theme="green"] .modal {
+:global([data-theme="green"]) .modal {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-[data-theme="green"] .modalHeader h2 {
+:global([data-theme="green"]) .modalHeader h2 {
   color: #1e293b;
 }
 
-[data-theme="green"] .modalBody label,
-[data-theme="green"] .formGroup label {
+:global([data-theme="green"]) .modalBody label,
+:global([data-theme="green"]) .formGroup label {
   color: #475569;
 }
 
-[data-theme="green"] .modalInput,
-[data-theme="green"] .modalTextarea {
+:global([data-theme="green"]) .modalInput,
+:global([data-theme="green"]) .modalTextarea {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #1e293b;
 }
 
-[data-theme="green"] .modalInput:focus,
-[data-theme="green"] .modalTextarea:focus {
+:global([data-theme="green"]) .modalInput:focus,
+:global([data-theme="green"]) .modalTextarea:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-[data-theme="green"] .typeDisplay {
+:global([data-theme="green"]) .typeDisplay {
   color: #1e293b;
   background: #ffffff;
   border: 2px solid rgba(16, 185, 129, 0.3);
 }
 
-[data-theme="green"] .propertiesContent {
+:global([data-theme="green"]) .propertiesContent {
   color: #334155;
 }
 
-[data-theme="green"] .noSelection p {
+:global([data-theme="green"]) .noSelection p {
   color: #64748b;
 }
 
-[data-theme="green"] .legendSection h4 {
+:global([data-theme="green"]) .legendSection h4 {
   color: #1e293b;
 }
 
-[data-theme="green"] .legendSection p {
+:global([data-theme="green"]) .legendSection p {
   color: #64748b;
 }
 
 /* Green theme - Layers Panel specific styles */
-[data-theme="green"] .layerSectionHeader {
+:global([data-theme="green"]) .layerSectionHeader {
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
 }
 
-[data-theme="green"] .layerSectionHeader span {
+:global([data-theme="green"]) .layerSectionHeader span {
   color: #10b981;
 }
 
-[data-theme="green"] .layerSettings {
+:global([data-theme="green"]) .layerSettings {
   background: #ffffff;
 }
 
-[data-theme="green"] .layerSettingRow label {
+:global([data-theme="green"]) .layerSettingRow label {
   color: #334155;
 }
 
-[data-theme="green"] .gridSizeControl button {
+:global([data-theme="green"]) .gridSizeControl button {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.25);
   color: #334155;
 }
 
-[data-theme="green"] .gridSizeControl button:hover {
+:global([data-theme="green"]) .gridSizeControl button:hover {
   border-color: #10b981;
   color: #10b981;
   background: rgba(16, 185, 129, 0.05);
 }
 
-[data-theme="green"] .gridSizeControl span {
+:global([data-theme="green"]) .gridSizeControl span {
   color: #1e293b;
 }
 
-[data-theme="green"] .bgColorPicker input[type="color"] {
+:global([data-theme="green"]) .bgColorPicker input[type="color"] {
   border-color: rgba(16, 185, 129, 0.25);
 }
 
-[data-theme="green"] .bgColorPicker span {
+:global([data-theme="green"]) .bgColorPicker span {
   color: #64748b;
 }
 
-[data-theme="green"] .bgPresets button {
+:global([data-theme="green"]) .bgPresets button {
   border-color: rgba(16, 185, 129, 0.2);
 }
 
-[data-theme="green"] .bgPresets button:hover {
+:global([data-theme="green"]) .bgPresets button:hover {
   border-color: #10b981;
 }
 
 /* Green theme - Legend styles */
-[data-theme="green"] .legend {
+:global([data-theme="green"]) .legend {
   border-top-color: rgba(16, 185, 129, 0.2);
 }
 
-[data-theme="green"] .legend h4 {
+:global([data-theme="green"]) .legend h4 {
   color: #10b981;
 }
 
-[data-theme="green"] .legendHint {
+:global([data-theme="green"]) .legendHint {
   color: #64748b;
 }
 
-[data-theme="green"] .legendItem {
+:global([data-theme="green"]) .legendItem {
   color: #334155;
 }
 
-[data-theme="green"] .legendEmpty {
+:global([data-theme="green"]) .legendEmpty {
   color: #64748b;
 }
 
 /* Green theme - Canvas Controls (floating overlay) */
-[data-theme="green"] .canvasControls {
+:global([data-theme="green"]) .canvasControls {
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(16, 185, 129, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="green"] .zoomControls span {
+:global([data-theme="green"]) .zoomControls span {
   color: #1e293b;
 }
 
-[data-theme="green"] .snapControl {
+:global([data-theme="green"]) .snapControl {
   color: #1e293b;
 }
 
-[data-theme="green"] .snapControl span {
+:global([data-theme="green"]) .snapControl span {
   color: #1e293b;
 }
 
-[data-theme="green"] .toggleBtn {
+:global([data-theme="green"]) .toggleBtn {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.25);
   color: #475569;
 }
 
-[data-theme="green"] .toggleBtn:hover {
+:global([data-theme="green"]) .toggleBtn:hover {
   border-color: #10b981;
   color: #10b981;
 }
 
-[data-theme="green"] .toggleBtn.active {
+:global([data-theme="green"]) .toggleBtn.active {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   border-color: #34d399;
   color: #ffffff;
 }
 
 /* Green Theme - Mode Toggle & Mode Buttons */
-[data-theme="green"] .modeToggle {
+:global([data-theme="green"]) .modeToggle {
   background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="green"] .modeBtn {
+:global([data-theme="green"]) .modeBtn {
   background: #ffffff;
   color: #475569;
 }
 
-[data-theme="green"] .modeBtn:hover {
+:global([data-theme="green"]) .modeBtn:hover {
   background: rgba(16, 185, 129, 0.08);
   color: #10b981;
 }
 
-[data-theme="green"] .modeBtn.active {
+:global([data-theme="green"]) .modeBtn.active {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 /* Green Theme - Floor Plan List & Items */
-[data-theme="green"] .floorPlanList {
+:global([data-theme="green"]) .floorPlanList {
   scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
 }
 
-[data-theme="green"] .floorPlanItem {
+:global([data-theme="green"]) .floorPlanItem {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.2);
   color: #334155;
 }
 
-[data-theme="green"] .floorPlanItem:hover {
+:global([data-theme="green"]) .floorPlanItem:hover {
   border-color: #10b981;
   background: rgba(16, 185, 129, 0.03);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
 }
 
-[data-theme="green"] .floorPlanItem.active {
+:global([data-theme="green"]) .floorPlanItem.active {
   border-color: #10b981;
   background: rgba(16, 185, 129, 0.08);
 }
 
-[data-theme="green"] .floorPlanInfo {
+:global([data-theme="green"]) .floorPlanInfo {
   color: #334155;
 }
 
-[data-theme="green"] .floorPlanName {
+:global([data-theme="green"]) .floorPlanName {
   color: #1e293b;
 }
 
-[data-theme="green"] .floorPlanMeta {
+:global([data-theme="green"]) .floorPlanMeta {
   color: #64748b;
 }
 
-[data-theme="green"] .defaultIcon,
-[data-theme="green"] .defaultStar {
+:global([data-theme="green"]) .defaultIcon,
+:global([data-theme="green"]) .defaultStar {
   color: #f59e0b;
 }
 
 /* Green Theme - Modal Elements */
-[data-theme="green"] .modalOverlay {
+:global([data-theme="green"]) .modalOverlay {
   background: rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="green"] .modalHeader {
+:global([data-theme="green"]) .modalHeader {
   background: #ffffff;
   border-bottom-color: rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="green"] .modalHeader button {
+:global([data-theme="green"]) .modalHeader button {
   background: rgba(16, 185, 129, 0.08);
   color: #475569;
 }
 
-[data-theme="green"] .modalHeader button:hover {
+:global([data-theme="green"]) .modalHeader button:hover {
   background: #ef4444;
   color: #ffffff;
 }
 
-[data-theme="green"] .modalBody {
+:global([data-theme="green"]) .modalBody {
   background: #ffffff;
   color: #334155;
 }
 
-[data-theme="green"] .modalFooter {
+:global([data-theme="green"]) .modalFooter {
   background: #f8fafc;
   border-top-color: rgba(16, 185, 129, 0.15);
 }
 
-[data-theme="green"] .modalSelect {
+:global([data-theme="green"]) .modalSelect {
   background: #ffffff;
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: #1e293b;
 }
 
-[data-theme="green"] .modalSelect:focus {
+:global([data-theme="green"]) .modalSelect:focus {
   border-color: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Green Theme - Modal Buttons */
-[data-theme="green"] .cancelBtn {
+:global([data-theme="green"]) .cancelBtn {
   background: #ffffff;
   color: #475569;
   border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-[data-theme="green"] .cancelBtn:hover {
+:global([data-theme="green"]) .cancelBtn:hover {
   border-color: #10b981;
   color: #10b981;
   background: rgba(16, 185, 129, 0.05);
 }
 
-[data-theme="green"] .saveModalBtn {
+:global([data-theme="green"]) .saveModalBtn {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: #ffffff;
 }
 
-[data-theme="green"] .saveModalBtn:hover:not(:disabled) {
+:global([data-theme="green"]) .saveModalBtn:hover:not(:disabled) {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
 /* Green Theme - Load Button & Clear Button */
-[data-theme="green"] .loadBtn {
+:global([data-theme="green"]) .loadBtn {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.25);
   color: #475569;
 }
 
-[data-theme="green"] .loadBtn:hover {
+:global([data-theme="green"]) .loadBtn:hover {
   border-color: #10b981;
   color: #10b981;
   background: rgba(16, 185, 129, 0.05);
 }
 
-[data-theme="green"] .clearBtn {
+:global([data-theme="green"]) .clearBtn {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 
-[data-theme="green"] .clearBtn:hover {
+:global([data-theme="green"]) .clearBtn:hover {
   background: rgba(239, 68, 68, 0.2);
 }
 
 /* Green Theme - Checkbox & Form Elements */
-[data-theme="green"] .checkboxGroup {
+:global([data-theme="green"]) .checkboxGroup {
   background: #f8fafc;
   color: #334155;
 }
 
-[data-theme="green"] .checkboxGroup label {
+:global([data-theme="green"]) .checkboxGroup label {
   color: #334155;
 }
 
-[data-theme="green"] .formGroup label {
+:global([data-theme="green"]) .formGroup label {
   color: #475569;
 }
 
 /* Green Theme - Empty State & Loading */
-[data-theme="green"] .emptyState {
+:global([data-theme="green"]) .emptyState {
   color: #64748b;
 }
 
-[data-theme="green"] .loading {
+:global([data-theme="green"]) .loading {
   color: #64748b;
 }
 
 /* Green Theme - Select Mode & Canvas Controls */
-[data-theme="green"] .selectModeBtn {
+:global([data-theme="green"]) .selectModeBtn {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.25);
   color: #475569;
 }
 
-[data-theme="green"] .selectModeBtn:hover {
+:global([data-theme="green"]) .selectModeBtn:hover {
   border-color: #10b981;
   color: #10b981;
 }
 
-[data-theme="green"] .selectModeBtn.active {
+:global([data-theme="green"]) .selectModeBtn.active {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: #ffffff;
   border-color: #34d399;
 }
 
-[data-theme="green"] .selectedCount {
+:global([data-theme="green"]) .selectedCount {
   color: #10b981;
   background: rgba(16, 185, 129, 0.1);
 }
 
 /* Green Theme - Schedule Selector */
-[data-theme="green"] .overlayToggle {
+:global([data-theme="green"]) .overlayToggle {
   background: #ffffff;
   border-color: rgba(16, 185, 129, 0.25);
   color: #475569;
 }
 
-[data-theme="green"] .overlayToggle:hover {
+:global([data-theme="green"]) .overlayToggle:hover {
   border-color: #10b981;
   color: #10b981;
 }
 
-[data-theme="green"] .overlayToggle.active {
+:global([data-theme="green"]) .overlayToggle.active {
   background: rgba(16, 185, 129, 0.1);
   border-color: #10b981;
   color: #10b981;
 }
 
 /* Green Theme - Select Options */
-[data-theme="green"] .select option {
+:global([data-theme="green"]) .select option {
   background: #ffffff;
   color: #1e293b;
 }
 
 /* Green Theme - Back Button */
-[data-theme="green"] .backBtn {
+:global([data-theme="green"]) .backBtn {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: #ffffff;
 }
 
-[data-theme="green"] .backBtn:hover {
+:global([data-theme="green"]) .backBtn:hover {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
 /* Dark Theme */
-[data-theme="dark"] .layout {
+:global([data-theme="dark"]) .layout {
   background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
 }
 
-[data-theme="dark"] .header {
+:global([data-theme="dark"]) .header {
   background: linear-gradient(135deg, rgba(20, 26, 50, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%);
   border: 2px solid rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .leftPanel,
-[data-theme="dark"] .rightPanel {
+:global([data-theme="dark"]) .leftPanel,
+:global([data-theme="dark"]) .rightPanel {
   background: linear-gradient(135deg, rgba(20, 26, 50, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%);
   border: 2px solid rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .canvas {
+:global([data-theme="dark"]) .canvas {
   background-color: #1a1f3a;
   border: 2px solid rgba(0, 212, 255, 0.3);
 }
 
-[data-theme="dark"] .canvasControls {
+:global([data-theme="dark"]) .canvasControls {
   background: linear-gradient(135deg, rgba(20, 26, 50, 0.95) 0%, rgba(10, 14, 39, 0.98) 100%);
   border: 2px solid rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .title,
-[data-theme="dark"] .panelHeader h3 {
+:global([data-theme="dark"]) .title,
+:global([data-theme="dark"]) .panelHeader h3 {
   color: #ffffff;
 }
 
-[data-theme="dark"] .sectionHeader {
+:global([data-theme="dark"]) .sectionHeader {
   color: #ffffff;
   background: rgba(0, 212, 255, 0.1);
 }
 
-[data-theme="dark"] .sectionHeader:hover {
+:global([data-theme="dark"]) .sectionHeader:hover {
   background: rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .roomItem {
+:global([data-theme="dark"]) .roomItem {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #ffffff;
 }
 
-[data-theme="dark"] .roomItem:hover {
+:global([data-theme="dark"]) .roomItem:hover {
   border-color: #00d4ff;
   box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
-[data-theme="dark"] .saveBtn {
+:global([data-theme="dark"]) .saveBtn {
   background: linear-gradient(135deg, #0099cc 0%, #00d4ff 100%);
 }
 
-[data-theme="dark"] .exportBtn,
-[data-theme="dark"] .shareBtn {
+:global([data-theme="dark"]) .exportBtn,
+:global([data-theme="dark"]) .shareBtn {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.2);
   color: #ffffff;
 }
 
-[data-theme="dark"] .toggleBtn.active {
+:global([data-theme="dark"]) .toggleBtn.active {
   background: linear-gradient(135deg, #0099cc 0%, #00d4ff 100%);
   color: #ffffff;
 }
 
-[data-theme="dark"] .panelToggle,
-[data-theme="dark"] .panelToggleRight {
+:global([data-theme="dark"]) .panelToggle,
+:global([data-theme="dark"]) .panelToggleRight {
   background: linear-gradient(135deg, #0099cc 0%, #00d4ff 100%);
   color: white;
 }
 
-[data-theme="dark"] .toolItem {
+:global([data-theme="dark"]) .toolItem {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #a0aec0;
 }
 
-[data-theme="dark"] .toolItem:hover {
+:global([data-theme="dark"]) .toolItem:hover {
   border-color: #00d4ff;
   color: #00d4ff;
 }
 
-[data-theme="dark"] .searchBox {
+:global([data-theme="dark"]) .searchBox {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
 }
 
-[data-theme="dark"] .searchBox input {
+:global([data-theme="dark"]) .searchBox input {
   color: #ffffff;
 }
 
-[data-theme="dark"] .propertyInput,
-[data-theme="dark"] .propertySelect {
+:global([data-theme="dark"]) .propertyInput,
+:global([data-theme="dark"]) .propertySelect {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #ffffff;
 }
 
 /* Additional Dark Theme Styles */
-[data-theme="dark"] .bgColorPicker span {
+:global([data-theme="dark"]) .bgColorPicker span {
   color: rgba(255, 255, 255, 0.7);
 }
 
-[data-theme="dark"] .bgPresets button {
+:global([data-theme="dark"]) .bgPresets button {
   border-color: rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .bgPresets button:hover {
+:global([data-theme="dark"]) .bgPresets button:hover {
   border-color: #00d4ff;
 }
 
-[data-theme="dark"] .layerItem {
+:global([data-theme="dark"]) .layerItem {
   background: rgba(26, 31, 58, 0.6);
   border: 1px solid rgba(0, 212, 255, 0.15);
   color: #ffffff;
 }
 
-[data-theme="dark"] .layerItem:hover,
-[data-theme="dark"] .layerItem.selected {
+:global([data-theme="dark"]) .layerItem:hover,
+:global([data-theme="dark"]) .layerItem.selected {
   border-color: #00d4ff;
   background: rgba(0, 212, 255, 0.1);
 }
 
-[data-theme="dark"] .noLayers {
+:global([data-theme="dark"]) .noLayers {
   color: rgba(255, 255, 255, 0.5);
 }
 
-[data-theme="dark"] .select {
+:global([data-theme="dark"]) .select {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.2);
   color: #ffffff;
 }
 
-[data-theme="dark"] .select option {
+:global([data-theme="dark"]) .select option {
   background: #1a1f3a;
   color: #ffffff;
 }
 
-[data-theme="dark"] .modeBtn {
+:global([data-theme="dark"]) .modeBtn {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #a0aec0;
 }
 
-[data-theme="dark"] .modeBtn:hover {
+:global([data-theme="dark"]) .modeBtn:hover {
   border-color: rgba(0, 212, 255, 0.4);
   color: #ffffff;
 }
 
-[data-theme="dark"] .modeBtn.active {
+:global([data-theme="dark"]) .modeBtn.active {
   background: linear-gradient(135deg, #0099cc 0%, #00d4ff 100%);
   border-color: #00d4ff;
   color: #ffffff;
 }
 
-[data-theme="dark"] .zoomBtn,
-[data-theme="dark"] .controlBtn {
+:global([data-theme="dark"]) .zoomBtn,
+:global([data-theme="dark"]) .controlBtn {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #a0aec0;
 }
 
-[data-theme="dark"] .zoomBtn:hover,
-[data-theme="dark"] .controlBtn:hover {
+:global([data-theme="dark"]) .zoomBtn:hover,
+:global([data-theme="dark"]) .controlBtn:hover {
   border-color: #00d4ff;
   color: #00d4ff;
 }
 
-[data-theme="dark"] .notification {
+:global([data-theme="dark"]) .notification {
   background: rgba(26, 31, 58, 0.95);
   border: 2px solid rgba(0, 212, 255, 0.3);
   color: #ffffff;
 }
 
-[data-theme="dark"] .modal {
+:global([data-theme="dark"]) .modal {
   background: linear-gradient(135deg, rgba(20, 26, 50, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%);
   border: 2px solid rgba(0, 212, 255, 0.3);
 }
 
-[data-theme="dark"] .modalHeader {
+:global([data-theme="dark"]) .modalHeader {
   border-color: rgba(0, 212, 255, 0.2);
 }
 
-[data-theme="dark"] .modalHeader h3 {
+:global([data-theme="dark"]) .modalHeader h3 {
   color: #ffffff;
 }
 
-[data-theme="dark"] .modalContent label {
+:global([data-theme="dark"]) .modalContent label {
   color: rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="dark"] .modalContent input,
-[data-theme="dark"] .modalContent select,
-[data-theme="dark"] .modalContent textarea {
+:global([data-theme="dark"]) .modalContent input,
+:global([data-theme="dark"]) .modalContent select,
+:global([data-theme="dark"]) .modalContent textarea {
   background: rgba(26, 31, 58, 0.8);
   border: 2px solid rgba(0, 212, 255, 0.15);
   color: #ffffff;
 }
 
-[data-theme="dark"] .modalContent input:focus,
-[data-theme="dark"] .modalContent select:focus,
-[data-theme="dark"] .modalContent textarea:focus {
+:global([data-theme="dark"]) .modalContent input:focus,
+:global([data-theme="dark"]) .modalContent select:focus,
+:global([data-theme="dark"]) .modalContent textarea:focus {
   border-color: #00d4ff;
 }
 
-[data-theme="dark"] .canvasWrapper {
+:global([data-theme="dark"]) .canvasWrapper {
   background: #0a0e27;
 }
 
-[data-theme="dark"] .canvas {
+:global([data-theme="dark"]) .canvas {
   background-color: #141a32;
 }
 
-[data-theme="dark"] .gridOverlay {
+:global([data-theme="dark"]) .gridOverlay {
   opacity: 0.3;
 }
 
-[data-theme="dark"] .canvasElement {
+:global([data-theme="dark"]) .canvasElement {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="dark"] .canvasElement.selected {
+:global([data-theme="dark"]) .canvasElement.selected {
   box-shadow: 0 0 0 3px #00d4ff, 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
 /* Dark theme element labels */
-[data-theme="dark"] .elementLabel {
+:global([data-theme="dark"]) .elementLabel {
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-[data-theme="dark"] .textLabel {
+:global([data-theme="dark"]) .textLabel {
   color: #ffffff;
 }
 
-[data-theme="dark"] .hallwayLabel {
+:global([data-theme="dark"]) .hallwayLabel {
   color: rgba(255, 255, 255, 0.7);
 }
 
-[data-theme="dark"] .elementCapacity {
+:global([data-theme="dark"]) .elementCapacity {
   color: rgba(255, 255, 255, 0.7);
 }
 
 /* Dark theme element types */
-[data-theme="dark"] .element_hallway {
+:global([data-theme="dark"]) .element_hallway {
   background: rgba(100, 116, 139, 0.4) !important;
   border: 2px dashed rgba(148, 163, 184, 0.6) !important;
 }
 
-[data-theme="dark"] .element_text {
+:global([data-theme="dark"]) .element_text {
   border: 1px dashed rgba(148, 163, 184, 0.5) !important;
 }
 
-[data-theme="dark"] .element_wall {
+:global([data-theme="dark"]) .element_wall {
   background: #475569 !important;
 }
 
-[data-theme="dark"] .roomItemInfo {
+:global([data-theme="dark"]) .roomItemInfo {
   color: rgba(255, 255, 255, 0.6);
 }
 
-[data-theme="dark"] .roomItem span,
-[data-theme="dark"] .roomItem .roomName {
+:global([data-theme="dark"]) .roomItem span,
+:global([data-theme="dark"]) .roomItem .roomName {
   color: #ffffff;
 }
 
-[data-theme="dark"] .roomItem .roomType {
+:global([data-theme="dark"]) .roomItem .roomType {
   color: rgba(255, 255, 255, 0.6);
 }
 
-[data-theme="dark"] .tabBtn {
+:global([data-theme="dark"]) .tabBtn {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   border: none;
 }
 
-[data-theme="dark"] .tabBtn.active {
+:global([data-theme="dark"]) .tabBtn.active {
   color: #00d4ff;
   background: rgba(0, 212, 255, 0.1);
 }
 
-[data-theme="dark"] .tabBtn:hover:not(.active) {
+:global([data-theme="dark"]) .tabBtn:hover:not(.active) {
   color: #ffffff;
 }
 
 /* Light Theme */
-[data-theme="light"] .layout {
+:global([data-theme="light"]) .layout {
   background: linear-gradient(180deg, #f5f7fa 0%, #e8f5e9 50%, #f0f4f8 100%);
 }
 
-[data-theme="light"] .header {
+:global([data-theme="light"]) .header {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
   border: 2px solid rgba(0, 166, 81, 0.25);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="light"] .leftPanel,
-[data-theme="light"] .rightPanel {
+:global([data-theme="light"]) .leftPanel,
+:global([data-theme="light"]) .rightPanel {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
   border: 2px solid rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .canvas {
+:global([data-theme="light"]) .canvas {
   background-color: #ffffff;
   border: 2px solid #e2e8f0;
 }
 
-[data-theme="light"] .canvasControls {
+:global([data-theme="light"]) .canvasControls {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
   border: 2px solid rgba(0, 166, 81, 0.2);
 }
 
-[data-theme="light"] .title,
-[data-theme="light"] .panelHeader h3 {
+:global([data-theme="light"]) .title,
+:global([data-theme="light"]) .panelHeader h3 {
   color: #1e293b;
 }
 
-[data-theme="light"] .sectionHeader {
+:global([data-theme="light"]) .sectionHeader {
   color: #1e293b;
   background: rgba(0, 166, 81, 0.08);
 }
 
-[data-theme="light"] .sectionHeader:hover {
+:global([data-theme="light"]) .sectionHeader:hover {
   background: rgba(0, 166, 81, 0.15);
 }
 
-[data-theme="light"] .roomItem {
+:global([data-theme="light"]) .roomItem {
   background: #ffffff;
   border: 2px solid #e2e8f0;
   color: #1e293b;
 }
 
-[data-theme="light"] .roomItem:hover {
+:global([data-theme="light"]) .roomItem:hover {
   border-color: #22c55e;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
-[data-theme="light"] .saveBtn {
+:global([data-theme="light"]) .saveBtn {
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
-[data-theme="light"] .exportBtn,
-[data-theme="light"] .shareBtn {
+:global([data-theme="light"]) .exportBtn,
+:global([data-theme="light"]) .shareBtn {
   background: #ffffff;
   border: 2px solid #e2e8f0;
   color: #1e293b;
 }
 
-[data-theme="light"] .toggleBtn.active {
+:global([data-theme="light"]) .toggleBtn.active {
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: #ffffff;
 }
 
-[data-theme="light"] .panelToggle,
-[data-theme="light"] .panelToggleRight {
+:global([data-theme="light"]) .panelToggle,
+:global([data-theme="light"]) .panelToggleRight {
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   color: white;
 }
 
-[data-theme="light"] .toolItem {
+:global([data-theme="light"]) .toolItem {
   background: #ffffff;
   border: 2px solid #e2e8f0;
   color: #475569;
 }
 
-[data-theme="light"] .toolItem:hover {
+:global([data-theme="light"]) .toolItem:hover {
   border-color: #22c55e;
   color: #22c55e;
 }
 
-[data-theme="light"] .searchBox {
+:global([data-theme="light"]) .searchBox {
   background: #ffffff;
   border: 2px solid #e2e8f0;
 }
 
-[data-theme="light"] .searchBox input {
+:global([data-theme="light"]) .searchBox input {
   color: #1e293b;
 }
 
-[data-theme="light"] .propertyInput,
-[data-theme="light"] .propertySelect {
+:global([data-theme="light"]) .propertyInput,
+:global([data-theme="light"]) .propertySelect {
   background: #ffffff;
   border: 2px solid #e2e8f0;
   color: #1e293b;
@@ -1052,143 +1052,143 @@
 /* ==================== Comprehensive Theme Fixes for All Elements ==================== */
 
 /* Dark Theme - Complete text, icon, and element visibility fixes */
-[data-theme="dark"] .sizeInput span,
-[data-theme="dark"] .propertyRow span {
+:global([data-theme="dark"]) .sizeInput span,
+:global([data-theme="dark"]) .propertyRow span {
   color: rgba(255, 255, 255, 0.6);
 }
 
-[data-theme="dark"] .propertyLabel,
-[data-theme="dark"] .propertyGroup label {
+:global([data-theme="dark"]) .propertyLabel,
+:global([data-theme="dark"]) .propertyGroup label {
   color: rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="dark"] .toolItem span {
+:global([data-theme="dark"]) .toolItem span {
   color: rgba(255, 255, 255, 0.7);
 }
 
-[data-theme="dark"] .toolItem svg {
+:global([data-theme="dark"]) .toolItem svg {
   color: #a0aec0;
 }
 
-[data-theme="dark"] .toolItem:hover svg {
+:global([data-theme="dark"]) .toolItem:hover svg {
   color: #00d4ff;
 }
 
-[data-theme="dark"] .sectionTitle,
-[data-theme="dark"] .sectionHeader span {
+:global([data-theme="dark"]) .sectionTitle,
+:global([data-theme="dark"]) .sectionHeader span {
   color: rgba(255, 255, 255, 0.9);
 }
 
-[data-theme="dark"] .canvasSizeControl label,
-[data-theme="dark"] .canvasSizeControl span {
+:global([data-theme="dark"]) .canvasSizeControl label,
+:global([data-theme="dark"]) .canvasSizeControl span {
   color: rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="dark"] .colorPicker input[type="color"] {
+:global([data-theme="dark"]) .colorPicker input[type="color"] {
   border-color: rgba(0, 212, 255, 0.3);
 }
 
-[data-theme="dark"] .rotationInput span {
+:global([data-theme="dark"]) .rotationInput span {
   color: rgba(255, 255, 255, 0.7);
   background: rgba(0, 212, 255, 0.1);
 }
 
-[data-theme="dark"] .elementLabel,
-[data-theme="dark"] .textLabel {
+:global([data-theme="dark"]) .elementLabel,
+:global([data-theme="dark"]) .textLabel {
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
-[data-theme="dark"] .canvasContainer {
+:global([data-theme="dark"]) .canvasContainer {
   background: #0d1117;
 }
 
-[data-theme="dark"] .noSelection p,
-[data-theme="dark"] .noSelection span {
+:global([data-theme="dark"]) .noSelection p,
+:global([data-theme="dark"]) .noSelection span {
   color: rgba(255, 255, 255, 0.5);
 }
 
 /* Green Theme - Complete text, icon, and element visibility fixes */
-[data-theme="green"] .sizeInput span,
-[data-theme="green"] .propertyRow span {
+:global([data-theme="green"]) .sizeInput span,
+:global([data-theme="green"]) .propertyRow span {
   color: #475569;
 }
 
-[data-theme="green"] .toolItem span {
+:global([data-theme="green"]) .toolItem span {
   color: #475569;
 }
 
-[data-theme="green"] .toolItem svg {
+:global([data-theme="green"]) .toolItem svg {
   color: #64748b;
 }
 
-[data-theme="green"] .toolItem:hover svg {
+:global([data-theme="green"]) .toolItem:hover svg {
   color: #10b981;
 }
 
-[data-theme="green"] .rotationInput span {
+:global([data-theme="green"]) .rotationInput span {
   color: #1e293b;
   background: rgba(16, 185, 129, 0.1);
 }
 
-[data-theme="green"] .colorPicker input[type="color"] {
+:global([data-theme="green"]) .colorPicker input[type="color"] {
   border-color: rgba(16, 185, 129, 0.3);
 }
 
-[data-theme="green"] .canvasSizeControl label,
-[data-theme="green"] .canvasSizeControl span {
+:global([data-theme="green"]) .canvasSizeControl label,
+:global([data-theme="green"]) .canvasSizeControl span {
   color: #334155;
 }
 
-[data-theme="green"] .elementLabel {
+:global([data-theme="green"]) .elementLabel {
   color: #1e293b;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="green"] .noSelection p,
-[data-theme="green"] .noSelection span {
+:global([data-theme="green"]) .noSelection p,
+:global([data-theme="green"]) .noSelection span {
   color: #64748b;
 }
 
 /* Light Theme - Complete text, icon, and element visibility fixes */
-[data-theme="light"] .sizeInput span,
-[data-theme="light"] .propertyRow span {
+:global([data-theme="light"]) .sizeInput span,
+:global([data-theme="light"]) .propertyRow span {
   color: #64748b;
 }
 
-[data-theme="light"] .toolItem span {
+:global([data-theme="light"]) .toolItem span {
   color: #475569;
 }
 
-[data-theme="light"] .toolItem svg {
+:global([data-theme="light"]) .toolItem svg {
   color: #64748b;
 }
 
-[data-theme="light"] .toolItem:hover svg {
+:global([data-theme="light"]) .toolItem:hover svg {
   color: #22c55e;
 }
 
-[data-theme="light"] .rotationInput span {
+:global([data-theme="light"]) .rotationInput span {
   color: #1e293b;
   background: rgba(34, 197, 94, 0.1);
 }
 
-[data-theme="light"] .colorPicker input[type="color"] {
+:global([data-theme="light"]) .colorPicker input[type="color"] {
   border-color: #e2e8f0;
 }
 
-[data-theme="light"] .canvasSizeControl label,
-[data-theme="light"] .canvasSizeControl span {
+:global([data-theme="light"]) .canvasSizeControl label,
+:global([data-theme="light"]) .canvasSizeControl span {
   color: #334155;
 }
 
-[data-theme="light"] .elementLabel {
+:global([data-theme="light"]) .elementLabel {
   color: #1e293b;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-[data-theme="light"] .noSelection p,
-[data-theme="light"] .noSelection span {
+:global([data-theme="light"]) .noSelection p,
+:global([data-theme="light"]) .noSelection span {
   color: #64748b;
 }
 
@@ -1836,17 +1836,24 @@
 /* ==================== Canvas Container ==================== */
 .canvasContainer {
   flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
   background: var(--bg-gray-100);
   overflow: auto;
   position: relative;
-  padding: 20px;
+  padding: 40px;
+}
+
+/* Wrapper that sizes to the visual (scaled) canvas dimensions.
+   This fixes the layout: transform:scale() doesn't affect flow,
+   so without this wrapper the canvas overflows behind panels. */
+.canvasScaleWrapper {
+  position: relative;
+  margin: 0 auto;
 }
 
 .canvas {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   background-color: #ffffff;
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
@@ -1854,11 +1861,6 @@
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   transform-origin: top left;
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-  /* Fixed letter bond paper size (11 x 8.5 inch) landscape - zoom only via transform */
-  min-width: 1056px;
-  min-height: 816px;
 }
 
 /* ==================== Canvas Elements ==================== */
@@ -2156,6 +2158,35 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(12px);
   max-width: 220px;
+  transition: box-shadow 0.2s ease;
+}
+
+.canvasControls.dragging {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  opacity: 0.95;
+  cursor: grabbing;
+  user-select: none;
+}
+
+.controlsDragHandle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 0 4px;
+  cursor: grab;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2px;
+  transition: color 0.2s ease;
+}
+
+.controlsDragHandle:hover {
+  color: var(--primary);
+}
+
+.controlsDragHandle:active {
+  cursor: grabbing;
 }
 
 .zoomControls {
@@ -3997,6 +4028,7 @@
     padding: 8px 10px;
     gap: 6px;
     max-width: 180px;
+    touch-action: none;
   }
 
   .zoomControls {

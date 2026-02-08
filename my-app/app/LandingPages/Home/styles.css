@@ -161,19 +161,19 @@
 }
 
 .stat-icon.rooms { 
-  background: rgba(0, 166, 81, 0.12);
+  background: rgba(46, 175, 125, 0.12);
 }
 .stat-icon.rooms svg {
-  color: #00A651 !important;
-  stroke: #00A651 !important;
+  color: #2EAF7D !important;
+  stroke: #2EAF7D !important;
 }
 
 .stat-icon.faculty { 
-  background: rgba(46, 175, 125, 0.12);
+  background: rgba(68, 147, 66, 0.12);
 }
 .stat-icon.faculty svg {
-  color: #2EAF7D !important;
-  stroke: #2EAF7D !important;
+  color: #449342 !important;
+  stroke: #449342 !important;
 }
 
 .stat-icon.courses { 
@@ -185,19 +185,19 @@
 }
 
 .stat-icon.sections { 
-  background: rgba(2, 53, 60, 0.12);
+  background: rgba(46, 175, 125, 0.12);
 }
 .stat-icon.sections svg {
-  color: #02353C !important;
-  stroke: #02353C !important;
+  color: #2EAF7D !important;
+  stroke: #2EAF7D !important;
 }
 
 .stat-icon.schedules { 
-  background: rgba(0, 166, 81, 0.12);
+  background: rgba(63, 208, 201, 0.12);
 }
 .stat-icon.schedules svg {
-  color: #00A651 !important;
-  stroke: #00A651 !important;
+  color: #3FD0C9 !important;
+  stroke: #3FD0C9 !important;
 }
 
 .stat-icon.online-indicator { 
@@ -235,7 +235,7 @@
   display: block;
   font-size: 32px;
   font-weight: 800;
-  color: #00A651;
+  color: var(--primary);
   line-height: 1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -243,7 +243,7 @@
 .stat-label {
   display: block;
   font-size: 13px;
-  color: #374151;
+  color: var(--text-medium);
   margin-top: 6px;
   font-weight: 600;
 }
@@ -286,7 +286,7 @@
   align-items: center;
   padding: 18px 24px;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(0, 166, 81, 0.03) 0%, transparent 100%);
+  background: linear-gradient(135deg, var(--primary-alpha) 0%, transparent 100%);
 }
 
 .card-header h2 {
@@ -343,7 +343,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--primary), #059669);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,9 +366,9 @@
   right: -2px;
   width: 14px;
   height: 14px;
-  background: #2EAF7D;
+  background: var(--success-green);
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid var(--bg-white);
 }
 
 .faculty-info {
@@ -428,8 +428,8 @@
 
 /* Schedule Card */
 .default-star {
-  color: #2EAF7D;
-  fill: #2EAF7D;
+  color: var(--primary);
+  fill: var(--primary);
 }
 
 .schedule-info {
@@ -512,15 +512,15 @@
   align-items: center;
   gap: 16px;
   padding: 14px 18px;
-  background: rgba(0, 166, 81, 0.06);
-  border: 1px solid rgba(0, 166, 81, 0.15);
+  background: var(--primary-alpha);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .holiday-item:hover {
-  background: rgba(0, 166, 81, 0.12);
-  border-color: rgba(0, 166, 81, 0.25);
+  background: rgba(46, 175, 125, 0.12);
+  border-color: rgba(46, 175, 125, 0.25);
 }
 
 .holiday-date {
@@ -533,14 +533,14 @@
   display: block;
   font-size: 24px;
   font-weight: 800;
-  color: #00A651;
+  color: var(--primary);
   line-height: 1;
 }
 
 .holiday-month {
   display: block;
   font-size: 11px;
-  color: #4a5568;
+  color: var(--text-medium);
   text-transform: uppercase;
   font-weight: 700;
   margin-top: 3px;
@@ -550,7 +550,7 @@
 .holiday-name {
   flex: 1;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--text-dark);
   font-weight: 600;
 }
 
@@ -615,21 +615,21 @@
   cursor: default;
   position: relative;
   transition: all 0.2s ease;
-  background: rgba(0, 166, 81, 0.08);
-  border: 1px solid rgba(0, 166, 81, 0.2);
+  background: var(--primary-alpha);
+  border: 1px solid var(--border-color);
   min-height: 40px;
 }
 
 .calendar-day .day-number {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-dark);
   line-height: 1;
 }
 
 .calendar-day:hover:not(.empty) {
-  background: rgba(0, 166, 81, 0.15);
-  border-color: rgba(0, 166, 81, 0.35);
+  background: rgba(46, 175, 125, 0.15);
+  border-color: rgba(46, 175, 125, 0.35);
 }
 
 .calendar-day.empty {
@@ -639,9 +639,9 @@
 }
 
 .calendar-day.today {
-  background: linear-gradient(135deg, #00A651, #02353C);
-  border-color: #00A651;
-  box-shadow: 0 2px 8px rgba(0, 166, 81, 0.35);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px var(--glow-color);
 }
 
 .calendar-day.today .day-number {
@@ -650,7 +650,7 @@
 }
 
 .calendar-day.today:hover {
-  background: linear-gradient(135deg, #02353C, #00A651);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
 }
 
 .calendar-day.holiday {
@@ -723,7 +723,7 @@
   gap: 14px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 166, 81, 0.2);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -759,14 +759,14 @@
   display: block;
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-dark);
   margin-bottom: 3px;
 }
 
 .nav-desc {
   display: block;
   font-size: 12px;
-  color: #4a5568;
+  color: var(--text-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -816,7 +816,56 @@
 }
 
 [data-theme="green"] .stat-label {
-  color: #166534;
+  color: #276749;
+}
+
+/* Green Theme - Stat Icons: Solid gradient backgrounds with white icons */
+[data-theme="green"] .stat-icon.rooms {
+  background: linear-gradient(135deg, #2EAF7D, #449342) !important;
+}
+[data-theme="green"] .stat-icon.rooms svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="green"] .stat-icon.faculty {
+  background: linear-gradient(135deg, #449342, #2EAF7D) !important;
+}
+[data-theme="green"] .stat-icon.faculty svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="green"] .stat-icon.courses {
+  background: linear-gradient(135deg, #3FD0C9, #2EAF7D) !important;
+}
+[data-theme="green"] .stat-icon.courses svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="green"] .stat-icon.sections {
+  background: linear-gradient(135deg, #02353C, #2EAF7D) !important;
+}
+[data-theme="green"] .stat-icon.sections svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="green"] .stat-icon.schedules {
+  background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
+}
+[data-theme="green"] .stat-icon.schedules svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+[data-theme="green"] .stat-icon.online-indicator {
+  background: linear-gradient(135deg, #22c55e, #2EAF7D) !important;
+}
+[data-theme="green"] .stat-icon.online-indicator svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 [data-theme="green"] .stat-icon svg {
@@ -899,7 +948,7 @@
 }
 
 [data-theme="green"] .nav-desc {
-  color: #166534;
+  color: #276749;
 }
 
 /* ==================== Light Theme ==================== */
@@ -915,7 +964,7 @@
 }
 
 [data-theme="light"] .dashboard-title {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, #2EAF7D 0%, #449342 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -923,7 +972,7 @@
 
 /* Light Theme - Stats */
 [data-theme="light"] .stat-value {
-  color: #005826;
+  color: #1e293b;
 }
 
 [data-theme="light"] .stat-label {
@@ -933,6 +982,37 @@
 [data-theme="light"] .stat-icon svg {
   color: #ffffff !important;
 }
+
+/* Light Theme - Stat Icons: Solid backgrounds */
+[data-theme="light"] .stat-icon.rooms {
+  background: linear-gradient(135deg, #2EAF7D, #449342) !important;
+}
+[data-theme="light"] .stat-icon.rooms svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.faculty {
+  background: linear-gradient(135deg, #449342, #2EAF7D) !important;
+}
+[data-theme="light"] .stat-icon.faculty svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.courses {
+  background: linear-gradient(135deg, #3FD0C9, #2EAF7D) !important;
+}
+[data-theme="light"] .stat-icon.courses svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.sections {
+  background: linear-gradient(135deg, #02353C, #2EAF7D) !important;
+}
+[data-theme="light"] .stat-icon.sections svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.schedules {
+  background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
+}
+[data-theme="light"] .stat-icon.schedules svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.online-indicator {
+  background: linear-gradient(135deg, #22c55e, #2EAF7D) !important;
+}
+[data-theme="light"] .stat-icon.online-indicator svg { color: #fff !important; stroke: #fff !important; }
 
 /* Light Theme - Calendar */
 [data-theme="light"] .calendar-day {
@@ -950,8 +1030,8 @@
 }
 
 [data-theme="light"] .calendar-day.today {
-  background: linear-gradient(135deg, #005826, #00a651);
-  border-color: #00a651;
+  background: linear-gradient(135deg, #2EAF7D, #449342);
+  border-color: #2EAF7D;
 }
 
 [data-theme="light"] .calendar-day.today .day-number {
@@ -983,7 +1063,7 @@
 }
 
 [data-theme="light"] .holiday-day {
-  color: #00a651;
+  color: #2EAF7D;
 }
 
 [data-theme="light"] .holiday-month {
@@ -1080,12 +1160,6 @@
 
 [data-theme="dark"] .stat-icon.online-indicator::after {
   background: #22d3ee;
-}
-
-/* Dark Theme - Online Count Badge */
-[data-theme="dark"] .online-count {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.15);
 }
 
 /* Dark Theme - Generate Button */
@@ -1190,11 +1264,6 @@
   border: 1px solid rgba(56, 189, 248, 0.15);
 }
 
-[data-theme="dark"] .quick-nav-item:hover {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: var(--nav-color);
-}
-
 [data-theme="dark"] .nav-label {
   color: #ffffff;
 }
@@ -1240,6 +1309,48 @@
 [data-theme="dark"] .login-time {
   background: rgba(26, 35, 50, 0.8);
   color: #94a3b8;
+}
+
+/* Dark Theme - Nav Icon Override (overrides inline --nav-color) */
+[data-theme="dark"] .nav-icon {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="dark"] .quick-nav-item:nth-child(2n) .nav-icon {
+  background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+}
+
+[data-theme="dark"] .quick-nav-item:nth-child(3n) .nav-icon {
+  background: linear-gradient(135deg, #14b8a6, #0d9488) !important;
+}
+
+[data-theme="dark"] .quick-nav-item:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* Dark Theme - Faculty Avatar */
+[data-theme="dark"] .faculty-avatar {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+/* Dark Theme - Highlight/Online Cards */
+[data-theme="dark"] .stat-card.highlight,
+[data-theme="dark"] .stat-card.online {
+  background: rgba(26, 35, 50, 0.98);
+  border: 2px solid rgba(56, 189, 248, 0.4);
+}
+
+/* Dark Theme - Online Dot */
+[data-theme="dark"] .online-dot {
+  background: #22d3ee;
+  border-color: #1a1f3a;
+}
+
+/* Dark Theme - Online Count Badge */
+[data-theme="dark"] .online-count {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
 }
 
 /* Dark Theme - Empty States */

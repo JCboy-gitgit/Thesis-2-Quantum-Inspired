@@ -307,6 +307,117 @@
   text-align: center;
 }
 
+/* ─── Building & Floor Navigator ─── */
+.buildingNav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.buildingTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--college-primary) transparent;
+  padding-bottom: 2px;
+}
+
+.buildingTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.buildingTab:hover {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  color: white;
+}
+
+.buildingTabActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+  color: white !important;
+  box-shadow: 0 0 12px var(--college-glow);
+}
+
+.buildingTabActive svg {
+  color: var(--college-primary);
+}
+
+.buildingTabName {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buildingTabCount {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.6;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.floorPills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-left: 4px;
+}
+
+.floorPill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.floorPill:hover {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  color: white;
+}
+
+.floorPillActive {
+  background: var(--college-primary) !important;
+  border-color: var(--college-primary) !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+.defaultBadge {
+  opacity: 0.7;
+}
+
 /* Canvas wrapper */
 .canvasWrapper {
   flex: 1;
@@ -1337,6 +1448,40 @@
   .selectDropdown {
     min-width: 0;
     width: 100%;
+    font-size: 11px;
+  }
+
+  /* Building Nav mobile */
+  .buildingNav {
+    padding: 8px;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .buildingTabs {
+    gap: 6px;
+  }
+
+  .buildingTab {
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 5px;
+  }
+
+  .buildingTabCount {
+    display: none;
+  }
+
+  .buildingTabName {
+    max-width: 100px;
+  }
+
+  .floorPills {
+    gap: 4px;
+  }
+
+  .floorPill {
+    padding: 4px 10px;
     font-size: 11px;
   }
 

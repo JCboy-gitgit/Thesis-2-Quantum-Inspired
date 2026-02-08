@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#00331a",
+  themeColor: "#2EAF7D",
 };
 
 export default function RootLayout({
@@ -44,8 +44,8 @@ export default function RootLayout({
     (function() {
       try {
         var isFacultyPage = window.location.pathname.startsWith('/faculty');
-        var storageKey = isFacultyPage ? 'faculty-base-theme' : 'admin-base-theme';
-        var savedTheme = localStorage.getItem(storageKey);
+        var themeKey = isFacultyPage ? 'faculty-base-theme' : 'admin-base-theme';
+        var savedTheme = localStorage.getItem(themeKey);
         var validThemes = ['green', 'light', 'dark'];
         var theme;
         
@@ -65,18 +65,14 @@ export default function RootLayout({
         
         // Set immediate background color to prevent white flash
         var bgColors = {
-          green: '#00331a',
+          green: '#f0fdf4',
           dark: '#0a0e27',
           light: '#ffffff'
         };
         document.documentElement.style.backgroundColor = bgColors[theme] || (isFacultyPage ? bgColors.light : bgColors.green);
       } catch (e) {
-        // Fallback
-        var isFacultyFallback = window.location.pathname.startsWith('/faculty');
-        var fallbackTheme = isFacultyFallback ? 'light' : 'green';
-        var fallbackBg = isFacultyFallback ? '#ffffff' : '#00331a';
-        document.documentElement.setAttribute('data-theme', fallbackTheme);
-        document.documentElement.style.backgroundColor = fallbackBg;
+        document.documentElement.setAttribute('data-theme', 'green');
+        document.documentElement.style.backgroundColor = '#f0fdf4';
       }
     })();
   `;
@@ -88,7 +84,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ backgroundColor: 'var(--background, #00331a)' }}
+        style={{ backgroundColor: 'var(--background, #f0fdf4)' }}
       >
         <Providers>
           <Toaster />

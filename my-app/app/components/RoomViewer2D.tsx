@@ -491,44 +491,6 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
         
         <div className={`${styles.controls} ${isMobile && !showControls ? styles.controlsHidden : ''}`}>
-          {/* Building selector */}
-          {buildings.length > 0 && (
-            <div className={styles.selector}>
-              <Building2 size={16} />
-              <select
-                value={selectedBuilding?.id || ''}
-                onChange={(e) => handleBuildingChange(e.target.value)}
-                className={styles.selectDropdown}
-                aria-label="Select building"
-              >
-                {buildings.map(building => (
-                  <option key={building.id} value={building.id}>
-                    {building.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Floor selector */}
-          {selectedBuilding && selectedBuilding.floors.length > 0 && (
-            <div className={styles.selector}>
-              <Map size={16} />
-              <select
-                value={selectedFloor?.id || ''}
-                onChange={(e) => handleFloorChange(e.target.value)}
-                className={styles.selectDropdown}
-                aria-label="Select floor"
-              >
-                {selectedBuilding.floors.map(floor => (
-                  <option key={floor.id} value={floor.id}>
-                    {floor.floor_name || `Floor ${floor.floor_number}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {/* Zoom controls */}
           <div className={styles.zoomControls}>
             <button
@@ -577,6 +539,53 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           </button>
         </div>
       </div>
+
+      {/* Building & Floor Navigator */}
+      {buildings.length > 0 && (
+        <div className={styles.buildingNav}>
+          {/* Building tabs */}
+          <div className={styles.buildingTabs}>
+            {buildings.map(building => (
+              <button
+                key={building.id}
+                className={`${styles.buildingTab} ${selectedBuilding?.id === building.id ? styles.buildingTabActive : ''}`}
+                onClick={() => handleBuildingChange(String(building.id))}
+                title={building.name}
+              >
+                <Building2 size={16} />
+                <span className={styles.buildingTabName}>{building.name}</span>
+                <span className={styles.buildingTabCount}>
+                  {building.floors.length} {building.floors.length === 1 ? 'floor' : 'floors'}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Floor pills within selected building */}
+          {selectedBuilding && selectedBuilding.floors.length > 0 && (
+            <div className={styles.floorPills}>
+              {selectedBuilding.floors.map(floor => {
+                // Show short name: strip building prefix if present
+                const shortName = floor.floor_name
+                  ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
+                  : `Floor ${floor.floor_number}`
+                return (
+                  <button
+                    key={floor.id}
+                    className={`${styles.floorPill} ${selectedFloor?.id === floor.id ? styles.floorPillActive : ''}`}
+                    onClick={() => handleFloorChange(String(floor.id))}
+                    title={floor.floor_name || `Floor ${floor.floor_number}`}
+                  >
+                    <Map size={12} />
+                    <span>{shortName}</span>
+                    {floor.is_default_view && <Eye size={10} className={styles.defaultBadge} />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Legend - Enhanced visibility */}
       <div className={`${styles.legend} ${isMobile ? styles.legendCompact : ''}`}>
