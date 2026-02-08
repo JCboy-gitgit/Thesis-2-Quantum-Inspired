@@ -150,7 +150,7 @@ export default function FacultyHomePage() {
       document.body.classList.remove(cls)
       document.documentElement.classList.remove(cls)
     })
-    
+
     // Clear admin CSS variables
     const propsToRemove = ['--admin-bg', '--sidebar-width', '--header-height', 'background', 'backgroundColor']
     propsToRemove.forEach(prop => {
@@ -160,7 +160,7 @@ export default function FacultyHomePage() {
 
     // Add faculty classes
     document.body.classList.add('faculty-page', 'faculty-loaded')
-    
+
     setMounted(true)
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
@@ -769,91 +769,91 @@ export default function FacultyHomePage() {
                 : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
                 } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Current Class
+                  </h3>
                   {currentClass ? (
-                    <>
-                      <span className={`flex items-center gap-1.5 text-xs font-bold uppercase ${getCollegeColorClass('text')}`}>
-                        <span className={`w-2 h-2 rounded-full animate-pulse ${getCollegeColorClass('bg')}`}></span>
-                        Ongoing
-                      </span>
-                      <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
-                      </span>
-                    </>
+                    <span className={`flex items-center gap-1.5 text-xs font-bold uppercase ${getCollegeColorClass('text')}`}>
+                      <span className={`w-2 h-2 rounded-full animate-pulse ${getCollegeColorClass('bg')}`}></span>
+                      Ongoing
+                    </span>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${styles.collegeBadge}`}>Next Class</span>
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode ? 'bg-slate-100 text-slate-500' : 'bg-slate-700 text-slate-400'
+                      }`}>
+                      Free
+                    </span>
                   )}
                 </div>
+
                 <div className="mt-3">
                   {currentClass ? (
                     <>
                       <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{currentClass.course_code}</h4>
                       <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{currentClass.course_name}</p>
                       <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span className={`font-semibold ${getCollegeColorClass('text')}`}>
+                          {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
+                        </span>
                         <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {currentClass.room}, {currentClass.building}</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {currentClass.section}</span>
                       </div>
                     </>
                   ) : (
-                    <>
-                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Upcoming Class</h4>
-                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No class scheduled for today</p>
-                    </>
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <div className={`p-3 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700/50'}`}>
+                        <Clock size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                      </div>
+                      <h4 className={`text-base font-bold m-0 mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Active Class</h4>
+                      <p className={`text-xs m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>You are currently free.</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Next Class Card */}
+              {/* Upcoming Class Card */}
               <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${nextClass
-                ? `${getCollegeColorClass('border')} ${getCollegeColorClass('shadow')}`
+                ? `${getCollegeColorClass('border', 'light')} ${isLightMode ? 'shadow-sm' : ''}`
                 : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
                 } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
-                  {nextClass ? (
-                    <>
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
-                        isLightMode
-                          ? isScience
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : isArtsLetters
-                            ? 'bg-orange-100 text-orange-700'
-                            : isArchitecture
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-blue-100 text-blue-700'
-                          : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
-                        }`}>Next Up</span>
-                      <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                        {formatTime(nextClass.start_time)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
-                      isLightMode
+                  <h3 className={`text-sm font-bold uppercase tracking-wider ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    Upcoming Class
+                  </h3>
+                  {nextClass && (
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode
                         ? isScience
                           ? 'bg-emerald-100 text-emerald-700'
                           : isArtsLetters
-                          ? 'bg-orange-100 text-orange-700'
-                          : isArchitecture
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-blue-100 text-blue-700'
+                            ? 'bg-orange-100 text-orange-700'
+                            : isArchitecture
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-blue-100 text-blue-700'
                         : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
-                      }`}>Finished</span>
+                      }`}>Next Up</span>
                   )}
                 </div>
+
                 <div className="mt-3">
                   {nextClass ? (
                     <>
                       <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{nextClass.course_code}</h4>
                       <p className={`text-sm m-0 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{nextClass.course_name}</p>
                       <div className={`flex flex-col gap-1.5 text-xs sm:text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span className={`font-semibold ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>
+                          {formatTime(nextClass.start_time)} - {formatTime(nextClass.end_time)}
+                        </span>
                         <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {nextClass.room}, {nextClass.building}</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {nextClass.section}</span>
                       </div>
                     </>
                   ) : (
-                    <>
-                      <h4 className={`text-base sm:text-lg font-bold m-0 mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>All Done!</h4>
-                      <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>No more classes for today</p>
-                    </>
+                    <div className="flex flex-col items-center justify-center py-4 text-center">
+                      <div className={`p-3 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700/50'}`}>
+                        <Calendar size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                      </div>
+                      <h4 className={`text-base font-bold m-0 mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Upcoming Classes</h4>
+                      <p className={`text-xs m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>No more classes scheduled for today.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -867,9 +867,9 @@ export default function FacultyHomePage() {
                 <Calendar size={18} className="sm:w-5 sm:h-5" />
                 {(() => {
                   const today = new Date()
-                  today.setHours(0,0,0,0)
+                  today.setHours(0, 0, 0, 0)
                   const sel = new Date(selectedDate)
-                  sel.setHours(0,0,0,0)
+                  sel.setHours(0, 0, 0, 0)
                   const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
                   if (diff === 0) return "Today's Schedule"
                   if (diff === 1) return "Tomorrow's Schedule"
@@ -879,64 +879,60 @@ export default function FacultyHomePage() {
               </h3>
               <div className="flex items-center gap-2">
                 {/* Previous Day */}
-                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
-                  isLightMode
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
                     ? isScience
                       ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
                       : isArtsLetters
-                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                      : isArchitecture
-                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                        : isArchitecture
+                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
                     : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
-                }`} onClick={() => {
-                  const prev = new Date(selectedDate)
-                  prev.setDate(prev.getDate() - 1)
-                  setSelectedDate(prev)
-                }} title="Previous day">
+                  }`} onClick={() => {
+                    const prev = new Date(selectedDate)
+                    prev.setDate(prev.getDate() - 1)
+                    setSelectedDate(prev)
+                  }} title="Previous day">
                   <ChevronLeft size={16} />
                 </button>
 
                 {/* Date label / Today button */}
-                <button className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  isLightMode
+                <button className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isLightMode
                     ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`} onClick={() => setSelectedDate(new Date())} title="Go to today">
+                  }`} onClick={() => setSelectedDate(new Date())} title="Go to today">
                   {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </button>
 
                 {/* Next Day */}
-                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
-                  isLightMode
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
                     ? isScience
                       ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
                       : isArtsLetters
-                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                      : isArchitecture
-                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                        : isArchitecture
+                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
                     : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
-                }`} onClick={() => {
-                  const next = new Date(selectedDate)
-                  next.setDate(next.getDate() + 1)
-                  setSelectedDate(next)
-                }} title="Next day">
+                  }`} onClick={() => {
+                    const next = new Date(selectedDate)
+                    next.setDate(next.getDate() + 1)
+                    setSelectedDate(next)
+                  }} title="Next day">
                   <ChevronRight size={16} />
                 </button>
 
                 {/* Refresh */}
-                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
-                  isLightMode
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
                     ? isScience
                       ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
                       : isArtsLetters
-                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                      : isArchitecture
-                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                        : isArchitecture
+                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
                     : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
-                }`} onClick={checkAuthAndLoad} title="Refresh">
+                  }`} onClick={checkAuthAndLoad} title="Refresh">
                   <RefreshCw size={14} />
                 </button>
               </div>
@@ -944,21 +940,20 @@ export default function FacultyHomePage() {
             {(() => {
               const selectedDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][selectedDate.getDay()]
               const daySchedules = schedules.filter(s => s.day === selectedDayName)
-              
+
               return daySchedules.length > 0 ? (
-              <div className="flex flex-col gap-2 sm:gap-3">
-                {daySchedules.map((schedule, index) => (
-                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${
-                      isLightMode
+                <div className="flex flex-col gap-2 sm:gap-3">
+                  {daySchedules.map((schedule, index) => (
+                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${isLightMode
                         ? isScience
                           ? 'bg-white/90 border border-slate-200 hover:border-emerald-500'
                           : isArtsLetters
-                          ? 'bg-white/90 border border-slate-200 hover:border-orange-500'
-                          : isArchitecture
-                          ? 'bg-white/90 border border-slate-200 hover:border-red-500'
-                          : 'bg-white/90 border border-slate-200 hover:border-blue-500'
+                            ? 'bg-white/90 border border-slate-200 hover:border-orange-500'
+                            : isArchitecture
+                              ? 'bg-white/90 border border-slate-200 hover:border-red-500'
+                              : 'bg-white/90 border border-slate-200 hover:border-blue-500'
                         : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'
-                    }`}>
+                      }`}>
                       <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${getCollegeColorClass('text')}`}>
                         <Clock size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
                         <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
@@ -974,25 +969,25 @@ export default function FacultyHomePage() {
                       <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${getCollegeColorClass('text')}`} />
                     </div>
                   ))}
-              </div>
-            ) : (
-              <div className={`rounded-xl p-6 sm:p-8 md:p-12 text-center ${isLightMode ? 'bg-white/90 border border-slate-200' : 'bg-slate-800/80 border border-cyan-500/20'}`}>
-                <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
-                <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                  {(() => {
-                    const today = new Date()
-                    today.setHours(0,0,0,0)
-                    const sel = new Date(selectedDate)
-                    sel.setHours(0,0,0,0)
-                    const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
-                    if (diff === 0) return 'No Schedule Today'
-                    if (diff === 1) return 'No Schedule Tomorrow'
-                    return `No Schedule on ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}`
-                  })()}
-                </h3>
-                <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Your schedule will appear here once assigned by the admin.</p>
-              </div>
-            )
+                </div>
+              ) : (
+                <div className={`rounded-xl p-6 sm:p-8 md:p-12 text-center ${isLightMode ? 'bg-white/90 border border-slate-200' : 'bg-slate-800/80 border border-cyan-500/20'}`}>
+                  <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
+                  <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                    {(() => {
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      const sel = new Date(selectedDate)
+                      sel.setHours(0, 0, 0, 0)
+                      const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
+                      if (diff === 0) return 'No Schedule Today'
+                      if (diff === 1) return 'No Schedule Tomorrow'
+                      return `No Schedule on ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}`
+                    })()}
+                  </h3>
+                  <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Your schedule will appear here once assigned by the admin.</p>
+                </div>
+              )
             })()}
           </section>
 
@@ -1015,17 +1010,16 @@ export default function FacultyHomePage() {
 
       {/* Quick Action - Mark as Absence */}
       <button
-        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${
-          isLightMode
+        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${isLightMode
             ? isScience
               ? 'bg-emerald-600 text-white hover:bg-emerald-700'
               : isArtsLetters
-              ? 'bg-orange-500 text-white hover:bg-orange-600'
-              : isArchitecture
-              ? 'bg-red-500 text-white hover:bg-red-600'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : isArchitecture
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
             : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
-        }`}
+          }`}
         onClick={() => setAttendanceOpen(true)}
       >
         Mark as Absence
@@ -1091,17 +1085,16 @@ export default function FacultyHomePage() {
               />
 
               <button
-                className={`w-full rounded-lg px-4 py-2 font-semibold ${
-                  isLightMode
+                className={`w-full rounded-lg px-4 py-2 font-semibold ${isLightMode
                     ? isScience
                       ? 'bg-emerald-600 text-white'
                       : isArtsLetters
-                      ? 'bg-orange-500 text-white'
-                      : isArchitecture
-                      ? 'bg-red-500 text-white'
-                      : 'bg-blue-600 text-white'
+                        ? 'bg-orange-500 text-white'
+                        : isArchitecture
+                          ? 'bg-red-500 text-white'
+                          : 'bg-blue-600 text-white'
                     : 'bg-cyan-500 text-slate-900'
-                }`}
+                  }`}
                 onClick={handleMarkAbsent}
                 disabled={attendanceSubmitting}
               >
