@@ -1,16 +1,21 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { clearBrowserCaches } from '@/lib/clearCache'
-import { Map } from 'lucide-react'
+import {
+  Map, Building2, Layers, CheckCircle2, XCircle,
+  Sun, Moon, Clock
+} from 'lucide-react'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import RoomViewer2D from '@/app/components/RoomViewer2D'
 import { useTheme } from '@/app/context/ThemeContext'
 import '@/app/styles/faculty-global.css'
+import s from './campus-map.module.css'
 
+/* ─── Types ─── */
 interface UserProfile {
   id: string
   email: string
@@ -23,98 +28,127 @@ interface UserProfile {
   avatar_url?: string
 }
 
+interface FloorPlanRow {
+  id: number
+  building_id: number
+  floor_number: number
+  buildings?: { id: number; name: string } | null
+}
+
+/* ─── Helpers ─── */
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+function useClock() {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+  return now
+}
+
+/* ─── Component ─── */
 export default function FacultyCampusMapPage() {
   const router = useRouter()
-  const { theme, collegeTheme } = useTheme()
+  const { theme, collegeTheme, setTheme } = useTheme()
+  const clock = useClock()
+
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
-  const [user, setUser] = useState<UserProfile | null>(null)
-  const [mounted, setMounted] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
   const [emptyRoomMode, setEmptyRoomMode] = useState(false)
-  
-  // Use theme for accurate light mode detection
+
+  // Stats
+  const [buildingCount, setBuildingCount] = useState(0)
+  const [floorCount, setFloorCount] = useState(0)
+
   const isLightMode = theme === 'light'
-  const isScience = collegeTheme === 'science'
 
-  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-
-  // Track desktop/mobile for sidebar margin
+  /* ─── Responsive ─── */
   useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768)
-    checkDesktop()
-    window.addEventListener('resize', checkDesktop)
-    return () => window.removeEventListener('resize', checkDesktop)
+    const check = () => setIsDesktop(window.innerWidth >= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
+  /* ─── Auth ─── */
   useEffect(() => {
     setMounted(true)
-    checkAuth()
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) { router.push('/'); return }
+        if (session.user.email === ADMIN_EMAIL) { router.push('/LandingPages/Home'); return }
+
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single() as { data: UserProfile | null; error: any }
+
+        if (userError || !userData || !userData.is_active) {
+          await clearBrowserCaches()
+          await supabase.auth.signOut()
+          router.push('/')
+          return
+        }
+        setUser(userData)
+      } catch {
+        router.push('/')
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [])
 
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
+  /* ─── Fetch lightweight stats ─── */
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const db = supabase as any
+        const { data: fps } = await db
+          .from('floor_plans')
+          .select('building_id, floor_number, buildings(id, name)')
+          .or('is_default_view.eq.true,is_published.eq.true')
 
-      if (!session?.user) {
-        router.push('/')
-        return
-      }
+        if (fps && fps.length > 0) {
+          const uniqueBuildings = new Set(fps.map((f: FloorPlanRow) => f.building_id))
+          setBuildingCount(uniqueBuildings.size)
+          setFloorCount(fps.length)
+        }
+      } catch { /* silent */ }
+    })()
+  }, [])
 
-      // Admin should not access faculty pages
-      if (session.user.email === ADMIN_EMAIL) {
-        router.push('/LandingPages/Home')
-        return
-      }
+  /* ─── Formatted time strings ─── */
+  const timeStr = useMemo(
+    () => clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    [clock]
+  )
+  const dateStr = useMemo(
+    () => clock.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
+    [clock]
+  )
 
-      // Get user profile
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single() as { data: UserProfile | null; error: any }
-
-      if (userError || !userData || !userData.is_active) {
-        await clearBrowserCaches()
-        await supabase.auth.signOut()
-        router.push('/')
-        return
-      }
-
-      setUser(userData)
-    } catch (error) {
-      console.error('Auth check error:', error)
-      router.push('/')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  /* ─── Loading state ─── */
   if (loading || !mounted) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center gap-5 ${
-        isLightMode 
-          ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 text-gray-800' 
-          : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white'
-      }`}>
-        <div className={`w-12 h-12 border-4 rounded-full animate-spin ${
-          isLightMode 
-            ? (isScience ? 'border-emerald-500/30 border-t-emerald-500' : 'border-blue-500/30 border-t-blue-500')
-            : 'border-cyan-500/30 border-t-cyan-500'
-        }`}></div>
-        <p className={`text-sm ${isLightMode ? 'text-gray-500' : 'text-slate-400'}`}>Loading campus map...</p>
+      <div className={s.pageRoot} data-theme={theme} data-college-theme={collegeTheme}>
+        <div className={s.loadingScreen}>
+          <div className={s.spinner} />
+          <span className={s.loadingText}>Loading campus map…</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div 
-      className={`min-h-screen faculty-page-wrapper ${
-        isLightMode 
-          ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' 
-          : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
-      }`} 
+    <div
+      className={`${s.pageRoot} faculty-page-wrapper`}
       data-theme={theme}
       data-college-theme={collegeTheme}
     >
@@ -125,60 +159,155 @@ export default function FacultyCampusMapPage() {
         menuBarHidden={isMenuBarHidden}
       />
 
-      {/* Main Layout */}
-      <div 
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300"
-        style={{ marginLeft: isDesktop && sidebarOpen ? '250px' : '0' }}
+      {/* Main content area */}
+      <div
+        className={s.content}
+        style={{ marginLeft: isDesktop && sidebarOpen ? 250 : 0 }}
       >
-        {/* Faculty Menu Bar */}
+        {/* Menu bar */}
         <FacultyMenuBar
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleSidebar={() => setSidebarOpen(o => !o)}
           sidebarOpen={sidebarOpen}
           isHidden={isMenuBarHidden}
           onToggleHidden={setIsMenuBarHidden}
           userEmail={user?.email}
         />
 
-        {/* Main Content */}
-        <main className="flex-1 px-3 sm:px-4 md:px-6 lg:px-8 pt-20 sm:pt-24 md:pt-28 pb-6 max-w-[1600px] mx-auto w-full box-border">
-          {/* Page Header */}
-          <div className="mb-4 sm:mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--college-gradient)' }}
-              >
-                <Map size={20} className="sm:w-6 sm:h-6 text-white" />
+        <main className={s.main}>
+          {/* ─── Hero Banner ─── */}
+          <div className={s.heroBanner}>
+            <div className={s.heroLeft}>
+              <div className={s.heroIconBox}>
+                <Map size={26} />
               </div>
               <div>
-                <h1 className={`text-xl sm:text-2xl md:text-3xl font-bold m-0 ${isLightMode ? 'text-slate-900' : 'text-white'}`}>Campus Floor Plan</h1>
-                <p className={`text-xs sm:text-sm m-0 mt-1 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Interactive view of campus buildings and room locations</p>
+                <h1 className={s.heroTitle}>Campus Floor Plan</h1>
+                <p className={s.heroSubtitle}>Interactive real-time view of campus buildings &amp; rooms</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emptyRoomMode
-                  ? isLightMode
-                    ? (isScience ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-blue-500 text-white border-blue-500')
-                    : 'bg-cyan-500 text-slate-900 border-cyan-500'
-                  : isLightMode ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-800 border-cyan-500/20 text-slate-300'
-                }`}
-                onClick={() => setEmptyRoomMode(!emptyRoomMode)}
-              >
-                Empty Room Finder
-              </button>
-              <span className={`text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                {emptyRoomMode ? 'Highlighting available rooms' : 'Showing all rooms'}
-              </span>
+
+            <div className={s.heroRight}>
+              {/* Live clock */}
+              <div className={s.liveBadge}>
+                <span className={s.liveDot} />
+                <Clock size={13} />
+                <span>{timeStr}</span>
+                <span style={{ opacity: 0.6 }}>·</span>
+                <span>{dateStr}</span>
+              </div>
+
+              {/* Inline theme toggle */}
+              <div className={s.themeToggle}>
+                <button
+                  className={`${s.themeToggleBtn} ${isLightMode ? s.active : ''}`}
+                  onClick={() => setTheme('light')}
+                  title="Light mode"
+                >
+                  <Sun size={14} /> Light
+                </button>
+                <button
+                  className={`${s.themeToggleBtn} ${!isLightMode ? s.active : ''}`}
+                  onClick={() => setTheme('dark')}
+                  title="Dark mode"
+                >
+                  <Moon size={14} /> Dark
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Campus Map Viewer - Full Height */}
-          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border transition-all duration-300 ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/90 border-cyan-500/20'}`}>
-            <div className="w-full" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
+          {/* ─── Bento Stats Grid ─── */}
+          <div className={s.bentoGrid}>
+            {/* Buildings */}
+            <div className={s.statCard}>
+              <div className={`${s.statIconBox} ${s.buildings}`}>
+                <Building2 size={22} />
+              </div>
+              <div className={s.statInfo}>
+                <span className={s.statValue}>{buildingCount}</span>
+                <span className={s.statLabel}>Buildings</span>
+              </div>
+            </div>
+
+            {/* Floors */}
+            <div className={s.statCard}>
+              <div className={`${s.statIconBox} ${s.floors}`}>
+                <Layers size={22} />
+              </div>
+              <div className={s.statInfo}>
+                <span className={s.statValue}>{floorCount}</span>
+                <span className={s.statLabel}>Floor Plans</span>
+              </div>
+            </div>
+
+            {/* Available indicator */}
+            <div className={s.statCard}>
+              <div className={`${s.statIconBox} ${s.available}`}>
+                <CheckCircle2 size={22} />
+              </div>
+              <div className={s.statInfo}>
+                <span className={s.statValue} style={{ color: 'var(--cm-success)' }}>Live</span>
+                <span className={s.statLabel}>Available Rooms</span>
+              </div>
+            </div>
+
+            {/* Occupied indicator */}
+            <div className={s.statCard}>
+              <div className={`${s.statIconBox} ${s.occupied}`}>
+                <XCircle size={22} />
+              </div>
+              <div className={s.statInfo}>
+                <span className={s.statValue} style={{ color: 'var(--cm-danger)' }}>Live</span>
+                <span className={s.statLabel}>Occupied Rooms</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Controls Bar ─── */}
+          <div className={s.controlsBar}>
+            <div className={s.controlsLeft}>
+              {/* Empty room finder toggle */}
+              <label className={s.emptyRoomToggle}>
+                <div
+                  className={`${s.toggleSwitch} ${emptyRoomMode ? s.active : ''}`}
+                  onClick={() => setEmptyRoomMode(v => !v)}
+                >
+                  <div className={s.toggleKnob} />
+                </div>
+                <div>
+                  <span className={s.toggleLabel}>Empty Room Finder</span>
+                  <span className={s.toggleHint}>
+                    {emptyRoomMode ? ' · Highlighting available rooms' : ' · Showing all rooms'}
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            <div className={s.controlsRight}>
+              {/* Legend */}
+              <div className={s.legend}>
+                <div className={s.legendItem}>
+                  <span className={`${s.legendDot} ${s.green}`} />
+                  <span>Available</span>
+                </div>
+                <div className={s.legendItem}>
+                  <span className={`${s.legendDot} ${s.red}`} />
+                  <span>Occupied</span>
+                </div>
+                <div className={s.legendItem}>
+                  <span className={`${s.legendDot} ${s.gray}`} />
+                  <span>Unknown</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Floor Plan Viewer ─── */}
+          <div className={s.viewerCard}>
+            <div className={s.viewerInner} style={{ height: 'calc(100vh - 360px)', minHeight: 430 }}>
               <RoomViewer2D collegeTheme={collegeTheme} highlightEmpty={emptyRoomMode} />
             </div>
-          </section>
+          </div>
         </main>
       </div>
     </div>

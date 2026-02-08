@@ -9,6 +9,7 @@ import {
   MapPin,
   BookOpen,
   ChevronRight,
+  ChevronLeft,
   Building2,
   GraduationCap,
   TrendingUp,
@@ -70,6 +71,7 @@ export default function FacultyHomePage() {
   const [attendanceStartDate, setAttendanceStartDate] = useState('')
   const [attendanceEndDate, setAttendanceEndDate] = useState('')
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   // Use ThemeContext directly - no more local theme state
   const isLightMode = theme === 'light'
@@ -381,8 +383,8 @@ export default function FacultyHomePage() {
         setCollegeTheme(COLLEGE_THEME_MAP[mergedUser.college])
       }
 
-      // Fetch schedules
-      await fetchSchedules(session.user.id)
+      // Fetch schedules using the user's email
+      await fetchSchedules(session.user.email || '')
 
       setLoading(false)
     } catch (error) {
@@ -391,58 +393,85 @@ export default function FacultyHomePage() {
     }
   }
 
-  const fetchSchedules = async (userId: string) => {
+  const fetchSchedules = async (email: string) => {
     try {
-      const db = supabase as any
-      const { data, error } = await db
-        .from('faculty_schedules')
-        .select(`
-          id,
-          course_code,
-          course_name,
-          room,
-          building,
-          day,
-          start_time,
-          end_time,
-          section
-        `)
-        .eq('user_id', userId)
-
-      if (error) {
-        // Table might not exist yet - this is expected, just silently return empty
-        // console.log('Note: faculty_schedules table not available:', error.message)
+      if (!email) {
         setSchedules([])
         return
       }
 
-      if (data && data.length > 0) {
-        // Process schedules...
-        const processedSchedules = data.map((schedule: any) => ({
-          ...schedule,
-          day: normalizeDay(schedule.day),
-          start_time: convertTo24Hour(schedule.start_time),
-          end_time: convertTo24Hour(schedule.end_time)
-        }))
+      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`, {
+        cache: 'no-store'
+      })
 
-        setSchedules(processedSchedules)
-        findCurrentAndNextClass(processedSchedules)
-        const { data: currentSchedule } = await db
-          .from('generated_schedules')
-          .select('id')
-          .eq('is_current', true)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        setCurrentScheduleId(currentSchedule?.id || null)
+      if (!response.ok) {
+        setSchedules([])
+        return
+      }
+
+      const result = await response.json()
+
+      if (result?.schedule) {
+        setCurrentScheduleId(result.schedule.id || null)
+      }
+
+      if (result?.allocations && result.allocations.length > 0) {
+        // Convert room_allocations to ScheduleItem format
+        // Each allocation has schedule_day (e.g. "Monday", "M/W/F", "TTH")
+        // and schedule_time (e.g. "7:00 AM - 8:30 AM")
+        const expanded: ScheduleItem[] = []
+
+        result.allocations.forEach((alloc: any) => {
+          const days = expandDays(alloc.schedule_day || '')
+          const timeParts = (alloc.schedule_time || '').split(/\s*-\s*/)
+          const startTime = timeParts[0] ? convertTo24Hour(timeParts[0].trim()) : '00:00'
+          const endTime = timeParts[1] ? convertTo24Hour(timeParts[1].trim()) : '00:00'
+
+          days.forEach(day => {
+            expanded.push({
+              id: alloc.id,
+              course_code: alloc.course_code || '',
+              course_name: alloc.course_name || '',
+              room: alloc.room || '',
+              building: alloc.building || '',
+              day,
+              start_time: startTime,
+              end_time: endTime,
+              section: alloc.section || ''
+            })
+          })
+        })
+
+        // Sort by start time
+        expanded.sort((a, b) => a.start_time.localeCompare(b.start_time))
+
+        setSchedules(expanded)
+        findCurrentAndNextClass(expanded)
       } else {
-        // No schedules found - that's okay
         setSchedules([])
       }
     } catch (error) {
       console.error('Error fetching schedules:', error)
       setSchedules([])
     }
+  }
+
+  // Expand compound day strings (e.g. "M/W/F", "TTH") into individual day names
+  const expandDays = (dayStr: string): string[] => {
+    const day = dayStr.trim().toUpperCase()
+    if (day.includes('/')) {
+      return day.split('/').map(d => normalizeDay(d.trim()))
+    }
+    if (day === 'TTH' || day === 'TH') {
+      return ['Tuesday', 'Thursday']
+    }
+    if (day === 'MWF') {
+      return ['Monday', 'Wednesday', 'Friday']
+    }
+    if (day === 'MW') {
+      return ['Monday', 'Wednesday']
+    }
+    return [normalizeDay(day)]
   }
 
   // Helper to convert 12-hour to 24-hour time
@@ -831,32 +860,94 @@ export default function FacultyHomePage() {
             </div>
           </section>
 
-          {/* Today's Schedule */}
+          {/* Today's Schedule with Day Navigation */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
               <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
                 <Calendar size={18} className="sm:w-5 sm:h-5" />
-                Today's Schedule
+                {(() => {
+                  const today = new Date()
+                  today.setHours(0,0,0,0)
+                  const sel = new Date(selectedDate)
+                  sel.setHours(0,0,0,0)
+                  const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
+                  if (diff === 0) return "Today's Schedule"
+                  if (diff === 1) return "Tomorrow's Schedule"
+                  if (diff === -1) return "Yesterday's Schedule"
+                  return `${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}'s Schedule`
+                })()}
               </h3>
-              <button className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
-                isLightMode
-                  ? isScience
-                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                    : isArtsLetters
-                    ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                    : isArchitecture
-                    ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                    : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
-                  : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
-              }`} onClick={checkAuthAndLoad} title="Refresh">
-                <RefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Previous Day */}
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
+                  isLightMode
+                    ? isScience
+                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                      : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                }`} onClick={() => {
+                  const prev = new Date(selectedDate)
+                  prev.setDate(prev.getDate() - 1)
+                  setSelectedDate(prev)
+                }} title="Previous day">
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Date label / Today button */}
+                <button className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  isLightMode
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`} onClick={() => setSelectedDate(new Date())} title="Go to today">
+                  {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </button>
+
+                {/* Next Day */}
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
+                  isLightMode
+                    ? isScience
+                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                      : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                }`} onClick={() => {
+                  const next = new Date(selectedDate)
+                  next.setDate(next.getDate() + 1)
+                  setSelectedDate(next)
+                }} title="Next day">
+                  <ChevronRight size={16} />
+                </button>
+
+                {/* Refresh */}
+                <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
+                  isLightMode
+                    ? isScience
+                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                      : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                      ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                      : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                }`} onClick={checkAuthAndLoad} title="Refresh">
+                  <RefreshCw size={14} />
+                </button>
+              </div>
             </div>
-            {schedules.filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]).length > 0 ? (
+            {(() => {
+              const selectedDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][selectedDate.getDay()]
+              const daySchedules = schedules.filter(s => s.day === selectedDayName)
+              
+              return daySchedules.length > 0 ? (
               <div className="flex flex-col gap-2 sm:gap-3">
-                {schedules
-                  .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
-                  .map((schedule, index) => (
+                {daySchedules.map((schedule, index) => (
                     <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${
                       isLightMode
                         ? isScience
@@ -887,10 +978,22 @@ export default function FacultyHomePage() {
             ) : (
               <div className={`rounded-xl p-6 sm:p-8 md:p-12 text-center ${isLightMode ? 'bg-white/90 border border-slate-200' : 'bg-slate-800/80 border border-cyan-500/20'}`}>
                 <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
-                <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>No Schedule Today</h3>
+                <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                  {(() => {
+                    const today = new Date()
+                    today.setHours(0,0,0,0)
+                    const sel = new Date(selectedDate)
+                    sel.setHours(0,0,0,0)
+                    const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
+                    if (diff === 0) return 'No Schedule Today'
+                    if (diff === 1) return 'No Schedule Tomorrow'
+                    return `No Schedule on ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}`
+                  })()}
+                </h3>
                 <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Your schedule will appear here once assigned by the admin.</p>
               </div>
-            )}
+            )
+            })()}
           </section>
 
           {/* Department Announcements */}

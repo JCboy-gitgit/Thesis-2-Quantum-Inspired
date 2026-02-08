@@ -629,9 +629,17 @@ function FacultyDirectoryContent() {
                 <X size={24} />
               </button>
               <div className={styles.panelHeader}>
-                <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
-                  {getInitials(selectedFaculty.full_name)}
-                </div>
+                {selectedFaculty.profile_image ? (
+                  <img 
+                    src={selectedFaculty.profile_image} 
+                    alt={selectedFaculty.full_name}
+                    className={styles.panelAvatarImg}
+                  />
+                ) : (
+                  <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                    {getInitials(selectedFaculty.full_name)}
+                  </div>
+                )}
                 <div>
                   <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
                   <p className={styles.panelPosition}>{selectedFaculty.position}</p>

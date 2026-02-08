@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation'
 import {
   Home,
   Users,
-  Building2,
   Calendar,
   User,
   Map
@@ -28,7 +27,6 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
     { icon: User, label: 'My Profile', path: '/faculty/profile' },
     { icon: Map, label: 'Campus Map', path: '/faculty/campus-map' },
     { icon: Users, label: 'Faculty Directory', path: '/faculty/directory' },
-    { icon: Building2, label: 'Departments', path: '/faculty/departments' },
     { icon: Calendar, label: 'Room Schedules', path: '/faculty/schedules' },
   ]
 

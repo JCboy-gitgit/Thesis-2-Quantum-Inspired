@@ -831,23 +831,36 @@ class EnhancedQuantumScheduler:
         slot_count: int,
         exclude_section_id: Optional[int] = None
     ) -> bool:
-        """Check if teacher has a conflict in the given time range"""
+        """Check if teacher has a conflict in the given time range.
+        
+        Uses section_assignments (which stores proper start_slot) for accurate
+        overlap detection, avoiding the multi-key iteration bug in self.schedule.
+        """
         if not teacher_id or teacher_id == 0:
             return False
         
-        for key, slot in self.schedule.items():
-            if slot.teacher_id == teacher_id and key[1] == day:
-                # Skip if it's the same section (for move operations)
-                if exclude_section_id and slot.section_id == exclude_section_id:
+        new_end = start_slot_id + slot_count
+        
+        # Use section_assignments for accurate overlap detection
+        for section_id, assignments in self.section_assignments.items():
+            # Skip if it's the same section (for move operations)
+            if exclude_section_id and section_id == exclude_section_id:
+                continue
+            
+            section = self.sections.get(section_id)
+            if not section or section.teacher_id != teacher_id:
+                continue
+            
+            for _, sched_day, sched_start, sched_count in assignments:
+                if sched_day != day:
                     continue
-                # Check for time overlap
-                existing_start = key[2]
-                existing_end = existing_start + slot.slot_count
-                new_end = start_slot_id + slot_count
+                
+                existing_end = sched_start + sched_count
                 
                 # Overlap if: new_start < existing_end AND existing_start < new_end
-                if start_slot_id < existing_end and existing_start < new_end:
+                if start_slot_id < existing_end and sched_start < new_end:
                     return True
+        
         return False
     
     def _check_section_year_conflict(
@@ -861,16 +874,16 @@ class EnhancedQuantumScheduler:
         """
         Check if another section of the same year level and course has a conflict.
         This prevents scheduling conflicts for students in the same year.
+        Uses section_assignments for accurate overlap detection.
         """
-        for key, slot in self.schedule.items():
-            if key[1] != day:
+        new_end = start_slot_id + slot_count
+        
+        for other_id, assignments in self.section_assignments.items():
+            # Skip if it's the same section
+            if exclude_section_id and other_id == exclude_section_id:
                 continue
             
-            # Skip if it's the same section
-            if exclude_section_id and slot.section_id == exclude_section_id:
-                continue
-                
-            other_section = self.sections.get(slot.section_id)
+            other_section = self.sections.get(other_id)
             if not other_section:
                 continue
             
@@ -879,12 +892,14 @@ class EnhancedQuantumScheduler:
                 other_section.year_level == section.year_level and
                 other_section.id != section.id):
                 
-                existing_start = key[2]
-                existing_end = existing_start + slot.slot_count
-                new_end = start_slot_id + slot_count
-                
-                if start_slot_id < existing_end and existing_start < new_end:
-                    return True
+                for _, sched_day, sched_start, sched_count in assignments:
+                    if sched_day != day:
+                        continue
+                    
+                    existing_end = sched_start + sched_count
+                    
+                    if start_slot_id < existing_end and sched_start < new_end:
+                        return True
         
         return False
     
@@ -955,22 +970,18 @@ class EnhancedQuantumScheduler:
         """
         Check if the same section is already scheduled at overlapping time slots.
         This prevents a student group from being assigned to multiple rooms at the same time.
+        Uses section_assignments for accurate overlap detection.
         """
-        for key, slot in self.schedule.items():
-            if key[1] != day:
+        new_end = start_slot_id + slot_count
+        
+        for _, sched_day, sched_start, sched_count in self.section_assignments.get(section_id, []):
+            if sched_day != day:
                 continue
             
-            # Check if same section
-            if slot.section_id != section_id:
-                continue
-            
-            # Check for time overlap
-            existing_start = key[2]
-            existing_end = existing_start + slot.slot_count
-            new_end = start_slot_id + slot_count
+            existing_end = sched_start + sched_count
             
             # Overlap if: new_start < existing_end AND existing_start < new_end
-            if start_slot_id < existing_end and existing_start < new_end:
+            if start_slot_id < existing_end and sched_start < new_end:
                 return True
         
         return False
@@ -1866,8 +1877,9 @@ class EnhancedQuantumScheduler:
                                 if pass_num == 0 and self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, slots_for_session):
                                     continue
                                 
-                                # Teacher conflict check
-                                if pass_num < 2 and section.teacher_id and self._check_teacher_conflict(
+                                # Teacher conflict check — HARD constraint, ALWAYS enforced
+                                # A teacher cannot physically be in two places at once
+                                if section.teacher_id and self._check_teacher_conflict(
                                     section.teacher_id, day, slot.id, slots_for_session, section.id
                                 ):
                                     continue
@@ -1878,8 +1890,9 @@ class EnhancedQuantumScheduler:
                                 ):
                                     continue
                                 
-                                # Teacher daily load check
-                                if pass_num == 0 and section.teacher_id:
+                                # Teacher daily load check — HARD constraint, ALWAYS enforced
+                                # No teacher should exceed max daily hours
+                                if section.teacher_id:
                                     daily_slots = self._get_teacher_daily_slots(section.teacher_id, day)
                                     max_daily = self.constraints.max_teacher_hours_per_day * 2
                                     if daily_slots + slots_for_session > max_daily:
@@ -2017,6 +2030,14 @@ class EnhancedQuantumScheduler:
                             section.teacher_id, day, slot.id, slots_to_assign, section.id
                         ):
                             continue
+                        
+                        # Teacher daily load check — HARD constraint
+                        if section.teacher_id:
+                            daily_slots = self._get_teacher_daily_slots(section.teacher_id, day)
+                            max_daily = self.constraints.max_teacher_hours_per_day * 2
+                            if daily_slots + slots_to_assign > max_daily:
+                                continue
+                        
                         if self._allocate_section(section, None, day, slot.id, slots_to_assign, True, actual_duration_minutes=actual_mins):
                             remaining_slots -= slots_to_assign
                             session_idx += 1
@@ -2044,11 +2065,18 @@ class EnhancedQuantumScheduler:
                             slots_to_assign = min(slots_to_assign, remaining_slots)
                                 
                             if self._is_slot_range_available(room_id, day, slot.id, slots_to_assign):
-                                # Check teacher conflict
+                                # Check teacher conflict — HARD constraint
                                 if section.teacher_id and self._check_teacher_conflict(
                                     section.teacher_id, day, slot.id, slots_to_assign, section.id
                                 ):
                                     continue
+                                
+                                # Teacher daily load check — HARD constraint
+                                if section.teacher_id:
+                                    daily_slots = self._get_teacher_daily_slots(section.teacher_id, day)
+                                    max_daily = self.constraints.max_teacher_hours_per_day * 2
+                                    if daily_slots + slots_to_assign > max_daily:
+                                        continue
                                     
                                 if self._allocate_section(section, room_id, day, slot.id, slots_to_assign, actual_duration_minutes=actual_mins):
                                     remaining_slots -= slots_to_assign
@@ -2172,7 +2200,8 @@ class EnhancedQuantumScheduler:
         return None
     
     def _apply_move(self, move: Dict[str, Any]) -> bool:
-        """Apply a move to the schedule (handles online day transitions)"""
+        """Apply a move to the schedule (handles online day transitions).
+        If the new allocation fails, restores the old assignment to prevent data loss."""
         old = move['old']
         section = self.sections.get(old['section_id'])
         if not section:
@@ -2180,6 +2209,7 @@ class EnhancedQuantumScheduler:
         
         # Preserve actual_duration_minutes from old assignment
         old_actual_minutes = old.get('actual_duration_minutes', 0)
+        old_is_online = old.get('is_online', self._is_online_day(old['day']))
         
         # Remove old assignment
         self._deallocate_section_assignment(
@@ -2187,26 +2217,34 @@ class EnhancedQuantumScheduler:
         )
         
         # Apply new assignment with preserved duration
+        success = False
         if move['type'] == 'change_room':
-            return self._allocate_section(
+            success = self._allocate_section(
                 section, move['new_room'], old['day'], old['start_slot'], old['slot_count'],
                 actual_duration_minutes=old_actual_minutes
             )
         elif move['type'] == 'change_day':
             new_is_online = move.get('new_is_online', self._is_online_day(move['new_day']))
             new_room = None if new_is_online else old['room_id']
-            return self._allocate_section(
+            success = self._allocate_section(
                 section, new_room, move['new_day'], old['start_slot'], old['slot_count'], new_is_online,
                 actual_duration_minutes=old_actual_minutes
             )
         elif move['type'] == 'change_time':
             is_online = old.get('is_online', self._is_online_day(old['day']))
-            return self._allocate_section(
+            success = self._allocate_section(
                 section, old['room_id'], old['day'], move['new_slot'], old['slot_count'], is_online,
                 actual_duration_minutes=old_actual_minutes
             )
         
-        return False
+        # If the new allocation failed, restore the old one to prevent losing the section
+        if not success:
+            self._allocate_section(
+                section, old['room_id'], old['day'], old['start_slot'], old['slot_count'], old_is_online,
+                actual_duration_minutes=old_actual_minutes
+            )
+        
+        return success
     
     def _revert_move(self, move: Dict[str, Any]):
         """Revert a move (handles online day transitions)"""

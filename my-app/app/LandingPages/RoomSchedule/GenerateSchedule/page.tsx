@@ -36,6 +36,7 @@ import {
   Upload
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { pushAdminNotification } from '@/app/components/NotificationBell'
 
 // ==================== Types ====================
 interface CampusGroup {
@@ -1569,6 +1570,13 @@ export default function GenerateSchedulePage() {
           `${scheduledCount} classes scheduled successfully with no conflicts.`,
           'success'
         )
+        pushAdminNotification({
+          type: 'schedule',
+          title: 'Schedule Generated Successfully',
+          message: `${scheduledCount} classes scheduled with zero conflicts.`,
+          severity: 'success',
+          link: '/LandingPages/RoomSchedule/ViewSchedule'
+        })
       } else if (conflictCount > 0 || unscheduledCount > 0) {
         // Schedule has conflicts or unscheduled classes
         toast.warning('Schedule Generated with Issues', {
@@ -1580,12 +1588,26 @@ export default function GenerateSchedulePage() {
           `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts. Review needed.`,
           'error'
         )
+        pushAdminNotification({
+          type: 'schedule',
+          title: 'Schedule Has Issues',
+          message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts.`,
+          severity: 'warning',
+          link: '/LandingPages/RoomSchedule/ViewSchedule'
+        })
       } else {
         toast.success('Schedule Generated', {
           description: result.message || `${scheduledCount} classes scheduled.`,
           duration: 6000,
         })
         sendBrowserNotification('Schedule Generated', `${scheduledCount} classes scheduled.`, 'success')
+        pushAdminNotification({
+          type: 'schedule',
+          title: 'Schedule Generated',
+          message: result.message || `${scheduledCount} classes scheduled.`,
+          severity: 'success',
+          link: '/LandingPages/RoomSchedule/ViewSchedule'
+        })
       }
     } catch (error: any) {
       console.error('Schedule generation failed:', error)
@@ -1600,6 +1622,12 @@ export default function GenerateSchedulePage() {
         duration: 10000,
       })
       sendBrowserNotification('Schedule Generation Failed', errorMessage, 'error')
+      pushAdminNotification({
+        type: 'schedule',
+        title: 'Schedule Generation Failed',
+        message: errorMessage.slice(0, 200),
+        severity: 'error'
+      })
     } finally {
       setScheduling(false)
     }

@@ -115,6 +115,20 @@ interface RequestBody {
 }
 
 /**
+ * Generate a consistent positive numeric ID from a teacher name string.
+ * Uses a simple hash to map the same name to the same integer every time.
+ */
+function getTeacherIdFromName(name: string): number {
+  if (!name || name === 'TBD' || name === 'Unknown' || name.trim() === '') return 0
+  const normalized = name.trim().toLowerCase()
+  let hash = 5381
+  for (let i = 0; i < normalized.length; i++) {
+    hash = ((hash << 5) + hash + normalized.charCodeAt(i)) & 0x7fffffff
+  }
+  return hash || 1 // Ensure never 0
+}
+
+/**
  * Convert frontend classes to backend sections format
  * lec_hours and lab_hours are actual contact hours per week
  */
@@ -128,6 +142,10 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
     // Use teacher_name from class data if available, otherwise 'TBD'
     const teacherName = (cls as any).teacher_name || 'TBD'
 
+    // Generate a consistent numeric teacher_id from the teacher's name
+    // This enables the scheduler's teacher conflict detection
+    const teacherId = getTeacherIdFromName(teacherName)
+
     // Get required features for this course (based on course_id from class_schedules table)
     const courseId = (cls as any).course_id || cls.id
 
@@ -136,7 +154,7 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
       section_code: cls.section || `SEC-${index + 1}`,
       course_code: cls.course_code || '',
       course_name: cls.course_name || '',
-      teacher_id: 0, // Default - no teacher constraint (will be mapped if teachers provided)
+      teacher_id: teacherId, // Unique ID derived from teacher_name for conflict detection
       teacher_name: teacherName,
       year_level: cls.year_level || parseInt(cls.section?.charAt(0)) || 1,
       student_count: cls.student_count || 30, // Use actual student count from class data

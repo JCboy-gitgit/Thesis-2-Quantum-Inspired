@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { 
-  MapPin, Clock, Users, CheckCircle, XCircle, Building2, Calendar, 
-  ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2, Minimize2,
+  Clock, Users, CheckCircle, XCircle, Building2, 
+  ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronDown, ChevronUp,
   Loader2, Info, Map, AlertTriangle, Eye, DoorOpen, Footprints,
   ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed,
   Archive, Dumbbell, Music, Theater, Presentation, Server, Wifi,
@@ -104,23 +104,6 @@ interface RoomAllocation {
   teacher_name?: string
 }
 
-// Room type colors
-const ROOM_TYPE_COLORS: Record<string, { bg: string; border: string; label: string }> = {
-  'classroom': { bg: '#3b82f6', border: '#1d4ed8', label: 'Lecture Rooms' },
-  'lecture_hall': { bg: '#8b5cf6', border: '#6d28d9', label: 'Lecture Hall' },
-  'computer_lab': { bg: '#06b6d4', border: '#0891b2', label: 'Computer Lab' },
-  'laboratory': { bg: '#ec4899', border: '#be185d', label: 'Laboratory' },
-  'library': { bg: '#22c55e', border: '#15803d', label: 'Library Center' },
-  'office': { bg: '#f59e0b', border: '#d97706', label: 'Office' },
-  'storage': { bg: '#78716c', border: '#57534e', label: 'Tool Storage' },
-  'stockroom': { bg: '#d4a373', border: '#bc8f5a', label: 'Stock Room' },
-  'restroom': { bg: '#94a3b8', border: '#64748b', label: 'Restroom' },
-  'gymnasium': { bg: '#f97316', border: '#ea580c', label: 'Gymnasium' },
-  'cafeteria': { bg: '#84cc16', border: '#65a30d', label: 'Cafeteria' },
-  'auditorium': { bg: '#a855f7', border: '#9333ea', label: 'Auditorium' },
-  'default': { bg: '#e5e7eb', border: '#9ca3af', label: 'Other' }
-}
-
 interface Building {
   id: number
   name: string
@@ -140,11 +123,9 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const wrapperRef = useRef<HTMLDivElement>(null)
   
   const [loading, setLoading] = useState(true)
-  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([])
   const [buildings, setBuildings] = useState<Building[]>([])
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<FloorPlan | null>(null)
-  const [currentFloorPlan, setCurrentFloorPlan] = useState<FloorPlan | null>(null)
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([])
   const [roomAllocations, setRoomAllocations] = useState<RoomAllocation[]>([])
   const [selectedElement, setSelectedElement] = useState<CanvasElement | null>(null)
@@ -157,6 +138,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [error, setError] = useState<string | null>(null)
   const [hasFloorPlan, setHasFloorPlan] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(fullscreen)
+  const [buildingNavCollapsed, setBuildingNavCollapsed] = useState(false)
 
   // Check if mobile
   useEffect(() => {
@@ -247,24 +229,26 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         return
       }
 
-      setFloorPlans(fps as FloorPlan[])
       setHasFloorPlan(true)
 
-      // Group floor plans by building
-      const buildingMap: Record<number, Building> = {}
+      // Group floor plans by building name parsed from floor_name
+      // This matches the admin's "Floor Plans & Drafts" grouping logic,
+      // which splits floor_name on " - " to get the building prefix.
+      const buildingMap: Record<string, Building> = {}
       
       fps.forEach((fp: any) => {
+        const parts = fp.floor_name?.split(' - ')
+        const buildingKey = parts && parts.length > 1 ? parts[0].trim() : (fp.buildings?.name || `Building ${fp.building_id || 0}`)
         const buildingId = fp.building_id || 0
-        const buildingName = fp.buildings?.name || `Building ${buildingId}`
         
-        if (!buildingMap[buildingId]) {
-          buildingMap[buildingId] = {
+        if (!buildingMap[buildingKey]) {
+          buildingMap[buildingKey] = {
             id: buildingId,
-            name: buildingName,
+            name: buildingKey,
             floors: []
           }
         }
-        buildingMap[buildingId].floors.push(fp as FloorPlan)
+        buildingMap[buildingKey].floors.push(fp as FloorPlan)
       })
 
       const buildingList: Building[] = Object.values(buildingMap)
@@ -293,14 +277,20 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   const handleBuildingChange = (buildingId: string) => {
     const building = buildings.find(b => b.id === parseInt(buildingId))
-    if (building) {
-      setSelectedBuilding(building)
-      // Auto-select first floor of new building
-      if (building.floors.length > 0) {
-        const firstFloor = building.floors[0]
-        setSelectedFloor(firstFloor)
-        loadFloorPlan(firstFloor)
-      }
+    if (!building) return
+    
+    // Toggle: clicking the same building collapses it
+    if (selectedBuilding?.id === building.id) {
+      setSelectedBuilding(null)
+      return
+    }
+    
+    setSelectedBuilding(building)
+    // Auto-select first floor of new building
+    if (building.floors.length > 0) {
+      const firstFloor = building.floors[0]
+      setSelectedFloor(firstFloor)
+      loadFloorPlan(firstFloor)
     }
   }
 
@@ -315,7 +305,6 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   }
 
   const loadFloorPlan = async (floorPlan: FloorPlan) => {
-    setCurrentFloorPlan(floorPlan)
 
     if (floorPlan.canvas_data?.elements) {
       setCanvasElements(floorPlan.canvas_data.elements)
@@ -353,12 +342,6 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         setRoomAllocations(allocations || [])
       }
     }
-  }
-
-  // Get room color
-  const getRoomColor = (roomType?: string) => {
-    const type = roomType?.toLowerCase().replace(/\s+/g, '_') || 'default'
-    return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
   }
 
   // Get room availability
@@ -540,50 +523,71 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
       </div>
 
-      {/* Building & Floor Navigator */}
+      {/* Building & Floor Navigator — Collapsible */}
       {buildings.length > 0 && (
-        <div className={styles.buildingNav}>
-          {/* Building tabs */}
-          <div className={styles.buildingTabs}>
-            {buildings.map(building => (
-              <button
-                key={building.id}
-                className={`${styles.buildingTab} ${selectedBuilding?.id === building.id ? styles.buildingTabActive : ''}`}
-                onClick={() => handleBuildingChange(String(building.id))}
-                title={building.name}
-              >
-                <Building2 size={16} />
-                <span className={styles.buildingTabName}>{building.name}</span>
-                <span className={styles.buildingTabCount}>
-                  {building.floors.length} {building.floors.length === 1 ? 'floor' : 'floors'}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Floor pills within selected building */}
-          {selectedBuilding && selectedBuilding.floors.length > 0 && (
-            <div className={styles.floorPills}>
-              {selectedBuilding.floors.map(floor => {
-                // Show short name: strip building prefix if present
-                const shortName = floor.floor_name
-                  ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
-                  : `Floor ${floor.floor_number}`
-                return (
-                  <button
-                    key={floor.id}
-                    className={`${styles.floorPill} ${selectedFloor?.id === floor.id ? styles.floorPillActive : ''}`}
-                    onClick={() => handleFloorChange(String(floor.id))}
-                    title={floor.floor_name || `Floor ${floor.floor_number}`}
-                  >
-                    <Map size={12} />
-                    <span>{shortName}</span>
-                    {floor.is_default_view && <Eye size={10} className={styles.defaultBadge} />}
-                  </button>
-                )
-              })}
+        <div className={`${styles.buildingNav} ${buildingNavCollapsed ? styles.buildingNavCollapsed : ''}`}>
+          <button
+            className={styles.buildingNavToggle}
+            onClick={() => setBuildingNavCollapsed(!buildingNavCollapsed)}
+          >
+            <div className={styles.buildingNavToggleLeft}>
+              <Building2 size={14} />
+              <span>Buildings ({buildings.length})</span>
             </div>
-          )}
+            {buildingNavCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </button>
+          {!buildingNavCollapsed && buildings.map(building => (
+            <div key={building.id} className={styles.buildingSection}>
+              {/* Building header row */}
+              <div
+                className={`${styles.buildingSectionHeader} ${selectedBuilding?.id === building.id ? styles.buildingSectionHeaderActive : ''}`}
+                onClick={() => handleBuildingChange(String(building.id))}
+              >
+                <div className={styles.buildingSectionLeft}>
+                  <Building2 size={16} />
+                  <span className={styles.buildingSectionName}>{building.name}</span>
+                </div>
+                <span className={styles.buildingSectionCount}>
+                  {building.floors.length} {building.floors.length === 1 ? 'plan' : 'plans'}
+                </span>
+              </div>
+
+              {/* Floor cards — shown when building is selected */}
+              {selectedBuilding?.id === building.id && building.floors.length > 0 && (
+                <div className={styles.floorCardList}>
+                  {building.floors.map(floor => {
+                    const shortName = floor.floor_name
+                      ? floor.floor_name.replace(new RegExp(`^${building.name}\\s*[-–]\\s*`, 'i'), '')
+                      : `Floor ${floor.floor_number}`
+                    const isActive = selectedFloor?.id === floor.id
+
+                    return (
+                      <button
+                        key={floor.id}
+                        className={`${styles.floorCard} ${isActive ? styles.floorCardActive : ''}`}
+                        onClick={() => handleFloorChange(String(floor.id))}
+                        title={floor.floor_name || `Floor ${floor.floor_number}`}
+                      >
+                        <div className={styles.floorCardInfo}>
+                          <span className={styles.floorCardName}>
+                            {shortName}
+                            {floor.is_default_view && <Eye size={11} className={styles.floorCardDefaultIcon} />}
+                          </span>
+                          <span className={styles.floorCardMeta}>
+                            Floor {floor.floor_number}
+                            {floor.is_default_view ? ' · Published' : ''}
+                          </span>
+                        </div>
+                        <span className={`${styles.floorCardBadge} ${floor.is_default_view ? styles.floorCardBadgePublished : styles.floorCardBadgeDraft}`}>
+                          {floor.is_default_view ? 'Published' : 'Draft'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

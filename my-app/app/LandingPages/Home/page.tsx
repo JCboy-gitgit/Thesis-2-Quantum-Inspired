@@ -175,7 +175,31 @@ export default function AdminDashboard() {
   // Function to refresh just the online faculty list
   const refreshOnlineFaculty = async () => {
     try {
-      // Consider faculty "online" if they logged in within the last 30 minutes
+      // Try presence API first
+      const presenceResponse = await fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_online_faculty' })
+      })
+      const contentType = presenceResponse.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        const presenceData = await presenceResponse.json()
+        if (presenceData.success && presenceData.online_faculty && presenceData.online_faculty.length > 0) {
+          const mapped = presenceData.online_faculty.map((f: any) => ({
+            id: f.id,
+            full_name: f.full_name,
+            email: f.email,
+            department: f.department || f.department_id,
+            last_login: f.last_heartbeat || f.last_login,
+            avatar_url: f.avatar_url
+          }))
+          setOnlineFaculty(mapped)
+          setStats(prev => ({ ...prev, onlineFaculty: mapped.length }))
+          return
+        }
+      }
+
+      // Fallback: Consider faculty "online" if they logged in within the last 30 minutes
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
       const { data: fallbackData, error } = await supabase.from('users')
         .select('id, full_name, email, department, last_login, avatar_url')
@@ -247,13 +271,13 @@ export default function AdminDashboard() {
         const contentType = presenceResponse.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const presenceData = await presenceResponse.json()
-          if (presenceData.success && presenceData.faculty) {
-            onlineFacultyData = presenceData.faculty.map((f: any) => ({
+          if (presenceData.success && presenceData.online_faculty) {
+            onlineFacultyData = presenceData.online_faculty.map((f: any) => ({
               id: f.id,
               full_name: f.full_name,
               email: f.email,
-              department: f.department,
-              last_login: f.last_heartbeat,
+              department: f.department || f.department_id,
+              last_login: f.last_heartbeat || f.last_login,
               avatar_url: f.avatar_url
             }))
           }
