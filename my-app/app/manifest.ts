@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Quantum-Inspired Room Scheduling System',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0a0e27',
-    theme_color: '#10b981',
+    background_color: '#00331a',
+    theme_color: '#00331a',
     icons: [
       {
         src: '/icons/icon-72.png',

@@ -61,8 +61,8 @@ async function generateIcons() {
       width: maskableSize,
       height: maskableSize,
       channels: 4,
-      // Emerald-tinted background for the maskable icon safe zone
-      background: { r: 16, g: 185, b: 129, alpha: 255 },
+      // Dark green background matching the app's default theme (#00331a)
+      background: { r: 0, g: 51, b: 26, alpha: 255 },
     },
   })
     .composite([{ input: resizedInner, top: padding, left: padding }])
