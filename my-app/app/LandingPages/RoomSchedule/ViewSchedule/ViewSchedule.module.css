@@ -1839,42 +1839,42 @@
 }
 
 /* ==================== Dark Theme Overrides ==================== */
-[data-theme="dark"] .viewModeSection {
+:global([data-theme="dark"]) .viewModeSection {
   background: var(--card-bg);
   border-color: var(--card-border);
 }
 
-[data-theme="dark"] .viewModeButton {
+:global([data-theme="dark"]) .viewModeButton {
   background: var(--bg-white);
   border-color: var(--border-color);
   color: var(--content-text);
 }
 
-[data-theme="dark"] .viewModeButton:hover {
+:global([data-theme="dark"]) .viewModeButton:hover {
   background: var(--primary-alpha);
 }
 
-[data-theme="dark"] .viewModeSelect {
+:global([data-theme="dark"]) .viewModeSelect {
   background: var(--bg-white);
   color: var(--content-text);
   border-color: var(--primary);
 }
 
-[data-theme="dark"] .timetableTitle {
+:global([data-theme="dark"]) .timetableTitle {
   background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
 }
 
-[data-theme="dark"] .statIcon {
+:global([data-theme="dark"]) .statIcon {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
 }
 
-[data-theme="dark"] .statIcon.success {
+:global([data-theme="dark"]) .statIcon.success {
   background: rgba(34, 211, 238, 0.15);
   color: #22d3ee;
 }
 
-[data-theme="dark"] .statIcon.warning {
+:global([data-theme="dark"]) .statIcon.warning {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }

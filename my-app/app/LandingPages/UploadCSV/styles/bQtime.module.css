@@ -257,3 +257,57 @@
     transform: rotate(360deg);
   }
 }
+
+/* ==================== Dark Theme ==================== */
+:global([data-theme="dark"]) .page-layout {
+  background: var(--background);
+}
+
+:global([data-theme="dark"]) .upload-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .section-title {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .format-info {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.2);
+}
+
+:global([data-theme="dark"]) .format-info h3 {
+  color: var(--primary);
+}
+
+:global([data-theme="dark"]) .text-medium {
+  color: var(--text-secondary);
+}
+
+/* ==================== Green Theme ==================== */
+:global([data-theme="green"]) .page-layout {
+  background: var(--background);
+}
+
+:global([data-theme="green"]) .upload-card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="green"]) .section-title {
+  color: var(--text-primary);
+}
+
+:global([data-theme="green"]) .format-info {
+  background: rgba(46, 175, 125, 0.08);
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .format-info h3 {
+  color: var(--primary);
+}
+
+:global([data-theme="green"]) .text-medium {
+  color: var(--text-secondary);
+}

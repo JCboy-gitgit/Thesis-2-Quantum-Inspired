@@ -4,121 +4,121 @@
 /* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
 
 /* Main Layout with Nature Background */
-[data-theme="green"] .facultyLayout {
+:global([data-theme="green"]) .facultyLayout {
   background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 30%, #bbf7d0 60%, #dcfce7 100%);
 }
 
-[data-theme="green"] .facultyHeader,
-[data-theme="green"] .headerTitleSection {
+:global([data-theme="green"]) .facultyHeader,
+:global([data-theme="green"]) .headerTitleSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.4) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
 }
 
-[data-theme="green"] .facultyTitle {
+:global([data-theme="green"]) .facultyTitle {
   color: #02353C;
 }
 
-[data-theme="green"] .facultySubtitle {
+:global([data-theme="green"]) .facultySubtitle {
   color: #166534;
 }
 
-[data-theme="green"] .headerLargeIcon {
+:global([data-theme="green"]) .headerLargeIcon {
   color: #ffffff;
 }
 
-[data-theme="green"] .headerIconWrapper {
+:global([data-theme="green"]) .headerIconWrapper {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
 /* Profile Cards */
-[data-theme="green"] .profileCard {
+:global([data-theme="green"]) .profileCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
 }
 
-[data-theme="green"] .profileCard:hover {
+:global([data-theme="green"]) .profileCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25);
   transform: translateY(-6px);
 }
 
-[data-theme="green"] .profileCover {
+:global([data-theme="green"]) .profileCover {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
 }
 
-[data-theme="green"] .profileAvatar {
+:global([data-theme="green"]) .profileAvatar {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   border-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .profileName {
+:global([data-theme="green"]) .profileName {
   color: #02353C;
 }
 
-[data-theme="green"] .profileTitle {
+:global([data-theme="green"]) .profileTitle {
   color: #166534;
 }
 
-[data-theme="green"] .profileDepartment {
+:global([data-theme="green"]) .profileDepartment {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #2EAF7D;
   border-color: rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .profileStats {
+:global([data-theme="green"]) .profileStats {
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .profileStatValue {
+:global([data-theme="green"]) .profileStatValue {
   color: #02353C;
 }
 
-[data-theme="green"] .profileStatLabel {
+:global([data-theme="green"]) .profileStatLabel {
   color: #166534;
 }
 
-[data-theme="green"] .contactItem {
+:global([data-theme="green"]) .contactItem {
   color: #166534;
 }
 
-[data-theme="green"] .contactItem svg {
+:global([data-theme="green"]) .contactItem svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .btnViewProfile {
+:global([data-theme="green"]) .btnViewProfile {
   background: linear-gradient(135deg, #2EAF7D 0%, #449342 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .btnViewProfile:hover {
+:global([data-theme="green"]) .btnViewProfile:hover {
   background: linear-gradient(135deg, #3FD0C9 0%, #2EAF7D 100%);
   box-shadow: 0 6px 24px rgba(46, 175, 125, 0.4);
 }
 
-[data-theme="green"] .btnMessage {
+:global([data-theme="green"]) .btnMessage {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #166534;
 }
 
-[data-theme="green"] .btnMessage:hover {
+:global([data-theme="green"]) .btnMessage:hover {
   border-color: #2EAF7D;
   color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
 }
 
 /* Back Button */
-[data-theme="green"] .backButton {
+:global([data-theme="green"]) .backButton {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .backButton:hover {
+:global([data-theme="green"]) .backButton:hover {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #2EAF7D;
@@ -126,139 +126,139 @@
 }
 
 /* Stats Grid */
-[data-theme="green"] .statCard {
+:global([data-theme="green"]) .statCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
   box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
 }
 
-[data-theme="green"] .statCard:hover {
+:global([data-theme="green"]) .statCard:hover {
   border-color: #2EAF7D;
   box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .statIcon {
+:global([data-theme="green"]) .statIcon {
   background: rgba(46, 175, 125, 0.12);
 }
 
-[data-theme="green"] .statIcon svg {
+:global([data-theme="green"]) .statIcon svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .statLabel {
+:global([data-theme="green"]) .statLabel {
   color: #166534;
 }
 
-[data-theme="green"] .statValue {
+:global([data-theme="green"]) .statValue {
   color: #02353C;
 }
 
 /* Search Section */
-[data-theme="green"] .searchSection {
+:global([data-theme="green"]) .searchSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
   border: 2px solid rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .searchInput {
+:global([data-theme="green"]) .searchInput {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .searchInput:focus {
+:global([data-theme="green"]) .searchInput:focus {
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .searchInput::placeholder {
+:global([data-theme="green"]) .searchInput::placeholder {
   color: #166534;
 }
 
-[data-theme="green"] .searchIcon {
+:global([data-theme="green"]) .searchIcon {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .filterBtn {
+:global([data-theme="green"]) .filterBtn {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .filterBtn:hover {
+:global([data-theme="green"]) .filterBtn:hover {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
 }
 
-[data-theme="green"] .filterBtn.active {
+:global([data-theme="green"]) .filterBtn.active {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   border-color: #2EAF7D;
   color: #ffffff;
 }
 
-[data-theme="green"] .addFacultyBtn {
+:global([data-theme="green"]) .addFacultyBtn {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
   box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .addFacultyBtn:hover {
+:global([data-theme="green"]) .addFacultyBtn:hover {
   box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
 }
 
 /* Empty State */
-[data-theme="green"] .emptyState {
+:global([data-theme="green"]) .emptyState {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
   border: 2px dashed rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .emptyIcon {
+:global([data-theme="green"]) .emptyIcon {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
 }
 
-[data-theme="green"] .emptyIcon svg {
+:global([data-theme="green"]) .emptyIcon svg {
   color: #2EAF7D;
 }
 
-[data-theme="green"] .emptyState h3 {
+:global([data-theme="green"]) .emptyState h3 {
   color: #02353C;
 }
 
-[data-theme="green"] .emptyState p {
+:global([data-theme="green"]) .emptyState p {
   color: #166534;
 }
 
 /* Loading State */
-[data-theme="green"] .loadingState {
+:global([data-theme="green"]) .loadingState {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
   border: 2px solid rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .loadingState p {
+:global([data-theme="green"]) .loadingState p {
   color: #166534;
 }
 
-[data-theme="green"] .spinner {
+:global([data-theme="green"]) .spinner {
   border-color: rgba(46, 175, 125, 0.2);
   border-top-color: #2EAF7D;
 }
 
 /* Pagination */
-[data-theme="green"] .paginationWrapper {
+:global([data-theme="green"]) .paginationWrapper {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .paginationBtn {
+:global([data-theme="green"]) .paginationBtn {
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid rgba(46, 175, 125, 0.25);
   color: #02353C;
 }
 
-[data-theme="green"] .paginationBtn:hover:not(:disabled) {
+:global([data-theme="green"]) .paginationBtn:hover:not(:disabled) {
   border-color: #2EAF7D;
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .paginationBtn.activePage {
+:global([data-theme="green"]) .paginationBtn.activePage {
   background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
   border-color: #2EAF7D;
   color: #ffffff;
@@ -316,16 +316,16 @@
   font-weight: 600;
 }
 
-[data-theme="green"] .selectedFileBar {
+:global([data-theme="green"]) .selectedFileBar {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
   border: 2px solid rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .selectedFileBar span {
+:global([data-theme="green"]) .selectedFileBar span {
   color: #166534;
 }
 
-[data-theme="green"] .selectedFileBar span b {
+:global([data-theme="green"]) .selectedFileBar span b {
   color: #02353C;
 }
 
@@ -1415,74 +1415,74 @@
 }
 
 /* ==================== Green Theme for New Elements ==================== */
-[data-theme="green"] .collegeCard {
+:global([data-theme="green"]) .collegeCard {
   background: linear-gradient(135deg, rgba(0, 38, 19, 0.95) 0%, rgba(0, 77, 38, 0.9) 100%);
   border: 2px solid rgba(0, 217, 111, 0.35);
 }
 
-[data-theme="green"] .collegeCard:hover {
+:global([data-theme="green"]) .collegeCard:hover {
   border-color: #00d96f;
   box-shadow: 0 8px 32px rgba(0, 217, 111, 0.35);
 }
 
-[data-theme="green"] .collegeInfo h4 {
+:global([data-theme="green"]) .collegeInfo h4 {
   color: #ffffff;
 }
 
-[data-theme="green"] .collegeInfo p {
+:global([data-theme="green"]) .collegeInfo p {
   color: #b3ffdb;
 }
 
-[data-theme="green"] .sectionTitle {
+:global([data-theme="green"]) .sectionTitle {
   color: #ffffff;
 }
 
-[data-theme="green"] .fileEditBtn {
+:global([data-theme="green"]) .fileEditBtn {
   background: rgba(46, 175, 125, 0.15);
   color: #2EAF7D;
 }
 
-[data-theme="green"] .fileEditBtn:hover {
+:global([data-theme="green"]) .fileEditBtn:hover {
   background: #2EAF7D;
   color: white;
 }
 
-[data-theme="green"] .fileDeleteBtn {
+:global([data-theme="green"]) .fileDeleteBtn {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
-[data-theme="green"] .fileDeleteBtn:hover {
+:global([data-theme="green"]) .fileDeleteBtn:hover {
   background: #ef4444;
   color: white;
 }
 
-[data-theme="green"] .renameFileBtn {
+:global([data-theme="green"]) .renameFileBtn {
   background: rgba(46, 175, 125, 0.15);
   color: #2EAF7D;
   border-color: #2EAF7D;
 }
 
-[data-theme="green"] .renameFileBtn:hover {
+:global([data-theme="green"]) .renameFileBtn:hover {
   background: #2EAF7D;
   color: white;
 }
 
-[data-theme="green"] .changeFileBtn {
+:global([data-theme="green"]) .changeFileBtn {
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* ==================== Dark Theme ==================== */
-[data-theme="dark"] .statIcon {
+:global([data-theme="dark"]) .statIcon {
   background: rgba(56, 189, 248, 0.15);
 }
 
-[data-theme="dark"] .statIcon svg {
+:global([data-theme="dark"]) .statIcon svg {
   color: #38bdf8;
 }
 
-[data-theme="green"] .changeFileBtn:hover {
+:global([data-theme="green"]) .changeFileBtn:hover {
   background: rgba(255, 255, 255, 0.2);
 }

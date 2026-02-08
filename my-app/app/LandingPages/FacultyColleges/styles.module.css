@@ -1147,168 +1147,168 @@
 }
 
 /* ==================== GREEN THEME ==================== */
-[data-theme="green"] .layout {
+:global([data-theme="green"]) .layout {
   background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 35%, #bbf7d0 70%, #dcfce7 100%);
 }
 
-[data-theme="green"] .main {
+:global([data-theme="green"]) .main {
   background: transparent;
 }
 
-[data-theme="green"] .breadcrumb,
-[data-theme="green"] .searchSection {
+:global([data-theme="green"]) .breadcrumb,
+:global([data-theme="green"]) .searchSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
   border-color: rgba(46, 175, 125, 0.35);
   box-shadow: 0 6px 24px rgba(46, 175, 125, 0.12);
 }
 
-[data-theme="green"] .backBtn {
+:global([data-theme="green"]) .backBtn {
   background: rgba(46, 175, 125, 0.12);
   border-color: rgba(46, 175, 125, 0.35);
   color: #02353c;
 }
 
-[data-theme="green"] .backBtn:hover {
+:global([data-theme="green"]) .backBtn:hover {
   background: rgba(63, 208, 201, 0.2);
   color: #02353c;
 }
 
-[data-theme="green"] .headerIconWrapper,
-[data-theme="green"] .addBtn,
-[data-theme="green"] .btnSave {
+:global([data-theme="green"]) .headerIconWrapper,
+:global([data-theme="green"]) .addBtn,
+:global([data-theme="green"]) .btnSave {
   background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.35);
 }
 
-[data-theme="green"] .title,
-[data-theme="green"] .sectionTitle {
+:global([data-theme="green"]) .title,
+:global([data-theme="green"]) .sectionTitle {
   color: #02353c;
 }
 
-[data-theme="green"] .subtitle,
-[data-theme="green"] .statLabel {
+:global([data-theme="green"]) .subtitle,
+:global([data-theme="green"]) .statLabel {
   color: #166534;
 }
 
-[data-theme="green"] .statCard,
-[data-theme="green"] .hierarchyCard,
-[data-theme="green"] .facultyCard {
+:global([data-theme="green"]) .statCard,
+:global([data-theme="green"]) .hierarchyCard,
+:global([data-theme="green"]) .facultyCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
   border-color: rgba(46, 175, 125, 0.25);
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.12);
 }
 
-[data-theme="green"] .statIcon,
-[data-theme="green"] .collegeIcon,
-[data-theme="green"] .fileIcon,
-[data-theme="green"] .facultyAvatar,
-[data-theme="green"] .hierarchyAvatar {
+:global([data-theme="green"]) .statIcon,
+:global([data-theme="green"]) .collegeIcon,
+:global([data-theme="green"]) .fileIcon,
+:global([data-theme="green"]) .facultyAvatar,
+:global([data-theme="green"]) .hierarchyAvatar {
   background: linear-gradient(135deg, rgba(46, 175, 125, 0.2) 0%, rgba(193, 246, 237, 0.45) 100%);
   color: #02353c;
 }
 
-[data-theme="green"] .statValue {
+:global([data-theme="green"]) .statValue {
   color: #02353c;
 }
 
-[data-theme="green"] .collegeCard,
-[data-theme="green"] .fileCard {
+:global([data-theme="green"]) .collegeCard,
+:global([data-theme="green"]) .fileCard {
   background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
   box-shadow: 0 12px 36px rgba(46, 175, 125, 0.3);
 }
 
-[data-theme="green"] .collegeInfo h4,
-[data-theme="green"] .fileInfo h4 {
+:global([data-theme="green"]) .collegeInfo h4,
+:global([data-theme="green"]) .fileInfo h4 {
   color: #ffffff;
 }
 
-[data-theme="green"] .collegeInfo p,
-[data-theme="green"] .fileInfo p,
-[data-theme="green"] .fileMeta,
-[data-theme="green"] .collegeMeta {
+:global([data-theme="green"]) .collegeInfo p,
+:global([data-theme="green"]) .fileInfo p,
+:global([data-theme="green"]) .fileMeta,
+:global([data-theme="green"]) .collegeMeta {
   color: rgba(255, 255, 255, 0.9);
 }
 
-[data-theme="green"] .searchInput,
-[data-theme="green"] .filterSelect,
-[data-theme="green"] .formInput,
-[data-theme="green"] .formSelect,
-[data-theme="green"] .formTextarea {
+:global([data-theme="green"]) .searchInput,
+:global([data-theme="green"]) .filterSelect,
+:global([data-theme="green"]) .formInput,
+:global([data-theme="green"]) .formSelect,
+:global([data-theme="green"]) .formTextarea {
   background: #ffffff;
   border-color: rgba(46, 175, 125, 0.35);
   color: #02353c;
 }
 
-[data-theme="green"] .searchInput:focus,
-[data-theme="green"] .filterSelect:focus,
-[data-theme="green"] .formInput:focus,
-[data-theme="green"] .formSelect:focus,
-[data-theme="green"] .formTextarea:focus {
+:global([data-theme="green"]) .searchInput:focus,
+:global([data-theme="green"]) .filterSelect:focus,
+:global([data-theme="green"]) .formInput:focus,
+:global([data-theme="green"]) .formSelect:focus,
+:global([data-theme="green"]) .formTextarea:focus {
   border-color: #2eaf7d;
 }
 
-[data-theme="green"] .hierarchyInfo h4,
-[data-theme="green"] .facultyInfo h4,
-[data-theme="green"] .formGroup label {
+:global([data-theme="green"]) .hierarchyInfo h4,
+:global([data-theme="green"]) .facultyInfo h4,
+:global([data-theme="green"]) .formGroup label {
   color: #02353c;
 }
 
-[data-theme="green"] .hierarchyPosition,
-[data-theme="green"] .hierarchyEmail,
-[data-theme="green"] .facultyInfo p,
-[data-theme="green"] .facultyEmail {
+:global([data-theme="green"]) .hierarchyPosition,
+:global([data-theme="green"]) .hierarchyEmail,
+:global([data-theme="green"]) .facultyInfo p,
+:global([data-theme="green"]) .facultyEmail {
   color: #166534;
 }
 
-[data-theme="green"] .paginationBtn {
+:global([data-theme="green"]) .paginationBtn {
   background: #ffffff;
   border-color: rgba(46, 175, 125, 0.35);
   color: #02353c;
 }
 
-[data-theme="green"] .paginationBtn:hover:not(:disabled) {
+:global([data-theme="green"]) .paginationBtn:hover:not(:disabled) {
   border-color: #2eaf7d;
   color: #2eaf7d;
 }
 
-[data-theme="green"] .emptyState,
-[data-theme="green"] .modalContent {
+:global([data-theme="green"]) .emptyState,
+:global([data-theme="green"]) .modalContent {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.35) 100%);
   border-color: rgba(46, 175, 125, 0.35);
   box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
 }
 
-[data-theme="green"] .emptyState h3 {
+:global([data-theme="green"]) .emptyState h3 {
   color: #02353c;
 }
 
-[data-theme="green"] .emptyState p {
+:global([data-theme="green"]) .emptyState p {
   color: #166534;
 }
 
-[data-theme="green"] .modalHeader {
+:global([data-theme="green"]) .modalHeader {
   border-color: rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .modalHeader h3 {
+:global([data-theme="green"]) .modalHeader h3 {
   color: #02353c;
 }
 
-[data-theme="green"] .modalClose {
+:global([data-theme="green"]) .modalClose {
   background: rgba(46, 175, 125, 0.15);
   color: #02353c;
 }
 
-[data-theme="green"] .modalFooter {
+:global([data-theme="green"]) .modalFooter {
   border-color: rgba(46, 175, 125, 0.25);
 }
 
-[data-theme="green"] .btnCancel {
+:global([data-theme="green"]) .btnCancel {
   border-color: rgba(46, 175, 125, 0.35);
   color: #02353c;
 }
 
-[data-theme="green"] .btnCancel:hover {
+:global([data-theme="green"]) .btnCancel:hover {
   background: rgba(46, 175, 125, 0.15);
 }
 

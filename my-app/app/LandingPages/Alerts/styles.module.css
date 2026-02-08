@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  background: var(--background, #00331a);
+  background: var(--background);
 }
 
 .main {
@@ -33,29 +33,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  background: var(--primary-gradient);
   color: #ffffff;
-  box-shadow: 0 12px 24px rgba(46, 175, 125, 0.35);
+  box-shadow: 0 12px 24px var(--glow-color);
 }
 
 .header h1 {
   margin: 0;
-  color: #e2fef2;
+  color: var(--text-primary);
   font-size: 28px;
 }
 
 .header p {
   margin: 4px 0 0;
-  color: rgba(226, 254, 242, 0.7);
+  color: var(--text-secondary);
 }
 
 .composeCard {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(61, 208, 201, 0.3);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 24px;
-  box-shadow: 0 18px 40px rgba(2, 12, 8, 0.4);
+  box-shadow: var(--shadow-md);
   backdrop-filter: blur(8px);
 }
 
@@ -63,7 +63,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #e2fef2;
+  color: var(--text-primary);
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -79,11 +79,18 @@
 .textarea {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(61, 208, 201, 0.35);
+  border: 1px solid var(--card-border);
   padding: 10px 12px;
-  background: rgba(2, 53, 60, 0.7);
-  color: #e2fef2;
+  background: var(--input-bg);
+  color: var(--input-text);
   outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--primary);
 }
 
 .textarea {
@@ -94,13 +101,19 @@
 
 .primaryButton {
   margin-top: 12px;
-  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  background: var(--primary-gradient);
   color: #ffffff;
   border: none;
   padding: 12px 16px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--glow-color);
 }
 
 .alertsSection {
@@ -114,19 +127,25 @@
 }
 
 .alertCard {
-  background: rgba(2, 53, 60, 0.7);
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 16px;
-  border: 1px solid rgba(61, 208, 201, 0.25);
-  box-shadow: 0 16px 36px rgba(2, 12, 8, 0.35);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.alertCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .alertCard[data-severity='warning'] {
-  border-color: rgba(245, 158, 11, 0.5);
+  border-color: var(--warning-orange);
 }
 
 .alertCard[data-severity='error'] {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: var(--error);
 }
 
 .alertHeader {
@@ -138,14 +157,14 @@
 
 .alertHeader h3 {
   margin: 0;
-  color: #e2fef2;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .alertHeader p {
   margin: 4px 0 0;
   font-size: 12px;
-  color: rgba(226, 254, 242, 0.7);
+  color: var(--text-secondary);
 }
 
 .severityIcon {
@@ -155,12 +174,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(61, 208, 201, 0.2);
-  color: #3FD0C9;
+  background: var(--primary-alpha);
+  color: var(--primary);
 }
 
 .message {
-  color: rgba(226, 254, 242, 0.8);
+  color: var(--content-text);
   font-size: 14px;
   margin: 0 0 12px;
 }
@@ -172,28 +191,83 @@
 }
 
 .secondaryButton {
-  background: rgba(255, 255, 255, 0.12);
-  color: #e2fef2;
-  border: 1px solid rgba(61, 208, 201, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
   padding: 8px 12px;
   border-radius: 10px;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.secondaryButton:hover {
+  background: var(--primary-alpha);
 }
 
 .deleteButton {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fecaca;
+  color: var(--error);
   padding: 8px 10px;
   border-radius: 10px;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: rgba(239, 68, 68, 0.25);
 }
 
 .loading,
 .empty {
   padding: 24px;
   text-align: center;
-  color: rgba(226, 254, 242, 0.7);
+  color: var(--text-secondary);
+}
+
+/* ==================== Green Theme Overrides ==================== */
+:global([data-theme="green"]) .composeCard {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .input,
+:global([data-theme="green"]) .select,
+:global([data-theme="green"]) .textarea {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(46, 175, 125, 0.25);
+  color: var(--text-primary);
+}
+
+/* ==================== Light Theme Overrides ==================== */
+:global([data-theme="light"]) .composeCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme="light"]) .alertCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme="light"]) .secondaryButton {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-primary);
+  border-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .secondaryButton:hover {
+  background: rgba(0, 166, 81, 0.08);
+}
+
+:global([data-theme="light"]) .input,
+:global([data-theme="light"]) .select,
+:global([data-theme="light"]) .textarea {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1a1a1a;
 }
 
 @media (max-width: 900px) {

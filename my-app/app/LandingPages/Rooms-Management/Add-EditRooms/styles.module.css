@@ -10,7 +10,7 @@
   --text-muted: #64748b;
 }
 
-[data-theme="dark"] .pageContainer {
+:global([data-theme="dark"]) .pageContainer {
   --text-muted: #a0aec0;
 }
 
@@ -1015,11 +1015,63 @@
 }
 
 /* ==================== Dark Theme ==================== */
-[data-theme="dark"] .campusCardIcon {
+:global([data-theme="dark"]) .campusCardIcon {
   background: rgba(56, 189, 248, 0.15);
   color: #38bdf8;
 }
 
-[data-theme="dark"] .campusCardIcon svg {
+:global([data-theme="dark"]) .campusCardIcon svg {
   color: #38bdf8;
+}
+
+:global([data-theme="dark"]) .headerCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .headerTitle {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .headerSubtitle {
+  color: var(--text-secondary);
+}
+
+/* ==================== Green Theme ==================== */
+:global([data-theme="green"]) .headerCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="green"]) .campusCardIcon {
+  background: rgba(46, 175, 125, 0.15);
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .campusCardIcon svg {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .headerTitle {
+  color: var(--text-primary);
+}
+
+:global([data-theme="green"]) .headerSubtitle {
+  color: var(--text-secondary);
+}
+
+/* ==================== Light Theme ==================== */
+:global([data-theme="light"]) .headerCard {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 166, 81, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme="light"]) .campusCardIcon {
+  background: rgba(0, 166, 81, 0.12);
+  color: #00A651;
+}
+
+:global([data-theme="light"]) .campusCardIcon svg {
+  color: #00A651;
 }

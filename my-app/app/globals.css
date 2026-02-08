@@ -2,42 +2,42 @@
 
 /* ==================== Theme Variables ==================== */
 
-/* Green Theme (Default - College of Science) */
+/* Green Theme (Default - Nature-Inspired Light Mode) */
 :root,
 [data-theme="green"] {
-  /* Primary Colors - Vibrant green */
-  --primary: #22c55e;
-  --primary-dark: #16a34a;
-  --primary-light: #4ade80;
-  --primary-alpha: rgba(34, 197, 94, 0.15);
-  --primary-medium: #22c55e;
-  --primary-gradient: linear-gradient(135deg, #8fe6af 0%, #22c55e 100%);
+  /* Primary Colors - Nature green */
+  --primary: #2EAF7D;
+  --primary-dark: #449342;
+  --primary-light: #3FD0C9;
+  --primary-alpha: rgba(46, 175, 125, 0.15);
+  --primary-medium: #2EAF7D;
+  --primary-gradient: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
   
-  /* Background Colors - Consistent dark green */
-  --background: #00331a;
-  --foreground: #d1fae5;
-  --dark-bg: #00331a;
-  --card-bg: rgba(0, 77, 38, 0.8);
-  --card-border: rgba(34, 197, 94, 0.3);
-  --bg-white: #004d26;
-  --bg-gray-50: #00331a;
-  --bg-gray-100: #004d26;
+  /* Background Colors - Light nature-inspired */
+  --background: #f0fdf4;
+  --foreground: #02353C;
+  --dark-bg: #f0fdf4;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(46, 175, 125, 0.3);
+  --bg-white: #ffffff;
+  --bg-gray-50: #f0fdf4;
+  --bg-gray-100: #dcfce7;
   
-  /* Text Colors - Light and readable */
-  --text-primary: #d1fae5;
-  --text-secondary: #a7f3d0;
-  --text-dark: #d1fae5;
-  --text-medium: #50866d;
-  --text-light: #86efac;
+  /* Text Colors - Dark and readable */
+  --text-primary: #02353C;
+  --text-secondary: #166534;
+  --text-dark: #02353C;
+  --text-medium: #276749;
+  --text-light: #38a169;
   /* Content text for cards */
-  --content-text: #d1fae5;
-  --content-text-secondary: #a7f3d0;
+  --content-text: #02353C;
+  --content-text-secondary: #166534;
   
   /* Form Inputs */
   --input-bg: #ffffff;
   --input-text: #1a202c;
-  --input-border: #e2e8f0;
-  --label-color: #718096;
+  --input-border: rgba(46, 175, 125, 0.25);
+  --label-color: #276749;
   
   /* Accent Colors - Vibrant and visible */
   --secondary: #fbbf24;
@@ -52,18 +52,18 @@
   --success-green: #22c55e;
   
   /* Sidebar */
-  --submenu-bg: rgba(0, 0, 0, 0.3);
-  --sidebar-text: #a7f3d0;
+  --submenu-bg: rgba(46, 175, 125, 0.08);
+  --sidebar-text: #166534;
   
   /* Effects */
-  --glow-color: rgba(34, 197, 94, 0.5);
-  --accent-gradient: linear-gradient(135deg, #22c55e, #4ade80);
-  --gradient-start: #001a0f;
-  --gradient-mid: #004d26;
-  --gradient-end: #00331a;
-  --border-color: rgba(34, 197, 94, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --glow-color: rgba(46, 175, 125, 0.4);
+  --accent-gradient: linear-gradient(135deg, #2EAF7D, #3FD0C9);
+  --gradient-start: #f0fdf4;
+  --gradient-mid: #dcfce7;
+  --gradient-end: #bbf7d0;
+  --border-color: rgba(46, 175, 125, 0.25);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* Dark Theme (Quantum Inspired) */
@@ -221,12 +221,12 @@ html {
   height: 100%;
   scroll-behavior: smooth;
   /* Default to green theme background to prevent flash */
-  background-color: #00331a;
+  background-color: #f0fdf4;
 }
 
 /* Apply theme-specific background once data-theme is set */
 html[data-theme="green"] {
-  background-color: #00331a;
+  background-color: #f0fdf4;
 }
 
 html[data-theme="dark"] {

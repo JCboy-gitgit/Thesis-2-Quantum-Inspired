@@ -244,6 +244,65 @@ export default function MapViewerPage() {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [canvasBackground, setCanvasBackground] = useState('#ffffff')
 
+  // Draggable controls card state
+  const [controlsPos, setControlsPos] = useState<{ x: number; y: number } | null>(null)
+  const [isDraggingControls, setIsDraggingControls] = useState(false)
+  const controlsDragOffset = useRef({ x: 0, y: 0 })
+  const controlsRef = useRef<HTMLDivElement>(null)
+
+  // Drag handlers for floating controls card
+  const handleControlsDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    const card = controlsRef.current
+    if (!card) return
+    const rect = card.getBoundingClientRect()
+    const parentRect = card.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 }
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    controlsDragOffset.current = {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    }
+    setIsDraggingControls(true)
+    setControlsPos({
+      x: rect.left - parentRect.left,
+      y: rect.top - parentRect.top
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!isDraggingControls) return
+    const moveHandler = (clientX: number, clientY: number) => {
+      const card = controlsRef.current
+      if (!card) return
+      const parentRect = card.offsetParent?.getBoundingClientRect() || { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }
+      const newX = clientX - parentRect.left - controlsDragOffset.current.x
+      const newY = clientY - parentRect.top - controlsDragOffset.current.y
+      const maxX = parentRect.width - (card.offsetWidth || 220)
+      const maxY = parentRect.height - (card.offsetHeight || 200)
+      setControlsPos({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      })
+    }
+    const handleMouseMove = (e: MouseEvent) => moveHandler(e.clientX, e.clientY)
+    const handleTouchMoveControls = (e: TouchEvent) => {
+      e.preventDefault()
+      moveHandler(e.touches[0].clientX, e.touches[0].clientY)
+    }
+    const handleUp = () => setIsDraggingControls(false)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleUp)
+    window.addEventListener('touchmove', handleTouchMoveControls, { passive: false })
+    window.addEventListener('touchend', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleUp)
+      window.removeEventListener('touchmove', handleTouchMoveControls)
+      window.removeEventListener('touchend', handleUp)
+    }
+  }, [isDraggingControls])
+
   // Layer state
   const [showLayersPanel, setShowLayersPanel] = useState(false)
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({})
@@ -449,27 +508,40 @@ export default function MapViewerPage() {
     setTimeout(() => setNotification(null), 3000)
   }
 
+  // Track whether panels were open before mobile collapse
+  const panelsBeforeMobileRef = useRef({ left: true, right: true })
+
   // Device detection for responsive adjustments (no warning)
   useEffect(() => {
+    let wasMobile = window.innerWidth < 768
+
     const checkDevice = () => {
       const width = window.innerWidth
-      setIsMobile(width < 768)
+      const isNowMobile = width < 768
+      setIsMobile(isNowMobile)
       setIsTablet(width >= 768 && width < 1024)
-      // Auto-collapse panels on mobile
-      if (width < 768) {
+
+      if (isNowMobile && !wasMobile) {
+        // Entering mobile: save current panel state, then collapse
+        panelsBeforeMobileRef.current = { left: leftPanelOpen, right: rightPanelOpen }
         setLeftPanelOpen(false)
         setRightPanelOpen(false)
         setShowMobileFAB(true)
-      } else {
+      } else if (!isNowMobile && wasMobile) {
+        // Leaving mobile: restore panels to their pre-mobile state
+        setLeftPanelOpen(panelsBeforeMobileRef.current.left)
+        setRightPanelOpen(panelsBeforeMobileRef.current.right)
         setShowMobileFAB(false)
         setActiveMobilePanel('none')
       }
+
+      wasMobile = isNowMobile
     }
 
     checkDevice()
     window.addEventListener('resize', checkDevice)
     return () => window.removeEventListener('resize', checkDevice)
-  }, [])
+  }, [leftPanelOpen, rightPanelOpen])
 
   // Update current time for live mode
   useEffect(() => {
@@ -480,6 +552,27 @@ export default function MapViewerPage() {
       return () => clearInterval(interval)
     }
   }, [viewMode])
+
+  // Auto-fit zoom: calculate best zoom to fit canvas in viewport on mount/resize
+  useEffect(() => {
+    const container = canvasContainerRef.current
+    if (!container) return
+    const fitZoom = () => {
+      const padding = 80 // 40px on each side
+      const availW = container.clientWidth - padding
+      const availH = container.clientHeight - padding
+      if (availW <= 0 || availH <= 0) return
+      const scaleX = (availW / canvasSize.width) * 100
+      const scaleY = (availH / canvasSize.height) * 100
+      const best = Math.min(scaleX, scaleY, 100) // never exceed 100%
+      setZoom(Math.max(25, Math.round(best / 25) * 25)) // round to nearest 25
+    }
+    // Run once after a short delay so the container has its real size
+    const timer = setTimeout(fitZoom, 200)
+    const observer = new ResizeObserver(fitZoom)
+    observer.observe(container)
+    return () => { clearTimeout(timer); observer.disconnect() }
+  }, [canvasSize.width, canvasSize.height])
 
   // Auth check - sequential initialization
   useEffect(() => {
@@ -2195,6 +2288,14 @@ export default function MapViewerPage() {
             onDrop={viewMode === 'editor' ? handleDrop : undefined}
             onDragLeave={() => setDragGhost(null)}
           >
+            {/* Scale wrapper — sized to the visual (scaled) canvas so scroll area matches */}
+            <div
+              className={styles.canvasScaleWrapper}
+              style={{
+                width: canvasSize.width * (zoom / 100),
+                height: canvasSize.height * (zoom / 100),
+              }}
+            >
             <div
               ref={canvasRef}
               className={`${styles.canvas} ${selectMode === 'multi' ? styles.multiSelectMode : ''}`}
@@ -2384,10 +2485,23 @@ export default function MapViewerPage() {
                 )
               })()}
             </div>
+            </div>{/* end canvasScaleWrapper */}
           </div>
 
-            {/* Floating Canvas Controls */}
-            <div className={styles.canvasControls}>
+            {/* Floating Canvas Controls - Draggable */}
+            <div
+              ref={controlsRef}
+              className={`${styles.canvasControls} ${isDraggingControls ? styles.dragging : ''}`}
+              style={controlsPos ? { position: 'absolute', left: controlsPos.x, top: controlsPos.y, bottom: 'auto', right: 'auto' } : undefined}
+            >
+              <div
+                className={styles.controlsDragHandle}
+                onMouseDown={handleControlsDragStart}
+                onTouchStart={handleControlsDragStart}
+                title="Drag to move"
+              >
+                <Grip size={14} />
+              </div>
               <div className={styles.zoomControls}>
                 <button onClick={() => setZoom(z => Math.max(25, z - 25))}>
                   <ZoomOut size={18} />
@@ -3097,10 +3211,10 @@ export default function MapViewerPage() {
         </div>
       )}
 
-      {/* Load Modal */}
+      {/* Load Modal — Organized by Building → Floor */}
       {showLoadModal && (
         <div className={styles.modalOverlay} onClick={() => { setShowLoadModal(false); setDraftMultiSelectMode(false); setSelectedDraftIds(new Set()) }}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modal} style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2><FileText size={20} /> Floor Plans &amp; Drafts</h2>
               <button onClick={() => { setShowLoadModal(false); setDraftMultiSelectMode(false); setSelectedDraftIds(new Set()) }}><X size={20} /></button>
@@ -3155,46 +3269,94 @@ export default function MapViewerPage() {
                 </div>
               ) : (
                 <div className={styles.floorPlanList}>
-                  {savedFloorPlans.map(fp => (
-                    <div
-                      key={fp.id}
-                      className={`${styles.floorPlanItem} ${currentFloorPlan?.id === fp.id ? styles.active : ''} ${selectedDraftIds.has(fp.id) ? styles.active : ''}`}
-                      onClick={() => {
-                        if (draftMultiSelectMode) {
-                          toggleDraftSelection(fp.id)
-                        } else {
-                          loadFloorPlan(fp)
-                          setShowLoadModal(false)
-                        }
-                      }}
-                    >
-                      {draftMultiSelectMode && (
-                        <input
-                          type="checkbox"
-                          checked={selectedDraftIds.has(fp.id)}
-                          onChange={() => toggleDraftSelection(fp.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ marginRight: 8, width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
-                        />
-                      )}
-                      <div className={styles.floorPlanInfo}>
-                        <span className={styles.floorPlanName}>
-                          {fp.floor_name}
-                          {fp.is_default_view && <Star size={14} className={styles.defaultIcon} />}
-                        </span>
-                        <span className={styles.floorPlanMeta}>
-                          Floor {fp.floor_number} • {new Date(fp.created_at).toLocaleDateString()}
-                        </span>
+                  {/* Group floor plans by building (extract from floor_name before " - ") */}
+                  {(() => {
+                    const grouped: Record<string, FloorPlan[]> = {}
+                    savedFloorPlans.forEach(fp => {
+                      const parts = fp.floor_name?.split(' - ')
+                      const building = parts && parts.length > 1 ? parts[0].trim() : 'Ungrouped'
+                      if (!grouped[building]) grouped[building] = []
+                      grouped[building].push(fp)
+                    })
+                    // Sort groups alphabetically, Ungrouped last
+                    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+                      if (a === 'Ungrouped') return 1
+                      if (b === 'Ungrouped') return -1
+                      return a.localeCompare(b)
+                    })
+                    return sortedKeys.map(building => (
+                      <div key={building} style={{ marginBottom: 16 }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '8px 12px',
+                          background: 'var(--bg-gray-50)',
+                          borderRadius: 8,
+                          marginBottom: 8,
+                          cursor: 'default'
+                        }}>
+                          <Building2 size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--content-text)', letterSpacing: 0.5 }}>
+                            {building}
+                          </span>
+                          <span style={{ fontSize: 11, color: 'var(--text-light)', marginLeft: 'auto' }}>
+                            {grouped[building].length} plan{grouped[building].length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {/* Sort within group: defaults first, then by floor_number, then name */}
+                        {grouped[building]
+                          .sort((a, b) => {
+                            if (a.is_default_view && !b.is_default_view) return -1
+                            if (!a.is_default_view && b.is_default_view) return 1
+                            if (a.floor_number !== b.floor_number) return a.floor_number - b.floor_number
+                            return a.floor_name.localeCompare(b.floor_name)
+                          })
+                          .map(fp => (
+                          <div
+                            key={fp.id}
+                            className={`${styles.floorPlanItem} ${currentFloorPlan?.id === fp.id ? styles.active : ''} ${selectedDraftIds.has(fp.id) ? styles.active : ''}`}
+                            style={{ marginLeft: 12 }}
+                            onClick={() => {
+                              if (draftMultiSelectMode) {
+                                toggleDraftSelection(fp.id)
+                              } else {
+                                loadFloorPlan(fp)
+                                setShowLoadModal(false)
+                              }
+                            }}
+                          >
+                            {draftMultiSelectMode && (
+                              <input
+                                type="checkbox"
+                                checked={selectedDraftIds.has(fp.id)}
+                                onChange={() => toggleDraftSelection(fp.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{ marginRight: 8, width: 18, height: 18, cursor: 'pointer', flexShrink: 0 }}
+                              />
+                            )}
+                            <div className={styles.floorPlanInfo}>
+                              <span className={styles.floorPlanName}>
+                                {/* Show just the part after building name if grouped */}
+                                {fp.floor_name?.includes(' - ') ? fp.floor_name.split(' - ').slice(1).join(' - ') : fp.floor_name}
+                                {fp.is_default_view && <Star size={14} className={styles.defaultIcon} />}
+                              </span>
+                              <span className={styles.floorPlanMeta}>
+                                Floor {fp.floor_number} • {new Date(fp.created_at).toLocaleDateString()} • {fp.is_published ? 'Published' : 'Draft'}
+                              </span>
+                            </div>
+                            <div className={styles.floorPlanStatus}>
+                              {fp.is_published ? (
+                                <span className={styles.published}>Published</span>
+                              ) : (
+                                <span className={styles.draft}>Draft</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className={styles.floorPlanStatus}>
-                        {fp.is_published ? (
-                          <span className={styles.published}>Published</span>
-                        ) : (
-                          <span className={styles.draft}>Draft</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  })()}
                 </div>
               )}
             </div>

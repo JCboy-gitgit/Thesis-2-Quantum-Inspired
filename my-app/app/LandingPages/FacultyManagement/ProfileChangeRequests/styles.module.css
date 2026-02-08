@@ -616,3 +616,62 @@
     justify-content: center;
   }
 }
+
+/* ==================== Dark Theme ==================== */
+:global([data-theme="dark"]) .pageContainer {
+  background: var(--dark-bg);
+}
+
+:global([data-theme="dark"]) .headerCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .headerTitle h1 {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .headerTitle p {
+  color: var(--text-secondary);
+}
+
+:global([data-theme="dark"]) .filterTab {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .filterTab.active {
+  background: linear-gradient(135deg, #00d4ff, #00a3cc);
+  color: white;
+}
+
+:global([data-theme="dark"]) .requestCard {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .userName {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .userEmail {
+  color: var(--text-secondary);
+}
+
+:global([data-theme="dark"]) .changeLabel {
+  color: var(--text-light);
+}
+
+:global([data-theme="dark"]) .oldValue,
+:global([data-theme="dark"]) .newValue {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: var(--card-border);
+}
+
+:global([data-theme="dark"]) .notesInput {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: var(--card-border);
+}
