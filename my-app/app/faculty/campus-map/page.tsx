@@ -37,6 +37,7 @@ export default function FacultyCampusMapPage() {
   
   // Use effectiveTheme for accurate light mode detection
   const isLightMode = effectiveTheme === 'light'
+  const isScience = collegeTheme === 'science'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -114,7 +115,7 @@ export default function FacultyCampusMapPage() {
       }`}>
         <div className={`w-12 h-12 border-4 rounded-full animate-spin ${
           isLightMode 
-            ? 'border-emerald-500/30 border-t-emerald-500' 
+            ? (isScience ? 'border-emerald-500/30 border-t-emerald-500' : 'border-blue-500/30 border-t-blue-500')
             : 'border-cyan-500/30 border-t-cyan-500'
         }`}></div>
         <p className={`text-sm ${isLightMode ? 'text-gray-500' : 'text-slate-400'}`}>Loading campus map...</p>
@@ -172,7 +173,9 @@ export default function FacultyCampusMapPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emptyRoomMode
-                  ? isLightMode ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-cyan-500 text-slate-900 border-cyan-500'
+                  ? isLightMode
+                    ? (isScience ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-blue-500 text-white border-blue-500')
+                    : 'bg-cyan-500 text-slate-900 border-cyan-500'
                   : isLightMode ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-800 border-cyan-500/20 text-slate-300'
                 }`}
                 onClick={() => setEmptyRoomMode(!emptyRoomMode)}

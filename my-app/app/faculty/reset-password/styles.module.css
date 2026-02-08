@@ -215,6 +215,13 @@
   color: #10b981;
 }
 
+/* For non-science themes in light mode */
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .message.success {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
 .message.error {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -265,6 +272,10 @@
 
 .successIcon {
   color: #10b981;
+}
+
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .successIcon {
+  color: #3b82f6;
 }
 
 /* Responsive */

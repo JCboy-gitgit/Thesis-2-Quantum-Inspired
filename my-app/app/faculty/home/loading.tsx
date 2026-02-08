@@ -52,7 +52,7 @@ export default function FacultyHomeLoading() {
         color: isLight ? '#1e293b' : '#ffffff',
       }}
     >
-      {/* Animated spinner - green for light, cyan for dark */}
+      {/* Animated spinner - green/blue for light, cyan for dark */}
       <div 
         style={{
           width: '48px',

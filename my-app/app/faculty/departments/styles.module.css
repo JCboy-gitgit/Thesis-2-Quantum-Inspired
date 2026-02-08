@@ -276,8 +276,12 @@
 }
 
 .statusBadge[data-active="true"] {
-  background: #22c55e;
+  background: #10b981;
   color: white;
+}
+
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .statusBadge[data-active="true"] {
+  background: #3b82f6;
 }
 
 .statusBadge[data-active="false"] {
