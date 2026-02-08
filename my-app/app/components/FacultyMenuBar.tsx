@@ -90,7 +90,7 @@ const collegeThemeColors = {
 
 // Light mode overrides (uses same college colors but with light background context)
 const lightModeColors = {
-  default: { text: 'text-cyan-600', textHover: 'text-cyan-700' },
+  default: { text: 'text-blue-600', textHover: 'text-blue-700' },
   science: { text: 'text-emerald-600', textHover: 'text-emerald-700' },
   'arts-letters': { text: 'text-orange-600', textHover: 'text-orange-700' },
   architecture: { text: 'text-red-600', textHover: 'text-red-700' },

@@ -46,6 +46,7 @@ interface DepartmentStats {
 function DepartmentsViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
@@ -61,6 +62,7 @@ function DepartmentsViewContent() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     checkAuth()
     fetchDepartments()
   }, [])

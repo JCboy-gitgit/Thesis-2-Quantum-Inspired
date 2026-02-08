@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { useTheme } from '@/app/context/ThemeContext'
 import '@/app/styles/faculty-global.css'
 
 // Aggressive CSS reset - clears ALL admin-specific styles
@@ -48,7 +49,7 @@ function applyFacultyStyles(isLightMode: boolean) {
   const body = document.body
   
   // Set faculty class
-  body.classList.add('faculty-page')
+  body.classList.add('faculty-page', 'faculty-page-wrapper')
   
   // Force correct background and text colors
   const bgColor = isLightMode ? '#ffffff' : '#0a0e27'
@@ -76,47 +77,39 @@ export default function FacultyLayout({
   children: React.ReactNode
 }) {
   const [mounted, setMounted] = useState(false)
-  const [isLightMode, setIsLightMode] = useState(true)
   const pathname = usePathname()
+  const { theme, collegeTheme } = useTheme()
 
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/reset-password')
+  const isLightMode = theme === 'light'
 
   // Use useLayoutEffect for synchronous DOM updates before paint
   useLayoutEffect(() => {
     // CRITICAL: Purge admin styles first, before anything else
     purgeAdminStyles()
     
-    // Get saved theme
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+    // Apply faculty styles using theme from context
+    applyFacultyStyles(isLightMode)
     
-    // Faculty defaults to light mode
-    const effectiveTheme = savedTheme === 'dark' ? 'dark' : 'light'
-    const lightMode = effectiveTheme === 'light'
-    
-    setIsLightMode(lightMode)
-    document.documentElement.setAttribute('data-theme', effectiveTheme)
-    
-    if (savedCollegeTheme) {
-      document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
+    // Update data attributes to match theme context
+    document.documentElement.setAttribute('data-theme', theme)
+    if (collegeTheme) {
+      document.documentElement.setAttribute('data-college-theme', collegeTheme)
     }
-    
-    // Apply faculty styles
-    applyFacultyStyles(lightMode)
     
     setMounted(true)
     
     return () => {
-      document.body.classList.remove('faculty-page')
+      document.body.classList.remove('faculty-page', 'faculty-page-wrapper')
     }
-  }, [pathname]) // Re-run on pathname change to catch navigation from admin
+  }, [theme, collegeTheme, pathname]) // Re-run when theme changes or pathname changes
 
   // Auth pages render immediately
   if (isAuthPage) {
     return <>{children}</>
   }
 
-  // Loading state
+  // Loading state - use current theme from context
   if (!mounted) {
     return (
       <div

@@ -86,6 +86,7 @@ export default function FacultyProfilePage() {
   const [pendingNameRequest, setPendingNameRequest] = useState<{ requested_value: string } | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [mounted, setMounted] = useState(false)
 
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false)
@@ -105,6 +106,10 @@ export default function FacultyProfilePage() {
   }
 
   useEffect(() => {
+    // Initialize theme from localStorage immediately
+    // Theme is now managed by ThemeContext, no local theme state needed
+    setMounted(true)
+    
     checkAuthAndLoad()
     fetchDepartments()
   }, [])

@@ -558,7 +558,11 @@
   object-fit: cover;
   flex-shrink: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  border: 4px solid var(--primary, #22c55e);
+  border: 4px solid var(--primary, #10b981);
+}
+
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .panelAvatar {
+  border-color: #3b82f6;
 }
 
 .panelName {

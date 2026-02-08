@@ -13,10 +13,14 @@
   --college-glow: rgba(0, 212, 255, 0.5);
 }
 
-/* Light mode theme variables for utility classes */
-.pageContainer[data-theme="light"] {
-  /* Override colors for light mode utility classes */
-  --college-primary-dark: #059669;
+/* Light mode for DEFAULT theme only (not science, arts-letters, or architecture) */
+.pageContainer[data-theme="light"]:not([data-college-theme="science"]):not([data-college-theme="arts-letters"]):not([data-college-theme="architecture"]) {
+  --college-primary: #3b82f6;
+  --college-primary-light: rgba(59, 130, 246, 0.2);
+  --college-primary-dark: #2563eb;
+  --college-accent: #60a5fa;
+  --college-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #60a5fa 100%);
+  --college-glow: rgba(59, 130, 246, 0.5);
 }
 
 /* ==================== College Theme Variables ==================== */
@@ -116,27 +120,13 @@
   background-clip: padding-box;
 }
 
-/* ==================== College Badge - Uses Theme Colors ==================== */
-.collegeBadge {
-  background: var(--college-primary-light, rgba(0, 212, 255, 0.2));
-  color: var(--college-primary, #00d4ff);
-  border: 1px solid var(--college-primary-light, rgba(0, 212, 255, 0.3));
-}
-
-/* Light mode college badge */
-:global([data-theme="light"]) .collegeBadge {
-  background: var(--college-primary-light, rgba(16, 185, 129, 0.15));
-  color: var(--college-primary-dark, #059669);
-  border: 1px solid var(--college-primary, rgba(16, 185, 129, 0.3));
-}
-
 /* Accent text - uses theme colors */
 .accentText {
   color: var(--college-primary, #00d4ff);
 }
 
 :global([data-theme="light"]) .accentText {
-  color: var(--college-primary-dark, #059669);
+  color: var(--college-primary-dark, #2563eb);
 }
 
 /* Accent icon background - uses theme gradient */
@@ -974,8 +964,8 @@
 }
 
 .classCard.active {
-  border-color: #22c55e;
-  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+  border-color: #3b82f6;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
 }
 
 .classCard.upcoming {
@@ -994,7 +984,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #22c55e;
+  color: #3b82f6;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1002,7 +992,7 @@
 .liveDot {
   width: 8px;
   height: 8px;
-  background: #22c55e;
+  background: #3b82f6;
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -1672,8 +1662,8 @@
 }
 
 .classCard.currentClass {
-  border-color: #10b981;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
 }
 
 .classCard.nextClass {
@@ -1697,8 +1687,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -1708,7 +1698,7 @@
 .liveDot {
   width: 8px;
   height: 8px;
-  background: #10b981;
+  background: #3b82f6;
   border-radius: 50%;
   animation: pulse 1.5s infinite;
 }

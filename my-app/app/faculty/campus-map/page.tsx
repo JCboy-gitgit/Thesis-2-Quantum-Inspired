@@ -31,12 +31,12 @@ export default function FacultyCampusMapPage() {
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   const [isDesktop, setIsDesktop] = useState(false)
   const [emptyRoomMode, setEmptyRoomMode] = useState(false)
   
-  // Use effectiveTheme for accurate light mode detection
-  const isLightMode = effectiveTheme === 'light'
+  // Use theme for accurate light mode detection
+  const isLightMode = theme === 'light'
+  const isScience = collegeTheme === 'science'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -49,23 +49,9 @@ export default function FacultyCampusMapPage() {
   }, [])
 
   useEffect(() => {
-    // Initialize theme from localStorage immediately
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
-    setEffectiveTheme(effectiveThemeValue)
-    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
     setMounted(true)
-    
     checkAuth()
   }, [])
-
-  // Sync with context theme changes
-  useEffect(() => {
-    if (mounted && theme) {
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   const checkAuth = async () => {
     try {
@@ -114,7 +100,7 @@ export default function FacultyCampusMapPage() {
       }`}>
         <div className={`w-12 h-12 border-4 rounded-full animate-spin ${
           isLightMode 
-            ? 'border-emerald-500/30 border-t-emerald-500' 
+            ? (isScience ? 'border-emerald-500/30 border-t-emerald-500' : 'border-blue-500/30 border-t-blue-500')
             : 'border-cyan-500/30 border-t-cyan-500'
         }`}></div>
         <p className={`text-sm ${isLightMode ? 'text-gray-500' : 'text-slate-400'}`}>Loading campus map...</p>
@@ -129,7 +115,7 @@ export default function FacultyCampusMapPage() {
           ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' 
           : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
       }`} 
-      data-theme={effectiveTheme}
+      data-theme={theme}
       data-college-theme={collegeTheme}
     >
       {/* Sidebar */}
@@ -172,7 +158,9 @@ export default function FacultyCampusMapPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emptyRoomMode
-                  ? isLightMode ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-cyan-500 text-slate-900 border-cyan-500'
+                  ? isLightMode
+                    ? (isScience ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-blue-500 text-white border-blue-500')
+                    : 'bg-cyan-500 text-slate-900 border-cyan-500'
                   : isLightMode ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-800 border-cyan-500/20 text-slate-300'
                 }`}
                 onClick={() => setEmptyRoomMode(!emptyRoomMode)}
@@ -186,7 +174,7 @@ export default function FacultyCampusMapPage() {
           </div>
 
           {/* Campus Map Viewer - Full Height */}
-          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/80 border-cyan-500/20'}`}>
+          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border transition-all duration-300 ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/90 border-cyan-500/20'}`}>
             <div className="w-full" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
               <RoomViewer2D collegeTheme={collegeTheme} highlightEmpty={emptyRoomMode} />
             </div>

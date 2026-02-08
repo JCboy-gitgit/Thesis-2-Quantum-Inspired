@@ -29,11 +29,14 @@ export default function FacultyAlertsPage() {
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   // Faculty pages treat 'green' as 'light' mode
-  const isLightMode = theme === 'light' || theme === 'green'
+  const isLightMode = theme === 'light'
 
   useEffect(() => {
+    setMounted(true)
+    
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {

@@ -104,6 +104,7 @@ const TIME_SLOTS = [
 function RoomSchedulesViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   
   // User and view state
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -150,6 +151,7 @@ function RoomSchedulesViewContent() {
     .sort((a, b) => (a.schedule_time || '').localeCompare(b.schedule_time || ''))
 
   useEffect(() => {
+    setMounted(true)
     checkAuth()
   }, [])
 

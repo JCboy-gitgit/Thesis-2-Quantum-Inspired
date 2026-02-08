@@ -94,7 +94,7 @@ function getRoleColor(role: string): string {
     case 'program_chair': return '#ec4899'
     case 'coordinator': return '#06b6d4'
     case 'staff': return '#64748b'
-    default: return '#22c55e'
+    default: return '#10b981' // Default faculty color (will be overridden by theme in CSS)
   }
 }
 
@@ -111,7 +111,7 @@ function getRoleLabel(role: string): string {
 
 function getEmploymentBadge(type: string): { label: string; color: string } {
   switch (type) {
-    case 'full-time': return { label: 'Full-Time', color: '#22c55e' }
+    case 'full-time': return { label: 'Full-Time', color: '#10b981' } // Theme-aware in CSS
     case 'part-time': return { label: 'Part-Time', color: '#f59e0b' }
     case 'adjunct': return { label: 'Adjunct', color: '#8b5cf6' }
     case 'guest': return { label: 'Guest', color: '#06b6d4' }
@@ -122,6 +122,7 @@ function getEmploymentBadge(type: string): { label: string; color: string } {
 function FacultyDirectoryContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
@@ -145,6 +146,7 @@ function FacultyDirectoryContent() {
   const scrollPositionRef = useRef<number>(0)
 
   useEffect(() => {
+    setMounted(true)
     checkAuth()
     fetchFacultyData()
   }, [])

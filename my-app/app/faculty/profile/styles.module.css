@@ -66,6 +66,13 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
   color: white;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure dark mode stays dark */
+:global([data-theme="dark"]) .pageContainer {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%) !important;
+  color: white !important;
 }
 
 /* Header */
@@ -244,6 +251,11 @@
   padding: 20px 30px 30px 30px;
 }
 
+/* Ensure dark mode background for main content */
+:global([data-theme="dark"]) .mainContent {
+  background: transparent;
+}
+
 /* Toast */
 .toast {
   display: flex;
@@ -266,6 +278,12 @@
   color: #10b981;
 }
 
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .toast.success {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
 .toast.error {
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
@@ -282,10 +300,15 @@
 
 /* Profile Card */
 .profileCard {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
+  border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
   border-radius: 20px;
   padding: 30px;
+}
+
+/* Ensure dark background persists in dark mode */
+:global([data-theme="dark"]) .profileCard {
+  border-color: var(--border-color, rgba(var(--college-primary-rgb), 0.3)) !important;
 }
 
 /* Avatar Section */
@@ -352,7 +375,7 @@
 }
 
 .email {
-  color: #a0aec0;
+  color: var(--text-secondary, #a0aec0);
   margin: 0 0 10px 0;
 }
 
@@ -402,9 +425,17 @@
   color: white;
 }
 
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .saveBtn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
 .saveBtn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
+}
+
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .saveBtn:hover:not(:disabled) {
+  box-shadow: 0 5px 20px rgba(59, 130, 246, 0.3);
 }
 
 .saveBtn:disabled {
@@ -612,8 +643,16 @@
   color: #10b981;
 }
 
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .scheduleDay {
+  color: #3b82f6;
+}
+
 .statusActive {
   color: #10b981;
+}
+
+:global([data-theme="light"]):global(:not([data-college-theme="science"])) .statusActive {
+  color: #3b82f6;
 }
 
 .scheduleDetails {
@@ -899,9 +938,9 @@
 }
 
 :global([data-theme="light"]) .profileCard {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: #e2e8f0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  /* background handled by var(--card-bg) */
+  /* border-color handled by var(--border-color) */
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
 :global([data-theme="light"]) .avatar {
@@ -911,11 +950,11 @@
 }
 
 :global([data-theme="light"]) .avatarInfo h1 {
-  color: #1e293b;
+  /* color handled by inheritance/variable */
 }
 
 :global([data-theme="light"]) .email {
-  color: #64748b;
+  /* color handled by variable */
 }
 
 :global([data-theme="light"]) .roleBadge {
@@ -934,9 +973,18 @@
 :global([data-theme="light"]) .formGroup input,
 :global([data-theme="light"]) .formGroup textarea,
 :global([data-theme="light"]) .formGroup select {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* Ensure dark theme for form inputs */
+:global([data-theme="dark"]) .formGroup input,
+:global([data-theme="dark"]) .formGroup textarea,
+:global([data-theme="dark"]) .formGroup select {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  color: white !important;
 }
 
 :global([data-theme="light"]) .formGroup input:focus,

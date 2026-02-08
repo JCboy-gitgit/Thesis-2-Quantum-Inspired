@@ -62,7 +62,6 @@ export default function FacultyHomePage() {
   const [sessionInvalid, setSessionInvalid] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [themeReady, setThemeReady] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   const [currentScheduleId, setCurrentScheduleId] = useState<number | null>(null)
   const [attendanceOpen, setAttendanceOpen] = useState(false)
   const [attendanceScope, setAttendanceScope] = useState<'class' | 'day' | 'week' | 'range'>('class')
@@ -72,8 +71,73 @@ export default function FacultyHomePage() {
   const [attendanceEndDate, setAttendanceEndDate] = useState('')
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
 
-  // Theme helper - use effectiveTheme which is synced from localStorage
-  const isLightMode = effectiveTheme === 'light'
+  // Use ThemeContext directly - no more local theme state
+  const isLightMode = theme === 'light'
+  const isScience = collegeTheme === 'science'
+  const isArtsLetters = collegeTheme === 'arts-letters'
+  const isArchitecture = collegeTheme === 'architecture'
+
+  // Get theme-aware colors based on college theme
+  const getThemeColor = (lightColor: string, darkColor: string) => {
+    if (isLightMode) {
+      return isScience ? lightColor.replace('blue', 'emerald') : lightColor
+    }
+    return isScience ? darkColor.replace('cyan', 'emerald').replace('green', 'emerald') : darkColor
+  }
+
+  // Helper function to get college-specific color classes
+  const getCollegeColorClass = (type: 'bg' | 'text' | 'border' | 'shadow', variant: 'light' | 'normal' | 'dark' = 'normal') => {
+    if (isLightMode) {
+      // Light mode colors
+      if (isScience) {
+        if (type === 'bg') return variant === 'light' ? 'bg-emerald-500/10' : variant === 'dark' ? 'bg-emerald-700' : 'bg-emerald-600'
+        if (type === 'text') return variant === 'light' ? 'text-emerald-500' : 'text-emerald-600'
+        if (type === 'border') return 'border-emerald-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(16,185,129,0.3)]'
+      } else if (isArtsLetters) {
+        if (type === 'bg') return variant === 'light' ? 'bg-orange-500/10' : variant === 'dark' ? 'bg-orange-600' : 'bg-orange-500'
+        if (type === 'text') return variant === 'light' ? 'text-orange-500' : 'text-orange-600'
+        if (type === 'border') return 'border-orange-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(249,115,22,0.3)]'
+      } else if (isArchitecture) {
+        if (type === 'bg') return variant === 'light' ? 'bg-red-500/10' : variant === 'dark' ? 'bg-red-600' : 'bg-red-500'
+        if (type === 'text') return variant === 'light' ? 'text-red-500' : 'text-red-600'
+        if (type === 'border') return 'border-red-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(239,68,68,0.3)]'
+      } else {
+        // Default theme
+        if (type === 'bg') return variant === 'light' ? 'bg-blue-500/10' : variant === 'dark' ? 'bg-blue-700' : 'bg-blue-600'
+        if (type === 'text') return variant === 'light' ? 'text-blue-500' : 'text-blue-600'
+        if (type === 'border') return 'border-blue-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(59,130,246,0.3)]'
+      }
+    } else {
+      // Dark mode colors
+      if (isScience) {
+        if (type === 'bg') return variant === 'light' ? 'bg-emerald-500/10' : variant === 'dark' ? 'bg-emerald-600' : 'bg-emerald-500'
+        if (type === 'text') return 'text-emerald-500'
+        if (type === 'border') return 'border-emerald-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(16,185,129,0.3)]'
+      } else if (isArtsLetters) {
+        if (type === 'bg') return variant === 'light' ? 'bg-orange-500/10' : variant === 'dark' ? 'bg-orange-600' : 'bg-orange-500'
+        if (type === 'text') return 'text-orange-400'
+        if (type === 'border') return 'border-orange-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(251,146,60,0.3)]'
+      } else if (isArchitecture) {
+        if (type === 'bg') return variant === 'light' ? 'bg-red-500/10' : variant === 'dark' ? 'bg-red-600' : 'bg-red-500'
+        if (type === 'text') return 'text-red-400'
+        if (type === 'border') return 'border-red-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(248,113,113,0.3)]'
+      } else {
+        // Default theme (cyan)
+        if (type === 'bg') return variant === 'light' ? 'bg-cyan-500/10' : variant === 'dark' ? 'bg-cyan-600' : 'bg-cyan-500'
+        if (type === 'text') return 'text-cyan-500'
+        if (type === 'border') return 'border-cyan-500'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(0,212,255,0.3)]'
+      }
+    }
+    return ''
+  }
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
 
@@ -92,42 +156,9 @@ export default function FacultyHomePage() {
       document.body.style.removeProperty(prop)
     })
 
-    // Apply theme immediately from localStorage BEFORE mounting
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-
-    // Determine effective theme - faculty pages only use light or dark (never green)
-    let themeToApply = savedTheme || 'light'
-    if (themeToApply === 'green') {
-      themeToApply = 'light' // Faculty pages convert green to light
-    }
-
-    // Set the effective theme immediately for proper styling
-    setEffectiveTheme(themeToApply as 'light' | 'dark')
-    document.documentElement.setAttribute('data-theme', themeToApply)
-
-    if (savedCollegeTheme) {
-      document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
-    }
-
     // Add faculty classes
     document.body.classList.add('faculty-page', 'faculty-loaded')
     
-    // Force body background based on faculty theme
-    const bgColor = themeToApply === 'light' ? '#ffffff' : '#0a0e27'
-    const textColor = themeToApply === 'light' ? '#1e293b' : '#ffffff'
-    document.documentElement.style.setProperty('background', bgColor, 'important')
-    document.body.style.setProperty('background', bgColor, 'important')
-    document.body.style.setProperty('color', textColor, 'important')
-    
-    // Reset CSS variables on root
-    document.documentElement.style.setProperty('--page-bg', bgColor)
-    document.documentElement.style.setProperty('--bg-primary', bgColor)
-    document.documentElement.style.setProperty('--bg-secondary', themeToApply === 'light' ? '#f8fafc' : '#1a1f3a')
-    document.documentElement.style.setProperty('--card-bg', themeToApply === 'light' ? 'rgba(255, 255, 255, 0.98)' : 'rgba(20, 26, 50, 0.95)')
-    document.documentElement.style.setProperty('--text-primary', textColor)
-    document.documentElement.style.setProperty('--text-secondary', themeToApply === 'light' ? '#64748b' : 'rgba(255, 255, 255, 0.7)')
-
     setMounted(true)
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
@@ -143,15 +174,6 @@ export default function FacultyHomePage() {
       document.body.classList.remove('faculty-loaded')
     }
   }, [])
-
-  // Sync effectiveTheme when theme context changes (e.g., user toggles theme)
-  useEffect(() => {
-    if (mounted && theme) {
-      // Faculty pages only use light or dark
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   // Force reflow after everything is ready to ensure styles are applied
   // Also open sidebar after page is fully ready (prevents layout flash on login)
@@ -601,7 +623,7 @@ export default function FacultyHomePage() {
   return (
     <div
       className={`${styles.pageContainer} faculty-page-wrapper`}
-      data-theme={effectiveTheme}
+      data-theme={theme}
       data-college-theme={collegeTheme}
       style={{
         backgroundColor: isLightMode ? '#ffffff' : '#0a0e27',
@@ -714,14 +736,14 @@ export default function FacultyHomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Current Class Card */}
               <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${currentClass
-                ? 'border-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.3)]'
+                ? `${getCollegeColorClass('border')} ${getCollegeColorClass('shadow')}`
                 : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
                 } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {currentClass ? (
                     <>
-                      <span className="flex items-center gap-1.5 text-green-500 text-xs font-bold uppercase">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      <span className={`flex items-center gap-1.5 text-xs font-bold uppercase ${getCollegeColorClass('text')}`}>
+                        <span className={`w-2 h-2 rounded-full animate-pulse ${getCollegeColorClass('bg')}`}></span>
                         Ongoing
                       </span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -753,20 +775,38 @@ export default function FacultyHomePage() {
 
               {/* Next Class Card */}
               <div className={`border-2 rounded-xl p-4 sm:p-5 transition-all duration-300 ${nextClass
-                ? isLightMode ? 'border-emerald-500 shadow-[0_4px_20px_rgba(16,185,129,0.3)]' : 'border-cyan-500 shadow-[0_4px_20px_rgba(0,212,255,0.3)]'
+                ? `${getCollegeColorClass('border')} ${getCollegeColorClass('shadow')}`
                 : isLightMode ? 'border-slate-200' : 'border-cyan-500/20'
                 } ${isLightMode ? 'bg-white/95 shadow-md' : 'bg-slate-800/80'}`}>
                 <div className="flex items-center justify-between mb-3">
                   {nextClass ? (
                     <>
-                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                      <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
+                        isLightMode
+                          ? isScience
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : isArtsLetters
+                            ? 'bg-orange-100 text-orange-700'
+                            : isArchitecture
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-blue-100 text-blue-700'
+                          : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
                         }`}>Next Up</span>
                       <span className={`text-xs font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {formatTime(nextClass.start_time)}
                       </span>
                     </>
                   ) : (
-                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-500/20 text-cyan-500'
+                    <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${
+                      isLightMode
+                        ? isScience
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : isArtsLetters
+                          ? 'bg-orange-100 text-orange-700'
+                          : isArchitecture
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-blue-100 text-blue-700'
+                        : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
                       }`}>Finished</span>
                   )}
                 </div>
@@ -798,7 +838,17 @@ export default function FacultyHomePage() {
                 <Calendar size={18} className="sm:w-5 sm:h-5" />
                 Today's Schedule
               </h3>
-              <button className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white' : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'}`} onClick={checkAuthAndLoad} title="Refresh">
+              <button className={`w-9 h-9 sm:w-10 sm:h-10 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${
+                isLightMode
+                  ? isScience
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                    : isArtsLetters
+                    ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                    : isArchitecture
+                    ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                    : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                  : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+              }`} onClick={checkAuthAndLoad} title="Refresh">
                 <RefreshCw size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
             </div>
@@ -807,8 +857,18 @@ export default function FacultyHomePage() {
                 {schedules
                   .filter(s => s.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()])
                   .map((schedule, index) => (
-                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${isLightMode ? 'bg-white/90 border border-slate-200 hover:border-emerald-500' : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'}`}>
-                      <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`}>
+                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${
+                      isLightMode
+                        ? isScience
+                          ? 'bg-white/90 border border-slate-200 hover:border-emerald-500'
+                          : isArtsLetters
+                          ? 'bg-white/90 border border-slate-200 hover:border-orange-500'
+                          : isArchitecture
+                          ? 'bg-white/90 border border-slate-200 hover:border-red-500'
+                          : 'bg-white/90 border border-slate-200 hover:border-blue-500'
+                        : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'
+                    }`}>
+                      <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${getCollegeColorClass('text')}`}>
                         <Clock size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
                         <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
                       </div>
@@ -820,7 +880,7 @@ export default function FacultyHomePage() {
                           <BookOpen size={12} className="flex-shrink-0" /> {schedule.section}
                         </p>
                       </div>
-                      <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${isLightMode ? 'text-emerald-600' : 'text-cyan-500'}`} />
+                      <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${getCollegeColorClass('text')}`} />
                     </div>
                   ))}
               </div>
@@ -839,7 +899,7 @@ export default function FacultyHomePage() {
               <TrendingUp size={18} className="sm:w-5 sm:h-5" />
               Department Announcements
             </h3>
-            <div className={`rounded-xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 ${isLightMode ? 'bg-emerald-500/10 border border-emerald-500 text-emerald-600' : 'bg-cyan-500/10 border border-cyan-500 text-cyan-500'}`}>
+            <div className={`rounded-xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 ${getCollegeColorClass('bg', 'light')} border ${getCollegeColorClass('border')} ${getCollegeColorClass('text')}`}>
               <TrendingUp size={20} className="flex-shrink-0 mt-1" />
               <div>
                 <h4 className="text-sm sm:text-base font-bold m-0 mb-1">Welcome to QTime Faculty Portal</h4>
@@ -852,9 +912,16 @@ export default function FacultyHomePage() {
 
       {/* Quick Action - Mark as Absence */}
       <button
-        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${isLightMode
-          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-          : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
+        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${
+          isLightMode
+            ? isScience
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : isArtsLetters
+              ? 'bg-orange-500 text-white hover:bg-orange-600'
+              : isArchitecture
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+            : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
         }`}
         onClick={() => setAttendanceOpen(true)}
       >
@@ -921,7 +988,17 @@ export default function FacultyHomePage() {
               />
 
               <button
-                className={`w-full rounded-lg px-4 py-2 font-semibold ${isLightMode ? 'bg-emerald-600 text-white' : 'bg-cyan-500 text-slate-900'}`}
+                className={`w-full rounded-lg px-4 py-2 font-semibold ${
+                  isLightMode
+                    ? isScience
+                      ? 'bg-emerald-600 text-white'
+                      : isArtsLetters
+                      ? 'bg-orange-500 text-white'
+                      : isArchitecture
+                      ? 'bg-red-500 text-white'
+                      : 'bg-blue-600 text-white'
+                    : 'bg-cyan-500 text-slate-900'
+                }`}
                 onClick={handleMarkAbsent}
                 disabled={attendanceSubmitting}
               >
