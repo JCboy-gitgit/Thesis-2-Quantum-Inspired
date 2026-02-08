@@ -55,6 +55,18 @@
   --submenu-bg: rgba(46, 175, 125, 0.08);
   --sidebar-text: #166534;
   
+  /* College Theme Variables (Fallback - will be overridden by ThemeContext) */
+  --college-primary: #2EAF7D;
+  --college-primary-rgb: 46, 175, 125;
+  --college-primary-light: rgba(46, 175, 125, 0.15);
+  --college-primary-dark: #449342;
+  --college-accent: #3FD0C9;
+  --college-gradient: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
+  --college-glow: rgba(46, 175, 125, 0.4);
+  
+  /* Additional text */
+  --text-muted: #94a3b8;
+  
   /* Effects */
   --glow-color: rgba(46, 175, 125, 0.4);
   --accent-gradient: linear-gradient(135deg, #2EAF7D, #3FD0C9);
@@ -64,6 +76,7 @@
   --border-color: rgba(46, 175, 125, 0.25);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 /* Dark Theme (Quantum Inspired) */
@@ -127,6 +140,9 @@
   --submenu-bg: rgba(0, 0, 0, 0.2);
   --sidebar-text: #a0aec0;
   
+  /* Additional text */
+  --text-muted: rgba(148, 163, 184, 0.5);
+  
   /* Effects */
   --glow-color: rgba(0, 212, 255, 0.5);
   --accent-gradient: linear-gradient(135deg, #00d4ff, #ffd700);
@@ -136,6 +152,7 @@
   --border-color: rgba(0, 212, 255, 0.2);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 /* Light Theme */
@@ -199,6 +216,9 @@
   --submenu-bg: rgba(0, 166, 81, 0.08);
   --sidebar-text: #2d6a4f;
   
+  /* Additional text */
+  --text-muted: #94a3b8;
+  
   /* Effects */
   --glow-color: rgba(0, 166, 81, 0.3);
   --accent-gradient: linear-gradient(135deg, #00a651, #4cff96);
@@ -208,6 +228,7 @@
   --border-color: #e2e8f0;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 @theme inline {
@@ -408,13 +429,13 @@ body {
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.4) rgba(99, 102, 241, 0.1);
+  scrollbar-color: var(--primary-alpha, rgba(46, 175, 125, 0.4)) transparent;
 }
 
 html,
 body {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.4) rgba(99, 102, 241, 0.1);
+  scrollbar-color: var(--primary-alpha, rgba(46, 175, 125, 0.4)) transparent;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
@@ -430,18 +451,18 @@ body::-webkit-scrollbar {
 }
 
 *::-webkit-scrollbar-track {
-  background: rgba(99, 102, 241, 0.05);
+  background: var(--primary-alpha, rgba(46, 175, 125, 0.05));
   border-radius: 10px;
 }
 
 html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track {
-  background: rgba(99, 102, 241, 0.05);
+  background: var(--primary-alpha, rgba(46, 175, 125, 0.05));
   border-radius: 10px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
+  background: var(--primary-alpha, rgba(46, 175, 125, 0.4));
   border-radius: 10px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -450,7 +471,7 @@ body::-webkit-scrollbar-track {
 
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
+  background: var(--primary-alpha, rgba(46, 175, 125, 0.4));
   border-radius: 10px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -458,14 +479,14 @@ body::-webkit-scrollbar-thumb {
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
+  background: var(--glow-color, rgba(46, 175, 125, 0.7));
   background-clip: padding-box;
   border: 2px solid transparent;
 }
 
 html::-webkit-scrollbar-thumb:hover,
 body::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
+  background: var(--glow-color, rgba(46, 175, 125, 0.7));
   background-clip: padding-box;
   border: 2px solid transparent;
 }

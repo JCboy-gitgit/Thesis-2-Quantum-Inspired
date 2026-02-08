@@ -1850,3 +1850,355 @@
 :global([data-theme="light"]) .loading p {
   color: #64748b;
 }
+
+/* ==========================================
+   DARK THEME EXPLICIT OVERRIDES
+   Mirror all light overrides with dark values.
+   Ensures dark mode always wins regardless of
+   CSS cascade order or variable inheritance.
+   ========================================== */
+:global([data-theme="dark"]) .container,
+:global([data-theme="green"]) .container {
+  background: var(--card-bg, rgba(15, 23, 42, 0.95)) !important;
+  border-color: #334155 !important;
+}
+
+:global([data-theme="dark"]) .header h2,
+:global([data-theme="green"]) .header h2 {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .header svg,
+:global([data-theme="green"]) .header svg {
+  color: var(--college-primary, #00d4ff);
+}
+
+:global([data-theme="dark"]) .zoomControls,
+:global([data-theme="green"]) .zoomControls {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:global([data-theme="dark"]) .zoomInput,
+:global([data-theme="green"]) .zoomInput {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .zoomInput:focus,
+:global([data-theme="green"]) .zoomInput:focus {
+  border-color: var(--college-primary) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+:global([data-theme="dark"]) .zoomPercent,
+:global([data-theme="green"]) .zoomPercent {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .refreshBtn,
+:global([data-theme="green"]) .refreshBtn {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .refreshBtn:hover,
+:global([data-theme="green"]) .refreshBtn:hover {
+  background: var(--college-primary) !important;
+  color: white !important;
+}
+
+:global([data-theme="dark"]) .fullscreenBtn,
+:global([data-theme="green"]) .fullscreenBtn {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .fullscreenBtn:hover,
+:global([data-theme="green"]) .fullscreenBtn:hover {
+  background: var(--college-primary) !important;
+  color: white !important;
+}
+
+:global([data-theme="dark"]) .legendItem,
+:global([data-theme="green"]) .legendItem {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .availableLegend,
+:global([data-theme="green"]) .availableLegend {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+:global([data-theme="dark"]) .availableLegend span,
+:global([data-theme="green"]) .availableLegend span {
+  color: #34d399 !important;
+}
+
+:global([data-theme="dark"]) .occupiedLegend,
+:global([data-theme="green"]) .occupiedLegend {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+:global([data-theme="dark"]) .occupiedLegend span,
+:global([data-theme="green"]) .occupiedLegend span {
+  color: #f87171 !important;
+}
+
+:global([data-theme="dark"]) .liveIndicator,
+:global([data-theme="green"]) .liveIndicator {
+  color: var(--college-primary, #00d4ff) !important;
+}
+
+:global([data-theme="dark"]) .liveText,
+:global([data-theme="green"]) .liveText {
+  color: var(--college-primary, #00d4ff) !important;
+}
+
+/* Building Nav - Dark */
+:global([data-theme="dark"]) .buildingNav,
+:global([data-theme="green"]) .buildingNav {
+  background: rgba(15, 23, 42, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:global([data-theme="dark"]) .buildingNavToggle,
+:global([data-theme="green"]) .buildingNavToggle {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:global([data-theme="dark"]) .buildingSectionHeader,
+:global([data-theme="green"]) .buildingSectionHeader {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+:global([data-theme="dark"]) .buildingSectionHeader:hover,
+:global([data-theme="green"]) .buildingSectionHeader:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .buildingSectionHeaderActive,
+:global([data-theme="green"]) .buildingSectionHeaderActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .buildingSectionLeft,
+:global([data-theme="green"]) .buildingSectionLeft {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+:global([data-theme="dark"]) .buildingSectionCount,
+:global([data-theme="green"]) .buildingSectionCount {
+  color: var(--college-primary, #00d4ff) !important;
+  background: var(--college-primary-light) !important;
+}
+
+:global([data-theme="dark"]) .floorCardList,
+:global([data-theme="green"]) .floorCardList {
+  border-left-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .floorCard,
+:global([data-theme="green"]) .floorCard {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+:global([data-theme="dark"]) .floorCard:hover,
+:global([data-theme="green"]) .floorCard:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .floorCardActive,
+:global([data-theme="green"]) .floorCardActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+  box-shadow: 0 0 10px var(--college-glow) !important;
+}
+
+:global([data-theme="dark"]) .floorCardName,
+:global([data-theme="green"]) .floorCardName {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:global([data-theme="dark"]) .floorCardMeta,
+:global([data-theme="green"]) .floorCardMeta {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .floorCardBadgePublished,
+:global([data-theme="green"]) .floorCardBadgePublished {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+:global([data-theme="dark"]) .floorCardBadgeDraft,
+:global([data-theme="green"]) .floorCardBadgeDraft {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+/* Canvas - Dark */
+:global([data-theme="dark"]) .canvas,
+:global([data-theme="green"]) .canvas {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .canvasWrapper,
+:global([data-theme="green"]) .canvasWrapper {
+  background: linear-gradient(45deg, var(--college-primary-light) 25%, transparent 25%),
+              linear-gradient(-45deg, var(--college-primary-light) 25%, transparent 25%),
+              linear-gradient(45deg, transparent 75%, var(--college-primary-light) 75%),
+              linear-gradient(-45deg, transparent 75%, var(--college-primary-light) 75%) !important;
+  background-size: 20px 20px !important;
+  border-color: var(--college-primary-light) !important;
+}
+
+:global([data-theme="dark"]) .roomDetails,
+:global([data-theme="green"]) .roomDetails {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .detailsHeader h3,
+:global([data-theme="green"]) .detailsHeader h3 {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .detailsHeader,
+:global([data-theme="green"]) .detailsHeader {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global([data-theme="dark"]) .detailRow,
+:global([data-theme="green"]) .detailRow {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .canvasElement.wall,
+:global([data-theme="green"]) .canvasElement.wall {
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+}
+
+:global([data-theme="dark"]) .canvasElement.hallway,
+:global([data-theme="green"]) .canvasElement.hallway {
+  background: rgba(55, 65, 81, 0.5) !important;
+  border-color: #4b5563 !important;
+}
+
+:global([data-theme="dark"]) .canvasElement.text,
+:global([data-theme="green"]) .canvasElement.text {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .elementLabel,
+:global([data-theme="green"]) .elementLabel {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .roomLabel,
+:global([data-theme="green"]) .roomLabel {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .courseCode,
+:global([data-theme="green"]) .courseCode {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .section,
+:global([data-theme="green"]) .section {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .classInfo,
+:global([data-theme="green"]) .classInfo {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global([data-theme="dark"]) .classInfo h4,
+:global([data-theme="green"]) .classInfo h4 {
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .classInfo p,
+:global([data-theme="green"]) .classInfo p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .classInfo p:first-of-type,
+:global([data-theme="green"]) .classInfo p:first-of-type {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .closeBtn,
+:global([data-theme="green"]) .closeBtn {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global([data-theme="dark"]) .closeBtn:hover,
+:global([data-theme="green"]) .closeBtn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+:global([data-theme="dark"]) .currentClassDetails,
+:global([data-theme="green"]) .currentClassDetails {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global([data-theme="dark"]) .currentClassDetails h4,
+:global([data-theme="green"]) .currentClassDetails h4 {
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .currentClassDetails p,
+:global([data-theme="green"]) .currentClassDetails p {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .mobileHint,
+:global([data-theme="green"]) .mobileHint {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global([data-theme="dark"]) .noFloorPlan,
+:global([data-theme="green"]) .noFloorPlan {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global([data-theme="dark"]) .noFloorPlan h3,
+:global([data-theme="green"]) .noFloorPlan h3 {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .loading,
+:global([data-theme="green"]) .loading {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:global([data-theme="dark"]) .loading p,
+:global([data-theme="green"]) .loading p {
+  color: rgba(255, 255, 255, 0.6) !important;
+}

@@ -44,16 +44,26 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  background: #0a0e27;
   color: white;
   gap: 20px;
+}
+
+:global([data-theme="light"]) .loadingScreen {
+  background: #f5f7fa;
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .loadingScreen {
+  background: #f5f7fa;
+  color: #1e293b;
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid rgba(var(--college-primary-rgb), 0.2);
-  border-top-color: var(--college-primary);
+  border: 4px solid rgba(var(--college-primary-rgb, 0, 212, 255), 0.2);
+  border-top-color: var(--college-primary, #00d4ff);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -64,15 +74,21 @@
 
 .pageContainer {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%) !important;
   color: white;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.4s ease, color 0.3s ease;
 }
 
-/* Ensure dark mode stays dark */
-:global([data-theme="dark"]) .pageContainer {
+/* Self-targeting: when data-theme is on the element itself */
+.pageContainer:global([data-theme="dark"]),
+.pageContainer:global([data-theme="green"]) {
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%) !important;
-  color: white !important;
+  color: #ffffff !important;
+}
+
+.pageContainer:global([data-theme="light"]) {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+  color: #1e293b;
 }
 
 /* Header */
@@ -81,8 +97,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: rgba(20, 26, 50, 0.95);
-  border-bottom: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
+  border-bottom: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .backBtn {
@@ -149,7 +166,7 @@
 }
 
 .profileChevron {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   transition: transform 0.3s ease, color 0.3s ease;
 }
 
@@ -173,12 +190,13 @@
   position: fixed;
   top: 70px;
   right: 20px;
-  background: rgba(20, 26, 50, 0.98);
+  background: var(--card-bg, rgba(20, 26, 50, 0.98));
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
   border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.5));
   min-width: 150px;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   overflow: hidden;
   animation: slideInMenu 0.3s ease-out;
   z-index: 2;
@@ -203,7 +221,7 @@
   padding: 12px 18px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
   font-size: 14px;
   font-weight: 500;
   border: none;
@@ -249,11 +267,7 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 20px 30px 30px 30px;
-}
-
-/* Ensure dark mode background for main content */
-:global([data-theme="dark"]) .mainContent {
-  background: transparent;
+  transition: color 0.3s ease;
 }
 
 /* Toast */
@@ -304,11 +318,7 @@
   border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
   border-radius: 20px;
   padding: 30px;
-}
-
-/* Ensure dark background persists in dark mode */
-:global([data-theme="dark"]) .profileCard {
-  border-color: var(--border-color, rgba(var(--college-primary-rgb), 0.3)) !important;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Avatar Section */
@@ -317,7 +327,7 @@
   align-items: center;
   gap: 25px;
   padding-bottom: 25px;
-  border-bottom: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  border-bottom: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
   margin-bottom: 25px;
 }
 
@@ -348,8 +358,9 @@
   right: 5px;
   width: 32px;
   height: 32px;
-  background: #1a1f3a;
+  background: var(--bg-gray-100, #1a1f3a);
   border: 2px solid var(--college-primary);
+  transition: background 0.3s ease;
   border-radius: 50%;
   color: var(--college-primary);
   display: flex;
@@ -369,9 +380,34 @@
   cursor: not-allowed;
 }
 
+:global([data-theme="light"]) .avatarEditBtn {
+  background: #f1f5f9;
+  border-color: var(--college-primary);
+  color: var(--college-primary-dark);
+}
+
+:global([data-theme="light"]) .avatarEditBtn:hover {
+  background: var(--college-primary);
+  color: white;
+}
+
 .avatarInfo h1 {
   font-size: 28px;
   margin: 0 0 5px 0;
+  color: var(--text-primary, #ffffff) !important;
+  transition: color 0.3s ease;
+}
+
+/* Direct class on the name h1 — bulletproof dark/light override */
+.profileName {
+  font-size: 28px;
+  margin: 0 0 5px 0;
+  color: #ffffff !important;
+  transition: color 0.3s ease;
+}
+
+:global([data-theme="light"]) .profileName {
+  color: #1e293b !important;
 }
 
 .email {
@@ -485,8 +521,9 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #a0aec0;
+  color: var(--label-color, #a0aec0);
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 .formGroup label svg {
@@ -496,14 +533,14 @@
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  background: var(--input-bg, rgba(0, 0, 0, 0.3));
+  border: 1px solid var(--input-border, rgba(var(--college-primary-rgb), 0.2));
   border-radius: 10px;
   padding: 12px 15px;
-  color: white;
+  color: var(--input-text, white);
   font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.3s ease, color 0.3s ease;
 }
 
 .formGroup input:focus,
@@ -529,8 +566,13 @@
 }
 
 .formGroup select option {
-  background: #1a1f3a;
-  color: white;
+  background: var(--bg-gray-100, #1a1f3a);
+  color: var(--text-primary, white);
+}
+
+:global([data-theme="light"]) .formGroup select option {
+  background: #ffffff;
+  color: #1e293b;
 }
 
 .formGroup textarea {
@@ -542,11 +584,16 @@
   margin: 0;
   padding: 12px 0;
   font-size: 15px;
-  color: white;
+  color: var(--text-primary, white);
+  transition: color 0.3s ease;
 }
 
 .formGroup p.readonly {
-  color: #a0aec0;
+  color: var(--text-secondary, #a0aec0);
+}
+
+.formGroup p.readOnly {
+  color: var(--text-secondary, #a0aec0);
 }
 
 /* Admin Approval Hint */
@@ -613,7 +660,7 @@
   padding: 1.5rem;
   background: rgba(var(--college-primary-rgb), 0.05);
   border-radius: 12px;
-  color: #a0aec0;
+  color: var(--text-secondary, #a0aec0);
 }
 
 .miniSpinner {
@@ -638,7 +685,7 @@
   gap: 0.5rem;
   padding-bottom: 1rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   font-weight: 600;
   color: #10b981;
 }
@@ -668,12 +715,12 @@
 }
 
 .scheduleItem strong {
-  color: #a0aec0;
+  color: var(--text-secondary, #a0aec0);
   font-weight: 500;
 }
 
 .scheduleItem span {
-  color: white;
+  color: var(--text-primary, white);
   font-weight: 600;
 }
 
@@ -879,6 +926,212 @@
   }
 }
 
+/* ==================== DARK THEME EXPLICIT OVERRIDE ==================== */
+:global([data-theme="dark"]) .pageContainer,
+:global([data-theme="green"]) .pageContainer {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%) !important;
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .header,
+:global([data-theme="green"]) .header {
+  background: rgba(20, 26, 50, 0.95) !important;
+  border-bottom-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+:global([data-theme="dark"]) .backBtn,
+:global([data-theme="green"]) .backBtn {
+  background: rgba(var(--college-primary-rgb), 0.1) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .profileCard,
+:global([data-theme="green"]) .profileCard {
+  background: rgba(20, 26, 50, 0.95) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+:global([data-theme="dark"]) .profileMenu,
+:global([data-theme="green"]) .profileMenu {
+  background: rgba(20, 26, 50, 0.98) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .profileMenuItem,
+:global([data-theme="green"]) .profileMenuItem {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:global([data-theme="dark"]) .avatar,
+:global([data-theme="green"]) .avatar {
+  background: var(--college-gradient) !important;
+  color: white !important;
+}
+
+:global([data-theme="dark"]) .avatarEditBtn,
+:global([data-theme="green"]) .avatarEditBtn {
+  background: #1a1f3a !important;
+  border-color: var(--college-primary) !important;
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .avatarInfo h1,
+:global([data-theme="green"]) .avatarInfo h1 {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .email,
+:global([data-theme="green"]) .email {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:global([data-theme="dark"]) .roleBadge,
+:global([data-theme="green"]) .roleBadge {
+  background: rgba(var(--college-primary-rgb), 0.2) !important;
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .avatarSection,
+:global([data-theme="green"]) .avatarSection {
+  border-bottom-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+:global([data-theme="dark"]) .editBtn,
+:global([data-theme="green"]) .editBtn {
+  background: rgba(var(--college-primary-rgb), 0.1) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .formGroup label,
+:global([data-theme="green"]) .formGroup label {
+  color: #a0aec0 !important;
+}
+
+:global([data-theme="dark"]) .formGroup label svg,
+:global([data-theme="green"]) .formGroup label svg {
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .formGroup input,
+:global([data-theme="dark"]) .formGroup textarea,
+:global([data-theme="dark"]) .formGroup select,
+:global([data-theme="green"]) .formGroup input,
+:global([data-theme="green"]) .formGroup textarea,
+:global([data-theme="green"]) .formGroup select {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .formGroup p,
+:global([data-theme="green"]) .formGroup p {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .formGroup p.readOnly,
+:global([data-theme="dark"]) .formGroup p.readonly,
+:global([data-theme="green"]) .formGroup p.readOnly,
+:global([data-theme="green"]) .formGroup p.readonly {
+  color: #a0aec0 !important;
+}
+
+:global([data-theme="dark"]) .scheduleSection,
+:global([data-theme="green"]) .scheduleSection {
+  border-top-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+:global([data-theme="dark"]) .sectionTitle,
+:global([data-theme="green"]) .sectionTitle {
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .scheduleCard,
+:global([data-theme="green"]) .scheduleCard {
+  background: linear-gradient(135deg, rgba(var(--college-primary-rgb), 0.08), rgba(var(--college-primary-rgb), 0.03)) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.25) !important;
+}
+
+:global([data-theme="dark"]) .scheduleStatus,
+:global([data-theme="green"]) .scheduleStatus {
+  color: #10b981 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+:global([data-theme="dark"]) .scheduleItem strong,
+:global([data-theme="green"]) .scheduleItem strong {
+  color: #a0aec0 !important;
+}
+
+:global([data-theme="dark"]) .scheduleItem span,
+:global([data-theme="green"]) .scheduleItem span {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .viewScheduleBtn,
+:global([data-theme="green"]) .viewScheduleBtn {
+  background: var(--college-gradient) !important;
+  color: white !important;
+}
+
+:global([data-theme="dark"]) .noSchedule,
+:global([data-theme="green"]) .noSchedule {
+  background: rgba(255, 159, 64, 0.05) !important;
+  border-color: rgba(255, 159, 64, 0.2) !important;
+  color: #ff9f40 !important;
+}
+
+:global([data-theme="dark"]) .noSchedule h3,
+:global([data-theme="green"]) .noSchedule h3 {
+  color: #ff9f40 !important;
+}
+
+:global([data-theme="dark"]) .noSchedule p,
+:global([data-theme="green"]) .noSchedule p {
+  color: #a0aec0 !important;
+}
+
+:global([data-theme="dark"]) .changePasswordBtn,
+:global([data-theme="green"]) .changePasswordBtn {
+  background: rgba(var(--college-primary-rgb), 0.1) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+  color: var(--college-primary) !important;
+}
+
+:global([data-theme="dark"]) .forgotPasswordBtn,
+:global([data-theme="green"]) .forgotPasswordBtn {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+:global([data-theme="dark"]) .passwordChangeForm,
+:global([data-theme="green"]) .passwordChangeForm {
+  background: rgba(var(--college-primary-rgb), 0.05) !important;
+  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
+}
+
+:global([data-theme="dark"]) .passwordToggle,
+:global([data-theme="green"]) .passwordToggle {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:global([data-theme="dark"]) .toast.success,
+:global([data-theme="green"]) .toast.success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #10b981 !important;
+}
+
+:global([data-theme="dark"]) .toast.error,
+:global([data-theme="green"]) .toast.error {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+}
+
 /* ==================== LIGHT THEME SUPPORT ==================== */
 :global([data-theme="light"]) .loadingScreen {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
@@ -891,7 +1144,7 @@
 }
 
 :global([data-theme="light"]) .pageContainer {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
   color: #1e293b;
 }
 
@@ -950,11 +1203,11 @@
 }
 
 :global([data-theme="light"]) .avatarInfo h1 {
-  /* color handled by inheritance/variable */
+  color: #1e293b !important;
 }
 
 :global([data-theme="light"]) .email {
-  /* color handled by variable */
+  color: #64748b;
 }
 
 :global([data-theme="light"]) .roleBadge {
@@ -964,6 +1217,8 @@
 
 :global([data-theme="light"]) .editBtn {
   background: var(--college-gradient);
+  color: white;
+  border-color: transparent;
 }
 
 :global([data-theme="light"]) .formGroup label {
@@ -976,15 +1231,6 @@
   background: #f8fafc !important;
   border-color: #cbd5e1 !important;
   color: #1e293b !important;
-}
-
-/* Ensure dark theme for form inputs */
-:global([data-theme="dark"]) .formGroup input,
-:global([data-theme="dark"]) .formGroup textarea,
-:global([data-theme="dark"]) .formGroup select {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border-color: rgba(var(--college-primary-rgb), 0.2) !important;
-  color: white !important;
 }
 
 :global([data-theme="light"]) .formGroup input:focus,
@@ -1093,6 +1339,10 @@
 
 :global([data-theme="green"]) .profileMenuItem {
   border-bottom-color: rgba(var(--college-primary-rgb), 0.1) !important;
+}
+
+:global([data-theme="green"]) .avatarInfo h1 {
+  color: #ffffff !important;
 }
 
 :global([data-theme="green"]) .profileCard {

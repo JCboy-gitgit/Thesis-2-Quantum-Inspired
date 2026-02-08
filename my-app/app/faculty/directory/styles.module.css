@@ -651,6 +651,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--text-primary);
+  z-index: 10;
 }
 
 .closeButton:hover {

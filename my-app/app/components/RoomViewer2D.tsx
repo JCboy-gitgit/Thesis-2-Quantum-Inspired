@@ -536,8 +536,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             </div>
             {buildingNavCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           </button>
-          {!buildingNavCollapsed && buildings.map(building => (
-            <div key={building.id} className={styles.buildingSection}>
+          {!buildingNavCollapsed && buildings.map((building, buildingIdx) => (
+            <div key={`building-${building.name}-${buildingIdx}`} className={styles.buildingSection}>
               {/* Building header row */}
               <div
                 className={`${styles.buildingSectionHeader} ${selectedBuilding?.id === building.id ? styles.buildingSectionHeaderActive : ''}`}

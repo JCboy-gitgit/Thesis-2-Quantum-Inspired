@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
         if (item.hasSubmenu) {
           if (item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
             newOpen[idx] = true
-          } else if (item.label === 'Rooms Management' && (pathname.includes('/Rooms-Management') || pathname.includes('/RoomsManagement'))) {
+          } else if (item.label === 'Room Management' && (pathname.includes('/Rooms-Management') || pathname.includes('/RoomsManagement'))) {
             newOpen[idx] = true
           } else if (item.label === 'Faculty Management' && (pathname.includes('/FacultyManagement') || pathname.includes('/FacultyColleges'))) {
             newOpen[idx] = true

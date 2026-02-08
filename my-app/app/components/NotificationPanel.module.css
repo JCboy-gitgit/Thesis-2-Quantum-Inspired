@@ -18,13 +18,13 @@
 }
 
 .bellBtn:hover {
-  background: rgba(0, 212, 255, 0.1);
-  border-color: rgba(0, 212, 255, 0.2);
+  background: rgba(var(--college-primary-rgb, 0, 212, 255), 0.1);
+  border-color: rgba(var(--college-primary-rgb, 0, 212, 255), 0.2);
 }
 
 :global([data-theme="light"]) .bellBtn:hover {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(var(--college-primary-rgb, 8, 145, 178), 0.1);
+  border-color: rgba(var(--college-primary-rgb, 8, 145, 178), 0.2);
 }
 
 .badge {

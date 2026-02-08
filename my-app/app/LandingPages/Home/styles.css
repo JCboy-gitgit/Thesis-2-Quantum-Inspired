@@ -943,6 +943,15 @@
   border-color: var(--nav-color);
 }
 
+[data-theme="green"] .nav-icon {
+  color: #ffffff !important;
+}
+
+[data-theme="green"] .nav-icon svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 [data-theme="green"] .nav-label {
   color: #02353C;
 }
@@ -1083,6 +1092,15 @@
 [data-theme="light"] .quick-nav-item:hover {
   background: rgba(0, 166, 81, 0.08);
   border-color: var(--nav-color);
+}
+
+[data-theme="light"] .nav-icon {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .nav-icon svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 [data-theme="light"] .nav-label {

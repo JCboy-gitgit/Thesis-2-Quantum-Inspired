@@ -133,3 +133,54 @@
   border-radius: 10px;
   cursor: pointer;
 }
+
+/* ==================== Light Mode Overrides ==================== */
+:global([data-theme="light"]) .card {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--border-color, #e2e8f0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .card[data-severity='warning'] {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+:global([data-theme="light"]) .card[data-severity='error'] {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+:global([data-theme="light"]) .cardHeader h3 {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .cardHeader p {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .severityIcon {
+  background: rgba(var(--college-primary-rgb, 8, 145, 178), 0.12);
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .message {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .loading,
+:global([data-theme="light"]) .empty {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .secondaryButton {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+:global([data-theme="light"]) .secondaryButton:hover {
+  background: #e2e8f0;
+}
+
+:global([data-theme="light"]) .iconBadge {
+  box-shadow: 0 8px 16px rgba(var(--college-primary-rgb, 8, 145, 178), 0.2);
+}

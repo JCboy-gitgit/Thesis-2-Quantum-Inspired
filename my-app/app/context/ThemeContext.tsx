@@ -20,6 +20,7 @@ interface ThemeContextType {
 
 interface CollegeColors {
   primary: string
+  primaryRgb: string
   primaryLight: string
   primaryDark: string
   accent: string
@@ -32,6 +33,7 @@ interface CollegeColors {
 const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
   default: {
     primary: 'rgba(0, 212, 255, 1)',
+    primaryRgb: '0, 212, 255',
     primaryLight: 'rgba(0, 212, 255, 0.2)',
     primaryDark: 'rgba(0, 153, 204, 1)',
     accent: '#00d4ff',
@@ -41,6 +43,7 @@ const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
   },
   science: {
     primary: 'rgba(37, 150, 190, 1)',
+    primaryRgb: '37, 150, 190',
     primaryLight: 'rgba(37, 150, 190, 0.2)',
     primaryDark: 'rgba(25, 100, 130, 1)',
     accent: '#10b981',
@@ -50,6 +53,7 @@ const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
   },
   'arts-letters': {
     primary: 'rgba(249, 115, 22, 1)',
+    primaryRgb: '249, 115, 22',
     primaryLight: 'rgba(249, 115, 22, 0.2)',
     primaryDark: 'rgba(194, 65, 12, 1)',
     accent: '#fbbf24',
@@ -59,6 +63,7 @@ const COLLEGE_COLORS: Record<CollegeTheme, CollegeColors> = {
   },
   architecture: {
     primary: 'rgba(239, 68, 68, 1)',
+    primaryRgb: '239, 68, 68',
     primaryLight: 'rgba(239, 68, 68, 0.2)',
     primaryDark: 'rgba(127, 29, 29, 1)',
     accent: '#f87171',
@@ -161,6 +166,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Apply the theme
     setThemeState(themeToApply)
     document.documentElement.setAttribute('data-theme', themeToApply)
+    // Keep body in sync to prevent stale ancestor selector conflicts
+    document.body.setAttribute('data-theme', themeToApply)
     
     // For faculty pages, also clear any admin-specific body classes
     if (isFacultyPage) {
@@ -196,6 +203,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const colors = COLLEGE_COLORS[college]
     const root = document.documentElement
     root.style.setProperty('--college-primary', colors.primary)
+    root.style.setProperty('--college-primary-rgb', colors.primaryRgb)
     root.style.setProperty('--college-primary-light', colors.primaryLight)
     root.style.setProperty('--college-primary-dark', colors.primaryDark)
     root.style.setProperty('--college-accent', colors.accent)
@@ -210,6 +218,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(normalizedTheme)
     localStorage.setItem(storageKey, normalizedTheme)
     document.documentElement.setAttribute('data-theme', normalizedTheme)
+    document.body.setAttribute('data-theme', normalizedTheme)
   }
 
   const setCollegeTheme = (college: CollegeTheme) => {
@@ -218,6 +227,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setCollegeThemeState(college)
     localStorage.setItem(storageKey, college)
     document.documentElement.setAttribute('data-college-theme', college)
+    document.body.setAttribute('data-college-theme', college)
     applyCollegeThemeCSS(college)
   }
 
