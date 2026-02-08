@@ -35,13 +35,21 @@ export default function RootLayout({
     (function() {
       try {
         var isFacultyPage = window.location.pathname.startsWith('/faculty');
-        var savedTheme = localStorage.getItem('faculty-base-theme');
+        var storageKey = isFacultyPage ? 'faculty-base-theme' : 'admin-base-theme';
+        var savedTheme = localStorage.getItem(storageKey);
         var validThemes = ['green', 'light', 'dark'];
-        var theme = validThemes.includes(savedTheme) ? savedTheme : (isFacultyPage ? 'light' : 'green');
+        var theme;
         
-        // Faculty pages should never use green theme
-        if (isFacultyPage && theme === 'green') {
-          theme = 'light';
+        if (validThemes.includes(savedTheme)) {
+          // Faculty pages should never use green theme
+          if (isFacultyPage && savedTheme === 'green') {
+            theme = 'light';
+          } else {
+            theme = savedTheme;
+          }
+        } else {
+          // Default themes: light for faculty, green for admin
+          theme = isFacultyPage ? 'light' : 'green';
         }
         
         document.documentElement.setAttribute('data-theme', theme);
@@ -50,12 +58,16 @@ export default function RootLayout({
         var bgColors = {
           green: '#00331a',
           dark: '#0a0e27',
-          light: '#f8fafc'
+          light: '#ffffff'
         };
         document.documentElement.style.backgroundColor = bgColors[theme] || (isFacultyPage ? bgColors.light : bgColors.green);
       } catch (e) {
-        document.documentElement.setAttribute('data-theme', 'green');
-        document.documentElement.style.backgroundColor = '#00331a';
+        // Fallback
+        var isFacultyFallback = window.location.pathname.startsWith('/faculty');
+        var fallbackTheme = isFacultyFallback ? 'light' : 'green';
+        var fallbackBg = isFacultyFallback ? '#ffffff' : '#00331a';
+        document.documentElement.setAttribute('data-theme', fallbackTheme);
+        document.documentElement.style.backgroundColor = fallbackBg;
       }
     })();
   `;

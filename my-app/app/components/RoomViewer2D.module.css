@@ -31,20 +31,19 @@
 }
 
 .container {
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--card-bg, rgba(15, 23, 42, 0.95));
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 30px;
-  border: 1px solid var(--college-primary-light);
+  border: 1px solid var(--border-color, var(--college-primary-light));
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   min-height: 600px;
 }
 
-/* Force dark mode container */
+/* Force dark mode container - variable fallback */
 :global([data-theme="dark"]) .container {
-  background: rgba(15, 23, 42, 0.98) !important;
   border-color: #334155 !important;
 }
 
@@ -79,7 +78,7 @@
 }
 
 .header h2 {
-  color: white;
+  color: var(--text-primary, white);
   font-size: 20px;
   font-weight: 600;
   display: flex;
@@ -1762,12 +1761,11 @@
 
 /* Light theme support */
 :global([data-theme="light"]) .container {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
+  /* background and border handled by variables */
 }
 
 :global([data-theme="light"]) .header h2 {
-  color: #1e293b;
+  /* handled by variable */
 }
 
 :global([data-theme="light"]) .selector {

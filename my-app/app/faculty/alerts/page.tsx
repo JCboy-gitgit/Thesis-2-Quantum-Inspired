@@ -30,17 +30,11 @@ export default function FacultyAlertsPage() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
 
   // Faculty pages treat 'green' as 'light' mode
-  const isLightMode = effectiveTheme === 'light'
+  const isLightMode = theme === 'light'
 
   useEffect(() => {
-    // Initialize theme from localStorage immediately
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
-    setEffectiveTheme(effectiveThemeValue)
-    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
     setMounted(true)
     
     const init = async () => {
@@ -53,14 +47,6 @@ export default function FacultyAlertsPage() {
     }
     init()
   }, [router])
-
-  // Sync with context theme changes
-  useEffect(() => {
-    if (mounted && theme) {
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   useEffect(() => {
     if (userId) {
@@ -99,7 +85,7 @@ export default function FacultyAlertsPage() {
   }
 
   return (
-    <div className={`min-h-screen faculty-page-wrapper ${isLightMode ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`} data-theme={effectiveTheme} data-college-theme={collegeTheme}>
+    <div className={`min-h-screen faculty-page-wrapper ${isLightMode ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`} data-theme={theme} data-college-theme={collegeTheme}>
       <FacultySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} menuBarHidden={isMenuBarHidden} />
       <div className="flex-1 flex flex-col min-h-screen transition-all duration-300" style={{ marginLeft: sidebarOpen ? '250px' : '0' }}>
         <FacultyMenuBar

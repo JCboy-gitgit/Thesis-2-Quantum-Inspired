@@ -300,16 +300,15 @@
 
 /* Profile Card */
 .profileCard {
-  background: rgba(20, 26, 50, 0.8);
-  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
+  border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
   border-radius: 20px;
   padding: 30px;
 }
 
 /* Ensure dark background persists in dark mode */
 :global([data-theme="dark"]) .profileCard {
-  background: rgba(20, 26, 50, 0.95) !important;
-  border-color: rgba(var(--college-primary-rgb), 0.3) !important;
+  border-color: var(--border-color, rgba(var(--college-primary-rgb), 0.3)) !important;
 }
 
 /* Avatar Section */
@@ -376,7 +375,7 @@
 }
 
 .email {
-  color: #a0aec0;
+  color: var(--text-secondary, #a0aec0);
   margin: 0 0 10px 0;
 }
 
@@ -939,8 +938,8 @@
 }
 
 :global([data-theme="light"]) .profileCard {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
+  /* background handled by var(--card-bg) */
+  /* border-color handled by var(--border-color) */
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -951,11 +950,11 @@
 }
 
 :global([data-theme="light"]) .avatarInfo h1 {
-  color: #1e293b;
+  /* color handled by inheritance/variable */
 }
 
 :global([data-theme="light"]) .email {
-  color: #64748b;
+  /* color handled by variable */
 }
 
 :global([data-theme="light"]) .roleBadge {

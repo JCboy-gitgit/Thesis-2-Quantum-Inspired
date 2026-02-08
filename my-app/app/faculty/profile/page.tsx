@@ -87,7 +87,6 @@ export default function FacultyProfilePage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [mounted, setMounted] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
 
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false)
@@ -108,23 +107,12 @@ export default function FacultyProfilePage() {
 
   useEffect(() => {
     // Initialize theme from localStorage immediately
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
-    setEffectiveTheme(effectiveThemeValue)
-    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
+    // Theme is now managed by ThemeContext, no local theme state needed
     setMounted(true)
     
     checkAuthAndLoad()
     fetchDepartments()
   }, [])
-
-  // Sync with context theme changes
-  useEffect(() => {
-    if (mounted && theme) {
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   const fetchDepartments = async () => {
     try {
@@ -590,7 +578,7 @@ export default function FacultyProfilePage() {
   }
 
   return (
-    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={effectiveTheme} data-college-theme={collegeTheme}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       {/* Sidebar */}
       <FacultySidebar
         isOpen={sidebarOpen}

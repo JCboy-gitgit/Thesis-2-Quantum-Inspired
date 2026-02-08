@@ -62,7 +62,6 @@ export default function FacultyHomePage() {
   const [sessionInvalid, setSessionInvalid] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [themeReady, setThemeReady] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   const [currentScheduleId, setCurrentScheduleId] = useState<number | null>(null)
   const [attendanceOpen, setAttendanceOpen] = useState(false)
   const [attendanceScope, setAttendanceScope] = useState<'class' | 'day' | 'week' | 'range'>('class')
@@ -72,8 +71,8 @@ export default function FacultyHomePage() {
   const [attendanceEndDate, setAttendanceEndDate] = useState('')
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
 
-  // Theme helper - use effectiveTheme which is synced from localStorage
-  const isLightMode = effectiveTheme === 'light'
+  // Use ThemeContext directly - no more local theme state
+  const isLightMode = theme === 'light'
   const isScience = collegeTheme === 'science'
   const isArtsLetters = collegeTheme === 'arts-letters'
   const isArchitecture = collegeTheme === 'architecture'
@@ -157,42 +156,9 @@ export default function FacultyHomePage() {
       document.body.style.removeProperty(prop)
     })
 
-    // Apply theme immediately from localStorage BEFORE mounting
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-
-    // Determine effective theme - faculty pages only use light or dark (never green)
-    let themeToApply = savedTheme || 'light'
-    if (themeToApply === 'green') {
-      themeToApply = 'light' // Faculty pages convert green to light
-    }
-
-    // Set the effective theme immediately for proper styling
-    setEffectiveTheme(themeToApply as 'light' | 'dark')
-    document.documentElement.setAttribute('data-theme', themeToApply)
-
-    if (savedCollegeTheme) {
-      document.documentElement.setAttribute('data-college-theme', savedCollegeTheme)
-    }
-
     // Add faculty classes
     document.body.classList.add('faculty-page', 'faculty-loaded')
     
-    // Force body background based on faculty theme
-    const bgColor = themeToApply === 'light' ? '#ffffff' : '#0a0e27'
-    const textColor = themeToApply === 'light' ? '#1e293b' : '#ffffff'
-    document.documentElement.style.setProperty('background', bgColor, 'important')
-    document.body.style.setProperty('background', bgColor, 'important')
-    document.body.style.setProperty('color', textColor, 'important')
-    
-    // Reset CSS variables on root
-    document.documentElement.style.setProperty('--page-bg', bgColor)
-    document.documentElement.style.setProperty('--bg-primary', bgColor)
-    document.documentElement.style.setProperty('--bg-secondary', themeToApply === 'light' ? '#f8fafc' : '#1a1f3a')
-    document.documentElement.style.setProperty('--card-bg', themeToApply === 'light' ? 'rgba(255, 255, 255, 0.98)' : 'rgba(20, 26, 50, 0.95)')
-    document.documentElement.style.setProperty('--text-primary', textColor)
-    document.documentElement.style.setProperty('--text-secondary', themeToApply === 'light' ? '#64748b' : 'rgba(255, 255, 255, 0.7)')
-
     setMounted(true)
     // Force a style recalculation
     document.documentElement.style.setProperty('--faculty-loaded', '1')
@@ -208,15 +174,6 @@ export default function FacultyHomePage() {
       document.body.classList.remove('faculty-loaded')
     }
   }, [])
-
-  // Sync effectiveTheme when theme context changes (e.g., user toggles theme)
-  useEffect(() => {
-    if (mounted && theme) {
-      // Faculty pages only use light or dark
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   // Force reflow after everything is ready to ensure styles are applied
   // Also open sidebar after page is fully ready (prevents layout flash on login)
@@ -666,7 +623,7 @@ export default function FacultyHomePage() {
   return (
     <div
       className={`${styles.pageContainer} faculty-page-wrapper`}
-      data-theme={effectiveTheme}
+      data-theme={theme}
       data-college-theme={collegeTheme}
       style={{
         backgroundColor: isLightMode ? '#ffffff' : '#0a0e27',

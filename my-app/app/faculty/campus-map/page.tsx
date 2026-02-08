@@ -31,12 +31,11 @@ export default function FacultyCampusMapPage() {
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   const [isDesktop, setIsDesktop] = useState(false)
   const [emptyRoomMode, setEmptyRoomMode] = useState(false)
   
-  // Use effectiveTheme for accurate light mode detection
-  const isLightMode = effectiveTheme === 'light'
+  // Use theme for accurate light mode detection
+  const isLightMode = theme === 'light'
   const isScience = collegeTheme === 'science'
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
@@ -50,23 +49,9 @@ export default function FacultyCampusMapPage() {
   }, [])
 
   useEffect(() => {
-    // Initialize theme from localStorage immediately
-    const savedTheme = localStorage.getItem('faculty-base-theme')
-    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
-    setEffectiveTheme(effectiveThemeValue)
-    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
     setMounted(true)
-    
     checkAuth()
   }, [])
-
-  // Sync with context theme changes
-  useEffect(() => {
-    if (mounted && theme) {
-      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
-      setEffectiveTheme(newEffectiveTheme)
-    }
-  }, [theme, mounted])
 
   const checkAuth = async () => {
     try {
@@ -130,7 +115,7 @@ export default function FacultyCampusMapPage() {
           ? 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50' 
           : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
       }`} 
-      data-theme={effectiveTheme}
+      data-theme={theme}
       data-college-theme={collegeTheme}
     >
       {/* Sidebar */}
