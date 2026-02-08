@@ -333,7 +333,7 @@ function PageContent(): JSX.Element {
       document.documentElement.setAttribute('data-theme', effectiveTheme)
       document.body.setAttribute('data-theme', effectiveTheme)
 
-      const bgColor = (savedTheme === 'light' || savedTheme === 'green') ? '#f8fafc' : '#0a0e27'
+      const bgColor = savedTheme === 'green' ? '#f0fdf4' : (savedTheme === 'light' ? '#f5f7fa' : '#0a0e27')
       document.body.style.backgroundColor = bgColor
       document.documentElement.style.backgroundColor = bgColor
 

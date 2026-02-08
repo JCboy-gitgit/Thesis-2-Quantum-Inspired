@@ -141,9 +141,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f142d 100%);
-  color: white;
+  background: var(--background, #0a0e27);
+  color: var(--text-primary, white);
   gap: 20px;
+}
+
+:global([data-theme="light"]) .loadingScreen {
+  background: #f5f7fa;
+  color: #1e293b;
 }
 
 .spinner {
@@ -204,12 +209,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 30px;
-  background: rgba(20, 26, 50, 0.95);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
   backdrop-filter: blur(10px);
   border-bottom: 2px solid var(--college-primary-light);
   z-index: 90;
   transition: transform 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.3));
 }
 
 .topHeader.hidden {
@@ -218,13 +223,8 @@
 
 :global([data-theme="light"]) .topHeader {
   background: rgba(255, 255, 255, 0.95);
-  border-bottom: 2px solid #e2e8f0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-:global([data-theme="light"]) .topHeader {
-  background: rgba(255, 255, 255, 0.95);
   border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* Menu Bar Toggle Button - Inside header at bottom center */
@@ -235,7 +235,7 @@
   transform: translateX(-50%);
   width: 48px;
   height: 24px;
-  background: rgba(20, 26, 50, 0.95);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
   border: 2px solid var(--college-primary-light);
   border-top: none;
   border-radius: 0 0 12px 12px;
@@ -268,7 +268,7 @@
   transform: translateX(-50%);
   width: 60px;
   height: 32px;
-  background: rgba(20, 26, 50, 0.95);
+  background: var(--card-bg, rgba(20, 26, 50, 0.95));
   border: 2px solid var(--college-primary-light);
   border-top: none;
   border-radius: 0 0 16px 16px;
@@ -1048,6 +1048,19 @@
   gap: 6px;
   flex-wrap: wrap;
   word-break: break-word;
+}
+
+/* College Badge */
+.collegeBadge {
+  background: rgba(var(--college-primary-rgb, 0, 212, 255), 0.15);
+  color: var(--college-primary, #00d4ff);
+  border: 1px solid rgba(var(--college-primary-rgb, 0, 212, 255), 0.3);
+}
+
+:global([data-theme="light"]) .collegeBadge {
+  background: rgba(var(--college-primary-rgb, 8, 145, 178), 0.1);
+  color: var(--college-primary-dark, #0e7490);
+  border: 1px solid rgba(var(--college-primary-rgb, 8, 145, 178), 0.25);
 }
 
 /* Schedule Section */

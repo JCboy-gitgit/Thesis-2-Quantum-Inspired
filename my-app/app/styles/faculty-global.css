@@ -18,7 +18,7 @@
   -moz-osx-font-smoothing: grayscale;
   
   /* Reset admin background/colors that might persist */
-  background: var(--bg-primary, #f8fafc);
+  background: var(--background, #f5f7fa);
   color: var(--text-primary, #1e293b);
   
   /* Ensure proper display */
@@ -238,7 +238,6 @@
 }
 
 /* ==================== LIGHT MODE BASE STYLES (DEFAULT - CLEAN WHITE) ==================== */
-.faculty-page-wrapper,
 .faculty-page-wrapper[data-theme="light"],
 [data-theme="light"] .faculty-page-wrapper {
   --page-bg: #ffffff;
@@ -263,7 +262,9 @@
 
 /* ==================== DARK MODE BASE STYLES (DEEP SPACE) ==================== */
 .faculty-page-wrapper[data-theme="dark"],
-[data-theme="dark"] .faculty-page-wrapper {
+[data-theme="dark"] .faculty-page-wrapper,
+.faculty-page-wrapper[data-theme="green"],
+[data-theme="green"] .faculty-page-wrapper {
   --page-bg: #0a0e27;
   --card-bg: rgba(20, 26, 50, 0.95);
   --card-border: var(--college-border, var(--college-primary-light));
@@ -929,4 +930,17 @@
 
 .faculty-page-wrapper .faculty-hover-glow:hover {
   box-shadow: 0 0 24px var(--college-glow);
+}
+
+/* ==================== FacultyMenuBar Hover Styles ==================== */
+/* These use CSS custom properties set inline to avoid dynamic Tailwind class issues */
+.faculty-menu-btn:hover {
+  border-color: var(--btn-hover-border) !important;
+  background-color: var(--btn-hover-bg) !important;
+  box-shadow: 0 0 15px rgba(var(--college-primary-rgb, 0, 212, 255), 0.3);
+}
+
+.faculty-menu-item:hover {
+  background-color: rgba(var(--college-primary-rgb, 0, 212, 255), 0.1) !important;
+  color: var(--item-hover-color) !important;
 }

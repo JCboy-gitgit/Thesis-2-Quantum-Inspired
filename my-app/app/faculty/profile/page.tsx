@@ -678,18 +678,18 @@ export default function FacultyProfilePage() {
                 </button>
               </div>
               <div className={styles.avatarInfo}>
-                <h1>{user?.full_name || 'Faculty Member'}</h1>
+                <h1 className={styles.profileName}>{user?.full_name || 'Faculty Member'}</h1>
                 <p className={styles.email}>{user?.email}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                   <span className={styles.roleBadge}>{user?.position || 'Faculty'}</span>
                   {user?.college && (
                     <span style={{
                       fontSize: '12px',
-                      color: 'var(--text-secondary)',
+                      color: 'var(--college-primary)',
                       padding: '4px 10px',
-                      background: 'rgba(16, 185, 129, 0.1)',
+                      background: 'var(--college-primary-light, rgba(var(--college-primary-rgb), 0.1))',
                       borderRadius: '12px',
-                      border: '1px solid rgba(16, 185, 129, 0.2)'
+                      border: '1px solid rgba(var(--college-primary-rgb), 0.2)'
                     }}>
                       {user.college}
                     </span>

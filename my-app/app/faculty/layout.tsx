@@ -51,6 +51,12 @@ function applyFacultyStyles(isLightMode: boolean) {
   // Set faculty class
   body.classList.add('faculty-page', 'faculty-page-wrapper')
   
+  // Sync data-theme on body to prevent stale ancestor selector conflicts
+  const currentTheme = html.getAttribute('data-theme')
+  if (currentTheme) {
+    body.setAttribute('data-theme', currentTheme)
+  }
+  
   // Force correct background and text colors
   const bgColor = isLightMode ? '#ffffff' : '#0a0e27'
   const textColor = isLightMode ? '#1e293b' : '#ffffff'
@@ -91,16 +97,22 @@ export default function FacultyLayout({
     // Apply faculty styles using theme from context
     applyFacultyStyles(isLightMode)
     
-    // Update data attributes to match theme context
+    // Update data attributes to match theme context on BOTH html and body
+    // Body must be synced because the login page sets data-theme on body,
+    // and stale values cause CSS ancestor selector conflicts
     document.documentElement.setAttribute('data-theme', theme)
+    document.body.setAttribute('data-theme', theme)
     if (collegeTheme) {
       document.documentElement.setAttribute('data-college-theme', collegeTheme)
+      document.body.setAttribute('data-college-theme', collegeTheme)
     }
     
     setMounted(true)
     
     return () => {
       document.body.classList.remove('faculty-page', 'faculty-page-wrapper')
+      document.body.removeAttribute('data-theme')
+      document.body.removeAttribute('data-college-theme')
     }
   }, [theme, collegeTheme, pathname]) // Re-run when theme changes or pathname changes
 

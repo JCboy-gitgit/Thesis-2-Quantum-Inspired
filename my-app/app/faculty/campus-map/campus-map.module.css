@@ -50,10 +50,48 @@
   --cm-toggle-active: var(--college-primary, #0891b2);
 }
 
+/* ---------- Dark mode explicit override ---------- */
+:global([data-theme="dark"]) .pageRoot {
+  --cm-bg: linear-gradient(135deg, #0a0e27 0%, #0f1631 40%, #141b3d 100%);
+  --cm-card: rgba(20, 27, 61, 0.72);
+  --cm-card-border: rgba(0, 212, 255, 0.12);
+  --cm-card-hover: rgba(0, 212, 255, 0.08);
+  --cm-text: #f0f4ff;
+  --cm-text-secondary: #94a3b8;
+  --cm-text-muted: #64748b;
+  --cm-glass: rgba(255, 255, 255, 0.04);
+  --cm-glass-border: rgba(255, 255, 255, 0.08);
+  --cm-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --cm-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --cm-divider: rgba(255, 255, 255, 0.06);
+  --cm-badge-bg: rgba(0, 212, 255, 0.1);
+  --cm-toggle-bg: rgba(255, 255, 255, 0.06);
+  --cm-toggle-active: var(--college-primary, #00d4ff);
+}
+
+/* ---------- Green override (faculty green → dark) ---------- */
+:global([data-theme="green"]) .pageRoot {
+  --cm-bg: linear-gradient(135deg, #0a0e27 0%, #0f1631 40%, #141b3d 100%);
+  --cm-card: rgba(20, 27, 61, 0.72);
+  --cm-card-border: rgba(0, 212, 255, 0.12);
+  --cm-card-hover: rgba(0, 212, 255, 0.08);
+  --cm-text: #f0f4ff;
+  --cm-text-secondary: #94a3b8;
+  --cm-text-muted: #64748b;
+  --cm-glass: rgba(255, 255, 255, 0.04);
+  --cm-glass-border: rgba(255, 255, 255, 0.08);
+  --cm-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --cm-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --cm-divider: rgba(255, 255, 255, 0.06);
+  --cm-badge-bg: rgba(0, 212, 255, 0.1);
+  --cm-toggle-bg: rgba(255, 255, 255, 0.06);
+  --cm-toggle-active: var(--college-primary, #00d4ff);
+}
+
 /* ---------- Page wrapper ---------- */
 .pageRoot {
   min-height: 100vh;
-  background: var(--cm-bg);
+  background: var(--cm-bg) !important;
   color: var(--cm-text);
   transition: background 0.4s ease, color 0.3s ease;
 }
