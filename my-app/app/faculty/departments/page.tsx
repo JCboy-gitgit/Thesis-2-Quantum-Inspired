@@ -46,6 +46,8 @@ interface DepartmentStats {
 function DepartmentsViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('light')
   
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
@@ -61,9 +63,24 @@ function DepartmentsViewContent() {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    // Initialize theme from localStorage immediately
+    const savedTheme = localStorage.getItem('faculty-base-theme')
+    const effectiveThemeValue = savedTheme === 'dark' ? 'dark' : 'light'
+    setEffectiveTheme(effectiveThemeValue)
+    document.documentElement.setAttribute('data-theme', effectiveThemeValue)
+    setMounted(true)
+    
     checkAuth()
     fetchDepartments()
   }, [])
+
+  // Sync with context theme changes
+  useEffect(() => {
+    if (mounted && theme) {
+      const newEffectiveTheme = theme === 'green' ? 'light' : (theme as 'light' | 'dark')
+      setEffectiveTheme(newEffectiveTheme)
+    }
+  }, [theme, mounted])
 
   useEffect(() => {
     if (searchTerm) {
@@ -196,7 +213,7 @@ function DepartmentsViewContent() {
   }
 
   return (
-    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
+    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={effectiveTheme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
           <ArrowLeft size={20} />

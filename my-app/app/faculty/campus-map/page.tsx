@@ -189,7 +189,7 @@ export default function FacultyCampusMapPage() {
           </div>
 
           {/* Campus Map Viewer - Full Height */}
-          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/80 border-cyan-500/20'}`}>
+          <section className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden border transition-all duration-300 ${isLightMode ? 'bg-white/90 border-slate-200' : 'bg-slate-800/90 border-cyan-500/20'}`}>
             <div className="w-full" style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}>
               <RoomViewer2D collegeTheme={collegeTheme} highlightEmpty={emptyRoomMode} />
             </div>

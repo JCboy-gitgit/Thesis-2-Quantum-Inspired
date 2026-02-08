@@ -42,6 +42,12 @@
   min-height: 600px;
 }
 
+/* Force dark mode container */
+:global([data-theme="dark"]) .container {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: #334155 !important;
+}
+
 .container.fullscreen {
   position: fixed;
   top: 0;
@@ -1658,7 +1664,7 @@
 }
 
 :global([data-theme="dark"]) .canvas {
-  background: #141a32;
+  background: #141a32 !important;
 }
 
 :global([data-theme="dark"]) .canvasWrapper {
@@ -1667,7 +1673,7 @@
               linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
               linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
   background-size: 20px 20px;
-  border-color: #334155;
+  border-color: #334155 !important;
 }
 
 :global([data-theme="dark"]) .canvasElement.room {
@@ -1756,8 +1762,8 @@
 
 /* Light theme support */
 :global([data-theme="light"]) .container {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
 }
 
 :global([data-theme="light"]) .header h2 {
@@ -1803,7 +1809,7 @@
 }
 
 :global([data-theme="light"]) .canvas {
-  background: rgba(241, 245, 249, 0.8);
+  background: rgba(241, 245, 249, 0.8) !important;
 }
 
 :global([data-theme="light"]) .canvasWrapper {
@@ -1812,7 +1818,7 @@
               linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
               linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
   background-size: 20px 20px;
-  border-color: #e2e8f0;
+  border-color: #e2e8f0 !important;
 }
 
 :global([data-theme="light"]) .roomDetails {
