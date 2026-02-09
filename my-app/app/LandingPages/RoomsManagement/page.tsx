@@ -865,7 +865,7 @@ export default function RoomsManagementPage() {
                 <Building2 size={28} />
               </div>
               <div className={styles.headerText}>
-                <h1 className={styles.title}>Rooms Management</h1>
+                <h1 className={styles.title}>Room Management</h1>
                 <p className={styles.subtitle}>
                   {currentView === 'files' && 'Select a campus file to manage rooms'}
                   {currentView === 'campuses' && `Viewing campuses in ${selectedFile?.school_name}`}

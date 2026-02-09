@@ -42,7 +42,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     // Only expand the relevant submenu, keeping others that are already open
     setOpenSubmenus(prev => {
       const newOpen: { [key: number]: boolean } = { ...prev }
-      
+
       menuItems.forEach((item, idx) => {
         if (item.hasSubmenu) {
           if (item.label === 'Room Schedule' && pathname.includes('/RoomSchedule')) {
@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           }
         }
       })
-      
+
       return newOpen
     })
     // eslint-disable-next-line
@@ -66,18 +66,18 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     { icon: Home, label: 'Home', path: '/LandingPages/Home' },
     {
       icon: Building2,
-      label: 'Rooms Management',
+      label: 'Room Management',
       path: '/LandingPages/RoomsManagement',
       hasSubmenu: true,
       submenu: [
         {
-          label: 'All Rooms', 
+          label: 'All Rooms',
           path: '/LandingPages/RoomsManagement',
           icon: List,
           exact: true
         },
         {
-          label: '2D Map Editor', 
+          label: '2D Map Editor',
           path: '/LandingPages/Rooms-Management/MapViewer',
           icon: Map,
           exact: true
@@ -87,7 +87,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     {
       icon: Users,
       label: 'Faculty Management',
-       path: '/LandingPages/FacultyManagement',
+      path: '/LandingPages/FacultyManagement',
       hasSubmenu: true,
       submenu: [
         {
@@ -110,7 +110,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
       hasSubmenu: true,
       submenu: [
         {
-          label: 'All Course',
+          label: 'All Courses',
           path: '/LandingPages/CoursesManagement',
           icon: BookOpen,
           exact: true
@@ -120,7 +120,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
     {
       icon: Calendar,
       label: 'Room Schedule',
-       path: '/LandingPages/RoomSchedule',
+      path: '/LandingPages/RoomSchedule',
       hasSubmenu: true,
       submenu: [
         {
@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           exact: true
         },
         {
-          label: 'Room Schedules View',
+          label: 'Room Schedule View',
           path: '/LandingPages/RoomSchedule/ViewSchedule',
           icon: Eye
         },
