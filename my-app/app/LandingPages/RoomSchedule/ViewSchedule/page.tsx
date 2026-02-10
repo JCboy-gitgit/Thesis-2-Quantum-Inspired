@@ -256,6 +256,7 @@ export default function ViewSchedulePage() {
 
   // Faculty assignment modal state
   const [showFacultyAssignModal, setShowFacultyAssignModal] = useState(false)
+  const [showBatchFacultyModal, setShowBatchFacultyModal] = useState(false)
   const [approvedFaculty, setApprovedFaculty] = useState<ApprovedFaculty[]>([])
   const [selectedFacultyIds, setSelectedFacultyIds] = useState<string[]>([])
   const [loadingFaculty, setLoadingFaculty] = useState(false)
@@ -346,7 +347,8 @@ export default function ViewSchedulePage() {
 
   // Open faculty assignment modal
   const handleOpenFacultyAssignModal = () => {
-    setShowFacultyAssignModal(true)
+    window.scrollTo(0, 0)
+    setShowBatchFacultyModal(true)
     setSelectedFacultyIds([])
     setFacultySearchQuery('')
     setAssignmentMessage(null)
@@ -385,10 +387,10 @@ export default function ViewSchedulePage() {
       if (data.success) {
         setAssignmentMessage({
           type: 'success',
-          text: `âœ… ${data.message}`
+          text: `✅ ${data.message}`
         })
         setTimeout(() => {
-          setShowFacultyAssignModal(false)
+          setShowBatchFacultyModal(false)
           setAssignmentMessage(null)
         }, 2000)
       } else {
@@ -695,6 +697,7 @@ export default function ViewSchedulePage() {
   }, [selectedSchedule])
 
   const handleSelectSchedule = async (schedule: Schedule) => {
+    window.scrollTo(0, 0)
     setSelectedSchedule(schedule)
     setViewMode('timetable')
     // Fetch approved faculty for assignment modal
@@ -1779,6 +1782,7 @@ export default function ViewSchedulePage() {
           {/* Header */}
           <div className={styles.pageHeader}>
             <button className={styles.backButton} onClick={() => {
+              window.scrollTo(0, 0)
               if (selectedSchedule) {
                 setSelectedSchedule(null)
                 setAllocations([])
@@ -1794,7 +1798,7 @@ export default function ViewSchedulePage() {
               <div className={styles.headerActions}>
                 <button
                   className={styles.actionButton}
-                  onClick={() => setIsRequestsModalOpen(true)}
+                  onClick={() => { window.scrollTo(0, 0); setIsRequestsModalOpen(true); }}
                   title="Review Schedule Change Requests"
                 >
                   <MessageSquare size={18} />
@@ -1913,7 +1917,7 @@ export default function ViewSchedulePage() {
                     onClick={() => setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                     title={historySortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
-                    {historySortOrder === 'asc' ? 'â†‘' : 'â†“'}
+                    {historySortOrder === 'asc' ? '↑' : '↓'}
                   </button>
                 </div>
                 <div className={styles.historyStats}>
@@ -2135,31 +2139,31 @@ export default function ViewSchedulePage() {
                 <div className={styles.viewModeButtons}>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
-                    onClick={() => { setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
                   >
                     <Grid3X3 size={16} /> All
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'room' ? styles.active : ''}`}
-                    onClick={() => setTimetableViewMode('room')}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('room'); }}
                   >
                     <DoorOpen size={16} /> By Room
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'section' ? styles.active : ''}`}
-                    onClick={() => setTimetableViewMode('section')}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('section'); }}
                   >
                     <Users size={16} /> By Section
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'teacher' ? styles.active : ''}`}
-                    onClick={() => setTimetableViewMode('teacher')}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('teacher'); }}
                   >
                     <FaChalkboardTeacher /> By Teacher
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'course' ? styles.active : ''}`}
-                    onClick={() => setTimetableViewMode('course')}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('course'); }}
                   >
                     <BookOpen size={16} /> By Course
                   </button>
@@ -2544,6 +2548,109 @@ export default function ViewSchedulePage() {
               fetchUnifiedSchedule()
             }}
           />
+        )}
+
+        {/* Batch Faculty Assignment Modal */}
+        {showBatchFacultyModal && selectedSchedule && (
+          <div className={styles.batchModalOverlay} onClick={() => setShowBatchFacultyModal(false)}>
+            <div className={styles.batchModalContent} onClick={e => e.stopPropagation()}>
+              <div className={styles.batchModalHeader}>
+                <div>
+                  <h2>Assign Schedule to Faculty</h2>
+                  <p className={styles.batchModalSubtitle}>
+                    Set &ldquo;{selectedSchedule.schedule_name}&rdquo; as the default schedule for selected faculty members
+                  </p>
+                </div>
+                <button className={styles.batchModalClose} onClick={() => setShowBatchFacultyModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className={styles.batchModalBody}>
+                <div className={styles.batchSearchBox}>
+                  <Search size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search faculty by name or email..."
+                    value={facultySearchQuery}
+                    onChange={e => setFacultySearchQuery(e.target.value)}
+                    className={styles.batchSearchInput}
+                  />
+                  {facultySearchQuery && (
+                    <button className={styles.batchClearSearch} onClick={() => setFacultySearchQuery('')}>
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.batchFacultyCount}>
+                  {selectedFacultyIds.length} selected &bull; {filteredApprovedFaculty.length} faculty found
+                </div>
+
+                <div className={styles.batchFacultyList}>
+                  {loadingFaculty ? (
+                    <div className={styles.batchLoading}>
+                      <Loader2 size={24} className={styles.spinner} />
+                      <p>Loading faculty...</p>
+                    </div>
+                  ) : filteredApprovedFaculty.length === 0 ? (
+                    <div className={styles.batchEmpty}>
+                      <Users size={24} />
+                      <p>No approved faculty found</p>
+                    </div>
+                  ) : (
+                    filteredApprovedFaculty.map(faculty => (
+                      <label
+                        key={faculty.id}
+                        className={`${styles.batchFacultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.batchSelected : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedFacultyIds.includes(faculty.id)}
+                          onChange={() => toggleFacultySelection(faculty.id)}
+                          className={styles.batchCheckbox}
+                        />
+                        <div className={styles.batchFacultyInfo}>
+                          <span className={styles.batchFacultyName}>{faculty.full_name}</span>
+                          <span className={styles.batchFacultyEmail}>{faculty.email}</span>
+                        </div>
+                        {selectedFacultyIds.includes(faculty.id) && (
+                          <Check size={16} className={styles.batchCheckIcon} />
+                        )}
+                      </label>
+                    ))
+                  )}
+                </div>
+
+                {assignmentMessage && (
+                  <div className={`${styles.batchMessage} ${styles[assignmentMessage.type]}`}>
+                    {assignmentMessage.text}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.batchModalFooter}>
+                <button
+                  className={styles.batchCancelBtn}
+                  onClick={() => setShowBatchFacultyModal(false)}
+                  disabled={assigningSchedule}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.batchConfirmBtn}
+                  onClick={handleAssignScheduleToFaculty}
+                  disabled={assigningSchedule || selectedFacultyIds.length === 0}
+                >
+                  {assigningSchedule ? (
+                    <><Loader2 size={16} className={styles.spinner} /> Assigning...</>
+                  ) : (
+                    <><UserPlus size={16} /> Assign to {selectedFacultyIds.length} Faculty</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

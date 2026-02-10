@@ -541,6 +541,7 @@ export default function MapViewerPage() {
   // Device detection for responsive adjustments (no warning)
   useEffect(() => {
     let wasMobile = window.innerWidth < 768
+    let isFirstCheck = true
 
     const checkDevice = () => {
       const width = window.innerWidth
@@ -548,7 +549,13 @@ export default function MapViewerPage() {
       setIsMobile(isNowMobile)
       setIsTablet(width >= 768 && width < 1024)
 
-      if (isNowMobile && !wasMobile) {
+      if (isFirstCheck && isNowMobile) {
+        // Initial load on mobile: collapse panels and show FAB
+        panelsBeforeMobileRef.current = { left: leftPanelOpen, right: rightPanelOpen }
+        setLeftPanelOpen(false)
+        setRightPanelOpen(false)
+        setShowMobileFAB(true)
+      } else if (isNowMobile && !wasMobile) {
         // Entering mobile: save current panel state, then collapse
         panelsBeforeMobileRef.current = { left: leftPanelOpen, right: rightPanelOpen }
         setLeftPanelOpen(false)
@@ -562,6 +569,7 @@ export default function MapViewerPage() {
         setActiveMobilePanel('none')
       }
 
+      isFirstCheck = false
       wasMobile = isNowMobile
     }
 

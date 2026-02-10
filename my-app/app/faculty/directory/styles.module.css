@@ -38,10 +38,46 @@
   background: var(--college-primary, rgba(0, 166, 81, 0.4));
 }
 
+.outerWrapper {
+  display: flex;
+  min-height: 100vh;
+  background: var(--background);
+  position: relative;
+}
+
+.mainColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+  transition: padding-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mainColumn.sidebarShift {
+  padding-left: 250px;
+}
+
+.contentRow {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .pageContainer {
   min-height: 100vh;
   padding: 2rem;
   background: var(--background);
+}
+
+.mainContentArea {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem;
+  padding-top: 5rem;
+  overflow-y: auto;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  contain: layout style;
 }
 
 .header {
@@ -109,11 +145,27 @@
   to { transform: rotate(360deg); }
 }
 
+/* Staggered card animations for smooth reflow */
+.facultyCard:nth-child(1) { transition-delay: 0ms; }
+.facultyCard:nth-child(2) { transition-delay: 20ms; }
+.facultyCard:nth-child(3) { transition-delay: 40ms; }
+.facultyCard:nth-child(4) { transition-delay: 60ms; }
+.facultyCard:nth-child(5) { transition-delay: 80ms; }
+.facultyCard:nth-child(6) { transition-delay: 100ms; }
+.facultyCard:nth-child(7) { transition-delay: 120ms; }
+.facultyCard:nth-child(8) { transition-delay: 140ms; }
+.facultyCard:nth-child(9) { transition-delay: 160ms; }
+.facultyCard:nth-child(10) { transition-delay: 180ms; }
+.facultyCard:nth-child(11) { transition-delay: 200ms; }
+.facultyCard:nth-child(12) { transition-delay: 220ms; }
+
 .statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .statCard {
@@ -146,6 +198,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .collegeCard {
@@ -154,8 +208,11 @@
   border-radius: 16px;
   padding: 2rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-sm);
+  will-change: transform, opacity;
+  position: relative;
+  opacity: 1;
 }
 
 .collegeCard:hover {
@@ -306,9 +363,11 @@
 
 .facultyGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .facultyCard {
@@ -317,10 +376,16 @@
   border-radius: 12px;
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);
   display: flex;
   gap: 1rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  position: relative;
+  opacity: 1;
+  transform-origin: center center;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .facultyCard:hover {
@@ -366,6 +431,9 @@
 .facultyInfo {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .facultyName {
@@ -376,12 +444,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
+  min-height: 1.575rem;
 }
 
 .facultyPosition {
   color: var(--text-secondary);
   font-size: 0.875rem;
   margin: 0 0 0.75rem 0;
+  line-height: 1.3;
+  min-height: 1.1375rem;
 }
 
 .badges {
@@ -389,6 +461,8 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-bottom: 0.75rem;
+  min-height: 1.75rem;
+  align-items: flex-start;
 }
 
 .roleBadge,
@@ -448,53 +522,39 @@
   font-weight: 600;
 }
 
-/* Side Panel Styles - Fixed Side-by-Side Layout */
+/* Side Panel Styles - Fixed Right, Content Auto-Adjusts */
 .sidePanel {
-  position: fixed;
-  top: 0;
-  right: 0;
   width: 0;
-  max-width: 450px;
-  height: 100vh;
+  max-width: 420px;
+  height: calc(100vh - 64px);
+  position: sticky;
+  top: 64px;
+  right: 0;
   background: var(--card-bg, #ffffff);
   border-left: 2px solid var(--card-border, rgba(0, 0, 0, 0.1));
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
-  z-index: 999;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 0;
-  visibility: hidden;
+  flex-shrink: 0;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Theme-aware backgrounds managed by CSS variables */
-.sidePanel {
-  background: var(--card-bg);
-  border-left-color: var(--border-color);
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
-}
-
 :global([data-theme="dark"]) .sidePanel {
   background: var(--card-bg);
   border-left-color: var(--border-color);
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .sidePanelOpen {
-  width: 450px;
-  opacity: 1;
-  visibility: visible;
+  width: 420px;
 }
 
-/* Main content area - no adjustment needed as panel overlays */
-.mainContentArea {
-  transition: none;
-  margin-right: 0;
-}
-
+/* Main content area - no extra rule needed, flex handles it */
 .mainContentArea.withPanel {
-  margin-right: 0;
+  /* not needed anymore, flex auto-adjusts */
 }
 
 .closePanelButton {
@@ -781,10 +841,15 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  .pageContainer {
-    padding: 1rem;
+  .mainColumn.sidebarShift {
+    padding-left: 0;
   }
-  
+
+  .mainContentArea {
+    padding: 1rem;
+    padding-top: 5rem;
+  }
+
   .pageTitle {
     font-size: 1.5rem;
   }
@@ -845,8 +910,9 @@
 }
 
 @media (max-width: 480px) {
-  .pageContainer {
+  .mainContentArea {
     padding: 0.75rem;
+    padding-top: 4.5rem;
   }
 
   .pageTitle {
@@ -910,8 +976,9 @@
 }
 
 @media (max-width: 360px) {
-  .pageContainer {
+  .mainContentArea {
     padding: 0.5rem;
+    padding-top: 4rem;
   }
 
   .pageTitle {
@@ -996,144 +1063,5 @@
   .modal {
     margin: 0.5rem;
     max-height: 95vh;
-  }
-
-  .modalHeader {
-    padding: 1.5rem;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .modalHeader > div {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .modalAvatar {
-    width: 70px;
-    height: 70px;
-    font-size: 1.5rem;
-  }
-  
-  .modalAvatarImg {
-    width: 70px;
-    height: 70px;
-    min-width: 70px;
-    min-height: 70px;
-    max-width: 70px;
-    max-height: 70px;
-  }
-
-  .modalName {
-    font-size: 1.15rem;
-    word-break: break-word;
-  }
-
-  .modalPosition {
-    font-size: 0.875rem;
-  }
-
-  .modalBadges {
-    justify-content: center;
-  }
-
-  .modalBody {
-    padding: 1.25rem;
-  }
-
-  .infoItem {
-    font-size: 0.85rem;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-  
-  .infoItem strong {
-    min-width: fit-content;
-  }
-  
-  .infoItem span {
-    word-break: break-word;
-  }
-
-  .section h3 {
-    font-size: 1rem;
-  }
-
-  .section p {
-    font-size: 0.875rem;
-  }
-
-  .pagination {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .pageButton {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
-  }
-
-  .pageInfo {
-    font-size: 0.8rem;
-  }
-
-  .searchSection {
-    padding: 1rem;
-  }
-
-  .searchBar {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .searchBar input {
-    font-size: 0.875rem;
-  }
-
-  /* Side Panel Mobile Styles */
-  .sidePanel {
-    width: 100%;
-    max-width: 100%;
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    height: 70vh;
-    border-left: none;
-    border-top: 2px solid var(--card-border);
-    border-radius: 24px 24px 0 0;
-  }
-
-  .sidePanelOpen {
-    width: 100%;
-  }
-
-  .mainContentArea.withPanel {
-    margin-right: 0;
-  }
-
-  .panelHeader {
-    padding: 1.5rem;
-    padding-top: 3.5rem;
-  }
-
-  .panelAvatar {
-    width: 80px;
-    height: 80px;
-    font-size: 1.75rem;
-  }
-
-  .panelName {
-    font-size: 1.25rem;
-  }
-
-  .panelPosition {
-    font-size: 0.875rem;
-  }
-
-  .panelBody {
-    padding: 1rem 1.5rem;
   }
 }

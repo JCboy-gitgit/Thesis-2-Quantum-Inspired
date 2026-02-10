@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
 import { ArrowLeft, Search, Users, Building2, Briefcase, Mail, Phone, MapPin, X } from 'lucide-react'
+import FacultySidebar from '@/app/components/FacultySidebar'
+import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
 
@@ -132,6 +134,9 @@ function FacultyDirectoryContent() {
   const [stats, setStats] = useState<FacultyStats | null>(null)
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
@@ -204,6 +209,8 @@ function FacultyDirectoryContent() {
         router.push('/')
         return
       }
+
+      setUserEmail(session.user.email || undefined)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -323,19 +330,36 @@ function FacultyDirectoryContent() {
   }
 
   return (
-    <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
-      <div className={`${styles.mainContentArea} ${selectedFaculty ? styles.withPanel : ''}`}>
-        <div className={styles.header}>
-          <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
-            <ArrowLeft size={20} />
-            Back to Home
-          </button>
-          <h1 className={styles.pageTitle}>
-            <Users size={32} />
-            Faculty Directory
-          </h1>
-        <p className={styles.subtitle}>View all faculty members across the institution</p>
-      </div>
+    <div className={`${styles.outerWrapper} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
+      {/* Faculty Sidebar */}
+      <FacultySidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        menuBarHidden={isMenuBarHidden}
+      />
+
+      {/* Main Column (menubar + content) */}
+      <div className={`${styles.mainColumn} ${sidebarOpen ? styles.sidebarShift : ''}`}>
+        {/* Faculty Menu Bar - sits above everything */}
+        <FacultyMenuBar
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+          isHidden={isMenuBarHidden}
+          onToggleHidden={setIsMenuBarHidden}
+          userEmail={userEmail}
+        />
+
+        {/* Content + Side Panel row */}
+        <div className={styles.contentRow}>
+          {/* Scrollable content area */}
+          <div className={styles.mainContentArea}>
+            <div className={styles.header}>
+              <h1 className={styles.pageTitle}>
+                <Users size={32} />
+                Faculty Directory
+              </h1>
+              <p className={styles.subtitle}>View all faculty members across the institution</p>
+            </div>
 
       {!selectedCollege ? (
         <>
@@ -518,6 +542,112 @@ function FacultyDirectoryContent() {
       )}
       </div> {/* End mainContentArea */}
 
+          {/* Desktop Side Panel - inside contentRow so it pushes content */}
+          {!isMobile && (
+            <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
+              {selectedFaculty && (
+                <>
+                  <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
+                    <X size={24} />
+                  </button>
+                  <div className={styles.panelHeader}>
+                    {selectedFaculty.profile_image ? (
+                      <img 
+                        src={selectedFaculty.profile_image} 
+                        alt={selectedFaculty.full_name}
+                        className={styles.panelAvatarImg}
+                      />
+                    ) : (
+                      <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                        {getInitials(selectedFaculty.full_name)}
+                      </div>
+                    )}
+                    <div>
+                      <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
+                      <p className={styles.panelPosition}>{selectedFaculty.position}</p>
+                      <div className={styles.panelBadges}>
+                        <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
+                          {getRoleLabel(selectedFaculty.role)}
+                        </span>
+                        <span 
+                          className={styles.employmentBadge} 
+                          style={{ backgroundColor: getEmploymentBadge(selectedFaculty.employment_type).color }}
+                        >
+                          {getEmploymentBadge(selectedFaculty.employment_type).label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.panelBody}>
+                    <div className={styles.infoGrid}>
+                      {selectedFaculty.faculty_id && (
+                        <div className={styles.infoItem}>
+                          <strong>Faculty ID:</strong>
+                          <span>{selectedFaculty.faculty_id}</span>
+                        </div>
+                      )}
+                      {selectedFaculty.college && (
+                        <div className={styles.infoItem}>
+                          <Building2 size={16} />
+                          <strong>College:</strong>
+                          <span>{selectedFaculty.college}</span>
+                        </div>
+                      )}
+                      {selectedFaculty.department && (
+                        <div className={styles.infoItem}>
+                          <Building2 size={16} />
+                          <strong>Department:</strong>
+                          <span>{selectedFaculty.department}</span>
+                        </div>
+                      )}
+                      {selectedFaculty.email && (
+                        <div className={styles.infoItem}>
+                          <Mail size={16} />
+                          <strong>Email:</strong>
+                          <span>{selectedFaculty.email}</span>
+                        </div>
+                      )}
+                      {selectedFaculty.phone && (
+                        <div className={styles.infoItem}>
+                          <Phone size={16} />
+                          <strong>Phone:</strong>
+                          <span>{selectedFaculty.phone}</span>
+                        </div>
+                      )}
+                      {selectedFaculty.office_location && (
+                        <div className={styles.infoItem}>
+                          <MapPin size={16} />
+                          <strong>Office:</strong>
+                          <span>{selectedFaculty.office_location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {selectedFaculty.specialization && (
+                      <div className={styles.section}>
+                        <h3>Specialization</h3>
+                        <p>{selectedFaculty.specialization}</p>
+                      </div>
+                    )}
+                    {selectedFaculty.education && (
+                      <div className={styles.section}>
+                        <h3>Education</h3>
+                        <p>{selectedFaculty.education}</p>
+                      </div>
+                    )}
+                    {selectedFaculty.bio && (
+                      <div className={styles.section}>
+                        <h3>Biography</h3>
+                        <p>{selectedFaculty.bio}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div> {/* End contentRow */}
+      </div> {/* End mainColumn */}
+
       {/* Mobile Modal */}
       {isMobile && selectedFaculty && (
         <div className={styles.modalOverlay} onClick={() => setSelectedFaculty(null)}>
@@ -617,110 +747,6 @@ function FacultyDirectoryContent() {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Desktop Side Panel */}
-      {!isMobile && (
-        <div className={`${styles.sidePanel} ${selectedFaculty ? styles.sidePanelOpen : ''}`}>
-          {selectedFaculty && (
-            <>
-              <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
-                <X size={24} />
-              </button>
-              <div className={styles.panelHeader}>
-                {selectedFaculty.profile_image ? (
-                  <img 
-                    src={selectedFaculty.profile_image} 
-                    alt={selectedFaculty.full_name}
-                    className={styles.panelAvatarImg}
-                  />
-                ) : (
-                  <div className={styles.panelAvatar} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
-                    {getInitials(selectedFaculty.full_name)}
-                  </div>
-                )}
-                <div>
-                  <h2 className={styles.panelName}>{selectedFaculty.full_name}</h2>
-                  <p className={styles.panelPosition}>{selectedFaculty.position}</p>
-                  <div className={styles.panelBadges}>
-                    <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
-                      {getRoleLabel(selectedFaculty.role)}
-                    </span>
-                    <span 
-                      className={styles.employmentBadge} 
-                      style={{ backgroundColor: getEmploymentBadge(selectedFaculty.employment_type).color }}
-                    >
-                      {getEmploymentBadge(selectedFaculty.employment_type).label}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.panelBody}>
-                <div className={styles.infoGrid}>
-                  {selectedFaculty.faculty_id && (
-                    <div className={styles.infoItem}>
-                      <strong>Faculty ID:</strong>
-                      <span>{selectedFaculty.faculty_id}</span>
-                    </div>
-                  )}
-                  {selectedFaculty.college && (
-                    <div className={styles.infoItem}>
-                      <Building2 size={16} />
-                      <strong>College:</strong>
-                      <span>{selectedFaculty.college}</span>
-                    </div>
-                  )}
-                  {selectedFaculty.department && (
-                    <div className={styles.infoItem}>
-                      <Building2 size={16} />
-                      <strong>Department:</strong>
-                      <span>{selectedFaculty.department}</span>
-                    </div>
-                  )}
-                  {selectedFaculty.email && (
-                    <div className={styles.infoItem}>
-                      <Mail size={16} />
-                      <strong>Email:</strong>
-                      <span>{selectedFaculty.email}</span>
-                    </div>
-                  )}
-                  {selectedFaculty.phone && (
-                    <div className={styles.infoItem}>
-                      <Phone size={16} />
-                      <strong>Phone:</strong>
-                      <span>{selectedFaculty.phone}</span>
-                    </div>
-                  )}
-                  {selectedFaculty.office_location && (
-                    <div className={styles.infoItem}>
-                      <MapPin size={16} />
-                      <strong>Office:</strong>
-                      <span>{selectedFaculty.office_location}</span>
-                    </div>
-                  )}
-                </div>
-                {selectedFaculty.specialization && (
-                  <div className={styles.section}>
-                    <h3>Specialization</h3>
-                    <p>{selectedFaculty.specialization}</p>
-                  </div>
-                )}
-                {selectedFaculty.education && (
-                  <div className={styles.section}>
-                    <h3>Education</h3>
-                    <p>{selectedFaculty.education}</p>
-                  </div>
-                )}
-                {selectedFaculty.bio && (
-                  <div className={styles.section}>
-                    <h3>Biography</h3>
-                    <p>{selectedFaculty.bio}</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
         </div>
       )}
     </div>
