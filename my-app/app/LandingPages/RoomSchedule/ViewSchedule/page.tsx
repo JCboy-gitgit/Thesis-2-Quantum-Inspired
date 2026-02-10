@@ -132,6 +132,7 @@ interface RoomAllocation {
   room: string
   capacity: number
   teacher_name?: string
+  teacher_id?: string
   department?: string
   lec_hours?: number
   lab_hours?: number
@@ -1721,7 +1722,6 @@ export default function ViewSchedulePage() {
       const { error } = await db
         .from('room_allocations')
         .update({
-          teacher_id: facultyId,
           teacher_name: facultyName
         })
         .eq('id', selectedAllocation.id)

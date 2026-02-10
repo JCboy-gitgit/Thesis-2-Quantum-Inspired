@@ -462,14 +462,28 @@ def generate_30min_slots(start_time: str = "07:00", end_time: str = "21:00") -> 
     return generate_time_slots(start_time, end_time, 30)
 
 
-def generate_time_slots(start_time: str = "07:00", end_time: str = "20:00", slot_duration: int = 90) -> List[TimeSlot]:
+def generate_time_slots(
+    start_time: str = "07:00",
+    end_time: str = "20:00",
+    slot_duration: int = 90,
+    lunch_start: Optional[str] = None,
+    lunch_end: Optional[str] = None
+) -> List[TimeSlot]:
     """
-    Generate time slots with configurable duration.
+    Generate time slots with configurable duration, skipping over the lunch break.
+    
+    When lunch_start and lunch_end are provided, the slot grid will NOT place any
+    slot that overlaps with the lunch window.  Instead it will:
+      1. Generate slots up to the lunch start.
+      2. Jump to lunch_end and resume generating from there.
+    This guarantees classes can start right when lunch ends (e.g. 2:00 PM).
     
     Args:
         start_time: Campus opening time (e.g., "07:00")
         end_time: Campus closing time (e.g., "20:00")
         slot_duration: Duration in minutes (default 90 = 1.5 hours standard academic period)
+        lunch_start: Lunch break start time (e.g., "13:00").  None = no gap.
+        lunch_end:   Lunch break end time   (e.g., "14:00").  None = no gap.
     
     Returns:
         List of TimeSlot objects
@@ -478,18 +492,32 @@ def generate_time_slots(start_time: str = "07:00", end_time: str = "20:00", slot
     start_mins = parse_time_to_minutes(start_time)
     end_mins = parse_time_to_minutes(end_time)
     
+    # Parse optional lunch window
+    lunch_start_mins = parse_time_to_minutes(lunch_start) if lunch_start else None
+    lunch_end_mins = parse_time_to_minutes(lunch_end) if lunch_end else None
+    
     slot_id = 1
     current = start_mins
     
     while current + slot_duration <= end_mins:
-        slot_start = minutes_to_time(current)
-        slot_end = minutes_to_time(current + slot_duration)
+        slot_end_mins = current + slot_duration
+        
+        # If a lunch window is configured, check for overlap
+        if lunch_start_mins is not None and lunch_end_mins is not None:
+            # Overlap: slot_start < lunch_end AND lunch_start < slot_end
+            if current < lunch_end_mins and lunch_start_mins < slot_end_mins:
+                # This slot would overlap lunch — jump to lunch_end and retry
+                current = lunch_end_mins
+                continue
+        
+        slot_start_str = minutes_to_time(current)
+        slot_end_str = minutes_to_time(slot_end_mins)
         
         slots.append(TimeSlot(
             id=slot_id,
-            slot_name=f"{slot_start}-{slot_end}",
-            start_time=slot_start,
-            end_time=slot_end,
+            slot_name=f"{slot_start_str}-{slot_end_str}",
+            start_time=slot_start_str,
+            end_time=slot_end_str,
             start_minutes=current,
             duration_minutes=slot_duration
         ))
@@ -2878,12 +2906,22 @@ def run_enhanced_scheduler(
     slot_duration = config.get('slot_duration', 90)
     slot_hours = slot_duration / 60  # Convert to hours (e.g., 90 min = 1.5 hours)
     
-    # Generate time slots using configured duration
+    # Determine lunch break window from config so slot generation can skip over it
+    lunch_mode = config.get('lunch_mode', 'strict')
+    lunch_start_hour = config.get('lunch_start_hour', 13)
+    lunch_end_hour = config.get('lunch_end_hour', 14)
+    lunch_start_str = f"{lunch_start_hour:02d}:00" if lunch_mode != 'none' else None
+    lunch_end_str = f"{lunch_end_hour:02d}:00" if lunch_mode != 'none' else None
+    
+    # Generate time slots using configured duration (skipping lunch gap)
     if not time_slots_data:
         start_time = config.get('start_time', '07:00')
         end_time = config.get('end_time', '20:00')
-        time_slots = generate_time_slots(start_time, end_time, slot_duration)
-        print(f"⏰ Generated {len(time_slots)} time slots of {slot_duration} minutes each")
+        time_slots = generate_time_slots(
+            start_time, end_time, slot_duration,
+            lunch_start=lunch_start_str, lunch_end=lunch_end_str
+        )
+        print(f"⏰ Generated {len(time_slots)} time slots of {slot_duration} minutes each (lunch gap: {lunch_start_str}-{lunch_end_str})")
     else:
         time_slots = [
             TimeSlot(

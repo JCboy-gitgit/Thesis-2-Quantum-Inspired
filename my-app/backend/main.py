@@ -371,7 +371,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             sections = [s.dict() for s in request.sections_data]
             rooms = [r.dict() for r in request.rooms_data]
             
-            # Generate time slots using frontend's slot duration
+            # Generate time slots using frontend's slot duration (skip lunch gap)
+            lunch_start_str = request.lunch_start if request.lunch_mode != 'none' else None
+            lunch_end_str = request.lunch_end if request.lunch_mode != 'none' else None
             if request.use_enhanced_scheduler:
                 # Use frontend's slot_duration (e.g., 90 minutes)
                 time_slots = [
@@ -382,9 +384,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                         'end_time': s.end_time,
                         'duration_minutes': s.duration_minutes
                     }
-                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration)
+                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration, lunch_start=lunch_start_str, lunch_end=lunch_end_str)
                 ]
-                print(f"⏰ Generated {len(time_slots)} time slots of {request.slot_duration} minutes ({request.start_time} - {request.end_time})")
+                print(f"⏰ Generated {len(time_slots)} time slots of {request.slot_duration} minutes ({request.start_time} - {request.end_time}, lunch gap: {lunch_start_str}-{lunch_end_str})")
             elif request.time_slots:
                 time_slots = [t.dict() for t in request.time_slots]
                 print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
@@ -396,6 +398,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             all_sections = await get_sections_for_scheduling()
             all_rooms = await get_all_rooms()
             
+            lunch_start_str2 = request.lunch_start if request.lunch_mode != 'none' else None
+            lunch_end_str2 = request.lunch_end if request.lunch_mode != 'none' else None
             if request.use_enhanced_scheduler:
                 time_slots = [
                     {
@@ -405,7 +409,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                         'end_time': s.end_time,
                         'duration_minutes': s.duration_minutes
                     }
-                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration)
+                    for s in generate_time_slots(request.start_time, request.end_time, request.slot_duration, lunch_start=lunch_start_str2, lunch_end=lunch_end_str2)
                 ]
             else:
                 time_slots = await get_time_slots()

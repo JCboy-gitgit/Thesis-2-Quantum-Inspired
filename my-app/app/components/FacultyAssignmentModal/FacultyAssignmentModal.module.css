@@ -1,16 +1,18 @@
+/* ============================================================
+   FacultyAssignmentModal — Dark (default), Green, Light themes
+   ============================================================ */
+
+/* ===== Overlay & Container ===== */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 20px;
+  padding: 16px;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -18,27 +20,46 @@
   background: var(--card-bg, #1a1a2e);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  max-width: 650px;
+  max-width: 600px;
   width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
+/* ===== Header ===== */
 .modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  flex-shrink: 0;
 }
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary, #fff);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.headerSubtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  font-weight: 400;
 }
 
 .closeButton {
@@ -50,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: all 0.2s;
 }
 
@@ -59,224 +80,501 @@
   color: var(--text-primary, #fff);
 }
 
-.closeButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.closeButton:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ===== Body (scrollable) ===== */
 .modalBody {
-  padding: 20px 24px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
+.modalBody::-webkit-scrollbar { width: 5px; }
+.modalBody::-webkit-scrollbar-track { background: transparent; }
+.modalBody::-webkit-scrollbar-thumb { background: var(--accent-color-fade, rgba(6, 182, 212, 0.25)); border-radius: 3px; }
+
+/* ===== Allocation Details ===== */
 .allocationDetails {
   background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 10px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .allocationDetails h3 {
-  margin: 0 0 12px 0;
-  font-size: 1rem;
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary, #fff);
+  color: var(--accent-color, #06b6d4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .detailsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 .detailItem {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .value {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   color: var(--text-primary, #fff);
   font-weight: 500;
 }
 
+.currentFacultyValue {
+  font-size: 0.88rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* ===== Faculty Selection ===== */
 .facultySelection {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-.facultySelection h3 {
+.selectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.selectionHeader h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--accent-color, #06b6d4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+.eligibleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* ===== Filter Bar ===== */
+.filterBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  flex: 1;
+  min-width: 140px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  transition: border-color 0.2s;
+}
+
+.searchBox:focus-within {
+  border-color: var(--accent-color, #06b6d4);
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary, #fff);
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.searchInput::placeholder { color: var(--text-secondary, rgba(255, 255, 255, 0.35)); }
+
+.clearSearch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.clearSearch:hover { color: var(--text-primary, #fff); }
+
+.filterSelect {
+  padding: 7px 10px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text-primary, #fff);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.filterSelect option { background: #1a1a2e; color: #fff; }
+
+/* ===== Faculty Count ===== */
+.facultyCount {
+  font-size: 0.72rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+}
+
+/* ===== Toggle Filters ===== */
+.toggleFilters {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.toggleLabel input[type="checkbox"] {
+  accent-color: var(--accent-color, #06b6d4);
+  width: 14px;
+  height: 14px;
+}
+
+.toggleText { user-select: none; }
+
+/* ===== Faculty List ===== */
 .facultyList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 350px;
+  gap: 6px;
+  max-height: 340px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.facultyList::-webkit-scrollbar {
-  width: 6px;
-}
+.facultyList::-webkit-scrollbar { width: 5px; }
+.facultyList::-webkit-scrollbar-track { background: transparent; }
+.facultyList::-webkit-scrollbar-thumb { background: var(--accent-color-fade, rgba(6, 182, 212, 0.25)); border-radius: 3px; }
 
-.facultyList::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.facultyList::-webkit-scrollbar-thumb {
-  background: var(--accent-color-fade, rgba(6, 182, 212, 0.2));
-  border-radius: 3px;
-}
-
-.facultyList::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color-fade, rgba(6, 182, 212, 0.3));
-}
-
-.noFaculty {
-  padding: 24px 16px;
-  text-align: center;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
-  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
+.facultyItemWrapper {
+  display: flex;
+  flex-direction: column;
 }
 
 .facultyOption {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 14px;
   background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
-  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.08));
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  gap: 10px;
 }
 
 .facultyOption:hover {
-  background: var(--accent-color-bg, rgba(6, 182, 212, 0.1));
-  border-color: var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.08));
+  border-color: var(--accent-color-fade, rgba(6, 182, 212, 0.25));
 }
 
 .facultyOption.selected {
-  background: var(--accent-color-bg, rgba(6, 182, 212, 0.15));
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.12));
   border-color: var(--accent-color, #06b6d4);
   box-shadow: 0 0 12px var(--accent-color-fade, rgba(6, 182, 212, 0.2));
+}
+
+.facultyOption.hasConflict {
+  opacity: 0.55;
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+  cursor: not-allowed;
 }
 
 .facultyInfo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
+  min-width: 0;
+}
+
+.facultyNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .facultyName {
   font-weight: 600;
   color: var(--text-primary, #fff);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+}
+
+.eligibleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.nonEligibleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.conflictBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .facultyMeta {
-  font-size: 0.8rem;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
-}
-
-.specialization {
-  font-size: 0.8rem;
-  color: var(--accent-color, #06b6d4);
-  font-weight: 500;
-}
-
-.selectedIcon {
-  color: var(--accent-color, #06b6d4);
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.conflictWarning {
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
   display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(234, 167, 65, 0.1);
-  border: 1px solid rgba(234, 167, 65, 0.3);
-  border-radius: 8px;
-  color: #fbbf24;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
-.conflictWarning svg {
+.loadInfo {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.loadBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  border-radius: 4px;
+  font-size: 0.68rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
+}
+
+.conflictInfo {
+  font-size: 0.72rem;
+  color: #f87171;
+  font-style: italic;
+}
+
+/* ===== Faculty Actions ===== */
+.facultyActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
-.conflictTitle {
-  margin: 0 0 4px 0;
-  font-weight: 600;
-  font-size: 0.9rem;
+.selectedIcon { color: var(--accent-color, #06b6d4); }
+
+.expandBtn {
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
 }
 
-.conflictMessage {
-  margin: 0;
-  font-size: 0.85rem;
+.expandBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fff);
 }
+
+/* ===== Expanded Schedule ===== */
+.expandedSchedule {
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.3));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 10px;
+  margin-top: -2px;
+}
+
+.scheduleTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  margin-bottom: 6px;
+}
+
+.noSchedule {
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.35));
+  font-style: italic;
+}
+
+.scheduleItems {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  font-size: 0.72rem;
+  color: var(--text-primary, #fff);
+  flex-wrap: wrap;
+}
+
+.scheduleTime {
+  font-weight: 600;
+  color: var(--accent-color, #06b6d4);
+  min-width: 60px;
+}
+
+.scheduleCourse { font-weight: 500; }
+.scheduleSection { font-size: 0.65rem; color: var(--text-secondary, rgba(255, 255, 255, 0.45)); }
+.scheduleRoom {
+  font-size: 0.65rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
+  margin-left: auto;
+}
+
+/* ===== Loading / Empty States ===== */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 35px 20px;
+  gap: 10px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.noFaculty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.55));
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  gap: 6px;
+}
+
+.noFaculty p { margin: 0; font-size: 0.88rem; }
+.noFaculty small { font-size: 0.75rem; opacity: 0.7; }
+
+/* ===== Info / Error Messages ===== */
+.infoMessage {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(6, 182, 212, 0.06);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 8px;
+  color: var(--accent-color, #06b6d4);
+  align-items: flex-start;
+}
+
+.infoMessage svg { flex-shrink: 0; margin-top: 2px; }
+.infoMessage p { margin: 0; font-size: 0.82rem; line-height: 1.4; }
 
 .errorMessage {
   display: flex;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 14px;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 8px;
   color: #f87171;
 }
 
-.errorMessage svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
+.errorMessage svg { flex-shrink: 0; margin-top: 2px; }
+.errorMessage p { margin: 0; font-size: 0.85rem; }
 
-.errorMessage p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
+/* ===== Footer ===== */
 .modalFooter {
   display: flex;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: 10px;
+  padding: 14px 22px;
   border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   background: var(--card-bg-secondary, rgba(15, 23, 42, 0.3));
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .cancelButton,
 .confirmButton {
-  padding: 10px 20px;
+  padding: 9px 18px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: none;
 }
 
@@ -285,9 +583,7 @@
   color: var(--text-primary, #fff);
 }
 
-.cancelButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
-}
+.cancelButton:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); }
 
 .confirmButton {
   background: linear-gradient(135deg, var(--primary-color, #06b6d4) 0%, var(--primary-color-dark, #0891b2) 100%);
@@ -295,391 +591,165 @@
 }
 
 .confirmButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px var(--accent-color-fade, rgba(6, 182, 212, 0.3));
 }
 
 .confirmButton:disabled,
-.confirmButton.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
+.confirmButton.disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.spinner {
-  animation: spin 1s linear infinite;
-}
+.spinner { animation: spin 1s linear infinite; }
 
+/* ===== Animations ===== */
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Loading State */
-.loadingState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  gap: 12px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
-}
+/* ============================================================
+   GREEN THEME
+   ============================================================ */
+:global([data-theme="green"]) .modalOverlay { background: rgba(2, 53, 60, 0.45); backdrop-filter: blur(6px); }
+:global([data-theme="green"]) .modalContent { background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%); border: 2px solid rgba(46, 175, 125, 0.3); box-shadow: 0 20px 60px rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .modalHeader { background: linear-gradient(90deg, rgba(68, 147, 66, 0.12) 0%, transparent 100%); border-bottom: 2px solid rgba(46, 175, 125, 0.25); }
+:global([data-theme="green"]) .modalHeader h2 { color: #02353C; }
+:global([data-theme="green"]) .headerSubtitle { color: #166534; }
+:global([data-theme="green"]) .closeButton { color: #166534; }
+:global([data-theme="green"]) .closeButton:hover:not(:disabled) { background: rgba(46, 175, 125, 0.12); color: #02353C; }
+:global([data-theme="green"]) .allocationDetails { background: rgba(46, 175, 125, 0.06); border-color: rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .allocationDetails h3 { color: #02353C; }
+:global([data-theme="green"]) .label { color: #166534; }
+:global([data-theme="green"]) .value { color: #02353C; font-weight: 600; }
+:global([data-theme="green"]) .currentFacultyValue { color: #166534; }
+:global([data-theme="green"]) .selectionHeader h3 { color: #02353C; }
+:global([data-theme="green"]) .eligibleBadge { background: rgba(46, 175, 125, 0.12); color: #166534; border-color: rgba(46, 175, 125, 0.25); }
+:global([data-theme="green"]) .searchBox { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .searchBox:focus-within { border-color: #2EAF7D; }
+:global([data-theme="green"]) .searchInput { color: #02353C; }
+:global([data-theme="green"]) .searchInput::placeholder { color: rgba(2, 53, 60, 0.35); }
+:global([data-theme="green"]) .clearSearch { color: rgba(2, 53, 60, 0.4); }
+:global([data-theme="green"]) .clearSearch:hover { color: #02353C; }
+:global([data-theme="green"]) .filterSelect { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); color: #02353C; }
+:global([data-theme="green"]) .filterSelect option { background: white; color: #02353C; }
+:global([data-theme="green"]) .facultyCount { color: rgba(2, 53, 60, 0.45); }
+:global([data-theme="green"]) .facultyOption { background: rgba(255, 255, 255, 0.95); border: 2px solid rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .facultyOption:hover { background: rgba(46, 175, 125, 0.08); border-color: #2EAF7D; }
+:global([data-theme="green"]) .facultyOption.selected { background: rgba(46, 175, 125, 0.12); border-color: #2EAF7D; box-shadow: 0 0 10px rgba(46, 175, 125, 0.25); }
+:global([data-theme="green"]) .facultyOption.hasConflict { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15); }
+:global([data-theme="green"]) .facultyName { color: #02353C; }
+:global([data-theme="green"]) .eligibleTag { background: rgba(46, 175, 125, 0.12); color: #166534; }
+:global([data-theme="green"]) .nonEligibleTag { background: rgba(2, 53, 60, 0.06); color: rgba(2, 53, 60, 0.45); }
+:global([data-theme="green"]) .facultyMeta { color: #166534; }
+:global([data-theme="green"]) .loadBadge { background: rgba(46, 175, 125, 0.08); border-color: rgba(46, 175, 125, 0.15); color: #166534; }
+:global([data-theme="green"]) .selectedIcon { color: #2EAF7D; }
+:global([data-theme="green"]) .expandBtn { border-color: rgba(46, 175, 125, 0.15); color: #166534; }
+:global([data-theme="green"]) .expandBtn:hover { background: rgba(46, 175, 125, 0.1); color: #02353C; }
+:global([data-theme="green"]) .expandedSchedule { background: rgba(46, 175, 125, 0.04); border-color: rgba(46, 175, 125, 0.12); }
+:global([data-theme="green"]) .scheduleTitle { color: #166534; }
+:global([data-theme="green"]) .noSchedule { color: rgba(2, 53, 60, 0.35); }
+:global([data-theme="green"]) .scheduleItem { background: rgba(255, 255, 255, 0.6); border-color: rgba(46, 175, 125, 0.12); color: #02353C; }
+:global([data-theme="green"]) .scheduleTime { color: #449342; }
+:global([data-theme="green"]) .scheduleSection { color: rgba(2, 53, 60, 0.5); }
+:global([data-theme="green"]) .scheduleRoom { color: rgba(2, 53, 60, 0.5); }
+:global([data-theme="green"]) .loadingState { color: #166534; }
+:global([data-theme="green"]) .noFaculty { border-color: rgba(46, 175, 125, 0.25); color: #166534; }
+:global([data-theme="green"]) .infoMessage { background: rgba(46, 175, 125, 0.06); border-color: rgba(46, 175, 125, 0.2); color: #166534; }
+:global([data-theme="green"]) .errorMessage { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.25); color: #dc2626; }
+:global([data-theme="green"]) .modalFooter { background: rgba(46, 175, 125, 0.06); border-top-color: rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .cancelButton { background: rgba(255, 255, 255, 0.95); border: 2px solid rgba(46, 175, 125, 0.25); color: #02353C; }
+:global([data-theme="green"]) .cancelButton:hover:not(:disabled) { background: rgba(46, 175, 125, 0.08); border-color: #2EAF7D; }
+:global([data-theme="green"]) .confirmButton { background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%); }
+:global([data-theme="green"]) .confirmButton:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(46, 175, 125, 0.35); }
 
-.loadingState .spinner {
-  color: var(--accent-color, #06b6d4);
-}
+/* ============================================================
+   LIGHT THEME
+   ============================================================ */
+:global([data-theme="light"]) .modalOverlay { background: rgba(0, 88, 38, 0.2); backdrop-filter: blur(6px); }
+:global([data-theme="light"]) .modalContent { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(0, 166, 81, 0.18); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12); }
+:global([data-theme="light"]) .modalHeader { background: linear-gradient(90deg, rgba(0, 166, 81, 0.06) 0%, transparent 100%); border-bottom: 2px solid rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .modalHeader h2 { color: #005826; }
+:global([data-theme="light"]) .headerSubtitle { color: #4a5568; }
+:global([data-theme="light"]) .closeButton { color: #4a5568; }
+:global([data-theme="light"]) .closeButton:hover:not(:disabled) { background: rgba(0, 166, 81, 0.06); color: #00a651; }
+:global([data-theme="light"]) .allocationDetails { background: rgba(0, 166, 81, 0.04); border-color: rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .allocationDetails h3 { color: #005826; }
+:global([data-theme="light"]) .label { color: #4a5568; }
+:global([data-theme="light"]) .value { color: #1a1a1a; font-weight: 600; }
+:global([data-theme="light"]) .currentFacultyValue { color: #005826; }
+:global([data-theme="light"]) .selectionHeader h3 { color: #005826; }
+:global([data-theme="light"]) .eligibleBadge { background: rgba(0, 166, 81, 0.1); color: #005826; border-color: rgba(0, 166, 81, 0.2); }
+:global([data-theme="light"]) .searchBox { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .searchBox:focus-within { border-color: #00a651; }
+:global([data-theme="light"]) .searchInput { color: #1a1a1a; }
+:global([data-theme="light"]) .searchInput::placeholder { color: rgba(0, 0, 0, 0.35); }
+:global([data-theme="light"]) .clearSearch { color: rgba(0, 0, 0, 0.4); }
+:global([data-theme="light"]) .clearSearch:hover { color: #1a1a1a; }
+:global([data-theme="light"]) .filterSelect { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); color: #1a1a1a; }
+:global([data-theme="light"]) .filterSelect option { background: white; color: #1a1a1a; }
+:global([data-theme="light"]) .facultyCount { color: rgba(0, 0, 0, 0.4); }
+:global([data-theme="light"]) .facultyOption { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .facultyOption:hover { background: rgba(0, 166, 81, 0.06); border-color: #00a651; }
+:global([data-theme="light"]) .facultyOption.selected { background: rgba(0, 166, 81, 0.1); border-color: #00a651; box-shadow: 0 0 10px rgba(0, 166, 81, 0.2); }
+:global([data-theme="light"]) .facultyOption.hasConflict { background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.15); }
+:global([data-theme="light"]) .facultyName { color: #1a1a1a; }
+:global([data-theme="light"]) .eligibleTag { background: rgba(0, 166, 81, 0.12); color: #005826; }
+:global([data-theme="light"]) .nonEligibleTag { background: rgba(0, 0, 0, 0.04); color: rgba(0, 0, 0, 0.4); }
+:global([data-theme="light"]) .facultyMeta { color: #4a5568; }
+:global([data-theme="light"]) .loadBadge { background: rgba(0, 166, 81, 0.06); border-color: rgba(0, 166, 81, 0.12); color: #4a5568; }
+:global([data-theme="light"]) .selectedIcon { color: #00a651; }
+:global([data-theme="light"]) .expandBtn { border-color: rgba(0, 166, 81, 0.15); color: #4a5568; }
+:global([data-theme="light"]) .expandBtn:hover { background: rgba(0, 166, 81, 0.08); color: #005826; }
+:global([data-theme="light"]) .expandedSchedule { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.1); }
+:global([data-theme="light"]) .scheduleTitle { color: #4a5568; }
+:global([data-theme="light"]) .noSchedule { color: rgba(0, 0, 0, 0.3); }
+:global([data-theme="light"]) .scheduleItem { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 166, 81, 0.1); color: #1a1a1a; }
+:global([data-theme="light"]) .scheduleTime { color: #005826; }
+:global([data-theme="light"]) .scheduleSection { color: rgba(0, 0, 0, 0.45); }
+:global([data-theme="light"]) .scheduleRoom { color: rgba(0, 0, 0, 0.45); }
+:global([data-theme="light"]) .loadingState { color: #4a5568; }
+:global([data-theme="light"]) .noFaculty { border-color: rgba(0, 166, 81, 0.2); color: #4a5568; }
+:global([data-theme="light"]) .infoMessage { background: rgba(0, 166, 81, 0.04); border-color: rgba(0, 166, 81, 0.15); color: #4a5568; }
+:global([data-theme="light"]) .errorMessage { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #b91c1c; }
+:global([data-theme="light"]) .modalFooter { background: rgba(0, 166, 81, 0.04); border-top-color: rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .cancelButton { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(0, 166, 81, 0.18); color: #1a1a1a; }
+:global([data-theme="light"]) .cancelButton:hover:not(:disabled) { background: rgba(0, 166, 81, 0.06); border-color: #00a651; }
+:global([data-theme="light"]) .confirmButton { background: linear-gradient(135deg, #005826 0%, #00a651 100%); }
+:global([data-theme="light"]) .confirmButton:hover:not(:disabled) { box-shadow: 0 6px 14px rgba(0, 166, 81, 0.25); }
 
-/* Faculty with Conflict */
-.facultyOption.hasConflict {
-  opacity: 0.6;
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.facultyOption.hasConflict:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.conflictBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.conflictInfo {
-  margin-top: 4px;
-  font-size: 0.75rem;
-  color: #f87171;
-  font-style: italic;
-}
-
-/* ==================== Green Theme ==================== */
-:global([data-theme="green"]) .modalOverlay {
-  background: rgba(2, 53, 60, 0.4);
-  backdrop-filter: blur(6px);
-}
-
-:global([data-theme="green"]) .modalContent {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  box-shadow: 0 20px 60px rgba(46, 175, 125, 0.2);
-}
-
-:global([data-theme="green"]) .modalHeader {
-  background: linear-gradient(90deg, rgba(68, 147, 66, 0.15) 0%, transparent 100%);
-  border-bottom: 2px solid rgba(46, 175, 125, 0.3);
-}
-
-:global([data-theme="green"]) .modalHeader h2 {
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .closeButton {
-  color: #166534;
-}
-
-:global([data-theme="green"]) .closeButton:hover:not(:disabled) {
-  background: rgba(46, 175, 125, 0.15);
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .allocationDetails {
-  background: rgba(46, 175, 125, 0.08);
-  border: 1px solid rgba(46, 175, 125, 0.3);
-}
-
-:global([data-theme="green"]) .allocationDetails h3 {
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .label {
-  color: #166534;
-}
-
-:global([data-theme="green"]) .value {
-  color: #02353C;
-  font-weight: 600;
-}
-
-:global([data-theme="green"]) .facultySelection h3 {
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .noFaculty {
-  background: rgba(46, 175, 125, 0.08);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
-}
-
-:global([data-theme="green"]) .facultyOption {
-  background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(46, 175, 125, 0.25);
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .facultyOption:hover {
-  background: rgba(46, 175, 125, 0.1);
-  border-color: #2EAF7D;
-}
-
-:global([data-theme="green"]) .facultyOption.selected {
-  background: rgba(46, 175, 125, 0.15);
-  border-color: #2EAF7D;
-  box-shadow: 0 0 12px rgba(46, 175, 125, 0.3);
-}
-
-:global([data-theme="green"]) .facultyName {
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .facultyMeta {
-  color: #166534;
-}
-
-:global([data-theme="green"]) .specialization {
-  color: #449342;
-}
-
-:global([data-theme="green"]) .selectedIcon {
-  color: #2EAF7D;
-}
-
-:global([data-theme="green"]) .conflictWarning {
-  background: rgba(234, 167, 65, 0.15);
-  border-color: rgba(234, 167, 65, 0.4);
-  color: #b45309;
-}
-
-:global([data-theme="green"]) .errorMessage {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #dc2626;
-}
-
-:global([data-theme="green"]) .modalFooter {
-  background: rgba(46, 175, 125, 0.08);
-  border-top-color: rgba(46, 175, 125, 0.3);
-}
-
-:global([data-theme="green"]) .cancelButton {
-  background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  color: #02353C;
-}
-
-:global([data-theme="green"]) .cancelButton:hover:not(:disabled) {
-  background: rgba(46, 175, 125, 0.1);
-  border-color: #2EAF7D;
-}
-
-:global([data-theme="green"]) .confirmButton {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  color: white;
-}
-
-:global([data-theme="green"]) .confirmButton:hover:not(:disabled) {
-  box-shadow: 0 8px 16px rgba(46, 175, 125, 0.4);
-}
-
-/* ==================== Light Theme ==================== */
-:global([data-theme="light"]) .modalOverlay {
-  background: rgba(0, 88, 38, 0.2);
-  backdrop-filter: blur(6px);
-}
-
-:global([data-theme="light"]) .modalContent {
-  background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(0, 166, 81, 0.2);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-}
-
-:global([data-theme="light"]) .modalHeader {
-  background: linear-gradient(90deg, rgba(0, 166, 81, 0.08) 0%, transparent 100%);
-  border-bottom: 2px solid rgba(0, 166, 81, 0.2);
-}
-
-:global([data-theme="light"]) .modalHeader h2 {
-  color: #005826;
-}
-
-:global([data-theme="light"]) .closeButton {
-  color: #4a5568;
-}
-
-:global([data-theme="light"]) .closeButton:hover:not(:disabled) {
-  background: rgba(0, 166, 81, 0.08);
-  color: #00a651;
-}
-
-:global([data-theme="light"]) .allocationDetails {
-  background: rgba(0, 166, 81, 0.05);
-  border: 1px solid rgba(0, 166, 81, 0.2);
-}
-
-:global([data-theme="light"]) .allocationDetails h3 {
-  color: #005826;
-}
-
-:global([data-theme="light"]) .label {
-  color: #4a5568;
-}
-
-:global([data-theme="light"]) .value {
-  color: #1a1a1a;
-  font-weight: 600;
-}
-
-:global([data-theme="light"]) .facultySelection h3 {
-  color: #005826;
-}
-
-:global([data-theme="light"]) .noFaculty {
-  background: rgba(0, 166, 81, 0.05);
-  border-color: rgba(0, 166, 81, 0.2);
-  color: #4a5568;
-}
-
-:global([data-theme="light"]) .facultyOption {
-  background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(0, 166, 81, 0.18);
-  color: #1a1a1a;
-}
-
-:global([data-theme="light"]) .facultyOption:hover {
-  background: rgba(0, 166, 81, 0.08);
-  border-color: #00a651;
-}
-
-:global([data-theme="light"]) .facultyOption.selected {
-  background: rgba(0, 166, 81, 0.12);
-  border-color: #00a651;
-  box-shadow: 0 0 12px rgba(0, 166, 81, 0.25);
-}
-
-:global([data-theme="light"]) .facultyName {
-  color: #1a1a1a;
-}
-
-:global([data-theme="light"]) .facultyMeta {
-  color: #4a5568;
-}
-
-:global([data-theme="light"]) .specialization {
-  color: #005826;
-}
-
-:global([data-theme="light"]) .selectedIcon {
-  color: #00a651;
-}
-
-:global([data-theme="light"]) .conflictWarning {
-  background: rgba(234, 167, 65, 0.12);
-  border-color: rgba(234, 167, 65, 0.3);
-  color: #92400e;
-}
-
-:global([data-theme="light"]) .errorMessage {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #b91c1c;
-}
-
-:global([data-theme="light"]) .modalFooter {
-  background: rgba(0, 166, 81, 0.05);
-  border-top-color: rgba(0, 166, 81, 0.2);
-}
-
-:global([data-theme="light"]) .cancelButton {
-  background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(0, 166, 81, 0.2);
-  color: #1a1a1a;
-}
-
-:global([data-theme="light"]) .cancelButton:hover:not(:disabled) {
-  background: rgba(0, 166, 81, 0.08);
-  border-color: #00a651;
-}
-
-:global([data-theme="light"]) .confirmButton {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
-  color: white;
-}
-
-:global([data-theme="light"]) .confirmButton:hover:not(:disabled) {
-  box-shadow: 0 8px 16px rgba(0, 166, 81, 0.3);
-}
-
-/* Mobile Responsive */
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
 @media (max-width: 768px) {
-  .modalOverlay {
-    padding: 16px;
-  }
+  .modalOverlay { padding: 8px; }
+  .modalContent { max-height: 94vh; max-width: 100%; border-radius: 12px; }
+  .modalHeader { padding: 14px 16px; }
+  .modalHeader h2 { font-size: 1rem; }
+  .modalBody { padding: 14px 16px; gap: 14px; }
+  .detailsGrid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .filterBar { flex-direction: column; gap: 6px; }
+  .searchBox { min-width: unset; }
+  .filterSelect { width: 100%; }
+  .selectionHeader { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .facultyList { max-height: 260px; }
+  .scheduleItem { flex-direction: column; gap: 3px; align-items: flex-start; }
+  .scheduleRoom { margin-left: 0; }
+  .modalFooter { flex-direction: column; gap: 8px; padding: 12px 16px; }
+  .cancelButton, .confirmButton { width: 100%; justify-content: center; }
+}
 
-  .modalContent {
-    max-width: 100%;
-    max-height: 90vh;
-  }
-
-  .modalHeader {
-    padding: 16px;
-  }
-
-  .modalBody {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .detailsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .facultyList {
-    max-height: 250px;
-  }
-
-  .modalFooter {
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-
-  .cancelButton,
-  .confirmButton {
-    width: 100%;
-    justify-content: center;
-  }
+@media (max-width: 480px) {
+  .modalOverlay { padding: 0; }
+  .modalContent { max-height: 100vh; border-radius: 0; }
+  .detailsGrid { grid-template-columns: 1fr; }
+  .facultyNameRow { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
