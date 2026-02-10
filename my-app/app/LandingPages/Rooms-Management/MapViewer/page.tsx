@@ -226,6 +226,7 @@ export default function MapViewerPage() {
   const [currentFloorPlan, setCurrentFloorPlan] = useState<FloorPlan | null>(null)
   const [floorPlanName, setFloorPlanName] = useState('')
   const [isDefault, setIsDefault] = useState(false)
+  const [isPublished, setIsPublished] = useState(false)
   const [isEditingMetadata, setIsEditingMetadata] = useState(false)
   const [metadataForm, setMetadataForm] = useState({
     floor_name: '',
@@ -821,6 +822,7 @@ export default function MapViewerPage() {
     setCurrentFloorPlan(floorPlan)
     setFloorPlanName(floorPlan.floor_name)
     setIsDefault(floorPlan.is_default_view)
+    setIsPublished(floorPlan.is_published || false)
     if (floorPlan.canvas_data?.elements) {
       // Normalize element data to fix missing/undefined fields from older saves
       const normalizedElements = floorPlan.canvas_data.elements.map((el: any) => ({
@@ -1572,6 +1574,8 @@ export default function MapViewerPage() {
             canvas_width: canvasSize.width,
             canvas_height: canvasSize.height,
             is_default_view: isDefault,
+            is_published: isPublished,
+            status: isPublished ? 'published' : 'draft',
             linked_schedule_id: selectedScheduleId,
             updated_at: new Date().toISOString()
           })
@@ -1583,7 +1587,7 @@ export default function MapViewerPage() {
         if (!data || data.length === 0) {
           throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
         }
-        showNotification('success', 'Floor plan updated!')
+        showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
       } else {
         // Create new
         const { data, error } = await db
@@ -1596,8 +1600,8 @@ export default function MapViewerPage() {
             canvas_width: canvasSize.width,
             canvas_height: canvasSize.height,
             is_default_view: isDefault,
-            is_published: false,
-            status: 'draft',
+            is_published: isPublished,
+            status: isPublished ? 'published' : 'draft',
             linked_schedule_id: selectedScheduleId
           }])
           .select()
@@ -1605,7 +1609,7 @@ export default function MapViewerPage() {
 
         if (error) throw error
         setCurrentFloorPlan(data as FloorPlan)
-        showNotification('success', 'Floor plan saved!')
+        showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
       }
 
       setShowSaveModal(false)
@@ -1625,6 +1629,7 @@ export default function MapViewerPage() {
     setFloorPlanName('')
     setCurrentFloorPlan(null)
     setIsDefault(false)
+    setIsPublished(false)
     setShowLoadModal(false)
     showNotification('success', 'Canvas cleared — ready for a new draft')
   }
@@ -2347,11 +2352,34 @@ export default function MapViewerPage() {
                                   onClick={() => loadFloorPlan(fp)}
                                   style={{ padding: 10 }}
                                 >
-                                  <div className={styles.cardStatus} style={{ top: 6, right: 6 }}>
-                                    <span
-                                      className={`${styles.statusDot} ${fp.is_default_view ? styles.published : styles.draft}`}
-                                      title={fp.is_default_view ? 'Default View' : 'Draft'}
-                                    />
+                                  <div className={styles.cardStatus} style={{ top: 6, right: 6, display: 'flex', gap: 4, flexDirection: 'column' }}>
+                                    {fp.is_default_view && (
+                                      <span
+                                        className={`${styles.statusDot} ${styles.published}`}
+                                        title="Default View"
+                                        style={{ fontSize: 10 }}
+                                      >
+                                        ⭐
+                                      </span>
+                                    )}
+                                    {fp.is_published && !fp.is_default_view && (
+                                      <span
+                                        className={`${styles.statusDot} ${styles.published}`}
+                                        title="Published"
+                                        style={{ fontSize: 10 }}
+                                      >
+                                        👁
+                                      </span>
+                                    )}
+                                    {!fp.is_published && !fp.is_default_view && (
+                                      <span
+                                        className={`${styles.statusDot} ${styles.draft}`}
+                                        title="Draft"
+                                        style={{ fontSize: 10 }}
+                                      >
+                                        📝
+                                      </span>
+                                    )}
                                   </div>
 
                                   <div className={styles.cardIcon} style={{ width: 36, height: 36, marginBottom: 8 }}>
@@ -2363,7 +2391,7 @@ export default function MapViewerPage() {
                                   </div>
 
                                   <div className={styles.cardMeta} style={{ fontSize: 10 }}>
-                                    {fp.is_default_view ? 'Published' : 'Draft'}
+                                    {fp.is_default_view ? 'Default' : fp.is_published ? 'Published' : 'Draft'}
                                   </div>
                                 </div>
                               ))}
@@ -3591,6 +3619,18 @@ export default function MapViewerPage() {
                 <label htmlFor="isDefault">
                   <Star size={16} />
                   Set as default floor plan (faculty will see this)
+                </label>
+              </div>
+              <div className={styles.checkboxGroup}>
+                <input
+                  type="checkbox"
+                  id="isPublished"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                />
+                <label htmlFor="isPublished">
+                  <Eye size={16} />
+                  Publish floor plan (make visible to faculty)
                 </label>
               </div>
             </div>
