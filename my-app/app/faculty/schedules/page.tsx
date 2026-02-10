@@ -1135,49 +1135,50 @@ function RoomSchedulesViewContent() {
 
       // Draw timetable on PDF
       const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, { r: number, g: number, b: number }>) => {
-        // Logo
+        // Logo - Centered
         const logoSize = 12
-        const logoX = margin
+        const logoX = (pageWidth - logoSize) / 2
         const logoY = margin
 
         if (logoData) {
           pdfDoc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize)
         }
 
-        // Qtime Scheduler Text
+        // Qtime Scheduler Text - Centered below logo
         const logoText = 'Qtime Scheduler'
         const logoTextSize = 14
         pdfDoc.setFontSize(logoTextSize)
         pdfDoc.setFont('helvetica', 'bold')
         pdfDoc.setTextColor(0, 0, 0)
-        pdfDoc.text(logoText, logoX + logoSize + 4, logoY + 5)
+        const logoTextWidth = pdfDoc.getTextWidth(logoText)
+        pdfDoc.text(logoText, (pageWidth - logoTextWidth) / 2, logoY + logoSize + 5)
 
-        // Title
-        pdfDoc.setFontSize(14)
-        pdfDoc.setFont('helvetica', 'bold')
-        const titleWidth = pdfDoc.getTextWidth(title)
-        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 20)
-
-        // Subtitle
+        // Semester/Year - Centered below logo text
         pdfDoc.setFontSize(10)
         pdfDoc.setFont('helvetica', 'normal')
 
-        let subtitleText = selectedSchedule?.schedule_name || ''
-        if (selectedSchedule?.academic_year) {
-          subtitleText += ` | ${selectedSchedule.academic_year}`
-        }
+        let semesterText = ''
         if (selectedSchedule?.semester) {
-          subtitleText += ` ${selectedSchedule.semester}`
+          semesterText += `${selectedSchedule.semester}`
+        }
+        if (selectedSchedule?.academic_year) {
+          semesterText += ` ${selectedSchedule.academic_year}`
         }
 
-        const subtitleWidth = pdfDoc.getTextWidth(subtitleText)
-        pdfDoc.text(subtitleText, (pageWidth - subtitleWidth) / 2, margin + 25)
+        const semesterWidth = pdfDoc.getTextWidth(semesterText)
+        pdfDoc.text(semesterText, (pageWidth - semesterWidth) / 2, logoY + logoSize + 11)
+
+        // Title (Section/Room/Faculty) - Centered below semester
+        pdfDoc.setFontSize(14)
+        pdfDoc.setFont('helvetica', 'bold')
+        const titleWidth = pdfDoc.getTextWidth(title)
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, logoY + logoSize + 18)
 
         const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
         const blocks = processAllocationsToBlocks(allocData)
 
         // Table dimensions
-        const startY = margin + 30
+        const startY = margin + 35
         const timeColWidth = 18
         const dayColWidth = (usableWidth - timeColWidth) / 6
         const rowHeight = 8

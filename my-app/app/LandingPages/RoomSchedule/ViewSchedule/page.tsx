@@ -67,6 +67,9 @@ import {
 import ArchiveModal from '@/app/components/ArchiveModal'
 import DraggableTimetable, { type DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
 import ScheduleRequestsModal from '@/app/components/ScheduleRequestsModal/ScheduleRequestsModal'
+import AllocationTable from '@/app/components/AllocationTable/AllocationTable'
+import RoomReassignmentModal from '@/app/components/RoomReassignmentModal/RoomReassignmentModal'
+import FacultyAssignmentModal from '@/app/components/FacultyAssignmentModal/FacultyAssignmentModal'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -116,8 +119,8 @@ interface Schedule {
 interface RoomAllocation {
   id: number
   schedule_id: number
-  class_id: number
-  room_id: number
+  class_id?: number
+  room_id?: number
   course_code: string
   course_name: string
   section: string
@@ -245,6 +248,10 @@ export default function ViewSchedulePage() {
 
   // Archive modal state
   const [showArchiveModal, setShowArchiveModal] = useState(false)
+
+  // Room reassignment modal state
+  const [showRoomModal, setShowRoomModal] = useState(false)
+  const [selectedAllocation, setSelectedAllocation] = useState<RoomAllocation | null>(null)
 
   // Faculty assignment modal state
   const [showFacultyAssignModal, setShowFacultyAssignModal] = useState(false)
@@ -689,6 +696,8 @@ export default function ViewSchedulePage() {
   const handleSelectSchedule = async (schedule: Schedule) => {
     setSelectedSchedule(schedule)
     setViewMode('timetable')
+    // Fetch approved faculty for assignment modal
+    fetchApprovedFaculty()
     // fetchUnifiedSchedule will be called by the useEffect hook
   }
 
@@ -1663,6 +1672,72 @@ export default function ViewSchedulePage() {
     }
   }
 
+  // Handler for room reassignment
+  const handleRoomReassign = (allocation: RoomAllocation) => {
+    setSelectedAllocation(allocation)
+    setShowRoomModal(true)
+  }
+
+  // Handler for confirming room reassignment
+  const handleRoomReassignConfirm = async (newRoomId: number, newRoom: string, newBuilding: string) => {
+    if (!selectedAllocation || !selectedSchedule) return
+
+    try {
+      const { error } = await db
+        .from('room_allocations')
+        .update({
+          room_id: newRoomId,
+          room: newRoom,
+          building: newBuilding
+        })
+        .eq('id', selectedAllocation.id)
+
+      if (error) throw error
+
+      // Refresh allocations
+      await fetchUnifiedSchedule()
+      setShowRoomModal(false)
+      setSelectedAllocation(null)
+    } catch (error: any) {
+      console.error('Error updating room:', error)
+      alert('Failed to update room: ' + error.message)
+    }
+  }
+
+  // Handler for faculty assignment
+  const handleFacultyAssign = (allocation: RoomAllocation) => {
+    console.log('🎯 Faculty Assign button clicked!', allocation)
+    console.log('📋 Approved Faculty count:', approvedFaculty.length)
+    console.log('🔒 Is schedule locked?', selectedSchedule?.is_locked)
+    setSelectedAllocation(allocation)
+    setShowFacultyAssignModal(true)
+  }
+
+  // Handler for confirming faculty assignment
+  const handleFacultyAssignConfirm = async (facultyId: string, facultyName: string) => {
+    if (!selectedAllocation || !selectedSchedule) return
+
+    try {
+      const { error } = await db
+        .from('room_allocations')
+        .update({
+          teacher_id: facultyId,
+          teacher_name: facultyName
+        })
+        .eq('id', selectedAllocation.id)
+
+      if (error) throw error
+
+      // Refresh allocations
+      await fetchUnifiedSchedule()
+      setShowFacultyAssignModal(false)
+      setSelectedAllocation(null)
+    } catch (error: any) {
+      console.error('Error updating faculty:', error)
+      alert('Failed to update faculty: ' + error.message)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -2303,7 +2378,9 @@ export default function ViewSchedulePage() {
                   <p>This schedule doesn&apos;t have any room allocations yet.</p>
                 </div>
               ) : (
-                <div className={styles.timetableWrapper} ref={timetableRef}>
+                <>
+                  {/* Timetable View */}
+                  <div className={styles.timetableWrapper} ref={timetableRef}>
                   {/* Timetable Title with Navigation */}
                   <div className={styles.timetableTitle}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -2375,6 +2452,17 @@ export default function ViewSchedulePage() {
                     />
                   </div>
                 </div>
+
+                  {/* Allocation Table - Below Timetable */}
+                  <div style={{ marginTop: '32px' }}>
+                    <AllocationTable
+                      allocations={displayAllocations}
+                      onReassignRoom={handleRoomReassign}
+                      onAssignFaculty={handleFacultyAssign}
+                      isLocked={selectedSchedule?.is_locked}
+                    />
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -2416,18 +2504,31 @@ export default function ViewSchedulePage() {
               )}
 
               {/* Faculty Assign Modal - Placeholder until restored */}
-              {showFacultyAssignModal && (
-                <div style={{
-                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  zIndex: 1000
-                }}>
-                  <div style={{ background: 'white', padding: '20px', borderRadius: '8px' }}>
-                    <h3>Assign Faculty</h3>
-                    <p>This feature is currently being updated.</p>
-                    <button onClick={() => setShowFacultyAssignModal(false)} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Close</button>
-                  </div>
-                </div>
+              {selectedAllocation && (
+                <>
+                  <RoomReassignmentModal
+                    isOpen={showRoomModal}
+                    allocation={selectedAllocation}
+                    availableRooms={[]}
+                    onConfirm={handleRoomReassignConfirm}
+                    onClose={() => {
+                      setShowRoomModal(false)
+                      setSelectedAllocation(null)
+                    }}
+                    allAllocations={allocations}
+                  />
+                  <FacultyAssignmentModal
+                    isOpen={showFacultyAssignModal}
+                    allocation={selectedAllocation}
+                    availableFaculty={approvedFaculty}
+                    onConfirm={handleFacultyAssignConfirm}
+                    onClose={() => {
+                      setShowFacultyAssignModal(false)
+                      setSelectedAllocation(null)
+                    }}
+                    allAllocations={allocations}
+                  />
+                </>
               )}
             </div>
           )}

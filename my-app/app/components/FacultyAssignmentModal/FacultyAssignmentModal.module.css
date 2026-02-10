@@ -1,0 +1,685 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 650px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  animation: slideUp 0.3s ease;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fff);
+}
+
+.closeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.allocationDetails {
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.allocationDetails h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value {
+  font-size: 0.95rem;
+  color: var(--text-primary, #fff);
+  font-weight: 500;
+}
+
+.facultySelection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.facultySelection h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent-color, #06b6d4);
+}
+
+.facultyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.facultyList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.facultyList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.facultyList::-webkit-scrollbar-thumb {
+  background: var(--accent-color-fade, rgba(6, 182, 212, 0.2));
+  border-radius: 3px;
+}
+
+.facultyList::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+}
+
+.noFaculty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+}
+
+.facultyOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 2px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.facultyOption:hover {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.1));
+  border-color: var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+}
+
+.facultyOption.selected {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.15));
+  border-color: var(--accent-color, #06b6d4);
+  box-shadow: 0 0 12px var(--accent-color-fade, rgba(6, 182, 212, 0.2));
+}
+
+.facultyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.facultyName {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  font-size: 0.95rem;
+}
+
+.facultyMeta {
+  font-size: 0.8rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.specialization {
+  font-size: 0.8rem;
+  color: var(--accent-color, #06b6d4);
+  font-weight: 500;
+}
+
+.selectedIcon {
+  color: var(--accent-color, #06b6d4);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.conflictWarning {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(234, 167, 65, 0.1);
+  border: 1px solid rgba(234, 167, 65, 0.3);
+  border-radius: 8px;
+  color: #fbbf24;
+}
+
+.conflictWarning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.conflictTitle {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conflictMessage {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.errorMessage {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+}
+
+.errorMessage svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.errorMessage p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.3));
+  justify-content: flex-end;
+}
+
+.cancelButton,
+.confirmButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+}
+
+.cancelButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #fff);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.confirmButton {
+  background: linear-gradient(135deg, var(--primary-color, #06b6d4) 0%, var(--primary-color-dark, #0891b2) 100%);
+  color: white;
+}
+
+.confirmButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+}
+
+.confirmButton:disabled,
+.confirmButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.loadingState .spinner {
+  color: var(--accent-color, #06b6d4);
+}
+
+/* Faculty with Conflict */
+.facultyOption.hasConflict {
+  opacity: 0.6;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.facultyOption.hasConflict:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.conflictBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.conflictInfo {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #f87171;
+  font-style: italic;
+}
+
+/* ==================== Green Theme ==================== */
+:global([data-theme="green"]) .modalOverlay {
+  background: rgba(2, 53, 60, 0.4);
+  backdrop-filter: blur(6px);
+}
+
+:global([data-theme="green"]) .modalContent {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 20px 60px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .modalHeader {
+  background: linear-gradient(90deg, rgba(68, 147, 66, 0.15) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .modalHeader h2 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .closeButton {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .closeButton:hover:not(:disabled) {
+  background: rgba(46, 175, 125, 0.15);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .allocationDetails {
+  background: rgba(46, 175, 125, 0.08);
+  border: 1px solid rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .allocationDetails h3 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .label {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .value {
+  color: #02353C;
+  font-weight: 600;
+}
+
+:global([data-theme="green"]) .facultySelection h3 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .noFaculty {
+  background: rgba(46, 175, 125, 0.08);
+  border-color: rgba(46, 175, 125, 0.3);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .facultyOption {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.25);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .facultyOption:hover {
+  background: rgba(46, 175, 125, 0.1);
+  border-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .facultyOption.selected {
+  background: rgba(46, 175, 125, 0.15);
+  border-color: #2EAF7D;
+  box-shadow: 0 0 12px rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .facultyName {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .facultyMeta {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .specialization {
+  color: #449342;
+}
+
+:global([data-theme="green"]) .selectedIcon {
+  color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .conflictWarning {
+  background: rgba(234, 167, 65, 0.15);
+  border-color: rgba(234, 167, 65, 0.4);
+  color: #b45309;
+}
+
+:global([data-theme="green"]) .errorMessage {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #dc2626;
+}
+
+:global([data-theme="green"]) .modalFooter {
+  background: rgba(46, 175, 125, 0.08);
+  border-top-color: rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .cancelButton {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .cancelButton:hover:not(:disabled) {
+  background: rgba(46, 175, 125, 0.1);
+  border-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .confirmButton {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  color: white;
+}
+
+:global([data-theme="green"]) .confirmButton:hover:not(:disabled) {
+  box-shadow: 0 8px 16px rgba(46, 175, 125, 0.4);
+}
+
+/* ==================== Light Theme ==================== */
+:global([data-theme="light"]) .modalOverlay {
+  background: rgba(0, 88, 38, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+:global([data-theme="light"]) .modalContent {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(0, 166, 81, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+:global([data-theme="light"]) .modalHeader {
+  background: linear-gradient(90deg, rgba(0, 166, 81, 0.08) 0%, transparent 100%);
+  border-bottom: 2px solid rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .modalHeader h2 {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .closeButton {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .closeButton:hover:not(:disabled) {
+  background: rgba(0, 166, 81, 0.08);
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .allocationDetails {
+  background: rgba(0, 166, 81, 0.05);
+  border: 1px solid rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .allocationDetails h3 {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .label {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .value {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+:global([data-theme="light"]) .facultySelection h3 {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .noFaculty {
+  background: rgba(0, 166, 81, 0.05);
+  border-color: rgba(0, 166, 81, 0.2);
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .facultyOption {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(0, 166, 81, 0.18);
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .facultyOption:hover {
+  background: rgba(0, 166, 81, 0.08);
+  border-color: #00a651;
+}
+
+:global([data-theme="light"]) .facultyOption.selected {
+  background: rgba(0, 166, 81, 0.12);
+  border-color: #00a651;
+  box-shadow: 0 0 12px rgba(0, 166, 81, 0.25);
+}
+
+:global([data-theme="light"]) .facultyName {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .facultyMeta {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .specialization {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .selectedIcon {
+  color: #00a651;
+}
+
+:global([data-theme="light"]) .conflictWarning {
+  background: rgba(234, 167, 65, 0.12);
+  border-color: rgba(234, 167, 65, 0.3);
+  color: #92400e;
+}
+
+:global([data-theme="light"]) .errorMessage {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+:global([data-theme="light"]) .modalFooter {
+  background: rgba(0, 166, 81, 0.05);
+  border-top-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .cancelButton {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(0, 166, 81, 0.2);
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .cancelButton:hover:not(:disabled) {
+  background: rgba(0, 166, 81, 0.08);
+  border-color: #00a651;
+}
+
+:global([data-theme="light"]) .confirmButton {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  color: white;
+}
+
+:global([data-theme="light"]) .confirmButton:hover:not(:disabled) {
+  box-shadow: 0 8px 16px rgba(0, 166, 81, 0.3);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 16px;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    max-height: 90vh;
+  }
+
+  .modalHeader {
+    padding: 16px;
+  }
+
+  .modalBody {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .facultyList {
+    max-height: 250px;
+  }
+
+  .modalFooter {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

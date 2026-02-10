@@ -93,7 +93,7 @@ function PageContent(): JSX.Element {
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
 
   // Login page theme (independent of app theme)
-  const [loginTheme, setLoginTheme] = useState<'dark' | 'light'>('dark')
+  const [loginTheme, setLoginTheme] = useState<'dark' | 'light'>('light')
 
   // Particle data
   const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])

@@ -90,7 +90,7 @@ const COURSE_COLORS = [
     '#0097a7', '#689f38', '#ffa000', '#512da8', '#e64a19', '#00838f'
 ]
 
-const LONG_PRESS_DELAY = 400 // ms to trigger touch-drag
+const LONG_PRESS_DELAY = 250 // ms to trigger touch-drag (reduced for faster response)
 
 // ======================== Helpers ========================
 
@@ -475,7 +475,9 @@ export default function DraggableTimetable({
     const handleTouchStart = useCallback((e: React.TouchEvent, block: CombinedBlock) => {
         if (!isBlockDraggable(block)) return
 
-        // Prevent default? No, allow scroll initally.
+        // Prevent context menu on long press
+        e.preventDefault()
+        
         const touch = e.touches[0]
         const ts = touchStateRef.current
         ts.startX = touch.clientX
@@ -501,7 +503,7 @@ export default function DraggableTimetable({
 
             // LOCK SCROLL & Attach Global Listeners
             document.body.style.overflow = 'hidden'
-            // document.body.style.touchAction = 'none' // Stronger enforcement
+            document.body.style.touchAction = 'none' // Stronger enforcement
             document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
             document.addEventListener('touchend', handleGlobalTouchEnd)
             document.addEventListener('touchcancel', handleGlobalTouchEnd)

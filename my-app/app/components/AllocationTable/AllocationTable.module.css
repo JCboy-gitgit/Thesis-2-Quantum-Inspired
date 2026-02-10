@@ -1,0 +1,421 @@
+.tableContainer {
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.tableHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.tableHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent-color, #06b6d4);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+}
+
+.scrollWrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.05));
+  border-bottom: 2px solid var(--accent-color-fade, rgba(6, 182, 212, 0.2));
+}
+
+.table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--accent-color, #06b6d4);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table tbody {
+  background: var(--card-bg-tertiary, rgba(15, 23, 42, 0.3));
+}
+
+.row {
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+  transition: background-color 0.2s;
+}
+
+.row:hover {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.05));
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.table td {
+  padding: 12px 16px;
+  color: var(--text-primary, #fff);
+}
+
+.courseCode {
+  font-weight: 600;
+  color: var(--accent-color, #06b6d4);
+}
+
+.courseLabel {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.1));
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.section {
+  color: var(--text-secondary-light, #cbd5e1);
+  font-weight: 500;
+}
+
+.day {
+  color: var(--text-secondary-light, #cbd5e1);
+}
+
+.time {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  color: var(--warning-color, #fbbf24);
+  font-weight: 500;
+}
+
+.room {
+  color: var(--text-secondary-light, #cbd5e1);
+}
+
+.roomBadge {
+  background: var(--success-color-bg, rgba(16, 185, 129, 0.15));
+  color: var(--success-color, #10b981);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.building {
+  color: var(--text-secondary-light, #cbd5e1);
+  font-size: 0.85rem;
+}
+
+.capacity {
+  text-align: center;
+  color: var(--text-secondary-light, #cbd5e1);
+  font-weight: 500;
+}
+
+.actions {
+  text-align: center;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, var(--primary-color, #06b6d4) 0%, var(--primary-color-dark, #0891b2) 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--accent-color-fade, rgba(6, 182, 212, 0.3));
+}
+
+.actionBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.actionBtn:disabled,
+.actionBtn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  font-size: 0.95rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .tableContainer {
+    padding: 12px;
+    margin-top: 16px;
+  }
+
+  .tableHeader h3 {
+    font-size: 1rem;
+  }
+
+  .table thead {
+    font-size: 0.7rem;
+  }
+
+  .table th {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .table td {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .courseLabel {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+
+  .actionBtn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .actionBtn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Hide less important columns on mobile */
+  .building,
+  .capacity {
+    display: none;
+  }
+
+  .scrollWrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ==================== Green Theme ==================== */
+:global([data-theme="green"]) .tableContainer {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(46, 175, 125, 0.3);
+  box-shadow: 0 4px 6px rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .tableHeader h3 {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .subtitle {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .scrollWrapper {
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .table thead {
+  background: rgba(46, 175, 125, 0.08);
+  border-bottom-color: rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .table th {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .table tbody {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:global([data-theme="green"]) .row {
+  border-bottom-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .row:hover {
+  background: rgba(46, 175, 125, 0.08);
+}
+
+:global([data-theme="green"]) .table td {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .courseCode {
+  color: #02353C;
+  font-weight: 700;
+}
+
+:global([data-theme="green"]) .courseLabel {
+  background: rgba(46, 175, 125, 0.12);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .section {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .day {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .time {
+  color: #d97706;
+  font-weight: 600;
+}
+
+:global([data-theme="green"]) .room {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .roomBadge {
+  background: rgba(46, 175, 125, 0.15);
+  color: #166534;
+}
+
+:global([data-theme="green"]) .building {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .capacity {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .actionBtn {
+  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  color: white;
+}
+
+:global([data-theme="green"]) .actionBtn:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(46, 175, 125, 0.35);
+}
+
+:global([data-theme="green"]) .emptyState {
+  color: #166534;
+}
+
+/* ==================== Light Theme ==================== */
+:global([data-theme="light"]) .tableContainer {
+  background: rgba(255, 255, 255, 0.98);
+  border: 2px solid rgba(0, 166, 81, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .tableHeader h3 {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .subtitle {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .scrollWrapper {
+  border-color: rgba(0, 166, 81, 0.18);
+}
+
+:global([data-theme="light"]) .table thead {
+  background: rgba(0, 166, 81, 0.06);
+  border-bottom-color: rgba(0, 166, 81, 0.2);
+}
+
+:global([data-theme="light"]) .table th {
+  color: #005826;
+}
+
+:global([data-theme="light"]) .table tbody {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:global([data-theme="light"]) .row {
+  border-bottom-color: rgba(0, 166, 81, 0.15);
+}
+
+:global([data-theme="light"]) .row:hover {
+  background: rgba(0, 166, 81, 0.06);
+}
+
+:global([data-theme="light"]) .table td {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .courseCode {
+  color: #005826;
+  font-weight: 700;
+}
+
+:global([data-theme="light"]) .courseLabel {
+  background: rgba(0, 166, 81, 0.1);
+  color: #005826;
+}
+
+:global([data-theme="light"]) .section {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .day {
+  color: #2d3748;
+}
+
+:global([data-theme="light"]) .time {
+  color: #d97706;
+  font-weight: 600;
+}
+
+:global([data-theme="light"]) .room {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .roomBadge {
+  background: rgba(0, 166, 81, 0.12);
+  color: #005826;
+}
+
+:global([data-theme="light"]) .building {
+  color: #4a5568;
+}
+
+:global([data-theme="light"]) .capacity {
+  color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .actionBtn {
+  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  color: white;
+}
+
+:global([data-theme="light"]) .actionBtn:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(0, 166, 81, 0.3);
+}
+
+:global([data-theme="light"]) .emptyState {
+  color: #4a5568;
+}

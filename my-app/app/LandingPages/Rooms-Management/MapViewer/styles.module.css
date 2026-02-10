@@ -4223,6 +4223,18 @@
     touch-action: none;
   }
 
+  /* Icon grid responsive adjustments for tablet */
+  .iconGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .iconItem {
+    width: 42px;
+    height: 42px;
+    border-radius: 7px;
+  }
+
   /* Properties panel */
   .propertyGroup label {
     font-size: 11px;
@@ -4308,6 +4320,25 @@
 
   .toolItem span {
     font-size: 10px;
+  }
+
+  /* Icon grid responsive adjustments */
+  .iconGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .iconItem {
+    width: 40px;
+    height: 40px;
+    padding: 6px;
+    border-radius: 6px;
+  }
+
+  .iconItem svg {
+    width: 18px;
+    height: 18px;
   }
 
   /* Canvas element minimum sizes for touch */
