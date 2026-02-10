@@ -172,7 +172,7 @@ async function fetchAllRows<T = Record<string, unknown>>(
 function CoursesManagementContent() {
   const router = useRouter()
   // State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)

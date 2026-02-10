@@ -269,7 +269,7 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
 export default function GenerateSchedulePage() {
   const router = useRouter()
   const { activeColleges: bulsuColleges } = useColleges()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [scheduling, setScheduling] = useState(false)
 

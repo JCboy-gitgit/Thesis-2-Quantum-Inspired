@@ -234,7 +234,7 @@ function FacultyProfilesContent() {
   const collegeFilter = searchParams.get('college')
   const { activeColleges: bulsuColleges } = useColleges()
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 

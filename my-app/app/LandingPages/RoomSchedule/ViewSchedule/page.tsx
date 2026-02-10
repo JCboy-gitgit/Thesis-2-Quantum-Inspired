@@ -188,7 +188,7 @@ export default function ViewSchedulePage() {
   const searchParams = useSearchParams()
   const scheduleIdParam = searchParams.get('id')
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [filteredSchedules, setFilteredSchedules] = useState<Schedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)

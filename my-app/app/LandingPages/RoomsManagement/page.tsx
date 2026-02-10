@@ -143,7 +143,7 @@ export default function RoomsManagementPage() {
   const { activeColleges: bulsuColleges } = useColleges()
 
   // Layout states
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingData, setLoadingData] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')

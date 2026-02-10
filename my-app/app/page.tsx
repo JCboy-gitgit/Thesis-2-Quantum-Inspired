@@ -259,6 +259,7 @@ function PageContent(): JSX.Element {
           localStorage.setItem('adminStaySignedIn', 'true')
         }
         setLoginMessage('Admin login successful. Redirecting...')
+        sessionStorage.setItem('sidebar_fresh_login', 'true')
         setTimeout(() => {
           router.push('/LandingPages/Home')
         }, 1000)

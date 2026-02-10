@@ -223,7 +223,7 @@ function FolderIcon({ className }: { className?: string }) {
 function FacultyListsContent() {
   const router = useRouter()
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [allFaculty, setAllFaculty] = useState<FacultyProfile[]>([])
   const [filteredData, setFilteredData] = useState<FacultyProfile[]>([])

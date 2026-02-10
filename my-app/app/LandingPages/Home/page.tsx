@@ -133,7 +133,16 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const freshLogin = sessionStorage.getItem('sidebar_fresh_login')
+      if (freshLogin) {
+        sessionStorage.removeItem('sidebar_fresh_login')
+        return true
+      }
+    }
+    return false
+  })
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState<Date | null>(null) // Initialize as null to avoid hydration mismatch
   const [calendarDate, setCalendarDate] = useState<Date | null>(null)

@@ -82,7 +82,7 @@ export default function FacultyDepartmentsPage() {
     redirectTo: '/'
   })
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
   const [stats, setStats] = useState<DepartmentStats>({

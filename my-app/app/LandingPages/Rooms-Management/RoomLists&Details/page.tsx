@@ -125,7 +125,7 @@ interface RoomUsage {
 export default function SchoolCapacityPage() {
   const router = useRouter()
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [campusFiles, setCampusFiles] = useState<CampusFile[]>([])
   const [selectedCampus, setSelectedCampus] = useState<number | null>(null)
   const [campusData, setCampusData] = useState<CampusRoom[]>([])

@@ -219,7 +219,7 @@ function FacultyCollegesContent() {
 
   // View state: 'colleges' | 'files' | 'faculty'
   const [currentView, setCurrentView] = useState<'colleges' | 'files' | 'faculty'>('colleges')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Colleges data

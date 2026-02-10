@@ -118,7 +118,7 @@ function TeachingLoadAssignmentContent() {
   ]
 
   // State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [faculties, setFaculties] = useState<FacultyProfile[]>([])
   const [courses, setCourses] = useState<Course[]>([])

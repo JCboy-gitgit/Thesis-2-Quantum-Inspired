@@ -180,7 +180,7 @@ const TOOLBOX_ITEMS = {
 export default function MapViewerPage() {
   const router = useRouter()
   const { theme: globalTheme } = useTheme() // Use global theme from context
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [menuBarHidden, setMenuBarHidden] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)

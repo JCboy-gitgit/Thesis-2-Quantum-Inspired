@@ -41,7 +41,7 @@ interface AbsenceRecord {
 
 export default function FacultyAbsencesPage() {
     const router = useRouter()
-    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
     const [absences, setAbsences] = useState<AbsenceRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')

@@ -39,7 +39,7 @@ interface FacultyRegistration {
 
 export default function FacultyApprovalPage() {
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [registrations, setRegistrations] = useState<FacultyRegistration[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
