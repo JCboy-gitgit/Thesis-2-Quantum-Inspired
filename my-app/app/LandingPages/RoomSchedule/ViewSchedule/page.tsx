@@ -1,6 +1,7 @@
-'use client'
+﻿"use client"
 
-import { useState, useEffect, Suspense, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useTheme } from '@/app/context/ThemeContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchNoCache } from '@/lib/fetchUtils'
@@ -58,9 +59,14 @@ import {
   Archive,
   UserPlus,
   Check,
-  Loader2
+  Loader2,
+  Lock,
+  Unlock,
+  MessageSquare
 } from 'lucide-react'
 import ArchiveModal from '@/app/components/ArchiveModal'
+import DraggableTimetable, { type DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
+import ScheduleRequestsModal from '@/app/components/ScheduleRequestsModal/ScheduleRequestsModal'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -104,6 +110,7 @@ interface Schedule {
   school_name?: string
   college?: string
   is_current?: boolean
+  is_locked?: boolean
 }
 
 interface RoomAllocation {
@@ -172,7 +179,7 @@ const allocationCoversSlot = (allocation: RoomAllocation, slotTime: string): boo
   return slotMinutes >= startMinutes && slotMinutes < endMinutes
 }
 
-function ViewSchedulePage() {
+export default function ViewSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const scheduleIdParam = searchParams.get('id')
@@ -182,6 +189,7 @@ function ViewSchedulePage() {
   const [filteredSchedules, setFilteredSchedules] = useState<Schedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [allocations, setAllocations] = useState<RoomAllocation[]>([])
+  const [displayAllocations, setDisplayAllocations] = useState<RoomAllocation[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingDetails, setLoadingDetails] = useState(false)
 
@@ -244,8 +252,17 @@ function ViewSchedulePage() {
   const [selectedFacultyIds, setSelectedFacultyIds] = useState<string[]>([])
   const [loadingFaculty, setLoadingFaculty] = useState(false)
   const [assigningSchedule, setAssigningSchedule] = useState(false)
-  const [facultySearchQuery, setFacultySearchQuery] = useState('')
   const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false)
+
+  // Schedule lock state
+  const [isTogglingLock, setIsTogglingLock] = useState(false)
+
+  // Requests State
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0)
+
+  // Faculty Search State
+  const [facultySearchQuery, setFacultySearchQuery] = useState('')
 
   // Auth state to prevent rendering before auth check completes
   const [authChecked, setAuthChecked] = useState(false)
@@ -360,7 +377,7 @@ function ViewSchedulePage() {
       if (data.success) {
         setAssignmentMessage({
           type: 'success',
-          text: `✅ ${data.message}`
+          text: `âœ… ${data.message}`
         })
         setTimeout(() => {
           setShowFacultyAssignModal(false)
@@ -540,17 +557,16 @@ function ViewSchedulePage() {
     }
   }
 
-  const handleSelectSchedule = async (schedule: Schedule) => {
-    setSelectedSchedule(schedule)
-    setLoadingDetails(true)
-    setViewMode('timetable')
+  const fetchUnifiedSchedule = async () => {
+    if (!selectedSchedule) return
 
+    setLoadingDetails(true)
     try {
-      // Fetch room allocations for this schedule
+      // Fetch allocations
       const { data: allocationData, error: allocationError } = await db
         .from('room_allocations')
         .select('*')
-        .eq('schedule_id', schedule.id)
+        .eq('schedule_id', selectedSchedule.id)
         .order('schedule_day', { ascending: true })
         .order('schedule_time', { ascending: true })
 
@@ -638,13 +654,42 @@ function ViewSchedulePage() {
         setBuildingRoomMap(brMap)
       } else {
         // Try to build allocations from class_schedules and campuses
-        await buildAllocationsFromSource(schedule)
+        await buildAllocationsFromSource(selectedSchedule)
       }
+
+      // Fetch pending requests count
+      fetchPendingRequestsCount()
+
     } catch (error) {
-      console.error('Error fetching allocations:', error)
+      console.error('Error fetching schedule details:', error)
     } finally {
       setLoadingDetails(false)
     }
+  }
+
+  const fetchPendingRequestsCount = async () => {
+    if (!selectedSchedule?.id) return
+    try {
+      const res = await fetch(`/api/schedule-requests?scheduleId=${selectedSchedule.id}&status=pending`)
+      const data = await res.json()
+      if (data.success) {
+        setPendingRequestsCount(data.requests?.length ?? 0)
+      }
+    } catch (error) {
+      console.error('Error fetching pending requests:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedSchedule) {
+      fetchUnifiedSchedule()
+    }
+  }, [selectedSchedule])
+
+  const handleSelectSchedule = async (schedule: Schedule) => {
+    setSelectedSchedule(schedule)
+    setViewMode('timetable')
+    // fetchUnifiedSchedule will be called by the useEffect hook
   }
 
   const buildAllocationsFromSource = async (schedule: Schedule) => {
@@ -836,6 +881,7 @@ function ViewSchedulePage() {
     })
 
     setTimetableData(timetable)
+    setDisplayAllocations(filtered)
   }
 
   const normalizeDay = (day: string): string => {
@@ -1106,6 +1152,34 @@ function ViewSchedulePage() {
         format: [215.9, 279.4] // Short bond paper: 8.5" x 11" in mm (portrait)
       })
 
+      // Load logo image
+      const loadImage = (src: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image()
+          img.src = src
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              reject(new Error('Could not get canvas context'))
+              return
+            }
+            ctx.drawImage(img, 0, 0)
+            resolve(canvas.toDataURL('image/png'))
+          }
+          img.onerror = reject
+        })
+      }
+
+      let logoData: string | null = null
+      try {
+        logoData = await loadImage('/app-icon.png')
+      } catch (e) {
+        console.error('Failed to load logo', e)
+      }
+
       const pageWidth = 215.9 // portrait width
       const pageHeight = 279.4 // portrait height
       const margin = 8
@@ -1150,49 +1224,47 @@ function ViewSchedulePage() {
 
       // Helper: Draw timetable for specific view (works with any PDF instance)
       const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, { r: number, g: number, b: number }>) => {
-        // QTime Logo - Green Q box with "Qtime Scheduler" text
-        const logoSize = 8
-        const logoTextSize = 10
-        const logoText = 'Qtime Scheduler'
-        pdfDoc.setFontSize(logoTextSize)
-        pdfDoc.setFont('helvetica', 'bold')
-        const textWidth = pdfDoc.getTextWidth(logoText)
-        const totalWidth = logoSize + 2 + textWidth  // logo + spacing + text
-        const startX = (pageWidth - totalWidth) / 2
+        // Logo
+        const logoSize = 12
+        const logoX = margin
         const logoY = margin
 
-        // Green rounded rectangle for Q
-        pdfDoc.setFillColor(22, 163, 74) // Green (#16a34a)
-        pdfDoc.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
+        if (logoData) {
+          pdfDoc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize)
+        }
 
-        // "Q" letter in white
-        pdfDoc.setTextColor(255, 255, 255)
-        pdfDoc.setFontSize(6)
-        pdfDoc.setFont('helvetica', 'bold')
-        const qWidth = pdfDoc.getTextWidth('Q')
-        pdfDoc.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
-
-        // "Qtime Scheduler" text in black
-        pdfDoc.setTextColor(0, 0, 0)
+        // Qtime Scheduler Text
+        const logoText = 'Qtime Scheduler'
+        const logoTextSize = 14
         pdfDoc.setFontSize(logoTextSize)
         pdfDoc.setFont('helvetica', 'bold')
-        pdfDoc.text(logoText, startX + logoSize + 2, logoY + 6)
-
-        // Reset text color
         pdfDoc.setTextColor(0, 0, 0)
+        pdfDoc.text(logoText, logoX + logoSize + 4, logoY + 5)
 
         // Title - centered (below logo)
-        pdfDoc.setFontSize(12)
+        pdfDoc.setFontSize(14)
         pdfDoc.setFont('helvetica', 'bold')
         const titleWidth = pdfDoc.getTextWidth(title)
-        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 14)
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 20)
 
         // Subtitle - centered
-        pdfDoc.setFontSize(8)
+        pdfDoc.setFontSize(10)
         pdfDoc.setFont('helvetica', 'normal')
-        const subtitle = `${selectedSchedule?.schedule_name} | ${selectedSchedule?.school_name}`
-        const subtitleWidth = pdfDoc.getTextWidth(subtitle)
-        pdfDoc.text(subtitle, (pageWidth - subtitleWidth) / 2, margin + 19)
+
+        let subtitleText = selectedSchedule?.schedule_name || ''
+        if (selectedSchedule?.school_name) {
+          subtitleText += ` | ${selectedSchedule.school_name}`
+        }
+        // Add Year and Semester
+        if (selectedSchedule?.academic_year) {
+          subtitleText += ` | ${selectedSchedule.academic_year}`
+        }
+        if (selectedSchedule?.semester) {
+          subtitleText += ` ${selectedSchedule.semester}`
+        }
+
+        const subtitleWidth = pdfDoc.getTextWidth(subtitleText)
+        pdfDoc.text(subtitleText, (pageWidth - subtitleWidth) / 2, margin + 25)
 
         // Get color map for this allocation if not provided
         const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
@@ -1201,7 +1273,7 @@ function ViewSchedulePage() {
         const blocks = processAllocationsToBlocks(allocData)
 
         // Table dimensions - portrait (adjusted for logo space)
-        const startY = margin + 22
+        const startY = margin + 30
         const timeColWidth = 18
         const dayColWidth = (usableWidth - timeColWidth) / 6 // 6 days for portrait (Mon-Sat)
         const rowHeight = 8
@@ -1455,11 +1527,48 @@ function ViewSchedulePage() {
       let pageCount = 0
 
       if (exportType === 'current') {
-        const viewLabel = timetableViewMode === 'room' ? `Room: ${selectedRoom}` :
-          timetableViewMode === 'section' ? `Section: ${selectedSection}` :
-            timetableViewMode === 'teacher' ? `Teacher: ${selectedTeacher}` :
-              timetableViewMode === 'course' ? `Course: ${selectedCourse}` : 'All Classes'
-        drawTimetable(allocations, viewLabel, ++pageCount)
+        // Filter allocations based on the current view mode
+        let currentAllocations = [] as RoomAllocation[]
+        let viewLabel = ''
+
+        if (timetableViewMode === 'room' && selectedRoom) {
+          currentAllocations = allocations.filter(a => a.room === selectedRoom)
+          viewLabel = `Room: ${selectedRoom}`
+        } else if (timetableViewMode === 'section' && selectedSection) {
+          // Helper to get base section (strip LAB/LEC suffixes including all variants)
+          const getBaseSection = (s: string) => {
+            if (!s) return ''
+            return s
+              .replace(/_LAB$/i, '')
+              .replace(/_LEC$/i, '')
+              .replace(/_LECTURE$/i, '')
+              .replace(/_LABORATORY$/i, '')
+              .replace(/, LAB$/i, '')
+              .replace(/, LEC$/i, '')
+              .replace(/, LECTURE$/i, '')
+              .replace(/, LABORATORY$/i, '')
+              .replace(/ LAB$/i, '')
+              .replace(/ LEC$/i, '')
+              .replace(/-LAB$/i, '')
+              .replace(/-LEC$/i, '')
+              .trim()
+          }
+          currentAllocations = allocations.filter(a => getBaseSection(a.section) === selectedSection)
+          viewLabel = `Section: ${selectedSection}`
+        } else if (timetableViewMode === 'teacher' && selectedTeacher) {
+          currentAllocations = allocations.filter(a => a.teacher_name === selectedTeacher)
+          viewLabel = `Teacher: ${selectedTeacher}`
+        } else if (timetableViewMode === 'course' && selectedCourse) {
+          currentAllocations = allocations.filter(a => a.course_code === selectedCourse)
+          viewLabel = `Course: ${selectedCourse}`
+        } else {
+          // Fallback if no specific view is selected or mode is unknown
+          currentAllocations = allocations
+          viewLabel = 'Full Schedule'
+        }
+
+        drawTimetable(currentAllocations, viewLabel, ++pageCount)
+
       } else if (exportType === 'all-rooms') {
         // Export all rooms as pages in one PDF
         for (const room of rooms) {
@@ -1513,12 +1622,12 @@ function ViewSchedulePage() {
         }
       }
 
-      // Save single PDF with all pages
+      // Save PDF
       const fileName = `timetable_${selectedSchedule?.schedule_name}_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
     } catch (error) {
       console.error('Error exporting PDF:', error)
-      alert('Failed to export PDF. Please make sure jsPDF is installed.')
+      alert('Failed to export PDF. Please try again.')
     }
   }
 
@@ -1608,6 +1717,14 @@ function ViewSchedulePage() {
 
             {selectedSchedule && (
               <div className={styles.headerActions}>
+                <button
+                  className={styles.actionButton}
+                  onClick={() => setIsRequestsModalOpen(true)}
+                  title="Review Schedule Change Requests"
+                >
+                  <MessageSquare size={18} />
+                  Review Requests
+                </button>
                 <div className={styles.exportDropdown}>
                   <button className={styles.actionButton} onClick={() => setShowExportMenu(!showExportMenu)}>
                     <Download size={18} /> Export PDF <ChevronDown size={14} />
@@ -1721,7 +1838,7 @@ function ViewSchedulePage() {
                     onClick={() => setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                     title={historySortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
-                    {historySortOrder === 'asc' ? '↑' : '↓'}
+                    {historySortOrder === 'asc' ? 'â†‘' : 'â†“'}
                   </button>
                 </div>
                 <div className={styles.historyStats}>
@@ -1866,7 +1983,7 @@ function ViewSchedulePage() {
               <div className={styles.scheduleInfoHeader}>
                 <div className={styles.scheduleInfoMain}>
                   <h2>{selectedSchedule.schedule_name}</h2>
-                  <p>{selectedSchedule.school_name} • {selectedSchedule.college}</p>
+                  <p>{selectedSchedule.school_name} â€¢ {selectedSchedule.college}</p>
                   <p className={styles.semesterInfo}>
                     {selectedSchedule.semester} {selectedSchedule.academic_year}
                   </p>
@@ -1890,6 +2007,49 @@ function ViewSchedulePage() {
                     title="Assign this schedule as default for faculty members"
                   >
                     <UserPlus size={18} /> Assign to Faculty
+                  </button>
+
+
+                  <button
+                    className={`${styles.lockScheduleBtn} ${selectedSchedule.is_locked ? styles.locked : ''}`}
+                    onClick={async () => {
+                      if (!selectedSchedule) return
+                      const newLocked = !selectedSchedule.is_locked
+                      const confirmMsg = newLocked
+                        ? 'Lock this schedule? Faculty will no longer be able to submit reschedule requests.'
+                        : 'Unlock this schedule? Faculty will be able to submit reschedule requests again.'
+                      if (!confirm(confirmMsg)) return
+                      setIsTogglingLock(true)
+                      try {
+                        const res = await fetch('/api/schedule-lock', {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ scheduleId: selectedSchedule.id, isLocked: newLocked })
+                        })
+                        const data = await res.json()
+                        if (data.success) {
+                          setSelectedSchedule(prev => prev ? { ...prev, is_locked: newLocked } : null)
+                          setSchedules(prev => prev.map(s => s.id === selectedSchedule.id ? { ...s, is_locked: newLocked } : s))
+                        } else {
+                          alert(data.error || 'Failed to toggle lock')
+                        }
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to toggle lock')
+                      } finally {
+                        setIsTogglingLock(false)
+                      }
+                    }}
+                    disabled={isTogglingLock}
+                    title={selectedSchedule.is_locked ? 'Unlock schedule for faculty editing' : 'Lock schedule to prevent faculty changes'}
+                  >
+                    {isTogglingLock ? (
+                      <Loader2 size={18} className={styles.spinning} />
+                    ) : selectedSchedule.is_locked ? (
+                      <Lock size={18} />
+                    ) : (
+                      <Unlock size={18} />
+                    )}
+                    {selectedSchedule.is_locked ? ' Locked' : ' Unlocked'}
                   </button>
                 </div>
               </div>
@@ -2143,7 +2303,6 @@ function ViewSchedulePage() {
                   <p>This schedule doesn&apos;t have any room allocations yet.</p>
                 </div>
               ) : (
-                /* Timetable Grid - Simplified to match GenerateSchedule */
                 <div className={styles.timetableWrapper} ref={timetableRef}>
                   {/* Timetable Title with Navigation */}
                   <div className={styles.timetableTitle}>
@@ -2167,442 +2326,125 @@ function ViewSchedulePage() {
                     </div>
                   </div>
                   <div className={styles.timetableContainer}>
-                    {(() => {
-                      // Helper: Format time as AM/PM
-                      const formatTimeAMPM = (hour: number, minute: number): string => {
-                        const period = hour >= 12 ? 'PM' : 'AM';
-                        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                        return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
-                      };
-
-                      // Helper: Parse time string to minutes
-                      const parseToMinutes = (timeStr: string): number => {
-                        if (!timeStr) return 0;
-                        const cleanTime = timeStr.trim();
-                        const ampmMatch = cleanTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-                        if (ampmMatch) {
-                          let hour = parseInt(ampmMatch[1]);
-                          const minute = parseInt(ampmMatch[2]);
-                          const period = ampmMatch[3].toUpperCase();
-                          if (period === 'PM' && hour !== 12) hour += 12;
-                          if (period === 'AM' && hour === 12) hour = 0;
-                          return hour * 60 + minute;
-                        }
-                        const match = cleanTime.match(/^(\d{1,2}):(\d{2})/);
-                        if (!match) return 0;
-                        return parseInt(match[1]) * 60 + parseInt(match[2]);
-                      };
-
-                      // Type for combined blocks
-                      type CombinedBlock = {
-                        course_code: string;
-                        course_name: string;
-                        section: string;
-                        room: string;
-                        building: string;
-                        teacher_name: string;
-                        day: string;
-                        startMinutes: number;
-                        endMinutes: number;
-                      };
-
-                      // STEP 1: Filter allocations based on current view mode
-                      let viewFilteredAllocations = allocations.filter(a => {
-                        if (timetableViewMode === 'room' && selectedRoom !== 'all') {
-                          if (a.room !== selectedRoom) return false;
-                        } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
-                          const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '');
-                          if (baseSection !== selectedSection) return false;
-                        } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
-                          if (a.teacher_name !== selectedTeacher) return false;
-                        } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
-                          if (a.course_code !== selectedCourse) return false;
+                    <DraggableTimetable
+                      allocations={displayAllocations}
+                      allAllocations={allocations}
+                      mode="admin-edit"
+                      isLocked={selectedSchedule?.is_locked}
+                      onDirectEdit={async (result: DragDropResult) => {
+                        if (result.hasConflict) {
+                          const proceed = confirm(
+                            `Warning: This time slot has a conflict!\n\n` +
+                            `${result.courseCode} (${result.section})\n` +
+                            `Moving from ${result.fromDay} ${result.fromTime}\n` +
+                            `to ${result.toDay} ${result.toTime}\n\n` +
+                            `Are you sure you want to place it here anyway?`
+                          )
+                          if (!proceed) return
                         }
 
-                        // Apply additional filters
-                        if (filterBuilding !== 'all' && a.building !== filterBuilding) return false;
-                        if (filterRoom !== 'all' && a.room !== filterRoom) return false;
-                        if (filterDay !== 'all' && !a.schedule_day?.toLowerCase().includes(filterDay.toLowerCase())) return false;
-                        if (searchQuery) {
-                          const query = searchQuery.toLowerCase();
-                          if (!a.course_code?.toLowerCase().includes(query) &&
-                            !a.course_name?.toLowerCase().includes(query) &&
-                            !a.section?.toLowerCase().includes(query) &&
-                            !a.room?.toLowerCase().includes(query) &&
-                            !a.teacher_name?.toLowerCase().includes(query)) {
-                            return false;
+                        try {
+                          // Update each allocation in the block
+                          for (const alloc of result.originalAllocations) {
+                            const timeParts = alloc.schedule_time.split(/\s*-\s*/)
+                            if (timeParts.length !== 2) continue
+                            const { error } = await db
+                              .from('room_allocations')
+                              .update({
+                                schedule_day: result.toDay.charAt(0).toUpperCase() + result.toDay.slice(1),
+                                schedule_time: result.toTime,
+                              })
+                              .eq('id', alloc.id)
+                            if (error) throw error
                           }
+
+                          // Refresh allocations
+                          const { data: refreshed } = await db
+                            .from('room_allocations')
+                            .select('*')
+                            .eq('schedule_id', selectedSchedule!.id)
+                            .order('schedule_day', { ascending: true })
+                            .order('schedule_time', { ascending: true })
+                          if (refreshed) setAllocations(refreshed)
+                          alert('Schedule updated successfully!')
+                        } catch (error: any) {
+                          console.error('Error updating allocation:', error)
+                          alert('Failed to update schedule: ' + (error.message || 'Unknown error'))
                         }
-                        return true;
-                      });
-
-                      console.log('ViewSchedule - Filtered allocations:', viewFilteredAllocations.length);
-
-                      // STEP 2: Group by course+section+room+day+teacher to find consecutive slots
-                      // Use same approach as GenerateSchedule (NO day expansion - use schedule_day directly)
-                      const groupedMap = new Map<string, RoomAllocation[]>();
-                      viewFilteredAllocations.forEach(alloc => {
-                        const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${alloc.schedule_day}|${alloc.teacher_name || ''}`;
-                        if (!groupedMap.has(key)) {
-                          groupedMap.set(key, []);
-                        }
-                        groupedMap.get(key)!.push(alloc);
-                      });
-
-                      // STEP 3: Combine consecutive time slots into blocks
-                      const combinedBlocks: CombinedBlock[] = [];
-                      groupedMap.forEach((allocs) => {
-                        const sorted = allocs.sort((a, b) => {
-                          return parseToMinutes(a.schedule_time || '') - parseToMinutes(b.schedule_time || '');
-                        });
-
-                        let currentBlock: CombinedBlock | null = null;
-
-                        sorted.forEach(alloc => {
-                          const timeStr = alloc.schedule_time || '';
-                          const timeParts = timeStr.split(/\s*-\s*/);
-                          if (timeParts.length !== 2) return;
-
-                          const startMins = parseToMinutes(timeParts[0]);
-                          const endMins = parseToMinutes(timeParts[1]);
-                          if (startMins === 0 && endMins === 0) return;
-
-                          if (currentBlock && currentBlock.endMinutes === startMins) {
-                            currentBlock.endMinutes = endMins;
-                          } else {
-                            if (currentBlock) {
-                              combinedBlocks.push(currentBlock);
-                            }
-                            currentBlock = {
-                              course_code: alloc.course_code || '',
-                              course_name: alloc.course_name || '',
-                              section: alloc.section || '',
-                              room: alloc.room || '',
-                              building: alloc.building || '',
-                              teacher_name: alloc.teacher_name || '',
-                              day: (alloc.schedule_day || '').toLowerCase(),
-                              startMinutes: startMins,
-                              endMinutes: endMins
-                            };
-                          }
-                        });
-
-                        if (currentBlock) {
-                          combinedBlocks.push(currentBlock);
-                        }
-                      });
-
-                      console.log('ViewSchedule - Combined blocks:', combinedBlocks.length);
-                      combinedBlocks.forEach((b, i) => {
-                        console.log(`  Block ${i}: ${b.course_code} | ${b.day} | ${b.startMinutes}-${b.endMinutes} mins`);
-                      });
-
-                      // STEP 4: Limit block duration (max 4 hours)
-                      const MAX_BLOCK_DURATION = 240;
-                      const finalBlocks = combinedBlocks.map(block => {
-                        const duration = block.endMinutes - block.startMinutes;
-                        if (duration > MAX_BLOCK_DURATION) {
-                          return { ...block, endMinutes: block.startMinutes + MAX_BLOCK_DURATION };
-                        }
-                        return block;
-                      });
-
-                      // STEP 5: Render settings
-                      const ROW_HEIGHT = 40;
-                      const START_HOUR = 7;
-                      const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-                      // Color palette for courses
-                      const COURSE_COLORS = [
-                        '#1976d2', '#388e3c', '#f57c00', '#7b1fa2', '#00796b',
-                        '#c2185b', '#5d4037', '#455a64', '#d32f2f', '#303f9f',
-                        '#0097a7', '#689f38', '#ffa000', '#512da8', '#e64a19', '#00838f'
-                      ];
-
-                      const courseColorMap = new Map<string, string>();
-                      const uniqueCourseCodes = [...new Set(finalBlocks.map(b => b.course_code))];
-                      uniqueCourseCodes.forEach((code, idx) => {
-                        courseColorMap.set(code, COURSE_COLORS[idx % COURSE_COLORS.length]);
-                      });
-
-                      const getBlockColor = (block: CombinedBlock): string => {
-                        return courseColorMap.get(block.course_code) || '#1976d2';
-                      };
-
-                      return (
-                        <table className={styles.timetable}>
-                          <thead>
-                            <tr>
-                              <th className={styles.timeHeader}>
-                                <Clock size={16} /> Time
-                              </th>
-                              {activeDays.map(day => (
-                                <th key={day} className={styles.dayHeader}>{day}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Array.from({ length: 26 }, (_, i) => {
-                              const hour = START_HOUR + Math.floor(i / 2);
-                              const minute = (i % 2) * 30;
-                              const isHourMark = minute === 0;
-                              const displayTime = formatTimeAMPM(hour, minute);
-
-                              return (
-                                <tr key={i} className={isHourMark ? styles.hourRow : styles.halfHourRow}>
-                                  <td className={`${styles.timeCell} ${isHourMark ? styles.hourMark : styles.halfHourMark}`}>
-                                    {displayTime}
-                                  </td>
-                                  {activeDays.map(day => {
-                                    const blocksStartingHere = finalBlocks.filter(block => {
-                                      const blockStartHour = Math.floor(block.startMinutes / 60);
-                                      const blockStartMin = block.startMinutes % 60;
-                                      return block.day === day.toLowerCase() &&
-                                        blockStartHour === hour &&
-                                        blockStartMin === minute;
-                                    });
-
-                                    const isCoveredByBlock = finalBlocks.some(block => {
-                                      if (block.day !== day.toLowerCase()) return false;
-                                      const currentMinutes = hour * 60 + minute;
-                                      return block.startMinutes < currentMinutes && currentMinutes < block.endMinutes;
-                                    });
-
-                                    const cellStyle = isCoveredByBlock
-                                      ? { position: 'relative' as const, height: `${ROW_HEIGHT}px`, background: 'transparent' }
-                                      : { position: 'relative' as const, height: `${ROW_HEIGHT}px` };
-
-                                    return (
-                                      <td key={`${day}-${i}`} className={styles.dataCell} style={cellStyle}>
-                                        {blocksStartingHere.map((block, idx) => {
-                                          const durationMinutes = block.endMinutes - block.startMinutes;
-                                          const durationSlots = Math.ceil(durationMinutes / 30);
-                                          const spanHeight = durationSlots * ROW_HEIGHT;
-
-                                          const startH = Math.floor(block.startMinutes / 60);
-                                          const startM = block.startMinutes % 60;
-                                          const endH = Math.floor(block.endMinutes / 60);
-                                          const endM = block.endMinutes % 60;
-                                          const displayTimeRange = `${formatTimeAMPM(startH, startM)} - ${formatTimeAMPM(endH, endM)}`;
-
-                                          return (
-                                            <div
-                                              key={idx}
-                                              className={styles.allocationBlock}
-                                              style={{
-                                                backgroundColor: getBlockColor(block),
-                                                color: '#fff',
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: '2px',
-                                                right: '2px',
-                                                height: `${spanHeight - 2}px`,
-                                                zIndex: 10,
-                                                overflow: 'hidden',
-                                                borderRadius: '8px',
-                                                padding: '8px 10px',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                justifyContent: 'flex-start',
-                                                boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
-                                                border: '1px solid rgba(255,255,255,0.2)'
-                                              }}
-                                              title={`${block.course_code} - ${block.course_name}\nSection: ${block.section}\nRoom: ${block.building} - ${block.room}\nTime: ${displayTimeRange}\nTeacher: ${block.teacher_name || 'TBD'}`}
-                                            >
-                                              <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-                                                {block.course_code || 'N/A'}
-                                              </div>
-                                              <div style={{ fontSize: '12px', opacity: 0.95, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
-                                                {block.course_name || ''}
-                                              </div>
-                                              <div style={{ fontSize: '10px', opacity: 0.85, marginBottom: '4px', fontWeight: 600, backgroundColor: 'rgba(0,0,0,0.15)', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', width: 'fit-content' }}>
-                                                {displayTimeRange}
-                                              </div>
-                                              <div style={{ fontSize: '12px', opacity: 0.95, fontWeight: 500 }}>{block.section}</div>
-                                              <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>{block.room}</div>
-                                              {block.teacher_name && (
-                                                <div style={{ fontSize: '10px', opacity: 0.85, marginTop: '2px' }}>{block.teacher_name}</div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                        {blocksStartingHere.length === 0 && !isCoveredByBlock && <div className={styles.emptyCell}></div>}
-                                      </td>
-                                    );
-                                  })}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      );
-                    })()}
+                      }}
+                    />
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Legend */}
-              {buildings.length > 0 && (
-                <div className={styles.legend}>
-                  <span className={styles.legendTitle}>Buildings:</span>
-                  {buildings.map((building, idx) => {
-                    const colors = [
-                      '#E8F5E9',  // Light green
-                      '#E0F2F1',  // Light teal
-                      '#FFF3E0',  // Light orange
-                      '#FCE4EC',  // Light pink
-                      '#F3E5F5',  // Light purple
-                      '#E3F2FD'   // Light blue
-                    ]
-                    return (
-                      <span
-                        key={building}
-                        className={styles.legendItem}
-                        style={{ backgroundColor: colors[idx % colors.length] }}
-                      >
-                        {building}
-                      </span>
-                    )
-                  })}
+
+
+          {/* Legend */}
+          {buildings.length > 0 && (
+            <div className={styles.legend}>
+              <span className={styles.legendTitle}>Buildings:</span>
+              {buildings.map((building, idx) => {
+                const colors = [
+                  '#E8F5E9', '#E0F2F1', '#FFF3E0', '#FCE4EC', '#F3E5F5', '#E3F2FD'
+                ]
+                return (
+                  <span
+                    key={building}
+                    className={styles.legendItem}
+                    style={{ backgroundColor: colors[idx % colors.length] }}
+                  >
+                    {building}
+                  </span>
+                )
+              })}
+
+              {/* Modals */}
+
+
+              {/* Archive Modal */}
+              {showArchiveModal && (
+                <ArchiveModal
+                  isOpen={showArchiveModal}
+                  onClose={() => setShowArchiveModal(false)}
+                  onRestore={() => {
+                    fetchSchedules()
+                    setShowArchiveModal(false)
+                  }}
+                />
+              )}
+
+              {/* Faculty Assign Modal - Placeholder until restored */}
+              {showFacultyAssignModal && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 1000
+                }}>
+                  <div style={{ background: 'white', padding: '20px', borderRadius: '8px' }}>
+                    <h3>Assign Faculty</h3>
+                    <p>This feature is currently being updated.</p>
+                    <button onClick={() => setShowFacultyAssignModal(false)} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Close</button>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
+        {/* Schedule Requests Modal */}
+        {selectedSchedule && (
+          <ScheduleRequestsModal
+            isOpen={isRequestsModalOpen}
+            onClose={() => setIsRequestsModalOpen(false)}
+            scheduleId={selectedSchedule.id}
+            onUpdate={() => {
+              // Refresh allocations
+              fetchUnifiedSchedule()
+            }}
+          />
+        )}
       </main>
-
-      {/* Archive Modal */}
-      <ArchiveModal
-        isOpen={showArchiveModal}
-        onClose={() => setShowArchiveModal(false)}
-        onRestore={() => {
-          // Refresh schedules after restore
-          fetchSchedules()
-          setShowArchiveModal(false)
-        }}
-      />
-
-      {/* Faculty Assignment Modal */}
-      {showFacultyAssignModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowFacultyAssignModal(false)}>
-          <div className={styles.facultyAssignModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>
-                <UserPlus size={24} style={{ marginRight: '10px', verticalAlign: 'middle' }} />
-                Assign Schedule to Faculty
-              </h3>
-              <button
-                className={styles.modalCloseBtn}
-                onClick={() => setShowFacultyAssignModal(false)}
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {assignmentMessage && (
-                <div className={`${styles.assignmentMessage} ${styles[assignmentMessage.type]}`}>
-                  {assignmentMessage.type === 'success' ? <CheckCircle2 size={18} /> : <X size={18} />}
-                  {assignmentMessage.text}
-                </div>
-              )}
-
-              <p className={styles.modalDescription}>
-                Select approved faculty members to assign <strong>&quot;{selectedSchedule?.schedule_name}&quot;</strong> as their default schedule.
-                Faculty will see this schedule on their home page.
-              </p>
-
-              {/* Search */}
-              <div className={styles.facultySearchBox}>
-                <Search size={18} />
-                <input
-                  type="text"
-                  placeholder="Search faculty by name or email..."
-                  value={facultySearchQuery}
-                  onChange={(e) => setFacultySearchQuery(e.target.value)}
-                />
-              </div>
-
-              {/* Faculty List */}
-              <div className={styles.facultyList}>
-                {loadingFaculty ? (
-                  <div className={styles.loadingFaculty}>
-                    <Loader2 size={32} className={styles.spinning} />
-                    <p>Loading approved faculty...</p>
-                  </div>
-                ) : filteredApprovedFaculty.length === 0 ? (
-                  <div className={styles.noFaculty}>
-                    <Users size={48} />
-                    <p>{facultySearchQuery ? 'No faculty found matching your search.' : 'No approved faculty found. Approve faculty registrations first.'}</p>
-                  </div>
-                ) : (
-                  filteredApprovedFaculty.map(faculty => (
-                    <div
-                      key={faculty.id}
-                      className={`${styles.facultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.selected : ''}`}
-                      onClick={() => toggleFacultySelection(faculty.id)}
-                    >
-                      <div className={styles.facultyCheckbox}>
-                        {selectedFacultyIds.includes(faculty.id) ? (
-                          <Check size={18} />
-                        ) : (
-                          <div className={styles.emptyCheckbox}></div>
-                        )}
-                      </div>
-                      <div className={styles.facultyInfo}>
-                        <span className={styles.facultyName}>{faculty.full_name}</span>
-                        <span className={styles.facultyEmail}>{faculty.email}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Selection Summary */}
-              {selectedFacultyIds.length > 0 && (
-                <div className={styles.selectionSummary}>
-                  <CheckCircle2 size={16} />
-                  <span>{selectedFacultyIds.length} faculty member{selectedFacultyIds.length > 1 ? 's' : ''} selected</span>
-                </div>
-              )}
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                className={styles.cancelBtn}
-                onClick={() => setShowFacultyAssignModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className={styles.assignBtn}
-                onClick={handleAssignScheduleToFaculty}
-                disabled={selectedFacultyIds.length === 0 || assigningSchedule}
-              >
-                {assigningSchedule ? (
-                  <>
-                    <Loader2 size={18} className={styles.spinning} />
-                    Assigning...
-                  </>
-                ) : (
-                  <>
-                    <Check size={18} />
-                    Assign Schedule
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  )
-}
-
-export default function ViewSchedulePageWrapper() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ViewSchedulePage />
-    </Suspense>
   )
 }

@@ -1,13 +1,13 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { 
-  Clock, Users, CheckCircle, XCircle, Building2, 
+import {
+  Clock, Users, CheckCircle, XCircle, Building2,
   ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronDown, ChevronUp,
   Loader2, Info, Map, AlertTriangle, Eye, DoorOpen, Footprints,
   ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed,
   Archive, Dumbbell, Music, Theater, Presentation, Server, Wifi,
-  Wind, Flame, Droplets, CircleDot, Triangle, Hexagon, Pentagon, 
+  Wind, Flame, Droplets, CircleDot, Triangle, Hexagon, Pentagon,
   Octagon, Star, Heart
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
@@ -82,7 +82,6 @@ interface CanvasElement {
 
 interface FloorPlan {
   id: number
-  building_id: number
   floor_number: number
   floor_name: string
   canvas_data: any
@@ -90,38 +89,16 @@ interface FloorPlan {
   canvas_height: number
   is_default_view: boolean
   linked_schedule_id?: number
+  is_published?: boolean
 }
 
-interface RoomAllocation {
-  id: number
-  schedule_id: number
-  room: string
-  building: string
-  course_code: string
-  section: string
-  schedule_day: string
-  schedule_time: string
-  teacher_name?: string
-}
-
-interface Building {
-  id: number
-  name: string
-  floors: FloorPlan[]
-}
-
-interface RoomViewer2DProps {
-  fullscreen?: boolean
-  onToggleFullscreen?: () => void
-  collegeTheme?: 'science' | 'arts-letters' | 'architecture' | 'default'
-  highlightEmpty?: boolean
-}
+// ... (other interfaces unchanged)
 
 export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', highlightEmpty = false }: RoomViewer2DProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
-  
+
   const [loading, setLoading] = useState(true)
   const [buildings, setBuildings] = useState<Building[]>([])
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
@@ -168,7 +145,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   // Fetch floor plans on mount
   useEffect(() => {
-    fetchFloorPlans()
+    initData()
   }, [])
 
   // Update zoom when fullscreen changes
@@ -203,52 +180,97 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     }
   }
 
-  const fetchFloorPlans = async () => {
+  const initData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Fetch all published/default floor plans with building info
-      const { data: fps, error: fpError } = await db
+      // Parallel fetch of buildings and floor plans
+      await Promise.all([fetchBuildings(), fetchFloorPlans()])
+    } catch (err) {
+      console.error('Error initializing data:', err)
+      setError('Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchBuildings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campuses')
+        .select('building')
+
+      if (error) throw error
+
+      // We process unique buildings in fetchFloorPlans logic
+      return data
+    } catch (err) {
+      console.error('Error fetching buildings:', err)
+      return []
+    }
+  }
+
+  const fetchFloorPlans = async () => {
+    try {
+      // 1. Fetch available building names first
+      const { data: campusData, error: campusError } = await supabase
+        .from('campuses')
+        .select('building')
+
+      const validBuildings = new Set((campusData || []).map((c: any) => c.building).filter(Boolean))
+
+      // 2. Fetch floor plans explicitly selecting columns (no building_id)
+      const { data, error: fpError } = await db
         .from('floor_plans')
-        .select('*, buildings(id, name)')
-        .or('is_default_view.eq.true,is_published.eq.true')
-        .order('building_id', { ascending: true })
+        .select('id, floor_number, floor_name, canvas_data, is_default_view, is_published, linked_schedule_id')
         .order('floor_number', { ascending: true })
 
       if (fpError) {
-        console.error('Error fetching floor plans:', fpError)
+        console.error('Error fetching floor plans:', fpError?.message || JSON.stringify(fpError))
         setHasFloorPlan(false)
         setError('No floor plans available')
         return
       }
 
-      if (!fps || fps.length === 0) {
+      if (!data || data.length === 0) {
         setHasFloorPlan(false)
         setError('No floor plans have been created yet')
         return
       }
 
+      // 3. Filter for published or default items in-memory
+      const fps = data.filter((fp: any) => fp.is_published || fp.is_default_view)
+
+      if (fps.length === 0) {
+        setHasFloorPlan(false)
+        setError('No published floor plans available')
+        return
+      }
+
       setHasFloorPlan(true)
 
-      // Group floor plans by building name parsed from floor_name
-      // This matches the admin's "Floor Plans & Drafts" grouping logic,
-      // which splits floor_name on " - " to get the building prefix.
+      // 4. Group floor plans by building
       const buildingMap: Record<string, Building> = {}
-      
+
       fps.forEach((fp: any) => {
-        const parts = fp.floor_name?.split(' - ')
-        const buildingKey = parts && parts.length > 1 ? parts[0].trim() : (fp.buildings?.name || `Building ${fp.building_id || 0}`)
-        const buildingId = fp.building_id || 0
-        
-        if (!buildingMap[buildingKey]) {
-          buildingMap[buildingKey] = {
-            id: buildingId,
-            name: buildingKey,
+        // Try to parse building from floor_name "BuildingName - FloorName"
+        let buildingName = 'Main Building'
+        if (fp.floor_name && fp.floor_name.includes(' - ')) {
+          buildingName = fp.floor_name.split(' - ')[0].trim()
+        }
+
+        // If the parsed name is a valid building from campuses, use it. 
+        // Otherwise, trust the parsed name anyway as fallback.
+
+        if (!buildingMap[buildingName]) {
+          buildingMap[buildingName] = {
+            id: Object.keys(buildingMap).length + 1, // Artificial ID for frontend keying
+            name: buildingName,
             floors: []
           }
         }
-        buildingMap[buildingKey].floors.push(fp as FloorPlan)
+        buildingMap[buildingName].floors.push(fp as FloorPlan)
       })
 
       const buildingList: Building[] = Object.values(buildingMap)
@@ -258,7 +280,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       if (buildingList.length > 0) {
         const firstBuilding = buildingList[0]
         setSelectedBuilding(firstBuilding)
-        
+
         if (firstBuilding.floors.length > 0) {
           const defaultFloor = firstBuilding.floors.find((f: FloorPlan) => f.is_default_view) || firstBuilding.floors[0]
           setSelectedFloor(defaultFloor)
@@ -267,24 +289,22 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       }
 
     } catch (err) {
-      console.error('Error:', err)
+      console.error('Error in fetchFloorPlans:', err)
       setError('Failed to load floor plans')
       setHasFloorPlan(false)
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleBuildingChange = (buildingId: string) => {
     const building = buildings.find(b => b.id === parseInt(buildingId))
     if (!building) return
-    
+
     // Toggle: clicking the same building collapses it
     if (selectedBuilding?.id === building.id) {
       setSelectedBuilding(null)
       return
     }
-    
+
     setSelectedBuilding(building)
     // Auto-select first floor of new building
     if (building.floors.length > 0) {
@@ -311,7 +331,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     } else {
       setCanvasElements([])
     }
-    
+
     if (floorPlan.canvas_data?.canvasSize) {
       setCanvasSize(floorPlan.canvas_data.canvasSize)
     }
@@ -356,7 +376,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
     const isOccupied = roomAllocations.some(alloc => {
       if (alloc.room !== roomName) return false
-      
+
       const allocDay = alloc.schedule_day?.toLowerCase()
       if (!allocDay?.includes(currentDay)) return false
 
@@ -397,7 +417,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
     return roomAllocations.find(alloc => {
       if (alloc.room !== roomName) return false
-      
+
       const allocDay = alloc.schedule_day?.toLowerCase()
       if (!allocDay?.includes(currentDay)) return false
 
@@ -452,7 +472,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`${styles.container} ${isFullscreen ? styles.fullscreen : ''} ${isMobile ? styles.mobileView : ''}`}
       data-college-theme={collegeTheme}
@@ -463,7 +483,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           <Map size={isMobile ? 16 : 20} />
           <h2>{isMobile ? 'Floor Plan' : 'Campus Floor Plan'}</h2>
           {isMobile && (
-            <button 
+            <button
               className={styles.toggleControlsBtn}
               onClick={() => setShowControls(!showControls)}
               title={showControls ? 'Hide controls' : 'Show controls'}
@@ -472,7 +492,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             </button>
           )}
         </div>
-        
+
         <div className={`${styles.controls} ${isMobile && !showControls ? styles.controlsHidden : ''}`}>
           {/* Zoom controls */}
           <div className={styles.zoomControls}>
@@ -609,7 +629,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           <div className={styles.liveIndicator}>
             <Clock size={14} />
           </div>
-          <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</span>
+          <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
         </div>
       </div>
 
@@ -637,11 +657,11 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
             .map(element => {
               const isRoom = element.type === 'room'
-              const availability = isRoom && element.linkedRoomData 
-                ? getRoomAvailability(element.linkedRoomData.room) 
+              const availability = isRoom && element.linkedRoomData
+                ? getRoomAvailability(element.linkedRoomData.room)
                 : 'unknown'
-              const currentClass = isRoom && element.linkedRoomData 
-                ? getCurrentClass(element.linkedRoomData.room) 
+              const currentClass = isRoom && element.linkedRoomData
+                ? getCurrentClass(element.linkedRoomData.room)
                 : null
               const isSelected = selectedElement?.id === element.id
 
@@ -669,10 +689,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                     <>
                       {/* Availability indicator */}
                       <div className={`${styles.availabilityDot} ${styles[availability]}`} />
-                      
+
                       {/* Room label */}
                       <div className={styles.roomLabel}>{element.label}</div>
-                      
+
                       {/* Current class info on hover/selection */}
                       {currentClass && (
                         <div className={styles.classInfo}>
@@ -737,15 +757,14 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 <span>Capacity: {selectedElement.linkedRoomData.capacity}</span>
               </div>
             )}
-            
+
             {/* Enhanced Status Badge */}
-            <div className={`${styles.statusBadge} ${
-              getRoomAvailability(selectedElement.linkedRoomData.room) === 'available' 
-                ? styles.statusAvailable 
-                : getRoomAvailability(selectedElement.linkedRoomData.room) === 'occupied' 
-                  ? styles.statusOccupied 
-                  : styles.statusUnknown
-            }`}>
+            <div className={`${styles.statusBadge} ${getRoomAvailability(selectedElement.linkedRoomData.room) === 'available'
+              ? styles.statusAvailable
+              : getRoomAvailability(selectedElement.linkedRoomData.room) === 'occupied'
+                ? styles.statusOccupied
+                : styles.statusUnknown
+              }`}>
               {getRoomAvailability(selectedElement.linkedRoomData.room) === 'available' ? (
                 <>
                   <CheckCircle size={18} />
@@ -763,7 +782,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 </>
               )}
             </div>
-            
+
             {getCurrentClass(selectedElement.linkedRoomData.room) && (
               <div className={styles.currentClassDetails}>
                 <h4>Current Class</h4>

@@ -97,13 +97,35 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     if (isOpen) fetchNotifications()
   }, [isOpen])
 
-  // Load on mount + poll every 30s
+  // Load on mount + poll every 30s + Realtime
   useEffect(() => {
     const persisted = loadPersistedNotifications()
     setNotifications(persisted)
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
+
+    // Real-time subscription
+    const channel = supabase
+      .channel('realtime_alerts_admin')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'system_alerts',
+          filter: 'audience=eq.admin'
+        },
+        (payload) => {
+          // Refresh notifications when new admin alert comes in
+          fetchNotifications()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchNotifications = useCallback(async () => {
@@ -112,7 +134,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       // 1. Fetch pending registrations
       const regResponse = await fetch('/api/faculty-registration?status=pending')
       const regData = await regResponse.json()
-      
+
       const registrationNotifs: Notification[] = (regData.registrations || []).map((reg: any) => ({
         id: `reg_${reg.id}`,
         type: 'registration' as const,
@@ -141,7 +163,9 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               timestamp: new Date(alert.created_at),
               read: alert.receipt?.status === 'read' || alert.receipt?.status === 'confirmed',
               severity: alert.severity || 'info',
-              link: undefined
+              link: alert.category === 'schedule_request'
+                ? '/LandingPages/RoomSchedule/ViewSchedule'
+                : undefined
             }))
           }
         }
@@ -229,7 +253,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
   return (
     <div className="notification-bell-container" ref={dropdownRef}>
-      <button 
+      <button
         className={`notification-bell-btn ${isOpen ? 'active' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
@@ -248,7 +272,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
             <h3>Notifications</h3>
             <div className="notification-header-actions">
               {unreadCount > 0 && (
-                <button 
+                <button
                   className="mark-all-btn"
                   onClick={markAllRead}
                   title="Mark all as read"
@@ -257,7 +281,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                 </button>
               )}
               {notifications.length > 0 && (
-                <button 
+                <button
                   className="clear-all-btn"
                   onClick={clearAllNotifications}
                   title="Clear all"
@@ -281,7 +305,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               </div>
             ) : (
               notifications.slice(0, 20).map((notif) => (
-                <div 
+                <div
                   key={notif.id}
                   className={`notification-item ${!notif.read ? 'unread' : ''} ${notif.severity === 'error' ? 'error' : ''} ${notif.severity === 'success' ? 'success' : ''}`}
                   onClick={() => handleNotificationClick(notif)}
@@ -303,7 +327,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
           {notifications.some(n => n.type === 'registration' && !n.read) && (
             <div className="notification-footer">
-              <button 
+              <button
                 className="approve-all-btn"
                 onClick={() => {
                   router.push('/LandingPages/FacultyManagement/FacultyApproval')

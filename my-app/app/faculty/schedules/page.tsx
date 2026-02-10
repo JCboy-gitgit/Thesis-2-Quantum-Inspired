@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import { useTheme } from '@/app/context/ThemeContext'
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Building2, 
-  DoorOpen, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Building2,
+  DoorOpen,
   Users,
   BookOpen,
   Search,
@@ -26,8 +26,11 @@ import {
   FileImage,
   Printer,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  MessageSquarePlus
 } from 'lucide-react'
+import DraggableTimetable, { DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
 
@@ -71,6 +74,7 @@ interface Schedule {
   created_at: string
   school_name?: string
   college?: string
+  is_locked?: boolean
 }
 
 interface UserProfile {
@@ -89,12 +93,12 @@ interface AssignedSchedule {
   schedule_name?: string
 }
 
-type ViewMode = 'my-schedule' | 'rooms' | 'faculty' | 'classes' | 'timeline' | 'timetable'
+type ViewMode = 'my-schedule' | 'rooms' | 'faculty' | 'classes' | 'timeline' | 'timetable' | 'requests'
 type TimetableType = 'room' | 'faculty' | 'section'
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const TIME_SLOTS = [
-  '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', 
+  '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM',
   '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
   '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
   '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM',
@@ -105,23 +109,30 @@ function RoomSchedulesViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  
+
   // User and view state
   const [user, setUser] = useState<UserProfile | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('my-schedule')
   const [hasAssignedSchedule, setHasAssignedSchedule] = useState(false)
-  
+
   // Schedule data
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [allocations, setAllocations] = useState<RoomAllocation[]>([])
   const [myAllocations, setMyAllocations] = useState<RoomAllocation[]>([])
   const [filteredAllocations, setFilteredAllocations] = useState<RoomAllocation[]>([])
-  
+
   // Loading states
   const [loading, setLoading] = useState(true)
   const [loadingDetails, setLoadingDetails] = useState(false)
-  
+
+  // Reschedule Request State
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [pendingRequest, setPendingRequest] = useState<DragDropResult | null>(null)
+  const [requestReason, setRequestReason] = useState('')
+  const [requestSubmitting, setRequestSubmitting] = useState(false)
+  const [myRequests, setMyRequests] = useState<any[]>([])
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [filterBuilding, setFilterBuilding] = useState<string>('all')
@@ -130,19 +141,20 @@ function RoomSchedulesViewContent() {
   const [filterTeacher, setFilterTeacher] = useState<string>('all')
   const [selectedAllocation, setSelectedAllocation] = useState<RoomAllocation | null>(null)
   const [isMobile, setIsMobile] = useState(false)
-  
+
   // Filter options
   const [buildings, setBuildings] = useState<string[]>([])
   const [rooms, setRooms] = useState<string[]>([])
   const [teachers, setTeachers] = useState<string[]>([])
   const [filteredRooms, setFilteredRooms] = useState<string[]>([])
-  
+
   // Timetable view state
   const [timetableType, setTimetableType] = useState<TimetableType>('room')
   const [timetableItems, setTimetableItems] = useState<string[]>([])
   const [selectedTimetableItem, setSelectedTimetableItem] = useState<string>('')
   const [timetableIndex, setTimetableIndex] = useState<number>(0)
   const [timelineDayIndex, setTimelineDayIndex] = useState<number>(0)
+
 
   // Timeline derived values (must be after timelineDayIndex state)
   const timelineDay = DAYS[timelineDayIndex] || DAYS[0]
@@ -159,10 +171,10 @@ function RoomSchedulesViewContent() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768)
     }
-    
+
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    
+
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
@@ -177,12 +189,202 @@ function RoomSchedulesViewContent() {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
-    
+
     return () => {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
   }, [selectedAllocation, isMobile])
+
+  // Handlers and effects derived from state should be here (before any early returns)
+
+  const handleDragDrop = (result: DragDropResult) => {
+    setPendingRequest(result)
+    setRequestReason('')
+    setRequestModalOpen(true)
+  }
+
+  const fetchMyRequests = async () => {
+    if (!selectedSchedule) return
+    try {
+      const response = await fetch(`/api/schedule-requests?schedule_id=${selectedSchedule.id}&status=pending`)
+      // See note below about fetching
+    } catch (error) {
+      console.error('Error fetching requests:', error)
+    }
+  }
+
+  const handleSubmitRequest = async () => {
+    if (!pendingRequest) {
+      alert("Error: No pending request data found.")
+      return
+    }
+    if (!user) {
+      alert("Error: You must be logged in to submit a request.")
+      return
+    }
+    if (!selectedSchedule) {
+      alert("Error: No schedule selected.")
+      return
+    }
+
+    if (pendingRequest.allocationIds.length === 0) {
+      alert("Error: Invalid class data (no allocation IDs).")
+      return
+    }
+
+    if (!requestReason.trim()) {
+      alert('Please provide a reason for this request.')
+      return
+    }
+
+    setRequestSubmitting(true)
+    try {
+      const payload = {
+        scheduleId: selectedSchedule.id,
+        allocationId: pendingRequest.allocationIds[0],
+        requestedBy: user.id,
+        requesterName: user.full_name || user.email,
+        requesterEmail: user.email,
+
+        originalDay: pendingRequest.fromDay,
+        originalTime: pendingRequest.fromTime,
+        originalRoom: pendingRequest.toRoom,
+        originalBuilding: pendingRequest.toBuilding,
+
+        newDay: pendingRequest.toDay,
+        newTime: pendingRequest.toTime,
+        newRoom: pendingRequest.toRoom,
+        newBuilding: pendingRequest.toBuilding,
+
+        courseCode: pendingRequest.courseCode,
+        courseName: pendingRequest.originalAllocations[0].course_name,
+        section: pendingRequest.section,
+
+        reason: requestReason
+      }
+
+      console.log('Sending payload:', JSON.stringify(payload, null, 2))
+
+      const response = await fetch('/api/schedule-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      console.log('Response status:', response.status)
+      const text = await response.text()
+      console.log('Response text:', text)
+
+      // Alert critical info for debugging
+      if (!response.ok) {
+        alert(`Debug Error: Status ${response.status}\nText: ${text.substring(0, 100)}`)
+      }
+
+      let data: any = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch (e) {
+        console.error('Failed to parse JSON:', e)
+        data = { error: 'Invalid JSON response' }
+      }
+
+      if (!response.ok) {
+        console.error('Submission failed:', data)
+        throw new Error(data.error || 'Failed to submit request')
+      }
+
+      alert('Reschedule request submitted successfully!')
+      setRequestModalOpen(false)
+      setPendingRequest(null)
+      fetchMyRequests() // Refresh requests list
+
+      // Also update the requests view directly if possible
+      if (viewMode === 'requests') {
+        // Re-trigger fetch or manually add to list (re-trigger is safer)
+        // Since we don't have the new request formatted exactly as DB yet, let's just re-fetch
+        const res = await fetch(`/api/schedule-requests?schedule_id=${selectedSchedule.id}&status=pending`)
+        const reqData = await res.json()
+        if (reqData.success && reqData.data) {
+          const myPending = reqData.data.filter((r: any) => r.requester_email === user?.email)
+          setMyRequests(myPending)
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Error submitting request:', error)
+      alert(error.message || 'Failed to submit request')
+    } finally {
+      setRequestSubmitting(false)
+    }
+  }
+
+  // Use a useEffect to fetch requests when viewMode changes to 'requests'
+  useEffect(() => {
+    if (viewMode === 'requests' && selectedSchedule) {
+      const loadRequests = async () => {
+        try {
+          // Fetch requests filtering by status=pending (or all if we update API later)
+          // For now using the existing endpoint and client filtering
+          const res = await fetch(`/api/schedule-requests?schedule_id=${selectedSchedule.id}&requested_by=${user?.id}&status=all`) // Updated API usage
+          const data = await res.json()
+          if (data.success && data.data) {
+            // API now supports filtering by requested_by, so we use that.
+            setMyRequests(data.data)
+          } else {
+            // Fallback if API update didn't propagate or using old params
+            const resOld = await fetch(`/api/schedule-requests?schedule_id=${selectedSchedule.id}&status=pending`)
+            const dataOld = await resOld.json()
+            if (dataOld.success && dataOld.data) {
+              const myPending = dataOld.data.filter((r: any) => r.requester_email === user?.email)
+              setMyRequests(myPending)
+            }
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+      loadRequests()
+    }
+  }, [viewMode, selectedSchedule, user])
+
+  // Real-time subscription for my requests
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel(`realtime_faculty_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'schedule_change_requests',
+          filter: `requester_id=eq.${user.id}`
+        },
+        async () => {
+          // 1. Refresh requests list if viewing requests
+          if (viewMode === 'requests' && selectedSchedule) {
+            try {
+              const res = await fetch(`/api/schedule-requests?schedule_id=${selectedSchedule.id}&requested_by=${user.id}&status=all`)
+              const data = await res.json()
+              if (data.success && data.data) {
+                setMyRequests(data.data)
+              }
+            } catch (e) { console.error(e) }
+          }
+          // 2. Refresh schedule (allocations) if request approved/allocations changed
+          if (selectedSchedule) {
+            handleSelectSchedule(selectedSchedule)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, viewMode, selectedSchedule])
 
   // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
   useEffect(() => {
@@ -278,7 +480,7 @@ function RoomSchedulesViewContent() {
   const updateTimetableItems = () => {
     const currentAllocations = allocations.length > 0 ? allocations : myAllocations
     let items: string[] = []
-    
+
     if (timetableType === 'room') {
       // Get unique room names (with building prefix)
       items = [...new Set(currentAllocations.map(a => `${a.building} - ${a.room}`))]
@@ -289,7 +491,7 @@ function RoomSchedulesViewContent() {
       // Get unique sections - combine LAB and LEC into single entries
       items = [...new Set(currentAllocations.map(a => stripSectionSuffix(a.section)).filter(Boolean))] as string[]
     }
-    
+
     setTimetableItems(items.sort())
     if (items.length > 0 && !items.includes(selectedTimetableItem)) {
       setSelectedTimetableItem(items[0])
@@ -300,7 +502,7 @@ function RoomSchedulesViewContent() {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/')
         return
@@ -334,10 +536,10 @@ function RoomSchedulesViewContent() {
 
       // Fetch user's assigned schedule first
       await fetchMySchedule(session.user.email || '')
-      
+
       // Then fetch all schedules for viewing
       await fetchSchedules()
-      
+
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -347,19 +549,19 @@ function RoomSchedulesViewContent() {
   const fetchMySchedule = async (email: string) => {
     try {
       const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
-      
+
       if (response.ok) {
         const data = await parseJsonSafely(response)
-        
+
         if (data?.schedule && data.allocations && data.allocations.length > 0) {
           setHasAssignedSchedule(true)
           setMyAllocations(data.allocations as RoomAllocation[])
-          
+
           // Extract unique filter options from my allocations
           const uniqueBuildings = [...new Set(data.allocations.map((a: any) => a.building).filter(Boolean))] as string[]
           const uniqueRooms = [...new Set(data.allocations.map((a: any) => a.room).filter(Boolean))] as string[]
           const uniqueTeachers = [...new Set(data.allocations.map((a: any) => a.teacher_name).filter(Boolean))] as string[]
-          
+
           setBuildings(uniqueBuildings)
           setRooms(uniqueRooms)
           setTeachers(uniqueTeachers)
@@ -405,9 +607,9 @@ function RoomSchedulesViewContent() {
         }))
 
         setSchedules(schedulesWithNames)
-        
-        // Only auto-select if we're not viewing my schedule
-        if (viewMode !== 'my-schedule' && schedulesWithNames.length > 0) {
+
+        // Always ensure a schedule is selected so consistent conflict checking works
+        if (!selectedSchedule && schedulesWithNames.length > 0) {
           const current = schedulesWithNames.find(s => (s as any).is_current) || schedulesWithNames[0]
           handleSelectSchedule(current)
         }
@@ -422,7 +624,7 @@ function RoomSchedulesViewContent() {
   const handleSelectSchedule = async (schedule: Schedule) => {
     setSelectedSchedule(schedule)
     setLoadingDetails(true)
-    
+
     try {
       const { data: allocationData, error } = await supabase
         .from('room_allocations')
@@ -433,11 +635,11 @@ function RoomSchedulesViewContent() {
 
       if (!error && allocationData && allocationData.length > 0) {
         setAllocations(allocationData as RoomAllocation[])
-        
+
         const uniqueBuildings = [...new Set(allocationData.map((a: any) => a.building).filter(Boolean))] as string[]
         const uniqueRooms = [...new Set(allocationData.map((a: any) => a.room).filter(Boolean))] as string[]
         const uniqueTeachers = [...new Set(allocationData.map((a: any) => a.teacher_name).filter(Boolean))] as string[]
-        
+
         setBuildings(uniqueBuildings)
         setRooms(uniqueRooms)
         setTeachers(uniqueTeachers)
@@ -457,12 +659,12 @@ function RoomSchedulesViewContent() {
     setFilterRoom('all')
     setFilterDay('all')
     setFilterTeacher('all')
-    
+
     // If switching away from my-schedule and no schedule selected, select first one
     if (mode !== 'my-schedule' && !selectedSchedule && schedules.length > 0) {
       handleSelectSchedule(schedules[0])
     }
-    
+
     // If switching to timetable view, update timetable items
     if (mode === 'timetable') {
       setTimeout(() => updateTimetableItems(), 100)
@@ -498,7 +700,7 @@ function RoomSchedulesViewContent() {
     }
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter(a =>
         a.course_code?.toLowerCase().includes(query) ||
         a.course_name?.toLowerCase().includes(query) ||
         a.section?.toLowerCase().includes(query) ||
@@ -513,7 +715,7 @@ function RoomSchedulesViewContent() {
   const groupByDay = () => {
     const grouped: { [day: string]: RoomAllocation[] } = {}
     DAYS.forEach(day => {
-      grouped[day] = filteredAllocations.filter(a => 
+      grouped[day] = filteredAllocations.filter(a =>
         a.schedule_day?.toLowerCase().includes(day.toLowerCase())
       )
     })
@@ -547,9 +749,9 @@ function RoomSchedulesViewContent() {
   // Timetable helper functions
   const getTimetableAllocations = (): RoomAllocation[] => {
     const currentAllocations = allocations.length > 0 ? allocations : myAllocations
-    
+
     if (!selectedTimetableItem) return []
-    
+
     if (timetableType === 'room') {
       return currentAllocations.filter(a => `${a.building} - ${a.room}` === selectedTimetableItem)
     } else if (timetableType === 'faculty') {
@@ -567,13 +769,13 @@ function RoomSchedulesViewContent() {
   // Generate unique color for each course
   const getCourseColor = (courseCode: string): string => {
     if (!courseCode) return 'hsl(200, 70%, 80%)'
-    
+
     // Create a hash from the course code
     let hash = 0
     for (let i = 0; i < courseCode.length; i++) {
       hash = courseCode.charCodeAt(i) + ((hash << 5) - hash)
     }
-    
+
     // Generate distinct hue values
     const hue = Math.abs(hash) % 360
     return `hsl(${hue}, 65%, 75%)`
@@ -593,25 +795,25 @@ function RoomSchedulesViewContent() {
     if (!timeStr) return 0
     const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i)
     if (!match) return 0
-    
+
     let hours = parseInt(match[1])
     const minutes = parseInt(match[2])
     const period = match[3]?.toUpperCase()
-    
+
     // Handle 12-hour format with AM/PM
     if (period === 'PM' && hours !== 12) hours += 12
     if (period === 'AM' && hours === 12) hours = 0
-    
+
     // If no AM/PM, assume 24-hour format - already correct
     // But handle edge case where hours < 7 might be PM (afternoon classes)
     // Actually, 24-hour format is already correct as-is
-    
+
     return hours * 60 + minutes
   }
 
   const getTimeRange = (timeStr: string): { start: number; end: number } => {
     if (!timeStr) return { start: 0, end: 0 }
-    
+
     const parts = timeStr.split('-').map(t => t.trim())
     if (parts.length === 2) {
       return {
@@ -619,7 +821,7 @@ function RoomSchedulesViewContent() {
         end: parseTimeToMinutes(parts[1])
       }
     }
-    
+
     const start = parseTimeToMinutes(timeStr)
     return { start, end: start + 60 }
   }
@@ -633,7 +835,7 @@ function RoomSchedulesViewContent() {
   const getAllocationsStartingAt = (day: string, timeSlot: string): RoomAllocation[] => {
     const timetableAllocations = getTimetableAllocations()
     const slotMinutes = parseTimeToMinutes(timeSlot)
-    
+
     return timetableAllocations.filter(a => {
       if (!a.schedule_day?.toLowerCase().includes(day.toLowerCase())) return false
       const { start } = getTimeRange(a.schedule_time)
@@ -645,7 +847,7 @@ function RoomSchedulesViewContent() {
   const isCellOccupied = (day: string, timeSlot: string): boolean => {
     const timetableAllocations = getTimetableAllocations()
     const slotMinutes = parseTimeToMinutes(timeSlot)
-    
+
     return timetableAllocations.some(a => {
       if (!a.schedule_day?.toLowerCase().includes(day.toLowerCase())) return false
       const { start, end } = getTimeRange(a.schedule_time)
@@ -693,14 +895,14 @@ function RoomSchedulesViewContent() {
     try {
       // Dynamic import of html2canvas
       const html2canvas = (await import('html2canvas')).default
-      
+
       if (exportType === 'current') {
         const canvas = await html2canvas(timetableElement, {
           scale: 2,
           backgroundColor: '#ffffff',
           logging: false
         })
-        
+
         const link = document.createElement('a')
         link.download = `timetable-${selectedTimetableItem?.replace(/\s+/g, '-') || 'schedule'}.png`
         link.href = canvas.toDataURL('image/png')
@@ -710,21 +912,21 @@ function RoomSchedulesViewContent() {
         for (let i = 0; i < timetableItems.length; i++) {
           setSelectedTimetableItem(timetableItems[i])
           setTimetableIndex(i)
-          
+
           // Wait for render
           await new Promise(resolve => setTimeout(resolve, 500))
-          
+
           const canvas = await html2canvas(timetableElement, {
             scale: 2,
             backgroundColor: '#ffffff',
             logging: false
           })
-          
+
           const link = document.createElement('a')
           link.download = `timetable-${timetableItems[i].replace(/\s+/g, '-')}.png`
           link.href = canvas.toDataURL('image/png')
           link.click()
-          
+
           await new Promise(resolve => setTimeout(resolve, 300))
         }
       }
@@ -787,6 +989,8 @@ function RoomSchedulesViewContent() {
     return [normalizeDay(day)]
   }
 
+
+
   // PDF Export Function
   const handleExportPDF = async (exportType: 'current' | 'all-rooms' | 'all-sections' | 'all-teachers' = 'current') => {
     try {
@@ -797,6 +1001,34 @@ function RoomSchedulesViewContent() {
         format: [215.9, 279.4] // Short bond paper: 8.5" x 11" in mm (portrait)
       })
 
+      // Load logo image
+      const loadImage = (src: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image()
+          img.src = src
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              reject(new Error('Could not get canvas context'))
+              return
+            }
+            ctx.drawImage(img, 0, 0)
+            resolve(canvas.toDataURL('image/png'))
+          }
+          img.onerror = reject
+        })
+      }
+
+      let logoData: string | null = null
+      try {
+        logoData = await loadImage('/app-icon.png')
+      } catch (e) {
+        console.error('Failed to load logo', e)
+      }
+
       const pageWidth = 215.9
       const pageHeight = 279.4
       const margin = 8
@@ -806,7 +1038,7 @@ function RoomSchedulesViewContent() {
       const generateColorPalette = (allocs: RoomAllocation[]) => {
         const uniqueCourses = new Set(allocs.map(a => a.course_code))
         const colorMap = new Map<string, { r: number; g: number; b: number }>()
-        
+
         const colors = [
           { r: 25, g: 118, b: 210 },   // Blue
           { r: 56, g: 142, b: 60 },    // Green
@@ -829,13 +1061,13 @@ function RoomSchedulesViewContent() {
           { r: 78, g: 52, b: 46 },     // Dark Brown
           { r: 1, g: 87, b: 155 }      // Dark Blue
         ]
-        
+
         let colorIdx = 0
         uniqueCourses.forEach(course => {
           colorMap.set(course, colors[colorIdx % colors.length])
           colorIdx++
         })
-        
+
         return colorMap
       }
 
@@ -902,55 +1134,50 @@ function RoomSchedulesViewContent() {
       }
 
       // Draw timetable on PDF
-      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, {r: number, g: number, b: number}>) => {
-        // QTime Logo
-        const logoSize = 8
-        const logoTextSize = 10
-        const logoText = 'Qtime Scheduler'
-        pdfDoc.setFontSize(logoTextSize)
-        pdfDoc.setFont('helvetica', 'bold')
-        const textWidth = pdfDoc.getTextWidth(logoText)
-        const totalWidth = logoSize + 2 + textWidth
-        const startX = (pageWidth - totalWidth) / 2
+      const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, { r: number, g: number, b: number }>) => {
+        // Logo
+        const logoSize = 12
+        const logoX = margin
         const logoY = margin
-        
-        // Green rounded rectangle for Q
-        pdfDoc.setFillColor(22, 163, 74)
-        pdfDoc.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
-        
-        // "Q" letter in white
-        pdfDoc.setTextColor(255, 255, 255)
-        pdfDoc.setFontSize(6)
-        pdfDoc.setFont('helvetica', 'bold')
-        const qWidth = pdfDoc.getTextWidth('Q')
-        pdfDoc.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
-        
-        // "Qtime Scheduler" text
-        pdfDoc.setTextColor(0, 0, 0)
+
+        if (logoData) {
+          pdfDoc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize)
+        }
+
+        // Qtime Scheduler Text
+        const logoText = 'Qtime Scheduler'
+        const logoTextSize = 14
         pdfDoc.setFontSize(logoTextSize)
         pdfDoc.setFont('helvetica', 'bold')
-        pdfDoc.text(logoText, startX + logoSize + 2, logoY + 6)
-        
         pdfDoc.setTextColor(0, 0, 0)
+        pdfDoc.text(logoText, logoX + logoSize + 4, logoY + 5)
 
         // Title
-        pdfDoc.setFontSize(12)
+        pdfDoc.setFontSize(14)
         pdfDoc.setFont('helvetica', 'bold')
         const titleWidth = pdfDoc.getTextWidth(title)
-        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 14)
-        
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 20)
+
         // Subtitle
-        pdfDoc.setFontSize(8)
+        pdfDoc.setFontSize(10)
         pdfDoc.setFont('helvetica', 'normal')
-        const subtitle = `${selectedSchedule?.schedule_name} | ${selectedSchedule?.semester} ${selectedSchedule?.academic_year}`
-        const subtitleWidth = pdfDoc.getTextWidth(subtitle)
-        pdfDoc.text(subtitle, (pageWidth - subtitleWidth) / 2, margin + 19)
+
+        let subtitleText = selectedSchedule?.schedule_name || ''
+        if (selectedSchedule?.academic_year) {
+          subtitleText += ` | ${selectedSchedule.academic_year}`
+        }
+        if (selectedSchedule?.semester) {
+          subtitleText += ` ${selectedSchedule.semester}`
+        }
+
+        const subtitleWidth = pdfDoc.getTextWidth(subtitleText)
+        pdfDoc.text(subtitleText, (pageWidth - subtitleWidth) / 2, margin + 25)
 
         const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
         const blocks = processAllocationsToBlocks(allocData)
-        
+
         // Table dimensions
-        const startY = margin + 22
+        const startY = margin + 30
         const timeColWidth = 18
         const dayColWidth = (usableWidth - timeColWidth) / 6
         const rowHeight = 8
@@ -970,7 +1197,7 @@ function RoomSchedulesViewContent() {
         pdfDoc.setTextColor(0, 0, 0)
         const timeHeaderWidth = pdfDoc.getTextWidth('Time')
         pdfDoc.text('Time', margin + (timeColWidth - timeHeaderWidth) / 2, startY + 5.5)
-        
+
         const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         weekdays.forEach((day, idx) => {
           const x = margin + timeColWidth + (idx * dayColWidth)
@@ -1000,9 +1227,9 @@ function RoomSchedulesViewContent() {
             const dayLower = day.toLowerCase()
             const slotMinutes = hour * 60 + min
 
-            const isCoveredByBlock = blocks.some(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const isCoveredByBlock = blocks.some(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1012,9 +1239,9 @@ function RoomSchedulesViewContent() {
               pdfDoc.line(x, y + rowHeight, x + dayColWidth, y + rowHeight)
             }
 
-            const relevantBlocks = blocks.filter(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const relevantBlocks = blocks.filter(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1030,13 +1257,13 @@ function RoomSchedulesViewContent() {
               const centerX = x + dayColWidth / 2
               pdfDoc.setTextColor(255, 255, 255)
               let textY = y + 3
-              
+
               // Course Code
               pdfDoc.setFontSize(7)
               pdfDoc.setFont('helvetica', 'bold')
               pdfDoc.text(block.course_code || 'N/A', centerX, textY, { align: 'center' })
               textY += 2.8
-              
+
               // Course Name
               if (blockHeight > 8) {
                 pdfDoc.setFontSize(5.5)
@@ -1045,7 +1272,7 @@ function RoomSchedulesViewContent() {
                 pdfDoc.text(courseNameLines.slice(0, 1), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Time Range
               if (blockHeight > 12) {
                 pdfDoc.setFontSize(5)
@@ -1062,7 +1289,7 @@ function RoomSchedulesViewContent() {
                 pdfDoc.text(`${formatTime(startH, startM)} - ${formatTime(endH, endM)}`, centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Section
               if (blockHeight > 16) {
                 pdfDoc.setFontSize(5.5)
@@ -1070,7 +1297,7 @@ function RoomSchedulesViewContent() {
                 pdfDoc.text((block.section || 'N/A').substring(0, 20), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Room
               if (blockHeight > 20) {
                 pdfDoc.setFontSize(5)
@@ -1080,7 +1307,7 @@ function RoomSchedulesViewContent() {
                 pdfDoc.text(roomText.substring(0, 25), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Teacher
               if (blockHeight > 24) {
                 pdfDoc.setFontSize(5)
@@ -1106,11 +1333,27 @@ function RoomSchedulesViewContent() {
       const currentAllocations = allocations.length > 0 ? allocations : myAllocations
 
       if (exportType === 'current') {
-        const viewLabel = timetableType === 'room' ? `Room: ${selectedTimetableItem}` :
-          timetableType === 'faculty' ? `Faculty: ${selectedTimetableItem}` :
-          timetableType === 'section' ? `Section: ${selectedTimetableItem}` : 'Schedule'
-        const currentData = getTimetableAllocations()
-        drawTimetable(currentData, viewLabel, ++pageCount)
+        let currentData: RoomAllocation[] = []
+        let viewLabel = ''
+
+        if (viewMode === 'my-schedule') {
+          currentData = myAllocations
+          viewLabel = 'My Schedule'
+        } else {
+          const label = timetableType === 'room' ? `Room: ${selectedTimetableItem}` :
+            timetableType === 'faculty' ? `Faculty: ${selectedTimetableItem}` :
+              timetableType === 'section' ? `Section: ${selectedTimetableItem}` : 'Schedule'
+          currentData = getTimetableAllocations()
+          viewLabel = label
+        }
+
+        if (currentData.length > 0) {
+          drawTimetable(currentData, viewLabel, ++pageCount)
+        } else {
+          alert('No data to export for current view.')
+          return
+        }
+
       } else if (exportType === 'all-rooms') {
         const roomItems = [...new Set(currentAllocations.map(a => `${a.building} - ${a.room}`))]
         for (const room of roomItems) {
@@ -1141,7 +1384,7 @@ function RoomSchedulesViewContent() {
       }
 
       // Save PDF
-      const fileName = `timetable_${selectedSchedule?.schedule_name}_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`
+      const fileName = `timetable_${selectedSchedule?.schedule_name || 'schedule'}_${exportType}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
     } catch (error) {
       console.error('Error exporting PDF:', error)
@@ -1157,6 +1400,8 @@ function RoomSchedulesViewContent() {
       </div>
     )
   }
+
+
 
   const groupedByDay = groupByDay()
   const groupedByRoom = groupByRoom()
@@ -1181,47 +1426,26 @@ function RoomSchedulesViewContent() {
 
       {/* View Mode Tabs */}
       <div className={styles.viewTabs}>
-        <button 
+        <button
           className={`${styles.viewTab} ${viewMode === 'my-schedule' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('my-schedule')}
         >
           <User size={18} />
           My Schedule
         </button>
-        <button 
-          className={`${styles.viewTab} ${viewMode === 'rooms' ? styles.activeTab : ''}`}
-          onClick={() => handleViewModeChange('rooms')}
-        >
-          <DoorOpen size={18} />
-          All Rooms
-        </button>
-        <button 
-          className={`${styles.viewTab} ${viewMode === 'faculty' ? styles.activeTab : ''}`}
-          onClick={() => handleViewModeChange('faculty')}
-        >
-          <Users size={18} />
-          All Faculty
-        </button>
-        <button 
-          className={`${styles.viewTab} ${viewMode === 'classes' ? styles.activeTab : ''}`}
-          onClick={() => handleViewModeChange('classes')}
-        >
-          <GraduationCap size={18} />
-          All Classes
-        </button>
-        <button 
-          className={`${styles.viewTab} ${viewMode === 'timeline' ? styles.activeTab : ''}`}
-          onClick={() => handleViewModeChange('timeline')}
-        >
-          <Clock size={18} />
-          Timeline
-        </button>
-        <button 
+        <button
           className={`${styles.viewTab} ${viewMode === 'timetable' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('timetable')}
         >
           <LayoutGrid size={18} />
           Timetable Gallery
+        </button>
+        <button
+          className={`${styles.viewTab} ${viewMode === 'requests' ? styles.activeTab : ''}`}
+          onClick={() => handleViewModeChange('requests')}
+        >
+          <MessageSquarePlus size={18} />
+          My Requests
         </button>
       </div>
 
@@ -1239,8 +1463,8 @@ function RoomSchedulesViewContent() {
       {viewMode !== 'my-schedule' && schedules.length > 0 && (
         <div className={styles.scheduleSelector}>
           <label>Select Schedule:</label>
-          <select 
-            value={selectedSchedule?.id || ''} 
+          <select
+            value={selectedSchedule?.id || ''}
             onChange={(e) => {
               const schedule = schedules.find(s => s.id === parseInt(e.target.value))
               if (schedule) handleSelectSchedule(schedule)
@@ -1347,7 +1571,7 @@ function RoomSchedulesViewContent() {
 
           {/* Results Info */}
           <div className={styles.resultsInfo}>
-            Showing {filteredAllocations.length} of {currentAllocations.length} 
+            Showing {filteredAllocations.length} of {currentAllocations.length}
             {viewMode === 'my-schedule' ? ' assigned' : ' scheduled'} classes
           </div>
 
@@ -1356,54 +1580,107 @@ function RoomSchedulesViewContent() {
             {/* My Schedule & Classes View - Group by Day */}
             {(viewMode === 'my-schedule' || viewMode === 'classes') && (
               <>
-                {DAYS.map(day => {
-                  const dayAllocations = groupedByDay[day]
-                  if (dayAllocations.length === 0) return null
-                  
-                  return (
-                    <div key={day} className={styles.daySection}>
-                      <h2 className={styles.dayTitle}>
-                        <Calendar size={20} />
-                        {day}
+                {/* Interactive Timetable View for My Schedule (all devices) */}
+                {viewMode === 'my-schedule' && (
+                  <div className={styles.timetableContainer}>
+                    <div className={styles.timetableHeader} style={{ marginBottom: '1rem' }}>
+                      <h2 className={styles.timetableTitle} style={{ fontSize: '1.25rem' }}>
+                        Interactive Schedule
                       </h2>
-                      <div className={styles.allocationsList}>
-                        {dayAllocations.map(allocation => (
-                          <div 
-                            key={allocation.id} 
-                            className={styles.allocationCard}
-                            onClick={() => setSelectedAllocation(allocation)}
-                          >
-                            <div className={styles.timeSlot}>
-                              <Clock size={16} />
-                              {allocation.schedule_time}
-                            </div>
-                            <div className={styles.courseInfo}>
-                              <h3 className={styles.courseCode}>{allocation.course_code}</h3>
-                              <p className={styles.courseName}>{allocation.course_name}</p>
-                              <p className={styles.section}>Section: {allocation.section}</p>
-                            </div>
-                            <div className={styles.locationInfo}>
-                              <div className={styles.location}>
-                                <Building2 size={14} />
-                                {allocation.building}
-                              </div>
-                              <div className={styles.room}>
-                                <DoorOpen size={14} />
-                                {allocation.room}
-                              </div>
-                            </div>
-                            {allocation.teacher_name && (
-                              <div className={styles.teacherInfo}>
-                                <Users size={14} />
-                                {allocation.teacher_name}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <p style={{ color: theme === 'green' ? '#666' : '#94a3b8', fontSize: '0.9rem' }}>
+                        {isMobile ? 'Long-press and drag' : 'Drag and drop'} your classes to request a reschedule.
+                        {selectedSchedule?.is_locked && <span style={{ color: '#ef4444', fontWeight: 'bold', marginLeft: '8px' }}>(Schedule Locked)</span>}
+                      </p>
                     </div>
-                  )
-                })}
+                    <DraggableTimetable
+                      allocations={myAllocations}
+                      allAllocations={allocations}
+                      mode="faculty-request"
+                      isLocked={selectedSchedule?.is_locked}
+                      facultyName={user?.full_name}
+                      onDrop={handleDragDrop}
+                    />
+                  </div>
+                )}
+
+                {/* Card List View (classes view mode) */}
+                {viewMode === 'classes' && (
+                  DAYS.map(day => {
+                    const dayAllocations = groupedByDay[day]
+                    if (dayAllocations.length === 0) return null
+
+                    return (
+                      <div key={day} className={styles.daySection}>
+                        <h2 className={styles.dayTitle}>
+                          <Calendar size={20} />
+                          {day}
+                        </h2>
+                        <div className={styles.allocationsList}>
+                          {dayAllocations.map(allocation => (
+                            <div
+                              key={allocation.id}
+                              className={styles.allocationCard}
+                              onClick={() => setSelectedAllocation(allocation)}
+                            >
+                              <div className={styles.timeSlot}>
+                                <Clock size={16} />
+                                {allocation.schedule_time}
+                              </div>
+                              <div className={styles.courseInfo}>
+                                <h3 className={styles.courseCode}>{allocation.course_code}</h3>
+                                <p className={styles.courseName}>{allocation.course_name}</p>
+                                <p className={styles.section}>Section: {allocation.section}</p>
+                              </div>
+                              <div className={styles.locationInfo}>
+                                <div className={styles.location}>
+                                  <Building2 size={14} />
+                                  {allocation.building}
+                                </div>
+                                <div className={styles.room}>
+                                  <DoorOpen size={14} />
+                                  {allocation.room}
+                                </div>
+                              </div>
+                              {allocation.teacher_name && (
+                                <div className={styles.teacherInfo}>
+                                  <Users size={14} />
+                                  {allocation.teacher_name}
+                                </div>
+                              )}
+
+                              {/* Mark Absence Button */}
+                              {viewMode === 'my-schedule' && (
+                                <button
+                                  className={styles.markAbsenceBtn}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedAllocation(allocation)
+                                    setShowMarkAbsenceModal(true)
+                                  }}
+                                  style={{
+                                    marginTop: '8px',
+                                    padding: '6px 12px',
+                                    backgroundColor: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <AlertCircle size={14} /> Mark As Absent
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </>
             )}
 
@@ -1457,8 +1734,8 @@ function RoomSchedulesViewContent() {
                     </h2>
                     <div className={styles.allocationsList}>
                       {roomAllocations.map(allocation => (
-                        <div 
-                          key={allocation.id} 
+                        <div
+                          key={allocation.id}
                           className={styles.allocationCard}
                           onClick={() => setSelectedAllocation(allocation)}
                         >
@@ -1514,8 +1791,8 @@ function RoomSchedulesViewContent() {
                     </h2>
                     <div className={styles.allocationsList}>
                       {teacherAllocations.map(allocation => (
-                        <div 
-                          key={allocation.id} 
+                        <div
+                          key={allocation.id}
                           className={styles.allocationCard}
                           onClick={() => setSelectedAllocation(allocation)}
                         >
@@ -1567,238 +1844,409 @@ function RoomSchedulesViewContent() {
         </div>
       )}
 
-      {/* Timetable Gallery View */}
-      {viewMode === 'timetable' && (
-        <div className={styles.timetableSection}>
-          {/* Timetable Type Selector */}
-          <div className={styles.timetableControls}>
-            <div className={styles.timetableTypeTabs}>
-              <button 
-                className={`${styles.typeTab} ${timetableType === 'room' ? styles.activeTypeTab : ''}`}
-                onClick={() => { setTimetableType('room'); setTimetableIndex(0); }}
+      {/* Request Submission Modal */}
+      {requestModalOpen && pendingRequest && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '480px', borderRadius: '16px', padding: '24px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            background: theme === 'dark' ? '#0f172a' : '#fff',
+            color: theme === 'dark' ? '#fff' : '#1e293b',
+            border: theme === 'dark' ? '1px solid #334155' : 'none',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquarePlus size={22} style={{ color: theme === 'dark' ? '#22d3ee' : '#059669' }} />
+              Request Reschedule
+            </h3>
+
+            <div style={{
+              padding: '16px', borderRadius: '12px', marginBottom: '16px', fontSize: '14px',
+              background: theme === 'dark' ? 'rgba(30,41,59,0.5)' : '#ecfdf5',
+              color: theme === 'dark' ? '#cbd5e1' : '#064e3b',
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '8px' }}>{pendingRequest.courseCode} - {pendingRequest.section}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>From</div>
+                  <div>{pendingRequest.fromDay}</div>
+                  <div>{pendingRequest.fromTime}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>To</div>
+                  <div style={{ fontWeight: 700, color: '#f59e0b' }}>{pendingRequest.toDay}</div>
+                  <div style={{ fontWeight: 700, color: '#f59e0b' }}>{pendingRequest.toTime}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px', opacity: 0.8 }}>Reason for Request</label>
+              <textarea
+                value={requestReason}
+                onChange={(e) => setRequestReason(e.target.value)}
+                placeholder="Please explain why you need to reschedule..."
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '12px', resize: 'none', height: '128px',
+                  border: `1px solid ${theme === 'dark' ? '#475569' : '#a7f3d0'}`,
+                  background: theme === 'dark' ? '#0f172a' : '#fff',
+                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  outline: 'none', fontSize: '14px', fontFamily: 'inherit',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={() => { setRequestModalOpen(false); setPendingRequest(null); }}
+                disabled={requestSubmitting}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', fontWeight: 500, border: 'none', cursor: 'pointer',
+                  background: 'transparent', transition: 'background 0.2s',
+                  color: theme === 'dark' ? '#94a3b8' : '#475569',
+                }}
               >
-                <DoorOpen size={16} />
-                Room Timetables
+                Cancel
               </button>
-              <button 
-                className={`${styles.typeTab} ${timetableType === 'faculty' ? styles.activeTypeTab : ''}`}
-                onClick={() => { setTimetableType('faculty'); setTimetableIndex(0); }}
+              <button
+                onClick={handleSubmitRequest}
+                disabled={requestSubmitting}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', fontWeight: 500, border: 'none', cursor: 'pointer',
+                  color: '#fff', transition: 'all 0.2s',
+                  background: theme === 'dark' ? '#0891b2' : '#059669',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  opacity: requestSubmitting ? 0.6 : 1,
+                }}
               >
-                <Users size={16} />
-                Faculty Timetables
-              </button>
-              <button 
-                className={`${styles.typeTab} ${timetableType === 'section' ? styles.activeTypeTab : ''}`}
-                onClick={() => { setTimetableType('section'); setTimetableIndex(0); }}
-              >
-                <GraduationCap size={16} />
-                Section Timetables
+                {requestSubmitting ? 'Submitting...' : 'Submit Request'}
               </button>
             </div>
-            
-            {/* Item Navigation - Pagination */}
-            {timetableItems.length > 0 && (
-              <div className={styles.timetableNavigation}>
-                <button 
-                  className={styles.navButton}
-                  onClick={() => navigateTimetable('prev')}
-                  disabled={timetableIndex === 0}
-                  title="Previous schedule"
-                >
-                  <ChevronLeft size={20} />
-                  Previous
-                </button>
-                <div className={styles.timetableSelector}>
-                  <select 
-                    value={selectedTimetableItem}
-                    onChange={(e) => {
-                      setSelectedTimetableItem(e.target.value)
-                      setTimetableIndex(timetableItems.indexOf(e.target.value))
-                    }}
-                    className={styles.timetableSelect}
-                  >
-                    {timetableItems.map(item => (
-                      <option key={item} value={item}>{item}</option>
-                    ))}
-                  </select>
-                  <span className={styles.navCounter}>
-                    Page {timetableIndex + 1} of {timetableItems.length}
-                  </span>
-                </div>
-                <button 
-                  className={styles.navButton}
-                  onClick={() => navigateTimetable('next')}
-                  disabled={timetableIndex === timetableItems.length - 1}
-                  title="Next schedule"
-                >
-                  Next
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            )}
+          </div>
+        </div>
+      )}
 
-            {/* Export Buttons */}
-            {selectedTimetableItem && (
-              <div className={styles.exportButtons}>
-                {/* PDF Export Dropdown */}
-                <div className={styles.exportDropdown}>
-                  <button 
-                    className={styles.exportBtn}
-                    onClick={() => setShowPdfExportMenu(!showPdfExportMenu)}
-                    title="Export as PDF"
-                  >
-                    <FileText size={18} />
-                    Export PDF
-                    <ChevronDown size={14} />
-                  </button>
-                  {showPdfExportMenu && (
-                    <div className={styles.exportDropdownMenu}>
-                      <button onClick={() => { handleExportPDF('current'); setShowPdfExportMenu(false); }}>
-                        Current View
-                      </button>
-                      <button onClick={() => { handleExportPDF('all-rooms'); setShowPdfExportMenu(false); }}>
-                        All Rooms (PDF)
-                      </button>
-                      <button onClick={() => { handleExportPDF('all-sections'); setShowPdfExportMenu(false); }}>
-                        All Sections (PDF)
-                      </button>
-                      <button onClick={() => { handleExportPDF('all-teachers'); setShowPdfExportMenu(false); }}>
-                        All Faculty (PDF)
-                      </button>
+      {/* My Requests View */}
+      {viewMode === 'requests' && (
+        <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <h2 className={`text-xl font-bold mb-6 flex items-center gap-2 ${theme === 'green' ? 'text-slate-800' : 'text-white'}`}>
+            My Requests
+            <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${theme === 'green' ? 'bg-emerald-100 text-emerald-700' : 'bg-cyan-900/30 text-cyan-300'
+              }`}>
+              {myRequests.length}
+            </span>
+          </h2>
+
+          {myRequests.length === 0 ? (
+            <div className="text-center py-12 opacity-60">
+              <MessageSquarePlus size={48} className="mx-auto mb-4 opacity-50" />
+              <p>No reschedule requests found.</p>
+              <p className="text-sm mt-2">Drag and drop classes in "My Schedule" to make a request.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {myRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className={`p-4 rounded-xl border transition-all ${theme === 'green'
+                    ? 'bg-white border-emerald-100 shadow-sm hover:shadow-md'
+                    : 'bg-slate-800/50 border-cyan-900/30 hover:bg-slate-800'
+                    }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-bold ${theme === 'green' ? 'text-emerald-700' : 'text-cyan-400'}`}>
+                          {req.course_code}
+                        </span>
+                        <span className="opacity-60">•</span>
+                        <span>{req.section}</span>
+                      </div>
+                      <div className={`text-sm mb-3 ${theme === 'green' ? 'text-slate-600' : 'text-slate-400'}`}>
+                        {req.reason}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-xs opacity-50 uppercase tracking-wider">Original</span>
+                          <span className="font-medium line-through opacity-70">
+                            {req.original_day} {req.original_time}
+                          </span>
+                        </div>
+                        <ArrowLeft className="rotate-180 opacity-40" size={16} />
+                        <div className="flex flex-col">
+                          <span className="text-xs opacity-50 uppercase tracking-wider">Requested</span>
+                          <span className={`font-bold ${theme === 'green' ? 'text-emerald-600' : 'text-cyan-300'
+                            }`}>
+                            {req.new_day} {req.new_time}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${req.status === 'approved'
+                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                        : req.status === 'rejected'
+                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                        }`}>
+                        {req.status}
+                      </span>
+                      <span className="text-xs opacity-50">
+                        {new Date(req.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {req.admin_notes && (
+                    <div className={`mt-3 pt-3 border-t text-sm ${theme === 'green' ? 'border-emerald-100 bg-emerald-50/50' : 'border-slate-700 bg-black/20'
+                      } rounded-lg p-3`}>
+                      <span className="font-semibold text-xs uppercase opacity-70 block mb-1">Admin Reply:</span>
+                      {req.admin_notes}
                     </div>
                   )}
                 </div>
-                <button 
-                  className={styles.exportBtn}
-                  onClick={() => handleExportTimetable('current')}
-                  title="Export current timetable as image"
-                >
-                  <FileImage size={18} />
-                  Export Image
-                </button>
-                <button 
-                  className={styles.exportBtn}
-                  onClick={() => handleExportTimetable('print')}
-                  title="Print timetable"
-                >
-                  <Printer size={18} />
-                  Print
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Timetable Grid */}
-          {selectedTimetableItem && (
-            <div className={styles.timetableContainer} id="timetable-grid">
-              <div className={styles.timetableHeader}>
-                <h2 className={styles.timetableTitle}>
-                  {timetableType === 'room' && <DoorOpen size={28} />}
-                  {timetableType === 'faculty' && <User size={28} />}
-                  {timetableType === 'section' && <GraduationCap size={28} />}
-                  {selectedTimetableItem}
-                </h2>
-                <p className={styles.timetableSubtitle}>
-                  {selectedSchedule?.schedule_name} • {selectedSchedule?.semester} {selectedSchedule?.academic_year}
-                </p>
-              </div>
-              
-              <div className={styles.timetableGridWrapper}>
-                <table className={styles.timetableTable}>
-                  <thead>
-                    <tr>
-                      <th className={styles.timeColumnHeader}>Time</th>
-                      {DAYS.map(day => (
-                        <th key={day} className={styles.dayColumnHeader}>{day}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TIME_SLOTS.map((timeSlot, rowIndex) => (
-                      <tr key={timeSlot} className={styles.timeRow}>
-                        <td className={styles.timeCellLabel}>
-                          <span className={styles.timeText}>{timeSlot}</span>
-                        </td>
-                        {DAYS.map(day => {
-                          const startingAllocations = getAllocationsStartingAt(day, timeSlot)
-                          const isOccupied = isCellOccupied(day, timeSlot)
-                          
-                          // Skip rendering if this cell is part of a spanning allocation
-                          if (isOccupied && startingAllocations.length === 0) {
-                            return null
-                          }
-                          
-                          return (
-                            <td 
-                              key={`${day}-${timeSlot}`} 
-                              className={styles.scheduleTableCell}
-                              rowSpan={startingAllocations.length > 0 ? getRowSpan(startingAllocations[0]) : 1}
-                            >
-                              {startingAllocations.map(allocation => (
-                                <div 
-                                  key={allocation.id}
-                                  className={styles.timetableClassCard}
-                                  style={{ 
-                                    backgroundColor: getCourseColor(allocation.course_code),
-                                    borderLeftColor: getCourseTextColor(allocation.course_code),
-                                    height: `${getCardHeight(allocation)}px`,
-                                    minHeight: `${getCardHeight(allocation)}px`
-                                  }}
-                                  onClick={() => setSelectedAllocation(allocation)}
-                                >
-                                  <div className={styles.cardHeader}>
-                                    <div className={styles.classCardCode} style={{ color: getCourseTextColor(allocation.course_code) }}>
-                                      {allocation.course_code}
-                                    </div>
-                                    {(allocation.lab_hours && allocation.lab_hours > 0) && (
-                                      <span className={styles.labBadge} title="Lab Schedule">
-                                        LAB
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className={styles.classCardName}>
-                                    {allocation.course_name}
-                                  </div>
-                                  <div className={styles.classCardSection}>
-                                    <GraduationCap size={12} />
-                                    {allocation.section}
-                                  </div>
-                                  <div className={styles.classCardRoom}>
-                                    <DoorOpen size={12} />
-                                    {allocation.room}
-                                  </div>
-                                  {allocation.teacher_name && (
-                                    <div className={styles.classCardTeacher}>
-                                      <User size={12} />
-                                      {allocation.teacher_name}
-                                    </div>
-                                  )}
-                                  <div className={styles.classCardTime}>
-                                    <Clock size={12} />
-                                    {allocation.schedule_time}
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {timetableItems.length === 0 && (
-            <div className={styles.emptyState}>
-              <LayoutGrid size={64} />
-              <h3>No Timetable Data</h3>
-              <p>Select a schedule first to view timetables.</p>
+              ))}
             </div>
           )}
         </div>
       )}
+
+      <div className={styles.timetableSection}>
+        {/* Timetable Type Selector */}
+        <div className={styles.timetableControls}>
+          <div className={styles.timetableTypeTabs}>
+            <button
+              className={`${styles.typeTab} ${timetableType === 'room' ? styles.activeTypeTab : ''}`}
+              onClick={() => { setTimetableType('room'); setTimetableIndex(0); }}
+            >
+              <DoorOpen size={16} />
+              Room Timetables
+            </button>
+            <button
+              className={`${styles.typeTab} ${timetableType === 'faculty' ? styles.activeTypeTab : ''}`}
+              onClick={() => { setTimetableType('faculty'); setTimetableIndex(0); }}
+            >
+              <Users size={16} />
+              Faculty Timetables
+            </button>
+            <button
+              className={`${styles.typeTab} ${timetableType === 'section' ? styles.activeTypeTab : ''}`}
+              onClick={() => { setTimetableType('section'); setTimetableIndex(0); }}
+            >
+              <GraduationCap size={16} />
+              Section Timetables
+            </button>
+          </div>
+
+          {/* Item Navigation - Pagination */}
+          {timetableItems.length > 0 && (
+            <div className={styles.timetableNavigation}>
+              <button
+                className={styles.navButton}
+                onClick={() => navigateTimetable('prev')}
+                disabled={timetableIndex === 0}
+                title="Previous schedule"
+              >
+                <ChevronLeft size={20} />
+                Previous
+              </button>
+              <div className={styles.timetableSelector}>
+                <select
+                  value={selectedTimetableItem}
+                  onChange={(e) => {
+                    setSelectedTimetableItem(e.target.value)
+                    setTimetableIndex(timetableItems.indexOf(e.target.value))
+                  }}
+                  className={styles.timetableSelect}
+                >
+                  {timetableItems.map(item => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+                <span className={styles.navCounter}>
+                  Page {timetableIndex + 1} of {timetableItems.length}
+                </span>
+              </div>
+              <button
+                className={styles.navButton}
+                onClick={() => navigateTimetable('next')}
+                disabled={timetableIndex === timetableItems.length - 1}
+                title="Next schedule"
+              >
+                Next
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+
+          {/* Export Buttons */}
+          {selectedTimetableItem && (
+            <div className={styles.exportButtons}>
+              {/* PDF Export Dropdown */}
+              <div className={styles.exportDropdown}>
+                <button
+                  className={styles.exportBtn}
+                  onClick={() => setShowPdfExportMenu(!showPdfExportMenu)}
+                  title="Export as PDF"
+                >
+                  <FileText size={18} />
+                  Export PDF
+                  <ChevronDown size={14} />
+                </button>
+                {showPdfExportMenu && (
+                  <div className={styles.exportDropdownMenu}>
+                    <button onClick={() => { handleExportPDF('current'); setShowPdfExportMenu(false); }}>
+                      Current View
+                    </button>
+                    <button onClick={() => { handleExportPDF('all-rooms'); setShowPdfExportMenu(false); }}>
+                      All Rooms (PDF)
+                    </button>
+                    <button onClick={() => { handleExportPDF('all-sections'); setShowPdfExportMenu(false); }}>
+                      All Sections (PDF)
+                    </button>
+                    <button onClick={() => { handleExportPDF('all-teachers'); setShowPdfExportMenu(false); }}>
+                      All Faculty (PDF)
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                className={styles.exportBtn}
+                onClick={() => handleExportTimetable('current')}
+                title="Export current timetable as image"
+              >
+                <FileImage size={18} />
+                Export Image
+              </button>
+              <button
+                className={styles.exportBtn}
+                onClick={() => handleExportTimetable('print')}
+                title="Print timetable"
+              >
+                <Printer size={18} />
+                Print
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Timetable Grid */}
+        {selectedTimetableItem && (
+          <div className={styles.timetableContainer} id="timetable-grid">
+            <div className={styles.timetableHeader}>
+              <h2 className={styles.timetableTitle}>
+                {timetableType === 'room' && <DoorOpen size={28} />}
+                {timetableType === 'faculty' && <User size={28} />}
+                {timetableType === 'section' && <GraduationCap size={28} />}
+                {selectedTimetableItem}
+              </h2>
+              <p className={styles.timetableSubtitle}>
+                {selectedSchedule?.schedule_name} • {selectedSchedule?.semester} {selectedSchedule?.academic_year}
+              </p>
+            </div>
+
+            <div className={styles.timetableGridWrapper}>
+              <table className={styles.timetableTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.timeColumnHeader}>Time</th>
+                    {DAYS.map(day => (
+                      <th key={day} className={styles.dayColumnHeader}>{day}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {TIME_SLOTS.map((timeSlot, rowIndex) => (
+                    <tr key={timeSlot} className={styles.timeRow}>
+                      <td className={styles.timeCellLabel}>
+                        <span className={styles.timeText}>{timeSlot}</span>
+                      </td>
+                      {DAYS.map(day => {
+                        const startingAllocations = getAllocationsStartingAt(day, timeSlot)
+                        const isOccupied = isCellOccupied(day, timeSlot)
+
+                        // Skip rendering if this cell is part of a spanning allocation
+                        if (isOccupied && startingAllocations.length === 0) {
+                          return null
+                        }
+
+                        return (
+                          <td
+                            key={`${day}-${timeSlot}`}
+                            className={styles.scheduleTableCell}
+                            rowSpan={startingAllocations.length > 0 ? getRowSpan(startingAllocations[0]) : 1}
+                          >
+                            {startingAllocations.map(allocation => (
+                              <div
+                                key={allocation.id}
+                                className={styles.timetableClassCard}
+                                style={{
+                                  backgroundColor: getCourseColor(allocation.course_code),
+                                  borderLeftColor: getCourseTextColor(allocation.course_code),
+                                  height: `${getCardHeight(allocation)}px`,
+                                  minHeight: `${getCardHeight(allocation)}px`
+                                }}
+                                onClick={() => setSelectedAllocation(allocation)}
+                              >
+                                <div className={styles.cardHeader}>
+                                  <div className={styles.classCardCode} style={{ color: getCourseTextColor(allocation.course_code) }}>
+                                    {allocation.course_code}
+                                  </div>
+                                  {(allocation.lab_hours && allocation.lab_hours > 0) && (
+                                    <span className={styles.labBadge} title="Lab Schedule">
+                                      LAB
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={styles.classCardName}>
+                                  {allocation.course_name}
+                                </div>
+                                <div className={styles.classCardSection}>
+                                  <GraduationCap size={12} />
+                                  {allocation.section}
+                                </div>
+                                <div className={styles.classCardRoom}>
+                                  <DoorOpen size={12} />
+                                  {allocation.room}
+                                </div>
+                                {allocation.teacher_name && (
+                                  <div className={styles.classCardTeacher}>
+                                    <User size={12} />
+                                    {allocation.teacher_name}
+                                  </div>
+                                )}
+                                <div className={styles.classCardTime}>
+                                  <Clock size={12} />
+                                  {allocation.schedule_time}
+                                </div>
+                              </div>
+                            ))}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {timetableItems.length === 0 && (
+          <div className={styles.emptyState}>
+            <LayoutGrid size={64} />
+            <h3>No Timetable Data</h3>
+            <p>Select a schedule first to view timetables.</p>
+          </div>
+        )}
+      </div>
+
 
       {/* Mobile Modal */}
       {isMobile && selectedAllocation && (
@@ -2003,6 +2451,61 @@ function RoomSchedulesViewContent() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+
+      {/* Mark Absence Modal */}
+      {showMarkAbsenceModal && selectedAllocation && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white', padding: '24px', borderRadius: '8px',
+            width: '90%', maxWidth: '500px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '1.25rem' }}>Mark Absence</h3>
+            <p><strong>Class:</strong> {selectedAllocation.course_code} - {selectedAllocation.course_name}</p>
+            <p><strong>Time:</strong> {selectedAllocation.schedule_day} {selectedAllocation.schedule_time}</p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Reason for Absence</label>
+              <textarea
+                value={absenceReason}
+                onChange={(e) => setAbsenceReason(e.target.value)}
+                placeholder="Please provide a reason (e.g., Sick leave, Emergency)..."
+                style={{
+                  width: '100%', height: '100px', padding: '8px',
+                  borderRadius: '4px', border: '1px solid #ccc'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={() => setShowMarkAbsenceModal(false)}
+                style={{
+                  padding: '8px 16px', borderRadius: '4px', border: '1px solid #ccc',
+                  background: 'white', cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMarkAbsence}
+                disabled={isSubmittingAbsence || !absenceReason.trim()}
+                style={{
+                  padding: '8px 16px', borderRadius: '4px', border: 'none',
+                  background: isSubmittingAbsence ? '#9ca3af' : '#ef4444',
+                  color: 'white', cursor: isSubmittingAbsence ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSubmittingAbsence ? 'Submitting...' : 'Confirm Absence'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

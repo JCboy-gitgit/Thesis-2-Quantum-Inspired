@@ -1,0 +1,86 @@
+              {/* Loading Details */}
+              {loadingDetails ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}></div>
+                  <p>Loading timetable...</p>
+                </div>
+              ) : allocations.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <BookOpen size={48} />
+                  <h3>No Allocations Found</h3>
+                  <p>This schedule doesn&apos;t have any room allocations yet.</p>
+                </div>
+              ) : (
+                <div className={styles.timetableWrapper} ref={timetableRef}>
+                  {/* Timetable Title with Navigation */}
+                  <div className={styles.timetableTitle}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div>
+                        <h3>
+                          {timetableViewMode === 'all' && 'All Classes Timetable'}
+                          {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
+                          {timetableViewMode === 'room' && selectedRoom === 'all' && 'All Rooms Timetable'}
+                          {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
+                          {timetableViewMode === 'section' && selectedSection === 'all' && 'All Sections Timetable'}
+                          {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
+                          {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'All Teachers Timetable'}
+                          {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
+                          {timetableViewMode === 'course' && selectedCourse === 'all' && 'All Courses Timetable'}
+                        </h3>
+                        <p className={styles.timetableSubtitle}>
+                          {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.timetableContainer}>
+                    <DraggableTimetable
+                      allocations={allocations}
+                      allAllocations={allocations}
+                      mode="admin-edit"
+                      isLocked={selectedSchedule?.is_locked}
+                      onDirectEdit={async (result: DragDropResult) => {
+                        if (result.hasConflict) {
+                          const proceed = confirm(
+                            `Warning: This time slot has a conflict!\n\n` +
+                            `${result.courseCode} (${result.section})\n` +
+                            `Moving from ${result.fromDay} ${result.fromTime}\n` +
+                            `to ${result.toDay} ${result.toTime}\n\n` +
+                            `Are you sure you want to place it here anyway?`
+                          )
+                          if (!proceed) return
+                        }
+
+                        try {
+                          // Update each allocation in the block
+                          for (const alloc of result.originalAllocations) {
+                            const timeParts = alloc.schedule_time.split(/\s*-\s*/)
+                            if (timeParts.length !== 2) continue
+                            const { error } = await db
+                              .from('room_allocations')
+                              .update({
+                                schedule_day: result.toDay.charAt(0).toUpperCase() + result.toDay.slice(1),
+                                schedule_time: result.toTime,
+                              })
+                              .eq('id', alloc.id)
+                            if (error) throw error
+                          }
+
+                          // Refresh allocations
+                          const { data: refreshed } = await db
+                            .from('room_allocations')
+                            .select('*')
+                            .eq('schedule_id', selectedSchedule!.id)
+                            .order('schedule_day', { ascending: true })
+                            .order('schedule_time', { ascending: true })
+                          if (refreshed) setAllocations(refreshed)
+                          alert('Schedule updated successfully!')
+                        } catch (error: any) {
+                          console.error('Error updating allocation:', error)
+                          alert('Failed to update schedule: ' + (error.message || 'Unknown error'))
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}

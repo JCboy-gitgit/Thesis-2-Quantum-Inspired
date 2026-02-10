@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, X, CheckCircle2, AlertTriangle, Info, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './NotificationPanel.module.css'
@@ -11,6 +12,7 @@ interface Notification {
   message: string
   severity: 'info' | 'success' | 'warning' | 'error'
   created_at: string
+  category?: string
   receipt?: {
     status: 'unread' | 'read' | 'confirmed' | 'dismissed'
   } | null
@@ -22,6 +24,7 @@ interface NotificationPanelProps {
 }
 
 export default function NotificationPanel({ userRole = 'faculty', userEmail }: NotificationPanelProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -38,13 +41,44 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
     init()
   }, [])
 
+  // Real-time subscription
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel('realtime_alerts_faculty')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'system_alerts'
+        },
+        (payload) => {
+          const alert = payload.new as any
+          if (alert.audience === 'faculty' || alert.audience === 'all') {
+            // If targetUserId is present, only show if it matches
+            if (alert.metadata?.targetUserId && alert.metadata.targetUserId !== userId) {
+              return
+            }
+            fetchNotifications(userId)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
+
   const fetchNotifications = async (uid: string) => {
     try {
       const audience = userRole === 'admin' ? 'admin' : 'faculty'
       const response = await fetch(`/api/alerts?audience=${audience}&userId=${encodeURIComponent(uid)}`)
       const data = await response.json()
-      setNotifications(data.alerts || [])
-      
+      setNotifications((data.alerts || []).map((a: any) => ({ ...a, category: a.category })))
+
       const unread = (data.alerts || []).filter(
         (n: any) => !n.receipt || n.receipt.status === 'unread'
       ).length
@@ -56,13 +90,13 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
 
   const markAsRead = async (notificationId: string) => {
     if (!userId) return
-    
+
     await fetch('/api/alerts', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alertId: notificationId, userId, action: 'read' })
     })
-    
+
     if (userId) {
       fetchNotifications(userId)
     }
@@ -70,13 +104,13 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
 
   const markAsConfirmed = async (notificationId: string) => {
     if (!userId) return
-    
+
     await fetch('/api/alerts', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alertId: notificationId, userId, action: 'confirm' })
     })
-    
+
     if (userId) {
       fetchNotifications(userId)
     }
@@ -106,7 +140,7 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
     if (diffMins < 60) return `${diffMins}m ago`
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays < 7) return `${diffDays}d ago`
-    
+
     return date.toLocaleDateString()
   }
 
@@ -155,11 +189,18 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
                 notifications.map(notification => (
                   <div
                     key={notification.id}
-                    className={`${styles.item} ${
-                      !notification.receipt || notification.receipt.status === 'unread'
-                        ? styles.unread
-                        : ''
-                    }`}
+                    className={`${styles.item} ${!notification.receipt || notification.receipt.status === 'unread'
+                      ? styles.unread
+                      : ''
+                      }`}
+                    onClick={() => {
+                      markAsRead(notification.id)
+                      if (notification.category === 'schedule_request') {
+                        router.push('/faculty/schedules')
+                        setOpen(false)
+                      }
+                    }}
+                    style={{ cursor: notification.category === 'schedule_request' ? 'pointer' : 'default' }}
                   >
                     <div className={styles.itemContent}>
                       <div className={styles.itemHeader}>
