@@ -135,7 +135,6 @@ export async function POST(request: NextRequest) {
         html: generatePasswordResetEmail(userData.full_name, resetLink)
       })
 
-      console.log(`✅ Password reset email sent to ${email}`)
     } catch (emailError) {
       console.error('Email send error:', emailError)
       // Clean up the token since email failed
@@ -264,8 +263,6 @@ export async function PUT(request: NextRequest) {
       .from('password_reset_tokens')
       .update({ used_at: new Date().toISOString() })
       .eq('token', token)
-
-    console.log(`✅ Password reset successful for ${tokenData.email}`)
 
     return NextResponse.json({
       success: true,

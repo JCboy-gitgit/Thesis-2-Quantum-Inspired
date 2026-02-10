@@ -96,8 +96,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'force_approve') {
-      console.log(`\n========== FORCE APPROVING USER ${userId} ==========`)
-      
       // Get auth user info
       const { data: authData } = await supabaseAdmin.auth.admin.getUserById(userId)
       const userEmail = authData.user?.email
@@ -110,8 +108,6 @@ export async function POST(request: NextRequest) {
         .eq('id', userId)
         .single()
       
-      console.log('Existing user:', existing)
-      
       // Step 2: If exists, update. If not, insert.
       if (existing) {
         const { data: updateResult, error: updateError } = await supabaseAdmin
@@ -122,8 +118,6 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', userId)
           .select()
-        
-        console.log('Update result:', updateResult, 'Error:', updateError)
         
         if (updateError) {
           return NextResponse.json({ 
@@ -144,8 +138,6 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
           })
           .select()
-        
-        console.log('Insert result:', insertResult, 'Error:', insertError)
         
         if (insertError) {
           return NextResponse.json({ 
@@ -170,8 +162,6 @@ export async function POST(request: NextRequest) {
         .select('id, email, is_active, full_name')
         .eq('id', userId)
         .single()
-      
-      console.log('Verified user after force approve:', verified)
       
       return NextResponse.json({
         success: true,

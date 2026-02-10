@@ -123,7 +123,7 @@ async function sendEmailWithRetry(emailData: any, maxRetries = 3): Promise<void>
       // Check if it's a temporary Gmail error (421)
       if (error.message?.includes('421') || error.message?.includes('Temporary System Problem')) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000) // Exponential backoff: 1s, 2s, 4s (max 10s)
-        console.log(`⚠️  Attempt ${attempt}/${maxRetries} failed for ${emailData.to}. Retrying in ${delay}ms...`)
+        console.log(`⚠️  Email attempt ${attempt}/${maxRetries} failed. Retrying in ${delay}ms...`)
         await new Promise(resolve => setTimeout(resolve, delay))
       } else {
         // Non-temporary error, don't retry
@@ -482,10 +482,9 @@ export async function POST(request: NextRequest) {
         try {
           await sendEmailWithRetry(item.data, 3) // 3 retries
           successList.push({ name: item.participant.name, email: item.participant.email })
-          console.log(`✅ Sent to: ${item.participant.email}`)
         } catch (err: any) {
           failedList.push({ name: item.participant.name, email: item.participant.email, error: err.message })
-          console.error(`❌ Failed (after retries): ${item.participant.email}`)
+          console.error('Failed to send email after retries')
         }
         
         // ✅ Delay between individual emails

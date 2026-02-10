@@ -116,8 +116,6 @@ export async function POST(req: NextRequest) {
         }
       })
 
-    console.log(`✅ ${emailRecipients.length} valid email addresses`)
-    emailRecipients.forEach(r => console.log(`   - ${r.name} <${r.email}>`))
 
     if (!emailRecipients.length) {
       console.warn('❌ No valid email addresses')

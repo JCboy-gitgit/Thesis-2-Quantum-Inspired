@@ -73,8 +73,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`✅ Email confirmed for: ${email}`)
-
     return NextResponse.json({
       success: true,
       message: `Email confirmed for ${email}`,

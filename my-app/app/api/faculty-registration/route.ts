@@ -161,7 +161,6 @@ export async function GET(request: NextRequest) {
     if (usersError) {
       console.error('Error fetching users:', usersError)
     }
-    console.log(`Found ${usersData?.length || 0} users in database`)
 
     // Get user_profiles to check rejection status
     const { data: profilesData, error: profilesError } = await supabaseAdmin
@@ -171,7 +170,6 @@ export async function GET(request: NextRequest) {
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError)
     }
-    console.log(`Found ${profilesData?.length || 0} user profiles in database`)
 
     const usersMap = new Map(usersData?.map(u => [u.email, u]) || [])
     const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || [])
@@ -204,11 +202,6 @@ export async function GET(request: NextRequest) {
         // Default to pending for confirmed but not yet processed users
         else {
           userStatus = 'pending'
-        }
-
-        // Debug log for each user
-        if (userRecord) {
-          console.log(`User ${user.email}: is_active=${userRecord.is_active}, profile_position=${userProfile?.position}, determined_status=${userStatus}`)
         }
 
         return {
@@ -275,21 +268,14 @@ export async function POST(request: NextRequest) {
     const userEmail = userData.user.email
 
     if (action === 'approve') {
-      console.log(`\n========== APPROVING USER ==========`)
-      console.log(`User ID: ${userId}`)
-      console.log(`Email: ${userEmail}`)
-
       // STEP 1: Check if user has confirmed their email via Supabase email link
       // Admin cannot approve until user confirms their email first
       if (!userData.user.email_confirmed_at) {
-        console.log('Email not confirmed - user must confirm via email link first')
         return NextResponse.json({
           error: 'Cannot approve: User has not confirmed their email yet. They must click the confirmation link sent to their email before you can approve their account.',
           details: 'Waiting for email confirmation'
         }, { status: 400 })
       }
-
-      console.log('✅ Email already confirmed by user')
 
       // STEP 2: Check if user exists in users table
       const { data: existingUser } = await supabaseAdmin
@@ -302,7 +288,6 @@ export async function POST(request: NextRequest) {
 
       if (existingUser) {
         // User exists - UPDATE the record
-        console.log('User exists, updating is_active to true...')
         const { error: updateError } = await supabaseAdmin
           .from('users')
           .update({
@@ -320,7 +305,6 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // User doesn't exist - INSERT new record
-        console.log('User not found, inserting new record...')
         const { error: insertError } = await supabaseAdmin
           .from('users')
           .insert({
@@ -348,16 +332,12 @@ export async function POST(request: NextRequest) {
         .eq('id', userId)
         .single()
 
-      console.log('Verification:', verifyUser)
-
       if (!verifyUser?.is_active) {
         console.error('ERROR: is_active is still false after approval!')
         return NextResponse.json({
           error: 'Approval failed - database did not update. Please check RLS policies or contact support.',
         }, { status: 500 })
       }
-
-      console.log(`✅ User ${userEmail} successfully approved!`)
 
       // Clear rejection marker in user_profiles if previously rejected
       const { data: profileResult, error: profileError } = await supabaseAdmin
@@ -371,11 +351,7 @@ export async function POST(request: NextRequest) {
       if (profileError) {
         console.error('Profile update error:', profileError)
         // Continue - main approval is done
-      } else {
-        console.log('Profile updated successfully for approval:', userId)
       }
-
-      console.log(`========== APPROVAL COMPLETE ==========\n`)
 
       // Send approval email
       try {
@@ -384,7 +360,6 @@ export async function POST(request: NextRequest) {
           subject: '✅ Your Faculty Registration has been Approved - Qtime Scheduler',
           html: generateApprovalEmail(userEmail!, full_name || 'Faculty Member')
         })
-        console.log(`📧 Approval email sent to ${userEmail}`)
       } catch (emailError) {
         console.error('Failed to send approval email:', emailError)
         // Don't fail the request if email fails
@@ -433,9 +408,6 @@ export async function POST(request: NextRequest) {
 
       if (profileError) {
         console.error('Profile update error for rejection:', profileError)
-        console.error('Failed to mark user as REJECTED in user_profiles:', userId)
-      } else {
-        console.log('Successfully marked user as REJECTED:', userId, profileResult)
       }
 
       // Send rejection email
@@ -445,7 +417,6 @@ export async function POST(request: NextRequest) {
           subject: '❌ Your Faculty Registration Status - Qtime Scheduler',
           html: generateRejectionEmail(userEmail!, full_name || existingUser?.full_name || 'User')
         })
-        console.log(`📧 Rejection email sent to ${userEmail}`)
       } catch (emailError) {
         console.error('Failed to send rejection email:', emailError)
       }

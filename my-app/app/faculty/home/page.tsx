@@ -48,6 +48,76 @@ interface ScheduleItem {
   section: string
 }
 
+// Philippine Holidays 2024-2026
+const philippineHolidays: { [key: string]: string } = {
+  // 2024
+  '2024-01-01': 'New Year\'s Day',
+  '2024-02-10': 'Chinese New Year',
+  '2024-02-25': 'EDSA People Power Revolution',
+  '2024-03-28': 'Maundy Thursday',
+  '2024-03-29': 'Good Friday',
+  '2024-03-30': 'Black Saturday',
+  '2024-04-09': 'Araw ng Kagitingan',
+  '2024-04-10': 'Eid\'l Fitr',
+  '2024-05-01': 'Labor Day',
+  '2024-06-12': 'Independence Day',
+  '2024-06-17': 'Eid\'l Adha',
+  '2024-08-21': 'Ninoy Aquino Day',
+  '2024-08-26': 'National Heroes Day',
+  '2024-11-01': 'All Saints\' Day',
+  '2024-11-02': 'All Souls\' Day',
+  '2024-11-30': 'Bonifacio Day',
+  '2024-12-08': 'Feast of Immaculate Conception',
+  '2024-12-24': 'Christmas Eve',
+  '2024-12-25': 'Christmas Day',
+  '2024-12-30': 'Rizal Day',
+  '2024-12-31': 'New Year\'s Eve',
+  // 2025
+  '2025-01-01': 'New Year\'s Day',
+  '2025-01-29': 'Chinese New Year',
+  '2025-02-25': 'EDSA People Power Revolution',
+  '2025-03-31': 'Eid\'l Fitr (Tentative)',
+  '2025-04-09': 'Araw ng Kagitingan',
+  '2025-04-17': 'Maundy Thursday',
+  '2025-04-18': 'Good Friday',
+  '2025-04-19': 'Black Saturday',
+  '2025-05-01': 'Labor Day',
+  '2025-06-06': 'Eid\'l Adha (Tentative)',
+  '2025-06-12': 'Independence Day',
+  '2025-08-21': 'Ninoy Aquino Day',
+  '2025-08-25': 'National Heroes Day',
+  '2025-11-01': 'All Saints\' Day',
+  '2025-11-02': 'All Souls\' Day',
+  '2025-11-30': 'Bonifacio Day',
+  '2025-12-08': 'Feast of Immaculate Conception',
+  '2025-12-24': 'Christmas Eve',
+  '2025-12-25': 'Christmas Day',
+  '2025-12-30': 'Rizal Day',
+  '2025-12-31': 'New Year\'s Eve',
+  // 2026
+  '2026-01-01': 'New Year\'s Day',
+  '2026-02-17': 'Chinese New Year',
+  '2026-02-25': 'EDSA People Power Revolution',
+  '2026-03-20': 'Eid\'l Fitr (Tentative)',
+  '2026-04-02': 'Maundy Thursday',
+  '2026-04-03': 'Good Friday',
+  '2026-04-04': 'Black Saturday',
+  '2026-04-09': 'Araw ng Kagitingan',
+  '2026-05-01': 'Labor Day',
+  '2026-05-27': 'Eid\'l Adha (Tentative)',
+  '2026-06-12': 'Independence Day',
+  '2026-08-21': 'Ninoy Aquino Day',
+  '2026-08-31': 'National Heroes Day',
+  '2026-11-01': 'All Saints\' Day',
+  '2026-11-02': 'All Souls\' Day',
+  '2026-11-30': 'Bonifacio Day',
+  '2026-12-08': 'Feast of Immaculate Conception',
+  '2026-12-24': 'Christmas Eve',
+  '2026-12-25': 'Christmas Day',
+  '2026-12-30': 'Rizal Day',
+  '2026-12-31': 'New Year\'s Eve',
+}
+
 export default function FacultyHomePage() {
   const router = useRouter()
   const [timetableModalOpen, setTimetableModalOpen] = useState(false)
@@ -1192,19 +1262,19 @@ export default function FacultyHomePage() {
             </div>
           </section>
 
-          {/* Department Announcements */}
+          {/* Upcoming Holidays Calendar */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-              <TrendingUp size={18} className="sm:w-5 sm:h-5" />
-              Department Announcements
+              <Calendar size={18} className="sm:w-5 sm:h-5" />
+              Upcoming Holidays
             </h3>
-            <div className={`rounded-xl p-4 sm:p-5 flex items-start gap-3 sm:gap-4 ${getCollegeColorClass('bg', 'light')} border ${getCollegeColorClass('border')} ${getCollegeColorClass('text')}`}>
-              <TrendingUp size={20} className="flex-shrink-0 mt-1" />
-              <div>
-                <h4 className="text-sm sm:text-base font-bold m-0 mb-1">Welcome to QTime Faculty Portal</h4>
-                <p className="text-xs sm:text-sm m-0 opacity-90">Stay updated with your schedule, faculty directory, and department information all in one place.</p>
-              </div>
-            </div>
+            <UpcomingHolidaysCard 
+              isLightMode={isLightMode} 
+              isScience={isScience}
+              isArtsLetters={isArtsLetters}
+              isArchitecture={isArchitecture}
+              getCollegeColorClass={getCollegeColorClass}
+            />
           </section>
         </main>
       </div>
@@ -1328,6 +1398,74 @@ export default function FacultyHomePage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Upcoming Holidays Card Component - Mobile Optimized
+interface UpcomingHolidaysCardProps {
+  isLightMode: boolean
+  isScience: boolean
+  isArtsLetters: boolean
+  isArchitecture: boolean
+  getCollegeColorClass: (type: 'bg' | 'text' | 'border' | 'shadow', variant?: 'light' | 'normal' | 'dark') => string
+}
+
+function UpcomingHolidaysCard({ isLightMode, isScience, isArtsLetters, isArchitecture, getCollegeColorClass }: UpcomingHolidaysCardProps) {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+  const getUpcomingHolidays = () => {
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    
+    return Object.entries(philippineHolidays)
+      .filter(([date]) => date >= todayStr)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(0, 6)
+      .map(([date, name]) => ({
+        date: new Date(date),
+        name
+      }))
+  }
+
+  const holidays = getUpcomingHolidays()
+
+  if (holidays.length === 0) {
+    return (
+      <div className={`rounded-lg p-4 sm:p-5 text-center ${isLightMode ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-300'}`}>
+        <p className="text-sm sm:text-base">No upcoming holidays at this time.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2 sm:space-y-3">
+      {holidays.map((holiday, idx) => (
+        <div
+          key={idx}
+          className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-all border ${getCollegeColorClass('border', 'light')} hover:${getCollegeColorClass('border')} ${
+            isLightMode
+              ? `${getCollegeColorClass('bg', 'light')} hover:shadow-sm`
+              : `bg-slate-800/60`
+          }`}
+        >
+          {/* Date Box */}
+          <div className={`flex flex-col items-center justify-center rounded-lg min-w-fit py-2 px-3 sm:py-3 sm:px-4 ${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`}>
+            <div className="text-lg sm:text-xl font-bold">{holiday.date.getDate()}</div>
+            <div className="text-xs sm:text-sm font-semibold">{monthNames[holiday.date.getMonth()].slice(0, 3).toUpperCase()}</div>
+          </div>
+
+          {/* Holiday Info */}
+          <div className="flex-1 min-w-0">
+            <h4 className={`font-semibold text-sm sm:text-base m-0 ${isLightMode ? 'text-slate-800' : 'text-white'} break-words`}>
+              {holiday.name}
+            </h4>
+            <p className={`text-xs sm:text-sm m-0 mt-0.5 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+              {holiday.date.toLocaleDateString('en-US', { weekday: 'long' })}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
