@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Clock, Users, CheckCircle, XCircle, Building2,
-  ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronDown, ChevronUp,
+  ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Loader2, Info, Map, AlertTriangle, Eye, DoorOpen, Footprints,
   ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed,
   Archive, Dumbbell, Music, Theater, Presentation, Server, Wifi,
   Wind, Flame, Droplets, CircleDot, Triangle, Hexagon, Pentagon,
-  Octagon, Star, Heart
+  Octagon, Star, Heart, Calendar, ImageIcon, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './RoomViewer2D.module.css'
@@ -61,6 +61,24 @@ interface Room {
   room_type?: string
 }
 
+interface Building {
+  id: number
+  name: string
+  floors: FloorPlan[]
+}
+
+interface RoomAllocation {
+  id?: number
+  room: string
+  schedule_day: string
+  schedule_time: string
+  schedule_id?: number
+  course_code?: string
+  section?: string
+  faculty_name?: string
+  teacher_name?: string
+}
+
 interface CanvasElement {
   id: string
   type: 'room' | 'wall' | 'door' | 'text' | 'icon' | 'hallway' | 'stair' | 'shape'
@@ -90,6 +108,13 @@ interface FloorPlan {
   is_default_view: boolean
   linked_schedule_id?: number
   is_published?: boolean
+}
+
+interface RoomViewer2DProps {
+  fullscreen?: boolean
+  onToggleFullscreen?: (isFullscreen: boolean) => void
+  collegeTheme?: string
+  highlightEmpty?: boolean
 }
 
 // ... (other interfaces unchanged)
@@ -447,7 +472,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const handleToggleFullscreen = () => {
     setIsFullscreen(!isFullscreen)
     if (onToggleFullscreen) {
-      onToggleFullscreen()
+      onToggleFullscreen(!isFullscreen)
     }
   }
 

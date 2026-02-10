@@ -1647,33 +1647,6 @@ function RoomSchedulesViewContent() {
                                   {allocation.teacher_name}
                                 </div>
                               )}
-
-                              {/* Mark Absence Button */}
-                              {viewMode === 'my-schedule' && (
-                                <button
-                                  className={styles.markAbsenceBtn}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedAllocation(allocation)
-                                    setShowMarkAbsenceModal(true)
-                                  }}
-                                  style={{
-                                    marginTop: '8px',
-                                    padding: '6px 12px',
-                                    backgroundColor: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.85rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}
-                                >
-                                  <AlertCircle size={14} /> Mark As Absent
-                                </button>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -2454,60 +2427,6 @@ function RoomSchedulesViewContent() {
         </div>
       )}
 
-
-      {/* Mark Absence Modal */}
-      {showMarkAbsenceModal && selectedAllocation && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white', padding: '24px', borderRadius: '8px',
-            width: '90%', maxWidth: '500px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '1.25rem' }}>Mark Absence</h3>
-            <p><strong>Class:</strong> {selectedAllocation.course_code} - {selectedAllocation.course_name}</p>
-            <p><strong>Time:</strong> {selectedAllocation.schedule_day} {selectedAllocation.schedule_time}</p>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Reason for Absence</label>
-              <textarea
-                value={absenceReason}
-                onChange={(e) => setAbsenceReason(e.target.value)}
-                placeholder="Please provide a reason (e.g., Sick leave, Emergency)..."
-                style={{
-                  width: '100%', height: '100px', padding: '8px',
-                  borderRadius: '4px', border: '1px solid #ccc'
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button
-                onClick={() => setShowMarkAbsenceModal(false)}
-                style={{
-                  padding: '8px 16px', borderRadius: '4px', border: '1px solid #ccc',
-                  background: 'white', cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleMarkAbsence}
-                disabled={isSubmittingAbsence || !absenceReason.trim()}
-                style={{
-                  padding: '8px 16px', borderRadius: '4px', border: 'none',
-                  background: isSubmittingAbsence ? '#9ca3af' : '#ef4444',
-                  color: 'white', cursor: isSubmittingAbsence ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isSubmittingAbsence ? 'Submitting...' : 'Confirm Absence'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
