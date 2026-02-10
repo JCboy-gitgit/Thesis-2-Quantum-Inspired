@@ -172,25 +172,25 @@ async function fetchAllRows<T = Record<string, unknown>>(
 function CoursesManagementContent() {
   const router = useRouter()
   // State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
-  
+
   // Folder navigation state
   const [selectedCollegeFolder, setSelectedCollegeFolder] = useState<string | null>(null)
-  
+
   // Folder settings state
   const [folderSettings, setFolderSettings] = useState<FolderSettings>({})
   const [showFolderSettingsModal, setShowFolderSettingsModal] = useState(false)
   const [editingFolderName, setEditingFolderName] = useState<string | null>(null)
   const [folderMenuOpen, setFolderMenuOpen] = useState<string | null>(null)
-  
+
   // Move file state
   const [showMoveModal, setShowMoveModal] = useState(false)
   const [movingGroupId, setMovingGroupId] = useState<number | null>(null)
   const [movingFromCollege, setMovingFromCollege] = useState<string | null>(null)
-  
+
   const [courses, setCourses] = useState<Course[]>([])
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([])
   const [viewMode, setViewMode] = useState<'selection' | 'list'>('selection')
@@ -317,12 +317,12 @@ function CoursesManagementContent() {
 
       // Refresh the data
       await fetchUploadGroups()
-      
+
       // Close modal and reset state
       setShowMoveModal(false)
       setMovingGroupId(null)
       setMovingFromCollege(null)
-      
+
       // If we're inside a folder that's now empty, go back to root
       if (selectedCollegeFolder === movingFromCollege) {
         const remainingInFolder = uploadGroups.filter(
@@ -963,9 +963,9 @@ function CoursesManagementContent() {
               {!selectedCollegeFolder && (
                 <>
                   <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ 
-                      fontSize: '16px', 
-                      fontWeight: 600, 
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: 600,
                       color: 'var(--text-dark, #1a202c)',
                       display: 'flex',
                       alignItems: 'center',
@@ -990,7 +990,7 @@ function CoursesManagementContent() {
                       const totalCourses = collegeGroups.reduce((sum, g) => sum + g.total_courses, 0)
                       const totalPrograms = new Set(collegeGroups.flatMap(g => g.degree_programs || [])).size
                       const folderColor = getFolderColor(college)
-                      
+
                       return (
                         <div
                           key={college}
@@ -1029,10 +1029,10 @@ function CoursesManagementContent() {
                                 <MoreVertical size={16} color="white" />
                               </button>
                             </div>
-                            
+
                             {/* Dropdown Menu */}
                             {folderMenuOpen === college && (
-                              <div 
+                              <div
                                 onClick={(e) => e.stopPropagation()}
                                 style={{
                                   position: 'absolute',
@@ -1048,9 +1048,9 @@ function CoursesManagementContent() {
                                 }}
                               >
                                 <div style={{ marginBottom: '12px' }}>
-                                  <label style={{ 
-                                    fontSize: '12px', 
-                                    fontWeight: 600, 
+                                  <label style={{
+                                    fontSize: '12px',
+                                    fontWeight: 600,
                                     color: 'var(--text-secondary, #718096)',
                                     marginBottom: '8px',
                                     display: 'flex',
@@ -1060,9 +1060,9 @@ function CoursesManagementContent() {
                                     <Palette size={14} />
                                     Folder Color
                                   </label>
-                                  <div style={{ 
-                                    display: 'grid', 
-                                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                                  <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(4, 1fr)',
                                     gap: '6px',
                                     marginTop: '8px'
                                   }}>
@@ -1075,8 +1075,8 @@ function CoursesManagementContent() {
                                           width: '32px',
                                           height: '32px',
                                           borderRadius: '8px',
-                                          border: folderColor === colorOption.gradient 
-                                            ? '3px solid var(--primary-medium, #2c5282)' 
+                                          border: folderColor === colorOption.gradient
+                                            ? '3px solid var(--primary-medium, #2c5282)'
                                             : '2px solid var(--border-color, #e2e8f0)',
                                           background: colorOption.gradient,
                                           cursor: 'pointer',
@@ -1086,11 +1086,11 @@ function CoursesManagementContent() {
                                     ))}
                                   </div>
                                 </div>
-                                
+
                                 <div style={{ borderTop: '1px solid var(--border-color, #e2e8f0)', paddingTop: '12px' }}>
-                                  <label style={{ 
-                                    fontSize: '12px', 
-                                    fontWeight: 600, 
+                                  <label style={{
+                                    fontSize: '12px',
+                                    fontWeight: 600,
                                     color: 'var(--text-secondary, #718096)',
                                     marginBottom: '8px',
                                     display: 'flex',
@@ -1104,8 +1104,12 @@ function CoursesManagementContent() {
                                     type="text"
                                     defaultValue={getFolderDisplayName(college)}
                                     placeholder={college}
+                                    onFocus={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
                                     onBlur={(e) => updateFolderName(college, e.target.value)}
                                     onKeyDown={(e) => {
+                                      e.stopPropagation()
                                       if (e.key === 'Enter') {
                                         updateFolderName(college, (e.target as HTMLInputElement).value)
                                       }
@@ -1122,7 +1126,7 @@ function CoursesManagementContent() {
                                     }}
                                   />
                                 </div>
-                                
+
                                 <button
                                   onClick={() => setFolderMenuOpen(null)}
                                   style={{
@@ -1160,7 +1164,7 @@ function CoursesManagementContent() {
                                 e.stopPropagation()
                                 setSelectedCollegeFolder(college)
                               }}
-                              style={{ 
+                              style={{
                                 background: folderColor
                               }}
                             >
@@ -1187,9 +1191,9 @@ function CoursesManagementContent() {
               {selectedCollegeFolder && (
                 <>
                   <div style={{ marginBottom: '16px' }}>
-                    <h3 style={{ 
-                      fontSize: '16px', 
-                      fontWeight: 600, 
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: 600,
                       color: 'var(--text-dark, #1a202c)',
                       display: 'flex',
                       alignItems: 'center',
@@ -1201,7 +1205,7 @@ function CoursesManagementContent() {
                   </div>
                   <div className={styles.schedulesGrid}>
                     {uploadGroups
-                      .filter(group => 
+                      .filter(group =>
                         (group.college || 'Uncategorized') === selectedCollegeFolder &&
                         (!searchTerm ||
                           group.college?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1229,122 +1233,122 @@ function CoursesManagementContent() {
                                 <span style={{ fontSize: '12px' }}>{group.file_name}</span>
                               </div>
                             )}
-                        {group.degree_programs && group.degree_programs.length > 0 && (
-                          <div className={styles.scheduleInfo}>
-                            <GraduationCap size={16} />
-                            <span>{group.degree_programs.length} Degree Program(s)</span>
-                          </div>
-                        )}
+                            {group.degree_programs && group.degree_programs.length > 0 && (
+                              <div className={styles.scheduleInfo}>
+                                <GraduationCap size={16} />
+                                <span>{group.degree_programs.length} Degree Program(s)</span>
+                              </div>
+                            )}
 
-                        <div className={styles.scheduleInfo}>
-                          <Clock size={16} />
-                          <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>
-                        </div>
-                      </div>
-                      <div className={styles.scheduleCardFooter}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className={styles.viewButton}
-                            onClick={() => handleGroupSelect(group.upload_group_id)}
-                            style={{ flex: 1 }}
-                          >
-                            <BookOpen size={16} />
-                            View & Manage
-                          </button>
-                          <button
-                            onClick={() => openMoveModal(group.upload_group_id, group.college || 'Uncategorized')}
-                            style={{
-                              padding: '12px 16px',
-                              background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              fontWeight: 600,
-                              transition: 'all 0.2s ease'
-                            }}
-                            title="Move to another folder"
-                          >
-                            <FolderInput size={16} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
-                            style={{
-                              padding: '12px 16px',
-                              background: '#fed7d7',
-                              color: '#c53030',
-                              border: 'none',
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              fontWeight: 600,
-                              transition: 'all 0.2s ease'
-                            }}
-                            title="Delete entire group"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-
-                        {/* Delete Group Confirmation */}
-                        {deleteGroupConfirm === group.upload_group_id && (
-                          <div style={{
-                            marginTop: '12px',
-                            padding: '12px',
-                            background: '#fff5f5',
-                            borderRadius: '8px',
-                            border: '1px solid #fed7d7'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                              <AlertTriangle size={16} color="#c53030" />
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
-                                Delete all {group.total_courses} courses?
-                              </span>
+                            <div className={styles.scheduleInfo}>
+                              <Clock size={16} />
+                              <span style={{ fontSize: '12px', opacity: 0.8 }}>Uploaded: {formatDate(group.created_at)}</span>
                             </div>
+                          </div>
+                          <div className={styles.scheduleCardFooter}>
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button
-                                onClick={() => handleDeleteGroup(group.upload_group_id)}
-                                style={{
-                                  flex: 1,
-                                  padding: '8px',
-                                  background: '#c53030',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                  fontSize: '12px'
-                                }}
+                                className={styles.viewButton}
+                                onClick={() => handleGroupSelect(group.upload_group_id)}
+                                style={{ flex: 1 }}
                               >
-                                Yes, Delete All
+                                <BookOpen size={16} />
+                                View & Manage
                               </button>
                               <button
-                                onClick={() => setDeleteGroupConfirm(null)}
+                                onClick={() => openMoveModal(group.upload_group_id, group.college || 'Uncategorized')}
                                 style={{
-                                  flex: 1,
-                                  padding: '8px',
-                                  background: '#e2e8f0',
-                                  color: '#4a5568',
+                                  padding: '12px 16px',
+                                  background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
+                                  color: 'white',
                                   border: 'none',
-                                  borderRadius: '6px',
+                                  borderRadius: '10px',
                                   cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
                                   fontWeight: 600,
-                                  fontSize: '12px'
+                                  transition: 'all 0.2s ease'
                                 }}
+                                title="Move to another folder"
                               >
-                                Cancel
+                                <FolderInput size={16} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteGroupConfirm(group.upload_group_id)}
+                                style={{
+                                  padding: '12px 16px',
+                                  background: '#fed7d7',
+                                  color: '#c53030',
+                                  border: 'none',
+                                  borderRadius: '10px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontWeight: 600,
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="Delete entire group"
+                              >
+                                <Trash2 size={16} />
                               </button>
                             </div>
+
+                            {/* Delete Group Confirmation */}
+                            {deleteGroupConfirm === group.upload_group_id && (
+                              <div style={{
+                                marginTop: '12px',
+                                padding: '12px',
+                                background: '#fff5f5',
+                                borderRadius: '8px',
+                                border: '1px solid #fed7d7'
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                  <AlertTriangle size={16} color="#c53030" />
+                                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
+                                    Delete all {group.total_courses} courses?
+                                  </span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => handleDeleteGroup(group.upload_group_id)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px',
+                                      background: '#c53030',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    Yes, Delete All
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteGroupConfirm(null)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px',
+                                      background: '#e2e8f0',
+                                      color: '#4a5568',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        </div>
+                      ))}
                   </div>
 
                   {uploadGroups.filter(g => (g.college || 'Uncategorized') === selectedCollegeFolder).length === 0 && (
@@ -1917,23 +1921,23 @@ function CoursesManagementContent() {
             overflow: 'hidden',
             boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
           }}
-          data-modal="move-file"
+            data-modal="move-file"
           >
             {/* Modal Header */}
-            <div 
+            <div
               data-modal-header="move-file"
               style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid var(--border-color, #e2e8f0)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
-              color: 'white'
-            }}>
-              <h3 style={{ 
-                margin: 0, 
-                fontSize: '18px', 
+                padding: '20px 24px',
+                borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'var(--primary-gradient, linear-gradient(135deg, #1a365d 0%, #2c5282 100%))',
+                color: 'white'
+              }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '18px',
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
@@ -1962,7 +1966,7 @@ function CoursesManagementContent() {
                 <X size={20} color="white" />
               </button>
             </div>
-            
+
             {/* Current Location */}
             <div style={{
               padding: '16px 24px',
@@ -1972,9 +1976,9 @@ function CoursesManagementContent() {
               <div style={{ fontSize: '12px', color: 'var(--text-secondary, #718096)', marginBottom: '4px' }}>
                 Moving from:
               </div>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
                 gap: '8px',
                 fontSize: '14px',
                 fontWeight: 600,
@@ -1984,7 +1988,7 @@ function CoursesManagementContent() {
                 {movingFromCollege && getFolderDisplayName(movingFromCollege)}
               </div>
             </div>
-            
+
             {/* Destination Folders */}
             <div style={{
               padding: '16px 24px',
@@ -1998,7 +2002,7 @@ function CoursesManagementContent() {
                 {getAllColleges().map((college) => {
                   const isCurrentFolder = college === movingFromCollege
                   const folderColor = getFolderColor(college)
-                  
+
                   return (
                     <button
                       key={college}
@@ -2009,10 +2013,10 @@ function CoursesManagementContent() {
                         alignItems: 'center',
                         gap: '12px',
                         padding: '14px 16px',
-                        background: isCurrentFolder 
-                          ? 'var(--bg-gray-100, #edf2f7)' 
+                        background: isCurrentFolder
+                          ? 'var(--bg-gray-100, #edf2f7)'
                           : 'var(--bg-white, #ffffff)',
-                        border: isCurrentFolder 
+                        border: isCurrentFolder
                           ? '2px dashed var(--border-color, #e2e8f0)'
                           : '2px solid var(--border-color, #e2e8f0)',
                         borderRadius: '12px',
@@ -2047,15 +2051,15 @@ function CoursesManagementContent() {
                         <Folder size={20} color="white" />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ 
-                          fontWeight: 600, 
+                        <div style={{
+                          fontWeight: 600,
                           fontSize: '14px',
                           color: 'var(--text-dark, #1a202c)'
                         }}>
                           {getFolderDisplayName(college)}
                         </div>
-                        <div style={{ 
-                          fontSize: '12px', 
+                        <div style={{
+                          fontSize: '12px',
                           color: 'var(--text-secondary, #718096)',
                           marginTop: '2px'
                         }}>
@@ -2066,10 +2070,10 @@ function CoursesManagementContent() {
                         <MoveRight size={18} style={{ color: 'var(--primary-medium, #2c5282)' }} />
                       )}
                       {isCurrentFolder && (
-                        <span style={{ 
-                          fontSize: '11px', 
+                        <span style={{
+                          fontSize: '11px',
                           color: 'var(--text-secondary, #718096)',
-                          fontWeight: 500 
+                          fontWeight: 500
                         }}>
                           Current
                         </span>
@@ -2079,7 +2083,7 @@ function CoursesManagementContent() {
                 })}
               </div>
             </div>
-            
+
             {/* Modal Footer */}
             <div style={{
               padding: '16px 24px',
@@ -2359,10 +2363,10 @@ function CoursesManagementContent() {
               {/* Room Requirements Section - Only show in Edit mode when we have an ID */}
               {modalMode === 'edit' && editingId && (
                 <div style={{ marginBottom: '20px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
                     marginBottom: '12px',
                     padding: '10px 14px',
                     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
@@ -2373,8 +2377,8 @@ function CoursesManagementContent() {
                     <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
                       Required Room Equipment
                     </span>
-                    <span style={{ 
-                      fontSize: '12px', 
+                    <span style={{
+                      fontSize: '12px',
                       color: 'var(--text-secondary)',
                       fontStyle: 'italic',
                       marginLeft: 'auto'

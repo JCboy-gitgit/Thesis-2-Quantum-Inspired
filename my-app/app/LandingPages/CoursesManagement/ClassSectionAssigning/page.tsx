@@ -118,7 +118,7 @@ function ClassSectionAssigningContent() {
   const { activeColleges: bulsuColleges } = useColleges()
 
   // State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [yearBatches, setYearBatches] = useState<YearBatch[]>([])
   const [sections, setSections] = useState<Section[]>([])

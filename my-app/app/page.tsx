@@ -53,13 +53,13 @@ function PageContent(): JSX.Element {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [checkingSession, setCheckingSession] = useState(true)
-  
+
   // Tab state
   const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login'
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab)
   const [tabAnimation, setTabAnimation] = useState<string>('')
   const prevTabRef = useRef<ActiveTab>(initialTab)
-  
+
   // Login states
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -68,7 +68,7 @@ function PageContent(): JSX.Element {
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginMessage, setLoginMessage] = useState<string | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
-  
+
   // Signup states
   const [signupEmail, setSignupEmail] = useState('')
   const [signupPassword, setSignupPassword] = useState('')
@@ -82,7 +82,7 @@ function PageContent(): JSX.Element {
   const [signupMessage, setSignupMessage] = useState<string | null>(null)
   const [signupError, setSignupError] = useState<string | null>(null)
   const [registerSuccess, setRegisterSuccess] = useState(false)
-  
+
   // Forgot password states
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
@@ -91,6 +91,9 @@ function PageContent(): JSX.Element {
   const [forgotError, setForgotError] = useState<string | null>(null)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ''
+
+  // Login page theme (independent of app theme)
+  const [loginTheme, setLoginTheme] = useState<'dark' | 'light'>('light')
 
   // Particle data
   const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
@@ -165,15 +168,15 @@ function PageContent(): JSX.Element {
   // Handle tab change with animation
   const handleTabChange = (newTab: ActiveTab) => {
     if (newTab === activeTab) return
-    
+
     const direction = newTab === 'signup' ? 'right' : 'left'
     setTabAnimation(`exiting-${direction}`)
-    
+
     setTimeout(() => {
       prevTabRef.current = activeTab
       setActiveTab(newTab)
       setTabAnimation(`entering-${direction === 'right' ? 'right' : 'left'}`)
-      
+
       setTimeout(() => {
         setTabAnimation('')
       }, 350)
@@ -244,9 +247,9 @@ function PageContent(): JSX.Element {
     setLoginLoading(true)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: loginEmail, 
-        password: loginPassword 
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword
       })
       if (error) throw error
 
@@ -256,6 +259,7 @@ function PageContent(): JSX.Element {
           localStorage.setItem('adminStaySignedIn', 'true')
         }
         setLoginMessage('Admin login successful. Redirecting...')
+        sessionStorage.setItem('sidebar_fresh_login', 'true')
         setTimeout(() => {
           router.push('/LandingPages/Home')
         }, 1000)
@@ -310,7 +314,7 @@ function PageContent(): JSX.Element {
             user_id: userData.id
           })
         })
-        
+
         const contentType = presenceResponse.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const presenceData = await presenceResponse.json()
@@ -420,8 +424,31 @@ function PageContent(): JSX.Element {
     return <LoadingFallback />
   }
 
+  // Toggle login page theme
+  const toggleLoginTheme = () => {
+    setLoginTheme(prev => prev === 'dark' ? 'light' : 'dark')
+  }
+
+  // Theme toggle button SVGs
+  const sunSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+  const moonSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+
   return (
-    <div className="login-page">
+    <div className={`login-page ${loginTheme === 'light' ? 'login-light-theme' : ''}`}>
+      {/* Theme Toggle Button */}
+      <button
+        type="button"
+        className="login-theme-toggle"
+        onClick={toggleLoginTheme}
+        title={loginTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        aria-label={loginTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      >
+        <span
+          className="theme-toggle-icon"
+          dangerouslySetInnerHTML={{ __html: loginTheme === 'dark' ? sunSVG : moonSVG }}
+        />
+      </button>
+
       {/* Animated Background */}
       <div className="background-container">
         <div className="stars"></div>
@@ -443,6 +470,23 @@ function PageContent(): JSX.Element {
             ></span>
           ))}
         </div>
+        {/* Light mode floating elements */}
+        {loginTheme === 'light' && (
+          <div className="light-particles">
+            {particles.slice(0, 12).map((particle, i) => (
+              <span
+                key={i}
+                className="light-particle"
+                style={{
+                  left: particle.left,
+                  top: particle.top,
+                  animationDelay: particle.delay,
+                  animationDuration: particle.duration
+                }}
+              ></span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Sparkle Animation Overlay for Register Success */}
@@ -497,10 +541,19 @@ function PageContent(): JSX.Element {
               <div className={`tab-content ${tabAnimation}`}>
                 {/* Login Content */}
                 <div className="tab-content-header">
-                  <h2 className="tab-content-title">Log-in to Your Account</h2>
+                  {/* Qtime Logo */}
+                  <div className="qtime-logo-container">
+                    <img
+                      src="/app-icon.png"
+                      alt="Qtime Logo"
+                      className="qtime-logo"
+                    />
+                    <span className="qtime-brand-text">Qtime</span>
+                  </div>
+                  <h2 className="tab-content-title">Log in to Your Account</h2>
                   <p className="tab-content-subtitle">Admin and Faculty access</p>
                 </div>
-                
+
                 <form onSubmit={handleLogin} className="form">
                   {/* Email Field */}
                   <div className="form-group">
@@ -586,7 +639,7 @@ function PageContent(): JSX.Element {
                   {/* Messages */}
                   {loginMessage && <div className="message success">{loginMessage}</div>}
                   {loginError && <div className="message error">{loginError}</div>}
-                  
+
                   {/* Switch to Sign Up */}
                   <div className="switch-row">
                     <span className="switch-text">Don't have an account yet?</span>
@@ -607,7 +660,7 @@ function PageContent(): JSX.Element {
                   <h2 className="tab-content-title">Faculty Registration</h2>
                   <p className="tab-content-subtitle">Register as faculty. You will be approved by admin.</p>
                 </div>
-                
+
                 <form onSubmit={handleSignup} className="form">
                   {/* Full Name Field */}
                   <div className="form-group">
@@ -741,7 +794,7 @@ function PageContent(): JSX.Element {
                   {/* Messages */}
                   {signupMessage && <div className="message success">{signupMessage}</div>}
                   {signupError && <div className="message error">{signupError}</div>}
-                  
+
                   {/* Switch to Login */}
                   <div className="switch-row">
                     <span className="switch-text">Already have an account?</span>

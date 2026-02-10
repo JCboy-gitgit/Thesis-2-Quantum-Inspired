@@ -1,0 +1,445 @@
+.draggableTimetableWrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e5e5);
+    -webkit-overflow-scrolling: touch;
+    /* Better touch behavior */
+    touch-action: pan-y pan-x;
+}
+
+/* Prevent scrolling while touch-dragging */
+.isDraggingActive {
+    overflow: hidden !important;
+    touch-action: none !important;
+    -webkit-overflow-scrolling: auto !important;
+    position: relative;
+}
+
+.timetable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 700px;
+}
+
+.timeHeader,
+.dayHeader {
+    padding: 12px 8px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+    background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5e 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.timeHeader {
+    width: 90px;
+}
+
+.hourRow {
+    border-top: 2px solid var(--border-color, #ddd);
+}
+
+.halfHourRow {
+    border-top: 1px dashed var(--border-color, #e8e8e8);
+}
+
+.timeCell {
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--text-medium, #666);
+    font-weight: 600;
+    background: var(--bg-gray-50, #f9fafb);
+    text-align: right;
+    white-space: nowrap;
+    border-right: 1px solid var(--border-color, #e5e5e5);
+    vertical-align: top;
+}
+
+.hourMark {
+    color: var(--content-text, #333);
+    font-weight: 700;
+}
+
+.halfHourMark {
+    color: var(--text-light, #999);
+    font-size: 10px;
+}
+
+.dataCell {
+    position: relative;
+    border: 1px solid var(--border-color, #eee);
+    vertical-align: top;
+    background: var(--bg-white, #fff);
+    transition: background-color 0.15s ease;
+}
+
+/* Drag & Drop: droppable zones */
+.droppableZone {
+    cursor: pointer;
+}
+
+.droppableZone:hover {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+/* Highlight available (green) or conflicting (red) cells when dragging */
+.cellAvailable {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.cellConflict {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+/* ==================== Drag Hint ==================== */
+.dragHint {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-medium, #64748b);
+    background: var(--bg-gray-50, #f8fafc);
+    border-bottom: 1px solid var(--border-color, #e5e5e5);
+    text-align: center;
+    letter-spacing: 0.2px;
+}
+
+/* ==================== Allocation Blocks ==================== */
+.allocationBlock {
+    position: absolute;
+    top: 0;
+    left: 2px;
+    right: 2px;
+    border-radius: 6px;
+    padding: 4px 6px;
+    overflow: hidden;
+    z-index: 10;
+    font-size: 11px;
+    line-height: 1.3;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+    /* Prevent iOS long-press menu */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.allocationBlock.draggable {
+    cursor: grab;
+    /* Critical: tells browser NOT to scroll when touching this element */
+    -webkit-touch-callout: none;
+    /* Disable iOS magnifying glass/menu on long press */
+    user-select: none;
+}
+
+.allocationBlock.draggable:active {
+    cursor: grabbing;
+}
+
+.allocationBlock.dragging {
+    opacity: 0.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(0.95);
+}
+
+.blockCourse {
+    font-weight: 700;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blockSection {
+    font-size: 10px;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blockRoom {
+    font-size: 10px;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blockTeacher {
+    font-size: 9px;
+    opacity: 0.75;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blockTime {
+    font-size: 9px;
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
+/* ==================== Touch Drag Ghost ==================== */
+.touchDragGhost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+    opacity: 0.92;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: ghostAppear 0.2s ease-out;
+}
+
+.touchDragGhost strong {
+    font-size: 14px;
+}
+
+.touchDragGhost span {
+    font-size: 11px;
+    opacity: 0.85;
+}
+
+@keyframes ghostAppear {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 0.92;
+    }
+}
+
+/* ==================== Drag Ghost Preview ==================== */
+.dragPreview {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+    opacity: 0.95;
+}
+
+/* ==================== Lock Overlay ==================== */
+.lockedOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.02);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.lockedBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ==================== Theme Support ==================== */
+
+/* Green theme */
+:global([data-theme="green"]) .timeHeader,
+:global([data-theme="green"]) .dayHeader {
+    background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+:global([data-theme="green"]) .timeCell {
+    background: #f9fafb;
+    color: #02353C;
+}
+
+:global([data-theme="green"]) .dataCell {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+:global([data-theme="green"]) .dataCell:hover {
+    background: rgba(193, 246, 237, 0.3);
+}
+
+:global([data-theme="green"]) .cellAvailable {
+    background: rgba(0, 166, 81, 0.15) !important;
+    border-color: rgba(0, 166, 81, 0.4) !important;
+}
+
+:global([data-theme="green"]) .dragHint {
+    background: rgba(0, 166, 81, 0.06);
+    color: #02353C;
+    border-color: rgba(0, 166, 81, 0.15);
+}
+
+/* Dark theme */
+:global([data-theme="dark"]) .timeHeader,
+:global([data-theme="dark"]) .dayHeader {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
+}
+
+:global([data-theme="dark"]) .timeCell {
+    background: rgba(30, 41, 59, 0.5);
+    color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .dataCell {
+    background: var(--bg-white, #1a1a2e);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="dark"]) .dataCell:hover {
+    background: rgba(56, 189, 248, 0.05);
+}
+
+:global([data-theme="dark"]) .cellAvailable {
+    background: rgba(56, 189, 248, 0.15) !important;
+    border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+:global([data-theme="dark"]) .cellConflict {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+:global([data-theme="dark"]) .lockedBadge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+:global([data-theme="dark"]) .dragHint {
+    background: rgba(56, 189, 248, 0.06);
+    color: #94a3b8;
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Light theme */
+:global([data-theme="light"]) .timeHeader,
+:global([data-theme="light"]) .dayHeader {
+    background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+}
+
+:global([data-theme="light"]) .timeCell {
+    background: #f8fafc;
+    color: #1a1a1a;
+}
+
+:global([data-theme="light"]) .dataCell {
+    background: rgba(255, 255, 255, 0.98);
+}
+
+:global([data-theme="light"]) .dataCell:hover {
+    background: rgba(0, 166, 81, 0.08);
+}
+
+:global([data-theme="light"]) .cellAvailable {
+    background: rgba(0, 166, 81, 0.15) !important;
+    border-color: rgba(0, 166, 81, 0.4) !important;
+}
+
+/* ==================== Mobile Responsive ==================== */
+@media (max-width: 768px) {
+    .timetable {
+        min-width: 600px;
+    }
+
+    .timeHeader,
+    .dayHeader {
+        padding: 8px 4px;
+        font-size: 10px;
+        letter-spacing: 0;
+    }
+
+    .timeHeader {
+        width: 60px;
+    }
+
+    .timeCell {
+        padding: 2px 4px;
+        font-size: 9px;
+    }
+
+    .allocationBlock {
+        padding: 3px 4px;
+        font-size: 10px;
+        border-radius: 4px;
+    }
+
+    .blockCourse {
+        font-size: 10px;
+    }
+
+    .blockSection {
+        font-size: 9px;
+    }
+
+    .blockRoom,
+    .blockTeacher {
+        font-size: 8px;
+    }
+
+    .blockTime {
+        font-size: 8px;
+    }
+
+    .dragHint {
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+
+    /* Improve touch targets on mobile */
+    .allocationBlock {
+        min-height: 36px;
+        touch-action: none; /* Let our JS handle it */
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .touchDragGhost {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+
+    /* Prevent scroll bounce during drag */
+    .isDraggingActive {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+}

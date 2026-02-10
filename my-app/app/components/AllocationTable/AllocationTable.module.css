@@ -1,0 +1,456 @@
+/* ============================================================
+   AllocationTable — Dark (default), Green, Light themes
+   ============================================================ */
+
+/* ===== Container ===== */
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--card-bg, #1a1a2e);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+}
+
+/* ===== Header ===== */
+.tableHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.tableHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tableHeaderTop h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.lockedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* ===== Filters ===== */
+.tableFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tableSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  flex: 1;
+  min-width: 180px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  transition: border-color 0.2s;
+}
+
+.tableSearchBox:focus-within {
+  border-color: var(--accent-color, #06b6d4);
+}
+
+.tableSearchInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary, #fff);
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.tableSearchInput::placeholder {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.35));
+}
+
+.tableClearSearch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.tableClearSearch:hover { color: var(--text-primary, #fff); }
+
+.tableDaySelect {
+  padding: 7px 10px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text-primary, #fff);
+  font-size: 0.78rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.tableDaySelect option { background: #1a1a2e; color: #fff; }
+
+/* ===== Scroll Controls Row ===== */
+.scrollControlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.3));
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  min-height: 34px;
+}
+
+.scrollBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scrollBtn:hover {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.1));
+  border-color: var(--accent-color, #06b6d4);
+  color: var(--accent-color, #06b6d4);
+}
+
+.scrollBtnHidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.scrollHint {
+  font-size: 0.7rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.35));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== Scroll Wrapper ===== */
+.scrollWrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollWrapper::-webkit-scrollbar { height: 6px; }
+.scrollWrapper::-webkit-scrollbar-track { background: transparent; }
+.scrollWrapper::-webkit-scrollbar-thumb { background: var(--accent-color-fade, rgba(6, 182, 212, 0.2)); border-radius: 3px; }
+.scrollWrapper::-webkit-scrollbar-thumb:hover { background: var(--accent-color-fade, rgba(6, 182, 212, 0.4)); }
+
+/* ===== Table ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.table thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.6));
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  background: var(--card-bg-secondary, rgba(15, 23, 42, 0.5));
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+  background: var(--accent-color-bg, rgba(6, 182, 212, 0.04));
+}
+
+.table tbody td {
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text-primary, #fff);
+  vertical-align: middle;
+}
+
+/* ===== Cell Styles ===== */
+.row { }
+
+.courseCode {
+  font-weight: 700;
+  color: var(--accent-color, #06b6d4);
+  font-size: 0.85rem;
+}
+
+.courseLabel {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.section {
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.day { white-space: nowrap; }
+
+.time {
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+}
+
+.teacher { white-space: nowrap; }
+
+.teacherName { font-weight: 500; }
+
+.unassigned {
+  color: rgba(239, 68, 68, 0.7);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.room { white-space: nowrap; }
+
+.roomBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.building {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  margin-top: 2px;
+}
+
+.capacity {
+  display: inline-block;
+  font-size: 0.62rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.35));
+  margin-left: 4px;
+}
+
+/* ===== Actions ===== */
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.actionBtnRoom {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.25);
+  color: #06b6d4;
+}
+
+.actionBtnRoom:hover:not(:disabled) {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: #06b6d4;
+  transform: translateY(-1px);
+}
+
+.actionBtnFaculty {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.25);
+  color: #a855f7;
+}
+
+.actionBtnFaculty:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+  transform: translateY(-1px);
+}
+
+.actionBtn:disabled,
+.actionBtn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ===== Empty State ===== */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 30px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
+  text-align: center;
+}
+
+.emptyState p { margin: 8px 0 0 0; font-size: 0.92rem; }
+
+/* ============================================================
+   GREEN THEME
+   ============================================================ */
+:global([data-theme="green"]) .tableContainer { background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.15) 100%); border: 2px solid rgba(46, 175, 125, 0.25); }
+:global([data-theme="green"]) .tableHeader { border-bottom: 2px solid rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .tableHeaderTop h3 { color: #02353C; }
+:global([data-theme="green"]) .subtitle { color: #166534; }
+:global([data-theme="green"]) .lockedBadge { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+:global([data-theme="green"]) .tableSearchBox { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .tableSearchBox:focus-within { border-color: #2EAF7D; }
+:global([data-theme="green"]) .tableSearchInput { color: #02353C; }
+:global([data-theme="green"]) .tableSearchInput::placeholder { color: rgba(2, 53, 60, 0.35); }
+:global([data-theme="green"]) .tableClearSearch { color: rgba(2, 53, 60, 0.4); }
+:global([data-theme="green"]) .tableClearSearch:hover { color: #02353C; }
+:global([data-theme="green"]) .tableDaySelect { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); color: #02353C; }
+:global([data-theme="green"]) .tableDaySelect option { background: white; color: #02353C; }
+:global([data-theme="green"]) .scrollControlsRow { background: rgba(46, 175, 125, 0.04); border-bottom-color: rgba(46, 175, 125, 0.12); }
+:global([data-theme="green"]) .scrollBtn { background: rgba(255, 255, 255, 0.9); border-color: rgba(46, 175, 125, 0.2); color: #166534; }
+:global([data-theme="green"]) .scrollBtn:hover { background: rgba(46, 175, 125, 0.12); border-color: #2EAF7D; color: #02353C; }
+:global([data-theme="green"]) .scrollHint { color: rgba(2, 53, 60, 0.35); }
+:global([data-theme="green"]) .table thead th { background: rgba(46, 175, 125, 0.08); border-bottom: 2px solid rgba(46, 175, 125, 0.2); color: #166534; }
+:global([data-theme="green"]) .table tbody tr { border-bottom-color: rgba(46, 175, 125, 0.1); }
+:global([data-theme="green"]) .table tbody tr:hover { background: rgba(46, 175, 125, 0.06); }
+:global([data-theme="green"]) .table tbody td { color: #02353C; }
+:global([data-theme="green"]) .courseCode { color: #449342; }
+:global([data-theme="green"]) .courseLabel { color: #166534; }
+:global([data-theme="green"]) .time { color: #02353C; }
+:global([data-theme="green"]) .unassigned { color: #dc2626; }
+:global([data-theme="green"]) .roomBadge { background: rgba(46, 175, 125, 0.1); border-color: rgba(46, 175, 125, 0.25); color: #02353C; }
+:global([data-theme="green"]) .building { color: #166534; }
+:global([data-theme="green"]) .capacity { color: rgba(2, 53, 60, 0.4); }
+:global([data-theme="green"]) .actionBtnRoom { background: rgba(46, 175, 125, 0.08); border-color: rgba(46, 175, 125, 0.25); color: #2EAF7D; }
+:global([data-theme="green"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(46, 175, 125, 0.15); border-color: #2EAF7D; }
+:global([data-theme="green"]) .actionBtnFaculty { background: rgba(68, 147, 66, 0.08); border-color: rgba(68, 147, 66, 0.25); color: #449342; }
+:global([data-theme="green"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(68, 147, 66, 0.15); border-color: #449342; }
+:global([data-theme="green"]) .emptyState { color: #166534; }
+
+/* ============================================================
+   LIGHT THEME
+   ============================================================ */
+:global([data-theme="light"]) .tableContainer { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(0, 166, 81, 0.18); }
+:global([data-theme="light"]) .tableHeader { border-bottom: 2px solid rgba(0, 166, 81, 0.12); }
+:global([data-theme="light"]) .tableHeaderTop h3 { color: #005826; }
+:global([data-theme="light"]) .subtitle { color: #4a5568; }
+:global([data-theme="light"]) .lockedBadge { background: rgba(220, 38, 38, 0.08); color: #b91c1c; }
+:global([data-theme="light"]) .tableSearchBox { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); }
+:global([data-theme="light"]) .tableSearchBox:focus-within { border-color: #00a651; }
+:global([data-theme="light"]) .tableSearchInput { color: #1a1a1a; }
+:global([data-theme="light"]) .tableSearchInput::placeholder { color: rgba(0, 0, 0, 0.35); }
+:global([data-theme="light"]) .tableClearSearch { color: rgba(0, 0, 0, 0.4); }
+:global([data-theme="light"]) .tableClearSearch:hover { color: #1a1a1a; }
+:global([data-theme="light"]) .tableDaySelect { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); color: #1a1a1a; }
+:global([data-theme="light"]) .tableDaySelect option { background: white; color: #1a1a1a; }
+:global([data-theme="light"]) .scrollControlsRow { background: rgba(0, 166, 81, 0.03); border-bottom-color: rgba(0, 166, 81, 0.08); }
+:global([data-theme="light"]) .scrollBtn { background: rgba(255, 255, 255, 0.95); border-color: rgba(0, 166, 81, 0.15); color: #4a5568; }
+:global([data-theme="light"]) .scrollBtn:hover { background: rgba(0, 166, 81, 0.08); border-color: #00a651; color: #005826; }
+:global([data-theme="light"]) .scrollHint { color: rgba(0, 0, 0, 0.3); }
+:global([data-theme="light"]) .table thead th { background: rgba(0, 166, 81, 0.05); border-bottom: 2px solid rgba(0, 166, 81, 0.12); color: #4a5568; }
+:global([data-theme="light"]) .table tbody tr { border-bottom-color: rgba(0, 0, 0, 0.06); }
+:global([data-theme="light"]) .table tbody tr:hover { background: rgba(0, 166, 81, 0.04); }
+:global([data-theme="light"]) .table tbody td { color: #1a1a1a; }
+:global([data-theme="light"]) .courseCode { color: #005826; }
+:global([data-theme="light"]) .courseLabel { color: #4a5568; }
+:global([data-theme="light"]) .time { color: #1a1a1a; }
+:global([data-theme="light"]) .unassigned { color: #b91c1c; }
+:global([data-theme="light"]) .roomBadge { background: rgba(0, 166, 81, 0.08); border-color: rgba(0, 166, 81, 0.18); color: #1a1a1a; }
+:global([data-theme="light"]) .building { color: #4a5568; }
+:global([data-theme="light"]) .capacity { color: rgba(0, 0, 0, 0.35); }
+:global([data-theme="light"]) .actionBtnRoom { background: rgba(0, 166, 81, 0.06); border-color: rgba(0, 166, 81, 0.18); color: #00a651; }
+:global([data-theme="light"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(0, 166, 81, 0.12); border-color: #00a651; }
+:global([data-theme="light"]) .actionBtnFaculty { background: rgba(0, 88, 38, 0.06); border-color: rgba(0, 88, 38, 0.18); color: #005826; }
+:global([data-theme="light"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(0, 88, 38, 0.12); border-color: #005826; }
+:global([data-theme="light"]) .emptyState { color: #4a5568; }
+
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .tableContainer { border-radius: 8px; }
+  .tableHeader { padding: 12px 14px; gap: 8px; }
+  .tableHeaderTop h3 { font-size: 0.9rem; }
+  .tableFilters { flex-direction: column; gap: 6px; }
+  .tableSearchBox { min-width: unset; }
+  .tableDaySelect { width: 100%; min-width: unset; }
+  .scrollControlsRow { padding: 6px 14px; }
+  .headerInfo { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .table { min-width: 750px; }
+  .table thead th { padding: 8px 10px; font-size: 0.65rem; }
+  .table tbody td { padding: 8px 10px; font-size: 0.78rem; }
+  .actionBtn { padding: 4px 8px; font-size: 0.68rem; }
+}
+
+@media (max-width: 480px) {
+  .tableHeader { padding: 10px 12px; }
+  .tableHeaderTop { flex-direction: column; align-items: flex-start; }
+  .scrollControlsRow { padding: 4px 12px; }
+  .table { min-width: 650px; }
+}

@@ -80,7 +80,7 @@ interface CampusGroup {
 
 export default function AddEditRoomsPage() {
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [campusGroups, setCampusGroups] = useState<CampusGroup[]>([])
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null)
   const [rooms, setRooms] = useState<CampusRoom[]>([])

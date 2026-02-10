@@ -14,7 +14,8 @@ import {
   GraduationCap,
   TrendingUp,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react'
 import styles from './styles.module.css'
 import { clearBrowserCaches } from '@/lib/clearCache'
@@ -49,7 +50,14 @@ interface ScheduleItem {
 
 export default function FacultyHomePage() {
   const router = useRouter()
-  const { theme, collegeTheme, setTheme, setCollegeTheme } = useTheme()
+  const [timetableModalOpen, setTimetableModalOpen] = useState(false)
+  const [selectedClassForModal, setSelectedClassForModal] = useState<ScheduleItem | null>(null)
+  const {
+    theme,
+    collegeTheme,
+    setTheme: setContextTheme, // renamed to avoid conflict
+    setCollegeTheme
+  } = useTheme()
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [schedules, setSchedules] = useState<ScheduleItem[]>([])
@@ -72,6 +80,51 @@ export default function FacultyHomePage() {
   const [attendanceEndDate, setAttendanceEndDate] = useState('')
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([])
+
+  // Fetch Notifications (Absences)
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const todayStr = new Date().toISOString().split('T')[0]
+        const { data, error } = await supabase
+          .from('faculty_absences')
+          .select(`
+            *,
+            room_allocations!inner (
+              course_code,
+              room,
+              schedule_time,
+              schedule_day
+            ),
+            profiles:faculty_id (
+              full_name
+            )
+          `)
+          .gte('date', todayStr) // Only future/today absences
+          .order('date', { ascending: true })
+          .limit(10)
+
+        if (!error && data) {
+          setNotifications(data)
+        }
+      } catch (err) {
+        console.error('Error fetching notifications:', err)
+      }
+    }
+
+    if (user) {
+      fetchNotifications()
+    }
+  }, [user])
+
+  // Filter schedules based on selected date
+  const filteredSchedules = schedules.filter(schedule => {
+    const selectedDayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
+    return schedule.day === selectedDayName
+  })
 
   // Use ThemeContext directly - no more local theme state
   const isLightMode = theme === 'light'
@@ -129,7 +182,7 @@ export default function FacultyHomePage() {
         if (type === 'bg') return variant === 'light' ? 'bg-red-500/10' : variant === 'dark' ? 'bg-red-600' : 'bg-red-500'
         if (type === 'text') return 'text-red-400'
         if (type === 'border') return 'border-red-500'
-        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(248,113,113,0.3)]'
+        if (type === 'shadow') return 'shadow-[0_4px_20px_rgba(239,68,68,0.3)]'
       } else {
         // Default theme (cyan)
         if (type === 'bg') return variant === 'light' ? 'bg-cyan-500/10' : variant === 'dark' ? 'bg-cyan-600' : 'bg-cyan-500'
@@ -139,6 +192,49 @@ export default function FacultyHomePage() {
       }
     }
     return ''
+  }
+  // Determine class status based on time
+  const getClassStatus = (schedule: ScheduleItem): 'done' | 'ongoing' | 'up-next' | 'future' => {
+    const now = new Date()
+    const currentTime = now.getHours() * 60 + now.getMinutes()
+
+    const [startHour, startMin] = schedule.start_time.split(':').map(Number)
+    const [endHour, endMin] = schedule.end_time.split(':').map(Number)
+    const startMinutes = startHour * 60 + startMin
+    const endMinutes = endHour * 60 + endMin
+
+    if (currentTime > endMinutes) return 'done'
+    if (currentTime >= startMinutes && currentTime <= endMinutes) return 'ongoing'
+    if (currentTime < startMinutes && currentTime >= startMinutes - 60) return 'up-next'
+    return 'future'
+  }
+
+  const getStatusBadge = (status: 'done' | 'ongoing' | 'up-next' | 'future') => {
+    switch (status) {
+      case 'done':
+        return (
+          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase bg-slate-100 text-slate-500`}>
+            Done
+          </span>
+        )
+      case 'ongoing':
+        return (
+          <span className={`flex items-center gap-1.5 text-xs font-bold uppercase ${getCollegeColorClass('text')}`}>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${getCollegeColorClass('bg')}`}></span>
+            Ongoing
+          </span>
+        )
+      case 'up-next':
+        return (
+          <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode
+            ? 'bg-amber-100 text-amber-700'
+            : 'bg-amber-900/30 text-amber-400 border border-amber-700/50'}`}>
+            Up Next
+          </span>
+        )
+      default:
+        return null
+    }
   }
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
@@ -609,6 +705,8 @@ export default function FacultyHomePage() {
     })
   }
 
+
+
   // Determine loading theme from localStorage (before context is ready)
   const getLoadingTheme = () => {
     if (typeof window !== 'undefined') {
@@ -821,14 +919,14 @@ export default function FacultyHomePage() {
                   </h3>
                   {nextClass && (
                     <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase ${isLightMode
-                        ? isScience
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : isArtsLetters
-                            ? 'bg-orange-100 text-orange-700'
-                            : isArchitecture
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-blue-100 text-blue-700'
-                        : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
+                      ? isScience
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : isArtsLetters
+                          ? 'bg-orange-100 text-orange-700'
+                          : isArchitecture
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-blue-100 text-blue-700'
+                      : `${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`
                       }`}>Next Up</span>
                   )}
                 </div>
@@ -860,6 +958,61 @@ export default function FacultyHomePage() {
             </div>
           </section>
 
+          {/* Notifications / Building Updates */}
+          <section className="mb-4 sm:mb-5 md:mb-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                <AlertCircle className="sm:w-5 sm:h-5 text-amber-500" />
+                Recent Announcements & Room Availability
+              </h3>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div className={`p-4 rounded-xl border text-center ${isLightMode
+                ? 'bg-white/95 border-slate-200 text-slate-500'
+                : 'bg-slate-800/80 border-cyan-500/20 text-slate-400'}`}>
+                <p className="text-sm">No new announcements or cancellations.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {notifications.map((note) => (
+                  <div key={note.id} className={`p-4 rounded-xl border-l-4 shadow-sm transition-all hover:shadow-md ${isLightMode
+                    ? 'bg-white border-slate-200 border-l-emerald-500'
+                    : 'bg-slate-800 border-slate-700 border-l-emerald-500'
+                    }`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-emerald-100 text-emerald-700">
+                        Room Available
+                      </span>
+                      <span className={`text-xs ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {new Date(note.date).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <h4 className={`text-sm font-bold mb-1 ${isLightMode ? 'text-slate-800' : 'text-slate-200'}`}>
+                      {note.room_allocations.room} is Free
+                    </h4>
+
+                    <div className={`text-xs space-y-1 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <div className="flex items-center gap-1.5">
+                        <Clock size={12} />
+                        {note.room_allocations.schedule_time}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Building2 size={12} />
+                        <span>{note.profiles?.full_name} ({note.room_allocations.course_code})</span>
+                      </div>
+                    </div>
+
+                    <div className={`text-xs italic pt-2 border-t ${isLightMode ? 'border-slate-100 text-slate-500' : 'border-slate-700 text-slate-500'}`}>
+                      "{note.reason}"
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* Today's Schedule with Day Navigation */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
@@ -880,14 +1033,14 @@ export default function FacultyHomePage() {
               <div className="flex items-center gap-2">
                 {/* Previous Day */}
                 <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
-                    ? isScience
-                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                      : isArtsLetters
-                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                        : isArchitecture
-                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
-                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                  ? isScience
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                    : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                        ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                        : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                  : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
                   }`} onClick={() => {
                     const prev = new Date(selectedDate)
                     prev.setDate(prev.getDate() - 1)
@@ -898,22 +1051,22 @@ export default function FacultyHomePage() {
 
                 {/* Date label / Today button */}
                 <button className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isLightMode
-                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`} onClick={() => setSelectedDate(new Date())} title="Go to today">
                   {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                 </button>
 
                 {/* Next Day */}
                 <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
-                    ? isScience
-                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                      : isArtsLetters
-                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                        : isArchitecture
-                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
-                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                  ? isScience
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                    : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                        ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                        : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                  : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
                   }`} onClick={() => {
                     const next = new Date(selectedDate)
                     next.setDate(next.getDate() + 1)
@@ -924,71 +1077,119 @@ export default function FacultyHomePage() {
 
                 {/* Refresh */}
                 <button className={`w-8 h-8 sm:w-9 sm:h-9 border-none rounded-lg cursor-pointer flex items-center justify-center transition-all ${isLightMode
-                    ? isScience
-                      ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                      : isArtsLetters
-                        ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
-                        : isArchitecture
-                          ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
-                          : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
-                    : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
-                  }`} onClick={checkAuthAndLoad} title="Refresh">
-                  <RefreshCw size={14} />
+                  ? isScience
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white'
+                    : isArtsLetters
+                      ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white'
+                      : isArchitecture
+                        ? 'bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white'
+                        : 'bg-blue-500/10 text-blue-600 hover:bg-blue-500 hover:text-white'
+                  : 'bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white'
+                  }`} onClick={() => {
+                    fetchSchedules(user?.email || '')
+                  }} title="Refresh schedule">
+                  <span className={loading ? "animate-spin" : ""}>↻</span>
                 </button>
               </div>
             </div>
-            {(() => {
-              const selectedDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][selectedDate.getDay()]
-              const daySchedules = schedules.filter(s => s.day === selectedDayName)
 
-              return daySchedules.length > 0 ? (
-                <div className="flex flex-col gap-2 sm:gap-3">
-                  {daySchedules.map((schedule, index) => (
-                    <div key={index} className={`rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 cursor-pointer transition-all hover:translate-x-1 ${isLightMode
-                        ? isScience
-                          ? 'bg-white/90 border border-slate-200 hover:border-emerald-500'
-                          : isArtsLetters
-                            ? 'bg-white/90 border border-slate-200 hover:border-orange-500'
-                            : isArchitecture
-                              ? 'bg-white/90 border border-slate-200 hover:border-red-500'
-                              : 'bg-white/90 border border-slate-200 hover:border-blue-500'
-                        : 'bg-slate-800/80 border border-cyan-500/20 hover:border-cyan-500'
-                      }`}>
-                      <div className={`flex items-center gap-2 text-xs sm:text-sm font-semibold min-w-[130px] sm:min-w-[140px] ${getCollegeColorClass('text')}`}>
-                        <Clock size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>{formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}</span>
+            {/* Schedule List */}
+            <div className="flex flex-col gap-3">
+              {filteredSchedules.length > 0 ? (
+                filteredSchedules.map((schedule) => {
+                  const status = getClassStatus(schedule)
+                  return (
+                    <div
+                      key={schedule.id}
+                      onClick={() => {
+                        setSelectedClassForModal(schedule)
+                        setTimetableModalOpen(true)
+                      }}
+                      className={`relative group rounded-xl sm:rounded-2xl p-4 transition-all duration-300 cursor-pointer border-l-4 ${isLightMode
+                        ? 'bg-white border-y border-r border-y-slate-100 border-r-slate-100 shadow-sm hover:shadow-md'
+                        : 'bg-slate-800/50 border-y border-r border-y-cyan-900/30 border-r-cyan-900/30 hover:bg-slate-800'
+                        } ${status === 'ongoing'
+                          ? getCollegeColorClass('border')
+                          : status === 'done'
+                            ? isLightMode ? 'border-l-slate-300 opacity-75' : 'border-l-slate-600 opacity-60'
+                            : getCollegeColorClass('border', 'light')
+                        }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                        {/* Time Column */}
+                        <div className="flex flex-row sm:flex-col items-center sm:items-start gap-2 sm:gap-1 min-w-[100px] sm:w-32">
+                          <div className={`p-1.5 rounded-lg ${status === 'ongoing'
+                            ? isLightMode ? 'bg-red-50' : 'bg-red-900/20'
+                            : isLightMode ? 'bg-slate-50' : 'bg-slate-700/30'
+                            }`}>
+                            <Clock size={16} className={
+                              status === 'ongoing'
+                                ? 'text-red-500'
+                                : isLightMode ? 'text-slate-400' : 'text-slate-500'
+                            } />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-sm sm:text-base font-bold whitespace-nowrap ${status === 'ongoing'
+                              ? 'text-red-600'
+                              : isLightMode ? 'text-slate-700' : 'text-slate-300'
+                              }`}>
+                              {formatTime(schedule.start_time)}
+                            </span>
+                            <span className={`text-xs font-medium ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              - {formatTime(schedule.end_time)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Class Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className={`text-base sm:text-lg font-bold truncate ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                              {schedule.course_code}
+                              <span className={`ml-2 text-sm font-normal ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                - {schedule.course_name}
+                              </span>
+                            </h4>
+                            <div className="flex-shrink-0">
+                              {getStatusBadge(status)}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm">
+                            <div className={`flex items-center gap-1.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <MapPin size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                              <span className="truncate">{schedule.room}, {schedule.building}</span>
+                            </div>
+                            <div className={`flex items-center gap-1.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <BookOpen size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                              <span>{schedule.section}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Chevron for indication */}
+                        <div className={`hidden sm:flex items-center justify-center w-8 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                          <ChevronRight size={20} />
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm sm:text-base font-semibold m-0 mb-1 break-words ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{schedule.course_code} - {schedule.course_name}</h4>
-                        <p className={`text-xs sm:text-sm m-0 flex items-center gap-1.5 flex-wrap ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                          <MapPin size={12} className="flex-shrink-0" /> {schedule.room}, {schedule.building}
-                          <span className={`mx-1 ${isLightMode ? 'text-slate-300' : 'text-slate-600'}`}>•</span>
-                          <BookOpen size={12} className="flex-shrink-0" /> {schedule.section}
-                        </p>
-                      </div>
-                      <ChevronRight size={16} className={`hidden sm:block flex-shrink-0 ${getCollegeColorClass('text')}`} />
                     </div>
-                  ))}
-                </div>
+                  )
+                })
               ) : (
-                <div className={`rounded-xl p-6 sm:p-8 md:p-12 text-center ${isLightMode ? 'bg-white/90 border border-slate-200' : 'bg-slate-800/80 border border-cyan-500/20'}`}>
-                  <Calendar size={48} className="sm:w-16 sm:h-16 opacity-30 mx-auto mb-4" />
-                  <h3 className={`text-base sm:text-lg font-bold m-0 mb-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                    {(() => {
-                      const today = new Date()
-                      today.setHours(0, 0, 0, 0)
-                      const sel = new Date(selectedDate)
-                      sel.setHours(0, 0, 0, 0)
-                      const diff = Math.round((sel.getTime() - today.getTime()) / 86400000)
-                      if (diff === 0) return 'No Schedule Today'
-                      if (diff === 1) return 'No Schedule Tomorrow'
-                      return `No Schedule on ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}`
-                    })()}
-                  </h3>
-                  <p className={`text-sm m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Your schedule will appear here once assigned by the admin.</p>
+                <div className={`flex flex-col items-center justify-center py-12 px-4 rounded-xl border border-dashed ${isLightMode ? 'border-slate-300 bg-slate-50' : 'border-slate-700 bg-slate-800/30'
+                  }`}>
+                  <div className={`p-4 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700'}`}>
+                    <Calendar size={32} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                  </div>
+                  <h3 className={`text-lg font-bold mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Classes Scheduled</h3>
+                  <p className={`text-sm text-center max-w-xs ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {selectedDate.toDateString() === new Date().toDateString()
+                      ? "You don't have any classes scheduled for today."
+                      : `You don't have any classes scheduled for ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}.`}
+                  </p>
                 </div>
-              )
-            })()}
+              )}
+            </div>
           </section>
 
           {/* Department Announcements */}
@@ -1011,14 +1212,14 @@ export default function FacultyHomePage() {
       {/* Quick Action - Mark as Absence */}
       <button
         className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${isLightMode
-            ? isScience
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-              : isArtsLetters
-                ? 'bg-orange-500 text-white hover:bg-orange-600'
-                : isArchitecture
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
+          ? isScience
+            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+            : isArtsLetters
+              ? 'bg-orange-500 text-white hover:bg-orange-600'
+              : isArchitecture
+                ? 'bg-red-500 text-white hover:bg-red-600'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+          : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
           }`}
         onClick={() => setAttendanceOpen(true)}
       >
@@ -1086,14 +1287,14 @@ export default function FacultyHomePage() {
 
               <button
                 className={`w-full rounded-lg px-4 py-2 font-semibold ${isLightMode
-                    ? isScience
-                      ? 'bg-emerald-600 text-white'
-                      : isArtsLetters
-                        ? 'bg-orange-500 text-white'
-                        : isArchitecture
-                          ? 'bg-red-500 text-white'
-                          : 'bg-blue-600 text-white'
-                    : 'bg-cyan-500 text-slate-900'
+                  ? isScience
+                    ? 'bg-emerald-600 text-white'
+                    : isArtsLetters
+                      ? 'bg-orange-500 text-white'
+                      : isArchitecture
+                        ? 'bg-red-500 text-white'
+                        : 'bg-blue-600 text-white'
+                  : 'bg-cyan-500 text-slate-900'
                   }`}
                 onClick={handleMarkAbsent}
                 disabled={attendanceSubmitting}

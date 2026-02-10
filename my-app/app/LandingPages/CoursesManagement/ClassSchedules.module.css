@@ -58,6 +58,7 @@
 
 :global([data-theme="green"]) .scheduleCardHeader {
   background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%);
+  color: white;
 }
 
 :global([data-theme="green"]) .scheduleCardFooter {
@@ -88,7 +89,6 @@
   box-shadow: 0 6px 24px rgba(46, 175, 125, 0.4);
 }
 
-:global([data-theme="green"]) .scheduleEventName,
 :global([data-theme="green"]) .scheduleCard .title,
 :global([data-theme="green"]) .classCard .title {
   color: #02353C;
@@ -1301,7 +1301,8 @@
   }
 
   .searchInput {
-    font-size: 16px; /* Prevents iOS zoom on focus */
+    font-size: 16px;
+    /* Prevents iOS zoom on focus */
     touch-action: manipulation;
   }
 }
@@ -1498,7 +1499,7 @@
     padding: 8px;
     margin-right: 8px;
   }
-  
+
   .downloadCsvText {
     display: none;
   }
@@ -1549,4 +1550,16 @@
 /* Green Theme - Override inline styles for Move Button */
 :global([data-theme="green"]) button[title="Move to another folder"] {
   background: linear-gradient(135deg, #276749 0%, #38a169 100%) !important;
+}
+
+/* ==================== Global White Text Override ==================== */
+/* Ensure folder headers always have white text on their dark/gradient backgrounds */
+.scheduleCardHeader .scheduleEventName,
+.scheduleCardHeader .scheduleEventName svg {
+  color: #ffffff !important;
+}
+
+.scheduleCardHeader .scheduleType {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
 }
