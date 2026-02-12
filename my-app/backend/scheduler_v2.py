@@ -767,7 +767,17 @@ class EnhancedQuantumScheduler:
                 
                 # NEW COLLEGE CONSTRAINT: Room must belong to section's college OR be "Shared"
                 # Skip rooms that belong to a different college (unless no college specified)
-                if section_college and room_college and room_college != 'Shared':
+                
+                # DEBUG: Log logic before check
+                # Note: Normalize strings for comparison
+                r_col = str(room_college).strip().upper() if room_college else ''
+                s_col = str(section_college).strip().upper() if section_college else ''
+                
+                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                     # DEBUG: Log mismatches occasionally to verify it's working
+                    if i < 5: # Only log first few checks to avoid spam
+                         print(f"   ⛔ Constraint Block: Room {room.room_code} ({r_col}) != Section {section.section_code} ({s_col})")
+                    continue  # Skip rooms belonging to other colleges
                     # Normalize strings for comparison
                     r_col = str(room_college).strip().upper()
                     s_col = str(section_college).strip().upper()
@@ -3080,6 +3090,19 @@ def run_enhanced_scheduler(
     print("=" * 60)
     print(f"📚 Sections to schedule: {len(sections_data)}")
     print(f"🏢 Available rooms: {len(rooms_data)}")
+    
+    # DEBUG: Inspect first few sections to verify data structure
+    if sections_data:
+        print("\n🔍 DEBUG: Inspecting Input Data Structures")
+        for i in range(min(3, len(sections_data))):
+            s = sections_data[i]
+            print(f"   Section {i}: Code='{s.get('section_code', 'N/A')}'")
+            print(f"      Top-level College: '{s.get('college')}'")
+            print(f"      Top-level Dept: '{s.get('department')}'")
+            if s.get('courses'):
+                print(f"      Nested College: '{s.get('courses', {}).get('college')}'")
+                print(f"      Nested Dept: '{s.get('courses', {}).get('department')}'")
+    
     if online_days:
         print(f"🌐 Online days: {', '.join(online_days)}")
     
