@@ -136,6 +136,7 @@ interface RoomAllocation {
   department?: string
   lec_hours?: number
   lab_hours?: number
+  college?: string // NEW: Section's college
 }
 
 interface TimetableCell {
@@ -623,6 +624,37 @@ export default function ViewSchedulePage() {
         }
 
         setAllocations(enrichedAllocations)
+
+        // Enrich with college data if missing (needed for mismatch warning)
+        const hasMissingCollege = enrichedAllocations.some((a: any) => !a.college)
+
+        if (hasMissingCollege) {
+          const sectionIds = enrichedAllocations.map((a: any) => a.class_id).filter((id: any) => !!id)
+
+          if (sectionIds.length > 0) {
+            const { data: sectionsData } = await db
+              .from('sections')
+              .select('id, college')
+              .in('id', sectionIds)
+
+            if (sectionsData && sectionsData.length > 0) {
+              const collegeMap = new Map<number, string>()
+              sectionsData.forEach((s: any) => {
+                if (s.college) collegeMap.set(s.id, s.college)
+              })
+
+              enrichedAllocations = enrichedAllocations.map((a: any) => {
+                if (!a.college && a.class_id) {
+                  const col = collegeMap.get(a.class_id)
+                  if (col) return { ...a, college: col }
+                }
+                return a
+              })
+              // Update state again with college data
+              setAllocations(enrichedAllocations)
+            }
+          }
+        }
 
         // Debug: Log all allocations
         console.log('=== ViewSchedule Data Debug ===');
@@ -2385,77 +2417,77 @@ export default function ViewSchedulePage() {
                 <>
                   {/* Timetable View */}
                   <div className={styles.timetableWrapper} ref={timetableRef}>
-                  {/* Timetable Title with Navigation */}
-                  <div className={styles.timetableTitle}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <div>
-                        <h3>
-                          {timetableViewMode === 'all' && 'All Classes Timetable'}
-                          {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
-                          {timetableViewMode === 'room' && selectedRoom === 'all' && 'All Rooms Timetable'}
-                          {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
-                          {timetableViewMode === 'section' && selectedSection === 'all' && 'All Sections Timetable'}
-                          {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
-                          {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'All Teachers Timetable'}
-                          {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
-                          {timetableViewMode === 'course' && selectedCourse === 'all' && 'All Courses Timetable'}
-                        </h3>
-                        <p className={styles.timetableSubtitle}>
-                          {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations
-                        </p>
+                    {/* Timetable Title with Navigation */}
+                    <div className={styles.timetableTitle}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <div>
+                          <h3>
+                            {timetableViewMode === 'all' && 'All Classes Timetable'}
+                            {timetableViewMode === 'room' && selectedRoom !== 'all' && `Room Timetable: ${selectedRoom}`}
+                            {timetableViewMode === 'room' && selectedRoom === 'all' && 'All Rooms Timetable'}
+                            {timetableViewMode === 'section' && selectedSection !== 'all' && `Section Timetable: ${selectedSection}`}
+                            {timetableViewMode === 'section' && selectedSection === 'all' && 'All Sections Timetable'}
+                            {timetableViewMode === 'teacher' && selectedTeacher !== 'all' && `Teacher Timetable: ${selectedTeacher}`}
+                            {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'All Teachers Timetable'}
+                            {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
+                            {timetableViewMode === 'course' && selectedCourse === 'all' && 'All Courses Timetable'}
+                          </h3>
+                          <p className={styles.timetableSubtitle}>
+                            {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className={styles.timetableContainer}>
-                    <DraggableTimetable
-                      allocations={displayAllocations}
-                      allAllocations={allocations}
-                      mode="admin-edit"
-                      isLocked={selectedSchedule?.is_locked}
-                      onDirectEdit={async (result: DragDropResult) => {
-                        if (result.hasConflict) {
-                          const proceed = confirm(
-                            `Warning: This time slot has a conflict!\n\n` +
-                            `${result.courseCode} (${result.section})\n` +
-                            `Moving from ${result.fromDay} ${result.fromTime}\n` +
-                            `to ${result.toDay} ${result.toTime}\n\n` +
-                            `Are you sure you want to place it here anyway?`
-                          )
-                          if (!proceed) return
-                        }
-
-                        try {
-                          // Update each allocation in the block
-                          for (const alloc of result.originalAllocations) {
-                            const timeParts = alloc.schedule_time.split(/\s*-\s*/)
-                            if (timeParts.length !== 2) continue
-                            const { error } = await db
-                              .from('room_allocations')
-                              .update({
-                                schedule_day: result.toDay.charAt(0).toUpperCase() + result.toDay.slice(1),
-                                schedule_time: result.toTime,
-                              })
-                              .eq('id', alloc.id)
-                            if (error) throw error
+                    <div className={styles.timetableContainer}>
+                      <DraggableTimetable
+                        allocations={displayAllocations}
+                        allAllocations={allocations}
+                        mode="admin-edit"
+                        isLocked={selectedSchedule?.is_locked}
+                        onDirectEdit={async (result: DragDropResult) => {
+                          if (result.hasConflict) {
+                            const proceed = confirm(
+                              `Warning: This time slot has a conflict!\n\n` +
+                              `${result.courseCode} (${result.section})\n` +
+                              `Moving from ${result.fromDay} ${result.fromTime}\n` +
+                              `to ${result.toDay} ${result.toTime}\n\n` +
+                              `Are you sure you want to place it here anyway?`
+                            )
+                            if (!proceed) return
                           }
 
-                          // Refresh allocations
-                          const { data: refreshed } = await db
-                            .from('room_allocations')
-                            .select('*')
-                            .eq('schedule_id', selectedSchedule!.id)
-                            .order('schedule_day', { ascending: true })
-                            .order('schedule_time', { ascending: true })
-                          if (refreshed) setAllocations(refreshed)
-                          alert('Schedule updated successfully!')
-                        } catch (error: any) {
-                          console.error('Error updating allocation:', error)
-                          alert('Failed to update schedule: ' + (error.message || 'Unknown error'))
-                        }
-                      }}
-                    />
+                          try {
+                            // Update each allocation in the block
+                            for (const alloc of result.originalAllocations) {
+                              const timeParts = alloc.schedule_time.split(/\s*-\s*/)
+                              if (timeParts.length !== 2) continue
+                              const { error } = await db
+                                .from('room_allocations')
+                                .update({
+                                  schedule_day: result.toDay.charAt(0).toUpperCase() + result.toDay.slice(1),
+                                  schedule_time: result.toTime,
+                                })
+                                .eq('id', alloc.id)
+                              if (error) throw error
+                            }
+
+                            // Refresh allocations
+                            const { data: refreshed } = await db
+                              .from('room_allocations')
+                              .select('*')
+                              .eq('schedule_id', selectedSchedule!.id)
+                              .order('schedule_day', { ascending: true })
+                              .order('schedule_time', { ascending: true })
+                            if (refreshed) setAllocations(refreshed)
+                            alert('Schedule updated successfully!')
+                          } catch (error: any) {
+                            console.error('Error updating allocation:', error)
+                            alert('Failed to update schedule: ' + (error.message || 'Unknown error'))
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
 
                   {/* Allocation Table - Below Timetable */}
                   <div style={{ marginTop: '32px' }}>

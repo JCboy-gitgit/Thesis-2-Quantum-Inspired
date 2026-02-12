@@ -162,6 +162,7 @@ class ScheduleEntry(BaseModel):
     student_count: int
     room_capacity: int
     is_lab_session: bool = False
+    college: Optional[str] = None
 
 
 class ScheduleConflict(BaseModel):

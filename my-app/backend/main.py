@@ -546,6 +546,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                     "capacity": entry.get("room_capacity", 0),
                     "teacher_name": entry.get("teacher_name", ""),
                     "department": entry.get("department", ""),
+                    "college": entry.get("college", ""),  # NEW: Save college to database
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
                     "status": "scheduled"

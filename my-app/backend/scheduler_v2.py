@@ -745,6 +745,10 @@ class EnhancedQuantumScheduler:
             required_features = section.required_features or set()
             section_college = section.college  # Get section's college
             
+            # DEBUG
+            if 'BSIT' in section.section_code or 'DEBUG' in section.section_code:
+                 print(f"DEBUG_COMPAT: Checking rooms for {section.section_code}. College={section_college}")
+            
             # BulSU Rule: Student count must be <= room capacity
             # For lectures: allow up to 10% overflow (room can be slightly smaller)
             # For labs: strict capacity matching
@@ -1928,9 +1932,12 @@ class EnhancedQuantumScheduler:
                     )
                     continue
             
-            compatible_rooms = self.compatible_rooms.get(section.id, list(self.rooms.keys()))
+            compatible_rooms = self.compatible_rooms.get(section.id, [])
+            
+            # FIX: Do NOT fallback to all rooms if compatible_rooms is empty.
+            # Empty list means strict constraints (capacity, college, etc.) blocked all rooms.
             if not compatible_rooms:
-                compatible_rooms = list(self.rooms.keys())
+                pass # section will remain unscheduled until aggressive pass (which also respects constraints now)
             
             # Calculate sessions with proper lec/lab separation
             # Returns list of (slot_count, is_lab, actual_duration_minutes) tuples
@@ -1991,7 +1998,7 @@ class EnhancedQuantumScheduler:
                     else:
                         days_to_try = self.active_days
                     
-                    rooms_to_try = session_rooms if pass_num < 2 else list(self.rooms.keys())
+                    rooms_to_try = session_rooms if pass_num < 2 else compatible_rooms
                     
                     for day in days_to_try:
                         if best_assignment:
@@ -2154,16 +2161,36 @@ class EnhancedQuantumScheduler:
             
             # Use equipment-compatible rooms (pre-computed), filtered by lab/lecture type
             compatible = self.compatible_rooms.get(section.id, [])
+            # Helper to check college compatibility since we are falling back to raw rooms
+            def is_college_compatible(room_id):
+                room = self.rooms[room_id]
+                # Normalize strings for comparison
+                r_col = str(room.college).strip().upper() if room.college else None
+                s_col = str(section.college).strip().upper() if section.college else None
+                
+                if s_col and r_col and r_col != 'SHARED':
+                    return r_col == s_col
+                return True
+
             if is_lab_class:
                 rooms_to_try = [r for r in compatible if self._is_lab_room(r)]
                 if not rooms_to_try:
                     # Fallback: any lab room (equipment may not match but lab-type is HARD)
-                    rooms_to_try = [r for r in self.rooms.keys() if self._is_lab_room(r)]
+                    # FIX: Must still respect college constraint!
+                    rooms_to_try = [
+                        r for r in self.rooms.keys() 
+                        if self._is_lab_room(r) and is_college_compatible(r)
+                    ]
             else:
                 rooms_to_try = [r for r in compatible if not self._is_lab_room(r)]
                 if not rooms_to_try:
                     # Fallback to any compatible room (including lab rooms)
-                    rooms_to_try = compatible if compatible else [r for r in self.rooms.keys() if not self._is_lab_room(r)]
+                    # FIX: Must still respect college constraint!
+                    rooms_to_try = [
+                        r for r in self.rooms.keys() 
+                        if (not self._is_lab_room(r) or not self.constraints.strict_lecture_room_matching) 
+                        and is_college_compatible(r)
+                    ]
             
             # Calculate session info for proper duration tracking
             sessions = self._calculate_sessions(section)
@@ -2956,7 +2983,8 @@ class EnhancedQuantumScheduler:
                     # Type-Based Splitting fields for hybrid courses
                     'section_type': section.section_type,  # "lecture", "lab", or "combined"
                     'original_section_id': section.original_section_id,  # Original ID before splitting
-                    'sibling_id': section.sibling_id  # ID of sibling section (LEC <-> LAB)
+                    'sibling_id': section.sibling_id,  # ID of sibling section (LEC <-> LAB)
+                    'college': section.college  # NEW: Include college in result
                 })
         
         return results
@@ -3135,8 +3163,8 @@ def run_enhanced_scheduler(
                 lec_hours=lec_hours,
                 lab_hours=0,  # No lab hours for lecture section
                 requires_lab=False,
-                department=s.get('department', ''),
-                college=s.get('college', ''),
+                department=s.get('department') or s.get('courses', {}).get('department', ''),
+                college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
                 required_features=set(),  # Lectures typically don't need special features
                 sibling_id=lab_section_id,  # Link to lab sibling
@@ -3161,8 +3189,8 @@ def run_enhanced_scheduler(
                 lec_hours=0,  # No lecture hours for lab section
                 lab_hours=lab_hours,
                 requires_lab=True,  # Lab section requires lab room
-                department=s.get('department', ''),
-                college=s.get('college', ''),
+                department=s.get('department') or s.get('courses', {}).get('department', ''),
+                college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
                 required_features=required_features_set,  # Labs may need special equipment
                 sibling_id=lec_section_id,  # Link to lecture sibling
@@ -3197,8 +3225,8 @@ def run_enhanced_scheduler(
                 lec_hours=lec_hours,
                 lab_hours=lab_hours,
                 requires_lab=is_lab_only or s.get('requires_lab', False),
-                department=s.get('department', ''),
-                college=s.get('college', ''),
+                department=s.get('department') or s.get('courses', {}).get('department', ''),
+                college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
                 required_features=required_features_set,
                 sibling_id=None,
@@ -3230,7 +3258,8 @@ def run_enhanced_scheduler(
             has_ac=r.get('has_ac', False),
             has_computers=r.get('has_computers', 0),
             has_lab_equipment=r.get('has_lab_equipment', False),
-            feature_tags=feature_tags_set
+            feature_tags=feature_tags_set,
+            college=r.get('college')  # Fix: Pass college to Room object
         ))
     
     # Create constraints with new options
