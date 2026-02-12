@@ -12,6 +12,7 @@ interface Room {
   capacity: number
   room_type?: string
   specific_classification?: string
+  college?: string // NEW: College ownership
 }
 
 interface RoomEquipment {
@@ -52,6 +53,7 @@ interface RoomAllocation {
   department?: string
   lec_hours?: number
   lab_hours?: number
+  college?: string // NEW: Section's college
 }
 
 type SortMode = 'compatibility' | 'capacity' | 'building' | 'name'
@@ -111,7 +113,7 @@ export default function RoomReassignmentModal({
         includeFeatures: 'true',
         ...(courseCode && { courseCode })
       })
-      
+
       const response = await fetch(`/api/rooms-list?${params}`, { cache: 'no-store' })
       const data = await response.json()
 
@@ -167,6 +169,26 @@ export default function RoomReassignmentModal({
       setConflictDetails(`${conflict.course_code} (${conflict.section}) is already in ${selectedRoom.room} at ${allocation.schedule_time} on ${allocation.schedule_day}`)
     } else { setHasConflict(false); setConflictDetails('') }
   }, [selectedRoom, allocation, allAllocations])
+
+  // NEW: Check for College Mismatch
+  const collegeMismatchWarning = useMemo(() => {
+    if (!selectedRoom || !allocation) return null
+
+    // Normalize logic
+    const roomCollege = (selectedRoom.college || '').trim().toUpperCase()
+    const sectionCollege = (allocation.college || '').trim().toUpperCase()
+
+    // If room is Shared, no warning
+    if (roomCollege === 'SHARED' || !roomCollege) return null
+
+    // If section has no college, no warning
+    if (!sectionCollege) return null
+
+    if (roomCollege !== sectionCollege) {
+      return `Warning: This room belongs to ${selectedRoom.college}, but the class is from ${allocation.college}.`
+    }
+    return null
+  }, [selectedRoom, allocation])
 
   const roomScores = useMemo(() => {
     const scores = new Map<number, { score: number; total: number; missingMandatory: string[]; missingOptional: string[]; matched: string[] }>()
@@ -384,6 +406,28 @@ export default function RoomReassignmentModal({
               <div><p className={styles.conflictTitle}>Room Conflict Detected</p><p className={styles.conflictMessage}>{conflictDetails}</p></div>
             </div>
           )}
+
+          {collegeMismatchWarning && (
+            <div className={styles.warningMessage} style={{
+              marginTop: '10px',
+              padding: '10px',
+              backgroundColor: '#fffbeb',
+              border: '1px solid #fcd34d',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#92400e',
+              fontSize: '0.9rem'
+            }}>
+              <AlertTriangle size={20} />
+              <div>
+                <p style={{ fontWeight: 600, margin: 0 }}>College Mismatch</p>
+                <p style={{ margin: 0 }}>{collegeMismatchWarning}</p>
+              </div>
+            </div>
+          )}
+
           {error && <div className={styles.errorMessage}><AlertCircle size={20} /><p>{error}</p></div>}
         </div>
 

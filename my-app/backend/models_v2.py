@@ -57,6 +57,14 @@ class ScheduleStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class EmploymentType(str, Enum):
+    FULL_TIME = "full-time"
+    PART_TIME = "part-time"
+    VSL = "vsl"  # Visiting Lecturer? Or specific VSL designation
+    ADJUNCT = "adjunct"
+    GUEST = "guest"
+
+
 # ==================== Room Models ====================
 
 class RoomCSV(BaseModel):
@@ -114,7 +122,9 @@ class FacultyCSV(BaseModel):
     avail_mask: Optional[str] = Field(default=None, description="Binary availability grid [6 days x 26 slots]")
     home_bldg: Optional[str] = Field(default=None, description="Preferred building")
     max_units: int = Field(default=24, ge=1, le=36)
-    employment_type: str = Field(default="full-time")
+    employment_type: EmploymentType = Field(default=EmploymentType.FULL_TIME)
+    preferred_times: Optional[str] = Field(default=None, description="morning, night, or any")
+    unavailable_days: Optional[List[str]] = Field(default_factory=list, description="Days faculty cannot teach")
 
 
 class FacultyAssignmentCSV(BaseModel):
@@ -140,6 +150,8 @@ class Faculty(BaseModel):
     max_units: int = 24
     current_units: int = 0
     employment_type: str = "full-time"
+    preferred_times: Optional[str] = None  # NEW: "morning", "night", "any"
+    unavailable_days: List[str] = field(default_factory=list)  # NEW: e.g. ["Saturday"]
     home_building: Optional[str] = None
     is_active: bool = True
     

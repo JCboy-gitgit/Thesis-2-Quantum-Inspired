@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // STEP 1: Fetch ALL rooms from campuses table
     const { data: roomData, error: roomError } = await supabaseAdmin
       .from('campuses')
-      .select('id, room, building, campus, capacity, room_type, specific_classification')
+      .select('id, room, building, campus, capacity, room_type, specific_classification, college')
       .order('building', { ascending: true })
       .order('room', { ascending: true })
 

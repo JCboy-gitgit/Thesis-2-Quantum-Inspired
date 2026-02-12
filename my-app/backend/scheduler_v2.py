@@ -297,6 +297,11 @@ class Section:
     sibling_id: Optional[int] = None  # ID of the sibling section (LEC <-> LAB)
     original_section_id: Optional[int] = None  # Original section ID before splitting
     section_type: str = "combined"  # "lecture", "lab", or "combined"
+
+    # NEW: Resource Decomposition Fields (Problem 3)
+    is_split_group: bool = False
+    linked_section_id: Optional[int] = None
+    split_type: Optional[str] = None  # "G1" or "G2"
     
     @property
     def required_slots(self) -> int:
@@ -349,6 +354,18 @@ class Room:
 
 
 @dataclass
+class FacultyProfile:
+    """Faculty profile for constraint checking"""
+    id: int
+    name: str
+    employment_type: str = "full-time"  # full-time, part-time, vsl
+    preferred_times: Optional[str] = None  # morning, night, any
+    unavailable_days: Set[str] = field(default_factory=set)
+    max_daily_hours: int = 10  # Hard limit
+    max_weekly_units: int = 24  # Weekly active load limit (1 unit ~= 1 hour for now)
+
+
+@dataclass
 class SchedulingConstraints:
     """BulSU QSA Configuration - REALISTIC SCHEDULING"""
     max_teacher_hours_per_day: int = 8  # Maximum 8 hours teaching per day
@@ -371,6 +388,11 @@ class SchedulingConstraints:
     min_class_duration_minutes: int = 90  # Minimum 1.5 hours per class session
     max_class_duration_minutes: int = 180  # Maximum 3 hours per class session
     require_faculty_lunch_break: bool = True  # Faculty MUST have lunch break
+    max_daily_hours_hard_limit: int = 10  # Problem 2: 10-hour hard rule
+    
+    # Penalties
+    SOFT_VSL_SHIFT_MISMATCH: int = 500  # Penalty for VSL teaching outside preferred shift
+    SOFT_PART_TIME_SATURDAY: int = 2000  # High soft/Hard for Part-time on Saturday (usually HARD)
 
 
 @dataclass
@@ -552,10 +574,42 @@ class EnhancedQuantumScheduler:
         time_slots: List[TimeSlot],
         constraints: Optional[SchedulingConstraints] = None,
         active_days: Optional[List[str]] = None,
-        online_days: Optional[List[str]] = None  # NEW: Days where all classes are online
+        online_days: Optional[List[str]] = None,  # NEW: Days where all classes are online
+        faculty_profiles: Optional[List[FacultyProfile]] = None  # NEW: Detailed faculty data
     ):
-        self.sections = {s.id: s for s in sections}
+        # Problem 3: Decompose BEFORE storing sections
+        # We need self.rooms initialized first to check capacities
         self.rooms = {r.id: r for r in rooms}
+        
+        # Initialize helper just for decomposition (needs self.rooms)
+        # But decomposition method is instance method.
+        # We can temporarily store sections and then run decomposition?
+        # Actually, let's just initialize self.rooms and then call it.
+        
+        # Original assignment: self.sections = {s.id: s for s in sections}
+        
+        # New flow:
+        # 1. Store rooms (needed for capacity checks)
+        # 2. Decompose sections
+        # 3. Store decomposed sections
+        self.raw_sections = sections # Keep original if needed?
+        
+        # We need to temporarily set sections to empty list or passed list to use the helper if it relies on self.rooms
+        # The helper `_decompose_oversized_sections` uses `self.rooms`
+        
+        # Hack: assign self.rooms, then run decomp
+        
+        # Decompose
+        # Note: We need to define _decompose_oversized_sections as a static or use it carefully. 
+        # Since it is an instance method (uses self.rooms), we can call it now.
+        
+        # Wait, I haven't defined self.sections yet.
+        # But `_decompose_oversized_sections` takes `sections` list as input.
+        
+        decomposed_sections = self._decompose_oversized_sections(sections)
+        self.sections = {s.id: s for s in decomposed_sections}
+        
+        self.faculty_profiles = {f.id: f for f in (faculty_profiles or [])}  # Index by ID
         self.time_slots = time_slots
         self.time_slots_by_id = {t.id: t for t in time_slots}
         self.constraints = constraints or SchedulingConstraints()
@@ -573,7 +627,7 @@ class EnhancedQuantumScheduler:
         
         # Group sections by department for block swaps
         self.sections_by_department = defaultdict(list)
-        for s in sections:
+        for s in self.sections.values():
             self.sections_by_department[s.department].append(s.id)
         
         # Current schedule state
@@ -602,24 +656,75 @@ class EnhancedQuantumScheduler:
         # Student group index for fast conflict checking
         # Maps base_section_code -> list of section_ids that belong to that student group
         self.student_group_sections: Dict[str, List[int]] = defaultdict(list)
-        for s in sections:
+        for s in self.sections.values():
             base_code = self._get_base_section_code_static(s.section_code)
             self.student_group_sections[base_code].append(s.id)
         
         # Pre-compute base section code for each section
         self.section_base_codes: Dict[int, str] = {
-            s.id: self._get_base_section_code_static(s.section_code) for s in sections
+            s.id: self._get_base_section_code_static(s.section_code) for s in self.sections.values()
         }
         
         # Sibling pairs tracking for hybrid courses (LEC <-> LAB)
         # Maps section_id to its sibling_id for quick lookup
         self.sibling_pairs: Dict[int, int] = {}
-        for s in sections:
+        for s in self.sections.values():
             if s.sibling_id is not None:
                 self.sibling_pairs[s.id] = s.sibling_id
         
         # Optimization stats
         self.stats = OptimizationStats()
+
+    def _decompose_oversized_sections(self, sections: List[Section]) -> List[Section]:
+        """
+        Problem 3: Conditional Resource Decomposition
+        Splits sections that exceed lab room capacity into G1/G2 subgroups.
+        """
+        # Determine strict lab capacity (e.g., finding the smallest or average lab size)
+        # For now, let's assume a standard lab capacity or derive from rooms
+        lab_rooms = [r for r in self.rooms.values() if 'lab' in (r.room_type or '').lower() or 'com' in (r.room_type or '').lower()]
+        if not lab_rooms:
+             return sections # No labs, can't split?
+            
+        # Use a safe threshold of 30 for now
+        LAB_CAPACITY_THRESHOLD = 30 
+        
+        new_sections = []
+        next_id = max((s.id for s in sections), default=0) + 1
+        
+        for section in sections:
+            # Only split if it requires lab and is oversized
+            is_lab = section.requires_lab or section.lab_hours > 0
+            if is_lab and section.student_count > LAB_CAPACITY_THRESHOLD:
+                # Create G1
+                g1 = replace(section)
+                g1.id = next_id
+                g1.section_code = f"{section.section_code} (G1)"
+                g1.student_count = section.student_count // 2 + (section.student_count % 2)
+                g1.is_split_group = True
+                g1.split_type = "G1"
+                
+                # Create G2
+                g2 = replace(section)
+                g2.id = next_id + 1
+                g2.section_code = f"{section.section_code} (G2)"
+                g2.student_count = section.student_count // 2
+                g2.is_split_group = True
+                g2.split_type = "G2"
+                
+                # Link them
+                g1.linked_section_id = g2.id
+                g2.linked_section_id = g1.id
+                
+                new_sections.append(g1)
+                new_sections.append(g2)
+                
+                next_id += 2
+                print(f"🔀 Split hybrid course '{section.section_code}': {g1.student_count} + {g2.student_count}")
+            else:
+                new_sections.append(section)
+                
+        return new_sections
         
     def _compute_compatible_rooms(self) -> Dict[int, List[int]]:
         """
@@ -659,7 +764,13 @@ class EnhancedQuantumScheduler:
                 # NEW COLLEGE CONSTRAINT: Room must belong to section's college OR be "Shared"
                 # Skip rooms that belong to a different college (unless no college specified)
                 if section_college and room_college and room_college != 'Shared':
-                    if room_college != section_college:
+                    # Normalize strings for comparison
+                    r_col = str(room_college).strip().upper()
+                    s_col = str(section_college).strip().upper()
+                    
+                    if r_col != s_col:
+                        # DEBUG LOG
+                        # print(f"Skipping room {room.room_code} ({room_college}) for {section.section_code} ({section_college})")
                         continue  # Skip rooms belonging to other colleges
                 
                 # Primary Rule: Room must fit all students
@@ -838,16 +949,41 @@ class EnhancedQuantumScheduler:
                         return True, f"Room {room_id} already booked at slot {slot_id}"
         
         # Check teacher conflict
+        # Check teacher conflict AND 10-hour rule
         if section.teacher_id and section.teacher_id > 0:
+            # 1. Check Faculty Profile Constraints
+            if self.faculty_profiles and section.teacher_id in self.faculty_profiles:
+                profile = self.faculty_profiles[section.teacher_id]
+                
+                # Part-Time / Unavailable Day Constraint
+                # Note: day string case might vary, ensuring case-insensitive check relative to what's stored
+                if day in profile.unavailable_days:
+                     return True, f"Faculty {profile.name} is unavailable on {day}"
+                if profile.employment_type == 'part-time' and day.lower() == 'saturday':
+                     return True, f"Part-time faculty {profile.name} cannot teach on Saturday"
+
+            daily_teaching_minutes = 0
+            new_teaching_minutes = slot_count * 30
+
             for key, slot in self.schedule.items():
                 if slot.teacher_id == section.teacher_id and key[1] == day:
                     if slot.section_id == section.id:
                         continue  # Same section, not a conflict
+                    
                     existing_start = key[2]
                     existing_end = existing_start + slot.slot_count
                     new_end = start_slot_id + slot_count
+                    
+                    # Conflict Check
                     if start_slot_id < existing_end and existing_start < new_end:
                         return True, f"Teacher {section.teacher_id} already scheduled at this time"
+                    
+                    # Accumulate hours
+                    daily_teaching_minutes += (slot.slot_count * 30)
+
+            # Check 10-hour rule (600 minutes)
+            if (daily_teaching_minutes + new_teaching_minutes) > (self.constraints.max_daily_hours_hard_limit * 60):
+                 return True, f"Teacher {section.teacher_id} exceeds {self.constraints.max_daily_hours_hard_limit} hours/day limit"
         
         return False, ""
     
@@ -1335,7 +1471,24 @@ class EnhancedQuantumScheduler:
             if len(sections) > 1:
                 cost += HARD_CONSTRAINT_PENALTY * (len(sections) - 1)
                 conflict_detected = True
+                conflict_detected = True
                 self.conflict_heatmap[(key[1], key[2])] += len(sections)
+
+        # CHECK: Teacher Weekly Load (SOFT) - Added for Problem 2 Parameterization
+        teacher_weekly_minutes = defaultdict(int)
+        for (tid, _, _), sections_set in teacher_slots.items():
+            if sections_set:
+                teacher_weekly_minutes[tid] += 30  # 30 mins per slot
+
+        for tid, total_minutes in teacher_weekly_minutes.items():
+            if self.faculty_profiles and tid in self.faculty_profiles:
+                profile = self.faculty_profiles[tid]
+                # defined in profile.max_weekly_units (e.g. 24 units = 24 hours = 1440 mins)
+                # Assuming 1 unit = 1 hour for now as per plan
+                max_minutes = profile.max_weekly_units * 60
+                if total_minutes > max_minutes:
+                    overload_hours = (total_minutes - max_minutes) / 60
+                    cost += overload_hours * self.constraints.SOFT_TEACHER_OVERLOAD
         
         # HARD: Section double-booking (SAME PENALTY AS ROOM CONFLICT)
         # A student group cannot be in two rooms at the same time

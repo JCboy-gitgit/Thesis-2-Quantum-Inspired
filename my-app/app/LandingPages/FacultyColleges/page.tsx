@@ -7,6 +7,7 @@ import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import { useColleges } from '@/app/context/CollegesContext'
+import { useTheme } from '@/app/context/ThemeContext'
 import styles from './styles.module.css'
 
 // ==================== INTERFACES ====================
@@ -36,7 +37,9 @@ interface FacultyProfile {
   email: string | null
   phone: string | null
   office_location: string | null
-  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest' | 'vsl'
+  preferred_times?: 'morning' | 'night' | 'any' | null
+  unavailable_days?: string[] | null
   is_active: boolean
   profile_image: string | null
   bio: string | null
@@ -211,6 +214,12 @@ function CloseIcon({ className }: { className?: string }) {
 function FacultyCollegesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { theme } = useTheme()
+
+  // Theme-aware colors
+  const activeColor = theme === 'green' ? '#059669' : '#2563eb' // emerald-600 vs blue-600
+  const activeBorder = theme === 'green' ? '#059669' : '#2563eb'
+
   // Use untyped Supabase client for flexibility across tables
   const db = supabase as any
 
@@ -299,6 +308,8 @@ function FacultyCollegesContent() {
     position: '',
     role: 'faculty' as FacultyProfile['role'],
     employment_type: 'full-time' as FacultyProfile['employment_type'],
+    preferred_times: 'any' as 'morning' | 'night' | 'any',
+    unavailable_days: [] as string[],
     department: '',
     college: '',
     phone: '',
@@ -904,7 +915,9 @@ function FacultyCollegesContent() {
       college: faculty.college || '',
       phone: faculty.phone || '',
       office_location: faculty.office_location || '',
-      profile_image: faculty.profile_image || null
+      profile_image: faculty.profile_image || null,
+      preferred_times: faculty.preferred_times || 'any',
+      unavailable_days: (faculty.unavailable_days as string[]) || []
     })
     setShowEditFacultyModal(true)
   }
@@ -1138,7 +1151,9 @@ function FacultyCollegesContent() {
       college: selectedCollege?.department_name || '',
       phone: '',
       office_location: '',
-      profile_image: null
+      profile_image: null,
+      preferred_times: 'any',
+      unavailable_days: []  // Use empty array instead of string[] assumption here? YES.
     })
   }
 
@@ -2083,17 +2098,80 @@ function FacultyCollegesContent() {
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
+                </div>
+                <div className={styles.formGroup}>
                   <label>Employment Type</label>
-                  <select
-                    className={styles.formInput}
-                    value={facultyFormData.employment_type}
-                    onChange={e => setFacultyFormData({ ...facultyFormData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
-                  >
-                    <option value="full-time">Full-Time</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="adjunct">Adjunct</option>
-                    <option value="guest">Guest</option>
-                  </select>
+                  <div className="grid grid-cols-4 gap-2 mb-2">
+                    {['full-time', 'part-time', 'vsl', 'guest'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          let newUnavailable = [...(facultyFormData.unavailable_days || [])];
+                          if (type === 'part-time') {
+                            if (!newUnavailable.includes('Saturday')) newUnavailable.push('Saturday');
+                          } else {
+                            newUnavailable = newUnavailable.filter(d => d !== 'Saturday');
+                          }
+                          setFacultyFormData({
+                            ...facultyFormData,
+                            employment_type: type as any,
+                            unavailable_days: newUnavailable
+                          })
+                        }}
+                        style={{
+                          padding: '6px 4px',
+                          fontSize: '0.8rem',
+                          borderRadius: '4px',
+                          border: '1px solid',
+                          borderColor: facultyFormData.employment_type === type ? '#2563eb' : '#e5e7eb',
+                          backgroundColor: facultyFormData.employment_type === type ? '#2563eb' : 'white',
+                          color: facultyFormData.employment_type === type ? 'white' : '#374151',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {type === 'vsl' ? 'VSL' : type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
+                      </button>
+                    ))}
+                  </div>
+
+                  {facultyFormData.employment_type === 'vsl' && (
+                    <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '4px', marginBottom: '8px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Preferred Shift</label>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="edit_preferred_times"
+                            checked={facultyFormData.preferred_times === 'morning'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'morning' })}
+                          /> Morning
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="edit_preferred_times"
+                            checked={facultyFormData.preferred_times === 'night'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'night' })}
+                          /> Night
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="edit_preferred_times"
+                            checked={facultyFormData.preferred_times === 'any'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'any' })}
+                          /> Any
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {facultyFormData.employment_type === 'part-time' && (
+                    <div style={{ padding: '8px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '4px', fontSize: '0.75rem', color: '#92400e' }}>
+                      Part-time faculty are restricted from Saturday classes.
+                    </div>
+                  )}
                 </div>
                 <div className={styles.formGroup}>
                   <label>Department</label>
@@ -2500,17 +2578,80 @@ function FacultyCollegesContent() {
                   </select>
                 </div>
                 <div className={styles.formGroup}>
+                </div>
+                <div className={styles.formGroup}>
                   <label>Employment Type</label>
-                  <select
-                    className={styles.formInput}
-                    value={facultyFormData.employment_type}
-                    onChange={e => setFacultyFormData({ ...facultyFormData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
-                  >
-                    <option value="full-time">Full-Time</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="adjunct">Adjunct</option>
-                    <option value="guest">Guest</option>
-                  </select>
+                  <div className="grid grid-cols-4 gap-2 mb-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                    {['full-time', 'part-time', 'vsl', 'guest'].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          let newUnavailable = [...(facultyFormData.unavailable_days || [])];
+                          if (type === 'part-time') {
+                            if (!newUnavailable.includes('Saturday')) newUnavailable.push('Saturday');
+                          } else {
+                            newUnavailable = newUnavailable.filter(d => d !== 'Saturday');
+                          }
+                          setFacultyFormData({
+                            ...facultyFormData,
+                            employment_type: type as any,
+                            unavailable_days: newUnavailable
+                          })
+                        }}
+                        style={{
+                          padding: '6px 4px',
+                          fontSize: '0.8rem',
+                          borderRadius: '4px',
+                          border: '1px solid',
+                          borderColor: facultyFormData.employment_type === type ? activeBorder : '#e5e7eb',
+                          backgroundColor: facultyFormData.employment_type === type ? activeColor : 'white',
+                          color: facultyFormData.employment_type === type ? 'white' : '#374151',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {type === 'vsl' ? 'VSL' : type.charAt(0).toUpperCase() + type.slice(1).replace('-', ' ')}
+                      </button>
+                    ))}
+                  </div>
+
+                  {facultyFormData.employment_type === 'vsl' && (
+                    <div style={{ padding: '8px', background: '#f8fafc', borderRadius: '4px', marginBottom: '8px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: '4px' }}>Preferred Shift</label>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="add_preferred_times"
+                            checked={facultyFormData.preferred_times === 'morning'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'morning' })}
+                          /> Morning
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="add_preferred_times"
+                            checked={facultyFormData.preferred_times === 'night'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'night' })}
+                          /> Night
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="add_preferred_times"
+                            checked={facultyFormData.preferred_times === 'any'}
+                            onChange={() => setFacultyFormData({ ...facultyFormData, preferred_times: 'any' })}
+                          /> Any
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {facultyFormData.employment_type === 'part-time' && (
+                    <div style={{ padding: '8px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '4px', fontSize: '0.75rem', color: '#92400e' }}>
+                      Part-time faculty are restricted from Saturday classes.
+                    </div>
+                  )}
                 </div>
               </div>
               <div className={styles.formRow}>
