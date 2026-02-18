@@ -42,7 +42,8 @@ import {
     MdDragIndicator,
     MdHistory,
     MdSchedule,
-    MdTaskAlt
+    MdTaskAlt,
+    MdMap
 } from 'react-icons/md'
 import styles from './LiveTimetable.module.css'
 
@@ -176,6 +177,13 @@ function normalizeDay(day: string): string {
     return dayMap[day.toUpperCase()] || day
 }
 
+function normalizeSection(section: string): string {
+    if (!section) return section
+    // Strip _Lab or _Lec suffix (case-insensitive) — e.g. "BSM CS 4A_Lab" → "BSM CS 4A"
+    // Sections like "BSM CS 4A G1" naturally have no such suffix and are left untouched
+    return section.replace(/_(Lab|Lec)$/i, '').trim()
+}
+
 function expandDays(dayStr: string): string[] {
     if (!dayStr) return []
     const day = dayStr.trim().toUpperCase()
@@ -249,11 +257,19 @@ export default function AdminLiveTimetablePage() {
     // Grouping
     type GroupByType = 'all' | 'room' | 'faculty' | 'section'
     const [groupBy, setGroupBy] = useState<GroupByType>('all')
-    const [selectedGroupValue, setSelectedGroupValue] = useState<string>('all')
 
     // Override editing
     const [editingOverride, setEditingOverride] = useState<{ allocationId: number; day: string; time: string; room: string; building: string; note: string } | null>(null)
     const [savingOverride, setSavingOverride] = useState(false)
+
+    // Group-by pagination (page through rooms/faculty/sections)
+    const [groupPage, setGroupPage] = useState(0)
+    // Drag-and-drop state
+    const [draggedAllocId, setDraggedAllocId] = useState<number | null>(null)
+    const [dragOverCell, setDragOverCell] = useState<string | null>(null)
+    const [dragConflict, setDragConflict] = useState<boolean>(false)
+    // Floor plan map (building name → floor_plan_id for "View on Map" links)
+    const [floorPlanMap, setFloorPlanMap] = useState<Record<string, number>>({})
 
     // Realtime clock
     const [currentTime, setCurrentTime] = useState(new Date())
@@ -267,6 +283,7 @@ export default function AdminLiveTimetablePage() {
     useEffect(() => {
         setMounted(true)
         checkAuth()
+        fetchFloorPlans()
         clockRef.current = setInterval(() => setCurrentTime(new Date()), 1000)
         return () => { if (clockRef.current) clearInterval(clockRef.current) }
     }, [])
@@ -282,6 +299,9 @@ export default function AdminLiveTimetablePage() {
         }, 60000)
         return () => clearInterval(interval)
     }, [currentWeekStart])
+
+    // Reset group page when groupBy changes
+    useEffect(() => { setGroupPage(0) }, [groupBy])
 
     // Realtime subscription
     useEffect(() => {
@@ -330,6 +350,22 @@ export default function AdminLiveTimetablePage() {
             setLoading(false)
         }
     }, [currentWeekStart])
+
+    const fetchFloorPlans = async () => {
+        try {
+            const { data: fps } = await (supabase as any)
+                .from('floor_plans')
+                .select('id, buildings:building_id(name)')
+            const map: Record<string, number> = {}
+            fps?.forEach((fp: any) => {
+                const bname = fp.buildings?.name
+                if (bname && !map[bname]) map[bname] = fp.id
+            })
+            setFloorPlanMap(map)
+        } catch (err) {
+            console.error('Failed to load floor plans:', err)
+        }
+    }
 
     const handleResetWeek = async () => {
         if (!schedule) return
@@ -405,6 +441,75 @@ export default function AdminLiveTimetablePage() {
         }
     }
 
+    // Check if dragging into a cell causes a conflict (same room or same teacher already occupied)
+    const hasDragConflict = (targetDay: string, targetSlotMinutes: number, draggingAllocId: number): boolean => {
+        const draggingAlloc = allocations.find(a => a.id === draggingAllocId)
+        if (!draggingAlloc) return false
+        const parts = draggingAlloc.schedule_time?.split('-').map((s: string) => s.trim()) || []
+        const duration = parts.length === 2 ? parseTimeToMinutes(parts[1]) - parseTimeToMinutes(parts[0]) : 60
+        const newStart = targetSlotMinutes
+        const newEnd = targetSlotMinutes + duration
+
+        return effectiveAllocations.some(a => {
+            if (a.id === draggingAllocId) return false
+            const aDays = expandDays(a.schedule_day || '')
+            if (!aDays.some(d => d.toLowerCase() === targetDay.toLowerCase())) return false
+            const aParts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
+            if (aParts.length !== 2) return false
+            const aStart = parseTimeToMinutes(aParts[0])
+            const aEnd = parseTimeToMinutes(aParts[1])
+            // Time overlap check
+            const timesOverlap = newStart < aEnd && newEnd > aStart
+            if (!timesOverlap) return false
+            // Same room OR same teacher conflict
+            const sameRoom = a.room === draggingAlloc.room && a.building === draggingAlloc.building
+            const sameTeacher = a.teacher_name && draggingAlloc.teacher_name && a.teacher_name === draggingAlloc.teacher_name
+            return sameRoom || !!sameTeacher
+        })
+    }
+
+    // Drag-and-drop handlers
+    const handleDragOver = (e: React.DragEvent) => { e.preventDefault() }
+    const handleDrop = (e: React.DragEvent, day: string, slotMinutes: number) => {
+        e.preventDefault()
+        if (draggedAllocId === null) return
+        // Don’t allow drop on conflict
+        if (hasDragConflict(day, slotMinutes, draggedAllocId)) {
+            setDraggedAllocId(null)
+            setDragOverCell(null)
+            setDragConflict(false)
+            return
+        }
+        const alloc = allocations.find(a => a.id === draggedAllocId)
+        if (!alloc) return
+        const hour = Math.floor(slotMinutes / 60)
+        const min = slotMinutes % 60
+        const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+        const ampm = hour >= 12 ? 'PM' : 'AM'
+        const startTime = `${h12}:${min.toString().padStart(2, '0')} ${ampm}`
+        const parts = alloc.schedule_time?.split('-').map((s: string) => s.trim()) || []
+        let duration = 60
+        if (parts.length === 2) duration = parseTimeToMinutes(parts[1]) - parseTimeToMinutes(parts[0])
+        const endMin = slotMinutes + duration
+        const endH = Math.floor(endMin / 60)
+        const endM = endMin % 60
+        const endH12 = endH > 12 ? endH - 12 : endH === 0 ? 12 : endH
+        const endAmpm = endH >= 12 ? 'PM' : 'AM'
+        const newTime = `${startTime} - ${endH12}:${endM.toString().padStart(2, '0')} ${endAmpm}`
+        const existing = overrides.find(o => o.allocation_id === draggedAllocId)
+        setEditingOverride({
+            allocationId: draggedAllocId,
+            day,
+            time: newTime,
+            room: existing?.override_room || alloc.room,
+            building: existing?.override_building || alloc.building,
+            note: existing?.note || ''
+        })
+        setDraggedAllocId(null)
+        setDragOverCell(null)
+        setDragConflict(false)
+    }
+
     const handleReviewAbsence = async (status: 'confirmed' | 'disputed') => {
         if (!reviewingAbsence) return
         try {
@@ -471,24 +576,34 @@ export default function AdminLiveTimetablePage() {
         effectiveAllocations.forEach(a => {
             if (groupBy === 'room') set.add(`${a.building} – ${a.room}`)
             else if (groupBy === 'faculty') set.add(a.teacher_name || 'Unassigned')
-            else if (groupBy === 'section') set.add(a.section || 'Unknown')
+            else if (groupBy === 'section') set.add(normalizeSection(a.section) || 'Unknown')
         })
         return Array.from(set).sort((a, b) => a.localeCompare(b))
     }
 
+    // Reset group page when groupBy or groupValues change
     const groupValues = groupBy !== 'all' ? getGroupValues() : []
+    // Paged group: current group name
+    const pagedGroupValue = groupBy !== 'all' && groupValues.length > 0
+        ? (groupPage < groupValues.length ? groupValues[groupPage] : groupValues[0])
+        : 'all'
 
     const getFilteredAllocations = (): RoomAllocation[] => {
-        if (groupBy === 'all' || selectedGroupValue === 'all') return effectiveAllocations
+        if (groupBy === 'all') return effectiveAllocations
+        const activeGroup = pagedGroupValue === 'all' ? null : pagedGroupValue
+        if (!activeGroup) return effectiveAllocations
         return effectiveAllocations.filter(a => {
-            if (groupBy === 'room') return `${a.building} – ${a.room}` === selectedGroupValue
-            if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === selectedGroupValue
-            if (groupBy === 'section') return (a.section || 'Unknown') === selectedGroupValue
+            if (groupBy === 'room') return `${a.building} – ${a.room}` === activeGroup
+            if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === activeGroup
+            if (groupBy === 'section') return (normalizeSection(a.section) || 'Unknown') === activeGroup
             return true
         })
     }
 
     const filteredAllocations = getFilteredAllocations()
+
+    // Unique allocation count (deduplicated by id)
+    const uniqueAllocationCount = new Set(allocations.map(a => a.id)).size
 
     // Get allocations for a specific day from filtered set (properly expands multi-day patterns)
     const getFilteredDayAllocations = (day: string) => {
@@ -502,6 +617,7 @@ export default function AdminLiveTimetablePage() {
 
     const todayDayName = getTodayDayName()
     const isCurrentWeek = formatDate(currentWeekStart) === formatDate(getMonday(new Date()))
+    const isPastWeek = formatDate(currentWeekStart) < formatDate(getMonday(new Date()))
 
     if (!mounted) return null
 
@@ -555,28 +671,36 @@ export default function AdminLiveTimetablePage() {
                     {/* ── Stats Row ── */}
                     <div className={styles.statsRow}>
                         <div className={styles.statCard}>
-                            <MdGroup className={styles.statIcon} />
+                            <div className={styles.statIconCircle}>
+                                <MdGroup className={styles.statIcon} />
+                            </div>
                             <div>
-                                <div className={styles.statValue}>{allocations.length}</div>
+                                <div className={styles.statValue}>{uniqueAllocationCount}</div>
                                 <div className={styles.statLabel}>Total Classes</div>
                             </div>
                         </div>
                         <div className={`${styles.statCard} ${styles.statWarning}`}>
-                            <MdEventBusy className={styles.statIcon} />
+                            <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
+                                <MdEventBusy className={styles.statIcon} />
+                            </div>
                             <div>
                                 <div className={styles.statValue}>{todayAbsences}</div>
                                 <div className={styles.statLabel}>Today's Absences</div>
                             </div>
                         </div>
                         <div className={`${styles.statCard} ${styles.statPending}`}>
-                            <MdPending className={styles.statIcon} />
+                            <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
+                                <MdPending className={styles.statIcon} />
+                            </div>
                             <div>
                                 <div className={styles.statValue}>{pendingMakeup}</div>
                                 <div className={styles.statLabel}>Pending Makeup Requests</div>
                             </div>
                         </div>
                         <div className={`${styles.statCard} ${styles.statOverride}`}>
-                            <MdEdit className={styles.statIcon} />
+                            <div className={`${styles.statIconCircle} ${styles.statIconCircleInfo}`}>
+                                <MdEdit className={styles.statIcon} />
+                            </div>
                             <div>
                                 <div className={styles.statValue}>{overrides.length}</div>
                                 <div className={styles.statLabel}>Week Overrides</div>
@@ -682,24 +806,36 @@ export default function AdminLiveTimetablePage() {
                                                 <select
                                                     className={styles.groupSelect}
                                                     value={groupBy}
-                                                    onChange={e => { setGroupBy(e.target.value as any); setSelectedGroupValue('all') }}
+                                                    onChange={e => { setGroupBy(e.target.value as any); setGroupPage(0) }}
                                                 >
                                                     <option value="all">All Classes</option>
                                                     <option value="room">Room</option>
                                                     <option value="faculty">Faculty</option>
                                                     <option value="section">Section</option>
                                                 </select>
-                                                {groupBy !== 'all' && (
-                                                    <select
-                                                        className={styles.groupValueSelect}
-                                                        value={selectedGroupValue}
-                                                        onChange={e => setSelectedGroupValue(e.target.value)}
-                                                    >
-                                                        <option value="all">{`All ${groupBy === 'room' ? 'Rooms' : groupBy === 'faculty' ? 'Faculty' : 'Sections'}`}</option>
-                                                        {groupValues.sort().map(v => (
-                                                            <option key={v} value={v}>{v}</option>
-                                                        ))}
-                                                    </select>
+                                                {groupBy !== 'all' && groupValues.length > 0 && (
+                                                    <div className={styles.groupPaginator}>
+                                                        <button
+                                                            className={styles.groupPageBtn}
+                                                            onClick={() => setGroupPage(p => Math.max(0, p - 1))}
+                                                            disabled={groupPage === 0}
+                                                            title="Previous"
+                                                        >
+                                                            <MdChevronLeft />
+                                                        </button>
+                                                        <span className={styles.groupPageLabel}>
+                                                            <strong>{pagedGroupValue}</strong>
+                                                            <span className={styles.groupPageCount}>{groupPage + 1} / {groupValues.length}</span>
+                                                        </span>
+                                                        <button
+                                                            className={styles.groupPageBtn}
+                                                            onClick={() => setGroupPage(p => Math.min(groupValues.length - 1, p + 1))}
+                                                            disabled={groupPage >= groupValues.length - 1}
+                                                            title="Next"
+                                                        >
+                                                            <MdChevronRight />
+                                                        </button>
+                                                    </div>
                                                 )}
                                                 <span className={styles.groupCount}>
                                                     {filteredAllocations.length} classes
@@ -726,7 +862,7 @@ export default function AdminLiveTimetablePage() {
                                                 </span>
                                             </div>
 
-                                            {/* Timetable grid */}
+                                    {/* Timetable grid — Mon to Sat, full day 7am-8pm */}
                                             <div className={styles.gridWrapper}>
                                                 <div className={styles.gridContainer}>
                                                     <table className={styles.gridTable}>
@@ -797,7 +933,16 @@ export default function AdminLiveTimetablePage() {
                                                                             return (
                                                                                 <td
                                                                                     key={`${day}-${slot}`}
-                                                                                    className={styles.gridDataCell}
+                                                                                    className={`${styles.gridDataCell} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
+                                                                                    onDragOver={handleDragOver}
+                                                                                    onDragEnter={() => {
+                                                                                        setDragOverCell(`${day}-${slotMinutes}`)
+                                                                                        if (draggedAllocId !== null) {
+                                                                                            setDragConflict(hasDragConflict(day, slotMinutes, draggedAllocId))
+                                                                                        }
+                                                                                    }}
+                                                                                    onDragLeave={() => { setDragOverCell(null); setDragConflict(false) }}
+                                                                                    onDrop={(e) => handleDrop(e, day, slotMinutes)}
                                                                                 >
                                                                                     <div className={styles.gridCellContent}>
                                                                                         {startingHere.map(alloc => {
@@ -809,16 +954,20 @@ export default function AdminLiveTimetablePage() {
 
                                                                                             const absent = isAbsent(alloc.id, dayDate)
                                                                                             const ongoing = !absent && isCurrentWeek && isClassOngoing(alloc.schedule_time || '') && day === todayDayName
-                                                                                            const done = !absent && !ongoing && isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)
+                                                                                            const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
                                                                                             const hasOverride = (alloc as any)._hasOverride
                                                                                             const overrideNote = (alloc as any)._overrideNote
+                                                                                            const compactHeight = durationSlots * 32 - 2
 
                                                                                             return (
                                                                                                 <div
                                                                                                     key={alloc.id}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''}`}
-                                                                                                    style={{ height: `${blockHeight}px` }}
-                                                                                                    title={`${alloc.course_code} · ${alloc.section}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}`}
+                                                                                                    draggable
+                                                                                                    onDragStart={(e) => { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) }}
+                                                                                                    onDragEnd={() => { setDraggedAllocId(null); setDragOverCell(null) }}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
+                                                                                                    style={{ height: `${compactHeight}px` }}
+                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}`}
                                                                                                     onClick={() => setEditingOverride({
                                                                                                         allocationId: alloc.id,
                                                                                                         day: alloc.schedule_day,
@@ -828,15 +977,17 @@ export default function AdminLiveTimetablePage() {
                                                                                                         note: overrideNote || ''
                                                                                                     })}
                                                                                                 >
-                                                                                                    {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
-                                                                                                    {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
-                                                                                                    {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
-                                                                                                    {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
-
+                                                                                                    <div className={styles.gridBlockHeader}>
+                                                                                                        {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
+                                                                                                        {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
+                                                                                                        {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
+                                                                                                        {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
+                                                                                                        <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>
+                                                                                                    </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
                                                                                                         <>
-                                                                                                            <span className={styles.gridBlockSection}>{alloc.section}</span>
+                                                                                                            <span className={styles.gridBlockSection}>{normalizeSection(alloc.section)}</span>
                                                                                                             <span className={styles.gridBlockRoom}>{alloc.room}</span>
                                                                                                         </>
                                                                                                     )}
@@ -845,6 +996,22 @@ export default function AdminLiveTimetablePage() {
                                                                                                     )}
                                                                                                     {durationSlots >= 3 && (
                                                                                                         <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
+                                                                                                    )}
+                                                                                                    <button
+                                                                                                        className={styles.gridBlockEditBtn}
+                                                                                                        onClick={(ev) => { ev.stopPropagation(); setEditingOverride({ allocationId: alloc.id, day: alloc.schedule_day, time: alloc.schedule_time, room: alloc.room, building: alloc.building, note: overrideNote || '' }) }}
+                                                                                                        title="Edit Slot"
+                                                                                                    >
+                                                                                                        <MdEdit />
+                                                                                                    </button>
+                                                                                                    {floorPlanMap[alloc.building] && (
+                                                                                                        <button
+                                                                                                            className={styles.gridBlockMapBtn}
+                                                                                                            onClick={(ev) => { ev.stopPropagation(); router.push(`/floor-plan/view/${floorPlanMap[alloc.building]}?room=${encodeURIComponent(alloc.room)}`) }}
+                                                                                                            title="View Room on Map"
+                                                                                                        >
+                                                                                                            <MdMap />
+                                                                                                        </button>
                                                                                                     )}
                                                                                                 </div>
                                                                                             )
@@ -937,8 +1104,16 @@ export default function AdminLiveTimetablePage() {
                                                                     </div>
                                                                     <div className={styles.cardDetails}>
                                                                         <span><MdAccessTime /> {alloc.schedule_time}</span>
-                                                                        <span><MdMeetingRoom /> {alloc.building} – {alloc.room}</span>
-                                                                        <span><MdGroup /> {alloc.section}</span>
+                                                                        <span>
+                                                                            <MdMeetingRoom /> {alloc.building} – {alloc.room}
+                                                                            {floorPlanMap[alloc.building] && (
+                                                                                <button className={styles.mapLinkBtn} onClick={() => router.push(`/floor-plan/view/${floorPlanMap[alloc.building]}?room=${encodeURIComponent(alloc.room)}`)}
+                                                                                    title="View Room on Map">
+                                                                                    <MdMap /> Map
+                                                                                </button>
+                                                                            )}
+                                                                        </span>
+                                                                        <span><MdGroup /> {normalizeSection(alloc.section)}</span>
                                                                         {alloc.teacher_name && <span><MdPerson /> {alloc.teacher_name}</span>}
                                                                     </div>
                                                                     {overrideNote && (
@@ -1022,7 +1197,7 @@ export default function AdminLiveTimetablePage() {
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
                                                                     <>
-                                                                        <span><MdMenuBook /> {alloc.course_code} – {alloc.section}</span>
+                                                                        <span><MdMenuBook /> {alloc.course_code} – {normalizeSection(alloc.section)}</span>
                                                                         <span><MdMeetingRoom /> {alloc.building} {alloc.room}</span>
                                                                         <span><MdAccessTime /> {alloc.schedule_time}</span>
                                                                     </>
@@ -1089,7 +1264,7 @@ export default function AdminLiveTimetablePage() {
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
                                                                     <>
-                                                                        <span><MdMenuBook /> {alloc.course_code} – {alloc.section}</span>
+                                                                        <span><MdMenuBook /> {alloc.course_code} – {normalizeSection(alloc.section)}</span>
                                                                     </>
                                                                 )}
                                                                 <span><MdCalendarToday /> Requested: {req.requested_date}</span>
@@ -1142,7 +1317,7 @@ export default function AdminLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestFaculty}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {alloc.section}</span>
+                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>

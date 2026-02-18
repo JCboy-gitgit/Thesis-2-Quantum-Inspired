@@ -30,7 +30,12 @@ import {
     MdFiberManualRecord,
     MdEdit,
     MdAdd,
-    MdHistory
+    MdHistory,
+    MdMap,
+    MdGridView,
+    MdViewList,
+    MdDragIndicator,
+    MdTaskAlt
 } from 'react-icons/md'
 import '@/app/styles/faculty-global.css'
 import styles from './FacultyLiveTimetable.module.css'
@@ -87,7 +92,53 @@ interface UserProfile {
     full_name: string
 }
 
+interface Room {
+    id: number
+    room: string
+    building: string
+    room_type?: string
+    specific_classification?: string
+    has_ac?: boolean
+    has_whiteboard?: boolean
+    has_tv?: boolean
+    has_projector?: boolean
+    capacity?: number
+    floor_number?: number
+    status?: string
+}
+
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+function normalizeDay(day: string): string {
+    const dayMap: { [key: string]: string } = {
+        'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+        'T': 'Tuesday', 'TUE': 'Tuesday', 'TUESDAY': 'Tuesday',
+        'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+        'TH': 'Thursday', 'THU': 'Thursday', 'THURSDAY': 'Thursday',
+        'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+        'S': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+        'SU': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+    }
+    return dayMap[day.toUpperCase()] || day
+}
+
+function normalizeSection(section: string): string {
+    if (!section) return section
+    return section.replace(/_(Lab|Lec)$/i, '').trim()
+}
+
+function expandDays(dayStr: string): string[] {
+    if (!dayStr) return []
+    const day = dayStr.trim().toUpperCase()
+    if (day.includes('/')) return day.split('/').map(d => normalizeDay(d.trim()))
+    if (day === 'TTH' || day === 'T/TH') return ['Tuesday', 'Thursday']
+    if (day === 'MWF') return ['Monday', 'Wednesday', 'Friday']
+    if (day === 'MW') return ['Monday', 'Wednesday']
+    if (day === 'TF') return ['Tuesday', 'Friday']
+    if (day === 'MTWTHF') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    if (day === 'MTWTHFS') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    return [normalizeDay(day)]
+}
 
 function parseTimeToMinutes(t: string): number {
     if (!t) return 0
@@ -134,6 +185,30 @@ function getTodayDayName(): string {
     return DAYS[day === 0 ? 6 : day - 1]
 }
 
+const GRID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+const FACULTY_TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
+    const hour = Math.floor(i / 2) + 7
+    const minute = (i % 2) * 30
+    const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    return `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`
+})
+
+function isClassDone(timeStr: string, dayName: string, todayDayName: string): boolean {
+    const todayIdx = DAYS.indexOf(todayDayName)
+    const dayIdx = DAYS.indexOf(dayName)
+    if (dayIdx < 0 || todayIdx < 0) return false
+    if (dayIdx < todayIdx) return true
+    if (dayIdx > todayIdx) return false
+    const now = new Date()
+    const nowMin = now.getHours() * 60 + now.getMinutes()
+    const parts = timeStr.split('-').map(s => s.trim())
+    if (parts.length !== 2) return false
+    const end = parseTimeToMinutes(parts[1])
+    return nowMin >= end
+}
+
 export default function FacultyLiveTimetablePage() {
     const router = useRouter()
     const { theme, collegeTheme } = useTheme()
@@ -166,10 +241,20 @@ export default function FacultyLiveTimetablePage() {
     // Makeup request modal
     const [requestingMakeup, setRequestingMakeup] = useState<{ alloc: RoomAllocation; absenceDate?: string } | null>(null)
     const [makeupDate, setMakeupDate] = useState('')
-    const [makeupTime, setMakeupTime] = useState('')
+    const [makeupStartSlot, setMakeupStartSlot] = useState('')   // e.g. "7:30 AM"
+    const [makeupDuration, setMakeupDuration] = useState(90)     // minutes
     const [makeupRoom, setMakeupRoom] = useState('')
     const [makeupReason, setMakeupReason] = useState('')
     const [submittingMakeup, setSubmittingMakeup] = useState(false)
+    const [availableRooms, setAvailableRooms] = useState<Room[]>([])
+    const [loadingRooms, setLoadingRooms] = useState(false)
+
+    // View/grid state
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+    const [draggedAllocId, setDraggedAllocId] = useState<number | null>(null)
+    const [dragOverCell, setDragOverCell] = useState<string | null>(null)
+    // Floor plan map (building → floor_plan_id for "View on Map" links)
+    const [floorPlanMap, setFloorPlanMap] = useState<Record<string, number>>({})
 
     // Realtime clock
     const [currentTime, setCurrentTime] = useState(new Date())
@@ -178,6 +263,7 @@ export default function FacultyLiveTimetablePage() {
     useEffect(() => {
         setMounted(true)
         checkAuth()
+        fetchFloorPlans()
         clockRef.current = setInterval(() => setCurrentTime(new Date()), 1000)
         return () => { if (clockRef.current) clearInterval(clockRef.current) }
     }, [])
@@ -196,6 +282,16 @@ export default function FacultyLiveTimetablePage() {
             .subscribe()
         return () => { supabase.removeChannel(channel) }
     }, [user])
+
+    // Fetch available rooms whenever the makeup date / time slot / duration changes
+    useEffect(() => {
+        if (requestingMakeup && makeupDate && makeupStartSlot) {
+            fetchAvailableRooms(makeupDate, makeupStartSlot, makeupDuration)
+        } else {
+            setAvailableRooms([])
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [makeupDate, makeupStartSlot, makeupDuration, requestingMakeup])
 
     const checkAuth = async () => {
         try {
@@ -253,8 +349,7 @@ export default function FacultyLiveTimetablePage() {
                     allocation_id: markingAbsence.id,
                     faculty_id: user.id,
                     absence_date: absenceDate,
-                    reason: absenceReason,
-                    schedule_id: schedule.id
+                    reason: absenceReason
                 })
             })
             const data = await res.json()
@@ -274,11 +369,20 @@ export default function FacultyLiveTimetablePage() {
     }
 
     const handleSubmitMakeup = async () => {
-        if (!requestingMakeup || !user || !schedule) return
-        if (!makeupDate || !makeupTime) {
-            alert('Please fill in the requested date and time.')
+        if (!requestingMakeup || !user) return
+        if (!makeupDate || !makeupStartSlot) {
+            alert('Please select the requested date and time slot.')
             return
         }
+        // Derive time string from slot + duration
+        const startMin = parseTimeToMinutes(makeupStartSlot)
+        const endMin = startMin + makeupDuration
+        const endHr = Math.floor(endMin / 60)
+        const endMn = endMin % 60
+        const endH12 = endHr > 12 ? endHr - 12 : endHr === 0 ? 12 : endHr
+        const endAmpm = endHr >= 12 ? 'PM' : 'AM'
+        const derivedTime = `${makeupStartSlot} - ${endH12}:${endMn.toString().padStart(2, '0')} ${endAmpm}`
+
         setSubmittingMakeup(true)
         try {
             const res = await fetch('/api/live-timetable', {
@@ -289,10 +393,9 @@ export default function FacultyLiveTimetablePage() {
                     allocation_id: requestingMakeup.alloc.id,
                     faculty_id: user.id,
                     requested_date: makeupDate,
-                    requested_time: makeupTime,
+                    requested_time: derivedTime,
                     requested_room: makeupRoom || null,
                     reason: makeupReason,
-                    schedule_id: schedule.id,
                     original_absence_date: requestingMakeup.absenceDate || null
                 })
             })
@@ -300,9 +403,11 @@ export default function FacultyLiveTimetablePage() {
             if (data.success) {
                 setRequestingMakeup(null)
                 setMakeupDate('')
-                setMakeupTime('')
+                setMakeupStartSlot('')
+                setMakeupDuration(90)
                 setMakeupRoom('')
                 setMakeupReason('')
+                setAvailableRooms([])
                 await fetchLiveData()
                 alert('Makeup class request submitted! The admin will review it shortly.')
             } else {
@@ -315,12 +420,132 @@ export default function FacultyLiveTimetablePage() {
         }
     }
 
-    // Get allocations for selected day
+    const fetchFloorPlans = async () => {
+        try {
+            const { data: fps } = await (supabase as any)
+                .from('floor_plans')
+                .select('id, buildings:building_id(name)')
+            const map: Record<string, number> = {}
+            fps?.forEach((fp: any) => {
+                const bname = fp.buildings?.name
+                if (bname && !map[bname]) map[bname] = fp.id
+            })
+            setFloorPlanMap(map)
+        } catch (err) {
+            console.error('Failed to load floor plans:', err)
+        }
+    }
+
+    // ── Room availability helpers ──────────────────────────────────────────────
+    const getCourseRoomType = (alloc: RoomAllocation): string => {
+        const section = (alloc.section || '').toLowerCase()
+        const course = (alloc.course_name || '').toLowerCase()
+        const code = (alloc.course_code || '').toLowerCase()
+        if (section.includes('_lab') || course.includes('laboratory') || code.includes('lab')) return 'Laboratory'
+        if (course.includes('computer') || code.startsWith('cs') || code.startsWith('it') || code.startsWith('cpe')) return 'Computer Lab'
+        return 'Classroom'
+    }
+
+    const fetchAvailableRooms = async (date: string, startSlot: string, duration: number) => {
+        if (!date || !startSlot) { setAvailableRooms([]); return }
+        setLoadingRooms(true)
+        try {
+            const { data: rooms } = await (supabase as any)
+                .from('rooms')
+                .select('id, room, building, room_type, specific_classification, has_ac, has_whiteboard, has_tv, has_projector, capacity, floor_number, status')
+                .neq('status', 'under_maintenance')
+                .order('building').order('room')
+
+            const startMin = parseTimeToMinutes(startSlot)
+            const endMin = startMin + duration
+
+            // Get the day-of-week label from the date string
+            const dateParts = date.split('-')
+            const dayOfWeek = dateParts.length === 3
+                ? new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2])).toLocaleDateString('en-US', { weekday: 'long' })
+                : ''
+
+            // Find rooms that are occupied at this time slot
+            const occupied = new Set<string>()
+            allAllocations.forEach(a => {
+                // Match day
+                const days = expandDays(a.schedule_day || '')
+                if (!days.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) return
+                // Check time overlap
+                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
+                if (parts.length !== 2) return
+                const aStart = parseTimeToMinutes(parts[0])
+                const aEnd = parseTimeToMinutes(parts[1])
+                if (startMin < aEnd && endMin > aStart) {
+                    occupied.add(`${(a.building || '').toLowerCase()}||${(a.room || '').toLowerCase()}`)
+                }
+            })
+
+            const filtered = (rooms || []).filter((r: Room) =>
+                !occupied.has(`${(r.building || '').toLowerCase()}||${(r.room || '').toLowerCase()}`)
+            )
+            setAvailableRooms(filtered)
+        } catch (err) {
+            console.error('Failed to fetch available rooms:', err)
+            setAvailableRooms([])
+        } finally {
+            setLoadingRooms(false)
+        }
+    }
+
+    const handleFacultyDragOver = (e: React.DragEvent) => { e.preventDefault() }
+
+    const handleFacultyDrop = (e: React.DragEvent, targetDay: string, slotMinutes: number) => {
+        e.preventDefault()
+        const allocId = parseInt(e.dataTransfer.getData('allocId'))
+        const alloc = allAllocations.find(a => a.id === allocId)
+        if (!alloc) return
+        const slotHour = Math.floor(slotMinutes / 60)
+        const slotMin = slotMinutes % 60
+        const h12 = slotHour > 12 ? slotHour - 12 : slotHour === 0 ? 12 : slotHour
+        const ampm = slotHour >= 12 ? 'PM' : 'AM'
+        const origParts = (alloc.schedule_time || '').split('-').map((s: string) => s.trim())
+        let durationMin = 90
+        if (origParts.length === 2) {
+            durationMin = Math.max(30, parseTimeToMinutes(origParts[1]) - parseTimeToMinutes(origParts[0]))
+        }
+        const startSlotStr = `${h12}:${slotMin.toString().padStart(2, '0')} ${ampm}`
+        const targetDate = getDayDate(targetDay)
+        setRequestingMakeup({ alloc })
+        setMakeupDate(targetDate)
+        setMakeupStartSlot(startSlotStr)
+        setMakeupDuration(durationMin)
+        setMakeupRoom(alloc.room)
+        setMakeupReason('')
+        setDraggedAllocId(null)
+        setDragOverCell(null)
+    }
+
+    // Get allocations for selected day — ONLY this faculty's own schedules
     const getDayAllocations = (day: string) => {
         return allAllocations
-            .filter(a => a.schedule_day?.toLowerCase().includes(day.toLowerCase()))
+            .filter(a => {
+                // Match by day using expandDays for patterns like TTH, MWF
+                const days = expandDays(a.schedule_day || '')
+                return days.some(d => d.toLowerCase() === day.toLowerCase())
+            })
+            .filter(a => {
+                // Only show this faculty's own classes
+                if (!user) return false
+                const name = (a.teacher_name || '').toLowerCase().trim()
+                const myName = (user.full_name || '').toLowerCase().trim()
+                return name === myName || name.includes(myName) || myName.includes(name)
+            })
             .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
     }
+
+    // Total count of MY classes this week (across all days)
+    const myTotalClasses = allAllocations.filter(a => {
+        if (!user) return false
+        const name = (a.teacher_name || '').toLowerCase().trim()
+        const myName = (user.full_name || '').toLowerCase().trim()
+        return name === myName || name.includes(myName) || myName.includes(name)
+    }).length
 
     const getDayDate = (dayName: string): string => {
         const idx = DAYS.indexOf(dayName)
@@ -333,6 +558,11 @@ export default function FacultyLiveTimetablePage() {
     }
 
     const pendingMakeup = myMakeupRequests.filter(m => m.status === 'pending').length
+
+    // Derived values for grid view
+    const isCurrentWeek = formatDate(currentWeekStart) === formatDate(getMonday(new Date()))
+    const isPastWeek = formatDate(currentWeekStart) < formatDate(getMonday(new Date()))
+    const todayDayName = getTodayDayName()
 
     if (!mounted) return null
 
@@ -389,21 +619,27 @@ export default function FacultyLiveTimetablePage() {
                     {/* ── Stats ── */}
                     <div className={styles.statsRow}>
                         <div className={styles.statCard}>
-                            <MdCalendarToday className={styles.statIcon} />
+                            <div className={styles.statIconCircle}>
+                                <MdCalendarToday className={styles.statIcon} />
+                            </div>
                             <div>
-                                <div className={styles.statValue}>{allAllocations.length}</div>
-                                <div className={styles.statLabel}>Total Classes This Week</div>
+                                <div className={styles.statValue}>{myTotalClasses}</div>
+                                <div className={styles.statLabel}>My Classes This Week</div>
                             </div>
                         </div>
                         <div className={`${styles.statCard} ${styles.statWarning}`}>
-                            <MdEventBusy className={styles.statIcon} />
+                            <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
+                                <MdEventBusy className={styles.statIcon} />
+                            </div>
                             <div>
                                 <div className={styles.statValue}>{myAbsences.length}</div>
                                 <div className={styles.statLabel}>My Absences This Week</div>
                             </div>
                         </div>
                         <div className={`${styles.statCard} ${styles.statPending}`}>
-                            <MdPending className={styles.statIcon} />
+                            <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
+                                <MdPending className={styles.statIcon} />
+                            </div>
                             <div>
                                 <div className={styles.statValue}>{pendingMakeup}</div>
                                 <div className={styles.statLabel}>Pending Makeup Requests</div>
@@ -473,122 +709,289 @@ export default function FacultyLiveTimetablePage() {
                             {/* ── LIVE TIMETABLE TAB ── */}
                             {activeTab === 'timetable' && (
                                 <div className={styles.timetableSection}>
-                                    {/* Day selector */}
-                                    <div className={styles.daySelector}>
-                                        {DAYS.map(day => {
-                                            const dayDate = getDayDate(day)
-                                            const isToday = dayDate === formatDate(new Date())
-                                            const dayAbsences = myAbsences.filter(a => a.absence_date === dayDate).length
-                                            const dayClasses = getDayAllocations(day).length
-                                            return (
-                                                <button
-                                                    key={day}
-                                                    className={`${styles.dayBtn} ${selectedDay === day ? styles.dayBtnActive : ''} ${isToday ? styles.dayBtnToday : ''}`}
-                                                    onClick={() => setSelectedDay(day)}
-                                                >
-                                                    <span className={styles.dayName}>{day.slice(0, 3)}</span>
-                                                    <span className={styles.dayCount}>{dayClasses} class{dayClasses !== 1 ? 'es' : ''}</span>
-                                                    {dayAbsences > 0 && <span className={styles.dayAbsenceBadge}>{dayAbsences}</span>}
-                                                    {isToday && <span className={styles.todayDot} />}
-                                                </button>
-                                            )
-                                        })}
+                                    {/* View mode toggle */}
+                                    <div className={styles.viewToggleBar}>
+                                        <button
+                                            className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
+                                            onClick={() => setViewMode('list')}
+                                        >
+                                            <MdViewList /> List
+                                        </button>
+                                        <button
+                                            className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.viewToggleBtnActive : ''}`}
+                                            onClick={() => setViewMode('grid')}
+                                        >
+                                            <MdGridView /> Grid (All Days)
+                                        </button>
                                     </div>
 
-                                    {/* Class list for selected day */}
-                                    <div className={styles.classGrid}>
-                                        {getDayAllocations(selectedDay).map(alloc => {
-                                            const dayDate = getDayDate(selectedDay)
-                                            const absent = isAbsentOnDate(alloc.id, dayDate)
-                                            const ongoing = !absent && isClassOngoing(alloc.schedule_time || '')
-                                            const isMyClass = !alloc.teacher_name || alloc.teacher_name === user?.full_name
-
-                                            return (
-                                                <div
-                                                    key={alloc.id}
-                                                    className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''}`}
-                                                >
-                                                    {/* Status */}
-                                                    <div className={styles.cardStatusRow}>
-                                                        {ongoing && (
-                                                            <span className={styles.ongoingBadge}>
-                                                                <MdFiberManualRecord className={styles.ongoingDot} /> ONGOING NOW
-                                                            </span>
-                                                        )}
-                                                        {absent && (
-                                                            <span className={styles.absentBadge}>
-                                                                <MdEventBusy /> ABSENT
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className={styles.cardMain}>
-                                                        <div className={styles.cardCourse}>
-                                                            <span className={styles.courseCode}>{alloc.course_code}</span>
-                                                            <span className={styles.courseName}>{alloc.course_name}</span>
-                                                        </div>
-                                                        <div className={styles.cardDetails}>
-                                                            <span><MdAccessTime /> {alloc.schedule_time}</span>
-                                                            <span><MdMeetingRoom /> {alloc.building} – {alloc.room}</span>
-                                                            <span><MdGroup /> {alloc.section}</span>
-                                                            {alloc.teacher_name && <span><MdPerson /> {alloc.teacher_name}</span>}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Faculty actions */}
-                                                    {!absent && (
-                                                        <div className={styles.cardActions}>
-                                                            <button
-                                                                className={styles.markAbsenceBtn}
-                                                                onClick={() => {
-                                                                    setMarkingAbsence(alloc)
-                                                                    setAbsenceDate(dayDate || formatDate(new Date()))
-                                                                    setAbsenceReason('')
-                                                                }}
-                                                            >
-                                                                <MdEventBusy /> Mark Absent
-                                                            </button>
-                                                            <button
-                                                                className={styles.makeupBtn}
-                                                                onClick={() => {
-                                                                    setRequestingMakeup({ alloc })
-                                                                    setMakeupDate('')
-                                                                    setMakeupTime('')
-                                                                    setMakeupRoom('')
-                                                                    setMakeupReason('')
-                                                                }}
-                                                            >
-                                                                <MdAdd /> Request Makeup
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                    {absent && (
-                                                        <div className={styles.cardActions}>
-                                                            <button
-                                                                className={styles.makeupBtn}
-                                                                onClick={() => {
-                                                                    const absenceRec = myAbsences.find(a => a.allocation_id === alloc.id && a.absence_date === dayDate)
-                                                                    setRequestingMakeup({ alloc, absenceDate: dayDate })
-                                                                    setMakeupDate('')
-                                                                    setMakeupTime('')
-                                                                    setMakeupRoom('')
-                                                                    setMakeupReason('')
-                                                                }}
-                                                            >
-                                                                <MdEventAvailable /> Request Makeup Class
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                        {getDayAllocations(selectedDay).length === 0 && (
-                                            <div className={styles.emptyDay}>
-                                                <MdCalendarToday />
-                                                <p>No classes scheduled for {selectedDay}</p>
+                                    {/* ── LIST VIEW ── */}
+                                    {viewMode === 'list' && (
+                                        <>
+                                            {/* Day selector */}
+                                            <div className={styles.daySelector}>
+                                                {DAYS.map(day => {
+                                                    const dayDate = getDayDate(day)
+                                                    const isToday = dayDate === formatDate(new Date())
+                                                    const dayAbsences = myAbsences.filter(a => a.absence_date === dayDate).length
+                                                    const dayClasses = getDayAllocations(day).length
+                                                    return (
+                                                        <button
+                                                            key={day}
+                                                            className={`${styles.dayBtn} ${selectedDay === day ? styles.dayBtnActive : ''} ${isToday ? styles.dayBtnToday : ''}`}
+                                                            onClick={() => setSelectedDay(day)}
+                                                        >
+                                                            <span className={styles.dayName}>{day.slice(0, 3)}</span>
+                                                            <span className={styles.dayCount}>{dayClasses} class{dayClasses !== 1 ? 'es' : ''}</span>
+                                                            {dayAbsences > 0 && <span className={styles.dayAbsenceBadge}>{dayAbsences}</span>}
+                                                            {isToday && <span className={styles.todayDot} />}
+                                                        </button>
+                                                    )
+                                                })}
                                             </div>
-                                        )}
-                                    </div>
+
+                                            {/* Class list for selected day */}
+                                            <div className={styles.classGrid}>
+                                                {getDayAllocations(selectedDay).length === 0 && (
+                                                    <div className={styles.emptyDay}>
+                                                        <MdCalendarToday />
+                                                        <p>No classes assigned to you on {selectedDay}</p>
+                                                    </div>
+                                                )}
+                                                {getDayAllocations(selectedDay).map(alloc => {
+                                                    const dayDate = getDayDate(selectedDay)
+                                                    const absent = isAbsentOnDate(alloc.id, dayDate)
+                                                    const ongoing = !absent && isClassOngoing(alloc.schedule_time || '')
+
+                                                    return (
+                                                        <div
+                                                            key={alloc.id}
+                                                            className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''}`}
+                                                        >
+                                                            {/* Status */}
+                                                            <div className={styles.cardStatusRow}>
+                                                                {ongoing && (
+                                                                    <span className={styles.ongoingBadge}>
+                                                                        <MdFiberManualRecord className={styles.ongoingDot} /> ONGOING NOW
+                                                                    </span>
+                                                                )}
+                                                                {absent && (
+                                                                    <span className={styles.absentBadge}>
+                                                                        <MdEventBusy /> ABSENT
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className={styles.cardMain}>
+                                                                <div className={styles.cardCourse}>
+                                                                    <span className={styles.courseCode}>{alloc.course_code}</span>
+                                                                    <span className={styles.courseName}>{alloc.course_name}</span>
+                                                                </div>
+                                                                <div className={styles.cardDetails}>
+                                                                    <span><MdAccessTime /> {alloc.schedule_time}</span>
+                                                                    <span>
+                                                                        <MdMeetingRoom /> {alloc.building} – {alloc.room}
+                                                                        {floorPlanMap[alloc.building] && (
+                                                                            <button
+                                                                                className={styles.mapLinkBtn}
+                                                                                onClick={() => router.push(`/floor-plan/view/${floorPlanMap[alloc.building]}?room=${encodeURIComponent(alloc.room)}`)}
+                                                                                title="View Room on Map"
+                                                                            >
+                                                                                <MdMap /> Map
+                                                                            </button>
+                                                                        )}
+                                                                    </span>
+                                                                    <span><MdGroup /> {normalizeSection(alloc.section)}</span>
+                                                                    {alloc.teacher_name && <span><MdPerson /> {alloc.teacher_name}</span>}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Faculty actions */}
+                                                            {!absent && (
+                                                                <div className={styles.cardActions}>
+                                                                    <button
+                                                                        className={styles.markAbsenceBtn}
+                                                                        onClick={() => {
+                                                                            setMarkingAbsence(alloc)
+                                                                            setAbsenceDate(dayDate || formatDate(new Date()))
+                                                                            setAbsenceReason('')
+                                                                        }}
+                                                                    >
+                                                                        <MdEventBusy /> Mark Absent
+                                                                    </button>
+                                                                    <button
+                                                                        className={styles.makeupBtn}
+                                                                        onClick={() => {
+                                                                            setRequestingMakeup({ alloc })
+                                                                            setMakeupDate('')
+                                                                            setMakeupTime('')
+                                                                            setMakeupRoom('')
+                                                                            setMakeupReason('')
+                                                                        }}
+                                                                    >
+                                                                        <MdAdd /> Request Makeup
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {absent && (
+                                                                <div className={styles.cardActions}>
+                                                                    <button
+                                                                        className={styles.makeupBtn}
+                                                                        onClick={() => {
+                                                                            setRequestingMakeup({ alloc, absenceDate: dayDate })
+                                                                            setMakeupDate('')
+                                                                            setMakeupTime('')
+                                                                            setMakeupRoom('')
+                                                                            setMakeupReason('')
+                                                                        }}
+                                                                    >
+                                                                        <MdEventAvailable /> Request Makeup Class
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* ── GRID VIEW ── */}
+                                    {viewMode === 'grid' && (
+                                        <>
+                                            {/* Legend */}
+                                            <div className={styles.gridLegend}>
+                                                <span className={styles.legendTitle}>Legend:</span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendNormal}`} /> Scheduled</span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendOngoing}`} /> Ongoing</span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDone}`} /> Done</span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendAbsent}`} /> Absent</span>
+                                                <span className={`${styles.legendItem} ${styles.dragHint}`}>
+                                                    <MdDragIndicator /> Drag to request makeup at new time
+                                                </span>
+                                            </div>
+
+                                            {/* Grid table: Mon–Sat, 7am–8pm */}
+                                            <div className={styles.gridWrapper}>
+                                                <div className={styles.gridContainer}>
+                                                    <table className={styles.gridTable}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th className={styles.gridTimeHeader}>
+                                                                    <MdAccessTime /> Time
+                                                                </th>
+                                                                {GRID_DAYS.map(day => {
+                                                                    const dayDate = getDayDate(day)
+                                                                    const isToday = dayDate === formatDate(new Date())
+                                                                    const dayAbsences = myAbsences.filter(a => a.absence_date === dayDate).length
+                                                                    return (
+                                                                        <th key={day} className={`${styles.gridDayHeader} ${isToday ? styles.gridDayToday : ''}`}>
+                                                                            <span>{day.slice(0, 3)}</span>
+                                                                            <span className={styles.gridDayDate}>
+                                                                                {dayDate ? new Date(dayDate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
+                                                                            </span>
+                                                                            {dayAbsences > 0 && <span className={styles.gridDayAbsenceBadge}>{dayAbsences}</span>}
+                                                                        </th>
+                                                                    )
+                                                                })}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {FACULTY_TIME_SLOTS.map((slot, slotIdx) => {
+                                                                const isHour = slotIdx % 2 === 0
+                                                                const slotMinutes = (Math.floor(slotIdx / 2) + 7) * 60 + (slotIdx % 2) * 30
+                                                                return (
+                                                                    <tr key={slot} className={isHour ? styles.gridHourRow : styles.gridHalfRow}>
+                                                                        <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark}`}>
+                                                                            {isHour ? slot : ''}
+                                                                        </td>
+                                                                        {GRID_DAYS.map(day => {
+                                                                            const dayDate = getDayDate(day)
+                                                                            const dayAllocs = getDayAllocations(day)
+                                                                            const startingHere = dayAllocs.filter(a => {
+                                                                                const parts = (a.schedule_time || '').split('-').map(s => s.trim())
+                                                                                if (parts.length !== 2) return false
+                                                                                const startMin = parseTimeToMinutes(parts[0])
+                                                                                return startMin >= slotMinutes && startMin < slotMinutes + 30
+                                                                            })
+                                                                            const coveredByEarlier = dayAllocs.some(a => {
+                                                                                const parts = (a.schedule_time || '').split('-').map(s => s.trim())
+                                                                                if (parts.length !== 2) return false
+                                                                                const startMin = parseTimeToMinutes(parts[0])
+                                                                                const endMin = parseTimeToMinutes(parts[1])
+                                                                                return startMin < slotMinutes && endMin > slotMinutes
+                                                                            })
+                                                                            if (coveredByEarlier && startingHere.length === 0) return null
+                                                                            return (
+                                                                                <td
+                                                                                    key={`${day}-${slot}`}
+                                                                                    className={`${styles.gridDataCell} ${dragOverCell === `${day}-${slotMinutes}` ? styles.gridDataCellDragOver : ''}`}
+                                                                                    onDragOver={handleFacultyDragOver}
+                                                                                    onDragEnter={() => setDragOverCell(`${day}-${slotMinutes}`)}
+                                                                                    onDragLeave={() => setDragOverCell(null)}
+                                                                                    onDrop={(e) => handleFacultyDrop(e, day, slotMinutes)}
+                                                                                >
+                                                                                    <div className={styles.gridCellContent}>
+                                                                                        {startingHere.map(alloc => {
+                                                                                            const parts = (alloc.schedule_time || '').split('-').map(s => s.trim())
+                                                                                            const startMin = parseTimeToMinutes(parts[0] || '')
+                                                                                            const endMin = parseTimeToMinutes(parts[1] || '')
+                                                                                            const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
+                                                                                            const compactHeight = durationSlots * 32 - 2
+                                                                                            const absent = isAbsentOnDate(alloc.id, dayDate)
+                                                                                            const ongoing = !absent && isCurrentWeek && isClassOngoing(alloc.schedule_time || '') && day === todayDayName
+                                                                                            const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
+                                                                                            return (
+                                                                                                <div
+                                                                                                    key={alloc.id}
+                                                                                                    draggable
+                                                                                                    onDragStart={(e) => { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) }}
+                                                                                                    onDragEnd={() => { setDraggedAllocId(null); setDragOverCell(null) }}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
+                                                                                                    style={{ height: `${compactHeight}px` }}
+                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}\nDrag to request makeup`}
+                                                                                                >
+                                                                                                    <div className={styles.gridBlockHeader}>
+                                                                                                        {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
+                                                                                                        {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
+                                                                                                        {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
+                                                                                                        <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>
+                                                                                                    </div>
+                                                                                                    <span className={styles.gridBlockCode}>{alloc.course_code}</span>
+                                                                                                    {durationSlots >= 2 && (
+                                                                                                        <>
+                                                                                                            <span className={styles.gridBlockSection}>{normalizeSection(alloc.section)}</span>
+                                                                                                            <span className={styles.gridBlockRoom}>{alloc.room}</span>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                    {durationSlots >= 3 && (
+                                                                                                        <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
+                                                                                                    )}
+                                                                                                    {floorPlanMap[alloc.building] && (
+                                                                                                        <button
+                                                                                                            className={styles.gridBlockMapBtn}
+                                                                                                            onClick={(ev) => { ev.stopPropagation(); router.push(`/floor-plan/view/${floorPlanMap[alloc.building]}?room=${encodeURIComponent(alloc.room)}`) }}
+                                                                                                            title="View Room on Map"
+                                                                                                        >
+                                                                                                            <MdMap />
+                                                                                                        </button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            )
+                                                                                        })}
+                                                                                    </div>
+                                                                                </td>
+                                                                            )
+                                                                        })}
+                                                                    </tr>
+                                                                )
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -607,7 +1010,7 @@ export default function FacultyLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestTitle}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {alloc.section}</span>
+                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>
@@ -666,7 +1069,7 @@ export default function FacultyLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestTitle}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {alloc.section}</span>
+                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>
@@ -715,7 +1118,7 @@ export default function FacultyLiveTimetablePage() {
                         <div className={styles.modalBody}>
                             <div className={styles.reviewInfo}>
                                 <p><strong>Course:</strong> {markingAbsence.course_code} – {markingAbsence.course_name}</p>
-                                <p><strong>Section:</strong> {markingAbsence.section}</p>
+                                <p><strong>Section:</strong> {normalizeSection(markingAbsence.section)}</p>
                                 <p><strong>Room:</strong> {markingAbsence.building} {markingAbsence.room}</p>
                                 <p><strong>Time:</strong> {markingAbsence.schedule_time}</p>
                             </div>
@@ -754,70 +1157,171 @@ export default function FacultyLiveTimetablePage() {
             )}
 
             {/* ── Makeup Request Modal ── */}
-            {requestingMakeup && (
-                <div className={styles.modalOverlay} onClick={() => setRequestingMakeup(null)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h3><MdEventAvailable /> Request Makeup Class</h3>
-                            <button className={styles.modalClose} onClick={() => setRequestingMakeup(null)}><MdClose /></button>
-                        </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.reviewInfo}>
-                                <p><strong>Course:</strong> {requestingMakeup.alloc.course_code} – {requestingMakeup.alloc.course_name}</p>
-                                <p><strong>Section:</strong> {requestingMakeup.alloc.section}</p>
-                                {requestingMakeup.absenceDate && <p><strong>For Absence On:</strong> {requestingMakeup.absenceDate}</p>}
+            {requestingMakeup && (() => {
+                const preferredType = getCourseRoomType(requestingMakeup.alloc)
+                const closeModal = () => {
+                    setRequestingMakeup(null)
+                    setMakeupDate('')
+                    setMakeupStartSlot('')
+                    setMakeupDuration(90)
+                    setMakeupRoom('')
+                    setMakeupReason('')
+                    setAvailableRooms([])
+                }
+                // Build derived time preview
+                let timePreview = ''
+                if (makeupStartSlot) {
+                    const startMin = parseTimeToMinutes(makeupStartSlot)
+                    const endMin = startMin + makeupDuration
+                    const endHr = Math.floor(endMin / 60)
+                    const endMn = endMin % 60
+                    const endH12 = endHr > 12 ? endHr - 12 : endHr === 0 ? 12 : endHr
+                    const endAmpm = endHr >= 12 ? 'PM' : 'AM'
+                    timePreview = `${makeupStartSlot} – ${endH12}:${endMn.toString().padStart(2, '0')} ${endAmpm}`
+                }
+                return (
+                    <div className={styles.modalOverlay} onClick={closeModal}>
+                        <div className={`${styles.modal} ${styles.modalWide}`} onClick={e => e.stopPropagation()}>
+                            <div className={styles.modalHeader}>
+                                <h3><MdEventAvailable /> Request Makeup Class</h3>
+                                <button className={styles.modalClose} onClick={closeModal}><MdClose /></button>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label>Preferred Makeup Date *</label>
-                                <input
-                                    type="date"
-                                    className={styles.formInput}
-                                    value={makeupDate}
-                                    onChange={e => setMakeupDate(e.target.value)}
-                                    min={formatDate(new Date())}
-                                />
+                            <div className={styles.modalBody}>
+                                <div className={styles.reviewInfo}>
+                                    <p><strong>Course:</strong> {requestingMakeup.alloc.course_code} – {requestingMakeup.alloc.course_name}</p>
+                                    <p><strong>Section:</strong> {normalizeSection(requestingMakeup.alloc.section)}</p>
+                                    {requestingMakeup.absenceDate && <p><strong>For Absence On:</strong> {requestingMakeup.absenceDate}</p>}
+                                </div>
+
+                                {/* Date */}
+                                <div className={styles.formGroup}>
+                                    <label>Preferred Makeup Date *</label>
+                                    <input
+                                        type="date"
+                                        className={styles.formInput}
+                                        value={makeupDate}
+                                        onChange={e => setMakeupDate(e.target.value)}
+                                        min={formatDate(new Date())}
+                                    />
+                                </div>
+
+                                {/* Time Slot Picker */}
+                                <div className={styles.formGroup}>
+                                    <label>Preferred Start Time *</label>
+                                    <div className={styles.timeSlotPicker}>
+                                        {FACULTY_TIME_SLOTS.map(slot => (
+                                            <button
+                                                key={slot}
+                                                type="button"
+                                                className={`${styles.timeSlotBtn} ${makeupStartSlot === slot ? styles.timeSlotBtnActive : ''}`}
+                                                onClick={() => setMakeupStartSlot(makeupStartSlot === slot ? '' : slot)}
+                                            >
+                                                {slot}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Duration Picker */}
+                                <div className={styles.formGroup}>
+                                    <label>Class Duration</label>
+                                    <div className={styles.durationRow}>
+                                        {[30, 60, 90, 120, 150, 180].map(d => (
+                                            <button
+                                                key={d}
+                                                type="button"
+                                                className={`${styles.durationChip} ${makeupDuration === d ? styles.durationChipActive : ''}`}
+                                                onClick={() => setMakeupDuration(d)}
+                                            >
+                                                {d < 60 ? `${d}min` : d % 60 === 0 ? `${d / 60}hr` : `${Math.floor(d / 60)}h ${d % 60}m`}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Time Preview */}
+                                {timePreview && (
+                                    <div className={styles.timePreviewBadge}>
+                                        <MdAccessTime /> <strong>Selected:</strong> {timePreview}
+                                    </div>
+                                )}
+
+                                {/* Available Rooms */}
+                                <div className={styles.formGroup}>
+                                    <label>
+                                        Available Rooms
+                                        {preferredType && <span className={styles.roomTypeHint}> — recommended: <em>{preferredType}</em></span>}
+                                    </label>
+                                    {!makeupDate || !makeupStartSlot ? (
+                                        <p className={styles.roomEmptyState}>Select a date and start time to see available rooms.</p>
+                                    ) : loadingRooms ? (
+                                        <div className={styles.roomLoadingState}><span className={styles.btnSpinner} /> Loading rooms…</div>
+                                    ) : availableRooms.length === 0 ? (
+                                        <p className={styles.roomEmptyState}>No rooms available for this time slot.</p>
+                                    ) : (
+                                        <div className={styles.roomGrid}>
+                                            {availableRooms.map(r => {
+                                                const isRecommended = (r.room_type || '').toLowerCase().includes(preferredType.toLowerCase()) ||
+                                                    (r.specific_classification || '').toLowerCase().includes(preferredType.toLowerCase())
+                                                const isSelected = makeupRoom === r.room && (makeupRoom === r.room)
+                                                return (
+                                                    <button
+                                                        key={r.id}
+                                                        type="button"
+                                                        className={[
+                                                            styles.roomCard,
+                                                            isSelected ? styles.roomCardSelected : '',
+                                                            isRecommended && !isSelected ? styles.roomCardRecommended : ''
+                                                        ].filter(Boolean).join(' ')}
+                                                        onClick={() => setMakeupRoom(isSelected ? '' : `${r.room}, ${r.building}`)}
+                                                    >
+                                                        <div className={styles.roomCardName}>{r.room}</div>
+                                                        <div className={styles.roomCardBuilding}>{r.building}{r.floor_number ? ` · Floor ${r.floor_number}` : ''}</div>
+                                                        <div className={styles.roomCardType}>{r.room_type || 'Room'}{r.specific_classification ? ` · ${r.specific_classification}` : ''}</div>
+                                                        <div className={styles.roomCardBadges}>
+                                                            {r.capacity && <span className={styles.roomEquipBadge}>👥 {r.capacity}</span>}
+                                                            {r.has_ac && <span className={styles.roomEquipBadge}>❄️ AC</span>}
+                                                            {r.has_projector && <span className={styles.roomEquipBadge}>📽️ Proj</span>}
+                                                            {r.has_tv && <span className={styles.roomEquipBadge}>📺 TV</span>}
+                                                            {r.has_whiteboard && <span className={styles.roomEquipBadge}>📋 WB</span>}
+                                                            {isRecommended && <span className={`${styles.roomEquipBadge} ${styles.roomRecommendedBadge}`}>✓ Recommended</span>}
+                                                        </div>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                    {makeupRoom && (
+                                        <div className={styles.selectedRoomPreview}>
+                                            <MdMeetingRoom /> <strong>Selected room:</strong> {makeupRoom}
+                                            <button type="button" className={styles.clearRoomBtn} onClick={() => setMakeupRoom('')}><MdClose /></button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Reason */}
+                                <div className={styles.formGroup}>
+                                    <label>Reason / Notes</label>
+                                    <textarea
+                                        className={styles.formTextarea}
+                                        value={makeupReason}
+                                        onChange={e => setMakeupReason(e.target.value)}
+                                        placeholder="Explain why you need a makeup class..."
+                                        rows={3}
+                                    />
+                                </div>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label>Preferred Time * (e.g. 7:30 AM - 9:00 AM)</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    value={makeupTime}
-                                    onChange={e => setMakeupTime(e.target.value)}
-                                    placeholder="7:30 AM - 9:00 AM"
-                                />
+                            <div className={styles.modalFooter}>
+                                <button className={styles.cancelBtn} onClick={closeModal}>Cancel</button>
+                                <button className={styles.submitBtn} onClick={handleSubmitMakeup} disabled={submittingMakeup || !makeupDate || !makeupStartSlot}>
+                                    {submittingMakeup ? <span className={styles.btnSpinner} /> : <MdSend />}
+                                    Submit Request
+                                </button>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label>Preferred Room (optional)</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    value={makeupRoom}
-                                    onChange={e => setMakeupRoom(e.target.value)}
-                                    placeholder="e.g. Room 301, Science Building"
-                                />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>Reason / Notes</label>
-                                <textarea
-                                    className={styles.formTextarea}
-                                    value={makeupReason}
-                                    onChange={e => setMakeupReason(e.target.value)}
-                                    placeholder="Explain why you need a makeup class..."
-                                    rows={3}
-                                />
-                            </div>
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setRequestingMakeup(null)}>Cancel</button>
-                            <button className={styles.submitBtn} onClick={handleSubmitMakeup} disabled={submittingMakeup}>
-                                {submittingMakeup ? <span className={styles.btnSpinner} /> : <MdSend />}
-                                Submit Request
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            })()}
         </div>
     )
 }

@@ -256,6 +256,46 @@
     color: white;
 }
 
+/* Green theme overrides for new elements */
+.page[data-theme="green"] .statIconCircle {
+    background: rgba(46, 175, 125, 0.15);
+    border-color: rgba(46, 175, 125, 0.3);
+    color: #2EAF7D;
+}
+
+.page[data-theme="green"] .gridPageNav {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(193,246,237,0.2) 100%);
+    border: 1px solid rgba(46,175,125,0.18);
+}
+
+.page[data-theme="green"] .gridPageBtn {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(46,175,125,0.2);
+    color: #276749;
+}
+
+.page[data-theme="green"] .gridPageBtn:hover,
+.page[data-theme="green"] .gridPageBtnActive {
+    background: rgba(46,175,125,0.12) !important;
+    border-color: #2EAF7D !important;
+    color: #1a5c3a !important;
+}
+
+.page[data-theme="green"] .gridPageLabel {
+    color: #1a5c3a;
+}
+
+.page[data-theme="green"] .gridBlockEditBtn {
+    background: rgba(46,175,125,0.12);
+    border-color: rgba(46,175,125,0.3);
+    color: #2EAF7D;
+}
+
+.page[data-theme="green"] .gridBlockEditBtn:hover {
+    background: #2EAF7D !important;
+    color: white !important;
+}
+
 .mainLayout {
     display: flex;
     flex-direction: column;
@@ -494,9 +534,47 @@
 }
 
 .statIcon {
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: var(--lt-primary);
-    opacity: 0.8;
+}
+
+/* Circle icon wrapper for stat cards */
+.statIconCircle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--lt-primary-glow);
+    border: 1.5px solid rgba(var(--lt-primary-rgb), 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    color: var(--lt-primary);
+    transition: all 0.2s;
+}
+
+.statIconCircleWarning {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--lt-danger);
+}
+
+.statIconCirclePending {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: var(--lt-warning);
+}
+
+.statIconCircleInfo {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: var(--lt-info);
+}
+
+.statCard:hover .statIconCircle {
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px var(--lt-primary-glow);
 }
 
 .statWarning .statIcon {
@@ -519,9 +597,10 @@
 }
 
 .statLabel {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--lt-text-muted);
     margin-top: 2px;
+    font-weight: 500;
 }
 
 /* ── Week Navigator ──────────────────────────────────────────── */
@@ -1650,8 +1729,7 @@
 .gridContainer {
     overflow-x: auto;
     overflow-y: auto;
-    max-height: calc(100vh - 380px);
-    min-height: 500px;
+    max-height: none;
     scrollbar-width: thin;
     scrollbar-color: var(--lt-scrollbar) transparent;
 }
@@ -1673,7 +1751,7 @@
 /* ── Grid Table ── */
 .gridTable {
     width: 100%;
-    min-width: 900px;
+    min-width: 1100px;
     border-collapse: collapse;
     table-layout: fixed;
 }
@@ -1775,7 +1853,7 @@
     vertical-align: top;
     border-right: 1px solid var(--lt-border);
     background: var(--lt-surface);
-    height: 40px;
+    height: 32px;
     white-space: nowrap;
 }
 
@@ -1795,10 +1873,23 @@
     padding: 1px 2px;
     border-right: 1px solid var(--lt-border);
     vertical-align: top;
-    height: 40px;
+    height: 32px;
     position: relative;
     background: var(--lt-surface);
     transition: background 0.15s ease;
+}
+
+.gridDataCellDragOver {
+    background: rgba(52, 211, 153, 0.18) !important;
+    outline: 2px dashed #34d399 !important;
+    outline-offset: -2px;
+}
+
+.gridDataCellConflict {
+    background: rgba(239, 68, 68, 0.18) !important;
+    outline: 2px dashed #ef4444 !important;
+    outline-offset: -2px;
+    cursor: not-allowed !important;
 }
 
 .gridDataCell:last-child {
@@ -1954,10 +2045,17 @@
 }
 
 /* Block status icons */
-.gridBlockLiveDot {
+.gridBlockHeader {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     position: absolute;
     top: 2px;
-    right: 3px;
+    right: 2px;
+    z-index: 3;
+}
+
+.gridBlockLiveDot {
     color: #34d399;
     font-size: 0.55rem;
     animation: liveDotBlink 1.5s ease-in-out infinite;
@@ -1978,9 +2076,6 @@
 }
 
 .gridBlockAbsentIcon {
-    position: absolute;
-    top: 2px;
-    right: 3px;
     color: var(--lt-danger);
     font-size: 0.7rem;
     line-height: 1;
@@ -1988,19 +2083,163 @@
 }
 
 .gridBlockOverrideIcon {
-    position: absolute;
-    top: 2px;
-    right: 3px;
     color: var(--lt-info);
     font-size: 0.65rem;
     line-height: 1;
     display: flex;
 }
 
+/* Drag & Drop */
+.gridBlockDragHandle {
+    color: var(--lt-text-muted);
+    font-size: 0.7rem;
+    opacity: 0;
+    cursor: grab;
+    transition: opacity 0.15s;
+}
+
+.gridBlock:hover .gridBlockDragHandle {
+    opacity: 0.6;
+}
+
+.gridBlockDragging {
+    opacity: 0.4 !important;
+    transform: scale(0.96) !important;
+    box-shadow: 0 0 0 2px var(--lt-primary) !important;
+    cursor: grabbing !important;
+}
+
+/* Edit button inside grid block */
+.gridBlockEditBtn {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(var(--lt-primary-rgb), 0.15);
+    border: 1px solid rgba(var(--lt-primary-rgb), 0.3);
+    border-radius: 4px;
+    color: var(--lt-primary);
+    font-size: 0.62rem;
+    padding: 1px 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.gridBlock:hover .gridBlockEditBtn {
+    opacity: 1;
+}
+
+.gridBlockEditBtn:hover {
+    background: var(--lt-primary) !important;
+    color: white !important;
+}
+
+/* Map button inside grid block */
+.gridBlockMapBtn {
+    position: absolute;
+    bottom: 2px;
+    right: 22px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 4px;
+    color: #3b82f6;
+    font-size: 0.62rem;
+    padding: 1px 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.gridBlock:hover .gridBlockMapBtn {
+    opacity: 1;
+}
+
+.gridBlockMapBtn:hover {
+    background: #3b82f6 !important;
+    color: white !important;
+}
+
+/* Map link button inside card detail row */
+.mapLinkBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    color: #3b82f6;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    vertical-align: middle;
+}
+
+.mapLinkBtn:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Grid page navigation */
+.gridPageNav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 16px;
+    background: var(--lt-surface2);
+    border: 1px solid var(--lt-border);
+    border-radius: 12px;
+}
+
+.gridPageBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--lt-text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.gridPageBtn:hover {
+    border-color: var(--lt-primary);
+    color: var(--lt-primary);
+    background: var(--lt-primary-glow);
+}
+
+.gridPageBtnActive {
+    background: var(--lt-primary-glow) !important;
+    border-color: var(--lt-primary) !important;
+    color: var(--lt-primary) !important;
+}
+
+.gridPageLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--lt-text);
+    flex: 1;
+    text-align: center;
+}
+
 /* ── Responsive Grid ── */
 @media (max-width: 1024px) {
     .gridContainer {
-        max-height: calc(100vh - 420px);
+        max-height: 70vh;
+        overflow-y: auto;
     }
 
     .gridTable {
@@ -2114,6 +2353,92 @@
     color: var(--lt-text-muted);
     font-weight: 500;
     margin-left: auto;
+}
+
+/* Group paginator — prev/next through rooms/faculty/sections */
+.groupPaginator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border-strong);
+    border-radius: 10px;
+    padding: 4px 8px;
+    min-width: 0;
+}
+
+.groupPageBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: var(--lt-surface2);
+    border: 1px solid var(--lt-border);
+    border-radius: 7px;
+    color: var(--lt-text);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.groupPageBtn:hover:not(:disabled) {
+    background: var(--lt-primary-glow);
+    border-color: var(--lt-primary);
+    color: var(--lt-primary);
+}
+
+.groupPageBtn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.groupPageLabel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    min-width: 120px;
+    max-width: 220px;
+    overflow: hidden;
+}
+
+.groupPageLabel strong {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--lt-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    text-align: center;
+}
+
+.groupPageCount {
+    font-size: 0.68rem;
+    color: var(--lt-text-muted);
+}
+
+.page[data-theme="green"] .groupPaginator {
+    background: rgba(255,255,255,0.9);
+    border-color: rgba(46,175,125,0.3);
+}
+
+.page[data-theme="green"] .groupPageBtn {
+    background: rgba(255,255,255,0.8);
+    border-color: rgba(46,175,125,0.15);
+    color: #276749;
+}
+
+.page[data-theme="green"] .groupPageBtn:hover:not(:disabled) {
+    background: rgba(46,175,125,0.12);
+    border-color: #2EAF7D;
+    color: #1a5c3a;
+}
+
+.page[data-theme="green"] .groupPageLabel strong {
+    color: #1a5c3a;
 }
 
 .groupTimetableSection {

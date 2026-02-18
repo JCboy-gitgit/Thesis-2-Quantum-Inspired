@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         const { action } = body
 
         if (action === 'mark-absence') {
-            const { allocation_id, faculty_id, absence_date, reason, schedule_id } = body
+            const { allocation_id, faculty_id, absence_date, reason } = body
 
             if (!allocation_id || !faculty_id || !absence_date) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -167,6 +167,14 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Absence already marked for this class on this date' }, { status: 409 })
             }
 
+            // Resolve schedule_id server-side from room_allocations to avoid FK violations
+            const { data: allocRow } = await supabaseAdmin
+                .from('room_allocations')
+                .select('schedule_id')
+                .eq('id', allocation_id)
+                .single()
+            const resolvedScheduleId = allocRow?.schedule_id || null
+
             const { data, error } = await supabaseAdmin
                 .from('live_timetable_absences')
                 .insert({
@@ -174,7 +182,7 @@ export async function POST(request: NextRequest) {
                     faculty_id,
                     absence_date,
                     reason: reason || null,
-                    schedule_id: schedule_id || null,
+                    schedule_id: resolvedScheduleId,
                     status: 'confirmed'
                 })
                 .select()
@@ -209,11 +217,19 @@ export async function POST(request: NextRequest) {
         }
 
         if (action === 'makeup-request') {
-            const { allocation_id, faculty_id, requested_date, requested_time, requested_room, reason, schedule_id, original_absence_date } = body
+            const { allocation_id, faculty_id, requested_date, requested_time, requested_room, reason, original_absence_date } = body
 
             if (!allocation_id || !faculty_id || !requested_date || !requested_time) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
             }
+
+            // Resolve schedule_id server-side from room_allocations to avoid FK violations
+            const { data: allocRow2 } = await supabaseAdmin
+                .from('room_allocations')
+                .select('schedule_id')
+                .eq('id', allocation_id)
+                .single()
+            const resolvedScheduleId2 = allocRow2?.schedule_id || null
 
             const { data, error } = await supabaseAdmin
                 .from('live_makeup_requests')
@@ -224,7 +240,7 @@ export async function POST(request: NextRequest) {
                     requested_time,
                     requested_room: requested_room || null,
                     reason: reason || null,
-                    schedule_id: schedule_id || null,
+                    schedule_id: resolvedScheduleId2,
                     original_absence_date: original_absence_date || null,
                     status: 'pending'
                 })

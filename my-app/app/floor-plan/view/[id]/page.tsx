@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { 
   Building2, Layers, Users, Clock, ZoomIn, ZoomOut, Maximize2, 
@@ -102,6 +102,8 @@ const ROOM_TYPE_COLORS: Record<string, { bg: string; border: string; label: stri
 export default function FloorPlanViewPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const highlightRoom = searchParams.get('room') || null
   const canvasRef = useRef<HTMLDivElement>(null)
   const floorPlanId = params.id as string
 
@@ -152,7 +154,15 @@ export default function FloorPlanViewPage() {
       setFloorPlan(fp as FloorPlan)
       
       if (fp.canvas_data?.elements) {
-        setCanvasElements(fp.canvas_data.elements)
+        const elements = fp.canvas_data.elements
+        setCanvasElements(elements)
+        // Auto-select the room if ?room= query param is present
+        if (highlightRoom) {
+          const match = elements.find((el: CanvasElement) =>
+            el.linkedRoomData?.room === highlightRoom || el.label === highlightRoom
+          )
+          if (match) setSelectedElement(match)
+        }
       }
       if (fp.canvas_data?.canvasSize) {
         setCanvasSize(fp.canvas_data.canvasSize)
@@ -404,7 +414,7 @@ export default function FloorPlanViewPage() {
               return (
                 <div
                   key={element.id}
-                  className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${showLiveStatus ? styles[availability] : ''}`}
+                  className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${showLiveStatus ? styles[availability] : ''} ${highlightRoom && (element.linkedRoomData?.room === highlightRoom || element.label === highlightRoom) ? styles.highlighted : ''}`}
                   style={{
                     left: element.x,
                     top: element.y,
