@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import {
-  Map, Building2, Layers, CheckCircle2, XCircle,
-  Sun, Moon, Clock
-} from 'lucide-react'
+  MdMap, MdBusiness, MdLayers, MdCheckCircle, MdCancel,
+  MdLightMode, MdDarkMode, MdAccessTime
+} from 'react-icons/md'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import RoomViewer2D from '@/app/components/RoomViewer2D'
@@ -78,36 +78,36 @@ export default function FacultyCampusMapPage() {
   /* ─── Auth ─── */
   useEffect(() => {
     setMounted(true)
-    ;(async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user) { router.push('/'); return }
-        if (session.user.email === ADMIN_EMAIL) { router.push('/LandingPages/Home'); return }
+      ; (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session?.user) { router.push('/'); return }
+          if (session.user.email === ADMIN_EMAIL) { router.push('/LandingPages/Home'); return }
 
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single() as { data: UserProfile | null; error: any }
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single() as { data: UserProfile | null; error: any }
 
-        if (userError || !userData || !userData.is_active) {
-          await clearBrowserCaches()
-          await supabase.auth.signOut()
+          if (userError || !userData || !userData.is_active) {
+            await clearBrowserCaches()
+            await supabase.auth.signOut()
+            router.push('/')
+            return
+          }
+          setUser(userData)
+        } catch {
           router.push('/')
-          return
+        } finally {
+          setLoading(false)
         }
-        setUser(userData)
-      } catch {
-        router.push('/')
-      } finally {
-        setLoading(false)
-      }
-    })()
+      })()
   }, [])
 
   /* ─── Fetch lightweight stats ─── */
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         const db = supabase as any
         const { data: fps } = await db
@@ -178,7 +178,7 @@ export default function FacultyCampusMapPage() {
           <div className={s.heroBanner}>
             <div className={s.heroLeft}>
               <div className={s.heroIconBox}>
-                <Map size={26} />
+                <MdMap size={26} />
               </div>
               <div>
                 <h1 className={s.heroTitle}>Campus Floor Plan</h1>
@@ -190,7 +190,7 @@ export default function FacultyCampusMapPage() {
               {/* Live clock */}
               <div className={s.liveBadge}>
                 <span className={s.liveDot} />
-                <Clock size={13} />
+                <MdAccessTime size={13} />
                 <span>{timeStr}</span>
                 <span style={{ opacity: 0.6 }}>·</span>
                 <span>{dateStr}</span>
@@ -203,14 +203,14 @@ export default function FacultyCampusMapPage() {
                   onClick={() => setTheme('light')}
                   title="Light mode"
                 >
-                  <Sun size={14} /> Light
+                  <MdLightMode size={14} /> Light
                 </button>
                 <button
                   className={`${s.themeToggleBtn} ${!isLightMode ? s.active : ''}`}
                   onClick={() => setTheme('dark')}
                   title="Dark mode"
                 >
-                  <Moon size={14} /> Dark
+                  <MdDarkMode size={14} /> Dark
                 </button>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function FacultyCampusMapPage() {
             {/* Buildings */}
             <div className={s.statCard}>
               <div className={`${s.statIconBox} ${s.buildings}`}>
-                <Building2 size={22} />
+                <MdBusiness size={22} />
               </div>
               <div className={s.statInfo}>
                 <span className={s.statValue}>{buildingCount}</span>
@@ -232,7 +232,7 @@ export default function FacultyCampusMapPage() {
             {/* Floors */}
             <div className={s.statCard}>
               <div className={`${s.statIconBox} ${s.floors}`}>
-                <Layers size={22} />
+                <MdLayers size={22} />
               </div>
               <div className={s.statInfo}>
                 <span className={s.statValue}>{floorCount}</span>
@@ -243,7 +243,7 @@ export default function FacultyCampusMapPage() {
             {/* Available indicator */}
             <div className={s.statCard}>
               <div className={`${s.statIconBox} ${s.available}`}>
-                <CheckCircle2 size={22} />
+                <MdCheckCircle size={22} />
               </div>
               <div className={s.statInfo}>
                 <span className={s.statValue} style={{ color: 'var(--cm-success)' }}>Live</span>
@@ -254,7 +254,7 @@ export default function FacultyCampusMapPage() {
             {/* Occupied indicator */}
             <div className={s.statCard}>
               <div className={`${s.statIconBox} ${s.occupied}`}>
-                <XCircle size={22} />
+                <MdCancel size={22} />
               </div>
               <div className={s.statInfo}>
                 <span className={s.statValue} style={{ color: 'var(--cm-danger)' }}>Live</span>

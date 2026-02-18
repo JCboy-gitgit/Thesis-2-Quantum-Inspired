@@ -18,7 +18,7 @@ PERFORMANCE OPTIMIZATIONS (v2.3):
 - Parallel-ready data structures
 """
 
-from typing import List, Dict, Tuple, Optional, Set, Any
+from typing import List, Dict, Tuple, Optional, Set, Any, Union
 from dataclasses import dataclass, field
 from enum import Enum
 import random
@@ -43,13 +43,21 @@ SOFT_MORNING_PREFERENCE = 5
 SOFT_DAY_DISTRIBUTION = 20
 SOFT_SIBLING_DIFFERENT_DAY = 100  # Penalty when LEC and LAB siblings are on different days
 SOFT_ROOM_TYPE_MAJOR_MISMATCH = 500  # Penalty for placing lecture in specialized lab (Drafting, Science Lab, etc.)
+SOFT_OVERLOADED_TEACHER = 200  # Penalty when teacher exceeds 10 load units
+
+# MANDATORY RECOVERY BLOCK (6-Hour Consecutive Rule)
+MANDATORY_BREAK_THRESHOLD_MINUTES = 360  # 6 hours straight -> must have break
+MANDATORY_BREAK_DURATION_MINUTES = 60  # 1 hour mandatory break
+HARD_NO_BREAK_AFTER_6HRS = HARD_CONSTRAINT_PENALTY  # HARD penalty for no break after 6hrs (prof or student)
+HARD_G1_G2_SAME_TEACHER_OVERLAP = HARD_CONSTRAINT_PENALTY  # G1 and G2 labs same prof same time
+MAX_TEACHER_LOAD_UNITS = 10  # Maximum load units per teacher
 
 # REALISTIC SCHEDULING CONSTRAINTS (Real-world university rules)
 SOFT_TEACHER_NO_BREAK = 1000  # Penalty for no break during lunch for faculty
 SOFT_CONSECUTIVE_HOURS_EXCEEDED = 500  # Penalty for >4 consecutive teaching hours
-MIN_CLASS_DURATION_SLOTS = 3  # Minimum 1.5 hours (90 minutes = 3 slots)
-MAX_CLASS_DURATION_SLOTS = 6  # Maximum 3 hours (180 minutes = 6 slots)
-MAX_CONSECUTIVE_TEACHING_SLOTS = 8  # Maximum 4 hours before required break
+MIN_CLASS_DURATION_SLOTS = 2  # Minimum 1 hour (60 minutes = 2 slots)
+MAX_CLASS_DURATION_SLOTS = 12  # Maximum 6 hours (360 minutes = 12 slots)
+MAX_CONSECUTIVE_TEACHING_SLOTS = 12  # Maximum 6 hours before required break
 MAX_DAILY_TEACHING_SLOTS = 16  # Maximum 8 hours of teaching per day
 
 # PERFORMANCE THRESHOLDS
@@ -275,7 +283,7 @@ class Section:
     course_name: str
     subject_code: str      # e.g., "IT-311"
     subject_name: str
-    teacher_id: int
+    teacher_id: Union[int, str]
     teacher_name: str
     year_level: int
     student_count: int
@@ -356,7 +364,7 @@ class Room:
 @dataclass
 class FacultyProfile:
     """Faculty profile for constraint checking"""
-    id: int
+    id: Union[int, str]
     name: str
     employment_type: str = "full-time"  # full-time, part-time, vsl
     preferred_times: Optional[str] = None  # morning, night, any
@@ -374,9 +382,9 @@ class SchedulingConstraints:
     capacity_tolerance: float = 0.10  # 10% tolerance for lectures
     prioritize_accessibility: bool = True
     avoid_lunch_conflicts: bool = True
-    lunch_mode: str = 'strict'  # CHANGED TO STRICT - faculty MUST have lunch break
-    lunch_start_minutes: int = 780   # 13:00 (1:00 PM) - UPDATED DEFAULT
-    lunch_end_minutes: int = 840     # 14:00 (2:00 PM) - UPDATED DEFAULT
+    lunch_mode: str = 'auto'  # NEW DEFAULT: 'auto' = 1hr break after 6hrs consecutive
+    lunch_start_minutes: int = 780   # 13:00 (1:00 PM) - used for strict/flexible modes
+    lunch_end_minutes: int = 840     # 14:00 (2:00 PM) - used for strict/flexible modes
     prefer_morning_classes: bool = True
     distribute_days_evenly: bool = True
     day_class_start: int = 420       # 07:00 in minutes
@@ -389,6 +397,9 @@ class SchedulingConstraints:
     max_class_duration_minutes: int = 180  # Maximum 3 hours per class session
     require_faculty_lunch_break: bool = True  # Faculty MUST have lunch break
     max_daily_hours_hard_limit: int = 10  # Problem 2: 10-hour hard rule
+    # NEW: Mandatory Recovery Block
+    auto_break_after_consecutive_hours: int = 6  # Auto 1hr break after this many consecutive hours
+    auto_break_duration_minutes: int = 60  # 1hr mandatory break
     
     # Penalties
     SOFT_VSL_SHIFT_MISMATCH: int = 500  # Penalty for VSL teaching outside preferred shift
@@ -677,53 +688,86 @@ class EnhancedQuantumScheduler:
 
     def _decompose_oversized_sections(self, sections: List[Section]) -> List[Section]:
         """
-        Problem 3: Conditional Resource Decomposition
-        Splits sections that exceed lab room capacity into G1/G2 subgroups.
+        Problem 3: Conditional Resource Decomposition (Anchor & Satellite Rule)
+        
+        ANCHOR & SATELLITE MODEL:
+        - ANCHOR (Lecture _LEC): Stays at FULL student count. Shared by all students.
+          When moved, the schedule updates for both G1 and G2 students.
+        - SATELLITE (Lab _LAB_G1 / _LAB_G2): Lab section split into two groups.
+          Each scheduled independently. Same professor cannot teach both at the same time.
+        
+        Only splits _LAB sections where student_count > lab room capacity.
+        _LEC sections are NEVER split (they're the anchor).
         """
-        # Determine strict lab capacity (e.g., finding the smallest or average lab size)
-        # For now, let's assume a standard lab capacity or derive from rooms
+        # Determine lab capacity threshold from actual lab rooms
         lab_rooms = [r for r in self.rooms.values() if 'lab' in (r.room_type or '').lower() or 'com' in (r.room_type or '').lower()]
         if not lab_rooms:
-             return sections # No labs, can't split?
-            
-        # Use a safe threshold of 30 for now
-        LAB_CAPACITY_THRESHOLD = 30 
+             return sections  # No labs, can't split
+        
+        # Use the median lab room capacity as threshold
+        lab_capacities = sorted([r.capacity for r in lab_rooms])
+        LAB_CAPACITY_THRESHOLD = lab_capacities[len(lab_capacities) // 2] if lab_capacities else 30
         
         new_sections = []
         next_id = max((s.id for s in sections), default=0) + 1
+        teacher_load_warnings = []
         
         for section in sections:
-            # Only split if it requires lab and is oversized
-            is_lab = section.requires_lab or section.lab_hours > 0
-            if is_lab and section.student_count > LAB_CAPACITY_THRESHOLD:
-                # Create G1
+            # ANCHOR RULE: Only split LAB sections, never LEC sections
+            is_lab_section = (
+                getattr(section, 'section_type', '') == 'lab' or
+                section.requires_lab or
+                (section.lab_hours > 0 and section.lec_hours == 0)
+            )
+            
+            if is_lab_section and section.student_count > LAB_CAPACITY_THRESHOLD:
+                # Create SATELLITE G1
                 g1 = replace(section)
                 g1.id = next_id
-                g1.section_code = f"{section.section_code} (G1)"
+                g1.section_code = f"{section.section_code}_G1"
                 g1.student_count = section.student_count // 2 + (section.student_count % 2)
                 g1.is_split_group = True
                 g1.split_type = "G1"
                 
-                # Create G2
+                # Create SATELLITE G2
                 g2 = replace(section)
                 g2.id = next_id + 1
-                g2.section_code = f"{section.section_code} (G2)"
+                g2.section_code = f"{section.section_code}_G2"
                 g2.student_count = section.student_count // 2
                 g2.is_split_group = True
                 g2.split_type = "G2"
                 
-                # Link them
+                # Link satellites to each other (for overlap detection)
                 g1.linked_section_id = g2.id
                 g2.linked_section_id = g1.id
+                
+                # Both point back to the original section (the anchor's parent)
+                g1.original_section_id = section.original_section_id or section.id
+                g2.original_section_id = section.original_section_id or section.id
                 
                 new_sections.append(g1)
                 new_sections.append(g2)
                 
+                # TEACHER LOAD ALERT: Splitting doubles the lab hours for the professor
+                if section.teacher_id:
+                    teacher_name = section.teacher_name or f"Teacher#{section.teacher_id}"
+                    lab_load = section.weekly_hours * 2  # Doubled because 2 groups
+                    teacher_load_warnings.append(
+                        f"Warning: Prof {teacher_name}: {section.section_code} split -> "
+                        f"{lab_load}hr lab load (2 x {section.weekly_hours}hr)"
+                    )
+                
                 next_id += 2
-                print(f"🔀 Split hybrid course '{section.section_code}': {g1.student_count} + {g2.student_count}")
+                print(f"Split '{section.section_code}': "
+                      f"G1({g1.student_count}) + G2({g2.student_count}) "
+                      f"[threshold={LAB_CAPACITY_THRESHOLD}]")
             else:
                 new_sections.append(section)
-                
+        
+        # Print teacher load warnings
+        for warning in teacher_load_warnings:
+            print(warning)
+        
         return new_sections
         
     def _compute_compatible_rooms(self) -> Dict[int, List[int]]:
@@ -1224,42 +1268,35 @@ class EnhancedQuantumScheduler:
         total_minutes = total_hours * 60
         return max(1, math.ceil(total_minutes / self.slot_duration_minutes))
     
-    def _split_hours_into_sessions(self, total_minutes: int) -> List[Tuple[int, int]]:
+    def _split_hours_into_sessions(self, total_minutes: int, is_lab: bool = False) -> List[Tuple[int, int]]:
         """
-        Split total_minutes into sessions, each fitting into consecutive time slots.
-        Returns list of (slot_count, actual_session_minutes) tuples.
+        Split total_minutes into session blocks dynamically.
         
         Rules:
-        - Up to 3h (180min): 1 session (straight block)
-        - 3.5h-6h (210-360min): 2 sessions (split as evenly as possible)
-        - 6.5h+ (390+min): 3 sessions
-        
-        Each session's slot_count = ceil(session_minutes / slot_duration)
+        - LECTURE: Max 3 hours (180 mins) to prevent cognitive overload (Humane Rule).
+        - LAB: Max 6 hours (360 mins) for practical continuity (User Request).
+        - Splits larger durations properly.
         """
         slot_dur = self.slot_duration_minutes
-        max_session_minutes = 180  # 3 hours max per session
         
-        if total_minutes <= max_session_minutes:
-            # Single session
-            slots = math.ceil(total_minutes / slot_dur)
-            return [(slots, total_minutes)]
-        
-        # Determine number of sessions
-        if total_minutes <= max_session_minutes * 2:
-            num_sessions = 2
-        else:
-            num_sessions = math.ceil(total_minutes / max_session_minutes)
-        
-        # Split evenly
-        base_minutes = total_minutes // num_sessions
-        remainder = total_minutes % num_sessions
+        # Dynamic Max Block
+        # Critique: 5h Math lecture is inhumane. Max should be 3h (180 min).
+        # Request: 6h Lab is desired.
+        MAX_BLOCK = 360 if is_lab else 180
         
         sessions = []
-        for i in range(num_sessions):
-            session_minutes = base_minutes + (1 if i < remainder else 0)
-            slots = math.ceil(session_minutes / slot_dur)
-            sessions.append((slots, session_minutes))
+        remaining = total_minutes
         
+        while remaining > 0:
+            # Take a chunk of up to MAX_BLOCK
+            current_block = min(remaining, MAX_BLOCK)
+            
+            # Calculate slots (ceil ensures we cover the time)
+            slots = math.ceil(current_block / slot_dur)
+            
+            sessions.append((slots, current_block))
+            remaining -= current_block
+            
         return sessions
     
     # ==================== Non-Consecutive Day Constraint ====================
@@ -1577,6 +1614,45 @@ class EnhancedQuantumScheduler:
                 if not self._check_room_equipment(section, room_id):
                     cost += HARD_EQUIPMENT_MISMATCH_PENALTY
                     conflict_detected = True
+                    
+        # HARD: Student Group Conflict (Same section cannot be in 2 places at once)
+        # Identify overlaps by tracking consumed slots per student group
+        student_group_slots = defaultdict(list)
+        for key, slot in self.schedule.items():
+            # Key is (room_id, day, slot_index). 
+            # If student has class in Room A at Slot 1, and Room B at Slot 1 -> Conflict.
+            section = self.sections.get(slot.section_id)
+            if section:
+                # Use base section code to catch split groups (e.g. G1/G2 usually distinct, but Base is cohort)
+                # If G1 and G2 are distinct subgroups, they CAN overlap?
+                # Usually "BSCS 1A" means the whole block.
+                # If "BSCS 1A G1" and "BSCS 1A G2", they might happen simultaneously?
+                # If is_split_group is True, maybe treat as distinct?
+                # For now, simplistic approach: Link by section_code.
+                group = section.section_code
+                day = key[1]
+                slot_index = key[2]
+                student_group_slots[(group, day)].append(slot_index)
+        
+        for (group, day), slots in student_group_slots.items():
+            if len(slots) != len(set(slots)):
+                cost += HARD_CONSTRAINT_PENALTY
+                conflict_detected = True
+
+        # HARD: Teacher Conflict (Same teacher cannot be in 2 places at once)
+        # Note: teacher_slot_times is computed later for soft constraints, but we need it here for HARD checks.
+        # Let's verify overlaps using the same logic as students.
+        teacher_slots_check = defaultdict(list)
+        for key, slot in self.schedule.items():
+            if slot.teacher_id:
+                day = key[1]
+                slot_index = key[2]
+                teacher_slots_check[(slot.teacher_id, day)].append(slot_index)
+        
+        for (tid, day), slots in teacher_slots_check.items():
+            if len(slots) != len(set(slots)):
+                cost += HARD_CONSTRAINT_PENALTY
+                conflict_detected = True
         
         # SOFT: Swiss Cheese Gap Detection (simplified)
         for (section_code, day), slots in section_day_slots.items():
@@ -1609,15 +1685,22 @@ class EnhancedQuantumScheduler:
                 
                 if required_type != actual_type:
                     # Check for MAJOR mismatch - specialized labs being used for wrong purpose
-                    specialized_labs = ['drafting', 'engineering', 'science lab', 'chemistry', 'physics', 'biology', 'speech lab']
-                    is_specialized_lab = any(spec in actual_type for spec in specialized_labs)
+                    specialized_tags = ['drafting', 'engineering', 'science', 'chemistry', 'physics', 'biology', 'speech', 'computer', 'mac', 'cisco', 'medical', 'mining']
+                    
+                    is_req_special = any(tag in required_type for tag in specialized_tags)
+                    is_act_special = any(tag in actual_type for tag in specialized_tags)
+                    
                     is_lecture_class = 'lecture' in required_type or not section.requires_lab
                     
-                    if is_specialized_lab and is_lecture_class:
-                        # High penalty: Lecture class in specialized lab (wasting specialized resources)
+                    if is_req_special and is_act_special:
+                        # Case 1: Incompatible Specialized Labs (e.g. Computer Lab in Chem Lab)
+                        # This is dangerous/impossible.
+                        cost += 50000 # Extremely high soft penalty (effectively hard)
+                    elif is_act_special and is_lecture_class:
+                        # Case 2: Lecture in specialized lab (Waste of resources)
                         cost += SOFT_ROOM_TYPE_MAJOR_MISMATCH
                     else:
-                        # Normal mismatch penalty
+                        # Case 3: Normal mismatch (e.g. Lecture in wrong type of classroom)
                         cost += SOFT_ROOM_TYPE_MISMATCH
             
             # Excessive room capacity waste (SOFT)
@@ -1639,7 +1722,7 @@ class EnhancedQuantumScheduler:
         teacher_slot_times: Dict[Tuple[int, str], List[int]] = defaultdict(list)  # (teacher_id, day) -> [slot_ids]
         
         for key, slot in self.schedule.items():
-            if slot.teacher_id and slot.teacher_id > 0:
+            if slot.teacher_id:  # Removed > 0 check to support UUID strings
                 day = key[1]
                 teacher_daily_slots[slot.teacher_id][day] += slot.slot_count
                 # Track actual slot times for consecutive hour checking
@@ -1703,6 +1786,79 @@ class EnhancedQuantumScheduler:
                 if has_morning_class and has_afternoon_class and has_class_during_lunch:
                     cost += SOFT_TEACHER_NO_BREAK
         
+        # FACULTY PREFERENCES: Shift & Employment Type Check
+        # VSL/Part-time often have specific availability (e.g., Night/Weekend)
+        # Full-time may prefer Morning/Day
+        checked_faculty_days = set()
+        
+        for (teacher_id, day), slot_ids in teacher_slot_times.items():
+            if not teacher_id or teacher_id not in self.faculty_profiles:
+                continue
+                
+            # Avoid re-checking same teacher-day combo
+            if (teacher_id, day) in checked_faculty_days:
+                continue
+            checked_faculty_days.add((teacher_id, day))
+            
+            profile = self.faculty_profiles[teacher_id]
+            employment_type = (profile.employment_type or 'full-time').lower()
+            preferences = (profile.preferred_times or '').lower()
+            
+            # Determine if this day's schedule violates preferences
+            # 1. Check Shift Preferences (Morning vs Night)
+            has_night_class = any(self.time_slots_by_id[s].is_night_class() for s in slot_ids if s in self.time_slots_by_id)
+            has_day_class = any(not self.time_slots_by_id[s].is_night_class() for s in slot_ids if s in self.time_slots_by_id)
+            
+            # Helper: Check if slot is morning (start < 12:00)
+            has_morning_class = any(self.time_slots_by_id[s].start_minutes < 720 for s in slot_ids if s in self.time_slots_by_id)
+            
+            # Preference: Night Shift
+            if 'night' in preferences or 'evening' in preferences:
+                # Penalty if scheduled in morning efficiently
+                if has_morning_class:
+                    cost += self.constraints.SOFT_VSL_SHIFT_MISMATCH
+            
+            # Preference: Morning Shift
+            elif 'morning' in preferences:
+                # Penalty if scheduled at night
+                if has_night_class:
+                    cost += self.constraints.SOFT_VSL_SHIFT_MISMATCH
+            
+            # 2. Employment Type Rules
+            # VSL / Part-time usually prefer Night or Weekends (Saturday)
+            if 'vsl' in employment_type or 'part-time' in employment_type or 'part time' in employment_type:
+                # If they are VSL and scheduled nicely on Saturday or Night, good.
+                # If they are scheduled during regular day hours on weekdays without preference, maybe slight penalty?
+                # Actually, strictly follow "unavailable_days" which is handled by hard constraints elsewhere?
+                # Assuming here we just want to favor their preferred shift.
+                pass
+            
+            # Full-time usually prefer 7am-6pm validation is handled by constraints.day_class_end
+            if 'full-time' in employment_type or 'regular' in employment_type:
+                # Generally avoid late night unless preferred
+                if has_night_class and 'night' not in preferences:
+                    cost += 200  # Slight penalty for Full-time night class without preference
+
+            # faculty welfare: Daily Span Check (Avoid split shifts > 10 hours)
+            if slot_ids:
+                start_slot = min(slot_ids)
+                end_slot = max(slot_ids)
+                span = end_slot - start_slot + 1
+                if span > 20: # > 10 hours
+                     # High penalty for excessive daily span
+                     cost += 500 * (span - 20)
+            
+            # Faculty Welfare: Turnaround Time Check (Late Night -> Early Morning)
+            # This requires checking the *previous* day's last slot. 
+            # Since we iterate (id, day), we can't easily see previous day here without looking up.
+            # But the critique mentioned specific problem.
+            # We can do a second pass or just check simplistic "finish at 20:00" penalty?
+            # Or assume if night class exists, next day morning class is bad?
+            # Let's check next day:
+            # next_day_idx = (DAY_INDEX.get(day.lower()) + 1) % 7
+            # but getting next day name is tricky with string keys.
+            # Let's stick to Daily Span for now as the primary fix.
+        
         # SOFT: Sibling sections (LEC/LAB split from hybrid courses) should be on DIFFERENT 
         # non-consecutive days. Penalty if on same day or consecutive days.
         checked_siblings = set()
@@ -1720,6 +1876,91 @@ class EnhancedQuantumScheduler:
             # Penalty if they overlap on same day (we want them on DIFFERENT days)
             if section_days and sibling_days and section_days.intersection(sibling_days):
                 cost += SOFT_SIBLING_DIFFERENT_DAY
+        
+        # ==================== MANDATORY RECOVERY BLOCK (6-Hour Rule) ====================
+        # AUTO lunch mode: If any teacher or student group has 6+ consecutive hours,
+        # apply HARD penalty (they MUST have a 1hr break inserted)
+        if self.constraints.lunch_mode == 'auto':
+            threshold_slots = (self.constraints.auto_break_after_consecutive_hours * 60) // self.slot_duration_minutes
+            
+            # Check TEACHERS for consecutive overload
+            for (teacher_id, day), slot_ids in teacher_slot_times.items():
+                if len(slot_ids) < threshold_slots:
+                    continue
+                sorted_slots = sorted(set(slot_ids))
+                consecutive = 1
+                for i in range(1, len(sorted_slots)):
+                    if sorted_slots[i] == sorted_slots[i-1] + 1:
+                        consecutive += 1
+                        if consecutive >= threshold_slots:
+                            cost += HARD_NO_BREAK_AFTER_6HRS
+                            conflict_detected = True
+                            break
+                    else:
+                        consecutive = 1
+            
+            # Check STUDENT GROUPS for consecutive overload
+            student_group_day_slots: Dict[Tuple[str, str], List[int]] = defaultdict(list)
+            for key, slot in self.schedule.items():
+                _, day, slot_id = key
+                section = self.sections.get(slot.section_id)
+                if section:
+                    base = self._get_base_section_code(section.section_code)
+                    for offset in range(slot.slot_count):
+                        student_group_day_slots[(base, day)].append(slot_id + offset)
+            
+            for (group, day), slot_ids in student_group_day_slots.items():
+                if len(slot_ids) < threshold_slots:
+                    continue
+                sorted_slots = sorted(set(slot_ids))
+                consecutive = 1
+                for i in range(1, len(sorted_slots)):
+                    if sorted_slots[i] == sorted_slots[i-1] + 1:
+                        consecutive += 1
+                        if consecutive >= threshold_slots:
+                            cost += HARD_NO_BREAK_AFTER_6HRS
+                            conflict_detected = True
+                            break
+                    else:
+                        consecutive = 1
+        
+        # ==================== G1/G2 SAME-TEACHER OVERLAP ====================
+        # If G1 and G2 lab sections share the same professor, they CANNOT overlap
+        g1_g2_pairs_checked = set()
+        for section_id, section in self.sections.items():
+            # Only check lab sections that are split groups
+            if not getattr(section, 'is_split_group', False):
+                continue
+            linked_id = getattr(section, 'linked_section_id', None)
+            if linked_id is None or linked_id not in self.sections:
+                continue
+            
+            pair_key = tuple(sorted([section_id, linked_id]))
+            if pair_key in g1_g2_pairs_checked:
+                continue
+            g1_g2_pairs_checked.add(pair_key)
+            
+            linked_section = self.sections[linked_id]
+            # Only penalize if SAME teacher
+            if section.teacher_id != linked_section.teacher_id or not section.teacher_id:
+                continue
+            
+            # Check time overlap between this section and linked section
+            section_time_keys = set()
+            for _, day, start_slot, slot_count in self.section_assignments.get(section_id, []):
+                for offset in range(slot_count):
+                    section_time_keys.add((day, start_slot + offset))
+            
+            linked_time_keys = set()
+            for _, day, start_slot, slot_count in self.section_assignments.get(linked_id, []):
+                for offset in range(slot_count):
+                    linked_time_keys.add((day, start_slot + offset))
+            
+            # Any overlap = HARD penalty (same teacher can't be in two labs at once)
+            overlap = section_time_keys.intersection(linked_time_keys)
+            if overlap:
+                cost += HARD_G1_G2_SAME_TEACHER_OVERLAP * len(overlap)
+                conflict_detected = True
         
         if conflict_detected:
             self.stats.conflict_count = sum(1 for v in room_slots.values() if len(v) > 1)
@@ -1860,14 +2101,14 @@ class EnhancedQuantumScheduler:
         # Calculate lecture sessions with accurate duration tracking
         if lec_hours > 0:
             lec_minutes = int(lec_hours * 60)
-            lec_sessions = self._split_hours_into_sessions(lec_minutes)
+            lec_sessions = self._split_hours_into_sessions(lec_minutes, is_lab=False)
             for slot_count, actual_mins in lec_sessions:
                 sessions.append((slot_count, False, actual_mins))  # is_lab=False
         
         # Calculate lab sessions with accurate duration tracking
         if lab_hours > 0:
             lab_minutes = int(lab_hours * 60)
-            lab_sessions = self._split_hours_into_sessions(lab_minutes)
+            lab_sessions = self._split_hours_into_sessions(lab_minutes, is_lab=True)
             for slot_count, actual_mins in lab_sessions:
                 sessions.append((slot_count, True, actual_mins))  # is_lab=True
         
@@ -1913,13 +2154,15 @@ class EnhancedQuantumScheduler:
         self.conflict_heatmap.clear()
         self.stats.online_classes = 0
         
-        # HEURISTIC SORTING: Prioritize hardest-to-place classes first
-        # This is more efficient than random placement
+        # HEURISTIC SORTING: Lecture-Before-Lab (Anchor-First Strategy)
+        # Lectures (anchors) are scheduled before labs (satellites) so:
+        # 1. Moving a lecture auto-updates schedules for both G1 and G2
+        # 2. Labs can be placed around already-scheduled lectures
         sorted_sections = sorted(
             self.sections.values(),
             key=lambda s: (
                 not getattr(s, 'is_pinned', False),  # 1. Pinned first
-                not (s.requires_lab or s.lab_hours > 0),  # 2. Lab classes next (hardest)
+                s.requires_lab or s.lab_hours > 0,  # 2. LECTURES first (False < True)
                 len(self.compatible_rooms.get(s.id, [])),  # 3. Fewer compatible rooms = harder
                 -s.student_count,  # 4. Larger classes next (capacity constraints)
                 -s.weekly_hours  # 5. More hours = harder to fit
@@ -2184,23 +2427,11 @@ class EnhancedQuantumScheduler:
 
             if is_lab_class:
                 rooms_to_try = [r for r in compatible if self._is_lab_room(r)]
-                if not rooms_to_try:
-                    # Fallback: any lab room (equipment may not match but lab-type is HARD)
-                    # FIX: Must still respect college constraint!
-                    rooms_to_try = [
-                        r for r in self.rooms.keys() 
-                        if self._is_lab_room(r) and is_college_compatible(r)
-                    ]
+                # STRICT: No fallback to random incompatible rooms.
+                # If no compatible lab found, leave unscheduled rather than assign dangerous/wrong room.
             else:
                 rooms_to_try = [r for r in compatible if not self._is_lab_room(r)]
-                if not rooms_to_try:
-                    # Fallback to any compatible room (including lab rooms)
-                    # FIX: Must still respect college constraint!
-                    rooms_to_try = [
-                        r for r in self.rooms.keys() 
-                        if (not self._is_lab_room(r) or not self.constraints.strict_lecture_room_matching) 
-                        and is_college_compatible(r)
-                    ]
+                # STRICT: No fallback to random incompatible rooms.
             
             # Calculate session info for proper duration tracking
             sessions = self._calculate_sessions(section)
@@ -2249,6 +2480,13 @@ class EnhancedQuantumScheduler:
                         ):
                             continue
                         
+                        # Student Group Conflict Check — HARD constraint
+                        # Prevent triple-booking (same students in multiple places)
+                        if self._check_student_group_conflict(
+                            section, day, slot.id, slots_to_assign, section.id
+                        ):
+                            continue
+                        
                         # Teacher daily load check — HARD constraint
                         if section.teacher_id:
                             daily_slots = self._get_teacher_daily_slots(section.teacher_id, day)
@@ -2283,9 +2521,16 @@ class EnhancedQuantumScheduler:
                             slots_to_assign = min(slots_to_assign, remaining_slots)
                                 
                             if self._is_slot_range_available(room_id, day, slot.id, slots_to_assign):
+                                
                                 # Check teacher conflict — HARD constraint
                                 if section.teacher_id and self._check_teacher_conflict(
                                     section.teacher_id, day, slot.id, slots_to_assign, section.id
+                                ):
+                                    continue
+
+                                # Student Group Conflict Check — HARD constraint
+                                if self._check_student_group_conflict(
+                                    section, day, slot.id, slots_to_assign, section.id
                                 ):
                                     continue
                                 
@@ -2861,6 +3106,9 @@ class EnhancedQuantumScheduler:
         # Final aggressive pass to try to schedule any remaining sections
         self._aggressive_scheduling_pass()
         
+        # USER REQUEST: Resolve overlapping teacher schedules to TBD
+        self._resolve_teacher_conflicts_to_tbd()
+        
         self.stats.time_elapsed_ms = int((time.time() - start_time) * 1000)
         
         # Count results - count sections that have at least 1 slot scheduled
@@ -2901,6 +3149,44 @@ class EnhancedQuantumScheduler:
         
         return self._build_result(), self.stats
     
+    def _resolve_teacher_conflicts_to_tbd(self):
+        """
+        Resolves hard teacher conflicts by setting conflicting assignments to TBD.
+        Ensures the final schedule is physically possible by removing bilocation errors.
+        """
+        teacher_slots = defaultdict(list)
+        # Scan current schedule for conflicts
+        for key, slot in self.schedule.items():
+            # Check if teacher is assigned (and not already TBD/0)
+            if slot.teacher_id and slot.teacher_id != 0 and slot.teacher_id != "0":
+                # key is (room_id, day, slot_index)
+                # Store by (teacher_id, day, slot_index)
+                teacher_key = (slot.teacher_id, key[1], key[2])
+                teacher_slots[teacher_key].append(key)
+        
+        conflict_count = 0
+        for t_key, keys in teacher_slots.items():
+            if len(keys) > 1:
+                # Conflict found! Teacher is in multiple rooms at same time.
+                # Sort keys to be deterministic (e.g. by room_id)
+                keys.sort(key=lambda x: str(x[0]) if x[0] is not None else "")
+                
+                # Keep the first assignment valid. Mark others as TBD.
+                kept_key = keys[0]
+                # Log teacher name by looking up section
+                kept_section_id = self.schedule[kept_key].section_id
+                kept_teacher = self.sections[kept_section_id].teacher_name if kept_section_id in self.sections else "Unknown"
+                
+                for conflict_key in keys[1:]:
+                    slot = self.schedule[conflict_key]
+                    # print(f"⚠️ AUTO-RESOLVE: Conflict for {kept_teacher}. Setting Room {conflict_key[0]} to TBD.")
+                    slot.teacher_id = 0  # Effectively removes teacher constraint for valid checks
+                    # slot.teacher_name is NOT available in ScheduleSlot
+                    conflict_count += 1
+                    
+        if conflict_count > 0:
+            print(f"✅ Auto-resolved {conflict_count} teacher conflicts to 'TBD'")
+
     def _build_result(self) -> List[Dict[str, Any]]:
         """Build the final schedule result with BulSU QSA format"""
         results = []
@@ -2963,6 +3249,21 @@ class EnhancedQuantumScheduler:
                     # Fallback: use slot boundary end time
                     end_time = end_time_slot.end_time
                 
+                # Check for TBD override (Teacher Conflict Resolution)
+                teacher_id_out = section.teacher_id
+                teacher_name_out = section.teacher_name
+                
+                # Schedule key is (room_id, day, start_slot_id) - wait, key is (room_id, day, slot_index)
+                # But assignment is start_slot. Does schedule store entry for start_slot?
+                # Yes, schedule stores entry for EVERY slot.
+                slot_key = (room_id, day, start_slot)
+                if slot_key in self.schedule:
+                    slot = self.schedule[slot_key]
+                    # Check if teacher_id is cleared (0 or "0")
+                    if slot.teacher_id == 0 or slot.teacher_id == "0":
+                         teacher_id_out = 0
+                         teacher_name_out = "TBD"
+                
                 results.append({
                     'section_id': section_id,
                     'section_code': section.section_code,
@@ -2981,8 +3282,8 @@ class EnhancedQuantumScheduler:
                     'end_time': end_time,
                     'start_slot_id': start_slot,
                     'slot_count': slot_count,
-                    'teacher_id': section.teacher_id,
-                    'teacher_name': section.teacher_name,
+                    'teacher_id': teacher_id_out,
+                    'teacher_name': teacher_name_out,
                     'year_level': section.year_level,
                     'student_count': section.student_count,
                     'department': section.department,
@@ -3007,7 +3308,8 @@ def run_enhanced_scheduler(
     rooms_data: List[Dict[str, Any]],
     time_slots_data: Optional[List[Dict[str, Any]]] = None,
     config: Optional[Dict[str, Any]] = None,
-    online_days: Optional[List[str]] = None
+    online_days: Optional[List[str]] = None,
+    faculty_profiles_data: Optional[List[Dict[str, Any]]] = None  # NEW: Faculty data passed from API
 ) -> Dict[str, Any]:
     """
     Run the enhanced Quantum-Inspired Annealing scheduler with BulSU QSA rules.
@@ -3156,8 +3458,18 @@ def run_enhanced_scheduler(
         base_section_code = s.get('section_code', s.get('section', f'SEC-{i+1}'))
         
         # Parse required features from list to set
-        required_features = s.get('required_features') or []
-        required_features_set = set(required_features) if isinstance(required_features, list) else set()
+        # ENHANCED: Use separate Lec/Lab requirements if available (populated by database.py)
+        lec_reqs = set(s.get('lec_required_features') or [])
+        lab_reqs = set(s.get('lab_required_features') or [])
+        generic_reqs = set(s.get('required_features') or [])
+        
+        # Fallback checks if specific requirements are missing but generic ones exist
+        if not lec_reqs and not lab_reqs and generic_reqs:
+            # Use heuristic allowlist for lectures to avoid over-constraining
+            lec_reqs = {f for f in generic_reqs if f in {'TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'}}
+            lab_reqs = generic_reqs # Assume all generic reqs are needed for lab portion
+        
+        required_features_set = generic_reqs
         
         # TYPE-BASED SPLITTING: Check if this is a hybrid course
         if lec_hours > 0 and lab_hours > 0:
@@ -3189,7 +3501,7 @@ def run_enhanced_scheduler(
                 department=s.get('department') or s.get('courses', {}).get('department', ''),
                 college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
-                required_features=set(),  # Lectures typically don't need special features
+                required_features=lec_reqs,  # Use specific lecture requirements
                 sibling_id=lab_section_id,  # Link to lab sibling
                 original_section_id=original_id,
                 section_type="lecture"
@@ -3215,7 +3527,7 @@ def run_enhanced_scheduler(
                 department=s.get('department') or s.get('courses', {}).get('department', ''),
                 college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
-                required_features=required_features_set,  # Labs may need special equipment
+                required_features=lab_reqs,  # Use specific lab requirements
                 sibling_id=lec_section_id,  # Link to lecture sibling
                 original_section_id=original_id,
                 section_type="lab"
@@ -3251,7 +3563,11 @@ def run_enhanced_scheduler(
                 department=s.get('department') or s.get('courses', {}).get('department', ''),
                 college=s.get('college') or s.get('courses', {}).get('college', ''),
                 semester=s.get('semester', '1st Semester'),
-                required_features=required_features_set,
+                # Use appropriate requirements based on section type
+                required_features=(
+                    lab_reqs if is_lab_only 
+                    else (lec_reqs if lab_hours == 0 else lec_reqs.union(lab_reqs))
+                ),
                 sibling_id=None,
                 original_section_id=None,
                 section_type="lab" if is_lab_only else "lecture"
@@ -3286,10 +3602,11 @@ def run_enhanced_scheduler(
         ))
     
     # Create constraints with new options
-    # Lunch mode: 'strict' = no classes during lunch (HARD), 'flexible' = avoid but allow (SOFT), 'none' = no restriction
-    lunch_mode = config.get('lunch_mode', 'flexible')
+    # Lunch modes: 'auto' = 1hr break after 6hrs consecutive (NEW DEFAULT),
+    # 'strict' = no classes during lunch (HARD), 'flexible' = avoid but allow (SOFT), 'none' = no restriction
+    lunch_mode = config.get('lunch_mode', 'auto')
     
-    # Lunch break times (default 12:00-13:00)
+    # Lunch break times (only used for 'strict' or 'flexible' mode; ignored in 'auto' mode)
     lunch_start_hour = config.get('lunch_start_hour', 12)
     lunch_end_hour = config.get('lunch_end_hour', 13)
     
@@ -3311,10 +3628,13 @@ def run_enhanced_scheduler(
         require_faculty_lunch_break=True  # Faculty MUST have lunch break if teaching all day
     )
     
-    print(f"🍽️ Lunch mode: {lunch_mode} ({lunch_start_hour}:00 - {lunch_end_hour}:00)")
-    print(f"🏫 Campus closing: {end_time_str} (classes must end by {end_time_minutes // 60}:{end_time_minutes % 60:02d})")
-    print(f"🔬 Strict lab-room matching: {constraints.strict_lab_room_matching}")
-    print(f"📚 Strict lecture-room matching: {constraints.strict_lecture_room_matching}")
+    if lunch_mode == 'auto':
+        print(f"Lunch mode: AUTO (mandatory 1hr break after {constraints.auto_break_after_consecutive_hours}hrs consecutive)")
+    else:
+        print(f"Lunch mode: {lunch_mode} ({lunch_start_hour}:00 - {lunch_end_hour}:00)")
+    print(f"Campus closing: {end_time_str} (classes must end by {end_time_minutes // 60}:{end_time_minutes % 60:02d})")
+    print(f"Strict lab-room matching: {constraints.strict_lab_room_matching}")
+    print(f"Strict lecture-room matching: {constraints.strict_lecture_room_matching}")
     
     # Get active days
     active_days = config.get('active_days')
@@ -3324,6 +3644,40 @@ def run_enhanced_scheduler(
     # Normalize online days
     normalized_online_days = [d.lower() for d in online_days] if online_days else []
     
+    # Create Faculty Profiles
+    faculty_profiles = []
+    if faculty_profiles_data:
+        print(f"👤 Processing {len(faculty_profiles_data)} faculty profiles...")
+        for f in faculty_profiles_data:
+            # Parse unavailable days from list or set
+            unavailable = set()
+            if 'unavailable_days' in f and f['unavailable_days']:
+                if isinstance(f['unavailable_days'], list):
+                    unavailable = set(d.lower() for d in f['unavailable_days'])
+                elif isinstance(f['unavailable_days'], str):
+                    unavailable = set(d.strip().lower() for d in f['unavailable_days'].split(','))
+            elif 'preferred_days' in f and f['preferred_days']:
+                # Support "preferred_days" (inverse of unavailable)
+                # Assume standard days Mon-Sat
+                all_possible_days = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'}
+                if isinstance(f['preferred_days'], list):
+                    preferred = set(d.lower() for d in f['preferred_days'])
+                    unavailable = all_possible_days - preferred
+            
+            # Parse preferred times (e.g., "Morning", "Night", "7:00-12:00")
+            # For now, just store the string, cost function handles keywords
+            preferred = f.get('preferred_times') or f.get('preferred_shift')
+            
+            faculty_profiles.append(FacultyProfile(
+                id=f.get('id', 0),
+                name=f.get('name', 'Unknown'),
+                employment_type=f.get('employment_type', 'full-time'),
+                preferred_times=preferred,
+                unavailable_days=unavailable,
+                max_daily_hours=f.get('max_hours_per_day', 8),
+                max_weekly_units=f.get('max_weekly_units', 24)
+            ))
+            
     # Create and run scheduler with BulSU QSA features
     scheduler = EnhancedQuantumScheduler(
         sections=sections,
@@ -3331,7 +3685,8 @@ def run_enhanced_scheduler(
         time_slots=time_slots,
         constraints=constraints,
         active_days=active_days,
-        online_days=normalized_online_days
+        online_days=normalized_online_days,
+        faculty_profiles=faculty_profiles  # Pass the profiles
     )
     
     allocations, stats = scheduler.optimize(

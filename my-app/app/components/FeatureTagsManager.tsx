@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package, Sun, Dumbbell } from 'lucide-react'
 import styles from './FeatureTagsManager.module.css'
 
@@ -37,6 +37,7 @@ interface FeatureTagsManagerProps {
   mode: 'room' | 'course'
   entityId: number
   entityName: string
+  subType?: 'lec' | 'lab'
   onUpdate?: () => void
 }
 
@@ -111,6 +112,7 @@ export default function FeatureTagsManager({
   mode,
   entityId,
   entityName,
+  subType,
   onUpdate
 }: FeatureTagsManagerProps) {
   // State
@@ -165,7 +167,14 @@ export default function FeatureTagsManager({
       const action = mode === 'room' ? 'add_room_feature' : 'add_subject_requirement'
       const payload = mode === 'room'
         ? { action, room_id: entityId, feature_tag_id: tagId, quantity: 1 }
-        : { action, course_id: entityId, feature_tag_id: tagId, is_mandatory: true, min_quantity: 1 }
+        : {
+          action,
+          course_id: entityId,
+          feature_tag_id: tagId,
+          is_mandatory: true,
+          min_quantity: 1,
+          notes: subType ? subType.toUpperCase() : undefined
+        }
 
       const response = await fetch('/api/room-features', {
         method: 'POST',
@@ -190,14 +199,36 @@ export default function FeatureTagsManager({
   const handleRemoveFeature = async (featureId: number) => {
     setSaving(true)
     try {
-      const action = mode === 'room' ? 'remove_room_feature' : 'remove_subject_requirement'
+      // Check if this is a shared requirement (BOTH) that needs downgrade instead of delete
+      const feature = assignedFeatures.find(f => f.id === featureId)
+      const notes = (feature?.notes || '').toUpperCase()
 
-      const response = await fetch(`/api/room-features?action=${action}&id=${featureId}`, {
-        method: 'DELETE'
-      })
+      if (mode === 'course' && notes === 'BOTH' && subType) {
+        // Downgrade logic: If removing from Lec tab, keep for Lab (and vice versa)
+        const newNotes = subType === 'lec' ? 'LAB' : 'LEC'
+        const req = feature as SubjectRequirement
 
-      const data = await response.json()
-      if (!data.success) throw new Error(data.error)
+        await fetch('/api/room-features', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'add_subject_requirement',
+            course_id: entityId,
+            feature_tag_id: req.feature_tag_id,
+            is_mandatory: req.is_mandatory,
+            min_quantity: req.min_quantity,
+            notes: newNotes
+          })
+        })
+      } else {
+        // Normal delete
+        const action = mode === 'room' ? 'remove_room_feature' : 'remove_subject_requirement'
+        const response = await fetch(`/api/room-features?action=${action}&id=${featureId}`, {
+          method: 'DELETE'
+        })
+        const data = await response.json()
+        if (!data.success) throw new Error(data.error)
+      }
 
       // Refresh data
       await fetchData()
@@ -247,8 +278,25 @@ export default function FeatureTagsManager({
     return ['all', ...Array.from(categories).sort()]
   }
 
+  // Computed filtered list based on subType (LEC/LAB tabs)
+  const filteredFeatures = useMemo(() => {
+    if (loading) return []
+    if (mode === 'room') return assignedFeatures
+    if (!subType) return assignedFeatures
+
+    return assignedFeatures.filter(f => {
+      const notes = (f.notes || '').toUpperCase()
+      if (notes === 'BOTH') return true // Show in both tabs
+
+      if (subType === 'lec') return notes === 'LEC'
+      // Treat 'LAB' or empty/null as Lab features (backward compatibility)
+      if (subType === 'lab') return notes === 'LAB' || !f.notes || notes === ''
+      return true
+    })
+  }, [assignedFeatures, mode, subType, loading])
+
   const getAssignedTagIds = (): Set<number> => {
-    return new Set(assignedFeatures.map(f => f.feature_tag_id))
+    return new Set(filteredFeatures.map(f => f.feature_tag_id))
   }
 
   const getAvailableTags = (): FeatureTag[] => {
@@ -332,7 +380,7 @@ export default function FeatureTagsManager({
 
       {/* Assigned Features */}
       <div className={styles.assignedSection}>
-        {assignedFeatures.length === 0 ? (
+        {filteredFeatures.length === 0 ? (
           <div className={styles.emptyState}>
             <Tag size={32} style={{ opacity: 0.3 }} />
             <p>No {mode === 'room' ? 'features assigned' : 'requirements set'}</p>
@@ -340,7 +388,7 @@ export default function FeatureTagsManager({
           </div>
         ) : (
           <div className={styles.tagsList}>
-            {assignedFeatures.map((feature) => {
+            {filteredFeatures.map((feature) => {
               const tag = feature.feature_tags as FeatureTag | undefined
               if (!tag) return null
 
@@ -458,14 +506,14 @@ export default function FeatureTagsManager({
       )}
 
       {/* Summary Footer */}
-      {assignedFeatures.length > 0 && (
+      {filteredFeatures.length > 0 && (
         <div className={styles.footer}>
           <span className={styles.footerCount}>
-            {assignedFeatures.length} {mode === 'room' ? 'feature(s)' : 'requirement(s)'}
+            {filteredFeatures.length} {mode === 'room' ? 'feature(s)' : 'requirement(s)'}
           </span>
           {mode === 'course' && (
             <span className={styles.footerMandatory}>
-              {(assignedFeatures as SubjectRequirement[]).filter(f => f.is_mandatory).length} mandatory
+              {(filteredFeatures as SubjectRequirement[]).filter(f => f.is_mandatory).length} mandatory
             </span>
           )}
         </div>

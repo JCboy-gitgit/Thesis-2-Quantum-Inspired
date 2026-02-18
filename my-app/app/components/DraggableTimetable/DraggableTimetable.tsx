@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { Clock, Lock } from 'lucide-react'
+import { MdAccessTime, MdLock } from 'react-icons/md'
 import styles from './DraggableTimetable.module.css'
 import {
     parseTimeToMinutes,
@@ -477,7 +477,7 @@ export default function DraggableTimetable({
 
         // Prevent context menu on long press
         e.preventDefault()
-        
+
         const touch = e.touches[0]
         const ts = touchStateRef.current
         ts.startX = touch.clientX
@@ -545,7 +545,7 @@ export default function DraggableTimetable({
             {isLocked && mode !== 'admin-edit' && (
                 <div className={styles.lockedOverlay}>
                     <div className={styles.lockedBadge}>
-                        <Lock size={16} /> Schedule is locked
+                        <MdLock size={16} /> Schedule is locked
                     </div>
                 </div>
             )}
@@ -562,7 +562,7 @@ export default function DraggableTimetable({
                 <thead>
                     <tr>
                         <th className={styles.timeHeader}>
-                            <Clock size={16} /> Time
+                            <MdAccessTime size={16} /> Time
                         </th>
                         {DAYS.map(day => (
                             <th key={day} className={styles.dayHeader}>{day}</th>

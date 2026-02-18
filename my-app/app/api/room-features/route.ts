@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     if (action === 'compatible_rooms' && courseId) {
       // Get rooms compatible with a course's requirements
       const minCapacity = parseInt(searchParams.get('min_capacity') || '1')
-      
+
       const { data, error } = await supabase
         .rpc('get_compatible_rooms_for_subject', {
           p_course_id: parseInt(courseId),
@@ -167,6 +167,28 @@ export async function POST(request: NextRequest) {
     if (action === 'add_subject_requirement') {
       const { course_id, feature_tag_id, is_mandatory, min_quantity, notes } = body
 
+      // Check for existing requirement to handle merging logic (LEC + LAB = BOTH)
+      const { data: existing } = await supabase
+        .from('subject_room_requirements')
+        .select('notes')
+        .eq('course_id', course_id)
+        .eq('feature_tag_id', feature_tag_id)
+        .maybeSingle()
+
+      let finalNotes = notes
+      if (existing) {
+        const oldNotes = (existing.notes || '').toUpperCase()
+        const newNotes = (notes || '').toUpperCase()
+
+        // Merge logic
+        if ((oldNotes === 'LEC' && newNotes === 'LAB') ||
+          (oldNotes === 'LAB' && newNotes === 'LEC')) {
+          finalNotes = 'BOTH'
+        } else if (oldNotes === 'BOTH') {
+          finalNotes = 'BOTH'
+        }
+      }
+
       const { data, error } = await supabase
         .from('subject_room_requirements')
         .upsert({
@@ -174,7 +196,7 @@ export async function POST(request: NextRequest) {
           feature_tag_id,
           is_mandatory: is_mandatory ?? true,
           min_quantity: min_quantity || 1,
-          notes
+          notes: finalNotes
         }, {
           onConflict: 'course_id,feature_tag_id'
         })

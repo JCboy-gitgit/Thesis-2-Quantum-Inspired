@@ -22,7 +22,8 @@ import {
   BookOpen,
   UserCheck,
   UserCog,
-  Bell
+  Bell,
+  Radio
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -133,6 +134,12 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
           label: 'Room Schedule View',
           path: '/LandingPages/RoomSchedule/ViewSchedule',
           icon: Eye
+        },
+        {
+          label: 'Live Timetable',
+          path: '/LandingPages/LiveTimetable',
+          icon: Radio,
+          exact: true
         },
       ]
     },

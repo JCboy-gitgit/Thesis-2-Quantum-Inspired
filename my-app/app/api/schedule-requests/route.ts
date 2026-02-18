@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
             // Fetch allocation details
             let courseCode = 'N/A'
             let section = 'N/A'
+            let roomName = 'N/A'
+
             if (req.allocation_id) {
                 const { data: allocData } = await supabaseAdmin
                     .from('room_allocations')
@@ -56,6 +58,19 @@ export async function GET(request: NextRequest) {
                 if (allocData) {
                     courseCode = allocData.course_code
                     section = allocData.section
+
+                    // Fetch room details safely
+                    if (allocData.room_id) {
+                        const { data: roomData } = await supabaseAdmin
+                            .from('rooms')
+                            .select('room_name')
+                            .eq('id', allocData.room_id)
+                            .single()
+
+                        if (roomData) {
+                            roomName = roomData.room_name
+                        }
+                    }
                 }
             }
 
@@ -65,6 +80,8 @@ export async function GET(request: NextRequest) {
                 requester_name: requesterName,
                 course_code: courseCode,
                 section: section,
+                room_name: roomName,
+                schedule_name: req.generated_schedules?.schedule_name || 'Unknown Schedule',
                 current_day: req.original_day,
                 current_time: req.original_time
             }
@@ -227,8 +244,41 @@ export async function PATCH(request: NextRequest) {
 
         // If approved, update allocation
         if (status === 'approved') {
-            const { allocation_id, new_day, new_time } = requestData
+            const { allocation_id, new_day, new_time, schedule_id } = requestData
 
+            // 1. Get room_id from the allocation
+            const { data: allocation, error: allocFetchError } = await supabaseAdmin
+                .from('room_allocations')
+                .select('room_id')
+                .eq('id', allocation_id)
+                .single()
+
+            if (allocFetchError || !allocation) {
+                return NextResponse.json({ error: 'Original allocation not found' }, { status: 404 })
+            }
+
+            const roomId = allocation.room_id
+
+            // 2. Check for conflicts in the target slot (Exact match on day + time + room)
+            // Note: This checks for exact string match on time range (e.g., "07:30 - 09:00")
+            const { data: conflicts } = await supabaseAdmin
+                .from('room_allocations')
+                .select('id, course_code, section')
+                .eq('schedule_id', schedule_id)
+                .eq('room_id', roomId)
+                .eq('schedule_day', new_day)
+                .eq('schedule_time', new_time)
+                .neq('id', allocation_id) // Exclude self
+
+            if (conflicts && conflicts.length > 0) {
+                const conflictDetails = conflicts.map((c: any) => `${c.course_code} (${c.section})`).join(', ')
+                return NextResponse.json({
+                    error: `Conflict detected: Room is already booked by ${conflictDetails} at this time.`,
+                    isConflict: true
+                }, { status: 409 })
+            }
+
+            // 3. Update allocation
             const { error: allocationError } = await supabaseAdmin
                 .from('room_allocations')
                 .update({

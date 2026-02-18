@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, X, CheckCircle2, AlertTriangle, Info, AlertCircle } from 'lucide-react'
+import { MdNotifications, MdClose, MdCheckCircle, MdWarning, MdInfo } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './NotificationPanel.module.css'
 
@@ -119,12 +119,12 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
   const severityIcon = (level: string) => {
     switch (level) {
       case 'success':
-        return <CheckCircle2 size={16} className={styles.iconSuccess} />
+        return <MdCheckCircle size={16} className={styles.iconSuccess} />
       case 'warning':
       case 'error':
-        return <AlertTriangle size={16} className={styles.iconError} />
+        return <MdWarning size={16} className={styles.iconError} />
       default:
-        return <Info size={16} className={styles.iconInfo} />
+        return <MdInfo size={16} className={styles.iconInfo} />
     }
   }
 
@@ -152,7 +152,7 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
         className={styles.bellBtn}
         title="Notifications"
       >
-        <Bell size={20} />
+        <MdNotifications size={20} />
         {unreadCount > 0 && (
           <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
@@ -174,7 +174,7 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
                 className={styles.closeBtn}
                 aria-label="Close"
               >
-                <X size={20} />
+                <MdClose size={20} />
               </button>
             </div>
 
@@ -182,7 +182,7 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
             <div className={styles.list}>
               {notifications.length === 0 ? (
                 <div className={styles.empty}>
-                  <Bell size={36} />
+                  <MdNotifications size={36} />
                   <p>No notifications yet</p>
                 </div>
               ) : (

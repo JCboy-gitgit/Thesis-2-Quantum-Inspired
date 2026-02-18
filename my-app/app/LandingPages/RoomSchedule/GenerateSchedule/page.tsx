@@ -155,11 +155,12 @@ interface TimeSettings {
   slotDuration: number // 60 minutes
   includeSaturday: boolean
   includeSunday: boolean
-  // Lunch break settings
-  lunchBreakEnabled: boolean
-  lunchBreakStart: string  // "13:00" = 1:00 PM
-  lunchBreakEnd: string    // "14:00" = 2:00 PM
-  lunchBreakStrict: boolean // true = hard constraint (no classes), false = soft constraint (avoid if possible)
+  // Lunch break settings (AUTO MODE: 1hr break after 6hrs consecutive)
+  // These are kept for backwards compatibility but are no longer user-configurable
+  lunchBreakEnabled: boolean  // Always true in auto mode
+  lunchBreakStart: string     // Not used in auto mode
+  lunchBreakEnd: string       // Not used in auto mode
+  lunchBreakStrict: boolean   // Not used in auto mode
 }
 
 interface TimeSlot {
@@ -315,11 +316,11 @@ export default function GenerateSchedulePage() {
     slotDuration: 90, // Fixed to 90 minutes (1.5 hours) - standard academic period
     includeSaturday: true,
     includeSunday: false,
-    // Lunch break settings - default 1:00 PM to 2:00 PM (enabled by default)
-    lunchBreakEnabled: true,
-    lunchBreakStart: '13:00',  // 1:00 PM
-    lunchBreakEnd: '14:00',    // 2:00 PM
-    lunchBreakStrict: true // No classes during lunch (hard constraint)
+    // Lunch break settings - AUTO MODE (1hr break after 6hrs consecutive)
+    lunchBreakEnabled: true,     // Always enabled in auto mode
+    lunchBreakStart: '12:00',    // Not user-configurable
+    lunchBreakEnd: '13:00',      // Not user-configurable  
+    lunchBreakStrict: true       // Not user-configurable
   })
 
   // UI states
@@ -441,7 +442,7 @@ export default function GenerateSchedulePage() {
   useEffect(() => {
     checkAuth()
     fetchAllGroups()
-    
+
     // Request notification permission on mount
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
@@ -558,9 +559,9 @@ export default function GenerateSchedulePage() {
       // Filter by college if specified
       let filteredData = data
       if (collegeFilter && collegeFilter !== 'all') {
-        filteredData = data.filter((r: any) => 
-          r.college === collegeFilter || 
-          r.college === 'Shared' || 
+        filteredData = data.filter((r: any) =>
+          r.college === collegeFilter ||
+          r.college === 'Shared' ||
           !r.college // Include rooms without college (legacy data)
         )
       }
@@ -569,7 +570,7 @@ export default function GenerateSchedulePage() {
         const status = (r.status || '').toLowerCase()
         return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
       })
-      
+
       setRooms(filteredData.map((r: any) => ({
         id: r.id,
         campus: r.campus || '',
@@ -590,7 +591,7 @@ export default function GenerateSchedulePage() {
     try {
       // Get sections for this year batch
       let batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
-      
+
       // Filter sections by college if specified
       if (collegeFilter && collegeFilter !== 'all') {
         batchSections = batchSections.filter(s => s.college === collegeFilter || !s.college)
@@ -758,12 +759,12 @@ export default function GenerateSchedulePage() {
   const loadClassDataWithSemester = async (yearBatchId: number, selectedSemester: string, collegeFilter?: string) => {
     try {
       let batchSections = sections.filter(s => s.year_batch_id === yearBatchId)
-      
+
       // Filter by college if specified
       if (collegeFilter && collegeFilter !== 'all') {
         batchSections = batchSections.filter(s => s.college === collegeFilter || !s.college)
       }
-      
+
       if (batchSections.length === 0) {
         setAllLoadedClasses([])
         setCourses([])
@@ -798,7 +799,7 @@ export default function GenerateSchedulePage() {
       const filteredCourses = (coursesData || []).filter((c: any) => {
         const courseSem = (c.semester || '').toLowerCase()
         const targetSemLower = selectedSemester.toLowerCase()
-        
+
         // Match various semester formats
         if (targetSemLower.includes('first') || targetSemLower.includes('1st')) {
           return courseSem.includes('1st') || courseSem.includes('first') || courseSem === '1'
@@ -928,9 +929,9 @@ export default function GenerateSchedulePage() {
         // Filter by college if specified
         let filteredData = data
         if (collegeFilter && collegeFilter !== 'all') {
-          filteredData = data.filter((r: any) => 
-            r.college === collegeFilter || 
-            r.college === 'Shared' || 
+          filteredData = data.filter((r: any) =>
+            r.college === collegeFilter ||
+            r.college === 'Shared' ||
             !r.college // Include rooms without college (legacy data)
           )
         }
@@ -939,7 +940,7 @@ export default function GenerateSchedulePage() {
           const status = (r.status || '').toLowerCase()
           return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
         })
-        
+
         const mappedRooms = filteredData.map((r: any) => ({
           id: r.id,
           campus: r.campus || '',
@@ -1450,11 +1451,8 @@ export default function GenerateSchedulePage() {
           avoid_conflicts: config.avoidConflicts,
           online_days: config.onlineDays,
           college: selectedCollege, // College constraint for backend
-          // Lunch break settings
-          lunch_break_enabled: timeSettings.lunchBreakEnabled,
-          lunch_start_time: timeSettings.lunchBreakStart,
-          lunch_end_time: timeSettings.lunchBreakEnd,
-          lunch_mode: timeSettings.lunchBreakStrict ? 'strict' : 'flexible'
+          // Lunch break: AUTO mode (1hr break after 6hrs consecutive)
+          lunch_mode: 'auto'
         }
       }
 
@@ -1486,7 +1484,7 @@ export default function GenerateSchedulePage() {
         // First get the response as text, then try to parse as JSON
         const responseText = await response.text()
         let errorMsg = 'Failed to generate schedule'
-        
+
         try {
           const errorData = JSON.parse(responseText)
           // Handle error - could be string, object, or array
@@ -1522,7 +1520,7 @@ export default function GenerateSchedulePage() {
         console.error('Failed to parse successful response as JSON')
         throw new Error('The backend returned an invalid response format. Please try again.')
       }
-      
+
       console.log('[GenerateSchedule] API Response:', JSON.stringify(result, null, 2))
 
       setScheduleResult({
@@ -1615,7 +1613,7 @@ export default function GenerateSchedulePage() {
       const errorMessage = typeof error === 'object'
         ? (error.message || JSON.stringify(error, null, 2))
         : String(error)
-      
+
       // Show error toast and browser notification
       toast.error('Schedule Generation Failed', {
         description: errorMessage,
@@ -1692,7 +1690,7 @@ export default function GenerateSchedulePage() {
       const generateColorPalette = (allocs: RoomAllocation[]) => {
         const uniqueCourses = new Set(allocs.map(a => a.course_code))
         const colorMap = new Map<string, { r: number; g: number; b: number }>()
-        
+
         const colors = [
           { r: 25, g: 118, b: 210 },   // Blue
           { r: 56, g: 142, b: 60 },    // Green
@@ -1715,20 +1713,20 @@ export default function GenerateSchedulePage() {
           { r: 78, g: 52, b: 46 },     // Dark Brown
           { r: 1, g: 87, b: 155 }      // Dark Blue
         ]
-        
+
         let colorIdx = 0
         uniqueCourses.forEach(course => {
           colorMap.set(course, colors[colorIdx % colors.length])
           colorIdx++
         })
-        
+
         return colorMap
       }
 
       // Helper: Expand day abbreviations
       const expandDays = (dayStr: string): string[] => {
         if (!dayStr) return []
-        
+
         const dayMap: { [key: string]: string } = {
           'M': 'monday', 'T': 'tuesday', 'W': 'wednesday',
           'TH': 'thursday', 'F': 'friday', 'S': 'saturday', 'SU': 'sunday',
@@ -1776,7 +1774,7 @@ export default function GenerateSchedulePage() {
       const processAllocationsToBlocks = (allocs: RoomAllocation[]) => {
         const blocks: any[] = []
         const groupedMap = new Map()
-        
+
         // Maximum block duration in minutes (4 hours = 240 minutes)
         // This prevents merging allocations into impossibly long blocks
         const MAX_BLOCK_DURATION_MINUTES = 240
@@ -1801,14 +1799,14 @@ export default function GenerateSchedulePage() {
           sorted.forEach((alloc: any) => {
             const startTime = alloc.start_time || alloc.schedule_time?.split('-')[0]?.trim() || ''
             const endTime = alloc.end_time || alloc.schedule_time?.split('-')[1]?.trim() || ''
-            
+
             const startMins = parseTimeToMinutes(startTime)
             const endMins = parseTimeToMinutes(endTime)
             if (startMins === 0 && endMins === 0) return
 
             // Check if we should merge with current block
             // Only merge if: consecutive AND merged duration wouldn't exceed max
-            const shouldMerge = currentBlock && 
+            const shouldMerge = currentBlock &&
               currentBlock.endMinutes === startMins &&
               (endMins - currentBlock.startMinutes) <= MAX_BLOCK_DURATION_MINUTES
 
@@ -1860,24 +1858,24 @@ export default function GenerateSchedulePage() {
         const totalWidth = logoSize + 2 + textWidth
         const startX = (pageWidth - totalWidth) / 2
         const logoY = margin
-        
+
         // Green rounded rectangle for Q
         pdf.setFillColor(22, 163, 74)
         pdf.roundedRect(startX, logoY, logoSize, logoSize, 1.5, 1.5, 'F')
-        
+
         // "Q" letter in white
         pdf.setTextColor(255, 255, 255)
         pdf.setFontSize(6)
         pdf.setFont('helvetica', 'bold')
         const qWidth = pdf.getTextWidth('Q')
         pdf.text('Q', startX + (logoSize - qWidth) / 2, logoY + 5.5)
-        
+
         // "Qtime Scheduler" text in black
         pdf.setTextColor(0, 0, 0)
         pdf.setFontSize(logoTextSize)
         pdf.setFont('helvetica', 'bold')
         pdf.text(logoText, startX + logoSize + 2, logoY + 6)
-        
+
         // Reset text color
         pdf.setTextColor(0, 0, 0)
 
@@ -1886,7 +1884,7 @@ export default function GenerateSchedulePage() {
         pdf.setFont('helvetica', 'bold')
         const titleWidth = pdf.getTextWidth(title)
         pdf.text(title, (pageWidth - titleWidth) / 2, margin + 14)
-        
+
         // Subtitle - centered
         pdf.setFontSize(8)
         pdf.setFont('helvetica', 'normal')
@@ -1899,7 +1897,7 @@ export default function GenerateSchedulePage() {
 
         // Process allocations into blocks
         const blocks = processAllocationsToBlocks(allocData)
-        
+
         // Table dimensions
         const startY = margin + 22
         const timeColWidth = 18
@@ -1910,11 +1908,11 @@ export default function GenerateSchedulePage() {
         // Draw header grid and labels
         pdf.setDrawColor(100, 100, 100)
         pdf.setLineWidth(0.5)
-        
+
         // Header row background
         pdf.setFillColor(240, 240, 240)
         pdf.rect(margin, startY, usableWidth, rowHeight, 'F')
-        
+
         // Draw header border
         pdf.setDrawColor(150, 150, 150)
         pdf.rect(margin, startY, usableWidth, rowHeight)
@@ -1925,7 +1923,7 @@ export default function GenerateSchedulePage() {
         pdf.setTextColor(0, 0, 0)
         const timeHeaderWidth = pdf.getTextWidth('Time')
         pdf.text('Time', margin + (timeColWidth - timeHeaderWidth) / 2, startY + 5.5)
-        
+
         const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         weekdays.forEach((day, idx) => {
           const x = margin + timeColWidth + (idx * dayColWidth)
@@ -1958,9 +1956,9 @@ export default function GenerateSchedulePage() {
             const slotMinutes = hour * 60 + min
 
             // Check if covered by block
-            const isCoveredByBlock = blocks.some(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const isCoveredByBlock = blocks.some(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1971,9 +1969,9 @@ export default function GenerateSchedulePage() {
               pdf.line(x, y + rowHeight, x + dayColWidth, y + rowHeight)
             }
 
-            const relevantBlocks = blocks.filter(b => 
-              b.day === dayLower && 
-              b.startMinutes <= slotMinutes && 
+            const relevantBlocks = blocks.filter(b =>
+              b.day === dayLower &&
+              b.startMinutes <= slotMinutes &&
               b.endMinutes > slotMinutes
             )
 
@@ -1990,13 +1988,13 @@ export default function GenerateSchedulePage() {
               const centerX = x + dayColWidth / 2
               pdf.setTextColor(255, 255, 255)
               let textY = y + 3
-              
+
               // Course Code - centered
               pdf.setFontSize(7)
               pdf.setFont('helvetica', 'bold')
               pdf.text(block.course_code || 'N/A', centerX, textY, { align: 'center' })
               textY += 2.8
-              
+
               // Course Name - centered
               if (blockHeight > 8) {
                 pdf.setFontSize(5.5)
@@ -2005,7 +2003,7 @@ export default function GenerateSchedulePage() {
                 pdf.text(courseNameLines.slice(0, 1), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Time Range - centered
               if (blockHeight > 12) {
                 pdf.setFontSize(5)
@@ -2021,14 +2019,14 @@ export default function GenerateSchedulePage() {
                 pdf.text(`${formatTime(startH, startM)} - ${formatTime(endH, endM)}`, centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Section - centered
               if (blockHeight > 16) {
                 pdf.setFontSize(5.5)
                 pdf.text((block.section || 'N/A').substring(0, 20), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Room - centered
               if (blockHeight > 20) {
                 pdf.setFontSize(5)
@@ -2037,7 +2035,7 @@ export default function GenerateSchedulePage() {
                 pdf.text(roomText.substring(0, 25), centerX, textY, { align: 'center' })
                 textY += 2.5
               }
-              
+
               // Teacher Name - centered
               if (blockHeight > 24) {
                 pdf.setFontSize(5)
@@ -2265,7 +2263,7 @@ export default function GenerateSchedulePage() {
                   <p className={styles.formDescription}>
                     The following classes could not be scheduled. Review the detailed reasons below to resolve issues.
                   </p>
-                  
+
                   {/* Summary by reason type */}
                   <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     {(() => {
@@ -2274,7 +2272,7 @@ export default function GenerateSchedulePage() {
                         const code = item.reason_code || 'UNKNOWN'
                         reasonCounts[code] = (reasonCounts[code] || 0) + 1
                       })
-                      
+
                       const reasonLabels: Record<string, { label: string; icon: string; color: string }> = {
                         'INSUFFICIENT_ROOM_CAPACITY': { label: 'Room Capacity', icon: '🏢', color: '#ef4444' },
                         'NO_LAB_ROOMS': { label: 'No Lab Rooms', icon: '🔬', color: '#8b5cf6' },
@@ -2285,7 +2283,7 @@ export default function GenerateSchedulePage() {
                         'ROOM_TYPE_MISMATCH': { label: 'Room Type Mismatch', icon: '🚪', color: '#6366f1' },
                         'UNKNOWN': { label: 'Other', icon: '❓', color: '#6b7280' }
                       }
-                      
+
                       return Object.entries(reasonCounts).map(([code, count]) => {
                         const info = reasonLabels[code] || reasonLabels['UNKNOWN']
                         return (
@@ -2308,7 +2306,7 @@ export default function GenerateSchedulePage() {
                       })
                     })()}
                   </div>
-                  
+
                   <div className={styles.unscheduledList}>
                     {scheduleResult.unscheduledList.map((item, index) => {
                       const reasonIcons: Record<string, string> = {
@@ -2322,7 +2320,7 @@ export default function GenerateSchedulePage() {
                         'UNKNOWN': '❓'
                       }
                       const icon = reasonIcons[item.reason_code || 'UNKNOWN'] || '❓'
-                      
+
                       return (
                         <div key={index} className={styles.unscheduledItem}>
                           <div className={styles.unscheduledHeader}>
@@ -2431,7 +2429,7 @@ export default function GenerateSchedulePage() {
                         className={styles.filterSelect}
                       >
                         <option value="all">All Sections</option>
-                        {[...new Set(scheduleResult.allocations.map(a => 
+                        {[...new Set(scheduleResult.allocations.map(a =>
                           a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
                         ).filter(Boolean))].map(section => (
                           <option key={section} value={section}>{section}</option>
@@ -2535,7 +2533,7 @@ export default function GenerateSchedulePage() {
                             // Parse schedule_time in format "H:MM AM - H:MM PM" or "HH:MM - HH:MM"
                             const timeParts = timeStr.split(/\s*-\s*/);
                             if (timeParts.length !== 2) return;
-                            
+
                             const startMins = parseTimeToMinutes(timeParts[0]);
                             const endMins = parseTimeToMinutes(timeParts[1]);
                             if (startMins === 0 && endMins === 0) return;
@@ -2622,11 +2620,11 @@ export default function GenerateSchedulePage() {
                                             // Get color based on course/subject
                                             const getColor = () => {
                                               if (block.is_online) return '#9c27b0';
-                                              
+
                                               // Generate color based on course code for consistent coloring across all views
                                               const courseKey = block.course_code || block.course_name || 'default';
                                               const hash = courseKey.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
-                                              
+
                                               // Expanded color palette with distinct, vibrant colors
                                               const colors = [
                                                 '#1976d2', // Blue
@@ -2650,7 +2648,7 @@ export default function GenerateSchedulePage() {
                                                 '#4e342e', // Dark Brown
                                                 '#01579b'  // Dark Blue
                                               ];
-                                              
+
                                               return colors[Math.abs(hash) % colors.length];
                                             };
 
@@ -2738,17 +2736,32 @@ export default function GenerateSchedulePage() {
             <div className={styles.formSection}>
               {/* Step Progress */}
               <div className={styles.stepProgress}>
-                <div className={`${styles.step} ${activeStep >= 1 ? styles.active : ''} ${activeStep > 1 ? styles.completed : ''}`}>
+                <div
+                  className={`${styles.step} ${activeStep >= 1 ? styles.active : ''} ${activeStep > 1 ? styles.completed : ''}`}
+                  onClick={() => goToStep(1)}
+                  style={{ cursor: 'pointer' }}
+                  title="Go to Step 1: Select Data Sources"
+                >
                   <div className={styles.stepNumber}>1</div>
                   <span>Select Data Sources</span>
                 </div>
                 <div className={styles.stepLine}></div>
-                <div className={`${styles.step} ${activeStep >= 2 ? styles.active : ''} ${activeStep > 2 ? styles.completed : ''}`}>
+                <div
+                  className={`${styles.step} ${activeStep >= 2 ? styles.active : ''} ${activeStep > 2 ? styles.completed : ''}`}
+                  onClick={() => { if (canProceedToStep2) goToStep(2) }}
+                  style={{ cursor: canProceedToStep2 ? 'pointer' : 'not-allowed', opacity: canProceedToStep2 ? 1 : 0.7 }}
+                  title={canProceedToStep2 ? "Go to Step 2: Review Data" : "Complete Step 1 first"}
+                >
                   <div className={styles.stepNumber}>2</div>
                   <span>Review Data</span>
                 </div>
                 <div className={styles.stepLine}></div>
-                <div className={`${styles.step} ${activeStep >= 3 ? styles.active : ''} ${activeStep > 3 ? styles.completed : ''}`}>
+                <div
+                  className={`${styles.step} ${activeStep >= 3 ? styles.active : ''} ${activeStep > 3 ? styles.completed : ''}`}
+                  onClick={() => { if (canProceedToStep3) goToStep(3) }}
+                  style={{ cursor: canProceedToStep3 ? 'pointer' : 'not-allowed', opacity: canProceedToStep3 ? 1 : 0.7 }}
+                  title={canProceedToStep3 ? "Go to Step 3: Configure & Generate" : "Complete Steps 1 & 2 first"}
+                >
                   <div className={styles.stepNumber}>3</div>
                   <span>Configure & Generate</span>
                 </div>
@@ -3060,7 +3073,7 @@ export default function GenerateSchedulePage() {
                   {/* Section & Course Multi-Select Filter */}
                   {selectedYearBatches.length > 0 && (
                     <div className={styles.filterSection}>
-                      <div className={styles.filterHeader} onClick={() => {}}>
+                      <div className={styles.filterHeader} onClick={() => { }}>
                         <div className={styles.filterTitle}>
                           <Users size={18} />
                           <h3>Select Sections & Courses</h3>
@@ -3119,7 +3132,7 @@ export default function GenerateSchedulePage() {
                               const isSelected = selectedSectionIds.includes(section.id)
                               const sectionCourses = allLoadedClasses.filter(cls => cls.section === section.section_name)
                               const excludedCount = sectionCourses.filter(cls => excludedCourseKeys.has(`${section.id}-${cls.course_code}`)).length
-                              
+
                               return (
                                 <div key={section.id} className={`${styles.buildingCard} ${isSelected ? styles.selected : ''}`}>
                                   <div className={styles.buildingHeader} style={{ marginBottom: '8px' }}>
@@ -3533,8 +3546,8 @@ export default function GenerateSchedulePage() {
                         </table>
                       </div>
                       {getFilteredRooms().length > 0 && (
-                        <button 
-                          className={styles.viewAllButton} 
+                        <button
+                          className={styles.viewAllButton}
                           onClick={() => { setPreviewSearchQuery(''); setShowAllRooms(true); }}
                         >
                           View All Rooms
@@ -3576,8 +3589,8 @@ export default function GenerateSchedulePage() {
                         </table>
                       </div>
                       {classes.length > 0 && (
-                        <button 
-                          className={styles.viewAllButton} 
+                        <button
+                          className={styles.viewAllButton}
                           onClick={() => { setPreviewSearchQuery(''); setShowAllClasses(true); }}
                         >
                           View All Classes
@@ -3840,77 +3853,29 @@ export default function GenerateSchedulePage() {
                       </div>
                     </div>
 
-                    {/* Lunch Break Settings */}
+                    {/* Automatic Lunch Break Info (Auto Mode) */}
                     <div className={styles.lunchBreakSection}>
                       <div className={styles.lunchBreakHeader}>
-                        <label className={styles.checkboxLabel}>
-                          <input
-                            type="checkbox"
-                            checked={timeSettings.lunchBreakEnabled}
-                            onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakEnabled: e.target.checked }))}
-                          />
-                          <span style={{ fontWeight: 600, fontSize: '14px' }}>
-                            🍽️ Enable Lunch Break Period
-                          </span>
-                        </label>
+                        <span style={{ fontWeight: 600, fontSize: '14px' }}>
+                          🍽️ Automatic Recovery Break
+                        </span>
                       </div>
-
-                      {timeSettings.lunchBreakEnabled && (
-                        <div className={styles.lunchBreakSettings}>
-                          <div className={styles.lunchBreakInfo}>
-                            <Clock size={18} />
-                            <p>No classes will be scheduled during the lunch break period to ensure faculty and students have time for meals.</p>
-                          </div>
-
-                          <div className={styles.formRow}>
-                            <div className={styles.formGroup}>
-                              <label className={styles.formLabel}>Lunch Start Time</label>
-                              <input
-                                type="time"
-                                className={styles.formInput}
-                                value={timeSettings.lunchBreakStart}
-                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakStart: e.target.value }))}
-                              />
-                            </div>
-                            <div className={styles.formGroup}>
-                              <label className={styles.formLabel}>Lunch End Time</label>
-                              <input
-                                type="time"
-                                className={styles.formInput}
-                                value={timeSettings.lunchBreakEnd}
-                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakEnd: e.target.value }))}
-                              />
-                            </div>
-                          </div>
-
-                          <div className={styles.checkboxGroup}>
-                            <label className={styles.checkboxLabel}>
-                              <input
-                                type="checkbox"
-                                checked={timeSettings.lunchBreakStrict}
-                                onChange={(e) => setTimeSettings(prev => ({ ...prev, lunchBreakStrict: e.target.checked }))}
-                              />
-                              <span>
-                                <strong>Strict Mode:</strong> Absolutely no classes during lunch break (hard constraint)
-                              </span>
-                            </label>
-                          </div>
-
-                          {!timeSettings.lunchBreakStrict && (
-                            <div className={styles.lunchBreakWarning}>
-                              <AlertTriangle size={16} />
-                              <span>Flexible mode: Algorithm will avoid lunch break but may schedule classes if necessary due to limited room availability.</span>
-                            </div>
-                          )}
-
-                          <div className={styles.lunchBreakPreview}>
-                            <strong>Lunch Break:</strong> {timeSettings.lunchBreakStart} - {timeSettings.lunchBreakEnd}
-                            <span className={timeSettings.lunchBreakStrict ? styles.strictBadge : styles.flexibleBadge}>
-                              {timeSettings.lunchBreakStrict ? '🔒 Strict' : '⚡ Flexible'}
-                            </span>
-                          </div>
+                      <div className={styles.lunchBreakSettings}>
+                        <div className={styles.lunchBreakInfo}>
+                          <Clock size={18} />
+                          <p>
+                            <strong>Mandatory 1-hour break</strong> is automatically inserted after
+                            <strong> 6 consecutive hours</strong> of class. This applies to both
+                            professors and student groups. No manual configuration needed.
+                          </p>
                         </div>
-                      )}
+                        <div className={styles.lunchBreakPreview}>
+                          <strong>Rule:</strong> 6hrs straight class → 1hr mandatory break
+                          <span className={styles.strictBadge}>
+                            🔒 Auto-Enforced
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
 
@@ -4437,7 +4402,7 @@ export default function GenerateSchedulePage() {
                 </thead>
                 <tbody>
                   {getFilteredRooms()
-                    .filter(room => 
+                    .filter(room =>
                       previewSearchQuery === '' ||
                       room.room.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
                       room.building.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
@@ -4445,14 +4410,14 @@ export default function GenerateSchedulePage() {
                       room.room_type.toLowerCase().includes(previewSearchQuery.toLowerCase())
                     )
                     .map(room => (
-                    <tr key={room.id}>
-                      <td>{room.room}</td>
-                      <td>{room.building}</td>
-                      <td>{room.campus}</td>
-                      <td>{room.capacity}</td>
-                      <td>{room.room_type}</td>
-                    </tr>
-                  ))}
+                      <tr key={room.id}>
+                        <td>{room.room}</td>
+                        <td>{room.building}</td>
+                        <td>{room.campus}</td>
+                        <td>{room.capacity}</td>
+                        <td>{room.room_type}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -4505,7 +4470,7 @@ export default function GenerateSchedulePage() {
                 </thead>
                 <tbody>
                   {classes
-                    .filter(cls => 
+                    .filter(cls =>
                       previewSearchQuery === '' ||
                       cls.course_code.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
                       cls.course_name.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
@@ -4513,17 +4478,17 @@ export default function GenerateSchedulePage() {
                       (cls.schedule_day && cls.schedule_day.toLowerCase().includes(previewSearchQuery.toLowerCase()))
                     )
                     .map(cls => (
-                    <tr key={cls.id}>
-                      <td>{cls.course_code}</td>
-                      <td>{cls.course_name}</td>
-                      <td>{cls.section}</td>
-                      <td>{cls.schedule_day || 'TBD'}</td>
-                      <td>{cls.schedule_time || 'TBD'}</td>
-                      <td>{cls.lec_hours}h</td>
-                      <td>{cls.lab_hours}h</td>
-                      <td>{cls.teacher_name || 'TBD'}</td>
-                    </tr>
-                  ))}
+                      <tr key={cls.id}>
+                        <td>{cls.course_code}</td>
+                        <td>{cls.course_name}</td>
+                        <td>{cls.section}</td>
+                        <td>{cls.schedule_day || 'TBD'}</td>
+                        <td>{cls.schedule_time || 'TBD'}</td>
+                        <td>{cls.lec_hours}h</td>
+                        <td>{cls.lab_hours}h</td>
+                        <td>{cls.teacher_name || 'TBD'}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

@@ -20,6 +20,8 @@ interface ScheduleRequest {
     section?: string
     current_day?: string
     current_time?: string
+    room_name?: string
+    schedule_name?: string
 }
 
 interface ScheduleRequestsModalProps {
@@ -33,6 +35,9 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
     const [requests, setRequests] = useState<ScheduleRequest[]>([])
     const [loading, setLoading] = useState(true)
     const [processingId, setProcessingId] = useState<number | null>(null)
+    const [rejectingId, setRejectingId] = useState<number | null>(null)
+    const [rejectReason, setRejectReason] = useState('')
+    const [actionErrors, setActionErrors] = useState<Record<number, string>>({})
 
     useEffect(() => {
         if (isOpen && scheduleId) {
@@ -82,34 +87,51 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
         }
     }
 
-    const handleAction = async (requestId: number, action: 'approve' | 'reject') => {
+    const handleAction = async (requestId: number, action: 'approve' | 'reject', reason?: string) => {
         setProcessingId(requestId)
+        setActionErrors(prev => ({ ...prev, [requestId]: '' }))
+
         try {
             const res = await fetch('/api/schedule-requests', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ requestId, status: action === 'approve' ? 'approved' : 'rejected' })
+                body: JSON.stringify({
+                    requestId,
+                    status: action === 'approve' ? 'approved' : 'rejected',
+                    rejectionReason: reason
+                })
             })
             const data = await res.json()
 
             if (data.success) {
                 // Remove from list
                 setRequests(prev => prev.filter(r => r.id !== requestId))
+                setRejectingId(null)
 
                 if (action === 'approve') {
-                    // If approved, the schedule changed, so notify parent to refresh
                     onUpdate()
-                    alert('Request approved and schedule updated.')
+                    // Optional: Show success toast?
                 }
             } else {
-                alert(data.error || 'Failed to process request')
+                setActionErrors(prev => ({ ...prev, [requestId]: data.error || 'Failed to process request' }))
             }
         } catch (error) {
             console.error('Error processing request:', error)
-            alert('An error occurred')
+            setActionErrors(prev => ({ ...prev, [requestId]: 'An unexpected error occurred' }))
         } finally {
             setProcessingId(null)
         }
+    }
+
+    const startReject = (id: number) => {
+        setRejectingId(id)
+        setRejectReason('')
+        setActionErrors(prev => ({ ...prev, [id]: '' }))
+    }
+
+    const cancelReject = () => {
+        setRejectingId(null)
+        setRejectReason('')
     }
 
     if (!isOpen) return null
@@ -149,6 +171,7 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
                                     <div className={styles.details}>
                                         <div className={styles.courseInfo}>
                                             <strong>{request.course_code}</strong> - {request.section}
+                                            {request.room_name && <span className={styles.roomBadge}>{request.room_name}</span>}
                                         </div>
 
                                         <div className={styles.moveInfo}>
@@ -173,22 +196,57 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
                                         </div>
                                     </div>
 
-                                    <div className={styles.actions}>
-                                        <button
-                                            onClick={() => handleAction(request.id, 'reject')}
-                                            disabled={processingId === request.id}
-                                            className={styles.rejectBtn}
-                                        >
-                                            {processingId === request.id ? '...' : 'Reject'}
-                                        </button>
-                                        <button
-                                            onClick={() => handleAction(request.id, 'approve')}
-                                            disabled={processingId === request.id}
-                                            className={styles.approveBtn}
-                                        >
-                                            {processingId === request.id ? 'Processing...' : 'Approve'}
-                                        </button>
-                                    </div>
+                                    {rejectingId === request.id ? (
+                                        <div className={styles.rejectForm}>
+                                            <textarea
+                                                className={styles.rejectInput}
+                                                placeholder="Reason for rejection (optional)"
+                                                value={rejectReason}
+                                                onChange={(e) => setRejectReason(e.target.value)}
+                                                autoFocus
+                                            />
+                                            <div className={styles.rejectActions}>
+                                                <button
+                                                    onClick={cancelReject}
+                                                    className={styles.cancelBtn}
+                                                    disabled={processingId === request.id}
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAction(request.id, 'reject', rejectReason)}
+                                                    className={styles.confirmRejectBtn}
+                                                    disabled={processingId === request.id}
+                                                >
+                                                    {processingId === request.id ? 'Rejecting...' : 'Confirm Reject'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className={styles.actions}>
+                                            <button
+                                                onClick={() => startReject(request.id)}
+                                                disabled={processingId === request.id}
+                                                className={styles.rejectBtn}
+                                            >
+                                                Reject
+                                            </button>
+                                            <button
+                                                onClick={() => handleAction(request.id, 'approve')}
+                                                disabled={processingId === request.id}
+                                                className={styles.approveBtn}
+                                            >
+                                                {processingId === request.id ? 'Processing...' : 'Approve'}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {actionErrors[request.id] && (
+                                        <div className={styles.errorBanner}>
+                                            <AlertTriangle size={14} />
+                                            <span>{actionErrors[request.id]}</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

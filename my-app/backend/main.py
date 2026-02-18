@@ -10,7 +10,7 @@ This API provides endpoints for:
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 import uvicorn
 import os
@@ -249,7 +249,7 @@ class SectionDataModel(BaseModel):
     course_name: str
     subject_code: Optional[str] = None  # New: Subject code (e.g., IT-311)
     subject_name: Optional[str] = None  # New: Subject name
-    teacher_id: int
+    teacher_id: Union[int, str]  # Support UUIDs from faculty_profiles
     teacher_name: str
     year_level: int = 1
     student_count: int
@@ -262,6 +262,8 @@ class SectionDataModel(BaseModel):
     college: Optional[str] = None  # New: College name
     semester: Optional[str] = "1st Semester"
     required_features: Optional[List[str]] = None  # NEW: Required equipment tags
+    lec_required_features: Optional[List[str]] = None  # NEW: Lecture-specific equipment
+    lab_required_features: Optional[List[str]] = None  # NEW: Lab-specific equipment
 
 class RoomDataModel(BaseModel):
     """Room data from frontend - Enhanced with equipment and college assignment"""
@@ -475,6 +477,10 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         if request.online_days:
             print(f"   🌐 Online Days: {', '.join(request.online_days)}")
         
+        # Fetch teacher profiles for constraints (VSL, shifts, etc.)
+        print("👤 Fetching teacher profiles for constraints...")
+        all_teachers = await get_all_teachers()
+        
         # Run the enhanced scheduler with 30-minute slots and BulSU QSA
         if request.use_enhanced_scheduler:
             result = run_enhanced_scheduler(
@@ -482,7 +488,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                 rooms_data=rooms,
                 time_slots_data=time_slots,
                 config=config,
-                online_days=request.online_days  # BulSU QSA: Pass online days
+                online_days=request.online_days,  # BulSU QSA: Pass online days
+                faculty_profiles_data=all_teachers  # Pass teacher data for constraints
             )
             # Map result to expected format
             result["schedule_entries"] = result.get("allocations", [])

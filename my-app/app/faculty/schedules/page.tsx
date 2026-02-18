@@ -6,30 +6,30 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import { useTheme } from '@/app/context/ThemeContext'
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Building2,
-  DoorOpen,
-  Users,
-  BookOpen,
-  Search,
-  Filter,
-  X,
-  User,
-  GraduationCap,
-  AlertCircle,
-  LayoutGrid,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  FileImage,
-  Printer,
-  FileText,
-  ChevronDown,
-  Lock,
-  MessageSquarePlus
-} from 'lucide-react'
+  MdArrowBack,
+  MdCalendarToday,
+  MdAccessTime,
+  MdBusiness,
+  MdMeetingRoom,
+  MdPeople,
+  MdMenuBook,
+  MdSearch,
+  MdFilterList,
+  MdClose,
+  MdPerson,
+  MdSchool,
+  MdError,
+  MdGridView,
+  MdChevronLeft,
+  MdChevronRight,
+  MdDownload,
+  MdImage,
+  MdPrint,
+  MdDescription,
+  MdExpandMore,
+  MdLock,
+  MdMessage
+} from 'react-icons/md'
 import DraggableTimetable, { DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
@@ -1413,11 +1413,11 @@ function RoomSchedulesViewContent() {
     <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
-          <ArrowLeft size={20} />
+          <MdArrowBack size={20} />
           Back to Home
         </button>
         <h1 className={styles.pageTitle}>
-          <Calendar size={32} />
+          <MdCalendarToday size={32} />
           Schedule Views
         </h1>
         <p className={styles.subtitle}>
@@ -1431,21 +1431,21 @@ function RoomSchedulesViewContent() {
           className={`${styles.viewTab} ${viewMode === 'my-schedule' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('my-schedule')}
         >
-          <User size={18} />
+          <MdPerson size={18} />
           My Schedule
         </button>
         <button
           className={`${styles.viewTab} ${viewMode === 'timetable' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('timetable')}
         >
-          <LayoutGrid size={18} />
+          <MdGridView size={18} />
           Timetable Gallery
         </button>
         <button
           className={`${styles.viewTab} ${viewMode === 'requests' ? styles.activeTab : ''}`}
           onClick={() => handleViewModeChange('requests')}
         >
-          <MessageSquarePlus size={18} />
+          <MdMessage size={18} />
           My Requests
         </button>
       </div>
@@ -1453,7 +1453,7 @@ function RoomSchedulesViewContent() {
       {/* My Schedule View - No schedule selector */}
       {viewMode === 'my-schedule' && !hasAssignedSchedule && (
         <div className={styles.emptyState}>
-          <AlertCircle size={64} />
+          <MdError size={64} />
           <h3>No Schedule Assigned</h3>
           <p>The administrator has not assigned a schedule to your account yet.</p>
           <p>Please contact your department administrator for assistance.</p>
@@ -1485,7 +1485,7 @@ function RoomSchedulesViewContent() {
       {(viewMode === 'my-schedule' ? hasAssignedSchedule : selectedSchedule) && viewMode !== 'timetable' && (
         <div className={styles.scheduleInfo}>
           <div className={styles.infoCard}>
-            <BookOpen size={20} />
+            <MdMenuBook size={20} />
             <div>
               <div className={styles.infoValue}>
                 {viewMode === 'my-schedule' ? myAllocations.length : (selectedSchedule?.total_classes || 0)}
@@ -1496,14 +1496,14 @@ function RoomSchedulesViewContent() {
             </div>
           </div>
           <div className={styles.infoCard}>
-            <Building2 size={20} />
+            <MdBusiness size={20} />
             <div>
               <div className={styles.infoValue}>{buildings.length}</div>
               <div className={styles.infoLabel}>Buildings</div>
             </div>
           </div>
           <div className={styles.infoCard}>
-            <DoorOpen size={20} />
+            <MdMeetingRoom size={20} />
             <div>
               <div className={styles.infoValue}>{rooms.length}</div>
               <div className={styles.infoLabel}>Rooms</div>
@@ -1511,7 +1511,7 @@ function RoomSchedulesViewContent() {
           </div>
           {viewMode !== 'my-schedule' && (
             <div className={styles.infoCard}>
-              <Users size={20} />
+              <MdPeople size={20} />
               <div>
                 <div className={styles.infoValue}>{teachers.length}</div>
                 <div className={styles.infoLabel}>Faculty</div>
@@ -1532,7 +1532,7 @@ function RoomSchedulesViewContent() {
           {/* Filter Section */}
           <div className={styles.filterSection}>
             <div className={styles.searchBar}>
-              <Search size={20} />
+              <MdSearch size={20} />
               <input
                 type="text"
                 placeholder="Search by course, section, room, or teacher..."
@@ -1613,7 +1613,7 @@ function RoomSchedulesViewContent() {
                     return (
                       <div key={day} className={styles.daySection}>
                         <h2 className={styles.dayTitle}>
-                          <Calendar size={20} />
+                          <MdCalendarToday size={20} />
                           {day}
                         </h2>
                         <div className={styles.allocationsList}>
@@ -1624,7 +1624,7 @@ function RoomSchedulesViewContent() {
                               onClick={() => setSelectedAllocation(allocation)}
                             >
                               <div className={styles.timeSlot}>
-                                <Clock size={16} />
+                                <MdAccessTime size={16} />
                                 {allocation.schedule_time}
                               </div>
                               <div className={styles.courseInfo}>
@@ -1634,17 +1634,17 @@ function RoomSchedulesViewContent() {
                               </div>
                               <div className={styles.locationInfo}>
                                 <div className={styles.location}>
-                                  <Building2 size={14} />
+                                  <MdBusiness size={14} />
                                   {allocation.building}
                                 </div>
                                 <div className={styles.room}>
-                                  <DoorOpen size={14} />
+                                  <MdMeetingRoom size={14} />
                                   {allocation.room}
                                 </div>
                               </div>
                               {allocation.teacher_name && (
                                 <div className={styles.teacherInfo}>
-                                  <Users size={14} />
+                                  <MdPeople size={14} />
                                   {allocation.teacher_name}
                                 </div>
                               )}
@@ -1665,14 +1665,14 @@ function RoomSchedulesViewContent() {
                     className={styles.timelineNav}
                     onClick={() => setTimelineDayIndex(prev => (prev - 1 + DAYS.length) % DAYS.length)}
                   >
-                    <ChevronLeft size={16} />
+                    <MdChevronLeft size={16} />
                   </button>
                   <span className={styles.timelineDay}>{timelineDay}</span>
                   <button
                     className={styles.timelineNav}
                     onClick={() => setTimelineDayIndex(prev => (prev + 1) % DAYS.length)}
                   >
-                    <ChevronRight size={16} />
+                    <MdChevronRight size={16} />
                   </button>
                 </div>
                 {timelineAllocations.length === 0 ? (
@@ -1682,7 +1682,7 @@ function RoomSchedulesViewContent() {
                     {timelineAllocations.map(allocation => (
                       <div key={allocation.id} className={styles.timelineCard}>
                         <div className={styles.timelineTime}>
-                          <Clock size={14} />
+                          <MdAccessTime size={14} />
                           {allocation.schedule_time}
                         </div>
                         <div className={styles.timelineInfo}>
@@ -1703,7 +1703,7 @@ function RoomSchedulesViewContent() {
                 {Object.entries(groupedByRoom).map(([roomKey, roomAllocations]) => (
                   <div key={roomKey} className={styles.daySection}>
                     <h2 className={styles.dayTitle}>
-                      <DoorOpen size={20} />
+                      <MdMeetingRoom size={20} />
                       {roomKey}
                     </h2>
                     <div className={styles.allocationsList}>
@@ -1741,9 +1741,9 @@ function RoomSchedulesViewContent() {
                             )}
                           </div>
                           <div className={styles.timeInfo}>
-                            <Calendar size={16} />
+                            <MdCalendarToday size={16} />
                             {allocation.schedule_day}
-                            <Clock size={16} style={{ marginLeft: '8px' }} />
+                            <MdAccessTime size={16} style={{ marginLeft: '8px' }} />
                             {allocation.schedule_time}
                           </div>
                         </div>
@@ -1760,7 +1760,7 @@ function RoomSchedulesViewContent() {
                 {Object.entries(groupedByTeacher).map(([teacherName, teacherAllocations]) => (
                   <div key={teacherName} className={styles.daySection}>
                     <h2 className={styles.dayTitle}>
-                      <User size={20} />
+                      <MdPerson size={20} />
                       {teacherName}
                     </h2>
                     <div className={styles.allocationsList}>
@@ -1796,9 +1796,9 @@ function RoomSchedulesViewContent() {
                             </div>
                           </div>
                           <div className={styles.timeInfo}>
-                            <Calendar size={16} />
+                            <MdCalendarToday size={16} />
                             {allocation.schedule_day}
-                            <Clock size={16} style={{ marginLeft: '8px' }} />
+                            <MdAccessTime size={16} style={{ marginLeft: '8px' }} />
                             {allocation.schedule_time}
                           </div>
                         </div>
@@ -1812,7 +1812,7 @@ function RoomSchedulesViewContent() {
         </>
       ) : viewMode !== 'my-schedule' && viewMode !== 'timetable' && (
         <div className={styles.emptyState}>
-          <Calendar size={64} />
+          <MdCalendarToday size={64} />
           <h3>No schedule data available</h3>
           <p>There are no room allocations for this schedule yet.</p>
         </div>
@@ -1833,7 +1833,7 @@ function RoomSchedulesViewContent() {
             border: theme === 'dark' ? '1px solid #334155' : 'none',
           }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MessageSquarePlus size={22} style={{ color: theme === 'dark' ? '#22d3ee' : '#059669' }} />
+              <MdMessage size={22} style={{ color: theme === 'dark' ? '#22d3ee' : '#059669' }} />
               Request Reschedule
             </h3>
 
@@ -1917,7 +1917,7 @@ function RoomSchedulesViewContent() {
 
           {myRequests.length === 0 ? (
             <div className="text-center py-12 opacity-60">
-              <MessageSquarePlus size={48} className="mx-auto mb-4 opacity-50" />
+              <MdMessage size={48} className="mx-auto mb-4 opacity-50" />
               <p>No reschedule requests found.</p>
               <p className="text-sm mt-2">Drag and drop classes in "My Schedule" to make a request.</p>
             </div>
@@ -1951,7 +1951,7 @@ function RoomSchedulesViewContent() {
                             {req.original_day} {req.original_time}
                           </span>
                         </div>
-                        <ArrowLeft className="rotate-180 opacity-40" size={16} />
+                        <MdArrowBack className="rotate-180 opacity-40" size={16} />
                         <div className="flex flex-col">
                           <span className="text-xs opacity-50 uppercase tracking-wider">Requested</span>
                           <span className={`font-bold ${theme === 'green' ? 'text-emerald-600' : 'text-cyan-300'
@@ -1999,21 +1999,21 @@ function RoomSchedulesViewContent() {
               className={`${styles.typeTab} ${timetableType === 'room' ? styles.activeTypeTab : ''}`}
               onClick={() => { setTimetableType('room'); setTimetableIndex(0); }}
             >
-              <DoorOpen size={16} />
+              <MdMeetingRoom size={16} />
               Room Timetables
             </button>
             <button
               className={`${styles.typeTab} ${timetableType === 'faculty' ? styles.activeTypeTab : ''}`}
               onClick={() => { setTimetableType('faculty'); setTimetableIndex(0); }}
             >
-              <Users size={16} />
+              <MdPeople size={16} />
               Faculty Timetables
             </button>
             <button
               className={`${styles.typeTab} ${timetableType === 'section' ? styles.activeTypeTab : ''}`}
               onClick={() => { setTimetableType('section'); setTimetableIndex(0); }}
             >
-              <GraduationCap size={16} />
+              <MdSchool size={16} />
               Section Timetables
             </button>
           </div>
@@ -2027,7 +2027,7 @@ function RoomSchedulesViewContent() {
                 disabled={timetableIndex === 0}
                 title="Previous schedule"
               >
-                <ChevronLeft size={20} />
+                <MdChevronLeft size={20} />
                 Previous
               </button>
               <div className={styles.timetableSelector}>
@@ -2054,7 +2054,7 @@ function RoomSchedulesViewContent() {
                 title="Next schedule"
               >
                 Next
-                <ChevronRight size={20} />
+                <MdChevronRight size={20} />
               </button>
             </div>
           )}
@@ -2069,9 +2069,9 @@ function RoomSchedulesViewContent() {
                   onClick={() => setShowPdfExportMenu(!showPdfExportMenu)}
                   title="Export as PDF"
                 >
-                  <FileText size={18} />
+                  <MdDescription size={18} />
                   Export PDF
-                  <ChevronDown size={14} />
+                  <MdExpandMore size={14} />
                 </button>
                 {showPdfExportMenu && (
                   <div className={styles.exportDropdownMenu}>
@@ -2095,7 +2095,7 @@ function RoomSchedulesViewContent() {
                 onClick={() => handleExportTimetable('current')}
                 title="Export current timetable as image"
               >
-                <FileImage size={18} />
+                <MdImage size={18} />
                 Export Image
               </button>
               <button
@@ -2103,7 +2103,7 @@ function RoomSchedulesViewContent() {
                 onClick={() => handleExportTimetable('print')}
                 title="Print timetable"
               >
-                <Printer size={18} />
+                <MdPrint size={18} />
                 Print
               </button>
             </div>
@@ -2115,9 +2115,9 @@ function RoomSchedulesViewContent() {
           <div className={styles.timetableContainer} id="timetable-grid">
             <div className={styles.timetableHeader}>
               <h2 className={styles.timetableTitle}>
-                {timetableType === 'room' && <DoorOpen size={28} />}
-                {timetableType === 'faculty' && <User size={28} />}
-                {timetableType === 'section' && <GraduationCap size={28} />}
+                {timetableType === 'room' && <MdMeetingRoom size={28} />}
+                {timetableType === 'faculty' && <MdPerson size={28} />}
+                {timetableType === 'section' && <MdSchool size={28} />}
                 {selectedTimetableItem}
               </h2>
               <p className={styles.timetableSubtitle}>
@@ -2182,21 +2182,21 @@ function RoomSchedulesViewContent() {
                                   {allocation.course_name}
                                 </div>
                                 <div className={styles.classCardSection}>
-                                  <GraduationCap size={12} />
+                                  <MdSchool size={12} />
                                   {allocation.section}
                                 </div>
                                 <div className={styles.classCardRoom}>
-                                  <DoorOpen size={12} />
+                                  <MdMeetingRoom size={12} />
                                   {allocation.room}
                                 </div>
                                 {allocation.teacher_name && (
                                   <div className={styles.classCardTeacher}>
-                                    <User size={12} />
+                                    <MdPerson size={12} />
                                     {allocation.teacher_name}
                                   </div>
                                 )}
                                 <div className={styles.classCardTime}>
-                                  <Clock size={12} />
+                                  <MdAccessTime size={12} />
                                   {allocation.schedule_time}
                                 </div>
                               </div>
@@ -2214,7 +2214,7 @@ function RoomSchedulesViewContent() {
 
         {timetableItems.length === 0 && (
           <div className={styles.emptyState}>
-            <LayoutGrid size={64} />
+            <MdGridView size={64} />
             <h3>No Timetable Data</h3>
             <p>Select a schedule first to view timetables.</p>
           </div>
@@ -2227,7 +2227,7 @@ function RoomSchedulesViewContent() {
         <div className={styles.modalOverlay} onClick={() => setSelectedAllocation(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setSelectedAllocation(null)}>
-              <X size={24} />
+              <MdClose size={24} />
             </button>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>{selectedAllocation.course_code}</h2>
@@ -2236,7 +2236,7 @@ function RoomSchedulesViewContent() {
             <div className={styles.modalBody}>
               <div className={styles.detailsGrid}>
                 <div className={styles.detailItem}>
-                  <BookOpen size={18} />
+                  <MdMenuBook size={18} />
                   <div>
                     <strong>Section</strong>
                     <span>{selectedAllocation.section}</span>
@@ -2244,7 +2244,7 @@ function RoomSchedulesViewContent() {
                 </div>
                 {selectedAllocation.year_level && (
                   <div className={styles.detailItem}>
-                    <GraduationCap size={18} />
+                    <MdSchool size={18} />
                     <div>
                       <strong>Year Level</strong>
                       <span>Year {selectedAllocation.year_level}</span>
@@ -2252,35 +2252,35 @@ function RoomSchedulesViewContent() {
                   </div>
                 )}
                 <div className={styles.detailItem}>
-                  <Calendar size={18} />
+                  <MdCalendarToday size={18} />
                   <div>
                     <strong>Day</strong>
                     <span>{selectedAllocation.schedule_day}</span>
                   </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Clock size={18} />
+                  <MdAccessTime size={18} />
                   <div>
                     <strong>Time</strong>
                     <span>{selectedAllocation.schedule_time}</span>
                   </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Building2 size={18} />
+                  <MdBusiness size={18} />
                   <div>
                     <strong>Building</strong>
                     <span>{selectedAllocation.building}</span>
                   </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <DoorOpen size={18} />
+                  <MdMeetingRoom size={18} />
                   <div>
                     <strong>Room</strong>
                     <span>{selectedAllocation.room}</span>
                   </div>
                 </div>
                 <div className={styles.detailItem}>
-                  <Users size={18} />
+                  <MdPeople size={18} />
                   <div>
                     <strong>Capacity</strong>
                     <span>{selectedAllocation.capacity} students</span>
@@ -2288,7 +2288,7 @@ function RoomSchedulesViewContent() {
                 </div>
                 {selectedAllocation.teacher_name && (
                   <div className={styles.detailItem}>
-                    <User size={18} />
+                    <MdPerson size={18} />
                     <div>
                       <strong>Teacher</strong>
                       <span>{selectedAllocation.teacher_name}</span>
@@ -2297,7 +2297,7 @@ function RoomSchedulesViewContent() {
                 )}
                 {selectedAllocation.department && (
                   <div className={styles.detailItem}>
-                    <Building2 size={18} />
+                    <MdBusiness size={18} />
                     <div>
                       <strong>Department</strong>
                       <span>{selectedAllocation.department}</span>
@@ -2306,7 +2306,7 @@ function RoomSchedulesViewContent() {
                 )}
                 {(selectedAllocation.lec_hours || selectedAllocation.lab_hours) && (
                   <div className={styles.detailItem}>
-                    <Clock size={18} />
+                    <MdAccessTime size={18} />
                     <div>
                       <strong>Hours</strong>
                       <span>
@@ -2329,7 +2329,7 @@ function RoomSchedulesViewContent() {
           {selectedAllocation && (
             <>
               <button className={styles.closePanelButton} onClick={() => setSelectedAllocation(null)}>
-                <X size={24} />
+                <MdClose size={24} />
               </button>
               <div className={styles.panelHeader}>
                 <div className={styles.panelTitle}>
@@ -2340,7 +2340,7 @@ function RoomSchedulesViewContent() {
               <div className={styles.panelBody}>
                 <div className={styles.infoGrid}>
                   <div className={styles.infoItem}>
-                    <BookOpen size={18} />
+                    <MdMenuBook size={18} />
                     <div>
                       <strong>Section</strong>
                       <span>{selectedAllocation.section}</span>
@@ -2348,7 +2348,7 @@ function RoomSchedulesViewContent() {
                   </div>
                   {selectedAllocation.year_level && (
                     <div className={styles.infoItem}>
-                      <GraduationCap size={18} />
+                      <MdSchool size={18} />
                       <div>
                         <strong>Year Level</strong>
                         <span>Year {selectedAllocation.year_level}</span>
@@ -2377,14 +2377,14 @@ function RoomSchedulesViewContent() {
                     </div>
                   </div>
                   <div className={styles.infoItem}>
-                    <DoorOpen size={18} />
+                    <MdMeetingRoom size={18} />
                     <div>
                       <strong>Room</strong>
                       <span>{selectedAllocation.room}</span>
                     </div>
                   </div>
                   <div className={styles.infoItem}>
-                    <Users size={18} />
+                    <MdPeople size={18} />
                     <div>
                       <strong>Capacity</strong>
                       <span>{selectedAllocation.capacity} students</span>

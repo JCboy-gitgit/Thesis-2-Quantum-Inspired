@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
-import { ArrowLeft, Search, Users, Building2, Briefcase, Mail, Phone, MapPin, X } from 'lucide-react'
+import { MdArrowBack, MdSearch, MdPeople, MdBusiness, MdWork, MdEmail, MdPhone, MdLocationOn, MdClose } from 'react-icons/md'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import styles from './styles.module.css'
@@ -137,16 +137,16 @@ function FacultyDirectoryContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
-  
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
   const [filterEmployment, setFilterEmployment] = useState<string>('all')
   const [departments, setDepartments] = useState<string[]>([])
   const [filterDepartment, setFilterDepartment] = useState<string>('all')
-  
+
   const [currentPage, setCurrentPage] = useState(1)
   const PAGE_SIZE = 12
-  
+
   // Store scroll position in a ref to preserve it across renders
   const scrollPositionRef = useRef<number>(0)
 
@@ -171,7 +171,7 @@ function FacultyDirectoryContent() {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
-    
+
     return () => {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
@@ -182,17 +182,17 @@ function FacultyDirectoryContent() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768)
     }
-    
+
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    
+
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/')
         return
@@ -221,12 +221,12 @@ function FacultyDirectoryContent() {
     setLoading(true)
     try {
       const data = await fetchAllRows('faculty_profiles')
-      
+
       // Also fetch users table to get avatar_url as fallback for profile_image
       const { data: usersData } = await supabase
         .from('users')
         .select('email, avatar_url')
-      
+
       // Create email -> avatar_url map
       const userAvatarMap = new Map<string, string>()
       usersData?.forEach(u => {
@@ -234,13 +234,13 @@ function FacultyDirectoryContent() {
           userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
         }
       })
-      
+
       // Merge avatar_url as fallback for profile_image
       const enrichedData = data.map(f => ({
         ...f,
         profile_image: f.profile_image || (f.email ? userAvatarMap.get(f.email.toLowerCase()) : null) || null
       }))
-      
+
       setAllFaculty(enrichedData)
 
       const collegeMap = new Map<string, { faculty: FacultyProfile[], departments: Set<string> }>()
@@ -355,192 +355,192 @@ function FacultyDirectoryContent() {
           <div className={styles.mainContentArea}>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>
-                <Users size={32} />
+                <MdUsers size={32} />
                 Faculty Directory
               </h1>
               <p className={styles.subtitle}>View all faculty members across the institution</p>
             </div>
 
-      {!selectedCollege ? (
-        <>
-          {stats && (
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <Users size={24} />
-                <div>
-                  <div className={styles.statValue}>{stats.totalFaculty}</div>
-                  <div className={styles.statLabel}>Total Faculty</div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <Building2 size={24} />
-                <div>
-                  <div className={styles.statValue}>{stats.totalColleges}</div>
-                  <div className={styles.statLabel}>Colleges</div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <Briefcase size={24} />
-                <div>
-                  <div className={styles.statValue}>{stats.fullTime}</div>
-                  <div className={styles.statLabel}>Full-Time</div>
-                </div>
-              </div>
-              <div className={styles.statCard}>
-                <Briefcase size={24} />
-                <div>
-                  <div className={styles.statValue}>{stats.partTime}</div>
-                  <div className={styles.statLabel}>Part-Time</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className={styles.collegeGrid}>
-            {collegeGroups.map(group => (
-              <div
-                key={group.college}
-                className={styles.collegeCard}
-                onClick={() => setSelectedCollege(group.college)}
-              >
-                <Building2 size={32} className={styles.collegeIcon} />
-                <h3 className={styles.collegeName}>{group.college}</h3>
-                <p className={styles.facultyCount}>{group.faculty_count} Faculty Members</p>
-                <div className={styles.departmentList}>
-                  {group.departments.slice(0, 3).map(dept => (
-                    <span key={dept} className={styles.departmentBadge}>{dept}</span>
-                  ))}
-                  {group.departments.length > 3 && (
-                    <span className={styles.moreBadge}>+{group.departments.length - 3} more</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className={styles.collegeHeader}>
-            <button onClick={() => setSelectedCollege(null)} className={styles.backLink}>
-              <ArrowLeft size={18} />
-              Back to Colleges
-            </button>
-            <h2 className={styles.collegeTitle}>{selectedCollege}</h2>
-          </div>
-
-          <div className={styles.searchSection}>
-            <div className={styles.searchBar}>
-              <Search size={20} />
-              <input
-                type="text"
-                placeholder="Search by name, ID, email, position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className={styles.filters}>
-              <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
-                <option value="all">All Roles</option>
-                <option value="administrator">Administrator</option>
-                <option value="department_head">Department Head</option>
-                <option value="program_chair">Program Chair</option>
-                <option value="coordinator">Coordinator</option>
-                <option value="faculty">Faculty</option>
-                <option value="staff">Staff</option>
-              </select>
-              <select value={filterEmployment} onChange={(e) => setFilterEmployment(e.target.value)}>
-                <option value="all">All Employment Types</option>
-                <option value="full-time">Full-Time</option>
-                <option value="part-time">Part-Time</option>
-                <option value="adjunct">Adjunct</option>
-                <option value="guest">Guest</option>
-              </select>
-              <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}>
-                <option value="all">All Departments</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.resultsInfo}>
-            Showing {startIdx + 1}-{Math.min(endIdx, filteredData.length)} of {filteredData.length} faculty members
-          </div>
-
-          <div className={styles.facultyGrid}>
-            {currentData.map(faculty => (
-              <div 
-                key={faculty.id} 
-                className={`${styles.facultyCard} ${selectedFaculty?.id === faculty.id ? styles.facultyCardSelected : ''}`} 
-                onClick={() => setSelectedFaculty(faculty)}
-              >
-                {faculty.profile_image ? (
-                  <img 
-                    src={faculty.profile_image} 
-                    alt={faculty.full_name}
-                    className={styles.facultyAvatarImg}
-                  />
-                ) : (
-                  <div className={styles.facultyAvatar} style={{ backgroundColor: getRoleColor(faculty.role) }}>
-                    {getInitials(faculty.full_name)}
+            {!selectedCollege ? (
+              <>
+                {stats && (
+                  <div className={styles.statsGrid}>
+                    <div className={styles.statCard}>
+                      <MdPeople size={24} />
+                      <div>
+                        <div className={styles.statValue}>{stats.totalFaculty}</div>
+                        <div className={styles.statLabel}>Total Faculty</div>
+                      </div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <MdBusiness size={24} />
+                      <div>
+                        <div className={styles.statValue}>{stats.totalColleges}</div>
+                        <div className={styles.statLabel}>Colleges</div>
+                      </div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <MdWork size={24} />
+                      <div>
+                        <div className={styles.statValue}>{stats.fullTime}</div>
+                        <div className={styles.statLabel}>Full-Time</div>
+                      </div>
+                    </div>
+                    <div className={styles.statCard}>
+                      <MdWork size={24} />
+                      <div>
+                        <div className={styles.statValue}>{stats.partTime}</div>
+                        <div className={styles.statLabel}>Part-Time</div>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className={styles.facultyInfo}>
-                  <h3 className={styles.facultyName}>{faculty.full_name}</h3>
-                  <p className={styles.facultyPosition}>{faculty.position}</p>
-                  <div className={styles.badges}>
-                    <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(faculty.role) }}>
-                      {getRoleLabel(faculty.role)}
-                    </span>
-                    <span 
-                      className={styles.employmentBadge} 
-                      style={{ backgroundColor: getEmploymentBadge(faculty.employment_type).color }}
-                    >
-                      {getEmploymentBadge(faculty.employment_type).label}
-                    </span>
-                  </div>
-                  {faculty.department && (
-                    <p className={styles.facultyDepartment}>
-                      <Building2 size={14} />
-                      {faculty.department}
-                    </p>
-                  )}
-                  {faculty.email && (
-                    <p className={styles.facultyEmail}>
-                      <Mail size={14} />
-                      {faculty.email}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={styles.pageButton}
-              >
-                Previous
-              </button>
-              <span className={styles.pageInfo}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className={styles.pageButton}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
-      </div> {/* End mainContentArea */}
+                <div className={styles.collegeGrid}>
+                  {collegeGroups.map(group => (
+                    <div
+                      key={group.college}
+                      className={styles.collegeCard}
+                      onClick={() => setSelectedCollege(group.college)}
+                    >
+                      <MdBusiness size={32} className={styles.collegeIcon} />
+                      <h3 className={styles.collegeName}>{group.college}</h3>
+                      <p className={styles.facultyCount}>{group.faculty_count} Faculty Members</p>
+                      <div className={styles.departmentList}>
+                        {group.departments.slice(0, 3).map(dept => (
+                          <span key={dept} className={styles.departmentBadge}>{dept}</span>
+                        ))}
+                        {group.departments.length > 3 && (
+                          <span className={styles.moreBadge}>+{group.departments.length - 3} more</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.collegeHeader}>
+                  <button onClick={() => setSelectedCollege(null)} className={styles.backLink}>
+                    <MdArrowBack size={18} />
+                    Back to Colleges
+                  </button>
+                  <h2 className={styles.collegeTitle}>{selectedCollege}</h2>
+                </div>
+
+                <div className={styles.searchSection}>
+                  <div className={styles.searchBar}>
+                    <MdSearch size={20} />
+                    <input
+                      type="text"
+                      placeholder="Search by name, ID, email, position..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.filters}>
+                    <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
+                      <option value="all">All Roles</option>
+                      <option value="administrator">Administrator</option>
+                      <option value="department_head">Department Head</option>
+                      <option value="program_chair">Program Chair</option>
+                      <option value="coordinator">Coordinator</option>
+                      <option value="faculty">Faculty</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                    <select value={filterEmployment} onChange={(e) => setFilterEmployment(e.target.value)}>
+                      <option value="all">All Employment Types</option>
+                      <option value="full-time">Full-Time</option>
+                      <option value="part-time">Part-Time</option>
+                      <option value="adjunct">Adjunct</option>
+                      <option value="guest">Guest</option>
+                    </select>
+                    <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)}>
+                      <option value="all">All Departments</option>
+                      {departments.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.resultsInfo}>
+                  Showing {startIdx + 1}-{Math.min(endIdx, filteredData.length)} of {filteredData.length} faculty members
+                </div>
+
+                <div className={styles.facultyGrid}>
+                  {currentData.map(faculty => (
+                    <div
+                      key={faculty.id}
+                      className={`${styles.facultyCard} ${selectedFaculty?.id === faculty.id ? styles.facultyCardSelected : ''}`}
+                      onClick={() => setSelectedFaculty(faculty)}
+                    >
+                      {faculty.profile_image ? (
+                        <img
+                          src={faculty.profile_image}
+                          alt={faculty.full_name}
+                          className={styles.facultyAvatarImg}
+                        />
+                      ) : (
+                        <div className={styles.facultyAvatar} style={{ backgroundColor: getRoleColor(faculty.role) }}>
+                          {getInitials(faculty.full_name)}
+                        </div>
+                      )}
+                      <div className={styles.facultyInfo}>
+                        <h3 className={styles.facultyName}>{faculty.full_name}</h3>
+                        <p className={styles.facultyPosition}>{faculty.position}</p>
+                        <div className={styles.badges}>
+                          <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(faculty.role) }}>
+                            {getRoleLabel(faculty.role)}
+                          </span>
+                          <span
+                            className={styles.employmentBadge}
+                            style={{ backgroundColor: getEmploymentBadge(faculty.employment_type).color }}
+                          >
+                            {getEmploymentBadge(faculty.employment_type).label}
+                          </span>
+                        </div>
+                        {faculty.department && (
+                          <p className={styles.facultyDepartment}>
+                            <MdBusiness size={14} />
+                            {faculty.department}
+                          </p>
+                        )}
+                        {faculty.email && (
+                          <p className={styles.facultyEmail}>
+                            <MdEmail size={14} />
+                            {faculty.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className={styles.pagination}>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={styles.pageButton}
+                    >
+                      Previous
+                    </button>
+                    <span className={styles.pageInfo}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={styles.pageButton}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div> {/* End mainContentArea */}
 
           {/* Desktop Side Panel - inside contentRow so it pushes content */}
           {!isMobile && (
@@ -548,12 +548,12 @@ function FacultyDirectoryContent() {
               {selectedFaculty && (
                 <>
                   <button className={styles.closePanelButton} onClick={() => setSelectedFaculty(null)}>
-                    <X size={24} />
+                    <MdClose size={24} />
                   </button>
                   <div className={styles.panelHeader}>
                     {selectedFaculty.profile_image ? (
-                      <img 
-                        src={selectedFaculty.profile_image} 
+                      <img
+                        src={selectedFaculty.profile_image}
                         alt={selectedFaculty.full_name}
                         className={styles.panelAvatarImg}
                       />
@@ -569,8 +569,8 @@ function FacultyDirectoryContent() {
                         <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                           {getRoleLabel(selectedFaculty.role)}
                         </span>
-                        <span 
-                          className={styles.employmentBadge} 
+                        <span
+                          className={styles.employmentBadge}
                           style={{ backgroundColor: getEmploymentBadge(selectedFaculty.employment_type).color }}
                         >
                           {getEmploymentBadge(selectedFaculty.employment_type).label}
@@ -588,35 +588,35 @@ function FacultyDirectoryContent() {
                       )}
                       {selectedFaculty.college && (
                         <div className={styles.infoItem}>
-                          <Building2 size={16} />
+                          <MdBusiness size={16} />
                           <strong>College:</strong>
                           <span>{selectedFaculty.college}</span>
                         </div>
                       )}
                       {selectedFaculty.department && (
                         <div className={styles.infoItem}>
-                          <Building2 size={16} />
+                          <MdBusiness size={16} />
                           <strong>Department:</strong>
                           <span>{selectedFaculty.department}</span>
                         </div>
                       )}
                       {selectedFaculty.email && (
                         <div className={styles.infoItem}>
-                          <Mail size={16} />
+                          <MdEmail size={16} />
                           <strong>Email:</strong>
                           <span>{selectedFaculty.email}</span>
                         </div>
                       )}
                       {selectedFaculty.phone && (
                         <div className={styles.infoItem}>
-                          <Phone size={16} />
+                          <MdPhone size={16} />
                           <strong>Phone:</strong>
                           <span>{selectedFaculty.phone}</span>
                         </div>
                       )}
                       {selectedFaculty.office_location && (
                         <div className={styles.infoItem}>
-                          <MapPin size={16} />
+                          <MdLocationOn size={16} />
                           <strong>Office:</strong>
                           <span>{selectedFaculty.office_location}</span>
                         </div>
@@ -653,12 +653,12 @@ function FacultyDirectoryContent() {
         <div className={styles.modalOverlay} onClick={() => setSelectedFaculty(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setSelectedFaculty(null)}>
-              <X size={24} />
+              <MdClose size={24} />
             </button>
             <div className={styles.modalHeader}>
               {selectedFaculty.profile_image ? (
-                <img 
-                  src={selectedFaculty.profile_image} 
+                <img
+                  src={selectedFaculty.profile_image}
                   alt={selectedFaculty.full_name}
                   className={styles.modalAvatarImg}
                 />
@@ -674,8 +674,8 @@ function FacultyDirectoryContent() {
                   <span className={styles.roleBadge} style={{ backgroundColor: getRoleColor(selectedFaculty.role) }}>
                     {getRoleLabel(selectedFaculty.role)}
                   </span>
-                  <span 
-                    className={styles.employmentBadge} 
+                  <span
+                    className={styles.employmentBadge}
                     style={{ backgroundColor: getEmploymentBadge(selectedFaculty.employment_type).color }}
                   >
                     {getEmploymentBadge(selectedFaculty.employment_type).label}
@@ -693,35 +693,35 @@ function FacultyDirectoryContent() {
                 )}
                 {selectedFaculty.college && (
                   <div className={styles.infoItem}>
-                    <Building2 size={16} />
+                    <MdBusiness size={16} />
                     <strong>College:</strong>
                     <span>{selectedFaculty.college}</span>
                   </div>
                 )}
                 {selectedFaculty.department && (
                   <div className={styles.infoItem}>
-                    <Building2 size={16} />
+                    <MdBusiness size={16} />
                     <strong>Department:</strong>
                     <span>{selectedFaculty.department}</span>
                   </div>
                 )}
                 {selectedFaculty.email && (
                   <div className={styles.infoItem}>
-                    <Mail size={16} />
+                    <MdEmail size={16} />
                     <strong>Email:</strong>
                     <span>{selectedFaculty.email}</span>
                   </div>
                 )}
                 {selectedFaculty.phone && (
                   <div className={styles.infoItem}>
-                    <Phone size={16} />
+                    <MdPhone size={16} />
                     <strong>Phone:</strong>
                     <span>{selectedFaculty.phone}</span>
                   </div>
                 )}
                 {selectedFaculty.office_location && (
                   <div className={styles.infoItem}>
-                    <MapPin size={16} />
+                    <MdLocationOn size={16} />
                     <strong>Office:</strong>
                     <span>{selectedFaculty.office_location}</span>
                   </div>

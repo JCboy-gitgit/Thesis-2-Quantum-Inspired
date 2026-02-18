@@ -35,7 +35,9 @@ import {
   Palette,
   MoreVertical,
   FolderInput,
-  MoveRight
+  MoveRight,
+  Monitor,
+  Presentation
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -218,6 +220,7 @@ function CoursesManagementContent() {
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<number | null>(null)
+  const [featuresTab, setFeaturesTab] = useState<'lec' | 'lab'>('lec')
 
   // Options
   const semesters = ['First Semester', 'Second Semester', 'Summer']
@@ -617,6 +620,7 @@ function CoursesManagementContent() {
     })
     setModalMode('edit')
     setEditingId(course.id)
+    setFeaturesTab('lec')
     setShowModal(true)
   }
 
@@ -2386,10 +2390,55 @@ function CoursesManagementContent() {
                       (Scheduler will only assign rooms with these features)
                     </span>
                   </div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <button
+                      onClick={() => setFeaturesTab('lec')}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: featuresTab === 'lec' ? '2px solid #8b5cf6' : '1px solid var(--border-color)',
+                        background: featuresTab === 'lec' ? 'rgba(139, 92, 246, 0.1)' : 'var(--bg-gray-50)',
+                        color: featuresTab === 'lec' ? '#7c3aed' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Presentation size={16} /> Lecture Requirements
+                    </button>
+                    <button
+                      onClick={() => setFeaturesTab('lab')}
+                      style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: featuresTab === 'lab' ? '2px solid #38a169' : '1px solid var(--border-color)',
+                        background: featuresTab === 'lab' ? 'rgba(56, 161, 105, 0.1)' : 'var(--bg-gray-50)',
+                        color: featuresTab === 'lab' ? '#2f855a' : 'var(--text-secondary)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Monitor size={16} /> Lab Requirements
+                    </button>
+                  </div>
+
                   <FeatureTagsManager
+                    key={featuresTab}
                     mode="course"
                     entityId={editingId}
                     entityName={formData.course_code}
+                    subType={featuresTab}
                   />
                 </div>
               )}

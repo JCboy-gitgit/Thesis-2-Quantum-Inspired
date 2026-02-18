@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
-import { CheckCircle2, Bell, AlertTriangle, Info } from 'lucide-react'
+import { MdCheckCircle, MdNotifications, MdWarning, MdInfo } from 'react-icons/md'
 import { useTheme } from '@/app/context/ThemeContext'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
@@ -36,7 +36,7 @@ export default function FacultyAlertsPage() {
 
   useEffect(() => {
     setMounted(true)
-    
+
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
@@ -79,9 +79,9 @@ export default function FacultyAlertsPage() {
   }
 
   const severityIcon = (level: string) => {
-    if (level === 'success') return <CheckCircle2 size={16} />
-    if (level === 'warning' || level === 'error') return <AlertTriangle size={16} />
-    return <Info size={16} />
+    if (level === 'success') return <MdCheckCircle size={16} />
+    if (level === 'warning' || level === 'error') return <MdWarning size={16} />
+    return <MdInfo size={16} />
   }
 
   return (
@@ -98,7 +98,7 @@ export default function FacultyAlertsPage() {
         <main className="flex-1 px-4 sm:px-6 md:px-8 pt-24 pb-10 max-w-[1400px] mx-auto w-full box-border">
           <div className={styles.header}>
             <div className={styles.titleWrap}>
-              <div className={styles.iconBadge}><Bell size={18} /></div>
+              <div className={styles.iconBadge}><MdNotifications size={18} /></div>
               <div>
                 <h1 className={isLightMode ? styles.lightTitle : styles.darkTitle}>Alert Feed</h1>
                 <p className={isLightMode ? styles.lightSubtitle : styles.darkSubtitle}>Schedule updates, room changes, and system notices.</p>

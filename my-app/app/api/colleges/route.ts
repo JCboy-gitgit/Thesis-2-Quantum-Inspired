@@ -18,10 +18,10 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey, {
-      global: {
-        fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
-      },
-    })
+    global: {
+      fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
+    },
+  })
   : null
 
 export interface BulSUCollege {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         display_order: order
       })
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       if (error.code === '23505') { // Unique violation
@@ -172,6 +172,13 @@ export async function POST(request: NextRequest) {
         )
       }
       throw error
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Failed to create college (permission verified?)' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ college: data }, { status: 201 })
@@ -213,12 +220,13 @@ export async function PUT(request: NextRequest) {
     if (is_active !== undefined) updateData.is_active = is_active
     if (display_order !== undefined) updateData.display_order = display_order
 
+    // Try to update existing record
     const { data, error } = await supabase
       .from('bulsu_colleges')
       .update(updateData)
       .eq('id', id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) {
       if (error.code === '23505') {
@@ -228,6 +236,39 @@ export async function PUT(request: NextRequest) {
         )
       }
       throw error
+    }
+
+    // If update returned no data, it might be a missing default college that needs seeding
+    if (!data) {
+      const defaultCollege = DEFAULT_COLLEGES.find(c => c.id === id)
+      if (defaultCollege) {
+        console.log(`Seeding default college ID ${id} on update...`)
+        // Merge defaults with updates
+        const toInsert = {
+          ...defaultCollege, // This includes ID
+          ...updateData,
+          updated_at: new Date().toISOString()
+        }
+
+        // Use UPSERT logic (insert)
+        const { data: insertedData, error: insertError } = await supabase
+          .from('bulsu_colleges')
+          .insert(toInsert)
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('Error seeding default college:', insertError)
+          throw insertError
+        }
+
+        return NextResponse.json({ college: insertedData })
+      }
+
+      return NextResponse.json(
+        { error: 'College not found' },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({ college: data })

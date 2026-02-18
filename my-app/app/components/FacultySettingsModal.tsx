@@ -4,7 +4,7 @@
 // Theme-aware modal that respects light/dark mode
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Moon, Sun, Monitor } from 'lucide-react'
+import { MdClose, MdDarkMode, MdLightMode, MdMonitor } from 'react-icons/md'
 import { useTheme } from '../context/ThemeContext'
 
 interface FacultySettingsModalProps {
@@ -14,7 +14,7 @@ interface FacultySettingsModalProps {
 
 function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
   const { theme, collegeTheme, setTheme, setCollegeTheme } = useTheme()
-  
+
   // For faculty pages, 'green' is treated as 'light' mode (green is only for admin)
   const displayMode = theme === 'dark' ? 'dark' : 'light'
   const isLightMode = displayMode === 'light'
@@ -26,7 +26,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
     'arts-letters': { primary: '#f97316', dark: '#ea580c', rgb: '249, 115, 22' },
     architecture: { primary: '#ef4444', dark: '#dc2626', rgb: '239, 68, 68' },
   }
-  
+
   const currentCollegeColor = collegeColors[collegeTheme] || collegeColors.default
 
   // Prevent body scroll when modal is open
@@ -52,27 +52,27 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
   }
 
   const colorThemes = [
-    { 
-      id: 'default', 
-      name: 'Default', 
+    {
+      id: 'default',
+      name: 'Default',
       description: 'Quantum-inspired theme',
       gradient: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
     },
-    { 
-      id: 'science', 
-      name: 'Science', 
+    {
+      id: 'science',
+      name: 'Science',
       description: 'College of Science theme',
       gradient: 'linear-gradient(135deg, #25969e 0%, #10b981 100%)',
     },
-    { 
-      id: 'arts-letters', 
-      name: 'Arts & Letters', 
+    {
+      id: 'arts-letters',
+      name: 'Arts & Letters',
       description: 'College of Arts & Letters theme',
       gradient: 'linear-gradient(135deg, #f97316 0%, #fbbf24 100%)',
     },
-    { 
-      id: 'architecture', 
-      name: 'Architecture', 
+    {
+      id: 'architecture',
+      name: 'Architecture',
       description: 'College of Architecture theme',
       gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
     },
@@ -83,7 +83,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
       id: 'dark',
       name: 'Dark Mode',
       description: 'Easy on the eyes',
-      icon: Moon,
+      icon: MdDarkMode,
       gradient: 'linear-gradient(135deg, #334155 0%, #0f172a 100%)',
       iconColor: '#22d3ee'
     },
@@ -91,7 +91,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
       id: 'light',
       name: 'Light Mode',
       description: 'Classic bright look',
-      icon: Sun,
+      icon: MdLightMode,
       gradient: 'linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%)',
       iconColor: '#92400e'
     }
@@ -100,20 +100,20 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
   // Theme-aware colors - now uses current college theme color
   const colors = {
     overlay: isLightMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.85)',
-    modalBg: isLightMode 
-      ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' 
+    modalBg: isLightMode
+      ? 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)'
       : 'linear-gradient(135deg, #0f1629 0%, #1a2035 100%)',
-    modalBorder: isLightMode 
-      ? `rgba(${currentCollegeColor.rgb}, 0.3)` 
+    modalBorder: isLightMode
+      ? `rgba(${currentCollegeColor.rgb}, 0.3)`
       : `rgba(${currentCollegeColor.rgb}, 0.3)`,
-    modalShadow: isLightMode 
-      ? `0 25px 80px rgba(0, 0, 0, 0.15), 0 0 40px rgba(${currentCollegeColor.rgb}, 0.1)` 
+    modalShadow: isLightMode
+      ? `0 25px 80px rgba(0, 0, 0, 0.15), 0 0 40px rgba(${currentCollegeColor.rgb}, 0.1)`
       : `0 25px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(${currentCollegeColor.rgb}, 0.15)`,
-    headerBg: isLightMode 
-      ? `linear-gradient(135deg, rgba(${currentCollegeColor.rgb}, 0.1) 0%, rgba(${currentCollegeColor.rgb}, 0.05) 100%)` 
+    headerBg: isLightMode
+      ? `linear-gradient(135deg, rgba(${currentCollegeColor.rgb}, 0.1) 0%, rgba(${currentCollegeColor.rgb}, 0.05) 100%)`
       : `linear-gradient(135deg, rgba(${currentCollegeColor.rgb}, 0.1) 0%, rgba(${currentCollegeColor.rgb}, 0.05) 100%)`,
-    headerBorder: isLightMode 
-      ? `rgba(${currentCollegeColor.rgb}, 0.2)` 
+    headerBorder: isLightMode
+      ? `rgba(${currentCollegeColor.rgb}, 0.2)`
       : `rgba(${currentCollegeColor.rgb}, 0.2)`,
     titleColor: currentCollegeColor.primary,
     textPrimary: isLightMode ? '#1e293b' : '#ffffff',
@@ -134,7 +134,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         inset: 0,
@@ -145,10 +145,10 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
         background: colors.overlay,
         backdropFilter: 'blur(12px)',
         padding: '20px',
-      }} 
+      }}
       onClick={handleOverlayClick}
     >
-      <div 
+      <div
         style={{
           background: colors.modalBg,
           border: `2px solid ${colors.modalBorder}`,
@@ -181,10 +181,10 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
             fontWeight: 700,
             margin: 0,
           }}>
-            <Monitor size={24} />
+            <MdMonitor size={24} />
             Settings
           </h2>
-          <button 
+          <button
             style={{
               width: '40px',
               height: '40px',
@@ -208,10 +208,10 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
               e.currentTarget.style.color = colors.closeBtnColor
             }}
           >
-            <X size={22} />
+            <MdClose size={22} />
           </button>
         </div>
-        
+
         {/* Content */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           <h3 style={{ color: colors.textPrimary, fontSize: '0.875rem', fontWeight: 500, margin: '0 0 4px 0', opacity: 0.9 }}>
@@ -264,7 +264,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
                   justifyContent: 'center',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                 }}>
-                  <Monitor size={28} color="#ffffff" />
+                  <MdMonitor size={28} color="#ffffff" />
                 </div>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ color: colors.textPrimary, fontSize: '1rem', fontWeight: 600, marginBottom: '4px' }}>
@@ -372,7 +372,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
             )
           })}
         </div>
-        
+
         {/* Footer */}
         <div style={{
           padding: '16px 24px',
@@ -381,7 +381,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
           display: 'flex',
           justifyContent: 'flex-end',
         }}>
-          <button 
+          <button
             style={{
               padding: '14px 40px',
               background: colors.btnGradient,
@@ -417,15 +417,15 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
 
 export default function FacultySettingsModal({ isOpen, onClose }: FacultySettingsModalProps) {
   const [mounted, setMounted] = useState(false)
-  
+
   useEffect(() => {
     setMounted(true)
   }, [])
-  
+
   if (!mounted || !isOpen) {
     return null
   }
-  
+
   return createPortal(
     <FacultySettingsModalContent onClose={onClose} />,
     document.body

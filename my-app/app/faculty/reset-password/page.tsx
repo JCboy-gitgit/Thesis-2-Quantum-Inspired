@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react'
+import { MdLock, MdVisibility, MdVisibilityOff, MdCheckCircle, MdError, MdArrowBack, MdRefresh } from 'react-icons/md'
 import styles from './styles.module.css'
 
 function ResetPasswordContent() {
@@ -99,7 +99,7 @@ function ResetPasswordContent() {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.loadingState}>
-            <Loader2 className={styles.spinner} size={48} />
+            <MdRefresh className={styles.spinner} size={48} />
             <p>Verifying reset link...</p>
           </div>
         </div>
@@ -113,14 +113,14 @@ function ResetPasswordContent() {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.errorState}>
-            <AlertCircle size={64} className={styles.errorIcon} />
+            <MdError size={64} className={styles.errorIcon} />
             <h2>Invalid Reset Link</h2>
             <p>{tokenError}</p>
-            <button 
+            <button
               className={styles.primaryButton}
               onClick={() => router.push('/')}
             >
-              <ArrowLeft size={18} />
+              <MdArrowBack size={18} />
               Back to Login
             </button>
           </div>
@@ -135,14 +135,14 @@ function ResetPasswordContent() {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.successState}>
-            <CheckCircle size={64} className={styles.successIcon} />
+            <MdCheckCircle size={64} className={styles.successIcon} />
             <h2>Password Reset Successful!</h2>
             <p>Your password has been changed. You can now login with your new password.</p>
-            <button 
+            <button
               className={styles.primaryButton}
               onClick={() => router.push('/')}
             >
-              <ArrowLeft size={18} />
+              <MdArrowBack size={18} />
               Go to Login
             </button>
           </div>
@@ -157,7 +157,7 @@ function ResetPasswordContent() {
       <div className={styles.card}>
         <div className={styles.header}>
           <div className={styles.iconWrapper}>
-            <Lock size={32} />
+            <MdLock size={32} />
           </div>
           <h1>Reset Your Password</h1>
           <p className={styles.subtitle}>Enter a new password for <strong>{email}</strong></p>
@@ -165,7 +165,7 @@ function ResetPasswordContent() {
 
         {message && (
           <div className={`${styles.message} ${message.type === 'success' ? styles.success : styles.error}`}>
-            {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            {message.type === 'success' ? <MdCheckCircle size={18} /> : <MdError size={18} />}
             {message.text}
           </div>
         )}
@@ -190,7 +190,7 @@ function ResetPasswordContent() {
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
               </button>
             </div>
           </div>
@@ -214,24 +214,24 @@ function ResetPasswordContent() {
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 tabIndex={-1}
               >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showConfirmPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
               </button>
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className={styles.submitButton}
             disabled={submitting}
           >
             {submitting ? (
               <>
-                <Loader2 className={styles.buttonSpinner} size={18} />
+                <MdRefresh className={styles.buttonSpinner} size={18} />
                 Resetting Password...
               </>
             ) : (
               <>
-                <Lock size={18} />
+                <MdLock size={18} />
                 Reset Password
               </>
             )}
@@ -239,11 +239,11 @@ function ResetPasswordContent() {
         </form>
 
         <div className={styles.footer}>
-          <button 
+          <button
             className={styles.linkButton}
             onClick={() => router.push('/')}
           >
-            <ArrowLeft size={14} />
+            <MdArrowBack size={14} />
             Back to Login
           </button>
         </div>
@@ -258,7 +258,7 @@ export default function ResetPasswordPage() {
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.loadingState}>
-            <Loader2 className={styles.spinner} size={48} />
+            <MdRefresh className={styles.spinner} size={48} />
             <p>Loading...</p>
           </div>
         </div>

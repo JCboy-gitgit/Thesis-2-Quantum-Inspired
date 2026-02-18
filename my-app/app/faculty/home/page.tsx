@@ -4,19 +4,19 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  BookOpen,
-  ChevronRight,
-  ChevronLeft,
-  Building2,
-  GraduationCap,
-  TrendingUp,
-  RefreshCw,
-  AlertCircle,
-  X
-} from 'lucide-react'
+  MdCalendarToday,
+  MdAccessTime,
+  MdLocationOn,
+  MdMenuBook,
+  MdChevronRight,
+  MdChevronLeft,
+  MdBusiness,
+  MdSchool,
+  MdTrendingUp,
+  MdRefresh,
+  MdError,
+  MdClose
+} from 'react-icons/md'
 import styles from './styles.module.css'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import FacultySidebar from '@/app/components/FacultySidebar'
@@ -876,7 +876,7 @@ export default function FacultyHomePage() {
                 </div>
                 {user?.department && (
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold mt-2 sm:mt-1 transition-colors duration-300 ${styles.collegeBadge}`}>
-                    <Building2 size={12} />
+                    <MdBusiness size={12} />
                     <span>{user.department}</span>
                   </div>
                 )}
@@ -891,7 +891,7 @@ export default function FacultyHomePage() {
               : 'bg-slate-800/80 border-cyan-500/20'
               }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
-                <Calendar size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                <MdCalendarToday size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{todayClassCount}</div>
@@ -903,7 +903,7 @@ export default function FacultyHomePage() {
               : 'bg-slate-800/80 border-cyan-500/20'
               }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
-                <BookOpen size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                <MdMenuBook size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-xl sm:text-2xl md:text-3xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{todayClassCount > schedules.length ? 0 : schedules.length - todayClassCount}</div>
@@ -915,7 +915,7 @@ export default function FacultyHomePage() {
               : 'bg-slate-800/80 border-cyan-500/20'
               }`}>
               <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl flex items-center justify-center text-white flex-shrink-0 ${styles.accentIcon}`}>
-                <Clock size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                <MdAccessTime size={20} className="sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-lg sm:text-xl md:text-2xl font-bold leading-none mb-1 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>{currentClass ? 'In Progress' : 'Free'}</div>
@@ -927,7 +927,7 @@ export default function FacultyHomePage() {
           {/* Current & Next Class - Responsive Stack */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-              <BookOpen size={18} className="sm:w-5 sm:h-5" />
+              <MdMenuBook size={18} className="sm:w-5 sm:h-5" />
               Today's Classes
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -962,14 +962,14 @@ export default function FacultyHomePage() {
                         <span className={`font-semibold ${getCollegeColorClass('text')}`}>
                           {formatTime(currentClass.start_time)} - {formatTime(currentClass.end_time)}
                         </span>
-                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {currentClass.room}, {currentClass.building}</span>
-                        <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {currentClass.section}</span>
+                        <span className="flex items-center gap-1.5 flex-wrap"><MdLocationOn size={14} className="flex-shrink-0" /> {currentClass.room}, {currentClass.building}</span>
+                        <span className="flex items-center gap-1.5"><MdMenuBook size={14} className="flex-shrink-0" /> {currentClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-4 text-center">
                       <div className={`p-3 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700/50'}`}>
-                        <Clock size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                        <MdAccessTime size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
                       </div>
                       <h4 className={`text-base font-bold m-0 mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Active Class</h4>
                       <p className={`text-xs m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>You are currently free.</p>
@@ -1010,14 +1010,14 @@ export default function FacultyHomePage() {
                         <span className={`font-semibold ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>
                           {formatTime(nextClass.start_time)} - {formatTime(nextClass.end_time)}
                         </span>
-                        <span className="flex items-center gap-1.5 flex-wrap"><MapPin size={14} className="flex-shrink-0" /> {nextClass.room}, {nextClass.building}</span>
-                        <span className="flex items-center gap-1.5"><BookOpen size={14} className="flex-shrink-0" /> {nextClass.section}</span>
+                        <span className="flex items-center gap-1.5 flex-wrap"><MdLocationOn size={14} className="flex-shrink-0" /> {nextClass.room}, {nextClass.building}</span>
+                        <span className="flex items-center gap-1.5"><MdMenuBook size={14} className="flex-shrink-0" /> {nextClass.section}</span>
                       </div>
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-4 text-center">
                       <div className={`p-3 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700/50'}`}>
-                        <Calendar size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                        <MdCalendarToday size={24} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
                       </div>
                       <h4 className={`text-base font-bold m-0 mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Upcoming Classes</h4>
                       <p className={`text-xs m-0 ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>No more classes scheduled for today.</p>
@@ -1032,7 +1032,7 @@ export default function FacultyHomePage() {
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center gap-2 mb-3 sm:mb-4">
               <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                <AlertCircle className="sm:w-5 sm:h-5 text-amber-500" />
+                <MdError className="sm:w-5 sm:h-5 text-amber-500" />
                 Recent Announcements & Room Availability
               </h3>
             </div>
@@ -1065,11 +1065,11 @@ export default function FacultyHomePage() {
 
                     <div className={`text-xs space-y-1 mb-3 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                       <div className="flex items-center gap-1.5">
-                        <Clock size={12} />
+                        <MdAccessTime size={12} />
                         {note.room_allocations.schedule_time}
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Building2 size={12} />
+                        <MdBusiness size={12} />
                         <span>{note.profiles?.full_name} ({note.room_allocations.course_code})</span>
                       </div>
                     </div>
@@ -1087,7 +1087,7 @@ export default function FacultyHomePage() {
           <section className="mb-4 sm:mb-5 md:mb-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2">
               <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-                <Calendar size={18} className="sm:w-5 sm:h-5" />
+                <MdCalendarToday size={18} className="sm:w-5 sm:h-5" />
                 {(() => {
                   const today = new Date()
                   today.setHours(0, 0, 0, 0)
@@ -1116,7 +1116,7 @@ export default function FacultyHomePage() {
                     prev.setDate(prev.getDate() - 1)
                     setSelectedDate(prev)
                   }} title="Previous day">
-                  <ChevronLeft size={16} />
+                  <MdChevronLeft size={16} />
                 </button>
 
                 {/* Date label / Today button */}
@@ -1142,7 +1142,7 @@ export default function FacultyHomePage() {
                     next.setDate(next.getDate() + 1)
                     setSelectedDate(next)
                   }} title="Next day">
-                  <ChevronRight size={16} />
+                  <MdChevronRight size={16} />
                 </button>
 
                 {/* Refresh */}
@@ -1192,7 +1192,7 @@ export default function FacultyHomePage() {
                             ? isLightMode ? 'bg-red-50' : 'bg-red-900/20'
                             : isLightMode ? 'bg-slate-50' : 'bg-slate-700/30'
                             }`}>
-                            <Clock size={16} className={
+                            <MdAccessTime size={16} className={
                               status === 'ongoing'
                                 ? 'text-red-500'
                                 : isLightMode ? 'text-slate-400' : 'text-slate-500'
@@ -1227,11 +1227,11 @@ export default function FacultyHomePage() {
 
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm">
                             <div className={`flex items-center gap-1.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                              <MapPin size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                              <MdLocationOn size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
                               <span className="truncate">{schedule.room}, {schedule.building}</span>
                             </div>
                             <div className={`flex items-center gap-1.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                              <BookOpen size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                              <MdMenuBook size={14} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
                               <span>{schedule.section}</span>
                             </div>
                           </div>
@@ -1239,7 +1239,7 @@ export default function FacultyHomePage() {
 
                         {/* Chevron for indication */}
                         <div className={`hidden sm:flex items-center justify-center w-8 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                          <ChevronRight size={20} />
+                          <MdChevronRight size={20} />
                         </div>
                       </div>
                     </div>
@@ -1249,7 +1249,7 @@ export default function FacultyHomePage() {
                 <div className={`flex flex-col items-center justify-center py-12 px-4 rounded-xl border border-dashed ${isLightMode ? 'border-slate-300 bg-slate-50' : 'border-slate-700 bg-slate-800/30'
                   }`}>
                   <div className={`p-4 rounded-full mb-3 ${isLightMode ? 'bg-slate-100' : 'bg-slate-700'}`}>
-                    <Calendar size={32} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
+                    <MdCalendarToday size={32} className={isLightMode ? 'text-slate-400' : 'text-slate-500'} />
                   </div>
                   <h3 className={`text-lg font-bold mb-1 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>No Classes Scheduled</h3>
                   <p className={`text-sm text-center max-w-xs ${isLightMode ? 'text-slate-500' : 'text-slate-500'}`}>
@@ -1265,11 +1265,11 @@ export default function FacultyHomePage() {
           {/* Upcoming Holidays Calendar */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
-              <Calendar size={18} className="sm:w-5 sm:h-5" />
+              <MdCalendarToday size={18} className="sm:w-5 sm:h-5" />
               Upcoming Holidays
             </h3>
-            <UpcomingHolidaysCard 
-              isLightMode={isLightMode} 
+            <UpcomingHolidaysCard
+              isLightMode={isLightMode}
               isScience={isScience}
               isArtsLetters={isArtsLetters}
               isArchitecture={isArchitecture}
@@ -1381,7 +1381,7 @@ export default function FacultyHomePage() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[2000] p-4">
           <div className="bg-slate-900 border-2 border-red-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
-              <AlertCircle size={36} className="sm:w-12 sm:h-12 text-red-500" />
+              <MdError size={36} className="sm:w-12 sm:h-12 text-red-500" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Session Expired</h2>
             <p className="text-sm sm:text-base text-slate-400 mb-5 sm:mb-6">Your account has been logged in from another device or browser. For security reasons, you have been logged out of this session.</p>
@@ -1417,7 +1417,7 @@ function UpcomingHolidaysCard({ isLightMode, isScience, isArtsLetters, isArchite
   const getUpcomingHolidays = () => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    
+
     return Object.entries(philippineHolidays)
       .filter(([date]) => date >= todayStr)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -1443,11 +1443,10 @@ function UpcomingHolidaysCard({ isLightMode, isScience, isArtsLetters, isArchite
       {holidays.map((holiday, idx) => (
         <div
           key={idx}
-          className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-all border ${getCollegeColorClass('border', 'light')} hover:${getCollegeColorClass('border')} ${
-            isLightMode
+          className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg transition-all border ${getCollegeColorClass('border', 'light')} hover:${getCollegeColorClass('border')} ${isLightMode
               ? `${getCollegeColorClass('bg', 'light')} hover:shadow-sm`
               : `bg-slate-800/60`
-          }`}
+            }`}
         >
           {/* Date Box */}
           <div className={`flex flex-col items-center justify-center rounded-lg min-w-fit py-2 px-3 sm:py-3 sm:px-4 ${getCollegeColorClass('bg', 'light')} ${getCollegeColorClass('text')}`}>

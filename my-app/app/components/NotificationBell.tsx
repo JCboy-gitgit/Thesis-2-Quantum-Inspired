@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, UserPlus, Clock, CheckCircle2, Zap, AlertTriangle, Info, Trash2 } from 'lucide-react'
+import { MdNotifications, MdPersonAdd, MdAccessTime, MdCheckCircle, MdBolt, MdWarning, MdInfo, MdDelete } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import './NotificationBell.css'
 
@@ -224,17 +224,17 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   const getNotificationIcon = (notif: Notification) => {
     switch (notif.type) {
       case 'registration':
-        return <UserPlus size={18} />
+        return <MdPersonAdd size={18} />
       case 'schedule':
-        return <Zap size={18} />
+        return <MdBolt size={18} />
       case 'alert':
         if (notif.severity === 'warning' || notif.severity === 'error')
-          return <AlertTriangle size={18} />
+          return <MdWarning size={18} />
         if (notif.severity === 'success')
-          return <CheckCircle2 size={18} />
-        return <Info size={18} />
+          return <MdCheckCircle size={18} />
+        return <MdInfo size={18} />
       default:
-        return <Bell size={18} />
+        return <MdNotifications size={18} />
     }
   }
 
@@ -258,7 +258,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
         onClick={() => setIsOpen(!isOpen)}
         title="Notifications"
       >
-        <Bell size={20} />
+        <MdNotifications size={20} />
         {unreadCount > 0 && (
           <span className="notification-badge">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -277,7 +277,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                   onClick={markAllRead}
                   title="Mark all as read"
                 >
-                  <CheckCircle2 size={14} />
+                  <MdCheckCircle size={14} />
                 </button>
               )}
               {notifications.length > 0 && (
@@ -286,7 +286,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                   onClick={clearAllNotifications}
                   title="Clear all"
                 >
-                  <Trash2 size={14} />
+                  <MdDelete size={14} />
                 </button>
               )}
             </div>
@@ -300,7 +300,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               </div>
             ) : notifications.length === 0 ? (
               <div className="notification-empty">
-                <Bell size={40} />
+                <MdNotifications size={40} />
                 <p>No new notifications</p>
               </div>
             ) : (
@@ -317,7 +317,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                     <span className="notification-title">{notif.title}</span>
                     <span className="notification-message">{notif.message}</span>
                     <span className="notification-time">
-                      <Clock size={12} /> {formatTime(notif.timestamp)}
+                      <MdAccessTime size={12} /> {formatTime(notif.timestamp)}
                     </span>
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                   setIsOpen(false)
                 }}
               >
-                <UserPlus size={16} />
+                <MdPersonAdd size={16} />
                 Review Pending Requests
               </button>
             </div>

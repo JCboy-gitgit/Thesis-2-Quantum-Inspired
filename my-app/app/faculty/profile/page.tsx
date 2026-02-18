@@ -5,28 +5,28 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import {
-  User,
-  Mail,
-  Building2,
-  Phone,
-  MapPin,
-  Edit3,
-  Save,
-  X,
-  Camera,
-  Briefcase,
-  BookOpen,
-  Calendar,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Lock,
-  Key,
-  Eye,
-  EyeOff,
-  Settings,
-  LogOut
-} from 'lucide-react'
+  MdPerson,
+  MdEmail,
+  MdBusiness,
+  MdPhone,
+  MdLocationOn,
+  MdEdit,
+  MdSave,
+  MdClose,
+  MdCameraAlt,
+  MdWork,
+  MdMenuBook,
+  MdCalendarToday,
+  MdAccessTime,
+  MdCheckCircle,
+  MdError,
+  MdLock,
+  MdVpnKey,
+  MdVisibility,
+  MdVisibilityOff,
+  MdSettings,
+  MdLogout
+} from 'react-icons/md'
 import styles from './styles.module.css'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import { useTheme, COLLEGE_THEME_MAP } from '@/app/context/ThemeContext'
@@ -109,7 +109,7 @@ export default function FacultyProfilePage() {
     // Initialize theme from localStorage immediately
     // Theme is now managed by ThemeContext, no local theme state needed
     setMounted(true)
-    
+
     checkAuthAndLoad()
     fetchDepartments()
   }, [])
@@ -613,7 +613,7 @@ export default function FacultyProfilePage() {
                 }}
                 type="button"
               >
-                <Settings size={16} />
+                <MdSettings size={16} />
                 <span>Settings</span>
               </button>
               <button
@@ -625,7 +625,7 @@ export default function FacultyProfilePage() {
                 }}
                 type="button"
               >
-                <LogOut size={16} />
+                <MdLogout size={16} />
                 <span>Logout</span>
               </button>
             </div>
@@ -654,7 +654,7 @@ export default function FacultyProfilePage() {
                     className={styles.avatarImage}
                   />
                 ) : (
-                  <User size={60} />
+                  <MdPerson size={60} />
                 )}
                 {/* Hidden file input */}
                 <input
@@ -673,7 +673,7 @@ export default function FacultyProfilePage() {
                   {uploadingImage ? (
                     <span className={styles.btnSpinner}></span>
                   ) : (
-                    <Camera size={16} />
+                    <MdCameraAlt size={16} />
                   )}
                 </button>
               </div>
@@ -703,17 +703,17 @@ export default function FacultyProfilePage() {
               {editing ? (
                 <>
                   <button className={styles.cancelBtn} onClick={handleCancel} disabled={saving}>
-                    <X size={18} />
+                    <MdClose size={18} />
                     Cancel
                   </button>
                   <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
-                    {saving ? <span className={styles.btnSpinner}></span> : <Save size={18} />}
+                    {saving ? <span className={styles.btnSpinner}></span> : <MdSave size={18} />}
                     {saving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </>
               ) : (
                 <button className={styles.editBtn} onClick={() => setEditing(true)}>
-                  <Edit3 size={18} />
+                  <MdEdit size={18} />
                   Edit Profile
                 </button>
               )}
@@ -724,7 +724,7 @@ export default function FacultyProfilePage() {
               {/* Full Name */}
               <div className={styles.formGroup}>
                 <label>
-                  <User size={16} />
+                  <MdPerson size={16} />
                   Full Name
                 </label>
                 {editing ? (
@@ -739,7 +739,7 @@ export default function FacultyProfilePage() {
                     <p>{user?.full_name || 'Not set'}</p>
                     {pendingNameRequest && (
                       <span className={styles.pendingBadge}>
-                        <Clock size={12} />
+                        <MdAccessTime size={12} />
                         Pending: &quot;{pendingNameRequest.requested_value}&quot;
                       </span>
                     )}
@@ -750,7 +750,7 @@ export default function FacultyProfilePage() {
               {/* Email (read-only) */}
               <div className={styles.formGroup}>
                 <label>
-                  <Mail size={16} />
+                  <MdEmail size={16} />
                   Email Address
                 </label>
                 <p className={styles.readonly}>{user?.email}</p>
@@ -759,7 +759,7 @@ export default function FacultyProfilePage() {
               {/* Department - Read only, managed by admin */}
               <div className={styles.formGroup}>
                 <label>
-                  <Building2 size={16} />
+                  <MdBusiness size={16} />
                   Department
                 </label>
                 <p className={styles.readOnly}>Contact admin to update department</p>
@@ -768,7 +768,7 @@ export default function FacultyProfilePage() {
               {/* Phone */}
               <div className={styles.formGroup}>
                 <label>
-                  <Phone size={16} />
+                  <MdPhone size={16} />
                   Contact Number
                 </label>
                 {editing ? (
@@ -786,7 +786,7 @@ export default function FacultyProfilePage() {
               {/* Office Location */}
               <div className={styles.formGroup}>
                 <label>
-                  <MapPin size={16} />
+                  <MdLocationOn size={16} />
                   Office Location
                 </label>
                 {editing ? (
@@ -804,7 +804,7 @@ export default function FacultyProfilePage() {
               {/* Specialization */}
               <div className={styles.formGroup}>
                 <label>
-                  <Briefcase size={16} />
+                  <MdWork size={16} />
                   Specialization
                 </label>
                 {editing ? (
@@ -822,7 +822,7 @@ export default function FacultyProfilePage() {
               {/* Bio */}
               <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                 <label>
-                  <BookOpen size={16} />
+                  <MdMenuBook size={16} />
                   Bio / About
                 </label>
                 {editing ? (
@@ -841,7 +841,7 @@ export default function FacultyProfilePage() {
             {/* Password & Security Section */}
             <div className={styles.scheduleSection}>
               <h2 className={styles.sectionTitle}>
-                <Lock size={20} />
+                <MdLock size={20} />
                 Password & Security
               </h2>
 
@@ -851,7 +851,7 @@ export default function FacultyProfilePage() {
                     className={styles.changePasswordBtn}
                     onClick={() => setShowPasswordChange(true)}
                   >
-                    <Key size={18} />
+                    <MdVpnKey size={18} />
                     Change Password
                   </button>
                   <button
@@ -859,7 +859,7 @@ export default function FacultyProfilePage() {
                     onClick={handleForgotPassword}
                     disabled={sendingResetEmail}
                   >
-                    <Mail size={18} />
+                    <MdEmail size={18} />
                     {sendingResetEmail ? 'Sending...' : 'Send Password Reset Email'}
                   </button>
                 </div>
@@ -867,7 +867,7 @@ export default function FacultyProfilePage() {
                 <div className={styles.passwordChangeForm}>
                   <div className={styles.formGroup}>
                     <label>
-                      <Lock size={16} />
+                      <MdLock size={16} />
                       New Password
                     </label>
                     <div className={styles.passwordInputWrapper}>
@@ -882,13 +882,13 @@ export default function FacultyProfilePage() {
                         className={styles.passwordToggle}
                         onClick={() => setShowNewPassword(!showNewPassword)}
                       >
-                        {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showNewPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
                       </button>
                     </div>
                   </div>
                   <div className={styles.formGroup}>
                     <label>
-                      <Lock size={16} />
+                      <MdLock size={16} />
                       Confirm Password
                     </label>
                     <div className={styles.passwordInputWrapper}>
@@ -903,7 +903,7 @@ export default function FacultyProfilePage() {
                         className={styles.passwordToggle}
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       >
-                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showConfirmPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
                       </button>
                     </div>
                   </div>
@@ -916,7 +916,7 @@ export default function FacultyProfilePage() {
                       }}
                       disabled={changingPassword}
                     >
-                      <X size={18} />
+                      <MdClose size={18} />
                       Cancel
                     </button>
                     <button
@@ -924,7 +924,7 @@ export default function FacultyProfilePage() {
                       onClick={handlePasswordChange}
                       disabled={changingPassword}
                     >
-                      {changingPassword ? <span className={styles.btnSpinner}></span> : <Key size={18} />}
+                      {changingPassword ? <span className={styles.btnSpinner}></span> : <MdVpnKey size={18} />}
                       {changingPassword ? 'Changing...' : 'Change Password'}
                     </button>
                   </div>
@@ -935,7 +935,7 @@ export default function FacultyProfilePage() {
             {/* Assigned Schedule Section */}
             <div className={styles.scheduleSection}>
               <h2 className={styles.sectionTitle}>
-                <Calendar size={20} />
+                <MdCalendarToday size={20} />
                 Assigned Schedule
               </h2>
 
@@ -947,7 +947,7 @@ export default function FacultyProfilePage() {
               ) : assignedSchedule ? (
                 <div className={styles.scheduleCard}>
                   <div className={styles.scheduleStatus}>
-                    <CheckCircle size={20} className={styles.statusActive} />
+                    <MdCheckCircle size={20} className={styles.statusActive} />
                     <span>Schedule Assigned</span>
                   </div>
                   <div className={styles.scheduleDetails}>
@@ -974,13 +974,13 @@ export default function FacultyProfilePage() {
                     className={styles.viewScheduleBtn}
                     onClick={() => router.push('/faculty/schedules')}
                   >
-                    <Clock size={16} />
+                    <MdAccessTime size={16} />
                     View Full Schedule
                   </button>
                 </div>
               ) : (
                 <div className={styles.noSchedule}>
-                  <AlertCircle size={40} />
+                  <MdError size={40} />
                   <h3>No Schedule Assigned</h3>
                   <p>The administrator has not assigned a schedule to your account yet.</p>
                   <p>Please contact your department administrator for assistance.</p>

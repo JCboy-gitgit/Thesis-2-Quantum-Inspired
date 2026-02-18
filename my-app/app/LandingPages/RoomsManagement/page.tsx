@@ -521,18 +521,21 @@ export default function RoomsManagementPage() {
 
   // Stats calculation
   const stats: CampusStats = useMemo(() => {
-    const totalCampuses = campusGroups.size
-    let totalBuildings = 0
-    campusGroups.forEach((rooms) => {
-      const buildings = new Set(rooms.map(r => r.building))
-      totalBuildings += buildings.size
-    })
-    const totalRooms = allRooms.length
-    const totalCapacity = allRooms.reduce((sum, r) => sum + r.capacity, 0)
+    // Use filteredRooms to respect active filters
+    const roomsToCount = filteredRooms
+
+    const uniqueCampuses = new Set(roomsToCount.map(r => r.campus))
+    const totalCampuses = uniqueCampuses.size
+
+    const uniqueBuildings = new Set(roomsToCount.map(r => `${r.campus}|${r.building}`))
+    const totalBuildings = uniqueBuildings.size
+
+    const totalRooms = roomsToCount.length
+    const totalCapacity = roomsToCount.reduce((sum, r) => sum + r.capacity, 0)
     const avgCapacity = totalRooms > 0 ? Math.round(totalCapacity / totalRooms) : 0
     let usableRooms = 0
     let notUsableRooms = 0
-    allRooms.forEach(room => {
+    roomsToCount.forEach(room => {
       const status = room.status?.toLowerCase()
       if (status === 'not_usable' || status === 'unavailable' || status === 'inactive') {
         notUsableRooms++
@@ -541,7 +544,7 @@ export default function RoomsManagementPage() {
       }
     })
     return { totalCampuses, totalBuildings, totalRooms, totalCapacity, avgCapacity, usableRooms, notUsableRooms }
-  }, [allRooms, campusGroups])
+  }, [filteredRooms])
 
   const hasActiveFilters = filterBuilding !== 'all' || filterFloor !== 'all' || filterRoomType !== 'all' || filterCollege !== 'all' || filterAC || filterTV || filterWhiteboard
 

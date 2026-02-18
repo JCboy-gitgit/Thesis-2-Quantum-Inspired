@@ -104,9 +104,9 @@ interface RequestBody {
     avoid_conflicts: boolean
     online_days?: string[] // NEW: Days where all classes are online
     // NEW: Constraint settings
-    lunch_mode?: 'strict' | 'flexible' | 'none' // Lunch break enforcement
-    lunch_start_hour?: number // Default 12
-    lunch_end_hour?: number // Default 13
+    lunch_mode?: 'auto' | 'strict' | 'flexible' | 'none' // Lunch break enforcement ('auto' = 1hr break after 6hrs consecutive)
+    lunch_start_hour?: number // Only used in 'strict'/'flexible' modes
+    lunch_end_hour?: number // Only used in 'strict'/'flexible' modes
     strict_lab_room_matching?: boolean // Lab classes must be in lab rooms
     strict_lecture_room_matching?: boolean // Lecture classes should not be in lab rooms
     // Split session settings
@@ -886,9 +886,9 @@ export async function POST(request: NextRequest) {
       max_teacher_hours_per_day: body.config.max_teacher_hours_per_day,
       avoid_conflicts: body.config.avoid_conflicts,
       // NEW: Constraint settings for BulSU rules
-      lunch_mode: body.config.lunch_mode || 'strict',
-      lunch_start_hour: lunchStartHour,
-      lunch_end_hour: lunchEndHour,
+      lunch_mode: body.config.lunch_mode || 'auto', // Default to auto mode
+      lunch_start_hour: lunchStartHour,  // Only used if lunch_mode is 'strict'/'flexible'
+      lunch_end_hour: lunchEndHour,      // Only used if lunch_mode is 'strict'/'flexible'
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
       strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? true, // Lectures should NOT be in lab rooms
       // Split session settings - allow classes to be divided into multiple sessions
@@ -898,7 +898,11 @@ export async function POST(request: NextRequest) {
     console.log('📡 Trying to connect to Python backend...')
     console.log('🌐 Online Days:', body.online_days?.join(', ') || 'None')
     console.log('🍽️ Lunch Mode:', backendPayload.lunch_mode)
-    console.log('🍽️ Lunch Time:', `${backendPayload.lunch_start_hour}:00 - ${backendPayload.lunch_end_hour}:00`)
+    if (backendPayload.lunch_mode !== 'auto') {
+      console.log('🍽️ Lunch Time:', `${backendPayload.lunch_start_hour}:00 - ${backendPayload.lunch_end_hour}:00`)
+    } else {
+      console.log('🍽️ Auto: 1hr mandatory break after 6hrs consecutive')
+    }
     console.log('🔬 Strict Lab Matching:', backendPayload.strict_lab_room_matching)
     console.log('✂️ Allow Split Sessions:', backendPayload.allow_split_sessions)
     console.log('🌍 Environment:', isProduction ? 'Production' : 'Development')

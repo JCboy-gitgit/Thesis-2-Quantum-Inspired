@@ -4,20 +4,20 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
-import { 
-  Building2, 
-  ArrowLeft, 
-  Search, 
-  Users,
-  BookOpen,
-  GraduationCap,
-  Briefcase,
-  FolderOpen,
-  Mail,
-  Phone,
-  MapPin,
-  X
-} from 'lucide-react'
+import {
+  MdBusiness,
+  MdArrowBack,
+  MdSearch,
+  MdPeople,
+  MdMenuBook,
+  MdSchool,
+  MdWork,
+  MdFolderOpen,
+  MdEmail,
+  MdPhone,
+  MdLocationOn,
+  MdClose
+} from 'react-icons/md'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
 
@@ -47,7 +47,7 @@ function DepartmentsViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  
+
   const [departments, setDepartments] = useState<Department[]>([])
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
   const [stats, setStats] = useState<DepartmentStats>({
@@ -69,7 +69,7 @@ function DepartmentsViewContent() {
 
   useEffect(() => {
     if (searchTerm) {
-      const filtered = departments.filter(dept => 
+      const filtered = departments.filter(dept =>
         dept.department_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         dept.department_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         dept.college?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -91,7 +91,7 @@ function DepartmentsViewContent() {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
     }
-    
+
     return () => {
       document.body.style.overflow = ''
       document.body.style.touchAction = ''
@@ -102,17 +102,17 @@ function DepartmentsViewContent() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768)
     }
-    
+
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    
+
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session?.user) {
         router.push('/')
         return
@@ -146,7 +146,7 @@ function DepartmentsViewContent() {
 
       setDepartments(data || [])
       setFilteredDepartments(data || [])
-      
+
       const activeDepts = (data || []).filter((d: Department) => d.is_active).length
       setStats({
         totalDepartments: data?.length || 0,
@@ -158,7 +158,7 @@ function DepartmentsViewContent() {
       const { count: facultyCount } = await supabase
         .from('faculty_profiles')
         .select('*', { count: 'exact', head: true })
-      
+
       const { count: coursesCount } = await supabase
         .from('courses')
         .select('*', { count: 'exact', head: true })
@@ -178,14 +178,14 @@ function DepartmentsViewContent() {
 
   const getDepartmentIcon = (code: string) => {
     const iconMap: Record<string, React.ReactNode> = {
-      'CICS': <BookOpen size={32} />,
-      'COE': <Building2 size={32} />,
-      'CBA': <Briefcase size={32} />,
-      'CAS': <GraduationCap size={32} />,
-      'CON': <Users size={32} />,
-      'CED': <GraduationCap size={32} />
+      'CICS': <MdMenuBook size={32} />,
+      'COE': <MdBusiness size={32} />,
+      'CBA': <MdWork size={32} />,
+      'CAS': <MdSchool size={32} />,
+      'CON': <MdPeople size={32} />,
+      'CED': <MdSchool size={32} />
     }
-    return iconMap[code] || <FolderOpen size={32} />
+    return iconMap[code] || <MdFolderOpen size={32} />
   }
 
   if (loading) {
@@ -201,11 +201,11 @@ function DepartmentsViewContent() {
     <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
-          <ArrowLeft size={20} />
+          <MdArrowBack size={20} />
           Back to Home
         </button>
         <h1 className={styles.pageTitle}>
-          <Building2 size={32} />
+          <MdBusiness size={32} />
           Departments
         </h1>
         <p className={styles.subtitle}>View department structures and information</p>
@@ -213,28 +213,28 @@ function DepartmentsViewContent() {
 
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <Building2 size={24} />
+          <MdBusiness size={24} />
           <div>
             <div className={styles.statValue}>{stats.totalDepartments}</div>
             <div className={styles.statLabel}>Total Departments</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <Building2 size={24} />
+          <MdBusiness size={24} />
           <div>
             <div className={styles.statValue}>{stats.activeDepartments}</div>
             <div className={styles.statLabel}>Active Departments</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <Users size={24} />
+          <MdPeople size={24} />
           <div>
             <div className={styles.statValue}>{stats.totalFaculty}</div>
             <div className={styles.statLabel}>Faculty Members</div>
           </div>
         </div>
         <div className={styles.statCard}>
-          <BookOpen size={24} />
+          <MdMenuBook size={24} />
           <div>
             <div className={styles.statValue}>{stats.totalCourses}</div>
             <div className={styles.statLabel}>Total Courses</div>
@@ -244,7 +244,7 @@ function DepartmentsViewContent() {
 
       <div className={styles.searchSection}>
         <div className={styles.searchBar}>
-          <Search size={20} />
+          <MdSearch size={20} />
           <input
             type="text"
             placeholder="Search departments by name, code, or college..."
@@ -260,8 +260,8 @@ function DepartmentsViewContent() {
 
       <div className={styles.departmentsGrid}>
         {filteredDepartments.map(dept => (
-          <div 
-            key={dept.id} 
+          <div
+            key={dept.id}
             className={styles.departmentCard}
             onClick={() => setSelectedDept(dept)}
           >
@@ -274,12 +274,12 @@ function DepartmentsViewContent() {
                 <span className={styles.departmentCode}>{dept.department_code}</span>
               </div>
               <p className={styles.collegeName}>
-                <Building2 size={14} />
+                <MdBusiness size={14} />
                 {dept.college}
               </p>
               {dept.head_name && (
                 <p className={styles.headName}>
-                  <Users size={14} />
+                  <MdPeople size={14} />
                   Head: {dept.head_name}
                 </p>
               )}
@@ -296,7 +296,7 @@ function DepartmentsViewContent() {
         <div className={styles.modalOverlay} onClick={() => setSelectedDept(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <button className={styles.closeButton} onClick={() => setSelectedDept(null)}>
-              <X size={24} />
+              <MdClose size={24} />
             </button>
             <div className={styles.modalHeader}>
               <div className={styles.modalIcon}>
@@ -313,34 +313,34 @@ function DepartmentsViewContent() {
             <div className={styles.modalBody}>
               <div className={styles.infoGrid}>
                 <div className={styles.infoItem}>
-                  <Building2 size={16} />
+                  <MdBusiness size={16} />
                   <strong>College:</strong>
                   <span>{selectedDept.college}</span>
                 </div>
                 {selectedDept.head_name && (
                   <div className={styles.infoItem}>
-                    <Users size={16} />
+                    <MdPeople size={16} />
                     <strong>Department Head:</strong>
                     <span>{selectedDept.head_name}</span>
                   </div>
                 )}
                 {selectedDept.head_email && (
                   <div className={styles.infoItem}>
-                    <Mail size={16} />
+                    <MdEmail size={16} />
                     <strong>Email:</strong>
                     <span>{selectedDept.head_email}</span>
                   </div>
                 )}
                 {selectedDept.contact_phone && (
                   <div className={styles.infoItem}>
-                    <Phone size={16} />
+                    <MdPhone size={16} />
                     <strong>Phone:</strong>
                     <span>{selectedDept.contact_phone}</span>
                   </div>
                 )}
                 {selectedDept.office_location && (
                   <div className={styles.infoItem}>
-                    <MapPin size={16} />
+                    <MdLocationOn size={16} />
                     <strong>Office Location:</strong>
                     <span>{selectedDept.office_location}</span>
                   </div>
@@ -363,7 +363,7 @@ function DepartmentsViewContent() {
           {selectedDept && (
             <>
               <button className={styles.closePanelButton} onClick={() => setSelectedDept(null)}>
-                <X size={24} />
+                <MdClose size={24} />
               </button>
               <div className={styles.panelHeader}>
                 <div className={styles.panelIcon}>
@@ -380,34 +380,34 @@ function DepartmentsViewContent() {
               <div className={styles.panelBody}>
                 <div className={styles.infoGrid}>
                   <div className={styles.infoItem}>
-                    <Building2 size={16} />
+                    <MdBusiness size={16} />
                     <strong>College:</strong>
                     <span>{selectedDept.college}</span>
                   </div>
                   {selectedDept.head_name && (
                     <div className={styles.infoItem}>
-                      <Users size={16} />
+                      <MdPeople size={16} />
                       <strong>Department Head:</strong>
                       <span>{selectedDept.head_name}</span>
                     </div>
                   )}
                   {selectedDept.head_email && (
                     <div className={styles.infoItem}>
-                      <Mail size={16} />
+                      <MdEmail size={16} />
                       <strong>Email:</strong>
                       <span>{selectedDept.head_email}</span>
                     </div>
                   )}
                   {selectedDept.contact_phone && (
                     <div className={styles.infoItem}>
-                      <Phone size={16} />
+                      <MdPhone size={16} />
                       <strong>Phone:</strong>
                       <span>{selectedDept.contact_phone}</span>
                     </div>
                   )}
                   {selectedDept.office_location && (
                     <div className={styles.infoItem}>
-                      <MapPin size={16} />
+                      <MdLocationOn size={16} />
                       <strong>Office Location:</strong>
                       <span>{selectedDept.office_location}</span>
                     </div>

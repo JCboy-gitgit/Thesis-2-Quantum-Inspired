@@ -117,7 +117,7 @@ async def get_sections_for_scheduling(
     academic_year: str,
     department: Optional[str] = None
 ) -> List[Dict]:
-    """Get all sections that need scheduling"""
+    """Get all sections that need scheduling, enriched with course requirements"""
     query = _db().table("sections").select(
         "*, courses(*), teachers(*)"
     ).eq("semester", semester).eq("academic_year", academic_year)
@@ -126,7 +126,71 @@ async def get_sections_for_scheduling(
         query = query.eq("department", department)
     
     response = query.execute()
-    return response.data or []
+    sections = response.data or []
+    
+    if not sections:
+        return []
+
+    # Get unique course IDs
+    course_ids = list(set([s.get("course_id") for s in sections if s.get("course_id")]))
+    
+    if not course_ids:
+        return sections
+
+    # Fetch requirements for these courses
+    try:
+        # We join feature_tags to get tag_name
+        req_query = _db().table("subject_room_requirements").select(
+            "course_id, is_mandatory, notes, feature_tags(tag_name)"
+        ).in_("course_id", course_ids)
+        
+        req_response = req_query.execute()
+        requirements = req_response.data or []
+        
+        # Process requirements
+        course_reqs = {} # course_id -> { 'all': [], 'lec': [], 'lab': [] }
+        
+        for r in requirements:
+            c_id = r.get("course_id")
+            tag = r.get("feature_tags")
+            if not tag: continue
+            tag_name = tag.get("tag_name")
+            if not tag_name: continue
+            
+            notes = (r.get("notes") or "").upper()
+            
+            if c_id not in course_reqs:
+                course_reqs[c_id] = {'all': [], 'lec': [], 'lab': []}
+                
+            course_reqs[c_id]['all'].append(tag_name)
+            
+            if notes == 'LEC':
+                course_reqs[c_id]['lec'].append(tag_name)
+            elif notes == 'BOTH':
+                course_reqs[c_id]['lec'].append(tag_name)
+                course_reqs[c_id]['lab'].append(tag_name)
+            elif notes == 'LAB': 
+                course_reqs[c_id]['lab'].append(tag_name)
+            else: # Legacy / No notes (Treat as General/Shared with heuristic)
+                course_reqs[c_id]['lab'].append(tag_name)
+                # For legacy data, auto-assign basic features to lecture
+                if tag_name in {'TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV', 'Monitor'}:
+                     course_reqs[c_id]['lec'].append(tag_name)
+                
+        # Augment sections
+        for section in sections:
+            c_id = section.get("course_id")
+            if c_id in course_reqs:
+                reqs = course_reqs[c_id]
+                section['required_features'] = reqs['all']
+                section['lec_required_features'] = reqs['lec']
+                section['lab_required_features'] = reqs['lab']
+                
+    except Exception as e:
+        print(f"⚠️ Error fetching requirements: {e}")
+        # Continue without requirements rather than failing completely
+            
+    return sections
 
 
 async def create_section(section_data: Dict) -> Dict:
@@ -143,20 +207,32 @@ async def bulk_create_sections(sections: List[Dict]) -> List[Dict]:
 
 # ==================== Teacher Operations ====================
 async def get_all_teachers(department: Optional[str] = None) -> List[Dict]:
-    """Fetch all teachers"""
-    query = _db().table("teachers").select("*")
+    """Fetch all teachers from faculty_profiles"""
+    # Use 'faculty_profiles' table (renamed/new schema)
+    query = _db().table("faculty_profiles").select("*")
     
     if department:
         query = query.eq("department", department)
     
     response = query.execute()
-    return response.data or []
+    data = response.data or []
+    
+    # Map 'full_name' to 'name' for compatibility
+    for t in data:
+        if 'full_name' in t and 'name' not in t:
+            t['name'] = t['full_name']
+            
+    return data
 
 
-async def get_teacher_availability(teacher_id: int) -> Dict:
+async def get_teacher_availability(teacher_id: Any) -> Dict:
     """Get teacher's availability and preferences"""
-    response = _db().table("teachers").select("*").eq("id", teacher_id).single().execute()
-    return response.data or {}
+    # Accept str or int ID
+    response = _db().table("faculty_profiles").select("*").eq("id", teacher_id).single().execute()
+    data = response.data or {}
+    if data and 'full_name' in data:
+        data['name'] = data['full_name']
+    return data
 
 
 async def create_teacher(teacher_data: Dict) -> Dict:

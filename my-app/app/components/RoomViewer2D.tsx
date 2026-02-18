@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  Clock, Users, CheckCircle, XCircle, Building2,
-  ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Loader2, Info, Map, AlertTriangle, Eye, DoorOpen, Footprints,
-  ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed,
-  Archive, Dumbbell, Music, Theater, Presentation, Server, Wifi,
-  Wind, Flame, Droplets, CircleDot, Triangle, Hexagon, Pentagon,
-  Octagon, Star, Heart, Calendar, ImageIcon, X
-} from 'lucide-react'
+  MdAccessTime, MdPeople, MdCheckCircle, MdCancel, MdBusiness,
+  MdZoomIn, MdZoomOut, MdFullscreen, MdFullscreenExit, MdExpandMore, MdExpandLess, MdChevronLeft, MdChevronRight,
+  MdRefresh, MdInfo, MdMap, MdWarning, MdVisibility, MdMeetingRoom, MdDirectionsWalk,
+  MdSwapVert, MdWc, MdLaptop, MdScience, MdLocalLibrary, MdRestaurant,
+  MdArchive, MdFitnessCenter, MdMusicNote, MdTheaterComedy, MdCoPresent, MdDns, MdWifi,
+  MdAir, MdLocalFireDepartment, MdWaterDrop, MdRadioButtonChecked, MdChangeHistory, MdHexagon, MdStar,
+  MdStop, MdFavorite, MdCalendarToday, MdImage, MdClose
+} from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './RoomViewer2D.module.css'
 
@@ -18,37 +18,37 @@ const db = supabase as any
 
 // Icon mapping
 const ICON_MAP: Record<string, any> = {
-  exit: DoorOpen,
-  stairs: Footprints,
-  elevator: ArrowUpDown,
-  restroom: Bath,
-  computer: Laptop,
-  lab: Beaker,
-  library: Library,
-  cafeteria: UtensilsCrossed,
-  storage: Archive,
-  gym: Dumbbell,
-  music: Music,
-  theater: Theater,
-  presentation: Presentation,
-  server: Server,
-  wifi: Wifi,
-  ac: Wind,
-  fire: Flame,
-  water: Droplets,
-  info: Info,
-  warning: AlertTriangle,
+  exit: MdMeetingRoom,
+  stairs: MdDirectionsWalk,
+  elevator: MdSwapVert,
+  restroom: MdWc,
+  computer: MdLaptop,
+  lab: MdScience,
+  library: MdLocalLibrary,
+  cafeteria: MdRestaurant,
+  storage: MdArchive,
+  gym: MdFitnessCenter,
+  music: MdMusicNote,
+  theater: MdTheaterComedy,
+  presentation: MdCoPresent,
+  server: MdDns,
+  wifi: MdWifi,
+  ac: MdAir,
+  fire: MdLocalFireDepartment,
+  water: MdWaterDrop,
+  info: MdInfo,
+  warning: MdWarning,
 }
 
 // Shape mapping
 const SHAPE_MAP: Record<string, any> = {
-  circle: CircleDot,
-  triangle: Triangle,
-  hexagon: Hexagon,
-  pentagon: Pentagon,
-  octagon: Octagon,
-  star: Star,
-  heart: Heart,
+  circle: MdRadioButtonChecked,
+  triangle: MdChangeHistory,
+  hexagon: MdHexagon,
+  pentagon: MdStar,
+  octagon: MdStop,
+  star: MdStar,
+  heart: MdFavorite,
 }
 
 interface Room {
@@ -479,7 +479,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   if (loading) {
     return (
       <div className={styles.loading}>
-        <Loader2 className={styles.spinner} size={32} />
+        <MdRefresh className={styles.spinner} size={32} />
         <p>Loading floor plan...</p>
       </div>
     )
@@ -488,7 +488,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   if (!hasFloorPlan || error) {
     return (
       <div className={styles.noFloorPlan}>
-        <Map size={48} />
+        <MdMap size={48} />
         <h3>No Floor Plan Available</h3>
         <p>{error || 'The admin has not created a floor plan yet.'}</p>
         <p className={styles.hint}>Floor plans will appear here once they are created and published by the admin.</p>
@@ -505,7 +505,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       {/* Compact Header for Mobile */}
       <div className={`${styles.header} ${isMobile && !showControls ? styles.headerCollapsed : ''}`}>
         <div className={styles.headerLeft}>
-          <Map size={isMobile ? 16 : 20} />
+          <MdMap size={isMobile ? 16 : 20} />
           <h2>{isMobile ? 'Floor Plan' : 'Campus Floor Plan'}</h2>
           {isMobile && (
             <button
@@ -526,7 +526,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
               className={styles.zoomBtn}
               title="Zoom out"
             >
-              <ZoomOut size={16} />
+              <MdZoomOut size={16} />
             </button>
             <input
               type="text"
@@ -544,7 +544,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
               className={styles.zoomBtn}
               title="Zoom in"
             >
-              <ZoomIn size={16} />
+              <MdZoomIn size={16} />
             </button>
           </div>
 
@@ -554,7 +554,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             className={styles.fullscreenBtn}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            {isFullscreen ? <MdFullscreenExit size={16} /> : <MdFullscreen size={16} />}
           </button>
 
           {/* Refresh */}
@@ -563,7 +563,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             className={styles.refreshBtn}
             title="Refresh"
           >
-            <Clock size={16} />
+            <MdRefresh size={16} />
           </button>
         </div>
       </div>
@@ -576,10 +576,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             onClick={() => setBuildingNavCollapsed(!buildingNavCollapsed)}
           >
             <div className={styles.buildingNavToggleLeft}>
-              <Building2 size={14} />
+              <MdBusiness size={14} />
               <span>Buildings ({buildings.length})</span>
             </div>
-            {buildingNavCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {buildingNavCollapsed ? <MdExpandMore size={14} /> : <MdExpandLess size={14} />}
           </button>
           {!buildingNavCollapsed && buildings.map((building, buildingIdx) => (
             <div key={`building-${building.name}-${buildingIdx}`} className={styles.buildingSection}>
@@ -589,7 +589,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 onClick={() => handleBuildingChange(String(building.id))}
               >
                 <div className={styles.buildingSectionLeft}>
-                  <Building2 size={16} />
+                  <MdBusiness size={16} />
                   <span className={styles.buildingSectionName}>{building.name}</span>
                 </div>
                 <span className={styles.buildingSectionCount}>
@@ -616,7 +616,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                         <div className={styles.floorCardInfo}>
                           <span className={styles.floorCardName}>
                             {shortName}
-                            {floor.is_default_view && <Eye size={11} className={styles.floorCardDefaultIcon} />}
+                            {floor.is_default_view && <MdVisibility size={11} className={styles.floorCardDefaultIcon} />}
                           </span>
                           <span className={styles.floorCardMeta}>
                             Floor {floor.floor_number}
@@ -640,19 +640,19 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       <div className={`${styles.legend} ${isMobile ? styles.legendCompact : ''}`}>
         <div className={`${styles.legendItem} ${styles.availableLegend}`}>
           <div className={`${styles.statusIndicator} ${styles.available}`}>
-            <CheckCircle size={10} className={styles.statusIcon} />
+            <MdCheckCircle size={10} className={styles.statusIcon} />
           </div>
           <span>{isMobile ? 'Free' : 'Available / Free'}</span>
         </div>
         <div className={`${styles.legendItem} ${styles.occupiedLegend}`}>
           <div className={`${styles.statusIndicator} ${styles.occupied}`}>
-            <XCircle size={10} className={styles.statusIcon} />
+            <MdCancel size={10} className={styles.statusIcon} />
           </div>
           <span>{isMobile ? 'In Use' : 'Occupied / In Use'}</span>
         </div>
         <div className={styles.legendItem}>
           <div className={styles.liveIndicator}>
-            <Clock size={14} />
+            <MdAccessTime size={14} />
           </div>
           <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
         </div>
@@ -732,7 +732,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                   {element.type === 'icon' && (
                     <div className={styles.iconElement}>
                       {(() => {
-                        const IconComp = ICON_MAP[element.iconType || 'info'] || Info
+                        const IconComp = ICON_MAP[element.iconType || 'info'] || MdInfo
                         return <IconComp size={Math.min(element.width, element.height) * 0.4} />
                       })()}
                       {element.label && <span className={styles.iconLabel}>{element.label}</span>}
@@ -743,7 +743,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                   {element.type === 'shape' && (
                     <div className={styles.shapeElement}>
                       {(() => {
-                        const ShapeComp = SHAPE_MAP[element.shapeType || 'circle'] || CircleDot
+                        const ShapeComp = SHAPE_MAP[element.shapeType || 'circle'] || MdRadioButtonChecked
                         return <ShapeComp size={Math.min(element.width, element.height) * 0.7} />
                       })()}
                     </div>
@@ -936,7 +936,7 @@ function RoomDetailsModal({
                   {roomSchedules.map((alloc, idx) => (
                     <div key={idx} className={styles.scheduleItem}>
                       <div className={styles.scheduleTime}>
-                        <Clock size={14} />
+                        <MdAccessTime size={14} />
                         {alloc.schedule_time}
                       </div>
                       <div className={styles.scheduleDetails}>

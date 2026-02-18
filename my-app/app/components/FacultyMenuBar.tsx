@@ -4,17 +4,17 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { 
-  Menu, 
-  Bell, 
-  User, 
-  Settings, 
-  LogOut, 
-  ChevronUp, 
-  ChevronDown, 
-  X,
-  Download 
-} from 'lucide-react'
+import {
+  MdMenu,
+  MdNotifications,
+  MdPerson,
+  MdSettings,
+  MdLogout,
+  MdExpandLess,
+  MdExpandMore,
+  MdClose,
+  MdDownload
+} from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
 import FacultySettingsModal from './FacultySettingsModal'
@@ -96,9 +96,9 @@ const lightModeColors = {
   architecture: { text: 'text-red-600', textHover: 'text-red-700' },
 }
 
-export default function FacultyMenuBar({ 
-  onToggleSidebar, 
-  sidebarOpen, 
+export default function FacultyMenuBar({
+  onToggleSidebar,
+  sidebarOpen,
   isHidden = false,
   onToggleHidden,
   userEmail
@@ -116,7 +116,7 @@ export default function FacultyMenuBar({
 
   // Faculty pages treat 'green' as 'light' mode (green is only for admin pages)
   const isLightMode = theme === 'light' || theme === 'green'
-  
+
   // Get current college theme colors
   const colors = useMemo(() => {
     const base = collegeThemeColors[collegeTheme] || collegeThemeColors.default
@@ -243,12 +243,11 @@ export default function FacultyMenuBar({
   return (
     <>
       {/* Main Header - Theme & College Theme Aware */}
-      <header 
-        className={`fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[70px] flex items-center justify-between px-3 sm:px-4 md:px-8 backdrop-blur-md border-b-2 z-[90] transition-all duration-300 shadow-lg ${isHidden ? '-translate-y-full' : ''} ${
-          isLightMode 
-            ? `bg-white/95 ${colors.border}` 
+      <header
+        className={`fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[70px] flex items-center justify-between px-3 sm:px-4 md:px-8 backdrop-blur-md border-b-2 z-[90] transition-all duration-300 shadow-lg ${isHidden ? '-translate-y-full' : ''} ${isLightMode
+            ? `bg-white/95 ${colors.border}`
             : `bg-slate-900/95 ${colors.border}`
-        }`}
+          }`}
         style={{ ['--menu-accent' as string]: colors.primary, ['--menu-accent-rgb' as string]: colors.primaryRgb }}
       >
         <div className="flex items-center gap-2 sm:gap-4">
@@ -259,7 +258,7 @@ export default function FacultyMenuBar({
             onClick={onToggleSidebar}
             title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
           >
-            <Menu size={20} className="sm:w-6 sm:h-6" />
+            <MdMenu size={20} className="sm:w-6 sm:h-6" />
           </button>
 
           {/* Logo/Branding - Uses College Theme Colors */}
@@ -295,83 +294,79 @@ export default function FacultyMenuBar({
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (
-              <User size={18} className="sm:w-5 sm:h-5" />
+              <MdPerson size={18} className="sm:w-5 sm:h-5" />
             )}
           </button>
         </div>
 
         {/* Toggle Arrow Button - inside header */}
         <button
-          className={`absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 border-2 border-t-0 rounded-b-xl cursor-pointer flex items-center justify-center transition-all z-[91] shadow-lg faculty-menu-btn ${
-            isLightMode
+          className={`absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 border-2 border-t-0 rounded-b-xl cursor-pointer flex items-center justify-center transition-all z-[91] shadow-lg faculty-menu-btn ${isLightMode
               ? `bg-white/95 ${colors.border} ${colors.text}`
               : `bg-slate-900/95 ${colors.border} ${colors.text}`
-          }`}
+            }`}
           style={{ ['--btn-hover-border' as string]: colors.primary, ['--btn-hover-bg' as string]: `rgba(${colors.primaryRgb}, 0.1)` }}
           onClick={toggleHidden}
           title={isHidden ? 'Show Header' : 'Hide Header'}
         >
-          <ChevronUp size={18} />
+          <MdExpandLess size={18} />
         </button>
       </header>
 
       {/* Floating Show Button when header is hidden */}
       {isHidden && (
         <button
-          className={`fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 border-2 border-t-0 rounded-b-2xl cursor-pointer flex items-center justify-center transition-all z-[1001] shadow-lg hover:translate-y-1 faculty-menu-btn ${
-            isLightMode
+          className={`fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 border-2 border-t-0 rounded-b-2xl cursor-pointer flex items-center justify-center transition-all z-[1001] shadow-lg hover:translate-y-1 faculty-menu-btn ${isLightMode
               ? `bg-white/95 ${colors.border} ${colors.text}`
               : `bg-slate-900/95 ${colors.border} ${colors.text}`
-          }`}
+            }`}
           style={{ ['--btn-hover-border' as string]: colors.primary, ['--btn-hover-bg' as string]: `rgba(${colors.primaryRgb}, 0.1)` }}
           onClick={toggleHidden}
           title="Show Header"
         >
-          <ChevronDown size={18} />
+          <MdExpandMore size={18} />
         </button>
       )}
 
       {/* Notifications Dropdown - Portal */}
       {mounted && showNotifications && createPortal(
-        <div 
-          className="fixed inset-0 z-[99998]" 
+        <div
+          className="fixed inset-0 z-[99998]"
           style={{ pointerEvents: 'none' }}
         >
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{ pointerEvents: 'auto' }}
-            onClick={() => setShowNotifications(false)} 
+            onClick={() => setShowNotifications(false)}
           />
           {/* Dropdown Content */}
-          <div 
-            className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[320px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-3 ${
-              isLightMode
+          <div
+            className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[320px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-3 ${isLightMode
                 ? `bg-white ${colors.border}`
                 : `bg-slate-900 ${colors.border}`
-            }`}
+              }`}
             style={{ pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
-            <button 
-              className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                isLightMode
+            <button
+              className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isLightMode
                   ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                   : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
+                }`}
               onClick={() => setShowNotifications(false)}
               type="button"
             >
-              <X size={18} />
+              <MdClose size={18} />
             </button>
-            
+
             <div className="flex items-center justify-between mb-3 pr-10">
               <h3 className={`font-semibold text-sm ${colors.text}`}>Notifications</h3>
             </div>
-            
+
             <div className={`text-center py-6 text-sm ${isLightMode ? 'text-gray-500' : 'text-slate-400'}`}>
-              <Bell size={32} className="mx-auto mb-2 opacity-50" />
+              <MdNotifications size={32} className="mx-auto mb-2 opacity-50" />
               <p>No new notifications</p>
               <p className={`text-xs mt-1 ${isLightMode ? 'text-gray-400' : 'text-slate-500'}`}>You&apos;re all caught up!</p>
             </div>
@@ -382,44 +377,42 @@ export default function FacultyMenuBar({
 
       {/* User Menu Dropdown - Portal */}
       {mounted && showUserMenu && createPortal(
-        <div 
-          className="fixed inset-0 z-[99999]" 
+        <div
+          className="fixed inset-0 z-[99999]"
           style={{ pointerEvents: 'none' }}
         >
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{ pointerEvents: 'auto' }}
-            onClick={() => setShowUserMenu(false)} 
+            onClick={() => setShowUserMenu(false)}
           />
           {/* Menu Content */}
-          <div 
-            className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[280px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-2 ${
-              isLightMode
+          <div
+            className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[280px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-2 ${isLightMode
                 ? `bg-white ${colors.border}`
                 : `bg-slate-900 ${colors.border}`
-            }`}
+              }`}
             style={{ pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
-            <button 
-              className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                isLightMode
+            <button
+              className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isLightMode
                   ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                   : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
+                }`}
               onClick={() => setShowUserMenu(false)}
               type="button"
             >
-              <X size={18} />
+              <MdClose size={18} />
             </button>
 
             {/* User Email */}
             {userEmail && (
               <>
                 <div className={`flex items-center gap-2.5 px-4 py-3 text-sm font-semibold break-all pr-10 ${colors.text}`}>
-                  <User size={16} />
+                  <MdPerson size={16} />
                   {userEmail}
                 </div>
                 <div className={`h-px my-1 ${isLightMode ? `bg-current opacity-20` : `bg-current opacity-20`}`} style={{ color: colors.primary }} />
@@ -428,11 +421,10 @@ export default function FacultyMenuBar({
 
             {/* Profile Button */}
             <button
-              className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${
-                isLightMode
+              className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
                   ? `text-gray-700`
                   : `text-white/90`
-              }`}
+                }`}
               style={{ ['--tw-bg-opacity' as string]: '0.1', ['--item-hover-color' as string]: colors.primary }}
               onClick={() => {
                 setShowUserMenu(false)
@@ -440,17 +432,16 @@ export default function FacultyMenuBar({
               }}
               type="button"
             >
-              <User size={16} />
+              <MdPerson size={16} />
               Profile
             </button>
 
             {/* Settings Button */}
             <button
-              className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${
-                isLightMode
+              className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
                   ? `text-gray-700`
                   : `text-white/90`
-              }`}
+                }`}
               style={{ ['--item-hover-color' as string]: colors.primary }}
               onClick={() => {
                 setShowUserMenu(false)
@@ -458,23 +449,22 @@ export default function FacultyMenuBar({
               }}
               type="button"
             >
-              <Settings size={16} />
+              <MdSettings size={16} />
               Settings
             </button>
 
             {/* Install App Button (PWA) */}
             {isInstallable && (
               <button
-                className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${
-                  isLightMode
+                className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
                     ? `text-gray-700`
                     : `text-white/90`
-                }`}
+                  }`}
                 style={{ ['--item-hover-color' as string]: colors.primary }}
                 onClick={handleInstallClick}
                 type="button"
               >
-                <Download size={16} />
+                <MdDownload size={16} />
                 Install App
               </button>
             )}
@@ -490,7 +480,7 @@ export default function FacultyMenuBar({
               }}
               type="button"
             >
-              <LogOut size={16} />
+              <MdLogout size={16} />
               Logout
             </button>
           </div>

@@ -3,12 +3,13 @@
 import React from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
-  Home,
-  Users,
-  Calendar,
-  User,
-  Map
-} from 'lucide-react'
+  MdDashboard,
+  MdPeople,
+  MdCalendarToday,
+  MdPerson,
+  MdMap,
+  MdLiveTv
+} from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './FacultySidebar.module.css'
 
@@ -23,11 +24,12 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
   const pathname = usePathname()
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/faculty/home' },
-    { icon: User, label: 'My Profile', path: '/faculty/profile' },
-    { icon: Map, label: 'Campus Map', path: '/faculty/campus-map' },
-    { icon: Users, label: 'Faculty Directory', path: '/faculty/directory' },
-    { icon: Calendar, label: 'Room Schedules', path: '/faculty/schedules' },
+    { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
+    { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
+    { icon: MdMap, label: 'Campus Map', path: '/faculty/campus-map' },
+    { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
+    { icon: MdCalendarToday, label: 'Room Schedules', path: '/faculty/schedules' },
+    { icon: MdLiveTv, label: 'Live Timetable', path: '/faculty/live-timetable' },
   ]
 
   const handleNavigation = (path: string) => {
@@ -63,7 +65,7 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
           {menuItems.map((item, index) => {
             const Icon = item.icon
             const active = isActive(item.path)
-            
+
             return (
               <button
                 key={index}
