@@ -891,10 +891,13 @@ export default function AdminLiveTimetablePage() {
                                                             {TIME_SLOTS.map((slot, slotIdx) => {
                                                                 const isHour = slotIdx % 2 === 0
                                                                 const slotMinutes = (Math.floor(slotIdx / 2) + 7) * 60 + (slotIdx % 2) * 30
+                                                                const nowMins = currentTime.getHours() * 60 + currentTime.getMinutes()
+                                                                const isNowSlot = isCurrentWeek && nowMins >= slotMinutes && nowMins < slotMinutes + 30
                                                                 return (
-                                                                    <tr key={slot} className={isHour ? styles.gridHourRow : styles.gridHalfRow}>
-                                                                        <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark}`}>
+                                                                    <tr key={slot} className={`${isHour ? styles.gridHourRow : styles.gridHalfRow} ${isNowSlot ? styles.gridNowRow : ''}`}>
+                                                                        <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark} ${isNowSlot ? styles.gridNowTimeCell : ''}`}>
                                                                             {isHour ? slot : ''}
+                                                                            {isNowSlot && <span className={styles.gridNowIndicator}>▶ NOW</span>}
                                                                         </td>
                                                                         {DAYS.filter(d => d !== 'Sunday').map(day => {
                                                                             const dayDate = getDayDate(day)
@@ -970,7 +973,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                     title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}`}
                                                                                                     onClick={() => setEditingOverride({
                                                                                                         allocationId: alloc.id,
-                                                                                                        day: alloc.schedule_day,
+                                                                                                        day: day,
                                                                                                         time: alloc.schedule_time,
                                                                                                         room: alloc.room,
                                                                                                         building: alloc.building,
@@ -999,7 +1002,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                     )}
                                                                                                     <button
                                                                                                         className={styles.gridBlockEditBtn}
-                                                                                                        onClick={(ev) => { ev.stopPropagation(); setEditingOverride({ allocationId: alloc.id, day: alloc.schedule_day, time: alloc.schedule_time, room: alloc.room, building: alloc.building, note: overrideNote || '' }) }}
+                                                                                                        onClick={(ev) => { ev.stopPropagation(); setEditingOverride({ allocationId: alloc.id, day: day, time: alloc.schedule_time, room: alloc.room, building: alloc.building, note: overrideNote || '' }) }}
                                                                                                         title="Edit Slot"
                                                                                                     >
                                                                                                         <MdEdit />
@@ -1068,7 +1071,8 @@ export default function AdminLiveTimetablePage() {
                                                     .map(alloc => {
                                                         const dayDate = getDayDate(selectedDay)
                                                         const absent = isAbsent(alloc.id, dayDate)
-                                                        const ongoing = !absent && isClassOngoing(alloc.schedule_time || '')
+                                                        const ongoing = !absent && isCurrentWeek && selectedDay === todayDayName && isClassOngoing(alloc.schedule_time || '')
+                                                        const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', selectedDay, todayDayName)))
                                                         const hasOverride = (alloc as any)._hasOverride
                                                         const overrideNote = (alloc as any)._overrideNote
                                                         const overrideId = (alloc as any)._overrideId
@@ -1076,13 +1080,18 @@ export default function AdminLiveTimetablePage() {
                                                         return (
                                                             <div
                                                                 key={alloc.id}
-                                                                className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''} ${hasOverride ? styles.classCardOverride : ''}`}
+                                                                className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''} ${done ? styles.classCardDone : ''} ${hasOverride ? styles.classCardOverride : ''}`}
                                                             >
                                                                 {/* Status badge */}
                                                                 <div className={styles.cardStatusRow}>
                                                                     {ongoing && (
                                                                         <span className={styles.ongoingBadge}>
                                                                             <MdFiberManualRecord className={styles.ongoingDot} /> ONGOING
+                                                                        </span>
+                                                                    )}
+                                                                    {done && !absent && (
+                                                                        <span className={styles.doneBadge}>
+                                                                            <MdTaskAlt /> DONE
                                                                         </span>
                                                                     )}
                                                                     {absent && (
@@ -1129,7 +1138,7 @@ export default function AdminLiveTimetablePage() {
                                                                         className={styles.editOverrideBtn}
                                                                         onClick={() => setEditingOverride({
                                                                             allocationId: alloc.id,
-                                                                            day: alloc.schedule_day,
+                                                                            day: selectedDay,
                                                                             time: alloc.schedule_time,
                                                                             room: alloc.room,
                                                                             building: alloc.building,
@@ -1443,13 +1452,26 @@ export default function AdminLiveTimetablePage() {
                             <button className={styles.modalClose} onClick={() => setReviewingMakeup(null)}><MdClose /></button>
                         </div>
                         <div className={styles.modalBody}>
-                            <div className={styles.reviewInfo}>
-                                <p><strong>Faculty:</strong> {reviewingMakeup.faculty_profiles?.full_name}</p>
-                                <p><strong>Requested Date:</strong> {reviewingMakeup.requested_date}</p>
-                                <p><strong>Requested Time:</strong> {reviewingMakeup.requested_time}</p>
-                                {reviewingMakeup.requested_room && <p><strong>Requested Room:</strong> {reviewingMakeup.requested_room}</p>}
-                                {reviewingMakeup.reason && <p><strong>Reason:</strong> {reviewingMakeup.reason}</p>}
-                            </div>
+                            {(() => {
+                                const makeupAlloc = allocations.find(al => al.id === reviewingMakeup.allocation_id)
+                                return (
+                                    <div className={styles.reviewInfo}>
+                                        <p><strong>Faculty:</strong> {reviewingMakeup.faculty_profiles?.full_name}</p>
+                                        {makeupAlloc && (
+                                            <>
+                                                <p><strong>Course:</strong> {makeupAlloc.course_code} – {makeupAlloc.course_name}</p>
+                                                <p><strong>Section:</strong> {normalizeSection(makeupAlloc.section)}</p>
+                                                <p><strong>Original Schedule:</strong> {makeupAlloc.schedule_day} · {makeupAlloc.schedule_time}</p>
+                                            </>
+                                        )}
+                                        {reviewingMakeup.original_absence_date && <p><strong>For Absence On:</strong> {reviewingMakeup.original_absence_date}</p>}
+                                        <p><strong>Requested Date:</strong> {reviewingMakeup.requested_date}</p>
+                                        <p><strong>Requested Time:</strong> {reviewingMakeup.requested_time}</p>
+                                        {reviewingMakeup.requested_room && <p><strong>Requested Room:</strong> {reviewingMakeup.requested_room}</p>}
+                                        {reviewingMakeup.reason && <p><strong>Reason:</strong> {reviewingMakeup.reason}</p>}
+                                    </div>
+                                )
+                            })()}
                             <div className={styles.formGroup}>
                                 <label>Admin Note (optional)</label>
                                 <textarea
