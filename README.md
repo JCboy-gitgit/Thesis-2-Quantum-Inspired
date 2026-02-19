@@ -52,4 +52,43 @@ The application follows a modern decoupled architecture:
 ### 1. Clone the repo
 ```bash
 git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+```
 
+### 2. Set Up Frontend
+``` bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 3. Set Up Backend
+``` bash
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+
+### 3. Environment Variables
+Create a .env file in the frontend directory:
+
+``` Code snippet
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+```
+
+
+
+
+---
+
+Group 6 Members
+Member Watashiii - Lead Developer / Algorithm Specialist
+
+Member Nicko Dalugdugan - Frontend Engineer / UI Design
+
+Member John Clarence Nicolas - Database Administrator / QA
+
+Member Fiona Ventura - Technical Writer / Documentation
+
+Member Ray Franz - Researcher / Information
