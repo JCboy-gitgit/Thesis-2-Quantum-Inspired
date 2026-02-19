@@ -817,8 +817,9 @@ class EnhancedQuantumScheduler:
                 r_col = str(room_college).strip().upper() if room_college else ''
                 s_col = str(section_college).strip().upper() if section_college else ''
                 
-                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
-                     # DEBUG: Log mismatches occasionally to verify it's working
+                                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    continue  # Skip rooms belonging to other colleges
+     # DEBUG: Log mismatches occasionally to verify it's working
                     if i < 5: # Only log first few checks to avoid spam
                          print(f"   ⛔ Constraint Block: Room {room.room_code} ({r_col}) != Section {section.section_code} ({s_col})")
                     continue  # Skip rooms belonging to other colleges
