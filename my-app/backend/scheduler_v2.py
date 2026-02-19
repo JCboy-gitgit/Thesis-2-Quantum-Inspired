@@ -19,7 +19,7 @@ PERFORMANCE OPTIMIZATIONS (v2.3):
 """
 
 from typing import List, Dict, Tuple, Optional, Set, Any, Union
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 import random
 import time
