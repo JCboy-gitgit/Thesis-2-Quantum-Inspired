@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { Bell, Trash2, CheckCircle2, AlertTriangle, Info, Megaphone } from 'lucide-react'
+import { Bell, Trash2, CheckCircle2, AlertTriangle, Info, Megaphone, AlertCircle } from 'lucide-react'
 import styles from './styles.module.css'
 
 interface AlertItem {

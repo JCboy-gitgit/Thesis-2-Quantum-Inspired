@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { FaAtom, FaCheck, FaTimes, FaClock, FaSpinner, FaExternalLinkAlt } from 'react-icons/fa'
-import { Loader2, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
+import { Loader2, Clock, CheckCircle, XCircle, AlertTriangle, RotateCcw, AlertCircle } from 'lucide-react'
 import styles from './ScheduleJobProgress.module.css'
 
 interface ScheduleJob {

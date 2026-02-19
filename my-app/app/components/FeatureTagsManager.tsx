@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package, Sun, Dumbbell } from 'lucide-react'
+import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package, Sun, Dumbbell, RotateCcw } from 'lucide-react'
 import styles from './FeatureTagsManager.module.css'
 
 // ==================== INTERFACES ====================

@@ -3,15 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  Building2, Layers, Users, Clock, ZoomIn, ZoomOut, Maximize2, 
-  Calendar, Download, ChevronLeft, Info, Map, Check, Loader2,
-  Wind, Projector, Wifi, Square, Building, Footprints, DoorOpen,
-  ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed, 
-  Archive, Dumbbell, Music, Theater, Presentation, Server, 
-  Flame, Droplets, AlertTriangle, CircleDot, Triangle, Hexagon, 
-  Pentagon, Octagon, Star, Heart
-} from 'lucide-react'
+import { Building2, Layers, Users, Clock, ZoomIn, ZoomOut, Maximize2, Calendar, Download, ChevronLeft, Info, Map, Check, Loader2, Wind, Projector, Wifi, Square, Building, Footprints, DoorOpen, ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed, Archive, Dumbbell, Music, Theater, Presentation, Server, Flame, Droplets, AlertTriangle, CircleDot, Triangle, Hexagon, Pentagon, Octagon, Star, Heart, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react'
 import styles from './styles.module.css'
 
 // Untyped supabase helper for tables not in generated types

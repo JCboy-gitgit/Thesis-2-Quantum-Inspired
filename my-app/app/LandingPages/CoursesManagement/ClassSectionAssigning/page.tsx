@@ -6,28 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from '../ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useColleges } from '@/app/context/CollegesContext'
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Plus,
-  Edit3,
-  X,
-  Save,
-  Calendar,
-  GraduationCap,
-  Layers,
-  BookMarked,
-  Users,
-  Search,
-  Trash2,
-  FolderPlus,
-  UserPlus,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Download
-} from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, Plus, Edit3, X, Save, Calendar, GraduationCap, Layers, BookMarked, Users, Search, Trash2, FolderPlus, UserPlus, FileText, CheckCircle, AlertCircle, Download, Edit } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 

@@ -6,26 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/hooks/useAuth'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-  Building2,
-  ArrowLeft,
-  Search,
-  Users,
-  BookOpen,
-  GraduationCap,
-  Briefcase,
-  FolderOpen,
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  Save,
-  Check,
-  AlertTriangle,
-  Upload,
-  FileSpreadsheet,
-  Download
-} from 'lucide-react'
+import { Building2, ArrowLeft, Search, Users, BookOpen, GraduationCap, Briefcase, FolderOpen, Plus, Edit2, Trash2, X, Save, Check, AlertTriangle, Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Edit, FileText } from 'lucide-react'
 import styles from './styles.module.css'
 
 interface Department {

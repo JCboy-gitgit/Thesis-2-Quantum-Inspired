@@ -6,39 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  FileSpreadsheet,
-  AlertTriangle,
-  Trash2,
-  Plus,
-  Edit3,
-  X,
-  Save,
-  Calendar,
-  GraduationCap,
-  Clock,
-  Layers,
-  BookMarked,
-  Filter,
-  Users,
-  ArrowLeft,
-  Search,
-  Tag,
-  Beaker,
-  Folder,
-  FolderOpen,
-  Home,
-  Settings,
-  Palette,
-  MoreVertical,
-  FolderInput,
-  MoveRight,
-  Monitor,
-  Presentation
-} from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2, Plus, Edit3, X, Save, Calendar, GraduationCap, Clock, Layers, BookMarked, Filter, Users, ArrowLeft, Search, Tag, Beaker, Folder, FolderOpen, Home, Settings, Palette, MoreVertical, FolderInput, MoveRight, Monitor, Presentation, AlertCircle, Edit, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 

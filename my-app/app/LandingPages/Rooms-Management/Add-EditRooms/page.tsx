@@ -6,33 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import {
-  PenSquare,
-  Plus,
-  Building2,
-  DoorOpen,
-  Users,
-  Save,
-  X,
-  Trash2,
-  Edit2,
-  AlertTriangle,
-  CheckCircle,
-  University,
-  Hotel,
-  FileSpreadsheet,
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  Landmark,
-  MapPin,
-  Wind,
-  Tv,
-  PresentationIcon,
-  Accessibility,
-  ArrowLeft,
-  Search
-} from 'lucide-react'
+import { PenSquare, Plus, Building2, DoorOpen, Users, Save, X, Trash2, Edit2, AlertTriangle, CheckCircle, University, Hotel, FileSpreadsheet, Calendar, ChevronDown, ChevronRight, Landmark, MapPin, Wind, Tv, PresentationIcon, Accessibility, ArrowLeft, Search, AlertCircle, Edit, FileText } from 'lucide-react'
 
 // Helper function to display "None" for null/undefined values
 const displayValue = (value: any, defaultVal: string = 'None'): string => {

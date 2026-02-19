@@ -3,38 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import styles from './styles.module.css'
-import { 
-  Map, 
-  Building2, 
-  Layers,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Lock,
-  Eye,
-  Calendar,
-  Users,
-  Info,
-  DoorOpen,
-  ArrowUpDown,
-  Building,
-  Sofa,
-  Monitor,
-  GraduationCap,
-  FlaskConical,
-  BookOpen,
-  Coffee,
-  Wifi,
-  Printer,
-  Projector,
-  Thermometer,
-  AlertTriangle,
-  ExternalLink,
-  X,
-  Check,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react'
+import { Map, Building2, Layers, ZoomIn, ZoomOut, Maximize2, Lock, Eye, Calendar, Users, Info, DoorOpen, ArrowUpDown, Building, Sofa, Monitor, GraduationCap, FlaskConical, BookOpen, Coffee, Wifi, Printer, Projector, Thermometer, AlertTriangle, ExternalLink, X, Check, ChevronLeft, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react'
 
 // Types
 interface CanvasElement {

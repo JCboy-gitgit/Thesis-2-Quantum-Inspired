@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, Check, AlertCircle, Loader2, AlertTriangle, Search, ChevronDown, ChevronUp, Zap, Shield, Star, MapPin, Monitor } from 'lucide-react'
+import { X, Check, AlertCircle, Loader2, AlertTriangle, Search, ChevronDown, ChevronUp, Zap, Shield, Star, MapPin, Monitor, RotateCcw, CheckCircle } from 'lucide-react'
 import styles from './RoomReassignmentModal.module.css'
 
 interface Room {

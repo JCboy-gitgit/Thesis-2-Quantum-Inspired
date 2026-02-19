@@ -6,23 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-  UserCheck,
-  UserX,
-  Clock,
-  Mail,
-  Calendar,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Search,
-  Filter,
-  RefreshCw,
-  Trash2,
-  User,
-  Building2,
-  Loader2
-} from 'lucide-react'
+import { UserCheck, UserX, Clock, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Search, Filter, RefreshCw, Trash2, User, Building2, Loader2, RotateCcw } from 'lucide-react'
 import styles from './styles.module.css'
 
 interface FacultyRegistration {

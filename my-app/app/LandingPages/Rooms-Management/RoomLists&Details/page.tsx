@@ -5,35 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-  Building2,
-  ArrowLeft,
-  Search,
-  Calendar,
-  Plus,
-  Check,
-  X,
-  Users,
-  BarChart3,
-  DoorOpen,
-  Settings,
-  Edit2,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  MapPin,
-  AlertTriangle,
-  University,
-  Hotel,
-  Landmark,
-  Wind,
-  Tv,
-  PresentationIcon,
-  CheckCircle2,
-  XCircle,
-  Wrench,
-  Eye
-} from 'lucide-react'
+import { Building2, ArrowLeft, Search, Calendar, Plus, Check, X, Users, BarChart3, DoorOpen, Settings, Edit2, Trash2, ChevronDown, ChevronRight, MapPin, AlertTriangle, University, Hotel, Landmark, Wind, Tv, PresentationIcon, CheckCircle2, XCircle, Wrench, Eye, CheckCircle, AlertCircle, Edit } from 'lucide-react'
 import { RiBuilding3Fill } from 'react-icons/ri'
 import styles from './styles.module.css'
 

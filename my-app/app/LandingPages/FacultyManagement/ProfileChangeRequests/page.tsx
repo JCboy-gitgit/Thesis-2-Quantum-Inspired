@@ -6,23 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-  UserCog,
-  Clock,
-  Mail,
-  Calendar,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Search,
-  Filter,
-  RefreshCw,
-  User,
-  ArrowRight,
-  Loader2,
-  Edit3,
-  MessageSquare
-} from 'lucide-react'
+import { UserCog, Clock, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Search, Filter, RefreshCw, User, ArrowRight, Loader2, Edit3, MessageSquare, RotateCcw, Edit } from 'lucide-react'
 import styles from './styles.module.css'
 
 interface ChangeRequest {

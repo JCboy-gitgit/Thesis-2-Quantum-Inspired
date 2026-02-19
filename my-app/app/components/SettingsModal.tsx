@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Moon, Sun, Leaf, Monitor, Building2, Plus, Edit2, Trash2, Check, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react'
+import { X, Moon, Sun, Leaf, Monitor, Building2, Plus, Edit2, Trash2, Check, GripVertical, ToggleLeft, ToggleRight, CheckCircle, Edit } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { useColleges, BulSUCollege } from '../context/CollegesContext'
 import './SettingsModal.css'

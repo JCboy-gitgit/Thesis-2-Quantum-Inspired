@@ -7,41 +7,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import { useColleges } from '@/app/context/CollegesContext'
-import {
-  Building2,
-  ArrowLeft,
-  Search,
-  Calendar,
-  Plus,
-  Check,
-  X,
-  Users,
-  BarChart3,
-  DoorOpen,
-  Edit2,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  MapPin,
-  University,
-  Hotel,
-  Landmark,
-  Wind,
-  Tv,
-  PresentationIcon,
-  CheckCircle2,
-  XCircle,
-  Wrench,
-  Save,
-  FileSpreadsheet,
-  Layers,
-  Filter,
-  Info,
-  Image as ImageIcon,
-  Upload,
-  Palette,
-  Tag
-} from 'lucide-react'
+import { Building2, ArrowLeft, Search, Calendar, Plus, Check, X, Users, BarChart3, DoorOpen, Edit2, Trash2, ChevronDown, ChevronRight, MapPin, University, Hotel, Landmark, Wind, Tv, PresentationIcon, CheckCircle2, XCircle, Wrench, Save, FileSpreadsheet, Layers, Filter, Info, Image as ImageIcon, Upload, Palette, Tag, Edit, FileText } from 'lucide-react'
 import styles from './styles.module.css'
 
 // ==================== INTERFACES ====================

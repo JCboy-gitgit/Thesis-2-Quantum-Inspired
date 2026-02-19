@@ -126,7 +126,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   const [loading, setLoading] = useState(true)
   const [buildings, setBuildings] = useState<Building[]>([])
-  const [selectedBuilding, setSelectedBuilding] = useState<MdBusiness | null>(null)
+  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<FloorPlan | null>(null)
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([])
   const [roomAllocations, setRoomAllocations] = useState<RoomAllocation[]>([])
@@ -341,7 +341,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   const handleFloorChange = (floorPlanId: string) => {
     if (selectedBuilding) {
-      const floor = selectedBuilding.floors.find(f => f.id === parseInt(floorPlanId))
+      const floor = selectedBuilding.floors.find((f: any) => f.id === parseInt(floorPlanId))
       if (floor) {
         setSelectedFloor(floor)
         loadFloorPlan(floor)

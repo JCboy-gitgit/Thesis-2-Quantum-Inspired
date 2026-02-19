@@ -6,27 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import {
-  Search,
-  Building2,
-  DoorOpen,
-  Users,
-  X,
-  ChevronDown,
-  ChevronUp,
-  University,
-  FileSpreadsheet,
-  Calendar,
-  CheckCircle,
-  ArrowLeft,
-  Layers,
-  Wind,
-  Tv,
-  PresentationIcon,
-  MapPin,
-  GraduationCap,
-  Filter
-} from 'lucide-react'
+import { Search, Building2, DoorOpen, Users, X, ChevronDown, ChevronUp, University, FileSpreadsheet, Calendar, CheckCircle, ArrowLeft, Layers, Wind, Tv, PresentationIcon, MapPin, GraduationCap, Filter, FileText } from 'lucide-react'
 
 // Helper to display null values
 const displayValue = (value: any, fallback: string = 'N/A'): string => {

@@ -8,21 +8,7 @@ import Sidebar from '@/app/components/Sidebar'
 import { useTheme } from '@/app/context/ThemeContext'
 
 import styles from './styles.module.css'
-import {
-  Map, Building2, Layers, Plus, Minus, Move, MousePointer, Square,
-  Type, Trash2, Save, Download, Settings, Eye, EyeOff, ChevronDown, ChevronUp,
-  Search, X, Check, Share2, Link, Grid, ZoomIn, ZoomOut, DoorOpen,
-  Building, Users, GraduationCap, FlaskConical, BookOpen, Coffee,
-  Projector, Thermometer, RefreshCw, FileText, ChevronRight, ChevronLeft, Edit3, FolderOpen,
-  Box, Maximize2, LayoutGrid, Footprints, Info, Monitor, AlertTriangle,
-  PanelLeftClose, PanelLeftOpen, Loader2, RotateCcw, Wifi, Wind, Star,
-  Calendar, Clock, Copy, ExternalLink, Palette, Image, Lock, Unlock,
-  ArrowUpDown, Laptop, Beaker, Library, UtensilsCrossed, Bath, Archive,
-  Dumbbell, Music, Theater, Presentation, Server, CircleDot, Triangle,
-  Hexagon, Pentagon, Octagon, Heart, Zap, Flame, Droplets, Sun, Moon,
-  MoveUp, MoveDown, ChevronsUp, ChevronsDown, LayoutList, Grip,
-  BoxSelect, Menu, Wrench
-} from 'lucide-react'
+import { Map, Building2, Layers, Plus, Minus, Move, MousePointer, Square, Type, Trash2, Save, Download, Settings, Eye, EyeOff, ChevronDown, ChevronUp, Search, X, Check, Share2, Link, Grid, ZoomIn, ZoomOut, DoorOpen, Building, Users, GraduationCap, FlaskConical, BookOpen, Coffee, Projector, Thermometer, RefreshCw, FileText, ChevronRight, ChevronLeft, Edit3, FolderOpen, Box, Maximize2, LayoutGrid, Footprints, Info, Monitor, AlertTriangle, PanelLeftClose, PanelLeftOpen, Loader2, RotateCcw, Wifi, Wind, Star, Calendar, Clock, Copy, ExternalLink, Palette, Image, Lock, Unlock, ArrowUpDown, Laptop, Beaker, Library, UtensilsCrossed, Bath, Archive, Dumbbell, Music, Theater, Presentation, Server, CircleDot, Triangle, Hexagon, Pentagon, Octagon, Heart, Zap, Flame, Droplets, Sun, Moon, MoveUp, MoveDown, ChevronsUp, ChevronsDown, LayoutList, Grip, BoxSelect, Menu, Wrench, CheckCircle, Edit } from 'lucide-react'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any

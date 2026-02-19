@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Check, XCircle, Clock, Calendar, ArrowRight, User, AlertTriangle } from 'lucide-react'
+import { X, Check, XCircle, Clock, Calendar, ArrowRight, User, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './ScheduleRequestsModal.module.css'
 
