@@ -812,25 +812,12 @@ class EnhancedQuantumScheduler:
                 # NEW COLLEGE CONSTRAINT: Room must belong to section's college OR be "Shared"
                 # Skip rooms that belong to a different college (unless no college specified)
                 
-                # DEBUG: Log logic before check
-                # Note: Normalize strings for comparison
+                # Normalize strings for comparison
                 r_col = str(room_college).strip().upper() if room_college else ''
                 s_col = str(section_college).strip().upper() if section_college else ''
                 
-                                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
                     continue  # Skip rooms belonging to other colleges
-     # DEBUG: Log mismatches occasionally to verify it's working
-                    if i < 5: # Only log first few checks to avoid spam
-                         print(f"   ⛔ Constraint Block: Room {room.room_code} ({r_col}) != Section {section.section_code} ({s_col})")
-                    continue  # Skip rooms belonging to other colleges
-                    # Normalize strings for comparison
-                    r_col = str(room_college).strip().upper()
-                    s_col = str(section_college).strip().upper()
-                    
-                    if r_col != s_col:
-                        # DEBUG LOG
-                        # print(f"Skipping room {room.room_code} ({room_college}) for {section.section_code} ({section_college})")
-                        continue  # Skip rooms belonging to other colleges
                 
                 # Primary Rule: Room must fit all students
                 if room.capacity < min_capacity:
@@ -1807,8 +1794,8 @@ class EnhancedQuantumScheduler:
             
             # Determine if this day's schedule violates preferences
             # 1. Check Shift Preferences (Morning vs Night)
-            has_night_class = any(self.time_slots_by_id[s].is_night_class() for s in slot_ids if s in self.time_slots_by_id)
-            has_day_class = any(not self.time_slots_by_id[s].is_night_class() for s in slot_ids if s in self.time_slots_by_id)
+            has_night_class = any(self.time_slots_by_id[s].is_night_class for s in slot_ids if s in self.time_slots_by_id)
+            has_day_class = any(not self.time_slots_by_id[s].is_night_class for s in slot_ids if s in self.time_slots_by_id)
             
             # Helper: Check if slot is morning (start < 12:00)
             has_morning_class = any(self.time_slots_by_id[s].start_minutes < 720 for s in slot_ids if s in self.time_slots_by_id)
