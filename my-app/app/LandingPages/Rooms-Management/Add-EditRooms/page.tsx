@@ -438,7 +438,7 @@ export default function AddEditRoomsPage() {
 
           {errorMessage && (
             <div className={styles.errorMessage}>
-              <AlertTriangle size={20} />
+              <AlertCircle size={20} />
               <span>{errorMessage}</span>
               <button onClick={() => setErrorMessage('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
                 <X size={16} />
@@ -454,7 +454,7 @@ export default function AddEditRoomsPage() {
             </div>
           ) : campusGroups.length === 0 ? (
             <div className={styles.emptyState}>
-              <FileSpreadsheet size={64} />
+              <FileText size={64} />
               <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
               <p className={styles.emptyText}>Upload a Campus/Building CSV file first to manage rooms</p>
               <button
@@ -491,7 +491,7 @@ export default function AddEditRoomsPage() {
                         <DoorOpen size={14} /> {group.room_count} rooms
                       </p>
                       <p className={styles.campusCardFile}>
-                        <FileSpreadsheet size={14} /> {group.file_name}
+                        <FileText size={14} /> {group.file_name}
                       </p>
                       <p className={styles.campusCardDate}>
                         <Calendar size={14} /> {new Date(group.created_at).toLocaleDateString()}
@@ -647,7 +647,7 @@ export default function AddEditRoomsPage() {
                                               className={styles.editBtn}
                                               title="Edit Room"
                                             >
-                                              <Edit2 size={16} />
+                                              <Edit size={16} />
                                             </button>
                                             <button
                                               onClick={() => handleDelete(room.id)}

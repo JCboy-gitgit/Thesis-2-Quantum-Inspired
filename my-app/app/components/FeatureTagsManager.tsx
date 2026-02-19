@@ -344,7 +344,7 @@ export default function FeatureTagsManager({
     return (
       <div className={styles.container}>
         <div className={styles.loadingState}>
-          <Loader2 size={24} className={styles.spinner} />
+          <RotateCcw size={24} className={styles.spinner} />
           <span>Loading features...</span>
         </div>
       </div>

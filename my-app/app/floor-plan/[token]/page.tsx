@@ -445,7 +445,7 @@ export default function PublicFloorPlanPage() {
               <p className={styles.errorMessage}>{passwordError}</p>
             )}
             <button type="submit" className={styles.submitButton}>
-              <Check size={18} />
+              <CheckCircle size={18} />
               Access Floor Plan
             </button>
           </form>
@@ -460,7 +460,7 @@ export default function PublicFloorPlanPage() {
       <div className={styles.errorContainer}>
         <div className={styles.errorCard}>
           <div className={styles.errorIcon}>
-            <AlertTriangle size={32} />
+            <AlertCircle size={32} />
           </div>
           <h2>Unable to Load Floor Plan</h2>
           <p>{error}</p>

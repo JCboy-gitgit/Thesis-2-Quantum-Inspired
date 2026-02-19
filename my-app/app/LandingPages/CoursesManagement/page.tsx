@@ -1101,7 +1101,7 @@ function CoursesManagementContent() {
                                     alignItems: 'center',
                                     gap: '6px'
                                   }}>
-                                    <Edit3 size={14} />
+                                    <Edit size={14} />
                                     Display Name
                                   </label>
                                   <input
@@ -1153,7 +1153,7 @@ function CoursesManagementContent() {
                           </div>
                           <div className={styles.scheduleCardBody}>
                             <div className={styles.scheduleInfo}>
-                              <FileSpreadsheet size={16} />
+                              <FileText size={16} />
                               <span>{totalCourses} Total Courses</span>
                             </div>
                             <div className={styles.scheduleInfo}>
@@ -1203,7 +1203,7 @@ function CoursesManagementContent() {
                       alignItems: 'center',
                       gap: '8px'
                     }}>
-                      <FileSpreadsheet size={20} />
+                      <FileText size={20} />
                       Course Files in {getFolderDisplayName(selectedCollegeFolder)}
                     </h3>
                   </div>
@@ -1223,7 +1223,7 @@ function CoursesManagementContent() {
                         >
                           <div className={styles.scheduleCardHeader}>
                             <h3 className={styles.scheduleEventName}>
-                              <FileSpreadsheet size={20} />
+                              <FileText size={20} />
                               {group.degree_programs?.join(', ') || `Upload Group #${group.upload_group_id}`}
                             </h3>
                             <span className={styles.scheduleType}>
@@ -1309,7 +1309,7 @@ function CoursesManagementContent() {
                                 border: '1px solid #fed7d7'
                               }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                  <AlertTriangle size={16} color="#c53030" />
+                                  <AlertCircle size={16} color="#c53030" />
                                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
                                     Delete all {group.total_courses} courses?
                                   </span>
@@ -1357,7 +1357,7 @@ function CoursesManagementContent() {
 
                   {uploadGroups.filter(g => (g.college || 'Uncategorized') === selectedCollegeFolder).length === 0 && (
                     <div className={styles.emptyState}>
-                      <FileSpreadsheet size={64} />
+                      <FileText size={64} />
                       <h3>No Course Files Found</h3>
                       <p>No course files have been uploaded for this college yet.</p>
                     </div>
@@ -1760,7 +1760,7 @@ function CoursesManagementContent() {
                                                 }}
                                                 title="Edit"
                                               >
-                                                <Edit3 size={14} />
+                                                <Edit size={14} />
                                               </button>
 
                                               {deleteConfirm === course.id ? (
@@ -2155,7 +2155,7 @@ function CoursesManagementContent() {
               borderRadius: '16px 16px 0 0'
             }}>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {modalMode === 'create' ? <Plus size={20} /> : <Edit3 size={20} />}
+                {modalMode === 'create' ? <Plus size={20} /> : <Edit size={20} />}
                 {modalMode === 'create' ? 'Add New Course' : 'Edit Course'}
               </h2>
               <button

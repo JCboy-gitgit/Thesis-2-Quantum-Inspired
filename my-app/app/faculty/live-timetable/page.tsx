@@ -241,6 +241,7 @@ export default function FacultyLiveTimetablePage() {
     // Makeup request modal
     const [requestingMakeup, setRequestingMakeup] = useState<{ alloc: RoomAllocation; absenceDate?: string } | null>(null)
     const [makeupDate, setMakeupDate] = useState('')
+    const [makeupTime, setMakeupTime] = useState('')
     const [makeupStartSlot, setMakeupStartSlot] = useState('')   // e.g. "7:30 AM"
     const [makeupDuration, setMakeupDuration] = useState(90)     // minutes
     const [makeupRoom, setMakeupRoom] = useState('')

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, Check, AlertCircle, Loader2, Search, ChevronDown, ChevronUp, BookOpen, Clock, Users, GraduationCap } from 'lucide-react'
+import { X, Check, CheckCircle, AlertCircle, Loader2, RotateCcw, Search, ChevronDown, ChevronUp, BookOpen, Clock, Users, GraduationCap } from 'lucide-react'
 import styles from './FacultyAssignmentModal.module.css'
 
 interface Faculty {
@@ -237,7 +237,7 @@ export default function FacultyAssignmentModal({
 
             <div className={styles.facultyList}>
               {fetchingFaculty ? (
-                <div className={styles.loadingState}><Loader2 size={28} className={styles.spinner} /><p>Loading faculty data...</p></div>
+                <div className={styles.loadingState}><RotateCcw size={28} className={styles.spinner} /><p>Loading faculty data...</p></div>
               ) : displayFaculty.length === 0 ? (
                 <div className={styles.noFaculty}>
                   <Users size={20} /><p>No faculty found matching your search.</p><small>Try a different search term.</small>
@@ -276,7 +276,7 @@ export default function FacultyAssignmentModal({
                           {facultyConflict && <div className={styles.conflictInfo}>Already teaching {facultyConflict.course_code} ({facultyConflict.section}) at this time</div>}
                         </div>
                         <div className={styles.facultyActions}>
-                          {selectedFaculty?.id === faculty.id && !facultyConflict && <Check size={20} className={styles.selectedIcon} />}
+                          {selectedFaculty?.id === faculty.id && !facultyConflict && <CheckCircle size={20} className={styles.selectedIcon} />}
                           <button className={styles.expandBtn} onClick={e => { e.stopPropagation(); setExpandedFaculty(isExpanded ? null : faculty.id) }} title={`${allocation.schedule_day} schedule`}>
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
@@ -322,7 +322,7 @@ export default function FacultyAssignmentModal({
         <div className={styles.modalFooter}>
           <button className={styles.cancelButton} onClick={onClose} disabled={loading}>Cancel</button>
           <button className={`${styles.confirmButton} ${hasConflict ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedFaculty || hasConflict}>
-            {loading ? <><Loader2 size={16} className={styles.spinner} /> Assigning...</> : <><Check size={16} /> Assign Faculty</>}
+            {loading ? <><RotateCcw size={16} className={styles.spinner} /> Assigning...</> : <><CheckCircle size={16} /> Assign Faculty</>}
           </button>
         </div>
       </div>

@@ -2,20 +2,20 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { 
-  Archive, 
-  X, 
-  RotateCcw, 
-  Trash2, 
-  FileSpreadsheet, 
-  Building2, 
-  User, 
-  Search,
-  AlertTriangle,
-  Check,
-  Clock,
-  Filter
-} from 'lucide-react'
+import {
+  MdArchive,
+  MdClose,
+  MdRefresh,
+  MdDelete,
+  MdInsertDriveFile,
+  MdBusiness,
+  MdPeople,
+  MdSearch,
+  MdWarning,
+  MdCheck,
+  MdAccessTime,
+  MdFilterList
+} from 'react-icons/md'
 import './ArchiveModal.css'
 
 interface ArchivedItem {
@@ -372,10 +372,10 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'csv_file': return <FileSpreadsheet size={20} />
-      case 'department': return <Building2 size={20} />
-      case 'faculty': return <User size={20} />
-      default: return <Archive size={20} />
+      case 'csv_file': return <MdInsertDriveFile size={20} />
+      case 'department': return <MdBusiness size={20} />
+      case 'faculty': return <MdPeople size={20} />
+      default: return <MdArchive size={20} />
     }
   }
 
@@ -414,21 +414,21 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         {/* Header */}
         <div className="archive-modal-header">
           <div className="archive-modal-title">
-            <Archive size={28} />
+            <MdArchive size={28} />
             <div>
               <h2>Archive</h2>
               <p>Manage deleted items - restore or permanently remove</p>
             </div>
           </div>
           <button className="archive-close-btn" onClick={onClose}>
-            <X size={24} />
+            <MdClose size={24} />
           </button>
         </div>
 
         {/* Message */}
         {message && (
           <div className={`archive-message ${message.type}`}>
-            {message.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
+            {message.type === 'success' ? <MdCheck size={18} /> : <MdWarning size={18} />}
             {message.text}
           </div>
         )}
@@ -436,7 +436,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         {/* Controls */}
         <div className="archive-controls">
           <div className="archive-search">
-            <Search size={18} />
+            <MdSearch size={18} />
             <input
               type="text"
               placeholder="Search archived items..."
@@ -446,7 +446,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
           </div>
           
           <div className="archive-filter">
-            <Filter size={18} />
+            <MdFilterList size={18} />
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="all">All Types</option>
               <option value="csv_file">CSV Files</option>
@@ -464,7 +464,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 onClick={handleBulkRestore}
                 disabled={actionLoading}
               >
-                <RotateCcw size={16} />
+                <MdRefresh size={16} />
                 Restore ({selectedItems.length})
               </button>
               <button 
@@ -472,7 +472,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 onClick={handleBulkDelete}
                 disabled={actionLoading}
               >
-                <Trash2 size={16} />
+                <MdDelete size={16} />
                 Delete ({selectedItems.length})
               </button>
             </div>
@@ -488,7 +488,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="archive-empty">
-              <Archive size={64} />
+              <MdArchive size={64} />
               <h3>No Archived Items</h3>
               <p>{searchTerm || filterType !== 'all' 
                 ? 'No items match your search criteria' 
@@ -536,7 +536,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                     </div>
                     
                     <div className="archive-item-date">
-                      <Clock size={14} />
+                      <MdAccessTime size={14} />
                       {formatDate(item.deleted_at)}
                     </div>
                     
@@ -547,7 +547,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                         disabled={actionLoading}
                         title="Restore"
                       >
-                        <RotateCcw size={16} />
+                        <MdRefresh size={16} />
                       </button>
                       <button
                         className="archive-action-btn delete"
@@ -555,7 +555,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                         disabled={actionLoading}
                         title="Permanent Delete"
                       >
-                        <Trash2 size={16} />
+                        <MdDelete size={16} />
                       </button>
                     </div>
                   </div>
@@ -576,7 +576,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
           <div className="archive-confirm-overlay">
             <div className="archive-confirm-modal">
               <div className="archive-confirm-icon">
-                <AlertTriangle size={48} />
+                <MdWarning size={48} />
               </div>
               <h3>Permanent Delete</h3>
               <p>

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '@/app/context/ThemeContext'
@@ -388,7 +388,7 @@ export default function ViewSchedulePage() {
       if (data.success) {
         setAssignmentMessage({
           type: 'success',
-          text: `✅ ${data.message}`
+          text: `? ${data.message}`
         })
         setTimeout(() => {
           setShowBatchFacultyModal(false)
@@ -1742,9 +1742,9 @@ export default function ViewSchedulePage() {
 
   // Handler for faculty assignment
   const handleFacultyAssign = (allocation: RoomAllocation) => {
-    console.log('🎯 Faculty Assign button clicked!', allocation)
-    console.log('📋 Approved Faculty count:', approvedFaculty.length)
-    console.log('🔒 Is schedule locked?', selectedSchedule?.is_locked)
+    console.log('?? Faculty Assign button clicked!', allocation)
+    console.log('?? Approved Faculty count:', approvedFaculty.length)
+    console.log('?? Is schedule locked?', selectedSchedule?.is_locked)
     setSelectedAllocation(allocation)
     setShowFacultyAssignModal(true)
   }
@@ -1949,7 +1949,7 @@ export default function ViewSchedulePage() {
                     onClick={() => setHistorySortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                     title={historySortOrder === 'asc' ? 'Ascending' : 'Descending'}
                   >
-                    {historySortOrder === 'asc' ? '↑' : '↓'}
+                    {historySortOrder === 'asc' ? '?' : '?'}
                   </button>
                 </div>
                 <div className={styles.historyStats}>
@@ -2073,7 +2073,7 @@ export default function ViewSchedulePage() {
                           className={styles.primaryButton}
                           onClick={() => handleSetCurrentSchedule(schedule.id)}
                         >
-                          <Check size={16} /> Set Current
+                          <CheckCircle size={16} /> Set Current
                         </button>
                       </div>
 
@@ -2094,7 +2094,7 @@ export default function ViewSchedulePage() {
               <div className={styles.scheduleInfoHeader}>
                 <div className={styles.scheduleInfoMain}>
                   <h2>{selectedSchedule.schedule_name}</h2>
-                  <p>{selectedSchedule.school_name} â€¢ {selectedSchedule.college}</p>
+                  <p>{selectedSchedule.school_name} • {selectedSchedule.college}</p>
                   <p className={styles.semesterInfo}>
                     {selectedSchedule.semester} {selectedSchedule.academic_year}
                   </p>
@@ -2154,7 +2154,7 @@ export default function ViewSchedulePage() {
                     title={selectedSchedule.is_locked ? 'Unlock schedule for faculty editing' : 'Lock schedule to prevent faculty changes'}
                   >
                     {isTogglingLock ? (
-                      <Loader2 size={18} className={styles.spinning} />
+                      <RotateCcw size={18} className={styles.spinning} />
                     ) : selectedSchedule.is_locked ? (
                       <Lock size={18} />
                     ) : (
@@ -2622,7 +2622,7 @@ export default function ViewSchedulePage() {
                 <div className={styles.batchFacultyList}>
                   {loadingFaculty ? (
                     <div className={styles.batchLoading}>
-                      <Loader2 size={24} className={styles.spinner} />
+                      <RotateCcw size={24} className={styles.spinner} />
                       <p>Loading faculty...</p>
                     </div>
                   ) : filteredApprovedFaculty.length === 0 ? (
@@ -2647,7 +2647,7 @@ export default function ViewSchedulePage() {
                           <span className={styles.batchFacultyEmail}>{faculty.email}</span>
                         </div>
                         {selectedFacultyIds.includes(faculty.id) && (
-                          <Check size={16} className={styles.batchCheckIcon} />
+                          <CheckCircle size={16} className={styles.batchCheckIcon} />
                         )}
                       </label>
                     ))
@@ -2675,7 +2675,7 @@ export default function ViewSchedulePage() {
                   disabled={assigningSchedule || selectedFacultyIds.length === 0}
                 >
                   {assigningSchedule ? (
-                    <><Loader2 size={16} className={styles.spinner} /> Assigning...</>
+                    <><RotateCcw size={16} className={styles.spinner} /> Assigning...</>
                   ) : (
                     <><UserPlus size={16} /> Assign to {selectedFacultyIds.length} Faculty</>
                   )}

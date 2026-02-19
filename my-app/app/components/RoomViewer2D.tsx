@@ -126,7 +126,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   const [loading, setLoading] = useState(true)
   const [buildings, setBuildings] = useState<Building[]>([])
-  const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
+  const [selectedBuilding, setSelectedBuilding] = useState<MdBusiness | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<FloorPlan | null>(null)
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([])
   const [roomAllocations, setRoomAllocations] = useState<RoomAllocation[]>([])
@@ -845,11 +845,11 @@ function RoomDetailsModal({
         {/* Status badge */}
         <div className={`${styles.statusBadgeModal} ${styles[availability]}`}>
           {availability === 'available' ? (
-            <><CheckCircle size={16} /> Available Now</>
+            <><MdCheckCircle size={16} /> Available Now</>
           ) : availability === 'occupied' ? (
-            <><XCircle size={16} /> In Use</>
+            <><MdCancel size={16} /> In Use</>
           ) : (
-            <><Clock size={16} /> Status Unknown</>
+            <><MdAccessTime size={16} /> Status Unknown</>
           )}
         </div>
 
@@ -859,19 +859,19 @@ function RoomDetailsModal({
             className={`${styles.tabBtn} ${activeTab === 'details' ? styles.active : ''}`}
             onClick={() => setActiveTab('details')}
           >
-            <Info size={16} />Details
+            <MdInfo size={16} />Details
           </button>
           <button
             className={`${styles.tabBtn} ${activeTab === 'schedule' ? styles.active : ''}`}
             onClick={() => setActiveTab('schedule')}
           >
-            <Calendar size={16} />Schedule ({roomSchedules.length})
+            <MdCalendarToday size={16} />Schedule ({roomSchedules.length})
           </button>
           <button
             className={`${styles.tabBtn} ${activeTab === 'images' ? styles.active : ''}`}
             onClick={() => setActiveTab('images')}
           >
-            <Eye size={16} />Photos ({roomImages.length})
+            <MdVisibility size={16} />Photos ({roomImages.length})
           </button>
         </div>
 
@@ -928,7 +928,7 @@ function RoomDetailsModal({
             <div className={styles.scheduleTab}>
               {roomSchedules.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <Calendar size={32} />
+                  <MdCalendarToday size={32} />
                   <p>No scheduled classes</p>
                 </div>
               ) : (
@@ -957,12 +957,12 @@ function RoomDetailsModal({
             <div className={styles.imagesTab}>
               {loading ? (
                 <div className={styles.emptyState}>
-                  <Loader2 size={32} className={styles.spinner} />
+                  <MdRefresh size={32} className={styles.spinner} />
                   <p>Loading images...</p>
                 </div>
               ) : roomImages.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <Eye size={32} />
+                  <MdVisibility size={32} />
                   <p>No photos available yet</p>
                 </div>
               ) : (
@@ -993,7 +993,7 @@ function RoomDetailsModal({
                         onClick={() => setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)}
                         title="Previous"
                       >
-                        <ChevronLeft size={18} />
+                        <MdChevronLeft size={18} />
                       </button>
                       <span className={styles.imageCounter}>
                         {selectedImageIdx + 1} / {roomImages.length}
@@ -1003,7 +1003,7 @@ function RoomDetailsModal({
                         onClick={() => setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)}
                         title="Next"
                       >
-                        <ChevronRight size={18} />
+                        <MdChevronRight size={18} />
                       </button>
                     </div>
                   )}

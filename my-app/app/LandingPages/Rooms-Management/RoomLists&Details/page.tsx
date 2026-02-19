@@ -904,7 +904,7 @@ export default function SchoolCapacityPage() {
                       </div>
                       {selectedCampus === file.upload_group_id && (
                         <div className={styles.selectedIndicator}>
-                          <Check size={20} />
+                          <CheckCircle size={20} />
                         </div>
                       )}
                       <button
@@ -1154,7 +1154,7 @@ export default function SchoolCapacityPage() {
                                                                   className={styles.saveBtnSmall}
                                                                   onClick={() => handleEditSave(room.id!)}
                                                                 >
-                                                                  <Check size={16} />
+                                                                  <CheckCircle size={16} />
                                                                   Save
                                                                 </button>
                                                                 <button
@@ -1282,7 +1282,7 @@ export default function SchoolCapacityPage() {
                                                                       className={`${styles.actionOption} ${styles.editOption}`}
                                                                       onClick={() => handleEditClick(room)}
                                                                     >
-                                                                      <Edit2 size={16} />
+                                                                      <Edit size={16} />
                                                                       Edit Room
                                                                     </button>
                                                                     <button
@@ -1426,7 +1426,7 @@ export default function SchoolCapacityPage() {
                 className={styles.modalBtnSave}
                 onClick={handleAddRoom}
               >
-                <Check size={18} />
+                <CheckCircle size={18} />
                 Add Room
               </button>
             </div>
@@ -1440,7 +1440,7 @@ export default function SchoolCapacityPage() {
           <div className={`${styles.modalContent} ${styles.deleteModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={`${styles.modalHeader} ${styles.deleteHeader}`}>
               <h3>
-                <AlertTriangle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
+                <AlertCircle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
                 Delete Campus
               </h3>
               <button
@@ -1455,7 +1455,7 @@ export default function SchoolCapacityPage() {
             <div className={styles.modalBody}>
               <div className={styles.deleteWarning}>
                 <div className={styles.warningIconWrapper}>
-                  <AlertTriangle size={64} className={styles.warningIcon} />
+                  <AlertCircle size={64} className={styles.warningIcon} />
                 </div>
                 <h4>Are you absolutely sure?</h4>
                 <p>

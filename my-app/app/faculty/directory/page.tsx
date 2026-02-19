@@ -355,7 +355,7 @@ function FacultyDirectoryContent() {
           <div className={styles.mainContentArea}>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>
-                <MdUsers size={32} />
+                <MdPeople size={32} />
                 Faculty Directory
               </h1>
               <p className={styles.subtitle}>View all faculty members across the institution</p>

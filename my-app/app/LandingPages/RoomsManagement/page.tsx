@@ -1000,7 +1000,7 @@ export default function RoomsManagementPage() {
             <>
               {campusFiles.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <FileSpreadsheet size={64} />
+                  <FileText size={64} />
                   <h3>No Campus Files Found</h3>
                   <p>Upload a Campus/Building CSV file to get started</p>
                   <button className={styles.addBtn} onClick={() => router.push('/LandingPages/UploadCSV')}>
@@ -1050,7 +1050,7 @@ export default function RoomsManagementPage() {
                             <h4>{file.school_name}</h4>
                             <p><DoorOpen size={14} /> {file.row_count} rooms</p>
                             <p className={styles.fileMeta}>
-                              <FileSpreadsheet size={12} /> {file.file_name}
+                              <FileText size={12} /> {file.file_name}
                             </p>
                             <p className={styles.fileMeta}>
                               <Calendar size={12} /> {new Date(file.created_at).toLocaleDateString()}
@@ -1256,7 +1256,7 @@ export default function RoomsManagementPage() {
                         <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
                           <Info size={14} />
                         </button>
-                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit2 size={14} /></button>
+                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit size={14} /></button>
                         <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
                       </div>
                     </div>
@@ -1318,7 +1318,7 @@ export default function RoomsManagementPage() {
                         <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
                           <Info size={14} />
                         </button>
-                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit2 size={14} /></button>
+                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit size={14} /></button>
                         <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
                       </div>
                     </div>

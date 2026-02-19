@@ -278,7 +278,7 @@ export default function FacultyApprovalPage() {
           </div>
 
           <button className={styles.refreshBtn} onClick={fetchRegistrations} disabled={loading}>
-            <RefreshCw size={18} className={loading ? styles.spinning : ''} />
+            <RotateCcw size={18} className={loading ? styles.spinning : ''} />
           </button>
         </div>
 
@@ -286,7 +286,7 @@ export default function FacultyApprovalPage() {
         <div className={styles.cardGrid}>
           {loading ? (
             <div className={styles.loadingState}>
-              <Loader2 size={40} className={styles.spinning} />
+              <RotateCcw size={40} className={styles.spinning} />
               <p>Loading registrations...</p>
             </div>
           ) : filteredRegistrations.length === 0 ? (
@@ -367,7 +367,7 @@ export default function FacultyApprovalPage() {
                             onClick={() => handleApproval(reg.id, 'approve')}
                             disabled={actionLoading === reg.id}
                           >
-                            {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserCheck size={16} />}
+                            {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <UserCheck size={16} />}
                             Approve
                           </button>
                           <button
@@ -399,7 +399,7 @@ export default function FacultyApprovalPage() {
                             onClick={() => handleApproval(reg.id, 'reject')}
                             disabled={actionLoading === reg.id}
                           >
-                            {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserX size={16} />}
+                            {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <UserX size={16} />}
                             Reject
                           </button>
 
@@ -413,7 +413,7 @@ export default function FacultyApprovalPage() {
                         onClick={() => handleApproval(reg.id, 'approve')}
                         disabled={actionLoading === reg.id}
                       >
-                        {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserCheck size={16} />}
+                        {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <UserCheck size={16} />}
                         Approve
                       </button>
                       <button
@@ -421,7 +421,7 @@ export default function FacultyApprovalPage() {
                         onClick={() => handleDelete(reg.id)}
                         disabled={actionLoading === reg.id}
                       >
-                        {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
+                        {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <Trash2 size={16} />}
                         Delete
                       </button>
                     </>
@@ -431,7 +431,7 @@ export default function FacultyApprovalPage() {
                       onClick={() => handleApproval(reg.id, 'reject')}
                       disabled={actionLoading === reg.id}
                     >
-                      {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <UserX size={16} />}
+                      {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <UserX size={16} />}
                       Reject
                     </button>
                   ) : (
@@ -440,7 +440,7 @@ export default function FacultyApprovalPage() {
                       onClick={() => handleDelete(reg.id)}
                       disabled={actionLoading === reg.id}
                     >
-                      {actionLoading === reg.id ? <Loader2 size={16} className={styles.spinning} /> : <Trash2 size={16} />}
+                      {actionLoading === reg.id ? <RotateCcw size={16} className={styles.spinning} /> : <Trash2 size={16} />}
                       Delete
                     </button>
                   )}

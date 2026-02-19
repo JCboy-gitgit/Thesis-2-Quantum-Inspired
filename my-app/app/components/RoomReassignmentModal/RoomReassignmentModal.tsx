@@ -258,10 +258,10 @@ export default function RoomReassignmentModal({
   const getScoreBadge = (roomId: number) => {
     const d = roomScores.get(roomId)
     if (!d || d.total === 0) return null
-    if (d.missingMandatory.length > 0) return <span className={styles.scoreBadgeRed}><AlertTriangle size={11} /> Incompatible</span>
+    if (d.missingMandatory.length > 0) return <span className={styles.scoreBadgeRed}><AlertCircle size={11} /> Incompatible</span>
     if (d.score >= 100) return <span className={styles.scoreBadgeGreen}><Shield size={11} /> Perfect Match</span>
     if (d.score >= 50) return <span className={styles.scoreBadgeYellow}><Star size={11} /> {Math.round(d.score)}%</span>
-    return <span className={styles.scoreBadgeRed}><AlertTriangle size={11} /> {Math.round(d.score)}%</span>
+    return <span className={styles.scoreBadgeRed}><AlertCircle size={11} /> {Math.round(d.score)}%</span>
   }
 
   if (!isOpen || !allocation) return null
@@ -328,7 +328,7 @@ export default function RoomReassignmentModal({
 
             <div className={styles.roomList}>
               {fetchingRooms ? (
-                <div className={styles.loadingState}><Loader2 size={28} className={styles.spinner} /><p>Loading rooms & equipment data...</p></div>
+                <div className={styles.loadingState}><RotateCcw size={28} className={styles.spinner} /><p>Loading rooms & equipment data...</p></div>
               ) : filteredRooms.length === 0 && allRooms.length === 0 ? (
                 <div className={styles.noRooms}><AlertCircle size={20} /><p>No rooms found in the database.</p><small>Check Room Management settings.</small></div>
               ) : filteredRooms.length === 0 ? (
@@ -368,7 +368,7 @@ export default function RoomReassignmentModal({
                           {scoreData && scoreData.missingMandatory.length > 0 && <div className={styles.missingInfo}>Missing: {scoreData.missingMandatory.join(', ')}</div>}
                         </div>
                         <div className={styles.roomActions}>
-                          {selectedRoom?.id === room.id && !conflict && !isIncompatible && <Check size={20} className={styles.selectedIcon} />}
+                          {selectedRoom?.id === room.id && !conflict && !isIncompatible && <CheckCircle size={20} className={styles.selectedIcon} />}
                           {features.length > 0 && (
                             <button className={styles.expandBtn} onClick={e => { e.stopPropagation(); setExpandedRoom(isExpanded ? null : room.id) }} title="View equipment">
                               {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -420,7 +420,7 @@ export default function RoomReassignmentModal({
               color: '#92400e',
               fontSize: '0.9rem'
             }}>
-              <AlertTriangle size={20} />
+              <AlertCircle size={20} />
               <div>
                 <p style={{ fontWeight: 600, margin: 0 }}>College Mismatch</p>
                 <p style={{ margin: 0 }}>{collegeMismatchWarning}</p>
@@ -434,7 +434,7 @@ export default function RoomReassignmentModal({
         <div className={styles.modalFooter}>
           <button className={styles.cancelButton} onClick={onClose} disabled={loading}>Cancel</button>
           <button className={`${styles.confirmButton} ${hasConflict ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedRoom || hasConflict}>
-            {loading ? <><Loader2 size={16} className={styles.spinner} /> Updating...</> : <><Check size={16} /> Confirm Reassignment</>}
+            {loading ? <><RotateCcw size={16} className={styles.spinner} /> Updating...</> : <><CheckCircle size={16} /> Confirm Reassignment</>}
           </button>
         </div>
       </div>

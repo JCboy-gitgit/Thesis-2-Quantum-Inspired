@@ -114,8 +114,8 @@ export default function AdminAlertsPage() {
 
   const severityIcon = (level: string) => {
     if (level === 'success') return <CheckCircle2 size={16} />
-    if (level === 'warning') return <AlertTriangle size={16} />
-    if (level === 'error') return <AlertTriangle size={16} />
+    if (level === 'warning') return <AlertCircle size={16} />
+    if (level === 'error') return <AlertCircle size={16} />
     return <Info size={16} />
   }
 

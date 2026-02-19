@@ -332,7 +332,7 @@ export default function SearchFilterRoomsPage() {
             </div>
           ) : campusGroups.length === 0 ? (
             <div className={styles.emptyState}>
-              <FileSpreadsheet size={64} />
+              <FileText size={64} />
               <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
               <p className={styles.emptyText}>Upload a Campus/Building CSV file first to search rooms</p>
             </div>
@@ -362,7 +362,7 @@ export default function SearchFilterRoomsPage() {
                         <DoorOpen size={14} /> {group.room_count} rooms
                       </p>
                       <p className={styles.campusCardFile}>
-                        <FileSpreadsheet size={14} /> {group.file_name}
+                        <FileText size={14} /> {group.file_name}
                       </p>
                       <p className={styles.campusCardDate}>
                         <Calendar size={14} /> {new Date(group.created_at).toLocaleDateString()}

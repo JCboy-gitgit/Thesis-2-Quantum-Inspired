@@ -151,7 +151,7 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
                         <div className={styles.loading}>Loading requests...</div>
                     ) : requests.length === 0 ? (
                         <div className={styles.empty}>
-                            <Check size={48} className={styles.emptyIcon} />
+                            <CheckCircle size={48} className={styles.emptyIcon} />
                             <p>No pending requests for this schedule.</p>
                         </div>
                     ) : (
@@ -243,7 +243,7 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
 
                                     {actionErrors[request.id] && (
                                         <div className={styles.errorBanner}>
-                                            <AlertTriangle size={14} />
+                                            <AlertCircle size={14} />
                                             <span>{actionErrors[request.id]}</span>
                                         </div>
                                     )}

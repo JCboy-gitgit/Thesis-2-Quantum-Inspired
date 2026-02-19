@@ -2356,21 +2356,21 @@ function RoomSchedulesViewContent() {
                     </div>
                   )}
                   <div className={styles.infoItem}>
-                    <Calendar size={18} />
+                    <MdCalendarToday size={18} />
                     <div>
                       <strong>Day</strong>
                       <span>{selectedAllocation.schedule_day}</span>
                     </div>
                   </div>
                   <div className={styles.infoItem}>
-                    <Clock size={18} />
+                    <MdAccessTime size={18} />
                     <div>
                       <strong>Time</strong>
                       <span>{selectedAllocation.schedule_time}</span>
                     </div>
                   </div>
                   <div className={styles.infoItem}>
-                    <Building2 size={18} />
+                    <MdBusiness size={18} />
                     <div>
                       <strong>Building</strong>
                       <span>{selectedAllocation.building}</span>
@@ -2392,7 +2392,7 @@ function RoomSchedulesViewContent() {
                   </div>
                   {selectedAllocation.teacher_name && (
                     <div className={styles.infoItem}>
-                      <User size={18} />
+                      <MdPerson size={18} />
                       <div>
                         <strong>Teacher</strong>
                         <span>{selectedAllocation.teacher_name}</span>
@@ -2401,7 +2401,7 @@ function RoomSchedulesViewContent() {
                   )}
                   {selectedAllocation.department && (
                     <div className={styles.infoItem}>
-                      <Building2 size={18} />
+                      <MdBusiness size={18} />
                       <div>
                         <strong>Department</strong>
                         <span>{selectedAllocation.department}</span>
@@ -2410,7 +2410,7 @@ function RoomSchedulesViewContent() {
                   )}
                   {(selectedAllocation.lec_hours || selectedAllocation.lab_hours) && (
                     <div className={styles.infoItem}>
-                      <Clock size={18} />
+                      <MdAccessTime size={18} />
                       <div>
                         <strong>Hours</strong>
                         <span>

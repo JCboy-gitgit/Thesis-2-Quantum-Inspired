@@ -1,6 +1,6 @@
 "use client"
 
-import { Edit3, UserPlus, Search, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { MdEdit, MdPersonAdd, MdSearch, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import styles from './AllocationTable.module.css'
 
@@ -115,7 +115,7 @@ export default function AllocationTable({
           </div>
           <div className={styles.tableFilters}>
             <div className={styles.tableSearchBox}>
-              <Search size={14} />
+              <MdSearch size={14} />
               <input
                 type="text"
                 placeholder="Search course, room, teacher..."
@@ -123,7 +123,7 @@ export default function AllocationTable({
                 onChange={e => setSearchQuery(e.target.value)}
                 className={styles.tableSearchInput}
               />
-              {searchQuery && <button className={styles.tableClearSearch} onClick={() => setSearchQuery('')}><X size={14} /></button>}
+              {searchQuery && <button className={styles.tableClearSearch} onClick={() => setSearchQuery('')}><MdClose size={14} /></button>}
             </div>
             <select className={styles.tableDaySelect} value={filterDay} onChange={e => setFilterDay(e.target.value)}>
               <option value="all">All Days</option>
@@ -140,7 +140,7 @@ export default function AllocationTable({
           onClick={() => scrollTable('left')}
           aria-label="Scroll left"
         >
-          <ChevronLeft size={16} />
+          <MdChevronLeft size={16} />
         </button>
         <span className={styles.scrollHint}>Scroll horizontally to view all columns</span>
         <button
@@ -148,7 +148,7 @@ export default function AllocationTable({
           onClick={() => scrollTable('right')}
           aria-label="Scroll right"
         >
-          <ChevronRight size={16} />
+          <MdChevronRight size={16} />
         </button>
       </div>
 
@@ -187,7 +187,7 @@ export default function AllocationTable({
                     disabled={isLocked}
                     title={isLocked ? 'Schedule is locked' : 'Reassign room'}
                   >
-                    <Edit3 size={13} /> Room
+                    <MdEdit size={13} /> Room
                   </button>
                   {onAssignFaculty && (
                     <button
@@ -196,7 +196,7 @@ export default function AllocationTable({
                       disabled={isLocked}
                       title={isLocked ? 'Schedule is locked' : 'Assign/change faculty'}
                     >
-                      <UserPlus size={13} /> Faculty
+                      <MdPersonAdd size={13} /> Faculty
                     </button>
                   )}
                 </td>

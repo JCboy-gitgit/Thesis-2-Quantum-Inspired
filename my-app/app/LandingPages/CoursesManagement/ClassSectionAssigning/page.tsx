@@ -1130,7 +1130,7 @@ function ClassSectionAssigningContent() {
                         transition: 'all 0.2s ease'
                       }}
                     >
-                      <Edit3 size={14} />
+                      <Edit size={14} />
                     </button>
 
                     {/* Delete Year Batch Button */}
@@ -1409,7 +1409,7 @@ function ClassSectionAssigningContent() {
                                                 transition: 'all 0.2s ease'
                                               }}
                                             >
-                                              <Edit3 size={14} />
+                                              <Edit size={14} />
                                             </button>
                                             {deleteConfirm === section.id ? (
                                               <div style={{ display: 'flex', gap: '2px' }}>
@@ -1807,7 +1807,7 @@ function ClassSectionAssigningContent() {
               borderRadius: '16px 16px 0 0'
             }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {modalMode === 'create' ? <UserPlus size={20} /> : <Edit3 size={20} />}
+                {modalMode === 'create' ? <UserPlus size={20} /> : <Edit size={20} />}
                 {modalMode === 'create' ? 'Add Section' : 'Edit Section'}
               </h2>
               <button

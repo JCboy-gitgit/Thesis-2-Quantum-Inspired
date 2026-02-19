@@ -439,7 +439,7 @@ export default function PublicFloorPlanView() {
             }}
             onClick={() => setSelectedElement(element)}
           >
-            <Building size={20} color="#3B82F6" />
+            <Building2 size={20} color="#3B82F6" />
             <span style={{ fontSize: 10, color: '#1E40AF', fontWeight: 600 }}>
               {element.label || 'Elevator'}
             </span>
@@ -740,7 +740,7 @@ export default function PublicFloorPlanView() {
             {selectedElement.type === 'shape' && <Circle size={16} />}
             {selectedElement.type === 'hallway' && <MapPin size={16} />}
             {selectedElement.type === 'stair' && <ArrowUpDown size={16} />}
-            {selectedElement.type === 'elevator' && <Building size={16} />}
+            {selectedElement.type === 'elevator' && <Building2 size={16} />}
             {selectedElement.type === 'entrance' && <DoorOpen size={16} />}
             {selectedElement.type === 'restroom' && <Users size={16} />}
             <span>{selectedElement.type.toUpperCase()}</span>

@@ -240,7 +240,7 @@ export default function ProfileChangeRequestsPage() {
           </div>
 
           <button className={styles.refreshBtn} onClick={fetchRequests} disabled={loading}>
-            <RefreshCw size={18} className={loading ? styles.spinning : ''} />
+            <RotateCcw size={18} className={loading ? styles.spinning : ''} />
           </button>
         </div>
 
@@ -248,7 +248,7 @@ export default function ProfileChangeRequestsPage() {
         <div className={styles.requestsList}>
           {loading ? (
             <div className={styles.loading}>
-              <Loader2 size={40} className={styles.spinning} />
+              <RotateCcw size={40} className={styles.spinning} />
               <p>Loading requests...</p>
             </div>
           ) : filteredRequests.length === 0 ? (
@@ -272,7 +272,7 @@ export default function ProfileChangeRequestsPage() {
                     <div>
                       <h3>{request.email}</h3>
                       <span className={styles.changeType}>
-                        <Edit3 size={14} />
+                        <Edit size={14} />
                         {formatFieldName(request.field_name)} Change
                       </span>
                     </div>
@@ -335,7 +335,7 @@ export default function ProfileChangeRequestsPage() {
                         disabled={actionLoading === request.id}
                       >
                         {actionLoading === request.id ? (
-                          <Loader2 size={16} className={styles.spinning} />
+                          <RotateCcw size={16} className={styles.spinning} />
                         ) : (
                           <XCircle size={16} />
                         )}
@@ -347,7 +347,7 @@ export default function ProfileChangeRequestsPage() {
                         disabled={actionLoading === request.id}
                       >
                         {actionLoading === request.id ? (
-                          <Loader2 size={16} className={styles.spinning} />
+                          <RotateCcw size={16} className={styles.spinning} />
                         ) : (
                           <CheckCircle2 size={16} />
                         )}

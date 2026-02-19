@@ -2864,7 +2864,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceContent}>
                         {campusGroups.length === 0 ? (
                           <div className={styles.emptyDataSource}>
-                            <FileSpreadsheet size={40} />
+                            <FileText size={40} />
                             <p>No campus data found. Upload a Campus/Building CSV first.</p>
                             <button onClick={() => router.push('/LandingPages/UploadCSV')}>
                               Upload CSV
@@ -2897,7 +2897,7 @@ export default function GenerateSchedulePage() {
                                     <span><Users size={14} /> {group.total_capacity} capacity</span>
                                   </div>
                                   <div className={styles.dataCardFile}>
-                                    <FileSpreadsheet size={14} /> {group.file_name}
+                                    <FileText size={14} /> {group.file_name}
                                   </div>
                                   <div className={styles.dataCardDate}>
                                     {new Date(group.created_at).toLocaleDateString()}
@@ -2942,7 +2942,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceContent}>
                         {yearBatches.length === 0 ? (
                           <div className={styles.emptyDataSource}>
-                            <FileSpreadsheet size={40} />
+                            <FileText size={40} />
                             <p>No year batches found. Please create year batches and sections first.</p>
                             <button onClick={() => router.push('/LandingPages/CoursesManagement/ClassSectionAssigning')}>
                               Go to Class & Section Assigning
@@ -3612,7 +3612,7 @@ export default function GenerateSchedulePage() {
                         <span>Class schedule data loaded ({classes.length} classes)</span>
                       </div>
                       <div className={`${styles.compatibilityItem} ${totalRoomCapacity >= classes.length * 30 ? styles.success : styles.warning}`}>
-                        {totalRoomCapacity >= classes.length * 30 ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                        {totalRoomCapacity >= classes.length * 30 ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
                         <span>
                           Capacity check: {totalRoomCapacity} seats for ~{classes.length * 30} estimated students
                         </span>

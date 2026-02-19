@@ -830,7 +830,7 @@ export default function UploadCSVPage(): JSX.Element {
                 Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
               </p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Example: CS-101, Room 101, Science Building, 1, CS, Lecture Room, Standard Classroom, 40, true, true, false
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
@@ -848,7 +848,7 @@ export default function UploadCSVPage(): JSX.Element {
                 <span style={{ color: 'var(--text-dark)' }}>Use a college code from Admin Settings (e.g., CS, CICT). Use Shared for multi-college rooms.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '4px', fontSize: '12px' }}>
-                <AlertTriangle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
+                <AlertCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
                 <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
               </div>
             </div>
@@ -943,7 +943,7 @@ export default function UploadCSVPage(): JSX.Element {
               </h3>
               <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Example: BS Biology, 1, 1st Semester, 1.0, BIO 101, General Biology, 1, 3, 2, None
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
@@ -1037,7 +1037,7 @@ export default function UploadCSVPage(): JSX.Element {
               </h3>
               <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Name | Position | Department | Type</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileSpreadsheet size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Examples:
               </small>
               <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace' }}>

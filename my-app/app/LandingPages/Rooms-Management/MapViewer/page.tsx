@@ -1906,7 +1906,7 @@ export default function MapViewerPage() {
       {(!authChecked || !isAuthorized) && (
         <div className={styles.authLoadingOverlay}>
           <div className={styles.authLoadingContent}>
-            <Loader2 size={48} className={styles.spinnerIcon} />
+            <RotateCcw size={48} className={styles.spinnerIcon} />
             <h2>{!authChecked ? 'Verifying access...' : 'Redirecting...'}</h2>
           </div>
         </div>
@@ -1969,7 +1969,7 @@ export default function MapViewerPage() {
                 onClick={() => setViewMode('editor')}
                 title="Editor Mode - Create and edit floor plans"
               >
-                <Edit3 size={16} />
+                <Edit size={16} />
                 Editor
               </button>
               <button
@@ -2043,7 +2043,7 @@ export default function MapViewerPage() {
             </button>
             {viewMode === 'editor' && (
               <button className={styles.saveBtn} onClick={() => setShowSaveModal(true)} disabled={saving}>
-                {saving ? <Loader2 size={18} className={styles.spinning} /> : <Save size={18} />}
+                {saving ? <RotateCcw size={18} className={styles.spinning} /> : <Save size={18} />}
                 Save
               </button>
             )}
@@ -2085,7 +2085,7 @@ export default function MapViewerPage() {
                             className={styles.sectionHeader}
                             onClick={() => setSectionsOpen(p => ({ ...p, roomsZones: !p.roomsZones }))}
                           >
-                            <span><Building size={16} /> Rooms & Zones</span>
+                            <span><Building2 size={16} /> Rooms & Zones</span>
                             {sectionsOpen.roomsZones ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
 
@@ -2109,7 +2109,7 @@ export default function MapViewerPage() {
                               <div className={styles.roomList}>
                                 {loading ? (
                                   <div className={styles.loading}>
-                                    <Loader2 size={20} className={styles.spinning} />
+                                    <RotateCcw size={20} className={styles.spinning} />
                                     Loading rooms...
                                   </div>
                                 ) : filteredRooms.length === 0 ? (
@@ -2144,7 +2144,7 @@ export default function MapViewerPage() {
                                         <span>{room.capacity || 30}</span>
                                       </div>
                                       {isRoomOnCanvas(room.id) && (
-                                        <Check size={14} className={styles.addedCheck} />
+                                        <CheckCircle size={14} className={styles.addedCheck} />
                                       )}
                                     </div>
                                   ))
@@ -2948,7 +2948,7 @@ export default function MapViewerPage() {
                             <div className={styles.roomDetails}>
                               <h4>Room Details</h4>
                               <div className={styles.detailItem}>
-                                <Building size={16} />
+                                <Building2 size={16} />
                                 <span>{selectedElement.linkedRoomData.room}</span>
                               </div>
                               <div className={styles.detailItem}>
@@ -3007,7 +3007,7 @@ export default function MapViewerPage() {
                                       </div>
                                     ) : (
                                       <div className={`${styles.statusBadge} ${styles.available}`}>
-                                        <Check size={14} /> Available
+                                        <CheckCircle size={14} /> Available
                                       </div>
                                     )
                                   })()}
@@ -3044,7 +3044,7 @@ export default function MapViewerPage() {
                                   showNotification('success', 'Element updated!')
                                 }}
                               >
-                                <Check size={16} />
+                                <CheckCircle size={16} />
                                 Apply Changes
                               </button>
 
@@ -3487,7 +3487,7 @@ export default function MapViewerPage() {
                               className={styles.saveModalBtn}
                               disabled={saving}
                             >
-                              {saving ? <Loader2 size={14} className={styles.spinning} /> : <Check size={14} />} Save
+                              {saving ? <RotateCcw size={14} className={styles.spinning} /> : <CheckCircle size={14} />} Save
                             </button>
                             <button
                               onClick={() => setIsEditingMetadata(false)}
@@ -3505,7 +3505,7 @@ export default function MapViewerPage() {
                               className={styles.iconBtn}
                               title="Edit Details"
                             >
-                              <Edit3 size={16} />
+                              <Edit size={16} />
                             </button>
                           </div>
 
@@ -3549,7 +3549,7 @@ export default function MapViewerPage() {
                           fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
                         }}
                       >
-                        <Check size={18} /> Confirm Selection
+                        <CheckCircle size={18} /> Confirm Selection
                       </button>
 
                       <button
@@ -3647,7 +3647,7 @@ export default function MapViewerPage() {
                 Cancel
               </button>
               <button className={styles.saveModalBtn} onClick={saveFloorPlan} disabled={saving}>
-                {saving ? <Loader2 size={16} className={styles.spinning} /> : <Save size={16} />}
+                {saving ? <RotateCcw size={16} className={styles.spinning} /> : <Save size={16} />}
                 {saving ? 'Saving...' : 'Save Floor Plan'}
               </button>
             </div>
@@ -3749,7 +3749,7 @@ export default function MapViewerPage() {
       {
         notification && (
           <div className={`${styles.notification} ${styles[notification.type]}`}>
-            {notification.type === 'success' && <Check size={18} />}
+            {notification.type === 'success' && <CheckCircle size={18} />}
             {notification.type === 'error' && <X size={18} />}
             {notification.type === 'info' && <Info size={18} />}
             <span>{notification.message}</span>

@@ -647,7 +647,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                         }}
                         title="Edit Department"
                       >
-                        <Edit2 size={16} />
+                        <Edit size={16} />
                       </button>
                       <button
                         className={`${styles.actionBtn} ${styles.deleteBtn}`}
@@ -674,7 +674,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>
-                {modalMode === 'create' ? <Plus size={24} /> : <Edit2 size={24} />}
+                {modalMode === 'create' ? <Plus size={24} /> : <Edit size={24} />}
                 {modalMode === 'create' ? 'Add New Department' : 'Edit Department'}
               </h2>
               <button className={styles.modalClose} onClick={closeModal}>
@@ -684,14 +684,14 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
 
             {formError && (
               <div className={`${styles.formMessage} ${styles.error}`}>
-                <AlertTriangle size={18} />
+                <AlertCircle size={18} />
                 {formError}
               </div>
             )}
 
             {formSuccess && (
               <div className={`${styles.formMessage} ${styles.success}`}>
-                <Check size={18} />
+                <CheckCircle size={18} />
                 {formSuccess}
               </div>
             )}
@@ -840,7 +840,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
         <div className={styles.modalOverlay} onClick={() => setDeleteConfirm(null)}>
           <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
             <div className={styles.confirmIcon}>
-              <AlertTriangle size={48} />
+              <AlertCircle size={48} />
             </div>
             <h3>Delete Department</h3>
             <p>
@@ -884,21 +884,21 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
 
             {uploadError && (
               <div className={`${styles.formMessage} ${styles.error}`}>
-                <AlertTriangle size={18} />
+                <AlertCircle size={18} />
                 {uploadError}
               </div>
             )}
 
             {uploadSuccess && (
               <div className={`${styles.formMessage} ${styles.success}`}>
-                <Check size={18} />
+                <CheckCircle size={18} />
                 {uploadSuccess}
               </div>
             )}
 
             <div className={styles.uploadContent}>
               <div className={styles.uploadZone}>
-                <FileSpreadsheet size={48} className={styles.uploadIcon} />
+                <FileText size={48} className={styles.uploadIcon} />
                 <h3>Select CSV File</h3>
                 <p>Upload faculty data in CSV format</p>
                 <input

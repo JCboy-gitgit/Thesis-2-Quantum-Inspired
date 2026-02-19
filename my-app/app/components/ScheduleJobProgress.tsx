@@ -139,7 +139,7 @@ export default function ScheduleJobProgress({
     return (
       <div className={styles.container}>
         <div className={styles.loadingState}>
-          <Loader2 className={styles.spinnerIcon} />
+          <RotateCcw className={styles.spinnerIcon} />
           <p>Connecting to scheduler...</p>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function ScheduleJobProgress({
     running: <FaAtom className={`${styles.statusIcon} ${styles.spinningAtom}`} />,
     completed: <CheckCircle className={`${styles.statusIcon} ${styles.successIcon}`} />,
     failed: <XCircle className={`${styles.statusIcon} ${styles.errorIcon}`} />,
-    cancelled: <AlertTriangle className={`${styles.statusIcon} ${styles.warningIcon}`} />
+    cancelled: <AlertCircle className={`${styles.statusIcon} ${styles.warningIcon}`} />
   }
 
   const statusLabels = {
@@ -213,7 +213,7 @@ export default function ScheduleJobProgress({
         )}
 
         <div className={styles.statCard}>
-          <Loader2 size={18} />
+          <RotateCcw size={18} />
           <div className={styles.statContent}>
             <span className={styles.statValue}>{job.total_classes}</span>
             <span className={styles.statLabel}>Total Classes</span>
@@ -231,7 +231,7 @@ export default function ScheduleJobProgress({
             </div>
             {job.result_data.unscheduled_count > 0 && (
               <div className={styles.statCard}>
-                <AlertTriangle size={18} className={styles.warningIcon} />
+                <AlertCircle size={18} className={styles.warningIcon} />
                 <div className={styles.statContent}>
                   <span className={styles.statValue}>{job.result_data.unscheduled_count}</span>
                   <span className={styles.statLabel}>Unscheduled</span>

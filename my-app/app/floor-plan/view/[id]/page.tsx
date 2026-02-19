@@ -325,7 +325,7 @@ export default function FloorPlanViewPage() {
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
-        <Loader2 size={48} className={styles.spinner} />
+        <RotateCcw size={48} className={styles.spinner} />
         <p>Loading Floor Plan...</p>
       </div>
     )
@@ -334,7 +334,7 @@ export default function FloorPlanViewPage() {
   if (error || !floorPlan) {
     return (
       <div className={styles.errorContainer}>
-        <AlertTriangle size={48} />
+        <AlertCircle size={48} />
         <h2>Floor Plan Not Found</h2>
         <p>{error || 'The requested floor plan does not exist.'}</p>
         <button onClick={() => router.back()} className={styles.backBtn}>
@@ -511,7 +511,7 @@ export default function FloorPlanViewPage() {
                   <span>Capacity: {selectedElement.linkedRoomData.capacity || 30}</span>
                 </div>
                 <div className={styles.detailItem}>
-                  <Building size={16} />
+                  <Building2 size={16} />
                   <span>Building: {selectedElement.linkedRoomData.building}</span>
                 </div>
                 <div className={styles.detailItem}>
@@ -561,7 +561,7 @@ export default function FloorPlanViewPage() {
                       </div>
                     ) : (
                       <div className={`${styles.statusBadge} ${styles.available}`}>
-                        <Check size={16} /> ✓ AVAILABLE NOW
+                        <CheckCircle size={16} /> ✓ AVAILABLE NOW
                       </div>
                     )
                   })()}

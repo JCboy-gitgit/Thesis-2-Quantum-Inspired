@@ -273,7 +273,7 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                         onClick={() => handleEditClick(college)}
                         title="Edit"
                       >
-                        <Edit2 size={16} />
+                        <Edit size={16} />
                       </button>
                       {deleteConfirm === college.id ? (
                         <>
@@ -282,7 +282,7 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                             onClick={() => handleDeleteCollege(college.id)}
                             title="Confirm Delete"
                           >
-                            <Check size={16} />
+                            <CheckCircle size={16} />
                           </button>
                           <button
                             className="action-btn cancel-btn"
