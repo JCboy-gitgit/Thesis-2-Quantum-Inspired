@@ -2471,7 +2471,7 @@ class EnhancedQuantumScheduler:
                         # Student Group Conflict Check — HARD constraint
                         # Prevent triple-booking (same students in multiple places)
                         if self._check_student_group_conflict(
-                            section, day, slot.id, slots_to_assign, section.id
+                            section.id, section.section_code, day, slot.id, slots_to_assign
                         ):
                             continue
                         
@@ -2518,7 +2518,7 @@ class EnhancedQuantumScheduler:
 
                                 # Student Group Conflict Check — HARD constraint
                                 if self._check_student_group_conflict(
-                                    section, day, slot.id, slots_to_assign, section.id
+                                    section.id, section.section_code, day, slot.id, slots_to_assign
                                 ):
                                     continue
                                 

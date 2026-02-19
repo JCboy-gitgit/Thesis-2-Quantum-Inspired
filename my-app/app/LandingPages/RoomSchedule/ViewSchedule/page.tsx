@@ -34,7 +34,13 @@ import {
   FaTh,
   FaImage
 } from 'react-icons/fa'
-import { Calendar, Clock, Building2, DoorOpen, Users, BookOpen, GraduationCap, ChevronDown, ChevronRight, Filter, Download, Printer, Grid3X3, List, Eye, Trash2, Plus, Search, X, CheckCircle2, Image as ImageIcon, Archive, UserPlus, Check, Loader2, Lock, Unlock, MessageSquare, RotateCcw, CheckCircle } from 'lucide-react'
+import {
+  MdAccessTime, MdMessage, MdDownload, MdKeyboardArrowDown, MdKeyboardArrowRight,
+  MdVisibility, MdMeetingRoom, MdGroup, MdMenuBook, MdSearch, MdClose,
+  MdBusiness, MdSchool, MdCheckCircle, MdDeleteOutline, MdPersonAdd,
+  MdRefresh, MdLock, MdLockOpen, MdGridView, MdCheckCircle as MdCheckCircleOutline
+} from 'react-icons/md'
+
 import ArchiveModal from '@/app/components/ArchiveModal'
 import DraggableTimetable, { type DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
 import ScheduleRequestsModal from '@/app/components/ScheduleRequestsModal/ScheduleRequestsModal'
@@ -1804,35 +1810,35 @@ export default function ViewSchedulePage() {
                   onClick={() => { window.scrollTo(0, 0); setIsRequestsModalOpen(true); }}
                   title="Review Schedule Change Requests"
                 >
-                  <MessageSquare size={18} />
+                  <MdMessage size={18} />
                   Review Requests
                 </button>
                 <div className={styles.exportDropdown}>
                   <button className={styles.actionButton} onClick={() => setShowExportMenu(!showExportMenu)}>
-                    <Download size={18} /> Export PDF <ChevronDown size={14} />
+                    <MdDownload size={18} /> Export PDF <MdKeyboardArrowDown size={14} />
                   </button>
                   {showExportMenu && (
                     <div className={styles.exportMenu}>
                       <button onClick={() => { handleExportPDF('current'); setShowExportMenu(false); }}>
-                        <Eye size={14} /> Current View
+                        <MdVisibility size={14} /> Current View
                       </button>
                       <button onClick={() => { handleExportPDF('all-rooms'); setShowExportMenu(false); }}>
-                        <DoorOpen size={14} /> All Rooms
+                        <MdMeetingRoom size={14} /> All Rooms
                       </button>
                       <button onClick={() => { handleExportPDF('all-sections'); setShowExportMenu(false); }}>
-                        <Users size={14} /> All Sections
+                        <MdGroup size={14} /> All Sections
                       </button>
                       <button onClick={() => { handleExportPDF('all-teachers'); setShowExportMenu(false); }}>
                         <FaChalkboardTeacher /> All Teachers
                       </button>
                       <button onClick={() => { handleExportPDF('all-courses'); setShowExportMenu(false); }}>
-                        <BookOpen size={14} /> All Courses
+                        <MdMenuBook size={14} /> All Courses
                       </button>
                     </div>
                   )}
                 </div>
                 <button className={styles.actionButton} onClick={handleExport}>
-                  <Download size={18} /> Export CSV
+                  <MdDownload size={18} /> Export CSV
                 </button>
               </div>
             )}
@@ -1844,7 +1850,7 @@ export default function ViewSchedulePage() {
               <div className={styles.welcomeHeader}>
                 <div>
                   <h1 className={styles.pageTitle}>
-                    <Clock style={{ display: 'inline', marginRight: '12px', verticalAlign: 'middle' }} />
+                    <MdAccessTime style={{ display: 'inline', marginRight: '12px', verticalAlign: 'middle' }} />
                     Schedule Generation History
                   </h1>
                   <p className={styles.pageSubtitle}>
@@ -1887,7 +1893,7 @@ export default function ViewSchedulePage() {
               {/* History Controls */}
               <div className={styles.historyControls}>
                 <div className={styles.historySearchGroup}>
-                  <Search size={18} className={styles.searchIcon} />
+                  <MdSearch size={18} className={styles.searchIcon} />
                   <input
                     type="text"
                     placeholder="Search schedules by name, school, college..."
@@ -1900,7 +1906,7 @@ export default function ViewSchedulePage() {
                       className={styles.clearSearch}
                       onClick={() => setHistorySearch('')}
                     >
-                      <X size={16} />
+                      <MdClose size={16} />
                     </button>
                   )}
                 </div>
@@ -1932,7 +1938,7 @@ export default function ViewSchedulePage() {
 
               {filteredSchedules.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <Search size={48} />
+                  <MdSearch size={48} />
                   <h2>No Matching Schedules</h2>
                   <p>Try adjusting your search criteria.</p>
                 </div>
@@ -1948,7 +1954,7 @@ export default function ViewSchedulePage() {
                         }}
                         title="Delete Schedule"
                       >
-                        <Trash2 size={16} />
+                        <MdDeleteOutline size={16} />
                       </button>
 
                       <div className={styles.scheduleCardHeader}>
@@ -1963,14 +1969,14 @@ export default function ViewSchedulePage() {
 
                       <div className={styles.scheduleInfoGrid}>
                         <div className={styles.infoItem}>
-                          <Building2 size={18} className={styles.infoIcon} />
+                          <MdBusiness size={18} className={styles.infoIcon} />
                           <div>
                             <p className={styles.infoLabel}>School</p>
                             <p className={styles.infoValue}>{schedule.school_name}</p>
                           </div>
                         </div>
                         <div className={styles.infoItem}>
-                          <GraduationCap size={18} className={styles.infoIcon} />
+                          <MdSchool size={18} className={styles.infoIcon} />
                           <div>
                             <p className={styles.infoLabel}>College</p>
                             <p className={styles.infoValue}>{schedule.college}</p>
@@ -2003,7 +2009,7 @@ export default function ViewSchedulePage() {
                       <div className={styles.statsContainer}>
                         <div className={`${styles.statBadge} ${styles.total}`}>
                           <div className={`${styles.statIcon} ${styles.total}`}>
-                            <BookOpen size={16} />
+                            <MdMenuBook size={16} />
                           </div>
                           <div>
                             <p className={styles.statLabel}>Total</p>
@@ -2012,7 +2018,7 @@ export default function ViewSchedulePage() {
                         </div>
                         <div className={`${styles.statBadge} ${styles.success}`}>
                           <div className={`${styles.statIcon} ${styles.success}`}>
-                            <CheckCircle2 size={16} />
+                            <MdCheckCircle size={16} />
                           </div>
                           <div>
                             <p className={styles.statLabel}>Scheduled</p>
@@ -2038,13 +2044,13 @@ export default function ViewSchedulePage() {
                           className={styles.viewButton}
                           onClick={() => handleSelectSchedule(schedule)}
                         >
-                          <Eye size={16} /> View Timetable
+                          <MdVisibility size={16} /> View Timetable
                         </button>
                         <button
                           className={styles.primaryButton}
                           onClick={() => handleSetCurrentSchedule(schedule.id)}
                         >
-                          <CheckCircle size={16} /> Set Current
+                          <MdCheckCircle size={16} /> Set Current
                         </button>
                       </div>
 
@@ -2125,11 +2131,11 @@ export default function ViewSchedulePage() {
                     title={selectedSchedule.is_locked ? 'Unlock schedule for faculty editing' : 'Lock schedule to prevent faculty changes'}
                   >
                     {isTogglingLock ? (
-                      <RotateCcw size={18} className={styles.spinning} />
+                      <MdRefresh size={18} className={styles.spinning} />
                     ) : selectedSchedule.is_locked ? (
-                      <Lock size={18} />
+                      <MdLock size={18} />
                     ) : (
-                      <Unlock size={18} />
+                      <MdLockOpen size={18} />
                     )}
                     {selectedSchedule.is_locked ? ' Locked' : ' Unlocked'}
                   </button>
@@ -2144,19 +2150,19 @@ export default function ViewSchedulePage() {
                     className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
                   >
-                    <Grid3X3 size={16} /> All
+                    <MdGridView size={16} /> All
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'room' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('room'); }}
                   >
-                    <DoorOpen size={16} /> By Room
+                    <MdMeetingRoom size={16} /> By Room
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'section' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('section'); }}
                   >
-                    <Users size={16} /> By Section
+                    <MdGroup size={16} /> By Section
                   </button>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'teacher' ? styles.active : ''}`}
@@ -2168,7 +2174,7 @@ export default function ViewSchedulePage() {
                     className={`${styles.viewModeButton} ${timetableViewMode === 'course' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('course'); }}
                   >
-                    <BookOpen size={16} /> By Course
+                    <MdMenuBook size={16} /> By Course
                   </button>
                 </div>
 
@@ -2178,7 +2184,7 @@ export default function ViewSchedulePage() {
                     <label>Select Room:</label>
                     <div className={styles.searchableSelect}>
                       <div className={styles.searchInputWrapper}>
-                        <Search size={14} />
+                        <MdSearch size={14} />
                         <input
                           type="text"
                           placeholder="Search rooms..."
@@ -2188,7 +2194,7 @@ export default function ViewSchedulePage() {
                         />
                         {roomSearchFilter && (
                           <button onClick={() => setRoomSearchFilter('')} className={styles.clearSelectSearch}>
-                            <X size={12} />
+                            <MdClose size={12} />
                           </button>
                         )}
                       </div>
@@ -2212,7 +2218,7 @@ export default function ViewSchedulePage() {
                     <label>Select Section:</label>
                     <div className={styles.searchableSelect}>
                       <div className={styles.searchInputWrapper}>
-                        <Search size={14} />
+                        <MdSearch size={14} />
                         <input
                           type="text"
                           placeholder="Search sections..."
@@ -2222,7 +2228,7 @@ export default function ViewSchedulePage() {
                         />
                         {sectionSearchFilter && (
                           <button onClick={() => setSectionSearchFilter('')} className={styles.clearSelectSearch}>
-                            <X size={12} />
+                            <MdClose size={12} />
                           </button>
                         )}
                       </div>
@@ -2246,7 +2252,7 @@ export default function ViewSchedulePage() {
                     <label>Select Teacher:</label>
                     <div className={styles.searchableSelect}>
                       <div className={styles.searchInputWrapper}>
-                        <Search size={14} />
+                        <MdSearch size={14} />
                         <input
                           type="text"
                           placeholder="Search teachers..."
@@ -2256,7 +2262,7 @@ export default function ViewSchedulePage() {
                         />
                         {teacherSearchFilter && (
                           <button onClick={() => setTeacherSearchFilter('')} className={styles.clearSelectSearch}>
-                            <X size={12} />
+                            <MdClose size={12} />
                           </button>
                         )}
                       </div>
@@ -2280,7 +2286,7 @@ export default function ViewSchedulePage() {
                     <label>Select Course:</label>
                     <div className={styles.searchableSelect}>
                       <div className={styles.searchInputWrapper}>
-                        <Search size={14} />
+                        <MdSearch size={14} />
                         <input
                           type="text"
                           placeholder="Search courses..."
@@ -2290,7 +2296,7 @@ export default function ViewSchedulePage() {
                         />
                         {courseSearchFilter && (
                           <button onClick={() => setCourseSearchFilter('')} className={styles.clearSelectSearch}>
-                            <X size={12} />
+                            <MdClose size={12} />
                           </button>
                         )}
                       </div>
@@ -2353,7 +2359,7 @@ export default function ViewSchedulePage() {
                   </select>
                 </div>
                 <div className={styles.searchGroup}>
-                  <Search size={18} className={styles.searchIcon} />
+                  <MdSearch size={18} className={styles.searchIcon} />
                   <input
                     type="text"
                     placeholder="Search course, section, room..."
@@ -2366,7 +2372,7 @@ export default function ViewSchedulePage() {
                       className={styles.clearSearch}
                       onClick={() => setSearchQuery('')}
                     >
-                      <X size={16} />
+                      <MdClose size={16} />
                     </button>
                   )}
                 </div>
@@ -2380,7 +2386,7 @@ export default function ViewSchedulePage() {
                 </div>
               ) : allocations.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <BookOpen size={48} />
+                  <MdMenuBook size={48} />
                   <h3>No Allocations Found</h3>
                   <p>This schedule doesn&apos;t have any room allocations yet.</p>
                 </div>
@@ -2565,13 +2571,13 @@ export default function ViewSchedulePage() {
                   </p>
                 </div>
                 <button className={styles.batchModalClose} onClick={() => setShowBatchFacultyModal(false)}>
-                  <X size={20} />
+                  <MdClose size={20} />
                 </button>
               </div>
 
               <div className={styles.batchModalBody}>
                 <div className={styles.batchSearchBox}>
-                  <Search size={16} />
+                  <MdSearch size={16} />
                   <input
                     type="text"
                     placeholder="Search faculty by name or email..."
@@ -2581,7 +2587,7 @@ export default function ViewSchedulePage() {
                   />
                   {facultySearchQuery && (
                     <button className={styles.batchClearSearch} onClick={() => setFacultySearchQuery('')}>
-                      <X size={14} />
+                      <MdClose size={14} />
                     </button>
                   )}
                 </div>
@@ -2593,12 +2599,12 @@ export default function ViewSchedulePage() {
                 <div className={styles.batchFacultyList}>
                   {loadingFaculty ? (
                     <div className={styles.batchLoading}>
-                      <RotateCcw size={24} className={styles.spinner} />
+                      <MdRefresh size={24} className={styles.spinner} />
                       <p>Loading faculty...</p>
                     </div>
                   ) : filteredApprovedFaculty.length === 0 ? (
                     <div className={styles.batchEmpty}>
-                      <Users size={24} />
+                      <MdGroup size={24} />
                       <p>No approved faculty found</p>
                     </div>
                   ) : (
@@ -2618,7 +2624,7 @@ export default function ViewSchedulePage() {
                           <span className={styles.batchFacultyEmail}>{faculty.email}</span>
                         </div>
                         {selectedFacultyIds.includes(faculty.id) && (
-                          <CheckCircle size={16} className={styles.batchCheckIcon} />
+                          <MdCheckCircle size={16} className={styles.batchCheckIcon} />
                         )}
                       </label>
                     ))
@@ -2646,9 +2652,9 @@ export default function ViewSchedulePage() {
                   disabled={assigningSchedule || selectedFacultyIds.length === 0}
                 >
                   {assigningSchedule ? (
-                    <><RotateCcw size={16} className={styles.spinner} /> Assigning...</>
+                    <><MdRefresh size={16} className={styles.spinner} /> Assigning...</>
                   ) : (
-                    <><UserPlus size={16} /> Assign to {selectedFacultyIds.length} Faculty</>
+                    <><MdPersonAdd size={16} /> Assign to {selectedFacultyIds.length} Faculty</>
                   )}
                 </button>
               </div>

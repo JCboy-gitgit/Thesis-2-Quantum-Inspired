@@ -3,28 +3,28 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
-  Home,
-  Upload,
-  Users,
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  CalendarPlus,
-  Eye,
-  Building2,
-  Map,
-  List,
-  PenSquare,
-  Search,
-  UserCircle,
-  Building,
-  GraduationCap,
-  BookOpen,
-  UserCheck,
-  UserCog,
-  Bell,
-  Radio
-} from 'lucide-react'
+  MdHome,
+  MdUpload,
+  MdGroup,
+  MdCalendarToday,
+  MdKeyboardArrowDown,
+  MdKeyboardArrowRight,
+  MdEditCalendar,
+  MdVisibility,
+  MdBusiness,
+  MdMap,
+  MdList,
+  MdEditSquare,
+  MdSearch,
+  MdAccountCircle,
+  MdDomain,
+  MdSchool,
+  MdMenuBook,
+  MdHowToReg,
+  MdManageAccounts,
+  MdNotifications,
+  MdLiveTv
+} from 'react-icons/md'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -64,9 +64,9 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
   }, [pathname])
 
   const menuItems = [
-    { icon: Home, label: 'Home', path: '/LandingPages/Home' },
+    { icon: MdHome, label: 'Home', path: '/LandingPages/Home' },
     {
-      icon: Building2,
+      icon: MdBusiness,
       label: 'Room Management',
       path: '/LandingPages/RoomsManagement',
       hasSubmenu: true,
@@ -74,19 +74,19 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
         {
           label: 'All Rooms',
           path: '/LandingPages/RoomsManagement',
-          icon: List,
+          icon: MdList,
           exact: true
         },
         {
           label: '2D Map Editor',
           path: '/LandingPages/Rooms-Management/MapViewer',
-          icon: Map,
+          icon: MdMap,
           exact: true
         },
       ]
     },
     {
-      icon: Users,
+      icon: MdGroup,
       label: 'Faculty Management',
       path: '/LandingPages/FacultyManagement',
       hasSubmenu: true,
@@ -94,32 +94,32 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
         {
           label: 'Faculty Approval',
           path: '/LandingPages/FacultyManagement/FacultyApproval',
-          icon: UserCheck,
+          icon: MdHowToReg,
           exact: true
         },
         {
           label: 'Faculty Colleges',
           path: '/LandingPages/FacultyColleges',
-          icon: Building,
+          icon: MdDomain,
           exact: true
         },
       ]
     },
     {
-      icon: GraduationCap,
+      icon: MdSchool,
       label: 'Course Management',
       hasSubmenu: true,
       submenu: [
         {
           label: 'All Courses',
           path: '/LandingPages/CoursesManagement',
-          icon: BookOpen,
+          icon: MdMenuBook,
           exact: true
         },
       ]
     },
     {
-      icon: Calendar,
+      icon: MdCalendarToday,
       label: 'Room Schedule',
       path: '/LandingPages/RoomSchedule',
       hasSubmenu: true,
@@ -127,23 +127,23 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
         {
           label: 'Generate Schedule',
           path: '/LandingPages/RoomSchedule/GenerateSchedule',
-          icon: CalendarPlus,
+          icon: MdEditCalendar,
           exact: true
         },
         {
           label: 'Room Schedule View',
           path: '/LandingPages/RoomSchedule/ViewSchedule',
-          icon: Eye
+          icon: MdVisibility
         },
         {
           label: 'Live Timetable',
           path: '/LandingPages/LiveTimetable',
-          icon: Radio,
+          icon: MdLiveTv,
           exact: true
         },
       ]
     },
-    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/UploadCSV' },
+    { icon: MdUpload, label: 'Upload CSV', path: '/LandingPages/UploadCSV' },
   ]
 
   const handleNavigation = (path: string) => {
@@ -181,9 +181,9 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
                   <item.icon className="sidebar-icon" size={20} />
                   <span className="sidebar-label">{item.label}</span>
                   {openSubmenus[index] ? (
-                    <ChevronDown className="submenu-icon" size={16} />
+                    <MdKeyboardArrowDown className="submenu-icon" size={16} />
                   ) : (
-                    <ChevronRight className="submenu-icon" size={16} />
+                    <MdKeyboardArrowRight className="submenu-icon" size={16} />
                   )}
                 </button>
                 {openSubmenus[index] && (
