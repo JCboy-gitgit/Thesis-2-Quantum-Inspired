@@ -208,7 +208,7 @@
   border-radius: 16px;
   width: 100%;
   max-width: 820px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   /* Constrain height to viewport and allow internal scrolling */
   max-height: 90vh;
   display: flex;
@@ -367,7 +367,8 @@
   font-size: 13px;
 }
 
-.formGroup input, .formGroup select {
+.formGroup input,
+.formGroup select {
   width: 100%;
   padding: 12px 14px;
   border: 2px solid var(--border-color, #e2e8f0);
@@ -688,6 +689,135 @@
   border-color: rgba(46, 175, 125, 0.2);
 }
 
-:global([data-theme="green"]) .uploadInstructions h4 {
-  color: var(--primary);
+/* ==================== Tooltips ==================== */
+.tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  color: #3182ce;
+  margin-left: 4px;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: #2d3748;
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1001;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 400;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #2d3748 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ==================== Themes for Load Limits ==================== */
+.limitCard {
+  margin-top: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  animation: fadeIn 0.3s ease;
+}
+
+:global([data-theme="dark"]) .limitCard,
+:global([data-theme="green"]) .limitCard {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--card-border, rgba(255, 255, 255, 0.1));
+}
+
+.limitCardTitle {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1a365d;
+}
+
+:global([data-theme="dark"]) .limitCardTitle,
+:global([data-theme="green"]) .limitCardTitle {
+  color: var(--primary, #63b3ed) !important;
+}
+
+.progressContainer {
+  height: 6px;
+  background: #edf2f7;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+:global([data-theme="dark"]) .progressContainer,
+:global([data-theme="green"]) .progressContainer {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.actionIconButton {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  font-size: 11px;
+  color: #4a5568;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+:global([data-theme="dark"]) .actionIconButton,
+:global([data-theme="green"]) .actionIconButton {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary, #a0aec0);
+}
+
+.actionIconButton:hover {
+  background: #f7fafc;
+}
+
+:global([data-theme="dark"]) .actionIconButton:hover,
+:global([data-theme="green"]) .actionIconButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.statusLabel {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+:global([data-theme="dark"]) .statusLabel,
+:global([data-theme="green"]) .statusLabel {
+  color: var(--text-primary, #ffffff);
 }

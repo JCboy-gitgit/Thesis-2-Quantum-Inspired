@@ -101,6 +101,7 @@ interface RequestBody {
     cooling_rate: number
     quantum_tunneling_probability: number
     max_teacher_hours_per_day: number
+    max_consecutive_hours: number // NEW: Max hours before required break
     avoid_conflicts: boolean
     online_days?: string[] // NEW: Days where all classes are online
     // NEW: Constraint settings
@@ -226,8 +227,8 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   }
 
   // Constants
-  const LUNCH_START = 13 * 60     // 1:00 PM
-  const LUNCH_END = 14 * 60       // 2:00 PM
+  const LUNCH_START = (body.config.lunch_start_hour || 13) * 60
+  const LUNCH_END = (body.config.lunch_end_hour || 14) * 60
   const NIGHT_THRESHOLD = 17 * 60 // 5:00 PM
   const LATE_START_THRESHOLD = 8 * 60 + 30 // 8:30 AM
   const MAX_CLASSES_PER_DAY = 4
@@ -884,6 +885,7 @@ export async function POST(request: NextRequest) {
       cooling_rate: body.config.cooling_rate,
       quantum_tunneling_probability: body.config.quantum_tunneling_probability,
       max_teacher_hours_per_day: body.config.max_teacher_hours_per_day,
+      max_consecutive_hours: body.config.max_consecutive_hours, // NEW: Max hours before required break
       avoid_conflicts: body.config.avoid_conflicts,
       // NEW: Constraint settings for BulSU rules
       lunch_mode: body.config.lunch_mode || 'auto', // Default to auto mode

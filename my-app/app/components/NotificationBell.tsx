@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MdNotifications, MdPersonAdd, MdAccessTime, MdCheckCircle, MdBolt, MdWarning, MdInfo, MdDelete } from 'react-icons/md'
+import { MdNotifications, MdPersonAdd, MdAccessTime, MdCheckCircle, MdBolt, MdWarning, MdInfo, MdDelete, MdArchive } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
+import ArchiveModal from './ArchiveModal'
 import './NotificationBell.css'
 
 interface Notification {
@@ -69,6 +70,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -209,16 +211,81 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     onNotificationClick?.(notif)
   }
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     const updated = notifications.map(n => ({ ...n, read: true }))
     setNotifications(updated)
     savePersistedNotifications(updated.filter(n => n.type !== 'registration'))
+
+    // Also update remote alerts
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      await fetch('/api/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: session.user.id, action: 'read_all' })
+      })
+    }
   }
 
-  const clearAllNotifications = () => {
+  const clearAllNotifications = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+
+    // Archive each notification
+    const toArchive = notifications.filter(n => n.type !== 'registration')
+
+    for (const notif of toArchive) {
+      await supabase.from('archived_items').insert({
+        item_type: 'notification',
+        item_name: notif.title,
+        item_data: notif,
+        deleted_by: userId,
+        original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
+        original_id: notif.id
+      })
+    }
+
     const kept = notifications.filter(n => n.type === 'registration' && !n.read)
     setNotifications(kept)
     savePersistedNotifications([])
+
+    // Remote cleanup
+    if (userId) {
+      await fetch('/api/alerts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: 'clear_all' })
+      })
+    }
+  }
+
+  const deleteNotification = async (id: string) => {
+    const notif = notifications.find(n => n.id === id)
+    if (!notif) return
+
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+
+    // Archive
+    await supabase.from('archived_items').insert({
+      item_type: 'notification',
+      item_name: notif.title,
+      item_data: notif,
+      deleted_by: userId,
+      original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
+      original_id: notif.id
+    })
+
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    savePersistedNotifications(notifications.filter(n => n.id !== id && n.type !== 'registration'))
+
+    if (userId && notif.type === 'alert') {
+      await fetch('/api/alerts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertId: notif.id.replace('alert_', ''), userId })
+      })
+    }
   }
 
   const getNotificationIcon = (notif: Notification) => {
@@ -282,6 +349,15 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               )}
               {notifications.length > 0 && (
                 <button
+                  className="archive-btn"
+                  onClick={() => setIsArchiveOpen(true)}
+                  title="View Archive"
+                >
+                  <MdArchive size={14} />
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
                   className="clear-all-btn"
                   onClick={clearAllNotifications}
                   title="Clear all"
@@ -320,6 +396,15 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
                       <MdAccessTime size={12} /> {formatTime(notif.timestamp)}
                     </span>
                   </div>
+                  <button
+                    className="item-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteNotification(notif.id)
+                    }}
+                  >
+                    <MdDelete size={14} />
+                  </button>
                 </div>
               ))
             )}
@@ -341,6 +426,12 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
           )}
         </div>
       )}
+      <ArchiveModal
+        isOpen={isArchiveOpen}
+        onClose={() => setIsArchiveOpen(false)}
+        onRestore={() => fetchNotifications()}
+        forcedType="notification"
+      />
     </div>
   )
 }

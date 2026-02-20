@@ -60,6 +60,21 @@ MAX_CLASS_DURATION_SLOTS = 12  # Maximum 6 hours (360 minutes = 12 slots)
 MAX_CONSECUTIVE_TEACHING_SLOTS = 12  # Maximum 6 hours before required break
 MAX_DAILY_TEACHING_SLOTS = 16  # Maximum 8 hours of teaching per day
 
+# PROFESSIONAL PENALTY WEIGHTS (User Template)
+HARD_FACULTY_TIME_CONFLICT = 1000000 # Keep 1M for safety
+HARD_ROOM_TIME_CONFLICT = 1000000
+HARD_SECTION_TIME_CONFLICT = 1000000
+HARD_FACULTY_OVERLOAD_WEEKLY = 800000
+HARD_FACULTY_OVERLOAD_DAILY = 500000
+HARD_ROOM_CAPACITY_VIOLATION = 700000
+HARD_UNQUALIFIED_FACULTY = 900000
+
+SOFT_FACULTY_IDLE_TIME = 200
+SOFT_LOAD_IMBALANCE = 300
+SOFT_LATE_CLASS = 150
+SOFT_ROOM_IDLE_GAP = 100
+SOFT_UNEVEN_SECTION_DIST = 250
+
 # PERFORMANCE THRESHOLDS
 OPTIMAL_COST_THRESHOLD = 1000  # Cost below this is considered "good enough"
 MIN_TEMPERATURE = 0.001  # Stop cooling at this temperature
@@ -362,6 +377,46 @@ class Room:
 
 
 @dataclass
+class FacultyTypeConfig:
+    """Detailed rules for different faculty employment types"""
+    max_hours_per_week: int
+    max_hours_per_day: int
+    max_sections_total: int
+    max_sections_per_course: int
+    required_office_hours: int = 0
+    research_required: bool = False
+
+FACULTY_TYPE_RULES = {
+    "FullTime": FacultyTypeConfig(
+        max_hours_per_week=24,
+        max_hours_per_day=6,
+        max_sections_total=6,
+        max_sections_per_course=2,
+        required_office_hours=6,
+        research_required=True
+    ),
+    "PartTime": FacultyTypeConfig(
+        max_hours_per_week=12,
+        max_hours_per_day=4,
+        max_sections_total=3,
+        max_sections_per_course=2
+    ),
+    "VSL": FacultyTypeConfig(
+        max_hours_per_week=15,
+        max_hours_per_day=6,
+        max_sections_total=4,
+        max_sections_per_course=3
+    ),
+    "COS": FacultyTypeConfig(
+        max_hours_per_week=18,
+        max_hours_per_day=6,
+        max_sections_total=5,
+        max_sections_per_course=2
+    )
+}
+
+
+@dataclass
 class FacultyProfile:
     """Faculty profile for constraint checking"""
     id: Union[int, str]
@@ -371,6 +426,8 @@ class FacultyProfile:
     unavailable_days: Set[str] = field(default_factory=set)
     max_daily_hours: int = 10  # Hard limit
     max_weekly_units: int = 24  # Weekly active load limit (1 unit ~= 1 hour for now)
+    max_sections_total: int = 6  # Total sections allowed
+    max_sections_per_course: int = 2  # Max sections of the same course
 
 
 @dataclass
@@ -397,9 +454,13 @@ class SchedulingConstraints:
     max_class_duration_minutes: int = 180  # Maximum 3 hours per class session
     require_faculty_lunch_break: bool = True  # Faculty MUST have lunch break
     max_daily_hours_hard_limit: int = 10  # Problem 2: 10-hour hard rule
-    # NEW: Mandatory Recovery Block
-    auto_break_after_consecutive_hours: int = 6  # Auto 1hr break after this many consecutive hours
+    # NEW: Mandatory Recovery Block (threshold set by max_consecutive_hours)
+    auto_break_after_consecutive_hours: int = 4  # Threshold for mandatory 1hr break
     auto_break_duration_minutes: int = 60  # 1hr mandatory break
+    allow_split_sessions: bool = True  # Whether to split long classes into multiple days
+    
+    # Faculty Type Rules
+    faculty_type_rules: Dict[str, FacultyTypeConfig] = field(default_factory=lambda: FACULTY_TYPE_RULES)
     
     # Penalties
     SOFT_VSL_SHIFT_MISMATCH: int = 500  # Penalty for VSL teaching outside preferred shift
@@ -1268,9 +1329,13 @@ class EnhancedQuantumScheduler:
         slot_dur = self.slot_duration_minutes
         
         # Dynamic Max Block
-        # Critique: 5h Math lecture is inhumane. Max should be 3h (180 min).
-        # Request: 6h Lab is desired.
-        MAX_BLOCK = 360 if is_lab else 180
+        # If splitting is disabled, only split if it exceeds a full day's limit (e.g., 10 hours)
+        if not self.constraints.allow_split_sessions:
+            MAX_BLOCK = self.constraints.max_daily_hours_hard_limit * 60
+        else:
+            # Critique: 5h Math lecture is inhumane. Max should be 3h (180 min).
+            # Request: 6h Lab is desired.
+            MAX_BLOCK = 360 if is_lab else 180
         
         sessions = []
         remaining = total_minutes
@@ -1513,21 +1578,53 @@ class EnhancedQuantumScheduler:
                 conflict_detected = True
                 self.conflict_heatmap[(key[1], key[2])] += len(sections)
 
-        # CHECK: Teacher Weekly Load (SOFT) - Added for Problem 2 Parameterization
+        # CHECK: Teacher Load Constraints (Professional Model)
         teacher_weekly_minutes = defaultdict(int)
-        for (tid, _, _), sections_set in teacher_slots.items():
+        teacher_daily_minutes = defaultdict(lambda: defaultdict(int)) # (tid, day) -> mins
+        teacher_sections = defaultdict(set) # tid -> set of section_ids
+        teacher_course_sections = defaultdict(lambda: defaultdict(set)) # tid -> course_code -> set of section_ids
+
+        for (tid, day, _), sections_set in teacher_slots.items():
             if sections_set:
                 teacher_weekly_minutes[tid] += 30  # 30 mins per slot
+                teacher_daily_minutes[tid][day] += 30
+                for sid in sections_set:
+                    teacher_sections[tid].add(sid)
+                    s_obj = self.sections.get(sid)
+                    if s_obj:
+                        teacher_course_sections[tid][s_obj.course_code].add(sid)
 
         for tid, total_minutes in teacher_weekly_minutes.items():
             if self.faculty_profiles and tid in self.faculty_profiles:
                 profile = self.faculty_profiles[tid]
-                # defined in profile.max_weekly_units (e.g. 24 units = 24 hours = 1440 mins)
-                # Assuming 1 unit = 1 hour for now as per plan
-                max_minutes = profile.max_weekly_units * 60
-                if total_minutes > max_minutes:
-                    overload_hours = (total_minutes - max_minutes) / 60
-                    cost += overload_hours * self.constraints.SOFT_TEACHER_OVERLOAD
+                
+                # 1. Weekly Hour Limit
+                max_weekly_mins = profile.max_weekly_units * 60
+                if total_minutes > max_weekly_mins:
+                    overload_hours = (total_minutes - max_weekly_mins) / 60
+                    cost += HARD_FACULTY_OVERLOAD_WEEKLY + (overload_hours * 1000)
+                    conflict_detected = True
+
+                # 2. Daily Hour Limit
+                for day, daily_mins in teacher_daily_minutes[tid].items():
+                    max_daily_mins = profile.max_daily_hours * 60
+                    if daily_mins > max_daily_mins:
+                        overload_hours = (daily_mins - max_daily_mins) / 60
+                        cost += HARD_FACULTY_OVERLOAD_DAILY + (overload_hours * 500)
+                        conflict_detected = True
+
+                # 3. Total Sections Limit
+                if len(teacher_sections[tid]) > profile.max_sections_total:
+                    excess = len(teacher_sections[tid]) - profile.max_sections_total
+                    cost += HARD_CONSTRAINT_PENALTY * excess 
+                    conflict_detected = True
+                
+                # 4. Sections per Course Limit
+                for course_code, section_ids in teacher_course_sections[tid].items():
+                    if len(section_ids) > profile.max_sections_per_course:
+                        excess = len(section_ids) - profile.max_sections_per_course
+                        cost += (HARD_CONSTRAINT_PENALTY // 2) * excess
+                        conflict_detected = True
         
         # HARD: Section double-booking (SAME PENALTY AS ROOM CONFLICT)
         # A student group cannot be in two rooms at the same time
@@ -3602,9 +3699,11 @@ def run_enhanced_scheduler(
     end_time_str = config.get('end_time', '20:00')  # Default to 8PM
     end_time_minutes = parse_time_to_minutes(end_time_str)
     
+    # Mapping max_consecutive_hours to the auto-break threshold
+    max_consecutive = config.get('max_consecutive_hours', 4)
+    
     constraints = SchedulingConstraints(
         max_teacher_hours_per_day=config.get('max_teacher_hours_per_day', 8),
-        max_consecutive_hours=config.get('max_consecutive_hours', 4),
         prioritize_accessibility=config.get('prioritize_accessibility', True),
         avoid_lunch_conflicts=config.get('avoid_lunch_conflicts', True),
         lunch_mode=lunch_mode,
@@ -3613,7 +3712,9 @@ def run_enhanced_scheduler(
         night_class_end=end_time_minutes,  # Use frontend's campus closing time
         strict_lab_room_matching=config.get('strict_lab_room_matching', True),
         strict_lecture_room_matching=config.get('strict_lecture_room_matching', True),
-        require_faculty_lunch_break=True  # Faculty MUST have lunch break if teaching all day
+        require_faculty_lunch_break=True,  # Faculty MUST have lunch break if teaching all day
+        auto_break_after_consecutive_hours=max_consecutive,
+        allow_split_sessions=config.get('allow_split_sessions', True)
     )
     
     if lunch_mode == 'auto':
@@ -3632,12 +3733,22 @@ def run_enhanced_scheduler(
     # Normalize online days
     normalized_online_days = [d.lower() for d in online_days] if online_days else []
     
+    # NEW: Get Faculty Type Rules from config overrides if provided
+    current_faculty_type_rules = FACULTY_TYPE_RULES.copy()
+    if config.get('faculty_types'):
+        overrides = config.get('faculty_types')
+        for ftype, data in overrides.items():
+            # Convert dictionary or Pydantic model to FacultyTypeConfig
+            if hasattr(data, 'dict'): data = data.dict()
+            if isinstance(data, dict):
+                current_faculty_type_rules[ftype] = FacultyTypeConfig(**data)
+    
     # Create Faculty Profiles
     faculty_profiles = []
     if faculty_profiles_data:
         print(f"👤 Processing {len(faculty_profiles_data)} faculty profiles...")
         for f in faculty_profiles_data:
-            # Parse unavailable days from list or set
+            # ... day parsing logic ...
             unavailable = set()
             if 'unavailable_days' in f and f['unavailable_days']:
                 if isinstance(f['unavailable_days'], list):
@@ -3646,24 +3757,33 @@ def run_enhanced_scheduler(
                     unavailable = set(d.strip().lower() for d in f['unavailable_days'].split(','))
             elif 'preferred_days' in f and f['preferred_days']:
                 # Support "preferred_days" (inverse of unavailable)
-                # Assume standard days Mon-Sat
                 all_possible_days = {'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'}
                 if isinstance(f['preferred_days'], list):
                     preferred = set(d.lower() for d in f['preferred_days'])
                     unavailable = all_possible_days - preferred
             
-            # Parse preferred times (e.g., "Morning", "Night", "7:00-12:00")
-            # For now, just store the string, cost function handles keywords
             preferred = f.get('preferred_times') or f.get('preferred_shift')
+            
+            # Get employment type and corresponding rules
+            etype_raw = str(f.get('employment_type', 'FullTime')).strip()
+            etype = "FullTime"
+            if etype_raw.lower() == 'vsl': etype = "VSL"
+            elif etype_raw.lower() == 'cos': etype = "COS"
+            elif 'part' in etype_raw.lower(): etype = "PartTime"
+            elif 'full' in etype_raw.lower(): etype = "FullTime"
+            
+            rules = current_faculty_type_rules.get(etype, current_faculty_type_rules["FullTime"])
             
             faculty_profiles.append(FacultyProfile(
                 id=f.get('id', 0),
                 name=f.get('name', 'Unknown'),
-                employment_type=f.get('employment_type', 'full-time'),
+                employment_type=etype,
                 preferred_times=preferred,
                 unavailable_days=unavailable,
-                max_daily_hours=f.get('max_hours_per_day', 8),
-                max_weekly_units=f.get('max_weekly_units', 24)
+                max_daily_hours=f.get('max_hours_per_day') or rules.max_hours_per_day,
+                max_weekly_units=f.get('max_hours_per_week') or rules.max_hours_per_week,
+                max_sections_total=f.get('max_sections_total') or rules.max_sections_total,
+                max_sections_per_course=f.get('max_sections_per_course') or rules.max_sections_per_course
             ))
             
     # Create and run scheduler with BulSU QSA features

@@ -8,7 +8,7 @@ import Sidebar from '@/app/components/Sidebar'
 import { useTheme } from '@/app/context/ThemeContext'
 
 import styles from './styles.module.css'
-import { MdMap as Map, MdDomain as Building2, MdLayers as Layers, MdAdd as Plus, MdRemove as Minus, MdOpenWith as Move, MdTouchApp as MousePointer, MdCropSquare as Square, MdTextFields as Type, MdDelete as Trash2, MdSave as Save, MdDownload as Download, MdSettings as Settings, MdVisibility as Eye, MdVisibilityOff as EyeOff, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdSearch as Search, MdClose as X, MdCheck as Check, MdShare as Share2, MdLink as Link, MdGridOn as Grid, MdZoomIn as ZoomIn, MdZoomOut as ZoomOut, MdMeetingRoom as DoorOpen, MdLocationCity as Building, MdPeople as Users, MdSchool as GraduationCap, MdScience as FlaskConical, MdMenuBook as BookOpen, MdLocalCafe as Coffee, MdVideocam as Projector, MdThermostat as Thermometer, MdRefresh as RefreshCw, MdDescription as FileText, MdKeyboardArrowRight as ChevronRight, MdKeyboardArrowLeft as ChevronLeft, MdEdit as Edit3, MdFolderOpen as FolderOpen, MdCheckBoxOutlineBlank as Box, MdFullscreen as Maximize2, MdGridView as LayoutGrid, MdDirectionsWalk as Footprints, MdInfo as Info, MdMonitor as Monitor, MdWarning as AlertTriangle, MdKeyboardDoubleArrowLeft as PanelLeftClose, MdKeyboardDoubleArrowRight as PanelLeftOpen, MdLoop as Loader2, MdReplay as RotateCcw, MdWifi as Wifi, MdAir as Wind, MdStar as Star, MdCalendarToday as Calendar, MdAccessTime as Clock, MdContentCopy as Copy, MdOpenInNew as ExternalLink, MdPalette as Palette, MdImage as ImageIcon, MdLock as Lock, MdLockOpen as Unlock, MdSwapVert as ArrowUpDown, MdLaptop as Laptop, MdScience as Beaker, MdLocalLibrary as Library, MdRestaurant as UtensilsCrossed, MdBathtub as Bath, MdArchive as Archive, MdFitnessCenter as Dumbbell, MdMusicNote as Music, MdTheaters as Theater, MdCoPresent as Presentation, MdDns as Server, MdRadioButtonChecked as CircleDot, MdChangeHistory as Triangle, MdHexagon as Hexagon, MdPentagon as Pentagon, MdStop as Octagon, MdFavorite as Heart, MdFlashOn as Zap, MdLocalFireDepartment as Flame, MdWaterDrop as Droplets, MdSunny as Sun, MdDarkMode as Moon, MdArrowUpward as MoveUp, MdArrowDownward as MoveDown, MdKeyboardDoubleArrowUp as ChevronsUp, MdKeyboardDoubleArrowDown as ChevronsDown, MdViewList as LayoutList, MdDragHandle as Grip, MdSelectAll as BoxSelect, MdMenu as Menu, MdBuild as Wrench, MdCheckCircle as CheckCircle, MdEdit as Edit } from 'react-icons/md'
+import { MdMap as Map, MdDomain as Building2, MdLayers as Layers, MdAdd as Plus, MdRemove as Minus, MdOpenWith as Move, MdTouchApp as MousePointer, MdCropSquare as Square, MdTextFields as Type, MdDelete as Trash2, MdSave as Save, MdDownload as Download, MdSettings as Settings, MdVisibility as Eye, MdVisibilityOff as EyeOff, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdSearch as Search, MdClose as X, MdCheck as Check, MdShare as Share2, MdLink as Link, MdGridOn as Grid, MdZoomIn as ZoomIn, MdZoomOut as ZoomOut, MdMeetingRoom as DoorOpen, MdLocationCity as Building, MdPeople as Users, MdSchool as GraduationCap, MdScience as FlaskConical, MdMenuBook as BookOpen, MdLocalCafe as Coffee, MdVideocam as Projector, MdThermostat as Thermometer, MdRefresh as RefreshCw, MdDescription as FileText, MdKeyboardArrowRight as ChevronRight, MdKeyboardArrowLeft as ChevronLeft, MdEdit as Edit3, MdFolderOpen as FolderOpen, MdCheckBoxOutlineBlank as Box, MdFullscreen as Maximize2, MdGridView as LayoutGrid, MdDirectionsWalk as Footprints, MdInfo as Info, MdMonitor as Monitor, MdWarning as AlertTriangle, MdKeyboardDoubleArrowLeft as PanelLeftClose, MdKeyboardDoubleArrowRight as PanelLeftOpen, MdLoop as Loader2, MdReplay as RotateCcw, MdWifi as Wifi, MdAir as Wind, MdStar as Star, MdCalendarToday as Calendar, MdAccessTime as Clock, MdContentCopy as Copy, MdOpenInNew as ExternalLink, MdPalette as Palette, MdImage as ImageIcon, MdLock as Lock, MdLockOpen as Unlock, MdSwapVert as ArrowUpDown, MdLaptop as Laptop, MdScience as Beaker, MdLocalLibrary as Library, MdRestaurant as UtensilsCrossed, MdBathtub as Bath, MdArchive as Archive, MdFitnessCenter as Dumbbell, MdMusicNote as Music, MdTheaters as Theater, MdCoPresent as Presentation, MdDns as Server, MdRadioButtonChecked as CircleDot, MdChangeHistory as Triangle, MdHexagon as Hexagon, MdPentagon as Pentagon, MdStop as Octagon, MdFavorite as Heart, MdFlashOn as Zap, MdLocalFireDepartment as Flame, MdWaterDrop as Droplets, MdSunny as Sun, MdDarkMode as Moon, MdArrowUpward as MoveUp, MdArrowDownward as MoveDown, MdKeyboardDoubleArrowUp as ChevronsUp, MdKeyboardDoubleArrowDown as ChevronsDown, MdViewList as LayoutList, MdDragHandle as Grip, MdSelectAll as BoxSelect, MdMenu as Menu, MdBuild as Wrench, MdCheckCircle as CheckCircle, MdEdit as Edit, MdMan, MdWoman } from 'react-icons/md'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -119,6 +119,8 @@ const ICON_OPTIONS = [
   { name: 'stairs', icon: Footprints, label: 'Stairs' },
   { name: 'elevator', icon: ArrowUpDown, label: 'Elevator' },
   { name: 'restroom', icon: Bath, label: 'Restroom' },
+  { name: 'men_room', icon: MdMan, label: 'Mens Room' },
+  { name: 'women_room', icon: MdWoman, label: 'Womens Room' },
   { name: 'computer', icon: Laptop, label: 'Computer' },
   { name: 'lab', icon: Beaker, label: 'Lab' },
   { name: 'library', icon: Library, label: 'Library' },
@@ -136,6 +138,14 @@ const ICON_OPTIONS = [
   { name: 'info', icon: Info, label: 'Info' },
   { name: 'warning', icon: AlertTriangle, label: 'Warning' },
 ]
+
+// Standard paper sizes for canvas (at 96 DPI)
+const PAPER_SIZES = {
+  letter: { name: 'Letter (8.5" x 11")', width: 1056, height: 816 },
+  legal: { name: 'Legal (8.5" x 14")', width: 1344, height: 816 },
+  a4: { name: 'A4 (210 x 297 mm)', width: 1123, height: 794 },
+  custom: { name: 'Custom size', width: 0, height: 0 }
+}
 
 // Shape options
 const SHAPE_OPTIONS = [
@@ -233,6 +243,7 @@ export default function MapViewerPage() {
     building: '',
     floor_number: 1
   })
+  const [buildingsList, setBuildingsList] = useState<{ id: number; name: string }[]>([])
   const [showMobileDetails, setShowMobileDetails] = useState(false)
 
   // Schedule integration
@@ -249,6 +260,7 @@ export default function MapViewerPage() {
   const [showGrid, setShowGrid] = useState(true)
   const [gridSize, setGridSize] = useState(20)
   const [canvasSize, setCanvasSize] = useState({ width: 1056, height: 816 }) // Letter Bond Paper 11x8.5" landscape at 96 DPI
+  const [presetSize, setPresetSize] = useState<keyof typeof PAPER_SIZES>('letter')
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
@@ -260,6 +272,7 @@ export default function MapViewerPage() {
   const [isDraggingControls, setIsDraggingControls] = useState(false)
   const controlsDragOffset = useRef({ x: 0, y: 0 })
   const controlsRef = useRef<HTMLDivElement>(null)
+  const logoImageRef = useRef<HTMLImageElement | null>(null)
 
   // Drag handlers for floating controls card
   const handleControlsDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -279,6 +292,15 @@ export default function MapViewerPage() {
       x: rect.left - parentRect.left,
       y: rect.top - parentRect.top
     })
+  }, [])
+
+  // Preload logo for export
+  useEffect(() => {
+    const img = new Image()
+    img.src = '/app-icon.png'
+    img.onload = () => {
+      logoImageRef.current = img
+    }
   }, [])
 
   useEffect(() => {
@@ -481,6 +503,28 @@ export default function MapViewerPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showExportPreview, setShowExportPreview] = useState(false)
+  const exportCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [exportSettings, setExportSettings] = useState({
+    title: '',
+    subtitle: '',
+    buildingLabel: '',
+    floorName: '',
+    floorNumber: '',
+    showWatermark: true,
+    showLegend: true,
+    showDate: true,
+    showScheduleInfo: true,
+    showRoomLabels: true,
+    roomFontSize: 9,
+    titleFontSize: 22,
+    orientation: 'auto' as 'auto' | 'landscape' | 'portrait',
+    paperSize: 'letter' as 'letter' | 'legal' | 'a4' | 'custom',
+    customPaperWidth: 800,
+    customPaperHeight: 600,
+    mapScale: 100, // 100% of fit
+    useWhiteBackground: true
+  })
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'layers'>('properties')
 
   // Auth state to prevent rendering before auth check completes
@@ -518,6 +562,8 @@ export default function MapViewerPage() {
   const [marqueeStart, setMarqueeStart] = useState<{ x: number; y: number } | null>(null)
   const [marqueeEnd, setMarqueeEnd] = useState<{ x: number; y: number } | null>(null)
   const [selectMode, setSelectMode] = useState<'single' | 'multi' | 'pan'>('single')
+  const interactionHandledRef = useRef<boolean>(false)
+  const justSelectedElementRef = useRef<string | null>(null)
 
   // Undo/redo history
   const [history, setHistory] = useState<CanvasElement[][]>([])
@@ -797,6 +843,15 @@ export default function MapViewerPage() {
       console.log('Fetched buildings:', uniqueBuildings)
       setBuildings(uniqueBuildings)
 
+      // Note: Using building name as identifier since 'buildings' table is not present in SQL schema
+      // and 'floor_plans' currently lacks a building_id column.
+      try {
+        const { data: bData } = await db.from('buildings').select('id, name')
+        if (bData) setBuildingsList(bData)
+      } catch (e) {
+        // Silently fail if table doesn't exist, as we fall back to string-based building names
+      }
+
       if (uniqueBuildings.length > 0) {
         setSelectedBuilding(uniqueBuildings[0])
       }
@@ -936,10 +991,11 @@ export default function MapViewerPage() {
       if (skipAutoLoad) return
 
       // Find matching floor plan for current building/floor
-      const match = floorPlanData.find(fp =>
-        fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase()) &&
-        fp.floor_number === selectedFloor
-      )
+      const match = floorPlanData.find(fp => {
+        const isSameBuilding = fp.canvas_data?.building === selectedBuilding ||
+          fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase());
+        return isSameBuilding && fp.floor_number === selectedFloor;
+      })
       if (match) {
         loadFloorPlan(match)
       }
@@ -977,7 +1033,18 @@ export default function MapViewerPage() {
       setCanvasElements(normalizedElements)
     }
     if (floorPlan.canvas_data?.canvasSize) {
-      setCanvasSize(floorPlan.canvas_data.canvasSize)
+      const size = floorPlan.canvas_data.canvasSize
+      setCanvasSize(size)
+
+      // Detect preset
+      const match = Object.entries(PAPER_SIZES).find(([key, val]) =>
+        key !== 'custom' && val.width === size.width && val.height === size.height
+      )
+      if (match) {
+        setPresetSize(match[0] as keyof typeof PAPER_SIZES)
+      } else {
+        setPresetSize('custom')
+      }
     }
     if (floorPlan.linked_schedule_id) {
       setSelectedScheduleId(floorPlan.linked_schedule_id)
@@ -1108,12 +1175,9 @@ export default function MapViewerPage() {
   // Generate unique ID
   const generateId = () => `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-  // Handle element selection
-  const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (element.isLocked && viewMode === 'editor') return
-
-    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+  // Handle element selection focus
+  const selectElement = useCallback((element: CanvasElement, multiSelect: boolean = false) => {
+    if (multiSelect) {
       setSelectedElements(prev => {
         if (prev.includes(element.id)) {
           return prev.filter(id => id !== element.id)
@@ -1121,11 +1185,9 @@ export default function MapViewerPage() {
           return [...prev, element.id]
         }
       })
-      // If toggling off the primary selected element, clear it
       if (selectedElement?.id === element.id) {
         setSelectedElement(null)
       } else if (!selectedElement) {
-        // If no primary selected, make this the first one for the properties panel
         setSelectedElement(element)
       }
     } else {
@@ -1133,6 +1195,7 @@ export default function MapViewerPage() {
       setSelectedElements([element.id])
     }
 
+    // Always update edit form when focusing an element
     setEditForm({
       label: element.label || '',
       type: element.type,
@@ -1147,6 +1210,21 @@ export default function MapViewerPage() {
       opacity: element.opacity ?? 100,
       borderWidth: element.borderWidth ?? 2
     })
+  }, [selectedElement])
+
+  // Handle element selection
+  const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (element.isLocked && viewMode === 'editor') return
+
+    // If this element was just selected during down/start, don't toggle it again on click
+    if (justSelectedElementRef.current === element.id) {
+      justSelectedElementRef.current = null
+      return
+    }
+
+    selectElement(element, e.ctrlKey || e.metaKey || e.shiftKey || selectMode === 'multi')
+    justSelectedElementRef.current = null
   }
 
   // Real-time property sync: apply editForm changes to the selected element immediately
@@ -1173,8 +1251,13 @@ export default function MapViewerPage() {
   }, [editForm])
 
   // Handle canvas click (deselect)
-  const handleCanvasClick = () => {
-    setSelectedElement(null)
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Only deselect if clicking exactly on the canvas background or container
+    const isBackground = e.target === canvasRef.current || e.target === canvasContainerRef.current
+    if (isBackground) {
+      setSelectedElement(null)
+      setSelectedElements([])
+    }
   }
 
   const handlePointerDragStart = (itemType: 'room' | 'toolbox' | 'icon' | 'shape', data: any, clientX: number, clientY: number) => {
@@ -1271,30 +1354,28 @@ export default function MapViewerPage() {
     e.stopPropagation()
     if (viewMode !== 'editor' || element.isLocked) return
 
-    // Selection logic for dragging
+    // Selection logic for dragging - ensure primary focus
     if (!selectedElements.includes(element.id)) {
-      if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
-        // Single selection if no modifier key
-        setSelectedElement(element)
-        setSelectedElements([element.id])
-        setEditForm({
-          label: element.label || '',
-          type: element.type,
-          width: element.width,
-          height: element.height,
-          x: element.x,
-          y: element.y,
-          color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
-          rotation: element.rotation,
-          iconType: element.iconType || '',
-          fontSize: element.fontSize || 14,
-          opacity: element.opacity ?? 100,
-          borderWidth: element.borderWidth ?? 2
-        })
-      } else {
-        // Add to selection if modifier key
-        setSelectedElements(prev => [...prev, element.id])
-      }
+      selectElement(element, e.ctrlKey || e.metaKey || e.shiftKey || selectMode === 'multi')
+      // Track that we just selected this so we don't toggle it off on the click event
+      justSelectedElementRef.current = element.id
+    } else if (selectedElement?.id !== element.id && !(e.ctrlKey || e.metaKey || e.shiftKey || selectMode === 'multi')) {
+      // If part of multi-selection but not primary, make it primary on drag start
+      setSelectedElement(element)
+      setEditForm({
+        label: element.label || '',
+        type: element.type,
+        width: element.width,
+        height: element.height,
+        x: element.x,
+        y: element.y,
+        color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
+        rotation: element.rotation,
+        iconType: element.iconType || '',
+        fontSize: element.fontSize || 14,
+        opacity: element.opacity ?? 100,
+        borderWidth: element.borderWidth ?? 2
+      })
     }
 
     const scale = (zoom || 75) / 100
@@ -1397,6 +1478,12 @@ export default function MapViewerPage() {
     setResizeHandle(handle)
     setResizeStart(startValues)
 
+    // Clear dragging state to prevent other elements from moving while resizing
+    setDraggingElement(null)
+    setInitialDragPositions({})
+    interactionRef.current.draggingElement = null
+    interactionRef.current.initialDragPositions = {}
+
     interactionRef.current.resizingElement = elementId
     interactionRef.current.resizeHandle = handle
     interactionRef.current.resizeStart = startValues
@@ -1478,6 +1565,14 @@ export default function MapViewerPage() {
       y: clickY - element.y
     }
 
+    // Ensure selected on touch start
+    if (!selectedElements.includes(element.id)) {
+      selectElement(element, selectMode === 'multi')
+      justSelectedElementRef.current = element.id
+    } else if (selectedElement?.id !== element.id && selectMode !== 'multi') {
+      setSelectedElement(element)
+    }
+
     setDraggingElement(element.id)
     setDragOffset(offset)
 
@@ -1532,6 +1627,12 @@ export default function MapViewerPage() {
     setResizingElement(elementId)
     setResizeHandle(handle)
     setResizeStart(startValues)
+
+    // Clear dragging state
+    setDraggingElement(null)
+    setInitialDragPositions({})
+    interactionRef.current.draggingElement = null
+    interactionRef.current.initialDragPositions = {}
 
     interactionRef.current.resizingElement = elementId
     interactionRef.current.resizeHandle = handle
@@ -1621,11 +1722,11 @@ export default function MapViewerPage() {
       return
     }
 
+    // Only handle marquee or click if not clicking on an element (which stops propagation)
     if (selectMode === 'multi') {
       handleMarqueeStart(e)
-    } else {
-      handleCanvasClick()
     }
+    // Deselection is now strictly handled by handleCanvasClick for better accuracy
   }
 
   // Handle canvas mouse move
@@ -1642,19 +1743,61 @@ export default function MapViewerPage() {
       return
     }
 
-    handleElementDrag(e)
-    handleResizeMove(e)
+    // These are now also handled by window listeners for better robustness, 
+    // but kept here for backward compatibility/multi-layered event handling
+    if (interactionRef.current.draggingElement) handleElementDrag(e)
+    if (interactionRef.current.resizingElement) handleResizeMove(e)
     if (isMarqueeSelecting) handleMarqueeMove(e)
   }
 
   // Handle canvas mouse up
   const handleCanvasMouseUp = () => {
-    setIsPanning(false)
-    interactionRef.current.isPanning = false
-    handleElementDragEnd()
-    handleResizeEnd()
+    if (interactionRef.current.isPanning) {
+      setIsPanning(false)
+      interactionRef.current.isPanning = false
+    }
+
+    if (interactionRef.current.draggingElement) handleElementDragEnd()
+    if (interactionRef.current.resizingElement) handleResizeEnd()
     if (isMarqueeSelecting) handleMarqueeEnd()
   }
+
+  // Global interaction listeners for robustness
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (interactionRef.current.draggingElement) handleElementDrag(e as any)
+      if (interactionRef.current.resizingElement) handleResizeMove(e as any)
+      if (isMarqueeSelecting) handleMarqueeMove(e as any)
+    }
+
+    const handleGlobalMouseUp = () => {
+      if (interactionRef.current.draggingElement) handleElementDragEnd()
+      if (interactionRef.current.resizingElement) handleResizeEnd()
+      if (isMarqueeSelecting) handleMarqueeEnd()
+    }
+
+    const handleGlobalTouchMove = (e: TouchEvent) => {
+      if (interactionRef.current.draggingElement || interactionRef.current.resizingElement) {
+        if (e.cancelable) e.preventDefault()
+        handleElementDrag(e as any)
+        handleResizeMove(e as any)
+      }
+    }
+
+    if (draggingElement || resizingElement || isMarqueeSelecting) {
+      window.addEventListener('mousemove', handleGlobalMouseMove)
+      window.addEventListener('mouseup', handleGlobalMouseUp)
+      window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
+      window.addEventListener('touchend', handleGlobalMouseUp)
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove)
+      window.removeEventListener('mouseup', handleGlobalMouseUp)
+      window.removeEventListener('touchmove', handleGlobalTouchMove)
+      window.removeEventListener('touchend', handleGlobalMouseUp)
+    }
+  }, [draggingElement, resizingElement, isMarqueeSelecting])
 
   // Clear all selections
   const clearSelection = () => {
@@ -1846,9 +1989,14 @@ export default function MapViewerPage() {
 
   // Save floor plan
   const saveFloorPlan = async () => {
+    // Easier naming: Default to just "Floor X" if no name is provided
+    const defaultName = `Floor ${selectedFloor}`
+    const finalName = floorPlanName.trim() || defaultName
+
+    // If the name is already the default or just a floor description, 
+    // we don't need to force the building dash into the UI state
     if (!floorPlanName.trim()) {
-      showNotification('error', 'Please enter a floor plan name')
-      return
+      setFloorPlanName(finalName)
     }
 
     try {
@@ -1859,27 +2007,37 @@ export default function MapViewerPage() {
         canvasSize,
         zoom,
         gridSize,
-        building: selectedBuilding // Save building name for grouping
+        building: selectedBuilding, // Save building name for grouping
+        backgroundColor: canvasBackground
       }
 
+      // Try to find building_id
+      let bId = 1
+      const foundB = buildingsList.find(b => b.name === selectedBuilding)
+      if (foundB) bId = foundB.id
+
       // If setting as default, unset other defaults first
+      // Without building_id in schema, we unset by floor_number or rely on name matching
       if (isDefault) {
         await db
           .from('floor_plans')
           .update({ is_default_view: false })
           .eq('is_default_view', true)
+          .ilike('floor_name', `%${selectedBuilding}%`)
       }
 
       if (currentFloorPlan?.id) {
         // Update existing
         console.log('Updating floor plan ID:', currentFloorPlan.id)
-        const { data, error } = await db
+        const { data: updateData, error: updateError } = await db
           .from('floor_plans')
           .update({
-            floor_name: floorPlanName,
+            floor_name: finalName,
             canvas_data: canvasData,
             canvas_width: canvasSize.width,
             canvas_height: canvasSize.height,
+            grid_size: gridSize,
+            background_color: canvasBackground,
             is_default_view: isDefault,
             is_published: isPublished,
             status: isPublished ? 'published' : 'draft',
@@ -1889,42 +2047,52 @@ export default function MapViewerPage() {
           .eq('id', currentFloorPlan.id)
           .select()
 
-        console.log('Update result:', { data, error })
-        if (error) throw error
-        if (!data || data.length === 0) {
+        if (updateError) throw updateError
+        if (!updateData || updateData.length === 0) {
           throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
         }
+
+        // Update local state with fresh data from DB
+        setCurrentFloorPlan(updateData[0] as FloorPlan)
         showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
       } else {
         // Create new
-        const { data, error } = await db
+        const { data: sessionData } = await supabase.auth.getSession()
+        const session = sessionData?.session
+
+        const { data: insertData, error: insertError } = await db
           .from('floor_plans')
           .insert([{
-            building_id: 1,
             floor_number: selectedFloor,
-            floor_name: floorPlanName,
+            floor_name: finalName,
             canvas_data: canvasData,
             canvas_width: canvasSize.width,
             canvas_height: canvasSize.height,
+            grid_size: gridSize,
+            background_color: canvasBackground,
             is_default_view: isDefault,
             is_published: isPublished,
             status: isPublished ? 'published' : 'draft',
-            linked_schedule_id: selectedScheduleId
+            linked_schedule_id: selectedScheduleId,
+            created_by: session?.user?.id
           }])
           .select()
           .single()
 
-        if (error) throw error
-        setCurrentFloorPlan(data as FloorPlan)
+        if (insertError) throw insertError
+        setCurrentFloorPlan(insertData as FloorPlan)
         showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
       }
 
       setHasUnsavedChanges(false)
       setShowSaveModal(false)
-      await fetchSavedFloorPlans(true) // Refresh the list but don't auto-load, as we just set the current plan
+      await fetchSavedFloorPlans(true) // Refresh the list
     } catch (error: any) {
       console.error('Save failure details:', error)
-      const errMsg = error?.message || (typeof error === 'string' ? error : 'See console for details')
+      const details = error?.details || error?.hint || ''
+      const msg = error?.message || (typeof error === 'string' ? error : '')
+      const errMsg = msg + (details ? ` (${details})` : '') || 'Unknown error - bridge to Supabase might be disconnected.'
+
       showNotification('error', `Save failed: ${errMsg}`)
     } finally {
       setSaving(false)
@@ -1944,177 +2112,1074 @@ export default function MapViewerPage() {
     setHasUnsavedChanges(false)
     setCanvasElements([])
     setSelectedElements([])
+    setSelectedElement(null)
     setFloorPlanName('')
     setCurrentFloorPlan(null)
     setIsDefault(false)
     setIsPublished(false)
     setShowLoadModal(false)
+
+    // Reset canvas size to default Letter
+    setCanvasSize(PAPER_SIZES.letter)
+    setPresetSize('letter')
     showNotification('success', 'Canvas cleared — ready for a new draft')
   }
 
-  // Export as PDF with QTime logo - Landscape orientation
+  // Open export preview modal
+  const openExportPreview = () => {
+    setExportSettings(prev => ({
+      ...prev,
+      title: prev.title || floorPlanName || `${selectedBuilding} - Floor ${selectedFloor}`,
+      subtitle: prev.subtitle || (schedules.find(s => s.id === selectedScheduleId)?.schedule_name || ''),
+      buildingLabel: prev.buildingLabel || selectedBuilding || '',
+      floorName: prev.floorName || (currentFloorPlan?.floor_name || `Floor ${selectedFloor}`),
+      floorNumber: prev.floorNumber || String(currentFloorPlan?.floor_number || selectedFloor),
+    }))
+    setShowExportPreview(true)
+    // Render preview after modal opens
+    setTimeout(() => renderExportPreview(), 100)
+  }
+
+  // Render the export preview on a canvas
+  const renderExportPreview = useCallback(() => {
+    const canvas = exportCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Preview at a reasonable size (scaled down)
+    const previewW = 800
+    const previewH = 600
+    canvas.width = previewW
+    canvas.height = previewH
+
+    const paper = exportSettings.paperSize === 'custom'
+      ? { width: exportSettings.customPaperWidth, height: exportSettings.customPaperHeight }
+      : PAPER_SIZES[exportSettings.paperSize] || PAPER_SIZES.letter
+
+    const widthMm = paper.width * (25.4 / 96)
+    const heightMm = paper.height * (25.4 / 96)
+
+    const isLandscape = exportSettings.orientation === 'auto'
+      ? widthMm > heightMm
+      : exportSettings.orientation === 'landscape'
+    const pageW = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
+    const pageH = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
+
+    // Scale factor to fit page in preview
+    const sf = Math.min(previewW / pageW, previewH / pageH) * 0.92
+    const offsetX = (previewW - pageW * sf) / 2
+    const offsetY = (previewH - pageH * sf) / 2
+
+    // Clear
+    ctx.fillStyle = '#e2e8f0'
+    ctx.fillRect(0, 0, previewW, previewH)
+
+    // Draw page shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.15)'
+    ctx.shadowBlur = 12
+    ctx.shadowOffsetX = 4
+    ctx.shadowOffsetY = 4
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(offsetX, offsetY, pageW * sf, pageH * sf)
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+
+    // Page border
+    ctx.strokeStyle = '#cbd5e1'
+    ctx.lineWidth = 1
+    ctx.strokeRect(offsetX, offsetY, pageW * sf, pageH * sf)
+
+    const m = pageW * 0.05 * sf // margin
+    const px = offsetX + m
+    const py = offsetY + m
+    const contentW = pageW * sf - m * 2
+    const contentH = pageH * sf - m * 2
+
+    // ===== WATERMARK =====
+    if (exportSettings.showWatermark) {
+      ctx.save()
+      ctx.globalAlpha = 0.04
+      ctx.translate(offsetX + pageW * sf / 2, offsetY + pageH * sf / 2)
+      ctx.rotate(-Math.PI / 6)
+
+      // Large Q box
+      const wSize = Math.min(pageW, pageH) * sf * 0.35
+      ctx.fillStyle = '#16a34a'
+      const radius = wSize * 0.12
+      const qX = -wSize / 2
+      const qY = -wSize / 2
+      ctx.beginPath()
+      ctx.moveTo(qX + radius, qY)
+      ctx.lineTo(qX + wSize - radius, qY)
+      ctx.quadraticCurveTo(qX + wSize, qY, qX + wSize, qY + radius)
+      ctx.lineTo(qX + wSize, qY + wSize - radius)
+      ctx.quadraticCurveTo(qX + wSize, qY + wSize, qX + wSize - radius, qY + wSize)
+      ctx.lineTo(qX + radius, qY + wSize)
+      ctx.quadraticCurveTo(qX, qY + wSize, qX, qY + wSize - radius)
+      ctx.lineTo(qX, qY + radius)
+      ctx.quadraticCurveTo(qX, qY, qX + radius, qY)
+      ctx.closePath()
+      ctx.fill()
+
+      // Q letter
+      ctx.fillStyle = '#ffffff'
+      ctx.font = `bold ${wSize * 0.7}px Arial`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('Q', 0, 0)
+
+      // "time" text below
+      ctx.fillStyle = '#16a34a'
+      ctx.font = `bold ${wSize * 0.22}px Arial`
+      ctx.fillText('time', 0, wSize / 2 + wSize * 0.15)
+
+      ctx.restore()
+    }
+
+    // ===== COMPACT HEADER (all labels in one tight block) =====
+    const titleY = py + 6 * sf
+    const maxTextW = contentW - 4 * sf
+
+    // Title — primary text
+    const titleFontPx = Math.max(6 * sf, (exportSettings.titleFontSize / 22) * 7.5 * sf)
+    ctx.fillStyle = '#0f172a'
+    ctx.font = `bold ${titleFontPx}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    ctx.fillText(exportSettings.title || 'Floor Plan', offsetX + pageW * sf / 2, titleY, maxTextW)
+
+    let infoY = titleY + titleFontPx + 2 * sf
+
+    // Schedule subtitle (if enabled)
+    if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
+      ctx.fillStyle = '#475569'
+      ctx.font = `${4 * sf}px Arial`
+      ctx.textAlign = 'center'
+      ctx.fillText(exportSettings.subtitle, offsetX + pageW * sf / 2, infoY, maxTextW)
+      infoY += 5 * sf
+    }
+
+    // Building / Floor / Date — all on ONE compact line to save space
+    {
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = `${3 * sf}px Arial`
+      ctx.textAlign = 'center'
+      const metaParts: string[] = []
+      if (exportSettings.buildingLabel) metaParts.push(`Building: ${exportSettings.buildingLabel}`)
+      if (exportSettings.floorName) metaParts.push(`Floor: ${exportSettings.floorName}`)
+      if (exportSettings.floorNumber) metaParts.push(`# ${exportSettings.floorNumber}`)
+      if (exportSettings.showDate) metaParts.push(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`)
+      if (metaParts.length) {
+        ctx.fillText(metaParts.join('  •  '), offsetX + pageW * sf / 2, infoY, maxTextW)
+        infoY += 5 * sf
+      }
+    }
+
+    // ===== FLOOR PLAN AREA =====
+    // Clamp planY so we always have room for the floor plan area
+    const legendReserve = exportSettings.showLegend ? 18 * sf : 4 * sf
+    const footerReserve = 10 * sf
+    const minPlanH = 40 * sf // minimum meaningful height
+    const maxPlanY = py + contentH - legendReserve - footerReserve - minPlanH
+    const planY = Math.min(infoY + 4 * sf, maxPlanY)
+    const planW = contentW
+    const planH = Math.max(minPlanH, contentH - (planY - py) - legendReserve - footerReserve)
+
+    // Floor plan border
+    ctx.strokeStyle = '#e2e8f0'
+    ctx.lineWidth = 1
+    ctx.strokeRect(px, planY, planW, planH)
+
+    // Background - use white if set
+    ctx.fillStyle = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
+    ctx.fillRect(px, planY, planW, planH)
+
+    // ===== WATERMARK (OVER BACKGROUND) =====
+    if (exportSettings.showWatermark) {
+      ctx.save()
+      // Clip to floor plan area so watermark doesn't bleed outside
+      ctx.rect(px, planY, planW, planH)
+      ctx.clip()
+      ctx.globalAlpha = 0.05
+      ctx.translate(px + planW / 2, planY + planH / 2)
+      ctx.rotate(-Math.PI / 6)
+
+      const wSize = Math.min(planW, planH) * 0.4
+      const qX = -wSize / 2
+      const qY = -wSize / 2
+
+      if (logoImageRef.current) {
+        ctx.drawImage(logoImageRef.current, qX, qY, wSize, wSize)
+      } else {
+        // Fallback if image not loaded
+        ctx.fillStyle = '#16a34a'
+        const radius = wSize * 0.12
+        ctx.beginPath()
+        if (ctx.roundRect) {
+          ctx.roundRect(qX, qY, wSize, wSize, radius)
+        } else {
+          ctx.rect(qX, qY, wSize, wSize)
+        }
+        ctx.fill()
+        ctx.fillStyle = '#ffffff'
+        ctx.font = `bold ${wSize * 0.7}px Arial`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('Q', 0, 0)
+      }
+      ctx.restore()
+    }
+
+    // Scale elements to fit — base scale uses planW/planH directly
+    const scaleEX = planW / canvasSize.width
+    const scaleEY = planH / canvasSize.height
+    // Use 0.95 to leave a small padding inside the plan area
+    const baseScale = Math.min(scaleEX, scaleEY) * 0.95
+    const scaleE = baseScale * (exportSettings.mapScale / 100)
+    const planCenterX = px + (planW - canvasSize.width * scaleE) / 2
+    const planCenterY = planY + (planH - canvasSize.height * scaleE) / 2
+
+    // Draw elements - SORT BY Z-INDEX, clipped to floor plan area
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(px, planY, planW, planH)
+    ctx.clip()
+
+    canvasElements
+      .filter(el => isLayerVisible(el.id))
+      .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+      .forEach(element => {
+        const ex = planCenterX + element.x * scaleE
+        const ey = planCenterY + element.y * scaleE
+        const ew = element.width * scaleE
+        const eh = element.height * scaleE
+
+        if (element.type === 'room') {
+          const color = element.color || '#f1f5f9'
+          ctx.fillStyle = color
+          ctx.fillRect(ex, ey, ew, eh)
+
+          // Border
+          ctx.strokeStyle = element.borderColor || '#cbd5e1'
+          ctx.lineWidth = Math.max(0.5, (element.borderWidth ?? 1) * scaleE * 0.5)
+          ctx.strokeRect(ex, ey, ew, eh)
+
+          // Room label — clipped to room bounds, shrinks until it fits
+          if (exportSettings.showRoomLabels) {
+            const label = element.label || ''
+            const maxLabelW = ew - 4 // more margin
+
+            ctx.save()
+            ctx.beginPath()
+            ctx.rect(ex, ey, ew, eh)
+            ctx.clip()
+
+            let roomFs = Math.max(5, exportSettings.roomFontSize * scaleE * 1.1)
+            ctx.fillStyle = getContrastColor(color)
+            ctx.font = `bold ${roomFs}px Arial`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+
+            let tw = ctx.measureText(label).width
+            while (tw > maxLabelW && roomFs > 5) {
+              roomFs *= 0.85
+              ctx.font = `bold ${roomFs}px Arial`
+              tw = ctx.measureText(label).width
+            }
+
+            let displayLabel = label
+            if (tw > maxLabelW) {
+              while (displayLabel.length > 1 && ctx.measureText(displayLabel + '…').width > maxLabelW) {
+                displayLabel = displayLabel.slice(0, -1)
+              }
+              displayLabel += '…'
+            }
+
+            const hasCapacity = !!element.linkedRoomData?.capacity
+            const labelY = hasCapacity ? ey + eh / 2 - roomFs * 0.4 : ey + eh / 2
+            ctx.fillText(displayLabel, ex + ew / 2, labelY)
+
+            if (hasCapacity) {
+              const capFs = Math.max(4, roomFs * 0.7)
+              ctx.font = `${capFs}px Arial`
+              ctx.globalAlpha = 0.85
+              let capLabel = `Cap: ${element.linkedRoomData!.capacity}`
+              while (ctx.measureText(capLabel).width > maxLabelW && capFs > 4) {
+                capLabel = capLabel.slice(0, -1)
+              }
+              ctx.fillText(capLabel, ex + ew / 2, ey + eh / 2 + roomFs * 0.5)
+              ctx.globalAlpha = 1.0
+            }
+
+            ctx.restore()
+          }
+
+          // Availability dot
+          if (showScheduleOverlay && element.linkedRoomData) {
+            const avail = getRoomAvailability(element.linkedRoomData.room)
+            ctx.fillStyle = avail === 'available' ? '#22c55e' : (avail === 'occupied' ? '#ef4444' : '#94a3b8')
+            ctx.beginPath()
+            ctx.arc(ex + ew - 3 * scaleE, ey + 3 * scaleE, 2.5 * scaleE, 0, Math.PI * 2)
+            ctx.fill()
+          }
+        } else if (element.type === 'hallway') {
+          ctx.fillStyle = '#d1d5db'
+          ctx.fillRect(ex, ey, ew, eh)
+
+          // Adjacency: smaller tolerance for snapped elements
+          const snapTol2 = 2
+          const adj = {
+            n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < snapTol2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
+            s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < snapTol2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
+            w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < snapTol2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
+            e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < snapTol2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
+          }
+
+          ctx.strokeStyle = '#9ca3af'
+          ctx.lineWidth = Math.max(0.5, 1.5 * scaleE)
+          ctx.setLineDash([5 * scaleE, 3 * scaleE])
+          if (!adj.n) { ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + ew, ey); ctx.stroke(); }
+          if (!adj.s) { ctx.beginPath(); ctx.moveTo(ex, ey + eh); ctx.lineTo(ex + ew, ey + eh); ctx.stroke(); }
+          if (!adj.w) { ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex, ey + eh); ctx.stroke(); }
+          if (!adj.e) { ctx.beginPath(); ctx.moveTo(ex + ew, ey); ctx.lineTo(ex + ew, ey + eh); ctx.stroke(); }
+          ctx.setLineDash([])
+
+          if (element.label) {
+            ctx.save()
+            ctx.fillStyle = '#4b5563'
+            const hfs = Math.max(4, 6 * scaleE)
+            ctx.font = `bold ${hfs}px Arial`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            if (element.orientation === 'vertical') {
+              ctx.translate(ex + ew / 2, ey + eh / 2)
+              ctx.rotate(-Math.PI / 2)
+              ctx.fillText(element.label, 0, 0)
+            } else {
+              ctx.fillText(element.label, ex + ew / 2, ey + eh / 2)
+            }
+            ctx.restore()
+          }
+        } else if (element.type === 'stair') {
+          ctx.fillStyle = '#f59e0b'
+          ctx.fillRect(ex, ey, ew, eh)
+          // Draw stair lines
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+          ctx.lineWidth = 1
+          for (let i = 1; i <= 4; i++) {
+            ctx.beginPath()
+            ctx.moveTo(ex, ey + (eh / 5) * i)
+            ctx.lineTo(ex + ew, ey + (eh / 5) * i)
+            ctx.stroke()
+          }
+          ctx.fillStyle = '#ffffff'
+          ctx.font = `bold ${Math.max(4, 6 * scaleE)}px Arial`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('STAIRS', ex + ew / 2, ey + eh / 2)
+        } else if (element.type === 'door') {
+          ctx.fillStyle = '#10b981'
+          ctx.fillRect(ex, ey, ew, eh)
+        } else if (element.type === 'wall') {
+          ctx.fillStyle = '#334155'
+          ctx.fillRect(ex, ey, ew, eh)
+        } else if (element.type === 'text') {
+          ctx.fillStyle = element.color || '#1e293b'
+          ctx.font = `${(element.fontSize || 12) * scaleE}px Arial`
+          ctx.textAlign = 'left'
+          ctx.textBaseline = 'top'
+          ctx.fillText(element.label || '', ex, ey)
+        } else if (element.type === 'icon') {
+          const iconType = element.iconType || ''
+          const lowLabel = (element.label || '').toLowerCase()
+          const cx = ex + ew / 2
+          const cy = ey + eh / 2
+          const radius = Math.min(ew, eh) / 2
+
+          const isRestroom = iconType === 'restroom' || iconType === 'men_room' || iconType === 'women_room' ||
+            lowLabel.includes('restroom') || lowLabel.includes('comfort') || lowLabel.includes('cr') || lowLabel.includes('wc') ||
+            lowLabel.includes('men') || lowLabel.includes('women') || lowLabel.includes('boy') || lowLabel.includes('girl')
+
+          if (isRestroom) {
+            const isMale = iconType === 'men_room' || lowLabel.includes('men') || lowLabel.includes('boy')
+            const isFemale = iconType === 'women_room' || lowLabel.includes('women') || lowLabel.includes('girl')
+
+            // Draw restroom symbol background
+            ctx.fillStyle = isMale ? '#2563eb' : isFemale ? '#db2777' : '#6366f1'
+            ctx.beginPath()
+            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2)
+            ctx.fill()
+
+            // Draw person icon (stick figure)
+            ctx.fillStyle = '#ffffff'
+            ctx.strokeStyle = '#ffffff'
+            ctx.lineWidth = Math.max(0.5, radius * 0.12)
+
+            if (isFemale) {
+              // Female: dress silhouette
+              // Head
+              const headR = radius * 0.22
+              ctx.beginPath()
+              ctx.arc(cx, cy - radius * 0.48, headR, 0, Math.PI * 2)
+              ctx.fill()
+              // Dress (triangle)
+              ctx.beginPath()
+              ctx.moveTo(cx, cy - radius * 0.22)
+              ctx.lineTo(cx - radius * 0.38, cy + radius * 0.45)
+              ctx.lineTo(cx + radius * 0.38, cy + radius * 0.45)
+              ctx.closePath()
+              ctx.fill()
+            } else {
+              // Male: rectangle body with legs
+              // Head
+              const headR = radius * 0.2
+              ctx.beginPath()
+              ctx.arc(cx, cy - radius * 0.5, headR, 0, Math.PI * 2)
+              ctx.fill()
+              // Body
+              ctx.fillRect(cx - radius * 0.15, cy - radius * 0.28, radius * 0.3, radius * 0.4)
+              // Legs
+              ctx.beginPath()
+              ctx.moveTo(cx - radius * 0.05, cy + radius * 0.12)
+              ctx.lineTo(cx - radius * 0.22, cy + radius * 0.48)
+              ctx.moveTo(cx + radius * 0.05, cy + radius * 0.12)
+              ctx.lineTo(cx + radius * 0.22, cy + radius * 0.48)
+              ctx.stroke()
+            }
+
+            // Generic restroom: draw neutral person figure
+            if (!isMale && !isFemale) {
+              // Head
+              const headR2 = radius * 0.21
+              ctx.beginPath()
+              ctx.arc(cx, cy - radius * 0.49, headR2, 0, Math.PI * 2)
+              ctx.fill()
+              // Body (narrower rectangle)
+              ctx.fillRect(cx - radius * 0.12, cy - radius * 0.26, radius * 0.24, radius * 0.35)
+              // Legs
+              ctx.beginPath()
+              ctx.moveTo(cx - radius * 0.04, cy + radius * 0.09)
+              ctx.lineTo(cx - radius * 0.18, cy + radius * 0.46)
+              ctx.moveTo(cx + radius * 0.04, cy + radius * 0.09)
+              ctx.lineTo(cx + radius * 0.18, cy + radius * 0.46)
+              ctx.stroke()
+            }
+          } else {
+            // Generic icon: colored circle with initial
+            ctx.fillStyle = element.color || '#6366f1'
+            ctx.beginPath()
+            ctx.arc(cx, cy, radius * 0.8, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.fillStyle = '#ffffff'
+            ctx.font = `bold ${radius * 0.75}px Arial`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText((element.label || 'i').charAt(0).toUpperCase(), cx, cy)
+          }
+
+          if (element.label) {
+            ctx.fillStyle = '#475569'
+            ctx.font = `${Math.max(4, 5 * scaleE)}px Arial`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'top'
+            ctx.fillText(element.label, cx, ey + eh + 2 * scaleE)
+          }
+        } else if (element.type === 'shape') {
+          ctx.fillStyle = element.color || '#10b981'
+          if (element.shapeType === 'circle') {
+            ctx.beginPath()
+            ctx.arc(ex + ew / 2, ey + eh / 2, Math.min(ew, eh) / 2, 0, Math.PI * 2)
+            ctx.fill()
+          } else {
+            ctx.fillRect(ex, ey, ew, eh)
+          }
+        }
+      })
+
+    // Restore clip after drawing elements
+    ctx.restore()
+
+    // Reset text alignment
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+
+    // ===== LEGEND (MORE COMPACT) =====
+    if (exportSettings.showLegend) {
+      const legendY2 = py + contentH - 8 * sf
+      ctx.fillStyle = '#1e293b'
+      ctx.font = `bold ${3.5 * sf}px Arial`
+      ctx.fillText('Legend:', px, legendY2)
+
+      const legendItems = getLegendItems()
+      let lx = px + 18 * sf
+      legendItems.forEach(item => {
+        ctx.fillStyle = item.bg
+        ctx.fillRect(lx, legendY2 - 3 * sf, 5 * sf, 3 * sf)
+        ctx.fillStyle = '#64748b'
+        ctx.font = `${3 * sf}px Arial`
+        ctx.fillText(item.label, lx + 6 * sf, legendY2)
+        lx += 30 * sf
+      })
+
+      if (showScheduleOverlay) {
+        lx += 5 * sf
+        ctx.fillStyle = '#22c55e'
+        ctx.beginPath()
+        ctx.arc(lx, legendY2 - 1.5 * sf, 1.5 * sf, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#64748b'
+        ctx.fillText('Available', lx + 2.5 * sf, legendY2)
+
+        lx += 25 * sf
+        ctx.fillStyle = '#ef4444'
+        ctx.beginPath()
+        ctx.arc(lx, legendY2 - 1.5 * sf, 1.5 * sf, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#64748b'
+        ctx.fillText('Occupied', lx + 2.5 * sf, legendY2)
+      }
+    }
+
+    // ===== FOOTER BRANDING =====
+    const footerY = offsetY + pageH * sf - 5 * sf
+    ctx.fillStyle = '#94a3b8'
+    ctx.font = `${2.8 * sf}px Arial`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+    ctx.fillText('Campus Map System  •  University Floor Plan Management', offsetX + pageW * sf / 2, footerY)
+
+    // Qtime Scheduler Branding — logo BESIDE text, both bottom-right
+    const brandFont = `bold ${4.6 * sf}px Arial`
+    ctx.font = brandFont
+    const brandingText = 'Qtime Scheduler'
+    const brandingW = ctx.measureText(brandingText).width
+    const boxS = 5.5 * sf
+    const gap = 2 * sf
+    // Total branding block width: boxS + gap + brandingW
+    const brandBlockRight = offsetX + pageW * sf - m
+    const brandBlockLeft = brandBlockRight - brandingW - gap - boxS
+    const brandBaseY = footerY // text baseline aligns with footer
+
+    // Draw logo box first (to the LEFT of text)
+    const boxX = brandBlockLeft
+    const boxY = brandBaseY - boxS // box top
+
+    if (logoImageRef.current) {
+      ctx.drawImage(logoImageRef.current, boxX, boxY, boxS, boxS)
+    } else {
+      ctx.fillStyle = '#16a34a'
+      ctx.beginPath()
+      if (ctx.roundRect) {
+        ctx.roundRect(boxX, boxY, boxS, boxS, 1.2 * sf)
+      } else {
+        ctx.rect(boxX, boxY, boxS, boxS)
+      }
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.font = `bold ${3.5 * sf}px Arial`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('Q', boxX + boxS / 2, boxY + boxS / 2)
+    }
+
+    // Draw branding text to the RIGHT of box
+    ctx.fillStyle = '#1e293b'
+    ctx.font = brandFont
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'bottom'
+    ctx.fillText(brandingText, boxX + boxS + gap, brandBaseY)
+
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+  }, [canvasElements, canvasSize, exportSettings, showScheduleOverlay, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan])
+
+  // Re-render preview when settings change
+  useEffect(() => {
+    if (showExportPreview) {
+      const timer = setTimeout(() => renderExportPreview(), 50)
+      return () => clearTimeout(timer)
+    }
+  }, [showExportPreview, exportSettings, renderExportPreview])
+
+  // Export as PDF with QTime logo (enhanced)
   const exportPDF = async () => {
     try {
       const { jsPDF } = await import('jspdf')
+
+      const paper = exportSettings.paperSize === 'custom'
+        ? { width: exportSettings.customPaperWidth, height: exportSettings.customPaperHeight }
+        : PAPER_SIZES[exportSettings.paperSize] || PAPER_SIZES.letter
+
+      const widthMm = paper.width * (25.4 / 96)
+      const heightMm = paper.height * (25.4 / 96)
+
+      const isLandscape = exportSettings.orientation === 'auto'
+        ? widthMm > heightMm
+        : exportSettings.orientation === 'landscape'
+
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
-        format: [215.9, 279.4] // Short bond paper (landscape: width > height)
+        format: isLandscape ? [Math.max(widthMm, heightMm), Math.min(widthMm, heightMm)] : [Math.min(widthMm, heightMm), Math.max(widthMm, heightMm)]
       })
 
-      const pageWidth = 279.4  // Swapped for landscape
-      const pageHeight = 215.9
-      const margin = 10
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const margin = Math.min(pageWidth, pageHeight) * 0.05
 
-      // QTime Logo
-      const logoSize = 10
-      const logoX = margin
-      const logoY = margin
+      // ===== WATERMARK =====
+      if (exportSettings.showWatermark) {
+        pdf.saveGraphicsState()
+        // @ts-ignore - Lower opacity watermark
+        const gState = new (pdf as any).GState({ opacity: 0.02 })
+        pdf.setGState(gState)
 
-      // Green rounded rectangle for Q
-      pdf.setFillColor(22, 163, 74)
-      pdf.roundedRect(logoX, logoY, logoSize, logoSize, 2, 2, 'F')
+        const wmSize = Math.min(pageWidth, pageHeight) * 0.5
+        const wmX = (pageWidth - wmSize) / 2
+        const wmY = (pageHeight - wmSize) / 2
 
-      // "Q" letter in white
-      pdf.setTextColor(255, 255, 255)
-      pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Q', logoX + 3.5, logoY + 7)
+        try {
+          pdf.addImage('/app-icon.png', 'PNG', wmX, wmY, wmSize, wmSize)
+        } catch (e) {
+          pdf.setFillColor(22, 163, 74)
+          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 1.5, wmSize * 1.5, 'F')
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFontSize(wmSize * 2.2)
+          pdf.setFont('helvetica', 'bold')
+          pdf.text('Q', wmX + wmSize * 0.26, wmY + wmSize * 0.75)
+        }
 
-      // "Qtime Scheduler" text
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(12)
-      pdf.text('Qtime Scheduler', logoX + logoSize + 3, logoY + 7)
-
-      // Title
-      pdf.setFontSize(16)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(`Floor Plan: ${floorPlanName || `${selectedBuilding} - Floor ${selectedFloor}`}`, margin, logoY + 20)
-
-      // Subtitle with schedule info
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-      const schedule = schedules.find(s => s.id === selectedScheduleId)
-      if (schedule) {
-        pdf.text(`Schedule: ${schedule.schedule_name} | ${schedule.semester} ${schedule.academic_year}`, margin, logoY + 28)
+        pdf.restoreGraphicsState()
       }
 
-      // Date
+      // Top-left logo removed as per user request
+
+      // Move "Qtime Scheduler" to bottom right instead of top left
+      // We'll draw this later in the footer section
+
+      // ===== COMPACT TITLE & INFO =====
+      const titleX = margin
+      const titleY = margin + 16 // Adjusted to account for removed logo space
+
+      pdf.setFontSize(exportSettings.titleFontSize || 20)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(15, 23, 42)
+      const title = exportSettings.title || floorPlanName || `${selectedBuilding}`
+      const titleW = pdf.getTextWidth(title)
+      pdf.text(title, (pageWidth - titleW) / 2, margin + 10) // Move title higher
+
+      // Smaller info row to save space
+      let infoY = titleY + 6
       pdf.setFontSize(9)
-      pdf.text(`Generated: ${new Date().toLocaleDateString()}`, margin, logoY + 35)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(100, 116, 139)
 
-      // Draw floor plan area - larger in landscape
-      const floorPlanY = logoY + 45
+      const parts: string[] = []
+      if (exportSettings.buildingLabel) parts.push(`Building: ${exportSettings.buildingLabel}`)
+      if (exportSettings.floorName) parts.push(`Floor: ${exportSettings.floorName}`)
+      if (exportSettings.floorNumber) parts.push(`Floor #: ${exportSettings.floorNumber}`)
+
+      const infoText = parts.join('  |  ')
+      const infoW = pdf.getTextWidth(infoText)
+      pdf.text(infoText, (pageWidth - infoW) / 2, infoY)
+      infoY += 4
+
+      if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
+        pdf.setFontSize(8)
+        const subW = pdf.getTextWidth(exportSettings.subtitle)
+        pdf.text(exportSettings.subtitle, (pageWidth - subW) / 2, infoY)
+        infoY += 4
+      }
+
+      if (exportSettings.showDate) {
+        pdf.setFontSize(8)
+        const dateText = `Exported: ${new Date().toLocaleDateString()}`
+        const dateW = pdf.getTextWidth(dateText)
+        pdf.text(dateText, (pageWidth - dateW) / 2, infoY)
+        infoY += 4
+      }
+
+      // ===== FLOOR PLAN AREA =====
+      const floorPlanY = infoY + 2
       const floorPlanWidth = pageWidth - (margin * 2)
-      const floorPlanHeight = pageHeight - floorPlanY - 40  // More room for floor plan
+      const floorPlanHeight = pageHeight - floorPlanY - (exportSettings.showLegend ? 20 : 10)
 
-      // Border
-      pdf.setDrawColor(200, 200, 200)
-      pdf.setLineWidth(0.5)
-      pdf.rect(margin, floorPlanY, floorPlanWidth, floorPlanHeight)
+      // Background
+      const bgColor = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
+      const rgbBg = hexToRgb(bgColor)
+      pdf.setFillColor(rgbBg.r, rgbBg.g, rgbBg.b)
+      pdf.rect(margin, floorPlanY, floorPlanWidth, floorPlanHeight, 'F')
 
-      // Calculate scale to fit elements
+      // ===== WATERMARK (ON TOP OF BACKGROUND) =====
+      if (exportSettings.showWatermark) {
+        pdf.saveGraphicsState()
+        // @ts-ignore
+        const gState = new (pdf as any).GState({ opacity: 0.05 })
+        pdf.setGState(gState)
+
+        const wmSize = Math.min(floorPlanWidth, floorPlanHeight) * 0.4
+        const wmX = margin + (floorPlanWidth - wmSize) / 2
+        const wmY = floorPlanY + (floorPlanHeight - wmSize) / 2
+
+        try {
+          pdf.addImage('/app-icon.png', 'PNG', wmX, wmY, wmSize, wmSize)
+        } catch (e) {
+          pdf.setFillColor(22, 163, 74)
+          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 0.1, wmSize * 0.1, 'F')
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFontSize(wmSize * 1.5)
+          pdf.text('Q', wmX + wmSize * 0.25, wmY + wmSize * 0.7)
+        }
+        pdf.restoreGraphicsState()
+      }
+
+      // Scale
       const scaleX = floorPlanWidth / canvasSize.width
       const scaleY = floorPlanHeight / canvasSize.height
-      const scale = Math.min(scaleX, scaleY) * 0.9
+      const baseScale = Math.min(scaleX, scaleY) * 0.96
+      const scale = baseScale * (exportSettings.mapScale / 100)
+      const centerX = margin + (floorPlanWidth - canvasSize.width * scale) / 2
+      const centerY = floorPlanY + (floorPlanHeight - canvasSize.height * scale) / 2
 
       // Draw elements
-      canvasElements.forEach(element => {
-        const x = margin + (element.x * scale)
-        const y = floorPlanY + (element.y * scale)
-        const w = element.width * scale
-        const h = element.height * scale
+      canvasElements
+        .filter(el => isLayerVisible(el.id))
+        .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+        .forEach(element => {
+          const x = centerX + element.x * scale
+          const y = centerY + element.y * scale
+          const w = element.width * scale
+          const h = element.height * scale
 
-        if (element.type === 'room') {
-          const color = element.color || '#3b82f6'
-          const rgb = hexToRgb(color)
-          pdf.setFillColor(rgb.r, rgb.g, rgb.b)
-          pdf.rect(x, y, w, h, 'F')
-
-          pdf.setDrawColor(100, 100, 100)
-          pdf.setLineWidth(0.3)
-          pdf.rect(x, y, w, h)
-
-          // Availability indicator
-          if (showScheduleOverlay && element.linkedRoomData) {
-            const availability = getRoomAvailability(element.linkedRoomData.room)
-            if (availability === 'available') {
-              pdf.setFillColor(34, 197, 94)
-            } else if (availability === 'occupied') {
-              pdf.setFillColor(239, 68, 68)
+          // Helper to draw rotated rect/shape
+          const drawRotated = (drawFn: () => void) => {
+            if (element.rotation) {
+              pdf.saveGraphicsState()
+              // Translate to center, rotate, then translate back
+              const cx = x + w / 2
+              const cy = y + h / 2
+              // @ts-ignore - jspdf rotation
+              pdf.setCurrentTransformationMatrix(pdf.matrixMult(
+                new (pdf as any).Matrix(1, 0, 0, 1, cx, cy),
+                pdf.matrixMult(
+                  // @ts-ignore
+                  new (pdf as any).Matrix(Math.cos(element.rotation * Math.PI / 180), Math.sin(element.rotation * Math.PI / 180), -Math.sin(element.rotation * Math.PI / 180), Math.cos(element.rotation * Math.PI / 180), 0, 0),
+                  // @ts-ignore
+                  new (pdf as any).Matrix(1, 0, 0, 1, -cx, -cy)
+                )
+              ))
+              drawFn()
+              pdf.restoreGraphicsState()
+            } else {
+              drawFn()
             }
-            pdf.circle(x + w - 3, y + 3, 2, 'F')
           }
 
-          // Room label
-          pdf.setTextColor(255, 255, 255)
-          pdf.setFontSize(6)
-          pdf.setFont('helvetica', 'bold')
-          const label = element.label || ''
-          const textWidth = pdf.getTextWidth(label)
-          if (textWidth < w - 2) {
-            pdf.text(label, x + (w - textWidth) / 2, y + h / 2 + 1)
+          if (element.type === 'room') {
+            drawRotated(() => {
+              const color = element.color || '#f1f5f9'
+              const rgb = hexToRgb(color)
+              pdf.setFillColor(rgb.r, rgb.g, rgb.b)
+              pdf.rect(x, y, w, h, 'F')
+
+              const borderC = hexToRgb(element.borderColor || '#cbd5e1')
+              pdf.setDrawColor(borderC.r, borderC.g, borderC.b)
+              pdf.setLineWidth(Math.max(0.1, (element.borderWidth ?? 1) * scale * 0.3))
+              pdf.rect(x, y, w, h)
+
+              // Availability indicator
+              if (showScheduleOverlay && element.linkedRoomData) {
+                const availability = getRoomAvailability(element.linkedRoomData.room)
+                pdf.setFillColor(availability === 'available' ? 34 : 239, availability === 'available' ? 197 : 68, availability === 'available' ? 94 : 68)
+                pdf.circle(x + w - 2, y + 2, 1.5, 'F')
+              }
+
+              // Enhanced room label - shrink until it fits, never overflow
+              if (exportSettings.showRoomLabels) {
+                const contrastHex = getContrastColor(color)
+                const cRgb = hexToRgb(contrastHex)
+                pdf.setTextColor(cRgb.r, cRgb.g, cRgb.b)
+
+                const label = element.label || ''
+                const maxLabelW = w - 1.5
+
+                // Start at preferred size, shrink until label fits
+                let roomFs = Math.max(4, exportSettings.roomFontSize * scale * 3.2)
+                pdf.setFont('helvetica', 'bold')
+                pdf.setFontSize(roomFs)
+                let textWidth = pdf.getTextWidth(label)
+                while (textWidth > maxLabelW && roomFs > 4.5) {
+                  roomFs *= 0.85
+                  pdf.setFontSize(roomFs)
+                  textWidth = pdf.getTextWidth(label)
+                }
+
+                // If it still doesn't fit even at min size, truncate with ellipsis
+                let displayLabel = label
+                if (textWidth > maxLabelW) {
+                  displayLabel = label
+                  while (displayLabel.length > 1 && pdf.getTextWidth(displayLabel + '…') > maxLabelW) {
+                    displayLabel = displayLabel.slice(0, -1)
+                  }
+                  displayLabel += '…'
+                  textWidth = pdf.getTextWidth(displayLabel)
+                }
+
+                const labelX = x + (w - textWidth) / 2
+                const hasCapacity = !!element.linkedRoomData?.capacity
+                // Vertical centering: jsPDF default baseline is 'alphabetic'.
+                // For a single label, center it vertically by using y + h/2 + roomFs*0.3
+                const labelY = hasCapacity ? y + h / 2 - roomFs * 0.15 : y + h / 2 + roomFs * 0.3
+                pdf.text(displayLabel, labelX, labelY)
+
+                if (hasCapacity) {
+                  const capFs = Math.max(3.5, roomFs * 0.7)
+                  pdf.setFontSize(capFs)
+                  pdf.setFont('helvetica', 'normal')
+                  const capText = `Cap: ${element.linkedRoomData!.capacity}`
+                  let capW = pdf.getTextWidth(capText)
+                  let capFsAdj = capFs
+                  while (capW > maxLabelW && capFsAdj > 3) {
+                    capFsAdj *= 0.85
+                    pdf.setFontSize(capFsAdj)
+                    capW = pdf.getTextWidth(capText)
+                  }
+                  pdf.text(capText, x + (w - capW) / 2, y + h / 2 + roomFs * 0.6)
+                }
+              }
+            })
+          } else if (element.type === 'wall') {
+            drawRotated(() => {
+              pdf.setFillColor(55, 65, 81)
+              pdf.rect(x, y, w, h, 'F')
+            })
+          } else if (element.type === 'hallway') {
+            drawRotated(() => {
+              pdf.setFillColor(209, 213, 219)
+              pdf.rect(x, y, w, h, 'F')
+
+              // Adjacency: smaller tolerance (2px)
+              const snapTol = 2
+              const adj = {
+                n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < snapTol && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
+                s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < snapTol && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
+                w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < snapTol && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
+                e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < snapTol && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
+              }
+
+              pdf.setDrawColor(156, 163, 175)
+              pdf.setLineWidth(0.4)
+              pdf.setLineDashPattern([2, 1.2], 0)
+
+              if (!adj.n) pdf.line(x, y, x + w, y)
+              if (!adj.s) pdf.line(x, y + h, x + w, y + h)
+              if (!adj.w) pdf.line(x, y, x, y + h)
+              if (!adj.e) pdf.line(x + w, y, x + w, y + h)
+
+              pdf.setLineDashPattern([], 0)
+
+              if (element.label) {
+                pdf.setTextColor(75, 85, 99)
+                const hfs = Math.max(4, 6 * scale)
+                pdf.setFontSize(hfs)
+                pdf.setFont('helvetica', 'bold')
+                const hw = pdf.getTextWidth(element.label)
+
+                if (element.orientation === 'vertical') {
+                  const cx = x + w / 2
+                  const cy = y + h / 2
+                  // @ts-ignore
+                  pdf.text(element.label, cx, cy, { angle: 270, align: 'center' })
+                } else {
+                  pdf.text(element.label, x + (w - hw) / 2, y + h / 2 + 1)
+                }
+              }
+            })
+          } else if (element.type === 'door') {
+            drawRotated(() => {
+              pdf.setFillColor(16, 185, 129)
+              pdf.rect(x, y, w, h, 'F')
+            })
+          } else if (element.type === 'text') {
+            drawRotated(() => {
+              const rgb = hexToRgb(element.color || '#1e293b')
+              pdf.setTextColor(rgb.r, rgb.g, rgb.b)
+              pdf.setFontSize((element.fontSize || 12) * scale * 2.8)
+              pdf.setFont('helvetica', 'normal')
+              pdf.text(element.label || '', x, y + h * 0.75)
+            })
+          } else if (element.type === 'stair') {
+            drawRotated(() => {
+              pdf.setFillColor(245, 158, 11)
+              pdf.rect(x, y, w, h, 'F')
+              pdf.setDrawColor(255, 255, 255)
+              pdf.setLineWidth(0.1)
+              for (let i = 1; i <= 4; i++) {
+                pdf.line(x, y + (h / 5) * i, x + w, y + (h / 5) * i)
+              }
+              pdf.setTextColor(255, 255, 255)
+              pdf.setFontSize(Math.max(4, 5 * scale))
+              pdf.setFont('helvetica', 'bold')
+              const sw = pdf.getTextWidth('STAIRS')
+              pdf.text('STAIRS', x + (w - sw) / 2, y + h / 2 + 1)
+            })
+          } else if (element.type === 'icon') {
+            drawRotated(() => {
+              const lowLabel = (element.label || '').toLowerCase()
+              const iconType = element.iconType || ''
+              const radius = Math.min(w, h) / 2
+              const cx = x + w / 2
+              const cy = y + h / 2
+
+              const isRestroom = iconType === 'restroom' || iconType === 'men_room' || iconType === 'women_room' ||
+                lowLabel.includes('restroom') || lowLabel.includes('comfort') || lowLabel.includes('cr') || lowLabel.includes('wc') ||
+                lowLabel.includes('men') || lowLabel.includes('women') || lowLabel.includes('boy') || lowLabel.includes('girl')
+
+              if (isRestroom) {
+                const isMale = iconType === 'men_room' || lowLabel.includes('men') || lowLabel.includes('boy')
+                const isFemale = iconType === 'women_room' || lowLabel.includes('women') || lowLabel.includes('girl')
+
+                if (isMale) {
+                  pdf.setFillColor(37, 99, 235) // blue
+                } else if (isFemale) {
+                  pdf.setFillColor(219, 39, 119) // pink
+                } else {
+                  pdf.setFillColor(99, 102, 241) // purple fallback
+                }
+                pdf.circle(cx, cy, radius * 0.85, 'F')
+
+                // Draw figure letter inside  — M / F / R (restroom)
+                pdf.setTextColor(255, 255, 255)
+                const figLabel = isMale ? 'M' : isFemale ? 'F' : 'R'
+                const figFs = Math.max(5, radius * 1.4)
+                pdf.setFontSize(figFs)
+                pdf.setFont('helvetica', 'bold')
+                const figW = pdf.getTextWidth(figLabel)
+                pdf.text(figLabel, cx - figW / 2, cy + figFs * 0.35)
+              } else {
+                const iconRgb = hexToRgb(element.color || '#6366f1')
+                pdf.setFillColor(iconRgb.r, iconRgb.g, iconRgb.b)
+                pdf.circle(cx, cy, radius * 0.8, 'F')
+                pdf.setTextColor(255, 255, 255)
+                const initLabel = (element.label || 'i').charAt(0).toUpperCase()
+                const initFs = Math.max(5, radius * 1.5)
+                pdf.setFontSize(initFs)
+                pdf.setFont('helvetica', 'bold')
+                const initW = pdf.getTextWidth(initLabel)
+                pdf.text(initLabel, cx - initW / 2, cy + initFs * 0.35)
+              }
+
+              if (element.label) {
+                pdf.setTextColor(71, 85, 105)
+                pdf.setFontSize(Math.max(4, 5 * scale))
+                pdf.setFont('helvetica', 'normal')
+                const iw = pdf.getTextWidth(element.label)
+                pdf.text(element.label, cx - iw / 2, y + h + 2)
+              }
+            })
+          } else if (element.type === 'shape') {
+            drawRotated(() => {
+              const sRgb = hexToRgb(element.color || '#10b981')
+              pdf.setFillColor(sRgb.r, sRgb.g, sRgb.b)
+              if (element.shapeType === 'circle') {
+                pdf.circle(x + w / 2, y + h / 2, Math.min(w, h) / 2, 'F')
+              } else {
+                pdf.rect(x, y, w, h, 'F')
+              }
+            })
           }
-        } else if (element.type === 'wall') {
-          pdf.setFillColor(55, 65, 81)
-          pdf.rect(x, y, w, h, 'F')
-        } else if (element.type === 'hallway') {
-          pdf.setFillColor(209, 213, 219)
-          pdf.rect(x, y, w, h, 'F')
-        } else if (element.type === 'text') {
-          pdf.setTextColor(0, 0, 0)
-          pdf.setFontSize(8)
-          pdf.text(element.label || '', x, y + 5)
-        }
-      })
+        })
 
-      // Legend
-      const legendY = floorPlanY + floorPlanHeight + 10
-      pdf.setTextColor(0, 0, 0)
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Legend:', margin, legendY)
-
-      const legendItems = getLegendItems()
-      let legendX = margin
-      let currentLegendY = legendY + 6
-
-      legendItems.forEach((item, idx) => {
-        const rgb = hexToRgb(item.bg)
-        pdf.setFillColor(rgb.r, rgb.g, rgb.b)
-        pdf.rect(legendX, currentLegendY, 8, 5, 'F')
-
-        pdf.setFontSize(8)
-        pdf.setFont('helvetica', 'normal')
-        pdf.text(item.label, legendX + 10, currentLegendY + 4)
-
-        legendX += 50
-        if (legendX > pageWidth - margin - 50) {
-          legendX = margin
-          currentLegendY += 8
-        }
-      })
-
-      // Availability legend if showing schedule
-      if (showScheduleOverlay) {
-        currentLegendY += 12
-        pdf.setFontSize(9)
+      // ===== LEGEND =====
+      if (exportSettings.showLegend) {
+        const legendY = floorPlanY + floorPlanHeight + 5
+        pdf.setTextColor(30, 41, 59)
+        pdf.setFontSize(10)
         pdf.setFont('helvetica', 'bold')
-        pdf.text('Room Status:', margin, currentLegendY)
+        pdf.text('Legend:', margin, legendY)
 
-        pdf.setFillColor(34, 197, 94)
-        pdf.circle(margin + 40, currentLegendY - 1.5, 3, 'F')
-        pdf.setFont('helvetica', 'normal')
-        pdf.text('Available', margin + 45, currentLegendY)
+        const legendItems = getLegendItems()
+        let legendX = margin
+        let currentLegendY = legendY + 6
 
-        pdf.setFillColor(239, 68, 68)
-        pdf.circle(margin + 80, currentLegendY - 1.5, 3, 'F')
-        pdf.text('Occupied', margin + 85, currentLegendY)
+        legendItems.forEach(item => {
+          const rgb = hexToRgb(item.bg)
+          pdf.setFillColor(rgb.r, rgb.g, rgb.b)
+          pdf.roundedRect(legendX, currentLegendY, 8, 4, 0.8, 0.8, 'F')
+
+          pdf.setFontSize(8)
+          pdf.setFont('helvetica', 'normal')
+          pdf.setTextColor(71, 85, 105)
+          pdf.text(item.label, legendX + 10, currentLegendY + 3.2)
+
+          legendX += 45
+          if (legendX > pageWidth - margin - 45) {
+            legendX = margin
+            currentLegendY += 7
+          }
+        })
+
+        if (showScheduleOverlay) {
+          currentLegendY += 9
+          pdf.setFontSize(9)
+          pdf.setFont('helvetica', 'bold')
+          pdf.setTextColor(30, 41, 59)
+          pdf.text('Room Status:', margin, currentLegendY)
+
+          pdf.setFillColor(34, 197, 94)
+          pdf.circle(margin + 34, currentLegendY - 1.2, 2.5, 'F')
+          pdf.setFont('helvetica', 'normal')
+          pdf.setTextColor(71, 85, 105)
+          pdf.text('Available', margin + 38, currentLegendY)
+
+          pdf.setFillColor(239, 68, 68)
+          pdf.circle(margin + 68, currentLegendY - 1.2, 2.5, 'F')
+          pdf.text('Occupied', margin + 72, currentLegendY)
+        }
       }
+
+      // ===== FOOTER & BRANDING =====
+      pdf.setFontSize(7)
+      pdf.setTextColor(148, 163, 184)
+      pdf.setFont('helvetica', 'normal')
+      const footerText = 'Campus Map System  •  University Floor Plan Management'
+      const footerW = pdf.getTextWidth(footerText)
+      pdf.text(footerText, (pageWidth - footerW) / 2, pageHeight - margin * 0.4)
+
+      // Qtime Scheduler Branding - Improved placement (Logo to the left of text)
+      const brandY = pageHeight - margin * 0.4
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'bold')
+      const brandingText = 'Qtime Scheduler'
+      const brandingW = pdf.getTextWidth(brandingText)
+      const qBoxSize = 5
+      const totalWidth = qBoxSize + 2 + brandingW
+      const startX = pageWidth - margin - totalWidth
+
+      const qBoxX = startX
+      const qBoxY = brandY - 4
+
+      try {
+        pdf.addImage('/app-icon.png', 'PNG', qBoxX, qBoxY, qBoxSize, qBoxSize)
+      } catch (e) {
+        pdf.setFillColor(22, 163, 74)
+        pdf.roundedRect(qBoxX, qBoxY, qBoxSize, qBoxSize, 1, 1, 'F')
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFontSize(7)
+        pdf.text('Q', qBoxX + 1.2, qBoxY + 3.8)
+      }
+
+      pdf.setFontSize(9)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(30, 41, 59)
+      pdf.text(brandingText, qBoxX + qBoxSize + 2, brandY)
 
       // Save
       const fileName = `FloorPlan_${selectedBuilding.replace(/\s+/g, '_')}_F${selectedFloor}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
+      setShowExportPreview(false)
       showNotification('success', 'PDF exported successfully!')
     } catch (error) {
       console.error('Error exporting PDF:', error)
@@ -2124,12 +3189,23 @@ export default function MapViewerPage() {
 
   // Helper: hex to rgb
   const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 100, g: 100, b: 100 }
+    let r = 0, g = 0, b = 0
+    if (hex.length === 4) {
+      r = parseInt(hex[1] + hex[1], 16)
+      g = parseInt(hex[2] + hex[2], 16)
+      b = parseInt(hex[3] + hex[3], 16)
+    } else if (hex.length === 7) {
+      r = parseInt(hex.substring(1, 3), 16)
+      g = parseInt(hex.substring(3, 5), 16)
+      b = parseInt(hex.substring(5, 7), 16)
+    }
+    return { r, g, b }
+  }
+
+  const getContrastColor = (hex: string) => {
+    const { r, g, b } = hexToRgb(hex)
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+    return (yiq >= 128) ? '#1e293b' : '#ffffff'
   }
 
   // Generate shareable link
@@ -2370,7 +3446,7 @@ export default function MapViewerPage() {
                 Save
               </button>
             )}
-            <button className={styles.exportBtn} onClick={exportPDF}>
+            <button className={styles.exportBtn} onClick={openExportPreview}>
               <Download size={18} />
               Export PDF
             </button>
@@ -2672,9 +3748,10 @@ export default function MapViewerPage() {
                             <div className={styles.floorPlanGrid} style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, padding: '0 8px' }}>
                               {savedFloorPlans
                                 .filter(fp => {
-                                  // Filter by current building if selected
                                   if (!selectedBuilding) return true
-                                  return fp.floor_name?.includes(selectedBuilding)
+                                  // Match by metadata or name
+                                  return (fp.canvas_data?.building === selectedBuilding) ||
+                                    (fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase()))
                                 })
                                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                                 .map(fp => (
@@ -2757,7 +3834,11 @@ export default function MapViewerPage() {
                       ) : (
                         <div className={styles.floorPlanGrid} style={{ gridTemplateColumns: '1fr', gap: 8 }}>
                           {savedFloorPlans
-                            .filter(fp => !selectedBuilding || fp.floor_name?.includes(selectedBuilding))
+                            .filter(fp => {
+                              if (!selectedBuilding) return true
+                              return (fp.canvas_data?.building === selectedBuilding) ||
+                                (fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase()))
+                            })
                             .map(fp => (
                               <div
                                 key={fp.id}
@@ -2841,6 +3922,14 @@ export default function MapViewerPage() {
                       const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
                       const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
 
+                      // Calculate hallway adjacencies for "connecting" effect
+                      const neighbors = element.type === 'hallway' ? {
+                        n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < 2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width)),
+                        s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < 2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width)),
+                        w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < 2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height)),
+                        e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < 2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height)),
+                      } : null
+
                       return (
                         <div
                           key={element.id}
@@ -2855,7 +3944,15 @@ export default function MapViewerPage() {
                             borderWidth: element.borderWidth ?? 2,
                             opacity: (element.opacity ?? 100) / 100,
                             transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
-                            zIndex: element.zIndex ?? 1
+                            zIndex: element.zIndex ?? 1,
+                            // Hide borders for connected hallways
+                            ...(neighbors ? {
+                              borderTop: neighbors.n ? 'none' : undefined,
+                              borderBottom: neighbors.s ? 'none' : undefined,
+                              borderLeft: neighbors.w ? 'none' : undefined,
+                              borderRight: neighbors.e ? 'none' : undefined,
+                              borderRadius: 0 // Remove rounding when connected
+                            } : {})
                           }}
                           onClick={(e) => handleElementClick(element, e)}
                           onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
@@ -2925,14 +4022,46 @@ export default function MapViewerPage() {
                           {/* Resize handles - only show when selected and in editor mode */}
                           {isSelected && viewMode === 'editor' && !element.isLocked && (
                             <>
-                              <div className={`${styles.resizeHandle} ${styles.resizeN}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'n')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeS}`} onMouseDown={(e) => handleResizeStart(e, element.id, 's')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'e')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'w')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeNE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeNW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeSE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'se')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeSW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')} />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeN}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'n')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'n')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeS}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 's')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 's')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeE}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'e')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'e')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeW}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'w')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'w')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeNE}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'ne')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeNW}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'nw')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeSE}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'se')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'se')}
+                              />
+                              <div
+                                className={`${styles.resizeHandle} ${styles.resizeSW}`}
+                                onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')}
+                                onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'sw')}
+                              />
                             </>
                           )}
                         </div>
@@ -3481,6 +4610,68 @@ export default function MapViewerPage() {
                 {/* Layers Tab Content */}
                 {activeRightTab === 'layers' && viewMode === 'editor' && (
                   <div className={styles.layersContent}>
+                    {/* Canvas Size Section */}
+                    <div className={styles.layerSection}>
+                      <div className={styles.layerSectionHeader}>
+                        <Maximize2 size={16} />
+                        <span>Canvas Size</span>
+                      </div>
+                      <div className={styles.layerSettings}>
+                        <select
+                          className={styles.canvasSizeSelect}
+                          value={presetSize}
+                          onChange={(e) => {
+                            const newPreset = e.target.value as keyof typeof PAPER_SIZES
+                            setPresetSize(newPreset)
+                            if (newPreset !== 'custom') {
+                              setCanvasSize({
+                                width: PAPER_SIZES[newPreset].width,
+                                height: PAPER_SIZES[newPreset].height
+                              })
+                            }
+                          }}
+                        >
+                          {Object.entries(PAPER_SIZES).map(([key, val]) => (
+                            <option key={key} value={key}>{val.name}</option>
+                          ))}
+                        </select>
+
+                        {(presetSize === 'custom' || true) && (
+                          <div className={styles.customSizeRow}>
+                            <div className={styles.customSizeInputGroup}>
+                              <label>Width (px)</label>
+                              <input
+                                type="number"
+                                className={styles.propertyInput}
+                                value={canvasSize.width}
+                                onChange={(e) => {
+                                  const w = Number(e.target.value)
+                                  setCanvasSize(p => ({ ...p, width: w }))
+                                  setPresetSize('custom')
+                                }}
+                              />
+                            </div>
+                            <div className={styles.customSizeInputGroup}>
+                              <label>Height (px)</label>
+                              <input
+                                type="number"
+                                className={styles.propertyInput}
+                                value={canvasSize.height}
+                                onChange={(e) => {
+                                  const h = Number(e.target.value)
+                                  setCanvasSize(p => ({ ...p, height: h }))
+                                  setPresetSize('custom')
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <p className={styles.legendHint} style={{ marginTop: '8px' }}>
+                          Standard landscape bonding paper sizes at 96 DPI.
+                        </p>
+                      </div>
+                    </div>
+
                     {/* Background Settings */}
                     <div className={styles.layerSection}>
                       <div className={styles.layerSectionHeader}>
@@ -3966,13 +5157,24 @@ export default function MapViewerPage() {
                 <button onClick={() => setShowSaveModal(false)}><X size={20} /></button>
               </div>
               <div className={styles.modalBody}>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0', fontSize: '0.875rem' }}>
+                  <div>
+                    <span style={{ color: '#64748b', fontWeight: 500, marginRight: '0.5rem' }}>Building:</span>
+                    <span style={{ color: '#0f172a', fontWeight: 600 }}>{selectedBuilding}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', fontWeight: 500, marginRight: '0.5rem' }}>Floor:</span>
+                    <span style={{ color: '#0f172a', fontWeight: 600 }}>{selectedFloor}</span>
+                  </div>
+                </div>
+
                 <div className={styles.formGroup}>
                   <label>Floor Plan Name</label>
                   <input
                     type="text"
                     value={floorPlanName}
                     onChange={(e) => setFloorPlanName(e.target.value)}
-                    placeholder={`${selectedBuilding} - Floor ${selectedFloor}`}
+                    placeholder={`Floor ${selectedFloor}`}
                     className={styles.modalInput}
                   />
                 </div>
@@ -4028,7 +5230,251 @@ export default function MapViewerPage() {
         )
       }
 
+      {/* Export Preview Modal */}
+      {showExportPreview && (
+        <div className={styles.modalOverlay} onClick={() => setShowExportPreview(false)}>
+          <div className={styles.exportPreviewModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2><Download size={20} /> Export PDF Preview</h2>
+              <button onClick={() => setShowExportPreview(false)}><X size={20} /></button>
+            </div>
+            <div className={styles.exportPreviewContent}>
+              {/* Left: Settings Panel */}
+              <div className={styles.exportSettingsPanel}>
+                <div className={styles.exportSettingsScroll}>
+                  <h4 className={styles.exportSectionTitle}>
+                    <Type size={16} /> Document Labels
+                  </h4>
 
+                  <div className={styles.exportField}>
+                    <label>Title</label>
+                    <input
+                      type="text"
+                      value={exportSettings.title}
+                      onChange={(e) => setExportSettings(p => ({ ...p, title: e.target.value }))}
+                      placeholder="Floor Plan Title"
+                      className={styles.modalInput}
+                    />
+                  </div>
+
+                  <div className={styles.exportField}>
+                    <label>Subtitle / Schedule</label>
+                    <input
+                      type="text"
+                      value={exportSettings.subtitle}
+                      onChange={(e) => setExportSettings(p => ({ ...p, subtitle: e.target.value }))}
+                      placeholder="Schedule or subtitle"
+                      className={styles.modalInput}
+                    />
+                  </div>
+
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Building</label>
+                      <input
+                        type="text"
+                        value={exportSettings.buildingLabel}
+                        onChange={(e) => setExportSettings(p => ({ ...p, buildingLabel: e.target.value }))}
+                        placeholder="Building name"
+                        className={styles.modalInput}
+                      />
+                    </div>
+                    <div className={styles.exportField}>
+                      <label>Floor Name</label>
+                      <input
+                        type="text"
+                        value={exportSettings.floorName}
+                        onChange={(e) => setExportSettings(p => ({ ...p, floorName: e.target.value }))}
+                        placeholder="e.g. Ground Floor"
+                        className={styles.modalInput}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Floor Number</label>
+                      <input
+                        type="text"
+                        value={exportSettings.floorNumber}
+                        onChange={(e) => setExportSettings(p => ({ ...p, floorNumber: e.target.value }))}
+                        placeholder="1"
+                        className={styles.modalInput}
+                      />
+                    </div>
+                    <div className={styles.exportField}>
+                      <label>Orientation</label>
+                      <select
+                        value={exportSettings.orientation}
+                        onChange={(e) => setExportSettings(p => ({ ...p, orientation: e.target.value as any }))}
+                        className={styles.modalSelect}
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="landscape">Landscape</option>
+                        <option value="portrait">Portrait</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Paper Size</label>
+                      <select
+                        value={exportSettings.paperSize}
+                        onChange={(e) => setExportSettings(p => ({ ...p, paperSize: e.target.value as any }))}
+                        className={styles.modalSelect}
+                      >
+                        <option value="letter">Letter (8.5" x 11")</option>
+                        <option value="legal">Legal (8.5" x 14")</option>
+                        <option value="a4">A4 (210 x 297 mm)</option>
+                        <option value="custom">Custom Size</option>
+                      </select>
+                    </div>
+                    {exportSettings.paperSize === 'custom' && (
+                      <div className={styles.exportField}>
+                        <label>Dimensions (px)</label>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <input
+                            type="number"
+                            value={exportSettings.customPaperWidth}
+                            onChange={(e) => setExportSettings(p => ({ ...p, customPaperWidth: Number(e.target.value) }))}
+                            className={styles.modalInput}
+                            style={{ width: '60px' }}
+                            placeholder="W"
+                          />
+                          <input
+                            type="number"
+                            value={exportSettings.customPaperHeight}
+                            onChange={(e) => setExportSettings(p => ({ ...p, customPaperHeight: Number(e.target.value) }))}
+                            className={styles.modalInput}
+                            style={{ width: '60px' }}
+                            placeholder="H"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <h4 className={styles.exportSectionTitle}>
+                    <Settings size={16} /> Typography
+                  </h4>
+
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Room Label Size: {exportSettings.roomFontSize}pt</label>
+                      <input
+                        type="range"
+                        min="6"
+                        max="20"
+                        step="1"
+                        value={exportSettings.roomFontSize}
+                        onChange={(e) => setExportSettings(p => ({ ...p, roomFontSize: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                    <div className={styles.exportField}>
+                      <label>Map Scale: {exportSettings.mapScale}%</label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="200"
+                        step="5"
+                        value={exportSettings.mapScale}
+                        onChange={(e) => setExportSettings(p => ({ ...p, mapScale: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                  </div>
+
+                  <h4 className={styles.exportSectionTitle}>
+                    <Eye size={16} /> Visibility
+                  </h4>
+
+                  <div className={styles.exportTogglesGrid}>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.showWatermark}
+                        onChange={(e) => setExportSettings(p => ({ ...p, showWatermark: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>QTime Watermark</span>
+                    </label>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.showLegend}
+                        onChange={(e) => setExportSettings(p => ({ ...p, showLegend: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>Legend</span>
+                    </label>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.showDate}
+                        onChange={(e) => setExportSettings(p => ({ ...p, showDate: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>Date</span>
+                    </label>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.showScheduleInfo}
+                        onChange={(e) => setExportSettings(p => ({ ...p, showScheduleInfo: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>Schedule Info</span>
+                    </label>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.showRoomLabels}
+                        onChange={(e) => setExportSettings(p => ({ ...p, showRoomLabels: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>Room Labels</span>
+                    </label>
+                    <label className={styles.exportToggle}>
+                      <input
+                        type="checkbox"
+                        checked={exportSettings.useWhiteBackground}
+                        onChange={(e) => setExportSettings(p => ({ ...p, useWhiteBackground: e.target.checked }))}
+                      />
+                      <span className={styles.exportToggleSlider} />
+                      <span>White Background</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className={styles.exportActions}>
+                  <button className={styles.cancelBtn} onClick={() => setShowExportPreview(false)}>
+                    Cancel
+                  </button>
+                  <button className={styles.saveModalBtn} onClick={exportPDF}>
+                    <Download size={16} />
+                    Export PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* Right: Preview Canvas */}
+              <div className={styles.exportPreviewArea}>
+                <div className={styles.exportPreviewLabel}>
+                  <Eye size={14} /> Live Preview
+                </div>
+                <div className={styles.exportCanvasWrapper}>
+                  <canvas
+                    ref={exportCanvasRef}
+                    className={styles.exportCanvas}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       {
@@ -4138,7 +5584,7 @@ export default function MapViewerPage() {
           </div>
         )
       }
-    </div >
+    </div>
   )
 }
 

@@ -1,10 +1,9 @@
-'use client'
-
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MdNotifications, MdClose, MdCheckCircle, MdWarning, MdInfo } from 'react-icons/md'
+import { MdNotifications, MdClose, MdCheckCircle, MdWarning, MdInfo, MdArchive, MdDelete } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './NotificationPanel.module.css'
+import ArchiveModal from './ArchiveModal'
 
 interface Notification {
   id: string
@@ -29,50 +28,9 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
 
-  useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUserId(session.user.id)
-        fetchNotifications(session.user.id)
-      }
-    }
-    init()
-  }, [])
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!userId) return
-
-    const channel = supabase
-      .channel('realtime_alerts_faculty')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'system_alerts'
-        },
-        (payload) => {
-          const alert = payload.new as any
-          if (alert.audience === 'faculty' || alert.audience === 'all') {
-            // If targetUserId is present, only show if it matches
-            if (alert.metadata?.targetUserId && alert.metadata.targetUserId !== userId) {
-              return
-            }
-            fetchNotifications(userId)
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId])
-
-  const fetchNotifications = async (uid: string) => {
+  const fetchNotifications = useCallback(async (uid: string) => {
     try {
       const audience = userRole === 'admin' ? 'admin' : 'faculty'
       const response = await fetch(`/api/alerts?audience=${audience}&userId=${encodeURIComponent(uid)}`)
@@ -86,20 +44,129 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
     } catch (error) {
       console.error('Failed to load notifications:', error)
     }
-  }
+  }, [userRole])
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUserId(session.user.id)
+        fetchNotifications(session.user.id)
+      }
+    }
+    init()
+  }, [fetchNotifications])
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel('realtime_alerts_faculty')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_alerts'
+        },
+        () => {
+          fetchNotifications(userId)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'alert_receipts',
+          filter: `user_id=eq.${userId}`
+        },
+        () => {
+          fetchNotifications(userId)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, fetchNotifications])
 
   const markAsRead = async (notificationId: string) => {
     if (!userId) return
+
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, receipt: { status: 'read' } } : n))
+    setUnreadCount(prev => Math.max(0, prev - 1))
 
     await fetch('/api/alerts', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alertId: notificationId, userId, action: 'read' })
     })
+  }
 
-    if (userId) {
-      fetchNotifications(userId)
+  const markAllAsRead = async () => {
+    if (!userId) return
+
+    setNotifications(prev => prev.map(n => ({ ...n, receipt: { status: 'read' } })))
+    setUnreadCount(0)
+
+    await fetch('/api/alerts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, action: 'read_all', audience: userRole })
+    })
+  }
+
+  const clearAllNotifications = async () => {
+    if (!userId) return
+
+    // Archive all current visible notifications first
+    for (const notif of notifications) {
+      await supabase.from('archived_items').insert({
+        item_type: 'notification',
+        item_name: notif.title,
+        item_data: notif,
+        deleted_by: userId,
+        original_table: 'system_alerts',
+        original_id: notif.id
+      })
     }
+
+    setNotifications([])
+    setUnreadCount(0)
+
+    await fetch('/api/alerts', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, action: 'clear_all', audience: userRole })
+    })
+  }
+
+  const deleteNotification = async (notif: Notification) => {
+    if (!userId) return
+
+    // Archive
+    await supabase.from('archived_items').insert({
+      item_type: 'notification',
+      item_name: notif.title,
+      item_data: notif,
+      deleted_by: userId,
+      original_table: 'system_alerts',
+      original_id: notif.id
+    })
+
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
+    if (!notif.receipt || notif.receipt.status === 'unread') {
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    }
+
+    await fetch('/api/alerts', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, action: 'clear_all', alertId: notif.id })
+    })
   }
 
   const markAsConfirmed = async (notificationId: string) => {
@@ -110,10 +177,7 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alertId: notificationId, userId, action: 'confirm' })
     })
-
-    if (userId) {
-      fetchNotifications(userId)
-    }
+    fetchNotifications(userId)
   }
 
   const severityIcon = (level: string) => {
@@ -169,13 +233,28 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
             {/* Header */}
             <div className={styles.header}>
               <h3 className={styles.title}>Notifications</h3>
-              <button
-                onClick={() => setOpen(false)}
-                className={styles.closeBtn}
-                aria-label="Close"
-              >
-                <MdClose size={20} />
-              </button>
+              <div className={styles.headerActions}>
+                {notifications.length > 0 && (
+                  <>
+                    <button className={styles.headerActionBtn} onClick={markAllAsRead} title="Mark all as read">
+                      <MdCheckCircle size={18} />
+                    </button>
+                    <button className={styles.headerActionBtn} onClick={() => setIsArchiveOpen(true)} title="View Archive">
+                      <MdArchive size={18} />
+                    </button>
+                    <button className={`${styles.headerActionBtn} ${styles.clearAllBtn}`} onClick={clearAllNotifications} title="Clear all">
+                      <MdDelete size={18} />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setOpen(false)}
+                  className={styles.closeBtn}
+                  aria-label="Close"
+                >
+                  <MdClose size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Notifications List */}
@@ -194,7 +273,9 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
                       : ''
                       }`}
                     onClick={() => {
-                      markAsRead(notification.id)
+                      if (!notification.receipt || notification.receipt.status === 'unread') {
+                        markAsRead(notification.id)
+                      }
                       if (notification.category === 'schedule_request') {
                         router.push('/faculty/schedules')
                         setOpen(false)
@@ -213,25 +294,23 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
                       </span>
                     </div>
 
-                    {/* Actions */}
-                    {(!notification.receipt || notification.receipt.status === 'unread') && (
-                      <div className={styles.itemActions}>
+                    <div className={styles.itemActions}>
+                      <button
+                        className={styles.itemDeleteBtn}
+                        onClick={(e) => { e.stopPropagation(); deleteNotification(notification) }}
+                        title="Delete"
+                      >
+                        <MdDelete size={14} />
+                      </button>
+                      {(!notification.receipt || notification.receipt.status === 'unread') && notification.severity !== 'info' && (
                         <button
-                          onClick={() => markAsRead(notification.id)}
-                          className={styles.actionBtn}
+                          onClick={(e) => { e.stopPropagation(); markAsConfirmed(notification.id) }}
+                          className={`${styles.actionBtn} ${styles.confirmBtn}`}
                         >
-                          Mark Read
+                          Confirm
                         </button>
-                        {notification.severity !== 'info' && (
-                          <button
-                            onClick={() => markAsConfirmed(notification.id)}
-                            className={`${styles.actionBtn} ${styles.confirmBtn}`}
-                          >
-                            Confirm
-                          </button>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))
               )}
@@ -239,6 +318,13 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
           </div>
         </>
       )}
+
+      <ArchiveModal
+        isOpen={isArchiveOpen}
+        onClose={() => setIsArchiveOpen(false)}
+        onRestore={() => userId && fetchNotifications(userId)}
+        forcedType="notification"
+      />
     </div>
   )
 }

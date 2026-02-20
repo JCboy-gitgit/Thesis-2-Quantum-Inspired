@@ -5,7 +5,7 @@ import {
   MdAccessTime, MdPeople, MdCheckCircle, MdCancel, MdBusiness,
   MdZoomIn, MdZoomOut, MdFullscreen, MdFullscreenExit, MdExpandMore, MdExpandLess, MdChevronLeft, MdChevronRight,
   MdRefresh, MdInfo, MdMap, MdWarning, MdVisibility, MdMeetingRoom, MdDirectionsWalk,
-  MdSwapVert, MdWc, MdLaptop, MdScience, MdLocalLibrary, MdRestaurant,
+  MdSwapVert, MdWc, MdMan, MdWoman, MdLaptop, MdScience, MdLocalLibrary, MdRestaurant,
   MdArchive, MdFitnessCenter, MdMusicNote, MdTheaterComedy, MdCoPresent, MdDns, MdWifi,
   MdAir, MdLocalFireDepartment, MdWaterDrop, MdRadioButtonChecked, MdChangeHistory, MdHexagon, MdStar,
   MdStop, MdFavorite, MdCalendarToday, MdImage, MdClose
@@ -22,6 +22,8 @@ const ICON_MAP: Record<string, any> = {
   stairs: MdDirectionsWalk,
   elevator: MdSwapVert,
   restroom: MdWc,
+  men_room: MdMan,
+  women_room: MdWoman,
   computer: MdLaptop,
   lab: MdScience,
   library: MdLocalLibrary,
@@ -712,11 +714,15 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                   {/* Room content */}
                   {isRoom && (
                     <>
-                      {/* Availability indicator */}
-                      <div className={`${styles.availabilityDot} ${styles[availability]}`} />
-
                       {/* Room label */}
                       <div className={styles.roomLabel}>{element.label}</div>
+
+                      {/* Capacity label - Live feature from admin */}
+                      {element.linkedRoomData && (
+                        <div className={styles.roomCapacity}>
+                          <MdPeople size={10} /> {element.linkedRoomData.capacity}
+                        </div>
+                      )}
 
                       {/* Current class info on hover/selection */}
                       {currentClass && (

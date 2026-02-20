@@ -87,16 +87,48 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const supabaseAdmin = createAdminClient()
     const body = await request.json()
-    const alertId = String(body.alertId || '').trim()
     const userId = String(body.userId || '').trim()
     const action = String(body.action || '').trim()
 
-    if (!alertId || !userId || !action) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!userId || !action) {
+      return NextResponse.json({ error: 'Missing userId or action' }, { status: 400 })
     }
 
     const now = new Date().toISOString()
+
+    if (action === 'read_all') {
+      const audience = body.audience || 'faculty'
+
+      // Get all unread alerts for this audience
+      const { data: activeAlerts } = await supabaseAdmin
+        .from('system_alerts')
+        .select('id')
+        .is('deleted_at', null)
+        .in('audience', [audience, 'all'])
+
+      if (activeAlerts && activeAlerts.length > 0) {
+        const inserts = activeAlerts.map(alert => ({
+          alert_id: alert.id,
+          user_id: userId,
+          status: 'read',
+          read_at: now,
+          updated_at: now
+        }))
+
+        const { error } = await supabaseAdmin
+          .from('alert_receipts')
+          .upsert(inserts, { onConflict: 'alert_id,user_id' })
+
+        if (error) throw error
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    const alertId = String(body.alertId || '').trim()
+    if (!alertId) return NextResponse.json({ error: 'Missing alertId' }, { status: 400 })
+
     let status = 'read'
     const updates: Record<string, any> = { updated_at: now }
 
@@ -113,7 +145,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const supabaseAdmin = createAdminClient()
     const { error } = await supabaseAdmin
       .from('alert_receipts')
       .upsert({
@@ -123,13 +154,72 @@ export async function PATCH(request: NextRequest) {
         ...updates
       }, { onConflict: 'alert_id,user_id' })
 
-    if (error) {
-      throw error
-    }
+    if (error) throw error
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Alerts PATCH error:', error)
-    return NextResponse.json({ error: error?.message || 'Failed to update alert' }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Failed to update alerts' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const body = await request.json()
+    const userId = String(body.userId || '').trim()
+    const action = body.action
+
+    if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
+
+    const now = new Date().toISOString()
+
+    if (action === 'clear_all') {
+      const { alertId } = body
+      if (alertId) {
+        // Clear specific alert
+        const { error } = await supabaseAdmin
+          .from('alert_receipts')
+          .upsert({
+            alert_id: alertId,
+            user_id: userId,
+            status: 'dismissed',
+            dismissed_at: now,
+            updated_at: now
+          }, { onConflict: 'alert_id,user_id' })
+
+        if (error) throw error
+      } else {
+        // Clear all active alerts for this audience
+        const audience = body.audience || 'faculty'
+        const { data: alerts } = await supabaseAdmin
+          .from('system_alerts')
+          .select('id')
+          .is('deleted_at', null)
+          .in('audience', [audience, 'all'])
+
+        if (alerts && alerts.length > 0) {
+          const deletes = alerts.map(a => ({
+            alert_id: a.id,
+            user_id: userId,
+            status: 'dismissed',
+            dismissed_at: now,
+            updated_at: now
+          }))
+
+          const { error } = await supabaseAdmin
+            .from('alert_receipts')
+            .upsert(deletes, { onConflict: 'alert_id,user_id' })
+
+          if (error) throw error
+        }
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    return NextResponse.json({ error: 'Invalid operation' }, { status: 400 })
+  } catch (error: any) {
+    console.error('Alerts DELETE error:', error)
+    return NextResponse.json({ error: error?.message || 'Failed to clear alerts' }, { status: 500 })
   }
 }

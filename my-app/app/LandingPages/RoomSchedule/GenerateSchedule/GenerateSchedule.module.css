@@ -7080,3 +7080,248 @@
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 100%);
   color: #d97706;
 }
+
+/* ==================== Scheduling Constraints Styles ==================== */
+.constraintsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.constraintItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 0;
+}
+
+.constraintLabelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.constraintInputGroup {
+  min-width: 250px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+  opacity: 0.5;
+}
+
+.ruleToggles {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ruleItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-gray-50);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.ruleItem:hover {
+  border-color: var(--primary);
+  background: var(--bg-white);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.ruleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ruleTitle {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 14px;
+}
+
+.ruleDesc {
+  font-size: 12px;
+  color: var(--text-medium);
+  opacity: 0.8;
+}
+
+/* Toggle Switch */
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked+.toggleSlider {
+  background: var(--primary-gradient);
+}
+
+input:focus+.toggleSlider {
+  box-shadow: 0 0 1px var(--primary);
+}
+
+input:checked+.toggleSlider:before {
+  transform: translateX(24px);
+}
+
+/* Green Theme Support for Rule Items */
+:global([data-theme="green"]) .ruleItem {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .ruleItem:hover {
+  background: rgba(46, 175, 125, 0.05);
+  border-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .ruleTitle {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .ruleDesc {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .divider {
+  background: rgba(46, 175, 125, 0.2);
+}
+
+/* Faculty Type Rules Section */
+.facultyRulesSection {
+  margin-top: 24px;
+  animation: slideUp 0.5s ease-out;
+}
+
+.facultyRulesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.facultyTypeCard {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(46, 175, 125, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.facultyTypeCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  border-color: rgba(46, 175, 125, 0.4);
+}
+
+.facultyTypeHeader {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.facultyTypeName {
+  font-weight: 700;
+  color: #02353C;
+  font-size: 1.1rem;
+}
+
+.facultyTypeInputs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.miniInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.miniInputGroup label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.miniInputGroup input {
+  padding: 8px 12px;
+  border: 1.5px solid rgba(46, 175, 125, 0.2);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #02353C;
+  background: white;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.miniInputGroup input:focus {
+  outline: none;
+  border-color: #2EAF7D;
+  box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.15);
+}
+
+:global([data-theme="green"]) .facultyTypeCard {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 253, 244, 0.8) 100%);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

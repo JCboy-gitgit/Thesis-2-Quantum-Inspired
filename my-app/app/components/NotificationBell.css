@@ -109,6 +109,7 @@
 }
 
 .mark-all-btn,
+.archive-btn,
 .clear-all-btn {
   background: none;
   border: 1px solid var(--card-border);
@@ -124,7 +125,8 @@
   gap: 4px;
 }
 
-.mark-all-btn:hover {
+.mark-all-btn:hover,
+.archive-btn:hover {
   background: var(--primary-alpha);
   color: var(--primary);
   border-color: var(--primary);
@@ -247,6 +249,30 @@
   font-size: 11px;
   color: var(--text-secondary);
   opacity: 0.7;
+}
+
+.item-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  opacity: 0;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.notification-item:hover .item-delete-btn {
+  opacity: 0.6;
+}
+
+.item-delete-btn:hover {
+  opacity: 1 !important;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 /* Empty State */

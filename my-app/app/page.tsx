@@ -267,10 +267,11 @@ function PageContent(): JSX.Element {
           localStorage.setItem('adminStaySignedIn', 'true')
         }
 
-        // Default admin to green mode regardless of login theme
-        localStorage.setItem('admin-base-theme', 'green')
-        document.documentElement.setAttribute('data-theme', 'green')
-        document.body.setAttribute('data-theme', 'green')
+        // Map login theme to admin theme: dark → dark, light → green (default admin)
+        const adminTheme = loginTheme === 'dark' ? 'dark' : 'green'
+        localStorage.setItem('admin-base-theme', adminTheme)
+        document.documentElement.setAttribute('data-theme', adminTheme)
+        document.body.setAttribute('data-theme', adminTheme)
 
         setLoginMessage('Admin login successful. Redirecting...')
         sessionStorage.setItem('sidebar_fresh_login', 'true')

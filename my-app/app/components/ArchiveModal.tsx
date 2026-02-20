@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import {
   MdArchive,
+  MdNotifications,
   MdClose,
   MdRefresh,
   MdDelete,
@@ -20,7 +21,7 @@ import './ArchiveModal.css'
 
 interface ArchivedItem {
   id: string
-  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room'
+  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification'
   item_name: string
   item_data: any
   deleted_at: string
@@ -34,13 +35,14 @@ interface ArchiveModalProps {
   onClose: () => void
   onRestore?: (item: ArchivedItem) => void
   onPermanentDelete?: (item: ArchivedItem) => void
+  forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification'
 }
 
-export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete }: ArchiveModalProps) {
+export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete, forcedType }: ArchiveModalProps) {
   const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>(forcedType || 'all')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [confirmDelete, setConfirmDelete] = useState<ArchivedItem | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -83,7 +85,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
     setActionLoading(true)
     try {
       console.log('Restoring item:', item.item_type, item.item_name, item.item_data)
-      
+
       // Handle different item types for restoration
       if (item.item_type === 'csv_file') {
         // For CSV files (campuses/class_schedules), restore all records
@@ -117,21 +119,21 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         const data = item.item_data
         if (data.schedule) {
           // Filter out fields that don't exist in generated_schedules table
-          const { 
+          const {
             school_name, college, // These are UI-only fields, not in DB
-            ...cleanSchedule 
+            ...cleanSchedule
           } = data.schedule
-          
+
           // Try to restore the schedule with original ID first
           const { error: scheduleError } = await supabase
             .from('generated_schedules')
             .upsert(cleanSchedule, { onConflict: 'id' })
-          
+
           if (scheduleError) {
             console.error('Error restoring schedule:', scheduleError)
             throw scheduleError
           }
-          
+
           if (data.allocations && Array.isArray(data.allocations)) {
             // Restore allocations - skip errors for allocations as they may already exist
             for (const allocation of data.allocations) {
@@ -157,7 +159,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 lab_hours: allocation.lab_hours,
                 status: allocation.status
               }
-              
+
               const { error: allocError } = await (supabase as any)
                 .from('room_allocations')
                 .upsert(cleanAllocation, { onConflict: 'id' })
@@ -182,6 +184,14 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         const { error } = await supabase.from(item.original_table).insert(dataWithoutId)
         if (error) {
           console.error('Error restoring room:', error)
+          throw error
+        }
+      } else if (item.item_type === 'notification') {
+        // Restore notification to system_alerts
+        const { id, ...notifData } = item.item_data
+        const { error } = await supabase.from('system_alerts').insert(notifData)
+        if (error) {
+          console.error('Error restoring notification:', error)
           throw error
         }
       } else {
@@ -228,7 +238,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         .select()
 
       if (error) throw error
-      
+
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
@@ -317,11 +327,11 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
           restoredCount++
         }
       }
-      
+
       setArchivedItems(prev => prev.filter(i => !selectedItems.includes(i.id)))
       setSelectedItems([])
       setMessage({ type: 'success', text: `${restoredCount} items restored successfully` })
-      
+
       setTimeout(() => setMessage(null), 3000)
     } catch (error: any) {
       console.error('Error bulk restoring:', error?.message || error)
@@ -340,11 +350,11 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         .in('id', selectedItems)
 
       if (error) throw error
-      
+
       setArchivedItems(prev => prev.filter(i => !selectedItems.includes(i.id)))
       setSelectedItems([])
       setMessage({ type: 'success', text: `${selectedItems.length} items permanently deleted` })
-      
+
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
       console.error('Error bulk deleting:', error)
@@ -355,8 +365,8 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
   }
 
   const toggleSelectItem = (id: string) => {
-    setSelectedItems(prev => 
-      prev.includes(id) 
+    setSelectedItems(prev =>
+      prev.includes(id)
         ? prev.filter(i => i !== id)
         : [...prev, id]
     )
@@ -375,6 +385,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'csv_file': return <MdInsertDriveFile size={20} />
       case 'department': return <MdBusiness size={20} />
       case 'faculty': return <MdPeople size={20} />
+      case 'notification': return <MdNotifications size={20} />
       default: return <MdArchive size={20} />
     }
   }
@@ -386,6 +397,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'faculty': return 'Faculty'
       case 'schedule': return 'Schedule'
       case 'room': return 'Room'
+      case 'notification': return 'Notification'
       default: return type
     }
   }
@@ -444,7 +456,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="archive-filter">
             <MdFilterList size={18} />
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
@@ -454,12 +466,13 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
               <option value="faculty">Faculty</option>
               <option value="schedule">Schedules</option>
               <option value="room">Rooms</option>
+              <option value="notification">Notifications</option>
             </select>
           </div>
 
           {selectedItems.length > 0 && (
             <div className="archive-bulk-actions">
-              <button 
+              <button
                 className="archive-bulk-btn restore"
                 onClick={handleBulkRestore}
                 disabled={actionLoading}
@@ -467,7 +480,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 <MdRefresh size={16} />
                 Restore ({selectedItems.length})
               </button>
-              <button 
+              <button
                 className="archive-bulk-btn delete"
                 onClick={handleBulkDelete}
                 disabled={actionLoading}
@@ -490,8 +503,8 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             <div className="archive-empty">
               <MdArchive size={64} />
               <h3>No Archived Items</h3>
-              <p>{searchTerm || filterType !== 'all' 
-                ? 'No items match your search criteria' 
+              <p>{searchTerm || filterType !== 'all'
+                ? 'No items match your search criteria'
                 : 'Deleted items will appear here for recovery'}
               </p>
             </div>
@@ -511,7 +524,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 <span className="archive-col-date">Deleted At</span>
                 <span className="archive-col-actions">Actions</span>
               </div>
-              
+
               <div className="archive-list">
                 {filteredItems.map(item => (
                   <div key={item.id} className={`archive-item ${selectedItems.includes(item.id) ? 'selected' : ''}`}>
@@ -523,23 +536,23 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                       />
                       <span className="checkmark"></span>
                     </label>
-                    
+
                     <div className="archive-item-name">
                       <span className="archive-item-icon">{getTypeIcon(item.item_type)}</span>
                       <span>{item.item_name}</span>
                     </div>
-                    
+
                     <div className="archive-item-type">
                       <span className={`type-badge ${item.item_type}`}>
                         {getTypeLabel(item.item_type)}
                       </span>
                     </div>
-                    
+
                     <div className="archive-item-date">
                       <MdAccessTime size={14} />
                       {formatDate(item.deleted_at)}
                     </div>
-                    
+
                     <div className="archive-item-actions">
                       <button
                         className="archive-action-btn restore"
@@ -585,14 +598,14 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
                 <span className="warning-text">This action cannot be undone.</span>
               </p>
               <div className="archive-confirm-actions">
-                <button 
+                <button
                   className="archive-confirm-btn cancel"
                   onClick={() => setConfirmDelete(null)}
                   disabled={actionLoading}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   className="archive-confirm-btn delete"
                   onClick={() => handlePermanentDelete(confirmDelete)}
                   disabled={actionLoading}

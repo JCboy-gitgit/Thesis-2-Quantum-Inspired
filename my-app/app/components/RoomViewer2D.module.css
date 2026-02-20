@@ -317,8 +317,15 @@
 }
 
 @keyframes floorListSlide {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .floorCard {
@@ -407,9 +414,9 @@
   flex: 1;
   overflow: auto;
   background: linear-gradient(45deg, var(--college-primary-light) 25%, transparent 25%),
-              linear-gradient(-45deg, var(--college-primary-light) 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, var(--college-primary-light) 75%),
-              linear-gradient(-45deg, transparent 75%, var(--college-primary-light) 75%);
+    linear-gradient(-45deg, var(--college-primary-light) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--college-primary-light) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--college-primary-light) 75%);
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
   border-radius: 8px;
@@ -566,21 +573,41 @@
 }
 
 @keyframes dotPulseGreen {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
     transform: scale(1);
   }
+
   50% {
     box-shadow: 0 0 0 6px rgba(34, 197, 94, 0), 0 2px 6px rgba(0, 0, 0, 0.4);
     transform: scale(1.1);
   }
 }
 
+.roomCapacity {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(15, 23, 42, 0.6);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 @keyframes dotPulseRed {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
     transform: scale(1);
   }
+
   50% {
     box-shadow: 0 0 0 6px rgba(239, 68, 68, 0), 0 2px 6px rgba(0, 0, 0, 0.4);
     transform: scale(1.1);
@@ -634,18 +661,24 @@
 }
 
 @keyframes pulseGreen {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(34, 197, 94, 0), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
 @keyframes pulseRed {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(239, 68, 68, 0), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
@@ -689,8 +722,15 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Element labels */
@@ -822,18 +862,24 @@
 }
 
 @keyframes glowGreen {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
   }
+
   50% {
     box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
   }
 }
 
 @keyframes glowRed {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
   }
+
   50% {
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
   }
@@ -999,7 +1045,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================
@@ -1411,6 +1459,7 @@
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
+
   .zoomBtn,
   .fullscreenBtn,
   .refreshBtn {
@@ -1489,9 +1538,9 @@
 
 :global([data-theme="dark"]) .canvasWrapper {
   background: linear-gradient(45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
-              linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
-              linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
   background-size: 20px 20px;
   border-color: #334155 !important;
 }
@@ -1732,9 +1781,9 @@
 
 :global([data-theme="light"]) .canvasWrapper {
   background: linear-gradient(45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
-              linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
-              linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
+    linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
   background-size: 20px 20px;
   border-color: #e2e8f0 !important;
 }
@@ -2059,9 +2108,9 @@
 :global([data-theme="dark"]) .canvasWrapper,
 :global([data-theme="green"]) .canvasWrapper {
   background: linear-gradient(45deg, var(--college-primary-light) 25%, transparent 25%),
-              linear-gradient(-45deg, var(--college-primary-light) 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, var(--college-primary-light) 75%),
-              linear-gradient(-45deg, transparent 75%, var(--college-primary-light) 75%) !important;
+    linear-gradient(-45deg, var(--college-primary-light) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--college-primary-light) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--college-primary-light) 75%) !important;
   background-size: 20px 20px !important;
   border-color: var(--college-primary-light) !important;
 }
@@ -2221,8 +2270,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modalContent {
@@ -2240,10 +2294,11 @@
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     transform: translateY(40px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -2620,8 +2675,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Mobile Responsive */

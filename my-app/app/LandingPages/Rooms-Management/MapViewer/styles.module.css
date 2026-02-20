@@ -2813,6 +2813,39 @@
   background: var(--bg-gray-50);
 }
 
+.canvasSizeSelect {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-white);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--content-text);
+  margin-bottom: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.canvasSizeSelect:focus {
+  border-color: var(--primary);
+}
+
+.customSizeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.customSizeInputGroup label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
 .layerSettings {
   padding: 12px 16px;
 }
@@ -3859,6 +3892,398 @@
   color: #d97706;
 }
 
+/* ==================== Export Preview Modal ==================== */
+.exportPreviewModal {
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.exportPreviewContent {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.exportSettingsPanel {
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid var(--border-color);
+  overflow: hidden;
+}
+
+.exportSettingsScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.exportSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 14px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.exportSectionTitle svg {
+  color: var(--primary);
+}
+
+.exportField {
+  margin-bottom: 14px;
+}
+
+.exportField label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-medium);
+  margin-bottom: 5px;
+}
+
+.exportField .modalInput,
+.exportField .modalSelect {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-white);
+  color: var(--content-text);
+  transition: border-color 0.2s;
+}
+
+.exportField .modalInput:focus,
+.exportField .modalSelect:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-alpha);
+}
+
+.exportFieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.exportSlider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 3px;
+  background: var(--border-color);
+  outline: none;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.exportSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.exportSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.exportSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.exportTogglesGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exportToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--content-text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.exportToggle:hover {
+  background: var(--bg-gray-50);
+}
+
+.exportToggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.exportToggleSlider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  background: #cbd5e1;
+  border-radius: 10px;
+  transition: background 0.25s;
+}
+
+.exportToggleSlider::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s;
+}
+
+.exportToggle input:checked+.exportToggleSlider {
+  background: var(--primary);
+}
+
+.exportToggle input:checked+.exportToggleSlider::after {
+  transform: translateX(16px);
+}
+
+.exportActions {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 2px solid var(--border-color);
+  background: var(--bg-gray-50);
+}
+
+.exportActions .cancelBtn {
+  flex: 1;
+}
+
+.exportActions .saveModalBtn {
+  flex: 1.5;
+}
+
+.exportPreviewArea {
+  display: flex;
+  flex-direction: column;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.exportPreviewLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(226, 232, 240, 0.8);
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.exportCanvasWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;
+}
+
+.exportCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Export Preview - Green Theme */
+:global([data-theme="green"]) .exportPreviewModal {
+  background: #ffffff;
+}
+
+:global([data-theme="green"]) .exportSectionTitle {
+  color: #64748b;
+  border-bottom-color: rgba(16, 185, 129, 0.15);
+}
+
+:global([data-theme="green"]) .exportSectionTitle svg {
+  color: #10b981;
+}
+
+:global([data-theme="green"]) .exportToggleSlider {
+  background: #cbd5e1;
+}
+
+:global([data-theme="green"]) .exportToggle input:checked+.exportToggleSlider {
+  background: #10b981;
+}
+
+:global([data-theme="green"]) .exportPreviewArea {
+  background: #f1f5f9;
+}
+
+:global([data-theme="green"]) .exportPreviewLabel {
+  color: #475569;
+  background: #f1f5f9;
+  border-bottom-color: rgba(16, 185, 129, 0.15);
+}
+
+:global([data-theme="green"]) .exportSlider::-webkit-slider-thumb {
+  background: #10b981;
+}
+
+:global([data-theme="green"]) .exportSlider::-moz-range-thumb {
+  background: #10b981;
+}
+
+/* Export Preview - Dark Theme */
+:global([data-theme="dark"]) .exportPreviewModal {
+  background: #1a1f3a;
+}
+
+:global([data-theme="dark"]) .exportSettingsPanel {
+  border-right-color: rgba(0, 212, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .exportSectionTitle {
+  color: #94a3b8;
+  border-bottom-color: rgba(0, 212, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .exportSectionTitle svg {
+  color: #00d4ff;
+}
+
+:global([data-theme="dark"]) .exportField label {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .exportField .modalInput,
+:global([data-theme="dark"]) .exportField .modalSelect {
+  background: rgba(26, 31, 58, 0.8);
+  border-color: rgba(0, 212, 255, 0.2);
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .exportField .modalInput:focus,
+:global([data-theme="dark"]) .exportField .modalSelect:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+:global([data-theme="dark"]) .exportToggle {
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .exportToggle:hover {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+:global([data-theme="dark"]) .exportToggleSlider {
+  background: #334155;
+}
+
+:global([data-theme="dark"]) .exportToggle input:checked+.exportToggleSlider {
+  background: #00d4ff;
+}
+
+:global([data-theme="dark"]) .exportPreviewArea {
+  background: #0a0e27;
+}
+
+:global([data-theme="dark"]) .exportPreviewLabel {
+  color: #94a3b8;
+  background: rgba(10, 14, 39, 0.8);
+  border-bottom-color: rgba(0, 212, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .exportActions {
+  background: rgba(26, 31, 58, 0.6);
+  border-top-color: rgba(0, 212, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .exportSlider {
+  background: #334155;
+}
+
+:global([data-theme="dark"]) .exportSlider::-webkit-slider-thumb {
+  background: #00d4ff;
+}
+
+:global([data-theme="dark"]) .exportSlider::-moz-range-thumb {
+  background: #00d4ff;
+}
+
+/* Export Preview - Mobile Responsive */
+@media (max-width: 768px) {
+  .exportPreviewModal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .exportPreviewContent {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .exportSettingsPanel {
+    border-right: none;
+    border-bottom: 2px solid var(--border-color);
+    max-height: 50vh;
+  }
+
+  .exportSettingsScroll {
+    padding: 14px;
+  }
+
+  .exportPreviewArea {
+    min-height: 250px;
+  }
+
+  .exportFieldRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ==================== Share Modal ==================== */
 .shareLink {
   display: flex;
@@ -4328,14 +4753,14 @@
 
   .resizeN,
   .resizeS {
-    width: 40px;
-    height: 12px;
+    width: 30px;
+    height: 10px;
   }
 
   .resizeE,
   .resizeW {
-    width: 12px;
-    height: 40px;
+    width: 10px;
+    height: 30px;
   }
 
   /* Room items */
@@ -4492,14 +4917,14 @@
 
   .resizeN,
   .resizeS {
-    width: 50px;
-    height: 16px;
+    width: 36px;
+    height: 12px;
   }
 
   .resizeE,
   .resizeW {
-    width: 16px;
-    height: 50px;
+    width: 12px;
+    height: 36px;
   }
 }
 
@@ -4534,6 +4959,11 @@
 
 .canvas.isInteracting .canvasElement {
   pointer-events: none;
+}
+
+.canvas.isInteracting .canvasElement.dragging,
+.canvas.isInteracting .canvasElement.resizing {
+  pointer-events: auto;
 }
 
 .panMode,
@@ -5000,5 +5430,65 @@
 
   .detailCard {
     margin-bottom: 0.5rem;
+  }
+}
+
+.interfaceBranding {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: interfaceFadeIn 0.5s ease-out;
+}
+
+.brandingIcon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 212, 255, 0.4);
+}
+
+.brandingText {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+}
+
+@keyframes interfaceFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .interfaceBranding {
+    bottom: 80px;
+    /* Adjust for mobile FABs */
+    right: 16px;
+    padding: 8px 12px;
   }
 }

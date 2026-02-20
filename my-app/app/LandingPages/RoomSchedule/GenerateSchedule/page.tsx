@@ -116,6 +116,20 @@ interface TeacherSchedule {
   email: string
 }
 
+interface FacultyTypeRule {
+  maxHoursPerWeek: number
+  maxHoursPerDay: number
+  maxSectionsTotal: number
+  maxSectionsPerCourse: number
+}
+
+const DEFAULT_FACULTY_RULES: Record<string, FacultyTypeRule> = {
+  FullTime: { maxHoursPerWeek: 24, maxHoursPerDay: 6, maxSectionsTotal: 6, maxSectionsPerCourse: 2 },
+  PartTime: { maxHoursPerWeek: 12, maxHoursPerDay: 4, maxSectionsTotal: 3, maxSectionsPerCourse: 2 },
+  VSL: { maxHoursPerWeek: 15, maxHoursPerDay: 6, maxSectionsTotal: 4, maxSectionsPerCourse: 3 },
+  COS: { maxHoursPerWeek: 18, maxHoursPerDay: 6, maxSectionsTotal: 5, maxSectionsPerCourse: 2 }
+}
+
 interface ScheduleConfig {
   scheduleName: string
   semester: string
@@ -125,8 +139,17 @@ interface ScheduleConfig {
   coolingRate: number
   quantumTunnelingProbability: number
   maxTeacherHoursPerDay: number
+  maxConsecutiveHours: number // NEW: Max hours before required break
   avoidConflicts: boolean
   onlineDays: string[] // Days when all classes are online
+  // BulSU Rules & Constraints
+  lunchMode: 'auto' | 'strict' | 'flexible' | 'none' // NEW
+  lunchStartHour: number // NEW
+  lunchEndHour: number // NEW
+  strictLabRoomMatching: boolean // NEW
+  strictLectureRoomMatching: boolean // NEW
+  allowSplitSessions: boolean // NEW
+  facultyTypeRules: Record<string, FacultyTypeRule> // NEW
 }
 
 interface TimeSettings {
@@ -285,8 +308,17 @@ export default function GenerateSchedulePage() {
     coolingRate: 0.999,
     quantumTunnelingProbability: 0.15,
     maxTeacherHoursPerDay: 8,
+    maxConsecutiveHours: 4, // Default 4 hours
     avoidConflicts: true,
-    onlineDays: [] // Days where all classes are online
+    onlineDays: [], // Days where all classes are online
+    // BulSU Rules Default
+    lunchMode: 'auto',
+    lunchStartHour: 13, // 1:00 PM
+    lunchEndHour: 14,   // 2:00 PM
+    strictLabRoomMatching: true,
+    strictLectureRoomMatching: true,
+    allowSplitSessions: true,
+    facultyTypeRules: { ...DEFAULT_FACULTY_RULES }
   })
 
   // Time Configuration
@@ -1428,11 +1460,26 @@ export default function GenerateSchedulePage() {
           cooling_rate: config.coolingRate,
           quantum_tunneling_probability: config.quantumTunnelingProbability,
           max_teacher_hours_per_day: config.maxTeacherHoursPerDay,
+          max_consecutive_hours: config.maxConsecutiveHours,
           avoid_conflicts: config.avoidConflicts,
           online_days: config.onlineDays,
           college: selectedCollege, // College constraint for backend
-          // Lunch break: AUTO mode (1hr break after 6hrs consecutive)
-          lunch_mode: 'auto'
+          lunch_mode: config.lunchMode,
+          lunch_start_hour: config.lunchStartHour,
+          lunch_end_hour: config.lunchEndHour,
+          strict_lab_room_matching: config.strictLabRoomMatching,
+          strict_lecture_room_matching: config.strictLectureRoomMatching,
+          allow_split_sessions: config.allowSplitSessions,
+          // NEW: Professional Faculty Type Rules
+          faculty_types: Object.entries(config.facultyTypeRules).reduce((acc, [key, value]) => ({
+            ...acc,
+            [key]: {
+              max_hours_per_week: value.maxHoursPerWeek,
+              max_hours_per_day: value.maxHoursPerDay,
+              max_sections_total: value.maxSectionsTotal,
+              max_sections_per_course: value.maxSectionsPerCourse
+            }
+          }), {})
         }
       }
 
@@ -3932,6 +3979,227 @@ export default function GenerateSchedulePage() {
                         </p>
                       </div>
                     )}
+                  </div>
+
+                  {/* Detailed Scheduling Constraints & Rules (New Section) */}
+                  <div className={styles.formCard}>
+                    <h3 className={styles.formSectionTitle}>
+                      <FaFilter /> Scheduling Constraints & Rules
+                    </h3>
+                    <div className={styles.timeConfigInfo}>
+                      <FaCog size={20} />
+                      <p>
+                        Configure how the algorithm handles specific BulSU scheduling rules. These constraints directly influence the cost matrix of the quantum simulation.
+                      </p>
+                    </div>
+
+                    <div className={styles.constraintsWrapper}>
+                      {/* Lunch Mode Selection */}
+                      <div className={styles.constraintItem}>
+                        <div className={styles.constraintLabelGroup}>
+                          <label className={styles.formLabel}>Lunch Break Mode</label>
+                          <span className={styles.formHint}>How the mandatory lunch break should be enforced</span>
+                        </div>
+                        <div className={styles.constraintInputGroup}>
+                          <select
+                            className={styles.formSelect}
+                            value={config.lunchMode}
+                            onChange={(e) => setConfig(prev => ({ ...prev, lunchMode: e.target.value as any }))}
+                          >
+                            <option value="auto">Auto (1hr break after 6hrs consecutive)</option>
+                            <option value="strict">Strict (Fixed 1hr gap for everyone)</option>
+                            <option value="flexible">Flexible (Prefer gap, but override if tight)</option>
+                            <option value="none">Disabled (No lunch enforcement)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {config.lunchMode !== 'auto' && config.lunchMode !== 'none' && (
+                        <div className={styles.formRow} style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Lunch Start Hour</label>
+                            <select
+                              className={styles.formSelect}
+                              value={config.lunchStartHour}
+                              onChange={(e) => setConfig(prev => ({ ...prev, lunchStartHour: parseInt(e.target.value) }))}
+                            >
+                              {[11, 12, 13, 14].map(h => (
+                                <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Lunch End Hour</label>
+                            <select
+                              className={styles.formSelect}
+                              value={config.lunchEndHour}
+                              onChange={(e) => setConfig(prev => ({ ...prev, lunchEndHour: parseInt(e.target.value) }))}
+                            >
+                              {[12, 13, 14, 15].map(h => (
+                                <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={styles.divider} />
+
+                      {/* Rule Toggles */}
+                      <div className={styles.ruleToggles}>
+                        <div className={styles.ruleItem}>
+                          <div className={styles.ruleInfo}>
+                            <span className={styles.ruleTitle}>Strict Lab Room Matching</span>
+                            <span className={styles.ruleDesc}>Lab classes MUST ONLY be placed in Laboratory/Computer Lab rooms</span>
+                          </div>
+                          <label className={styles.toggleSwitch}>
+                            <input
+                              type="checkbox"
+                              checked={config.strictLabRoomMatching}
+                              onChange={(e) => setConfig(prev => ({ ...prev, strictLabRoomMatching: e.target.checked }))}
+                            />
+                            <span className={styles.toggleSlider}></span>
+                          </label>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                          <div className={styles.ruleInfo}>
+                            <span className={styles.ruleTitle}>Strict Lecture Room Matching</span>
+                            <span className={styles.ruleDesc}>Lecture classes should avoid specialized laboratory rooms</span>
+                          </div>
+                          <label className={styles.toggleSwitch}>
+                            <input
+                              type="checkbox"
+                              checked={config.strictLectureRoomMatching}
+                              onChange={(e) => setConfig(prev => ({ ...prev, strictLectureRoomMatching: e.target.checked }))}
+                            />
+                            <span className={styles.toggleSlider}></span>
+                          </label>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                          <div className={styles.ruleInfo}>
+                            <span className={styles.ruleTitle}>Allow Split Sessions</span>
+                            <span className={styles.ruleDesc}>Split long classes (3hr+) into multiple sessions (e.g. 1.5hr Mon + 1.5hr Thu)</span>
+                          </div>
+                          <label className={styles.toggleSwitch}>
+                            <input
+                              type="checkbox"
+                              checked={config.allowSplitSessions}
+                              onChange={(e) => setConfig(prev => ({ ...prev, allowSplitSessions: e.target.checked }))}
+                            />
+                            <span className={styles.toggleSlider}></span>
+                          </label>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                          <div className={styles.ruleInfo}>
+                            <span className={styles.ruleTitle}>Avoid Conflicts (Strict)</span>
+                            <span className={styles.ruleDesc}>Zero-tolerance for room/teacher/student overlaps</span>
+                          </div>
+                          <label className={styles.toggleSwitch}>
+                            <input
+                              type="checkbox"
+                              checked={config.avoidConflicts}
+                              onChange={(e) => setConfig(prev => ({ ...prev, avoidConflicts: e.target.checked }))}
+                            />
+                            <span className={styles.toggleSlider}></span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className={styles.divider} />
+
+                      {/* Professional Faculty Type Rules (New Section) */}
+                      <div className={styles.facultyRulesSection}>
+                        <div className={styles.sectionHeader}>
+                          <div className={styles.constraintLabelGroup}>
+                            <label className={styles.formLabel}>Faculty Type Load Limits</label>
+                            <span className={styles.formHint}>Professional teaching hour limits based on employment type</span>
+                          </div>
+                        </div>
+
+                        <div className={styles.facultyRulesGrid}>
+                          {Object.entries(config.facultyTypeRules).map(([type, rules]) => (
+                            <div key={type} className={styles.facultyTypeCard}>
+                              <div className={styles.facultyTypeHeader}>
+                                <span className={styles.facultyTypeName}>{type}</span>
+                              </div>
+                              <div className={styles.facultyTypeInputs}>
+                                <div className={styles.miniInputGroup}>
+                                  <label>Weekly Hrs</label>
+                                  <input
+                                    type="number"
+                                    value={rules.maxHoursPerWeek}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        facultyTypeRules: {
+                                          ...prev.facultyTypeRules,
+                                          [type]: { ...rules, maxHoursPerWeek: val }
+                                        }
+                                      }))
+                                    }}
+                                  />
+                                </div>
+                                <div className={styles.miniInputGroup}>
+                                  <label>Daily Hrs</label>
+                                  <input
+                                    type="number"
+                                    value={rules.maxHoursPerDay}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        facultyTypeRules: {
+                                          ...prev.facultyTypeRules,
+                                          [type]: { ...rules, maxHoursPerDay: val }
+                                        }
+                                      }))
+                                    }}
+                                  />
+                                </div>
+                                <div className={styles.miniInputGroup}>
+                                  <label>Max Sec</label>
+                                  <input
+                                    type="number"
+                                    value={rules.maxSectionsTotal}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        facultyTypeRules: {
+                                          ...prev.facultyTypeRules,
+                                          [type]: { ...rules, maxSectionsTotal: val }
+                                        }
+                                      }))
+                                    }}
+                                  />
+                                </div>
+                                <div className={styles.miniInputGroup}>
+                                  <label>Sec/Course</label>
+                                  <input
+                                    type="number"
+                                    value={rules.maxSectionsPerCourse}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value) || 0
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        facultyTypeRules: {
+                                          ...prev.facultyTypeRules,
+                                          [type]: { ...rules, maxSectionsPerCourse: val }
+                                        }
+                                      }))
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Advanced Settings Toggle */}

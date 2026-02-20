@@ -70,8 +70,10 @@
 }
 
 :global([data-theme="dark"]) .panel {
-  background: #1e293b;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 480px) {
@@ -179,7 +181,20 @@
 }
 
 :global([data-theme="dark"]) .item.unread {
-  background: rgba(16, 185, 129, 0.05);
+  background: rgba(var(--college-primary-rgb, 16, 185, 129), 0.08);
+  border-left: 3px solid var(--college-primary, #10b981);
+}
+
+.item.unread::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background: var(--college-primary, #10b981);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--college-glow, rgba(16, 185, 129, 0.5));
 }
 
 .itemContent {
@@ -202,7 +217,7 @@
 }
 
 :global([data-theme="dark"]) .itemTitle {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 
 .itemMessage {
@@ -238,6 +253,71 @@
 .iconInfo {
   color: #3b82f6;
   flex-shrink: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .headerActionBtn {
+  background: #334155;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.headerActionBtn:hover {
+  background: #f1f5f9;
+  color: var(--college-primary, #3b82f6);
+  border-color: var(--college-primary, #3b82f6);
+}
+
+:global([data-theme="dark"]) .headerActionBtn:hover {
+  background: #475569;
+  color: #3b82f6;
+}
+
+.clearAllBtn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.itemDeleteBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: all 0.2s;
+}
+
+.item:hover .itemDeleteBtn {
+  display: flex;
+}
+
+.itemDeleteBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .itemActions {

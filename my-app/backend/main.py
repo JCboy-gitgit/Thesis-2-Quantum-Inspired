@@ -283,6 +283,15 @@ class RoomDataModel(BaseModel):
     feature_tags: Optional[List[str]] = None  # NEW: Equipment tags like "Desktop_PC", "DC_Power_Supply"
     college: Optional[str] = None  # NEW: College assignment (e.g., "CS", "CAFA", "Shared")
 
+class FacultyTypeModel(BaseModel):
+    """Rules for different faculty employment types"""
+    max_hours_per_week: int
+    max_hours_per_day: int
+    max_sections_total: int
+    max_sections_per_course: int
+    required_office_hours: int = 0
+    research_required: bool = False
+
 class ScheduleGenerationRequest(BaseModel):
     """Request model for schedule generation - Enhanced v2 with 30-min slots and BulSU QSA"""
     schedule_name: str
@@ -327,6 +336,9 @@ class ScheduleGenerationRequest(BaseModel):
     # Split session settings - allow classes to be split into multiple sessions
     # e.g., a 3hr class can become 1.5hr on Monday + 1.5hr on Thursday
     allow_split_sessions: bool = True  # Default: enabled
+    
+    # Faculty Type overrides
+    faculty_types: Optional[Dict[str, FacultyTypeModel]] = None
     
     # Use enhanced scheduler
     use_enhanced_scheduler: bool = True
@@ -463,7 +475,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "strict_lab_room_matching": request.strict_lab_room_matching,
             "strict_lecture_room_matching": request.strict_lecture_room_matching,
             # Split session settings
-            "allow_split_sessions": request.allow_split_sessions
+            "allow_split_sessions": request.allow_split_sessions,
+            # Faculty Type Rules
+            "faculty_types": request.faculty_types
         }
         
         print("🎯 Running Enhanced Quantum-Inspired Annealing Algorithm...")
