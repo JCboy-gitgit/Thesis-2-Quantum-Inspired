@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { UserCog, Clock, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Search, Filter, RefreshCw, User, ArrowRight, Loader2, Edit3, MessageSquare, RotateCcw, Edit } from 'lucide-react'
+import { MdManageAccounts as UserCog, MdAccessTime as Clock, MdMail as Mail, MdCalendarToday as Calendar, MdCheckCircle as CheckCircle2, MdCancel as XCircle, MdError as AlertCircle, MdSearch as Search, MdFilterList as Filter, MdRefresh as RefreshCw, MdPerson as User, MdArrowForward as ArrowRight, MdLoop as Loader2, MdEdit as Edit3, MdMessage as MessageSquare, MdReplay as RotateCcw, MdEdit as Edit } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface ChangeRequest {
@@ -100,11 +100,11 @@ export default function ProfileChangeRequestsPage() {
         throw new Error(data.error || 'Action failed')
       }
 
-      setMessage({ 
-        type: 'success', 
-        text: action === 'approve' 
-          ? '✅ Request approved and profile updated!' 
-          : '❌ Request rejected' 
+      setMessage({
+        type: 'success',
+        text: action === 'approve'
+          ? '✅ Request approved and profile updated!'
+          : '❌ Request rejected'
       })
 
       // Refresh list
@@ -150,7 +150,7 @@ export default function ProfileChangeRequestsPage() {
   return (
     <div className={styles.pageContainer}>
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         {/* Header */}
@@ -240,8 +240,8 @@ export default function ProfileChangeRequestsPage() {
               <UserCog size={60} />
               <h3>No {filter !== 'all' ? filter : ''} requests found</h3>
               <p>
-                {filter === 'pending' 
-                  ? 'All caught up! No pending profile change requests.' 
+                {filter === 'pending'
+                  ? 'All caught up! No pending profile change requests.'
                   : 'No requests match your current filter.'}
               </p>
             </div>
@@ -348,3 +348,4 @@ export default function ProfileChangeRequestsPage() {
     </div>
   )
 }
+

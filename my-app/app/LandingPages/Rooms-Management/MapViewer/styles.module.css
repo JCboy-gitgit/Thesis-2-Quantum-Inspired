@@ -1544,33 +1544,45 @@
   max-width: 0;
   padding: 0;
   border: none;
+  overflow: visible;
+  /* Ensure toggle is visible */
 }
 
 .panelToggle {
   position: absolute;
-  right: -40px;
-  top: 20px;
-  width: 36px;
-  height: 36px;
+  right: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-gradient);
-  border: none;
-  border-radius: 0 8px 8px 0;
-  color: white;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-left: none;
+  border-radius: 0 16px 16px 0;
+  color: var(--primary);
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.leftPanel.collapsed .panelToggle {
-  right: -40px;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+  opacity: 0.9;
 }
 
 .panelToggle:hover {
-  transform: scale(1.05);
+  width: 36px;
+  right: -36px;
+  background: var(--primary);
+  color: white;
+  opacity: 1;
+  box-shadow: 6px 0 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.panelToggle:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .panelHeader {
@@ -1587,6 +1599,26 @@
   color: var(--content-text-secondary);
   letter-spacing: 1px;
   margin: 0;
+}
+
+.headerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--content-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.headerBtn:hover {
+  background: var(--bg-gray-100);
+  color: var(--primary);
+  border-color: var(--border-color);
 }
 
 .toolboxContent {
@@ -2306,33 +2338,45 @@
   max-width: 0;
   padding: 0;
   border: none;
+  overflow: visible;
+  /* Ensure toggle is visible */
 }
 
 .panelToggleRight {
   position: absolute;
-  left: -40px;
-  top: 20px;
-  width: 36px;
-  height: 36px;
+  left: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-gradient);
-  border: none;
-  border-radius: 8px 0 0 8px;
-  color: white;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+  border-right: none;
+  border-radius: 16px 0 0 16px;
+  color: var(--primary);
   cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.rightPanel.collapsed .panelToggleRight {
-  left: -40px;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
+  opacity: 0.9;
 }
 
 .panelToggleRight:hover {
-  transform: scale(1.05);
+  width: 36px;
+  left: -36px;
+  background: var(--primary);
+  color: white;
+  opacity: 1;
+  box-shadow: -6px 0 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.panelToggleRight:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .propertiesContent {
@@ -2591,7 +2635,67 @@
   margin: 0;
 }
 
-/* ==================== Legend ==================== */
+/* ==================== Undo/Redo Controls ==================== */
+.undoRedoControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.undoRedoBtn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--content-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.undoRedoBtn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-alpha);
+}
+
+.undoRedoBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ==================== Live Update Badge ==================== */
+.liveUpdateBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  color: #059669;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* ==================== Property Group Section Label ==================== */
+.propertyGroupLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--content-text-secondary);
+  padding: 8px 0 4px 0;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-color);
+}
+
+
 .legend {
   margin-top: 24px;
   padding-top: 20px;
@@ -3090,7 +3194,7 @@
 
   .leftPanel.collapsed,
   .rightPanel.collapsed {
-    display: none;
+    transform: translateY(100%);
   }
 }
 
@@ -4110,41 +4214,63 @@
 
   .leftPanel,
   .rightPanel {
+    position: fixed;
     width: 100%;
     max-width: 100vw;
-    height: 50vh;
+    height: 70vh;
     top: auto;
     bottom: 0;
-    border-radius: 16px 16px 0 0;
+    left: 0;
+    right: 0;
+    border-radius: 24px 24px 0 0;
+    z-index: 1100;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    background: var(--card-bg);
+    transform: translateY(0);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    /* Space for handle */
   }
 
   .leftPanel.collapsed,
   .rightPanel.collapsed {
-    bottom: -50vh;
-    left: 0;
-    right: 0;
+    transform: translateY(100%);
+    pointer-events: none;
   }
 
-  .panelToggle {
-    top: -40px;
-    right: 50%;
-    transform: translateX(50%);
-    border-radius: 8px 8px 0 0;
-    width: 60px;
-    height: 32px;
-  }
-
+  .panelToggle,
   .panelToggleRight {
-    top: -40px;
+    position: absolute;
+    top: 8px;
     left: 50%;
+    right: auto;
+    bottom: auto;
     transform: translateX(-50%);
-    border-radius: 8px 8px 0 0;
-    width: 60px;
-    height: 32px;
+    width: 40px;
+    height: 4px;
+    background: var(--text-light);
+    opacity: 0.3;
+    border-radius: 2px;
+    border: none;
+    padding: 0;
+    display: flex !important;
+    /* Force show as handle */
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hide icons in the handle on mobile */
+  .panelToggle svg,
+  .panelToggleRight svg {
+    display: none;
   }
 
   .canvasContainer {
     padding: 10px;
+    padding-bottom: 80px;
+    /* Space for FAB */
   }
 
   .canvasControls {
@@ -4406,6 +4532,20 @@
   cursor: crosshair;
 }
 
+.canvas.isInteracting .canvasElement {
+  pointer-events: none;
+}
+
+.panMode,
+.canvasContainer.panMode {
+  cursor: grab !important;
+}
+
+.panning,
+.canvasContainer.panning {
+  cursor: grabbing !important;
+}
+
 .marqueeSelection {
   position: absolute;
   border: 2px dashed #3b82f6;
@@ -4480,37 +4620,41 @@
 /* ==================== Mobile FAB (Floating Action Button) ==================== */
 .mobileFAB {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   z-index: 1000;
 }
 
 .fabButton {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  /* Squircle look */
   border: none;
-  background: var(--primary-gradient);
-  color: white;
+  background: var(--bg-white);
+  color: var(--text-medium);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--border-color);
 }
 
-.fabButton:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+.fabButton:active {
+  transform: scale(0.9);
 }
 
 .fabButton.active {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  background: var(--primary-gradient);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 8px 24px var(--glow-color);
+  transform: scale(1.1);
 }
 
 .mobileOverlay {
@@ -4581,7 +4725,7 @@
 
 /* ==================== Metadata Editor Styles ==================== */
 .detailCard {
-  background: #ffffff;
+  background: var(--bg-white);
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid var(--border-color);
@@ -4605,7 +4749,7 @@
 .formGrid label,
 .fieldGroup label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--content-text-secondary);
   display: block;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
@@ -4616,7 +4760,7 @@
 .fieldValue {
   font-size: 1rem;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--content-text);
 }
 
 .fieldValue.large {

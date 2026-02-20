@@ -466,7 +466,7 @@ function FacultyProfilesContent() {
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.container}>
@@ -1072,3 +1072,4 @@ export default function FacultyProfilesPage() {
     </Suspense>
   )
 }
+

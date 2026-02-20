@@ -2024,6 +2024,17 @@
     border-left-color: #60a5fa !important;
 }
 
+.gridBlockMakeup {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.45) !important;
+    border-left-color: #f59e0b !important;
+}
+
+.classCardMakeup {
+    border-left: 4px solid #f59e0b !important;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, var(--lt-surface) 100%) !important;
+}
+
 .gridBlockDone {
     background: rgba(120, 120, 140, 0.1) !important;
     border-color: rgba(120, 120, 140, 0.25) !important;

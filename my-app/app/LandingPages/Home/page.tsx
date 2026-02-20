@@ -6,30 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-  Calendar,
-  Users,
-  Clock,
-  Building2,
-  DoorOpen,
-  BookOpen,
-  GraduationCap,
-  Upload,
-  Settings,
-  FileSpreadsheet,
-  Activity,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Zap,
-  Eye,
-  UserCheck,
-  CalendarDays,
-  LayoutDashboard,
-  TrendingUp,
-  Bell,
-  Star
-} from 'lucide-react'
+import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar } from 'react-icons/md'
 import './styles.css'
 
 // Philippine Holidays 2024-2026
@@ -156,25 +133,26 @@ export default function AdminDashboard() {
     activeSchedules: 0,
     onlineFaculty: 0
   })
+  const [selectedHoliday, setSelectedHoliday] = useState<{ name: string, date: string } | null>(null)
 
   useEffect(() => {
     // Set initial date on client side only (avoids hydration mismatch)
     setCurrentDate(new Date())
     setCalendarDate(new Date())
-    
+
     checkAuth()
     fetchDashboardData()
-    
+
     // Update current time every minute
     const timer = setInterval(() => {
       setCurrentDate(new Date())
     }, 60000)
-    
+
     // Refresh online faculty every 30 seconds
     const onlineRefresh = setInterval(() => {
       refreshOnlineFaculty()
     }, 30000)
-    
+
     return () => {
       clearInterval(timer)
       clearInterval(onlineRefresh)
@@ -216,7 +194,7 @@ export default function AdminDashboard() {
         .not('last_login', 'is', null)
         .gte('last_login', thirtyMinutesAgo)
         .order('last_login', { ascending: false })
-      
+
       if (!error && fallbackData) {
         setOnlineFaculty(fallbackData)
         setStats(prev => ({ ...prev, onlineFaculty: fallbackData.length }))
@@ -275,7 +253,7 @@ export default function AdminDashboard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'get_online_faculty' })
         })
-        
+
         // Check if response is JSON
         const contentType = presenceResponse.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
@@ -294,7 +272,7 @@ export default function AdminDashboard() {
       } catch (presenceError) {
         console.error('Failed to fetch online faculty:', presenceError)
       }
-      
+
       // Fallback to last_login method if presence API returned no results
       if (onlineFacultyData.length === 0) {
         // Consider faculty "online" if they logged in within the last 30 minutes
@@ -305,7 +283,7 @@ export default function AdminDashboard() {
           .not('last_login', 'is', null)
           .gte('last_login', thirtyMinutesAgo)
           .order('last_login', { ascending: false })
-        
+
         if (fallbackError) {
           const hasDetails = typeof fallbackError === 'object' && fallbackError !== null && Object.keys(fallbackError).length > 0
           if (hasDetails) {
@@ -368,7 +346,7 @@ export default function AdminDashboard() {
     const lastDay = new Date(year, month + 1, 0)
     const daysInMonth = lastDay.getDate()
     const startingDay = firstDay.getDay()
-    
+
     const days: (number | null)[] = []
     for (let i = 0; i < startingDay; i++) {
       days.push(null)
@@ -388,9 +366,17 @@ export default function AdminDashboard() {
   const isToday = (day: number) => {
     if (!calendarDate) return false
     const today = new Date()
-    return day === today.getDate() && 
-           calendarDate.getMonth() === today.getMonth() && 
-           calendarDate.getFullYear() === today.getFullYear()
+    return day === today.getDate() &&
+      calendarDate.getMonth() === today.getMonth() &&
+      calendarDate.getFullYear() === today.getFullYear()
+  }
+
+  const isPastDay = (day: number) => {
+    if (!calendarDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const checkDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day)
+    return checkDate < today
   }
 
   const prevMonth = () => {
@@ -408,7 +394,7 @@ export default function AdminDashboard() {
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)
-    
+
     if (diffMins < 1) return 'Just now'
     if (diffMins < 60) return `${diffMins}m ago`
     const diffHours = Math.floor(diffMins / 60)
@@ -418,14 +404,14 @@ export default function AdminDashboard() {
 
   // Quick navigation items - using nature-inspired theme colors
   const quickNavItems = [
-    { icon: DoorOpen, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: '#2EAF7D', desc: 'Manage rooms & buildings' },
-    { icon: Users, label: 'Faculty Management', path: '/LandingPages/FacultyManagement/FacultyApproval', color: '#449342', desc: 'Approve & manage faculty' },
-    { icon: BookOpen, label: 'Courses Management', path: '/LandingPages/CoursesManagement', color: '#3FD0C9', desc: 'Manage courses & sections' },
-    { icon: Zap, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: '#2EAF7D', desc: 'Create new schedules' },
-    { icon: Eye, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: '#449342', desc: 'View generated schedules' },
-    { icon: Upload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: '#3FD0C9', desc: 'Import data from CSV' },
-    { icon: GraduationCap, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: '#2EAF7D', desc: 'Manage college assignments' },
-    { icon: MapPin, label: 'Floor Plans', path: '/floor-plan/admin', color: '#449342', desc: 'View & edit floor plans' },
+    { icon: MdMeetingRoom, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: '#2EAF7D', desc: 'Manage rooms & buildings' },
+    { icon: MdPeople, label: 'Faculty Management', path: '/LandingPages/FacultyManagement/FacultyApproval', color: '#449342', desc: 'Approve & manage faculty' },
+    { icon: MdMenuBook, label: 'Courses Management', path: '/LandingPages/CoursesManagement', color: '#3FD0C9', desc: 'Manage courses & sections' },
+    { icon: MdFlashOn, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: '#2EAF7D', desc: 'Create new schedules' },
+    { icon: MdVisibility, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: '#449342', desc: 'View generated schedules' },
+    { icon: MdUpload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: '#3FD0C9', desc: 'Import data from CSV' },
+    { icon: MdSchool, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: '#2EAF7D', desc: 'Manage college assignments' },
+    { icon: MdLocationOn, label: 'Floor Plans', path: '/floor-plan/admin', color: '#449342', desc: 'View & edit floor plans' },
   ]
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -435,7 +421,7 @@ export default function AdminDashboard() {
   const getUpcomingHolidays = () => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
-    
+
     return Object.entries(philippineHolidays)
       .filter(([date]) => date >= todayStr)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -454,17 +440,17 @@ export default function AdminDashboard() {
         showAccountIcon={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`dashboard-main ${sidebarOpen ? 'with-sidebar' : 'full-width'}`}>
         <div className="dashboard-container">
-          
+
           {/* Header Section */}
           <header className="dashboard-header">
             <div className="header-content">
               <div className="header-text">
                 <h1 className="dashboard-title">
-                  <LayoutDashboard size={36} />
+                  <MdDashboard size={36} />
                   Admin Dashboard
                 </h1>
                 <p className="dashboard-subtitle">
@@ -480,7 +466,7 @@ export default function AdminDashboard() {
 
           {loading ? (
             <div className="loading-state">
-              <Activity className="loading-spinner" size={40} />
+              <MdShowChart className="loading-spinner" size={40} />
               <p>Loading dashboard...</p>
             </div>
           ) : (
@@ -490,7 +476,7 @@ export default function AdminDashboard() {
                 <div className="stats-grid">
                   <div className="stat-card" onClick={() => router.push('/LandingPages/RoomsManagement')}>
                     <div className="stat-icon rooms">
-                      <DoorOpen size={28} />
+                      <MdMeetingRoom size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.totalRooms}</span>
@@ -499,7 +485,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card" onClick={() => router.push('/LandingPages/FacultyManagement/FacultyApproval')}>
                     <div className="stat-icon faculty">
-                      <Users size={28} />
+                      <MdPeople size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.totalFaculty}</span>
@@ -508,7 +494,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card" onClick={() => router.push('/LandingPages/CoursesManagement')}>
                     <div className="stat-icon courses">
-                      <BookOpen size={28} />
+                      <MdMenuBook size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.totalCourses}</span>
@@ -517,7 +503,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card" onClick={() => router.push('/LandingPages/CoursesManagement')}>
                     <div className="stat-icon sections">
-                      <GraduationCap size={28} />
+                      <MdSchool size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.totalSections}</span>
@@ -526,7 +512,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card highlight" onClick={() => router.push('/LandingPages/RoomSchedule/ViewSchedule')}>
                     <div className="stat-icon schedules">
-                      <CalendarDays size={28} />
+                      <MdCalendarMonth size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.activeSchedules}</span>
@@ -535,7 +521,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="stat-card online">
                     <div className="stat-icon online-indicator">
-                      <Activity size={28} />
+                      <MdShowChart size={28} />
                     </div>
                     <div className="stat-info">
                       <span className="stat-value">{stats.onlineFaculty}</span>
@@ -547,15 +533,15 @@ export default function AdminDashboard() {
 
               {/* Main Content Grid */}
               <div className="dashboard-grid">
-                
+
                 {/* Left Column */}
                 <div className="dashboard-column left">
-                  
+
                   {/* Online Faculty */}
                   <section className="dashboard-card online-faculty-card">
                     <div className="card-header">
                       <h2>
-                        <UserCheck size={22} />
+                        <MdHowToReg size={22} />
                         Faculty Currently Online
                       </h2>
                       <span className="online-count">{onlineFaculty.length} active</span>
@@ -563,7 +549,7 @@ export default function AdminDashboard() {
                     <div className="card-content">
                       {onlineFaculty.length === 0 ? (
                         <div className="empty-list">
-                          <Users size={40} />
+                          <MdPeople size={40} />
                           <p>No faculty currently online</p>
                         </div>
                       ) : (
@@ -583,7 +569,7 @@ export default function AdminDashboard() {
                                 <span className="faculty-dept">{faculty.department || 'No Department'}</span>
                               </div>
                               <div className="login-time">
-                                <Clock size={14} />
+                                <MdAccessTime size={14} />
                                 {formatTimeAgo(faculty.last_login)}
                               </div>
                             </div>
@@ -597,10 +583,10 @@ export default function AdminDashboard() {
                   <section className="dashboard-card schedule-card">
                     <div className="card-header">
                       <h2>
-                        <CalendarDays size={22} />
+                        <MdCalendarMonth size={22} />
                         Current Schedule
                       </h2>
-                      {currentSchedule && <Star size={18} className="default-star" />}
+                      {currentSchedule && <MdStar size={18} className="default-star" />}
                     </div>
                     <div className="card-content">
                       {currentSchedule ? (
@@ -624,23 +610,23 @@ export default function AdminDashboard() {
                               <span className="detail-value">{new Date(currentSchedule.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
-                          <button 
+                          <button
                             className="view-schedule-btn"
                             onClick={() => router.push(`/LandingPages/RoomSchedule/ViewSchedule?id=${currentSchedule.id}`)}
                           >
-                            <Eye size={18} />
+                            <MdVisibility size={18} />
                             View Full Schedule
                           </button>
                         </div>
                       ) : (
                         <div className="empty-list">
-                          <CalendarDays size={40} />
+                          <MdCalendarMonth size={40} />
                           <p>No schedule generated yet</p>
-                          <button 
+                          <button
                             className="generate-btn"
                             onClick={() => router.push('/LandingPages/RoomSchedule/GenerateSchedule')}
                           >
-                            <Zap size={18} />
+                            <MdFlashOn size={18} />
                             Generate Schedule
                           </button>
                         </div>
@@ -652,7 +638,7 @@ export default function AdminDashboard() {
                   <section className="dashboard-card holidays-card">
                     <div className="card-header">
                       <h2>
-                        <Bell size={22} />
+                        <MdNotifications size={22} />
                         Upcoming Holidays
                       </h2>
                     </div>
@@ -674,17 +660,17 @@ export default function AdminDashboard() {
 
                 {/* Right Column */}
                 <div className="dashboard-column right">
-                  
+
                   {/* Calendar */}
                   <section className="dashboard-card calendar-card">
                     <div className="card-header">
                       <h2>
-                        <Calendar size={22} />
+                        <MdCalendarToday size={22} />
                         {calendarDate ? `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}` : 'Loading...'}
                       </h2>
                       <div className="calendar-nav">
-                        <button onClick={prevMonth}><ChevronLeft size={20} /></button>
-                        <button onClick={nextMonth}><ChevronRight size={20} /></button>
+                        <button onClick={prevMonth}><MdChevronLeft size={20} /></button>
+                        <button onClick={nextMonth}><MdChevronRight size={20} /></button>
                       </div>
                     </div>
                     <div className="card-content">
@@ -697,16 +683,45 @@ export default function AdminDashboard() {
                         <div className="calendar-days">
                           {calendarDate && getDaysInMonth(calendarDate).map((day, idx) => {
                             const holiday = day ? getHolidayForDate(day) : null
+                            const past = day ? isPastDay(day) : false
+                            const today = day ? isToday(day) : false
+                            const dateStr = day ? `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null
+
                             return (
-                              <div 
-                                key={idx} 
-                                className={`calendar-day ${!day ? 'empty' : ''} ${day && isToday(day) ? 'today' : ''} ${holiday ? 'holiday' : ''}`}
+                              <div
+                                key={idx}
+                                className={`calendar-day ${!day ? 'empty' : ''} ${today ? 'today' : ''} ${holiday ? 'holiday' : ''} ${past && !today ? 'past' : ''} ${selectedHoliday?.date === dateStr ? 'selected' : ''}`}
                                 title={holiday || ''}
+                                onClick={(e) => {
+                                  if (day && holiday) {
+                                    e.stopPropagation();
+                                    setSelectedHoliday(selectedHoliday?.date === dateStr ? null : { name: holiday, date: dateStr! });
+                                  } else {
+                                    setSelectedHoliday(null);
+                                  }
+                                }}
                               >
                                 {day && (
                                   <>
                                     <span className="day-number">{day}</span>
                                     {holiday && <span className="holiday-dot"></span>}
+
+                                    {/* Mini Holiday Window */}
+                                    {selectedHoliday?.date === dateStr && (
+                                      <div className="holiday-popover" onClick={(e) => e.stopPropagation()}>
+                                        <div className="popover-arrow"></div>
+                                        <div className="popover-content">
+                                          <div className="popover-header">
+                                            <MdNotifications size={14} />
+                                            <span>Holiday</span>
+                                          </div>
+                                          <div className="popover-name">{holiday}</div>
+                                          <div className="popover-date">
+                                            {new Date(dateStr!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -723,6 +738,10 @@ export default function AdminDashboard() {
                           <span className="legend-dot holiday"></span>
                           <span>Holiday</span>
                         </div>
+                        <div className="legend-item">
+                          <span className="legend-dot past"></span>
+                          <span>Past Days</span>
+                        </div>
                       </div>
                     </div>
                   </section>
@@ -731,15 +750,15 @@ export default function AdminDashboard() {
                   <section className="dashboard-card quick-nav-card">
                     <div className="card-header">
                       <h2>
-                        <TrendingUp size={22} />
+                        <MdTrendingUp size={22} />
                         Quick Navigation
                       </h2>
                     </div>
                     <div className="card-content">
                       <div className="quick-nav-grid">
                         {quickNavItems.map((item, idx) => (
-                          <button 
-                            key={idx} 
+                          <button
+                            key={idx}
                             className="quick-nav-item"
                             onClick={() => router.push(item.path)}
                             style={{ '--nav-color': item.color } as React.CSSProperties}
@@ -759,6 +778,14 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* Global click handler to close holiday popover */}
+          {selectedHoliday && (
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+              onClick={() => setSelectedHoliday(null)}
+            />
           )}
         </div>
       </main>

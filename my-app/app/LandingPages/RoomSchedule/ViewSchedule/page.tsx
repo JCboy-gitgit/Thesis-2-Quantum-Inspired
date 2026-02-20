@@ -1784,7 +1784,7 @@ export default function ViewSchedulePage() {
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.qtimeContainer}>
@@ -2094,7 +2094,7 @@ export default function ViewSchedulePage() {
                     onClick={handleOpenFacultyAssignModal}
                     title="Assign this schedule as default for faculty members"
                   >
-                    <UserPlus size={18} /> Assign to Faculty
+                    <MdPersonAdd size={18} /> Assign to Faculty
                   </button>
 
 
@@ -2665,3 +2665,4 @@ export default function ViewSchedulePage() {
     </div>
   )
 }
+

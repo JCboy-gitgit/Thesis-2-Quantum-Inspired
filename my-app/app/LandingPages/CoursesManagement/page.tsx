@@ -6,7 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
-import { BookOpen, ChevronDown, ChevronRight, FileSpreadsheet, AlertTriangle, Trash2, Plus, Edit3, X, Save, Calendar, GraduationCap, Clock, Layers, BookMarked, Filter, Users, ArrowLeft, Search, Tag, Beaker, Folder, FolderOpen, Home, Settings, Palette, MoreVertical, FolderInput, MoveRight, Monitor, Presentation, AlertCircle, Edit, FileText } from 'lucide-react'
+import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdTableChart as FileSpreadsheet, MdWarning as AlertTriangle, MdDelete as Trash2, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdAccessTime as Clock, MdLayers as Layers, MdBookmark as BookMarked, MdFilterList as Filter, MdPeople as Users, MdArrowBack as ArrowLeft, MdSearch as Search, MdLabel as Tag, MdScience as Beaker, MdFolder as Folder, MdFolderOpen as FolderOpen, MdHome as Home, MdSettings as Settings, MdPalette as Palette, MdMoreVert as MoreVertical, MdDriveFileMove as FolderInput, MdArrowForward as MoveRight, MdMonitor as Monitor, MdSlideshow as Presentation, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -188,6 +188,7 @@ function CoursesManagementContent() {
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<number | null>(null)
+  const [renaming, setRenaming] = useState(false)
   const [featuresTab, setFeaturesTab] = useState<'lec' | 'lab'>('lec')
 
   // Options
@@ -249,6 +250,55 @@ function CoursesManagementContent() {
   // Get display name for folder
   const getFolderDisplayName = (collegeName: string) => {
     return folderSettings[collegeName]?.customName || collegeName
+  }
+
+  // Handle renaming a college in the entire database
+  const handleRenameCollege = async (oldName: string, newName: string) => {
+    if (!newName || newName === oldName) return
+
+    const confirmMessage = `Are you sure you want to permanently rename "${oldName}" to "${newName}" in the database?\n\nThis will update ALL courses currently under this college. This action cannot be undone.`
+    if (!window.confirm(confirmMessage)) return
+
+    setRenaming(true)
+    try {
+      // Use the server-side API route to bypass RLS
+      const response = await fetch('/api/class-schedules/rename-college', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ oldName, newName })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to rename college')
+      }
+
+      // 2. Migrate folder settings (colors/custom names)
+      setFolderSettings(prev => {
+        const next = { ...prev }
+        if (next[oldName]) {
+          // Keep the color but reset customName since the DB value is now correct
+          next[newName] = { ...next[oldName], customName: undefined }
+          delete next[oldName]
+        }
+        return next
+      })
+
+      // 3. Refresh data and UI
+      await fetchUploadGroups()
+      setFolderMenuOpen(null)
+
+      alert(result.message || `Success! Renamed "${oldName}" to "${newName}".`)
+
+    } catch (err: any) {
+      console.error('Renaming error:', err)
+      alert(`Failed to rename college: ${err.message || 'Unknown error'}`)
+    } finally {
+      setRenaming(false)
+    }
   }
 
   // Get all unique colleges for move modal
@@ -791,7 +841,7 @@ function CoursesManagementContent() {
     return (
       <div className={styles.pageLayout}>
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
@@ -805,7 +855,7 @@ function CoursesManagementContent() {
   return (
     <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
@@ -977,7 +1027,7 @@ function CoursesManagementContent() {
                               <Folder size={24} />
                               {getFolderDisplayName(college)}
                             </h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
                               <span className={styles.scheduleType}>
                                 {collegeGroups.length} File(s)
                               </span>
@@ -1000,124 +1050,153 @@ function CoursesManagementContent() {
                               >
                                 <MoreVertical size={16} color="white" />
                               </button>
-                            </div>
 
-                            {/* Dropdown Menu */}
-                            {folderMenuOpen === college && (
-                              <div
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  position: 'absolute',
-                                  top: '60px',
-                                  right: '16px',
-                                  background: 'var(--bg-white, #ffffff)',
-                                  borderRadius: '12px',
-                                  boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-                                  padding: '12px',
-                                  zIndex: 100,
-                                  minWidth: '220px',
-                                  border: '1px solid var(--border-color, #e2e8f0)'
-                                }}
-                              >
-                                <div style={{ marginBottom: '12px' }}>
-                                  <label style={{
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    color: 'var(--text-secondary, #718096)',
-                                    marginBottom: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}>
-                                    <Palette size={14} />
-                                    Folder Color
-                                  </label>
-                                  <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(4, 1fr)',
-                                    gap: '6px',
-                                    marginTop: '8px'
-                                  }}>
-                                    {FOLDER_COLORS.map((colorOption) => (
-                                      <button
-                                        key={colorOption.name}
-                                        onClick={() => updateFolderColor(college, colorOption.gradient)}
-                                        title={colorOption.name}
-                                        style={{
-                                          width: '32px',
-                                          height: '32px',
-                                          borderRadius: '8px',
-                                          border: folderColor === colorOption.gradient
-                                            ? '3px solid var(--primary-medium, #2c5282)'
-                                            : '2px solid var(--border-color, #e2e8f0)',
-                                          background: colorOption.gradient,
-                                          cursor: 'pointer',
-                                          transition: 'all 0.2s ease'
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <div style={{ borderTop: '1px solid var(--border-color, #e2e8f0)', paddingTop: '12px' }}>
-                                  <label style={{
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    color: 'var(--text-secondary, #718096)',
-                                    marginBottom: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}>
-                                    <Edit size={14} />
-                                    Display Name
-                                  </label>
-                                  <input
-                                    type="text"
-                                    defaultValue={getFolderDisplayName(college)}
-                                    placeholder={college}
-                                    onFocus={(e) => e.stopPropagation()}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onBlur={(e) => updateFolderName(college, e.target.value)}
-                                    onKeyDown={(e) => {
-                                      e.stopPropagation()
-                                      if (e.key === 'Enter') {
-                                        updateFolderName(college, (e.target as HTMLInputElement).value)
-                                      }
-                                    }}
-                                    style={{
-                                      width: '100%',
-                                      padding: '8px 12px',
-                                      borderRadius: '8px',
-                                      border: '1px solid var(--border-color, #e2e8f0)',
-                                      fontSize: '13px',
-                                      marginTop: '6px',
-                                      background: '#ffffff',
-                                      color: '#1a202c'
-                                    }}
-                                  />
-                                </div>
-
-                                <button
-                                  onClick={() => setFolderMenuOpen(null)}
+                              {/* Dropdown Menu - Positioned relative to the action bar */}
+                              {folderMenuOpen === college && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
                                   style={{
-                                    width: '100%',
-                                    marginTop: '12px',
-                                    padding: '8px',
-                                    background: 'var(--bg-gray-100, #edf2f7)',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    color: 'var(--text-secondary, #718096)'
+                                    position: 'absolute',
+                                    top: 'calc(100% + 12px)',
+                                    left: '0',
+                                    background: 'var(--bg-white, #ffffff)',
+                                    borderRadius: '16px',
+                                    boxShadow: '0 20px 80px rgba(0,0,0,0.3)',
+                                    padding: '16px',
+                                    zIndex: 99999,
+                                    minWidth: '300px',
+                                    border: '1px solid var(--border-color, #e2e8f0)',
+                                    animation: 'fadeInUp 0.3s ease'
                                   }}
                                 >
-                                  Close
-                                </button>
-                              </div>
-                            )}
+                                  <div style={{ marginBottom: '12px' }}>
+                                    <label style={{
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      color: 'var(--text-secondary, #718096)',
+                                      marginBottom: '8px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
+                                    }}>
+                                      <Palette size={14} />
+                                      Folder Color
+                                    </label>
+                                    <div style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: 'repeat(4, 1fr)',
+                                      gap: '6px',
+                                      marginTop: '8px'
+                                    }}>
+                                      {FOLDER_COLORS.map((colorOption) => (
+                                        <button
+                                          key={colorOption.name}
+                                          onClick={() => updateFolderColor(college, colorOption.gradient)}
+                                          title={colorOption.name}
+                                          style={{
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '8px',
+                                            border: folderColor === colorOption.gradient
+                                              ? '3px solid var(--primary-medium, #2c5282)'
+                                              : '2px solid var(--border-color, #e2e8f0)',
+                                            background: colorOption.gradient,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div style={{ borderTop: '1px solid var(--border-color, #e2e8f0)', paddingTop: '12px' }}>
+                                    <label style={{
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      color: 'var(--text-secondary, #718096)',
+                                      marginBottom: '8px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
+                                    }}>
+                                      <Edit size={14} />
+                                      Display Name
+                                    </label>
+                                    <input
+                                      type="text"
+                                      defaultValue={getFolderDisplayName(college)}
+                                      placeholder={college}
+                                      onFocus={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onBlur={(e) => updateFolderName(college, e.target.value)}
+                                      onKeyDown={(e) => {
+                                        e.stopPropagation()
+                                        if (e.key === 'Enter') {
+                                          updateFolderName(college, (e.target as HTMLInputElement).value)
+                                        }
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--border-color, #e2e8f0)',
+                                        fontSize: '13px',
+                                        marginTop: '6px',
+                                        background: '#ffffff',
+                                        color: '#1a202c'
+                                      }}
+                                    />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                        handleRenameCollege(college, input.value);
+                                      }}
+                                      disabled={renaming}
+                                      style={{
+                                        width: '100%',
+                                        marginTop: '8px',
+                                        padding: '8px',
+                                        background: renaming ? 'var(--bg-gray-100)' : 'var(--primary-gradient)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        cursor: renaming ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                      }}
+                                    >
+                                      {renaming ? <div className={styles.spinnerSmall}></div> : <Save size={14} />}
+                                      Rename in Database (Global)
+                                    </button>
+                                  </div>
+
+                                  <button
+                                    onClick={() => setFolderMenuOpen(null)}
+                                    style={{
+                                      width: '100%',
+                                      marginTop: '12px',
+                                      padding: '8px',
+                                      background: 'var(--bg-gray-100, #edf2f7)',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      color: 'var(--text-secondary, #718096)'
+                                    }}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className={styles.scheduleCardBody}>
                             <div className={styles.scheduleInfo}>
@@ -1149,13 +1228,15 @@ function CoursesManagementContent() {
                     })}
                   </div>
 
-                  {uploadGroups.length === 0 && (
-                    <div className={styles.emptyState}>
-                      <Folder size={64} />
-                      <h3>No Course Files Found</h3>
-                      <p>Upload course curriculum CSV files from the Upload CSV page to see them here.</p>
-                    </div>
-                  )}
+                  {
+                    uploadGroups.length === 0 && (
+                      <div className={styles.emptyState}>
+                        <Folder size={64} />
+                        <h3>No Course Files Found</h3>
+                        <p>Upload course curriculum CSV files from the Upload CSV page to see them here.</p>
+                      </div>
+                    )
+                  }
                 </>
               )}
 
@@ -1871,28 +1952,32 @@ function CoursesManagementContent() {
 
       {/* ==================== Move File Modal ==================== */}
       {showMoveModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--bg-white, #ffffff)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '450px',
-            maxHeight: '80vh',
-            overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
-          }}
+        <div
+          onClick={() => setShowMoveModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-white, #ffffff)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '450px',
+              maxHeight: '80vh',
+              overflow: 'hidden',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            }}
             data-modal="move-file"
           >
             {/* Modal Header */}
@@ -2089,28 +2174,32 @@ function CoursesManagementContent() {
 
       {/* ==================== Create/Edit Modal ==================== */}
       {showModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--card-bg)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '700px',
-            maxHeight: '90vh',
-            overflow: 'auto',
-            boxShadow: 'var(--shadow-md)'
+        <div
+          onClick={closeModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
           }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--card-bg)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '700px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: 'var(--shadow-md)'
+            }}>
             {/* Modal Header */}
             <div style={{
               padding: '20px 24px',
@@ -2490,3 +2579,4 @@ export default function CoursesManagementPage() {
     </Suspense>
   )
 }
+

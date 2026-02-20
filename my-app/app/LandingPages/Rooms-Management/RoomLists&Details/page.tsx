@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { Building2, ArrowLeft, Search, Calendar, Plus, Check, X, Users, BarChart3, DoorOpen, Settings, Edit2, Trash2, ChevronDown, ChevronRight, MapPin, AlertTriangle, University, Hotel, Landmark, Wind, Tv, PresentationIcon, CheckCircle2, XCircle, Wrench, Eye, CheckCircle, AlertCircle, Edit } from 'lucide-react'
+import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdSettings, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdWarning, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdVisibility, MdError } from 'react-icons/md'
 import { RiBuilding3Fill } from 'react-icons/ri'
 import styles from './styles.module.css'
 
@@ -455,7 +455,7 @@ export default function SchoolCapacityPage() {
         .select()
 
       if (error) throw error
-      
+
       // Check if any rows were actually updated (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Update failed - no rows affected. Please check your permissions or run database/QUICK_FIX_RLS.sql in Supabase.')
@@ -509,7 +509,7 @@ export default function SchoolCapacityPage() {
         .select()
 
       if (error) throw error
-      
+
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
         throw new Error('Delete failed - no rows affected. Please check your permissions or run database/QUICK_FIX_RLS.sql in Supabase.')
@@ -799,7 +799,7 @@ export default function SchoolCapacityPage() {
         showSidebarToggle={true}
         showAccountIcon={true}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.mainContent} ${sidebarOpen ? '' : styles.fullWidth}`}>
         <div className={styles.contentWrapper}>
@@ -813,13 +813,13 @@ export default function SchoolCapacityPage() {
             className={styles.backButton}
             onClick={() => router.push('/LandingPages/Home')}
           >
-            <ArrowLeft size={18} />
+            <MdArrowBack size={18} />
             Back to Home
           </button>
           <div className={styles.headerCard}>
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
-                <University className={styles.headerLargeIcon} size={48} />
+                <MdSchool className={styles.headerLargeIcon} size={48} />
               </div>
               <div className={styles.headerText}>
                 <h1 className={styles.headerTitle}>Room Lists & Details</h1>
@@ -838,11 +838,11 @@ export default function SchoolCapacityPage() {
               <div className={styles.selectionSection}>
                 <div className={styles.searchHeader}>
                   <h2>
-                    <University size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                    <MdSchool size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                     Select School
                   </h2>
                   <div className={styles.searchBox}>
-                    <Search className={styles.searchIcon} size={18} />
+                    <MdSearch className={styles.searchIcon} size={18} />
                     <input
                       type="text"
                       placeholder="Search school..."
@@ -861,22 +861,22 @@ export default function SchoolCapacityPage() {
                       onClick={() => handleSelectSchool(file.upload_group_id)}
                     >
                       <div className={`${styles.campusCardIcon} ${styles.schoolIcon}`}>
-                        <University size={36} />
+                        <MdSchool size={36} />
                       </div>
                       <div className={styles.campusCardContent}>
                         <h3 className={styles.campusCardName}>{file.school_name}</h3>
                         <p className={styles.campusCardMeta}>
-                          <DoorOpen size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                          <MdMeetingRoom size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                           {file.row_count} rooms available
                         </p>
                         <p className={styles.campusCardDate}>
-                          <Calendar size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                          <MdCalendarToday size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                           Uploaded: {new Date(file.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       {selectedCampus === file.upload_group_id && (
                         <div className={styles.selectedIndicator}>
-                          <CheckCircle size={20} />
+                          <MdCheckCircle size={20} />
                         </div>
                       )}
                       <button
@@ -884,7 +884,7 @@ export default function SchoolCapacityPage() {
                         onClick={(e) => handleDeleteCampusClick(e, file)}
                         title="Delete entire campus"
                       >
-                        <Trash2 size={18} />
+                        <MdDelete size={18} />
                       </button>
                     </div>
                   ))}
@@ -911,7 +911,7 @@ export default function SchoolCapacityPage() {
                         <div className={styles.statsGrid}>
                           <div className={styles.statCard}>
                             <div className={styles.statIcon}>
-                              <Landmark size={28} /> {/* Campus icon */}
+                              <MdAccountBalance size={28} /> {/* Campus icon */}
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Total Campuses</p>
@@ -920,7 +920,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard}>
                             <div className={styles.statIcon}>
-                              <Hotel size={28} /> {/* Building icon */}
+                              <MdHotel size={28} /> {/* Building icon */}
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Total Buildings</p>
@@ -929,7 +929,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard}>
                             <div className={styles.statIcon}>
-                              <DoorOpen size={28} /> {/* Room icon */}
+                              <MdMeetingRoom size={28} /> {/* Room icon */}
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Total Rooms</p>
@@ -938,7 +938,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard}>
                             <div className={styles.statIcon}>
-                              <Users size={28} /> {/* Capacity icon */}
+                              <MdPeople size={28} /> {/* Capacity icon */}
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Total Capacity</p>
@@ -947,7 +947,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard}>
                             <div className={styles.statIcon}>
-                              <BarChart3 size={28} /> {/* Avg Capacity icon */}
+                              <MdBarChart size={28} /> {/* Avg Capacity icon */}
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Avg Capacity</p>
@@ -956,7 +956,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard} style={{ borderLeftColor: '#22c55e' }}>
                             <div className={styles.statIcon} style={{ background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', color: '#059669' }}>
-                              <CheckCircle2 size={28} />
+                              <MdCheckCircle size={28} />
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Usable Rooms</p>
@@ -965,7 +965,7 @@ export default function SchoolCapacityPage() {
                           </div>
                           <div className={styles.statCard} style={{ borderLeftColor: '#ef4444' }}>
                             <div className={styles.statIcon} style={{ background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', color: '#dc2626' }}>
-                              <XCircle size={28} />
+                              <MdCancel size={28} />
                             </div>
                             <div className={styles.statContent}>
                               <p className={styles.statLabel}>Not Usable</p>
@@ -978,7 +978,7 @@ export default function SchoolCapacityPage() {
                       <div className={styles.dataSection}>
                         <div className={styles.sectionHeaderActions}>
                           <h2 className={styles.sectionHeading}>
-                            <Landmark size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                            <MdAccountBalance size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                             Campuses & Buildings
                           </h2>
                           <div style={{ display: 'flex', gap: 10 }}>
@@ -986,14 +986,14 @@ export default function SchoolCapacityPage() {
                               className={styles.toggleCampusesBtn}
                               onClick={() => setCampusesExpanded((prev) => !prev)}
                             >
-                              {campusesExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                              {campusesExpanded ? <MdKeyboardArrowDown size={18} /> : <MdKeyboardArrowRight size={18} />}
                               {campusesExpanded ? 'Hide Campuses' : 'Show Campuses'}
                             </button>
                             <button
                               className={styles.addRoomButton}
                               onClick={() => setShowAddModal(true)}
                             >
-                              <Plus size={20} />
+                              <MdAdd size={20} />
                               Add New Room
                             </button>
                           </div>
@@ -1016,7 +1016,7 @@ export default function SchoolCapacityPage() {
                             return (
                               <div key={campusName} className={styles.campusSection} style={{ marginBottom: 28 }}>
                                 <div className={styles.campusHeader} style={{ fontWeight: 600, fontSize: 20, marginBottom: 8 }}>
-                                  <Landmark size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                                  <MdAccountBalance size={20} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                                   {campusName}
                                   <span style={{ marginLeft: 14, color: '#888', fontSize: 15 }}>
                                     {buildings.size} buildings
@@ -1026,7 +1026,7 @@ export default function SchoolCapacityPage() {
                                     style={{ marginLeft: 'auto', marginRight: 0 }}
                                     onClick={() => toggleCampus(campusName)}
                                   >
-                                    {isCampusExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                    {isCampusExpanded ? <MdKeyboardArrowDown size={16} /> : <MdKeyboardArrowRight size={16} />}
                                     {isCampusExpanded ? 'Hide' : 'Show'}
                                   </button>
                                 </div>
@@ -1046,9 +1046,9 @@ export default function SchoolCapacityPage() {
                                         >
                                           <h3 className={styles.buildingName}>
                                             <span className={styles.expandIcon}>
-                                              {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                                              {isExpanded ? <MdKeyboardArrowDown size={20} /> : <MdKeyboardArrowRight size={20} />}
                                             </span>
-                                            <Hotel size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px', marginRight: '8px' }} />
+                                            <MdHotel size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px', marginRight: '8px' }} />
                                             {buildingName}
                                           </h3>
                                           <span className={styles.roomBadge}>{buildingRooms.length} rooms</span>
@@ -1066,7 +1066,7 @@ export default function SchoolCapacityPage() {
                                                 <div key={floor} className={styles.floorSection}>
                                                   <div className={styles.floorHeader}>
                                                     <h4 className={styles.floorName}>
-                                                      <MapPin size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                                                      <MdLocationOn size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                                                       {floorName} Floor
                                                     </h4>
                                                     <span className={styles.floorInfo}>
@@ -1126,14 +1126,14 @@ export default function SchoolCapacityPage() {
                                                                   className={styles.saveBtnSmall}
                                                                   onClick={() => handleEditSave(room.id!)}
                                                                 >
-                                                                  <CheckCircle size={16} />
+                                                                  <MdCheckCircle size={16} />
                                                                   Save
                                                                 </button>
                                                                 <button
                                                                   className={styles.cancelBtnSmall}
                                                                   onClick={handleEditCancel}
                                                                 >
-                                                                  <X size={16} />
+                                                                  <MdClose size={16} />
                                                                   Cancel
                                                                 </button>
                                                               </div>
@@ -1159,9 +1159,9 @@ export default function SchoolCapacityPage() {
                                                                     color: statusInfo.color,
                                                                     border: `1px solid ${statusInfo.color}40`
                                                                   }}>
-                                                                    {statusInfo.icon === 'check' && <CheckCircle2 size={12} />}
-                                                                    {statusInfo.icon === 'x' && <XCircle size={12} />}
-                                                                    {statusInfo.icon === 'wrench' && <Wrench size={12} />}
+                                                                    {statusInfo.icon === 'check' && <MdCheckCircle size={12} />}
+                                                                    {statusInfo.icon === 'x' && <MdCancel size={12} />}
+                                                                    {statusInfo.icon === 'wrench' && <MdBuild size={12} />}
                                                                     {statusInfo.label}
                                                                   </div>
                                                                 )
@@ -1182,7 +1182,7 @@ export default function SchoolCapacityPage() {
                                                                 justifyContent: 'center',
                                                                 flexShrink: 0
                                                               }}>
-                                                                <DoorOpen size={24} />
+                                                                <MdMeetingRoom size={24} />
                                                               </div>
                                                               <div className={styles.roomInfo}>
                                                                 <h4 className={styles.roomName}>{room.room}</h4>
@@ -1190,11 +1190,11 @@ export default function SchoolCapacityPage() {
                                                                   {room.room_code ? `ID: ${room.room_code}` : parsed.displayName}
                                                                 </p>
                                                                 <p className={styles.roomCampus}>
-                                                                  <Building2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                                                                  <MdDomain size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                                                                   {room.campus}
                                                                 </p>
                                                                 <p className={styles.roomSeats}>
-                                                                  <Users size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                                                                  <MdPeople size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                                                                   Capacity: {room.capacity}
                                                                 </p>
                                                                 <p className={styles.roomType} style={{ fontSize: '12px', color: 'var(--text-light)' }}>
@@ -1208,7 +1208,7 @@ export default function SchoolCapacityPage() {
                                                                     background: room.has_ac ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_ac ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
                                                                   }}>
-                                                                    <Wind size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    <MdAir size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
                                                                     AC: {displayBool(room.has_ac)}
                                                                   </span>
                                                                   <span className={styles.amenityBadge} title="Whiteboard" style={{
@@ -1218,7 +1218,7 @@ export default function SchoolCapacityPage() {
                                                                     background: room.has_whiteboard ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_whiteboard ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
                                                                   }}>
-                                                                    <PresentationIcon size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    <MdCoPresent size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
                                                                     Board: {displayBool(room.has_whiteboard)}
                                                                   </span>
                                                                   <span className={styles.amenityBadge} title="TV" style={{
@@ -1228,7 +1228,7 @@ export default function SchoolCapacityPage() {
                                                                     background: room.has_tv ? 'var(--success-bg, #d1fae5)' : 'var(--gray-bg, #f3f4f6)',
                                                                     color: room.has_tv ? 'var(--success-text, #065f46)' : 'var(--text-light, #6b7280)'
                                                                   }}>
-                                                                    <Tv size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
+                                                                    <MdTv size={10} style={{ verticalAlign: 'middle', marginRight: '2px' }} />
                                                                     TV: {displayBool(room.has_tv)}
                                                                   </span>
                                                                 </div>
@@ -1246,7 +1246,7 @@ export default function SchoolCapacityPage() {
                                                                   }}
                                                                   title="Options"
                                                                 >
-                                                                  <Settings size={18} />
+                                                                  <MdSettings size={18} />
                                                                 </button>
                                                                 {showActions && (
                                                                   <div className={styles.actionsPopup}>
@@ -1254,7 +1254,7 @@ export default function SchoolCapacityPage() {
                                                                       className={`${styles.actionOption} ${styles.editOption}`}
                                                                       onClick={() => handleEditClick(room)}
                                                                     >
-                                                                      <Edit size={16} />
+                                                                      <MdEdit size={16} />
                                                                       Edit Room
                                                                     </button>
                                                                     <button
@@ -1262,7 +1262,7 @@ export default function SchoolCapacityPage() {
                                                                       onClick={() => handleDelete(room.id!)}
                                                                       disabled={deletingRoom === room.id}
                                                                     >
-                                                                      <Trash2 size={16} />
+                                                                      <MdDelete size={16} />
                                                                       {deletingRoom === room.id ? 'Deleting...' : 'Delete Room'}
                                                                     </button>
                                                                     <button
@@ -1273,7 +1273,7 @@ export default function SchoolCapacityPage() {
                                                                       }}
                                                                       title="View this room's schedule"
                                                                     >
-                                                                      <Eye size={16} />
+                                                                      <MdVisibility size={16} />
                                                                       View Schedule
                                                                     </button>
                                                                   </div>
@@ -1306,7 +1306,7 @@ export default function SchoolCapacityPage() {
               {!selectedCampus && !loading && campusFiles.length > 0 && (
                 <div className={styles.emptySelection}>
                   <div className={styles.emptyIcon}>
-                    <Building2 size={80} />
+                    <MdDomain size={80} />
                   </div>
                   <p>Please select a school above to view room details</p>
                 </div>
@@ -1322,20 +1322,20 @@ export default function SchoolCapacityPage() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>
-                <Plus size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdAdd size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 Add New Room
               </h3>
               <button
                 className={styles.modalClose}
                 onClick={() => setShowAddModal(false)}
               >
-                <X size={20} />
+                <MdClose size={20} />
               </button>
             </div>
             <div className={styles.modalBody}>
               <div className={styles.formGroup}>
                 <label>
-                  <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdDomain size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Campus
                 </label>
                 <input
@@ -1348,7 +1348,7 @@ export default function SchoolCapacityPage() {
               </div>
               <div className={styles.formGroup}>
                 <label>
-                  <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdDomain size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Building
                 </label>
                 <input
@@ -1361,7 +1361,7 @@ export default function SchoolCapacityPage() {
               </div>
               <div className={styles.formGroup}>
                 <label>
-                  <DoorOpen size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdMeetingRoom size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Room
                 </label>
                 <input
@@ -1374,7 +1374,7 @@ export default function SchoolCapacityPage() {
               </div>
               <div className={styles.formGroup}>
                 <label>
-                  <Users size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdPeople size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Capacity
                 </label>
                 <input
@@ -1391,14 +1391,14 @@ export default function SchoolCapacityPage() {
                 className={styles.modalBtnCancel}
                 onClick={() => setShowAddModal(false)}
               >
-                <X size={18} />
+                <MdClose size={18} />
                 Cancel
               </button>
               <button
                 className={styles.modalBtnSave}
                 onClick={handleAddRoom}
               >
-                <CheckCircle size={18} />
+                <MdCheckCircle size={18} />
                 Add Room
               </button>
             </div>
@@ -1412,7 +1412,7 @@ export default function SchoolCapacityPage() {
           <div className={`${styles.modalContent} ${styles.deleteModal}`} onClick={(e) => e.stopPropagation()}>
             <div className={`${styles.modalHeader} ${styles.deleteHeader}`}>
               <h3>
-                <AlertCircle size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
+                <MdError size={24} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#ef4444' }} />
                 Delete Campus
               </h3>
               <button
@@ -1421,13 +1421,13 @@ export default function SchoolCapacityPage() {
                 disabled={deletingCampus}
                 title="Close modal"
               >
-                <X size={20} />
+                <MdClose size={20} />
               </button>
             </div>
             <div className={styles.modalBody}>
               <div className={styles.deleteWarning}>
                 <div className={styles.warningIconWrapper}>
-                  <AlertCircle size={64} className={styles.warningIcon} />
+                  <MdError size={64} className={styles.warningIcon} />
                 </div>
                 <h4>Are you absolutely sure?</h4>
                 <p>
@@ -1448,7 +1448,7 @@ export default function SchoolCapacityPage() {
                 onClick={() => setShowDeleteCampusModal(false)}
                 disabled={deletingCampus}
               >
-                <X size={18} />
+                <MdClose size={18} />
                 Cancel
               </button>
               <button
@@ -1456,7 +1456,7 @@ export default function SchoolCapacityPage() {
                 onClick={handleDeleteCampus}
                 disabled={deletingCampus}
               >
-                <Trash2 size={18} />
+                <MdDelete size={18} />
                 {deletingCampus ? 'Deleting...' : 'Delete Campus'}
               </button>
             </div>

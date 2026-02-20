@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Menu, User, LogOut, Settings as SettingsIcon, UserCircle, ChevronUp, ChevronDown, Archive, Download } from 'lucide-react'
+import { MdMenu as Menu, MdPerson as User, MdLogout as LogOut, MdSettings as SettingsIcon, MdAccountCircle as UserCircle, MdKeyboardArrowUp as ChevronUp, MdKeyboardArrowDown as ChevronDown, MdArchive as Archive, MdDownload as Download } from 'react-icons/md'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import SettingsModal from './SettingsModal'
 import ArchiveModal from './ArchiveModal'
@@ -134,6 +134,12 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   }
 
   const handleLogout = async () => {
+    // Sync current theme to login preference before logging out
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'
+    // Map 'green' (admin) to 'dark' for login page, otherwise match
+    const loginThemePref = currentTheme === 'green' ? 'dark' : currentTheme
+    localStorage.setItem('login-theme-preference', loginThemePref)
+
     await clearBrowserCaches()
     await supabase.auth.signOut()
     router.push('/')

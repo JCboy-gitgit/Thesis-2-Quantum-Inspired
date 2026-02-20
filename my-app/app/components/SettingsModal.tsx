@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Moon, Sun, Leaf, Monitor, Building2, Plus, Edit2, Trash2, Check, GripVertical, ToggleLeft, ToggleRight, CheckCircle, Edit } from 'lucide-react'
+import { MdClose as X, MdDarkMode as Moon, MdLightMode as Sun, MdEco as Leaf, MdMonitor as Monitor, MdDomain as Building2, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdCheck as Check, MdDragIndicator as GripVertical, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdCheckCircle as CheckCircle, MdEdit as Edit } from 'react-icons/md'
 import { useTheme } from '../context/ThemeContext'
 import { useColleges, BulSUCollege } from '../context/CollegesContext'
 import './SettingsModal.css'
@@ -15,7 +15,7 @@ interface SettingsModalProps {
 function SettingsModalContent({ onClose }: { onClose: () => void }) {
   const { theme, setTheme } = useTheme()
   const { colleges, activeColleges, loading, isDefault, addCollege, updateCollege, deleteCollege, refreshColleges } = useColleges()
-  
+
   // College management state
   const [showCollegeForm, setShowCollegeForm] = useState(false)
   const [editingCollege, setEditingCollege] = useState<BulSUCollege | null>(null)
@@ -181,7 +181,7 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                   {isDefault && <span className="default-badge">Using Defaults</span>}
                 </p>
               </div>
-              <button 
+              <button
                 className="add-college-btn"
                 onClick={() => {
                   resetCollegeForm()
@@ -242,8 +242,8 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                 <div className="loading-colleges">Loading colleges...</div>
               ) : (
                 colleges.map((college, index) => (
-                  <div 
-                    key={college.id} 
+                  <div
+                    key={college.id}
                     className={`college-item ${!college.is_active ? 'inactive' : ''}`}
                   >
                     <div className="college-drag">

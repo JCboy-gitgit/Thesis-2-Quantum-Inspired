@@ -163,6 +163,23 @@
   }
 }
 
+/* Mobile Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-overlay.active {
+    display: block;
+  }
+}
+
 /* ==================== Green Theme - Nature Inspired Sidebar ==================== */
 [data-theme="green"] .sidebar {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.5) 100%);

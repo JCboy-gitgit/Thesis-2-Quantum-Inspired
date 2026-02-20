@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useTheme } from '@/app/context/ThemeContext'
@@ -544,13 +544,12 @@ export default function AdminLiveTimetablePage() {
 
     // Check if a class is absent today
     const isAbsent = (allocId: number, date: string) => {
-        return absences.some(a => a.allocation_id === allocId && a.absence_date === date)
+        return absences.some(a => a.allocation_id === allocId && a.absence_date === date && a.status !== 'disputed')
     }
 
     // Get allocations for a specific day (properly expands multi-day patterns like TTH, MWF)
     const getDayAllocations = (day: string) => {
-        return allocations
-            .map(getEffectiveAllocation)
+        return effectiveAllocations
             .filter(a => {
                 const days = expandDays(a.schedule_day || '')
                 return days.some(d => d.toLowerCase() === day.toLowerCase())
@@ -569,7 +568,33 @@ export default function AdminLiveTimetablePage() {
     const todayAbsences = absences.filter(a => a.absence_date === formatDate(new Date())).length
 
     // ── Grouping logic ──
-    const effectiveAllocations = allocations.map(getEffectiveAllocation)
+    const effectiveAllocations = useMemo(() => {
+        const base = allocations.map(getEffectiveAllocation)
+        const makeups = makeupRequests
+            .filter(m => m.status === 'approved')
+            .map(m => {
+                const original = allocations.find(a => a.id === m.allocation_id)
+                if (!original) return null
+
+                // Determine day name from requested_date
+                const date = new Date(m.requested_date)
+                const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
+
+                // Create a synthetic allocation object
+                return {
+                    ...original,
+                    id: -m.id,
+                    schedule_day: dayName,
+                    schedule_time: m.requested_time,
+                    room: m.requested_room || original.room,
+                    _isMakeup: true,
+                    _makeupId: m.id
+                } as any
+            })
+            .filter(Boolean) as RoomAllocation[]
+
+        return [...base, ...makeups]
+    }, [allocations, overrides, makeupRequests])
 
     const getGroupValues = (): string[] => {
         const set = new Set<string>()
@@ -862,7 +887,7 @@ export default function AdminLiveTimetablePage() {
                                                 </span>
                                             </div>
 
-                                    {/* Timetable grid — Mon to Sat, full day 7am-8pm */}
+                                            {/* Timetable grid — Mon to Sat, full day 7am-8pm */}
                                             <div className={styles.gridWrapper}>
                                                 <div className={styles.gridContainer}>
                                                     <table className={styles.gridTable}>
@@ -968,7 +993,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                     draggable
                                                                                                     onDragStart={(e) => { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) }}
                                                                                                     onDragEnd={() => { setDraggedAllocId(null); setDragOverCell(null) }}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${(alloc as any)._isMakeup ? styles.gridBlockMakeup : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
                                                                                                     title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}`}
                                                                                                     onClick={() => setEditingOverride({
@@ -985,6 +1010,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                         {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
                                                                                                         {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
                                                                                                         {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
+                                                                                                        {(alloc as any)._isMakeup && <span className={styles.gridBlockMakeupIcon}><MdEventAvailable /></span>}
                                                                                                         <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>
                                                                                                     </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
@@ -1080,7 +1106,7 @@ export default function AdminLiveTimetablePage() {
                                                         return (
                                                             <div
                                                                 key={alloc.id}
-                                                                className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''} ${done ? styles.classCardDone : ''} ${hasOverride ? styles.classCardOverride : ''}`}
+                                                                className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''} ${done ? styles.classCardDone : ''} ${hasOverride ? styles.classCardOverride : ''} ${(alloc as any)._isMakeup ? styles.classCardMakeup : ''}`}
                                                             >
                                                                 {/* Status badge */}
                                                                 <div className={styles.cardStatusRow}>
@@ -1102,6 +1128,11 @@ export default function AdminLiveTimetablePage() {
                                                                     {hasOverride && (
                                                                         <span className={styles.overrideBadge}>
                                                                             <MdEdit /> MODIFIED
+                                                                        </span>
+                                                                    )}
+                                                                    {(alloc as any)._isMakeup && (
+                                                                        <span className={styles.makeupBadge}>
+                                                                            <MdEventAvailable /> MAKEUP
                                                                         </span>
                                                                     )}
                                                                 </div>

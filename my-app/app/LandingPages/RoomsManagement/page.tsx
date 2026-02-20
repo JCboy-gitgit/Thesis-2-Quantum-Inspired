@@ -7,7 +7,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import { useColleges } from '@/app/context/CollegesContext'
-import { Building2, ArrowLeft, Search, Calendar, Plus, Check, X, Users, BarChart3, DoorOpen, Edit2, Trash2, ChevronDown, ChevronRight, MapPin, University, Hotel, Landmark, Wind, Tv, PresentationIcon, CheckCircle2, XCircle, Wrench, Save, FileSpreadsheet, Layers, Filter, Info, Image as ImageIcon, Upload, Palette, Tag, Edit, FileText } from 'lucide-react'
+import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdPalette, MdLabel, MdDescription } from 'react-icons/md'
 import styles from './styles.module.css'
 
 // ==================== INTERFACES ====================
@@ -779,7 +779,7 @@ export default function RoomsManagementPage() {
         showSidebarToggle={true}
         showAccountIcon={true}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.container}>
@@ -792,7 +792,7 @@ export default function RoomsManagementPage() {
           {currentView !== 'files' && (
             <div className={styles.breadcrumb}>
               <button className={styles.backBtn} onClick={handleBack}>
-                <ArrowLeft size={16} />
+                <MdArrowBack size={16} />
                 Back
               </button>
               <div className={styles.breadcrumbPath}>
@@ -831,7 +831,7 @@ export default function RoomsManagementPage() {
           <div className={styles.header}>
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
-                <Building2 size={28} />
+                <MdDomain size={28} />
               </div>
               <div className={styles.headerText}>
                 <h1 className={styles.title}>Room Management</h1>
@@ -845,7 +845,7 @@ export default function RoomsManagementPage() {
             </div>
             {selectedFile && (
               <button className={styles.addBtn} onClick={() => setShowAddModal(true)}>
-                <Plus size={18} />
+                <MdAdd size={18} />
                 Add Room
               </button>
             )}
@@ -855,42 +855,42 @@ export default function RoomsManagementPage() {
           {selectedFile && !loadingData && (
             <div className={styles.statsGrid}>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><Landmark size={24} /></div>
+                <div className={styles.statIcon}><MdAccountBalance size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Campuses</p>
                   <h3 className={styles.statValue}>{stats.totalCampuses}</h3>
                 </div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><Hotel size={24} /></div>
+                <div className={styles.statIcon}><MdHotel size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Buildings</p>
                   <h3 className={styles.statValue}>{stats.totalBuildings}</h3>
                 </div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><DoorOpen size={24} /></div>
+                <div className={styles.statIcon}><MdMeetingRoom size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Total Rooms</p>
                   <h3 className={styles.statValue}>{stats.totalRooms}</h3>
                 </div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><Users size={24} /></div>
+                <div className={styles.statIcon}><MdPeople size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Total Capacity</p>
                   <h3 className={styles.statValue}>{stats.totalCapacity}</h3>
                 </div>
               </div>
               <div className={`${styles.statCard} ${styles.statUsable}`}>
-                <div className={styles.statIcon}><CheckCircle2 size={24} /></div>
+                <div className={styles.statIcon}><MdCheckCircle size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Usable</p>
                   <h3 className={styles.statValue}>{stats.usableRooms}</h3>
                 </div>
               </div>
               <div className={`${styles.statCard} ${styles.statNotUsable}`}>
-                <div className={styles.statIcon}><XCircle size={24} /></div>
+                <div className={styles.statIcon}><MdCancel size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Not Usable</p>
                   <h3 className={styles.statValue}>{stats.notUsableRooms}</h3>
@@ -903,7 +903,7 @@ export default function RoomsManagementPage() {
           {selectedFile && currentView !== 'files' && (
             <div className={styles.searchSection}>
               <div className={styles.searchBox}>
-                <Search className={styles.searchIcon} size={18} />
+                <MdSearch className={styles.searchIcon} size={18} />
                 <input
                   type="text"
                   placeholder="Search rooms by name, building, campus..."
@@ -936,18 +936,18 @@ export default function RoomsManagementPage() {
               </div>
               <div className={styles.amenityFilters}>
                 <button className={`${styles.amenityBtn} ${filterAC ? styles.active : ''}`} onClick={() => setFilterAC(!filterAC)}>
-                  <Wind size={14} /> AC
+                  <MdAir size={14} /> AC
                 </button>
                 <button className={`${styles.amenityBtn} ${filterTV ? styles.active : ''}`} onClick={() => setFilterTV(!filterTV)}>
-                  <Tv size={14} /> TV
+                  <MdTv size={14} /> TV
                 </button>
                 <button className={`${styles.amenityBtn} ${filterWhiteboard ? styles.active : ''}`} onClick={() => setFilterWhiteboard(!filterWhiteboard)}>
-                  <PresentationIcon size={14} /> Board
+                  <MdCoPresent size={14} /> Board
                 </button>
               </div>
               {hasActiveFilters && (
                 <button className={styles.clearFiltersBtn} onClick={clearFilters}>
-                  <X size={14} /> Clear
+                  <MdClose size={14} /> Clear
                 </button>
               )}
             </div>
@@ -966,11 +966,11 @@ export default function RoomsManagementPage() {
             <>
               {campusFiles.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <FileText size={64} />
+                  <MdDescription size={64} />
                   <h3>No Campus Files Found</h3>
                   <p>Upload a Campus/Building CSV file to get started</p>
                   <button className={styles.addBtn} onClick={() => router.push('/LandingPages/UploadCSV')}>
-                    <Plus size={18} /> Upload CSV
+                    <MdAdd size={18} /> Upload CSV
                   </button>
                 </div>
               ) : (
@@ -991,7 +991,7 @@ export default function RoomsManagementPage() {
                             style={{ background: getFolderColor(fileKey) }}
                             onClick={() => setShowColorPicker(showColorPicker === fileKey ? null : fileKey)}
                           >
-                            <Palette size={16} color="white" />
+                            <MdPalette size={16} color="white" />
                           </button>
                           {showColorPicker === fileKey && (
                             <div className={styles.colorPickerMenu}>
@@ -1010,22 +1010,22 @@ export default function RoomsManagementPage() {
 
                         <div className={styles.fileCardContent}>
                           <div className={styles.fileIcon}>
-                            <University size={24} />
+                            <MdSchool size={24} />
                           </div>
                           <div className={styles.fileInfo}>
                             <h4>{file.school_name}</h4>
-                            <p><DoorOpen size={14} /> {file.row_count} rooms</p>
+                            <p><MdMeetingRoom size={14} /> {file.row_count} rooms</p>
                             <p className={styles.fileMeta}>
-                              <FileText size={12} /> {file.file_name}
+                              <MdDescription size={12} /> {file.file_name}
                             </p>
                             <p className={styles.fileMeta}>
-                              <Calendar size={12} /> {new Date(file.created_at).toLocaleDateString()}
+                              <MdCalendarToday size={12} /> {new Date(file.created_at).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                         <div className={styles.fileActions}>
                           <button className={styles.deleteBtn} onClick={(e) => { e.stopPropagation(); setFileToDelete(file); setShowDeleteFileModal(true); }}>
-                            <Trash2 size={16} />
+                            <MdDelete size={16} />
                           </button>
                         </div>
                         <span className={styles.fileArrow}>→</span>
@@ -1058,7 +1058,7 @@ export default function RoomsManagementPage() {
                         style={{ background: getFolderColor(campusKey) }}
                         onClick={() => setShowColorPicker(showColorPicker === campusKey ? null : campusKey)}
                       >
-                        <Palette size={16} color="white" />
+                        <MdPalette size={16} color="white" />
                       </button>
                       {showColorPicker === campusKey && (
                         <div className={styles.colorPickerMenu}>
@@ -1077,13 +1077,13 @@ export default function RoomsManagementPage() {
 
                     <div className={styles.campusCardContent}>
                       <div className={styles.campusIcon}>
-                        <Landmark size={24} />
+                        <MdAccountBalance size={24} />
                       </div>
                       <div className={styles.campusInfo}>
                         <h4>{campusName}</h4>
-                        <p><Hotel size={14} /> {buildings} buildings</p>
-                        <p><DoorOpen size={14} /> {rooms.length} rooms</p>
-                        <p className={styles.campusMeta}><Users size={12} /> {totalCapacity} total capacity</p>
+                        <p><MdHotel size={14} /> {buildings} buildings</p>
+                        <p><MdMeetingRoom size={14} /> {rooms.length} rooms</p>
+                        <p className={styles.campusMeta}><MdPeople size={12} /> {totalCapacity} total capacity</p>
                       </div>
                     </div>
                     <span className={styles.campusArrow}>→</span>
@@ -1114,7 +1114,7 @@ export default function RoomsManagementPage() {
                         style={{ background: getFolderColor(buildingKey) }}
                         onClick={() => setShowColorPicker(showColorPicker === buildingKey ? null : buildingKey)}
                       >
-                        <Palette size={16} color="white" />
+                        <MdPalette size={16} color="white" />
                       </button>
                       {showColorPicker === buildingKey && (
                         <div className={styles.colorPickerMenu}>
@@ -1133,13 +1133,13 @@ export default function RoomsManagementPage() {
 
                     <div className={styles.buildingCardContent}>
                       <div className={styles.buildingIcon}>
-                        <Hotel size={24} />
+                        <MdHotel size={24} />
                       </div>
                       <div className={styles.buildingInfo}>
                         <h4>{buildingName}</h4>
-                        <p><Layers size={14} /> {floors} floors</p>
-                        <p><DoorOpen size={14} /> {rooms.length} rooms</p>
-                        <p className={styles.buildingMeta}><Users size={12} /> {totalCapacity} total capacity</p>
+                        <p><MdLayers size={14} /> {floors} floors</p>
+                        <p><MdMeetingRoom size={14} /> {rooms.length} rooms</p>
+                        <p className={styles.buildingMeta}><MdPeople size={12} /> {totalCapacity} total capacity</p>
                       </div>
                     </div>
                     <span className={styles.buildingArrow}>→</span>
@@ -1153,7 +1153,7 @@ export default function RoomsManagementPage() {
           {!loadingData && currentView === 'rooms' && (
             <>
               <div className={styles.roomsHeader}>
-                <h2><DoorOpen size={20} /> Rooms in {selectedBuildingName}</h2>
+                <h2><MdMeetingRoom size={20} /> Rooms in {selectedBuildingName}</h2>
                 <span className={styles.roomCount}>{roomsForBuilding.length} rooms</span>
               </div>
               <div className={styles.roomsGrid}>
@@ -1162,13 +1162,13 @@ export default function RoomsManagementPage() {
                   return (
                     <div key={room.id} className={`${styles.roomCard} ${styles[statusInfo.icon]}`}>
                       <div className={styles.roomStatusBadge} style={{ background: statusInfo.bgColor, color: statusInfo.color }}>
-                        {statusInfo.icon === 'check' && <CheckCircle2 size={12} />}
-                        {statusInfo.icon === 'x' && <XCircle size={12} />}
-                        {statusInfo.icon === 'wrench' && <Wrench size={12} />}
+                        {statusInfo.icon === 'check' && <MdCheckCircle size={12} />}
+                        {statusInfo.icon === 'x' && <MdCancel size={12} />}
+                        {statusInfo.icon === 'wrench' && <MdBuild size={12} />}
                         {statusInfo.label}
                       </div>
                       <div className={styles.roomCardIcon} style={{ background: statusInfo.color }}>
-                        <DoorOpen size={20} />
+                        <MdMeetingRoom size={20} />
                       </div>
                       <div className={styles.roomCardInfo}>
                         <h4>{room.room}</h4>
@@ -1184,20 +1184,20 @@ export default function RoomsManagementPage() {
                             display: 'inline-block',
                             marginBottom: '4px'
                           }}>
-                            <University size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
+                            <MdSchool size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
                             {room.college}
                           </span>
                         )}
                         <div className={styles.roomInfoRow}>
-                          <p><Users size={11} /> Capacity: {room.capacity}</p>
-                          <p><MapPin size={11} /> Floor {displayValue(room.floor_number, 'G')}</p>
+                          <p><MdPeople size={11} /> Capacity: {room.capacity}</p>
+                          <p><MdLocationOn size={11} /> Floor {displayValue(room.floor_number, 'G')}</p>
                         </div>
                         <p className={styles.roomType}>{room.room_type || 'Classroom'}</p>
                       </div>
                       <div className={styles.roomAmenities}>
-                        <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><Wind size={14} /></span>
-                        <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
-                        <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
+                        <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><MdAir size={14} /></span>
+                        <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><MdTv size={14} /></span>
+                        <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><MdCoPresent size={14} /></span>
                         {room.id && roomFeatureCounts[room.id] && (
                           <span
                             className={styles.hasAmenity}
@@ -1214,16 +1214,16 @@ export default function RoomsManagementPage() {
                               gap: '3px'
                             }}
                           >
-                            <Tag size={10} /> {roomFeatureCounts[room.id]}
+                            <MdLabel size={10} /> {roomFeatureCounts[room.id]}
                           </span>
                         )}
                       </div>
                       <div className={styles.roomActions}>
                         <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
-                          <Info size={14} />
+                          <MdInfo size={14} />
                         </button>
-                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit size={14} /></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
+                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><MdEdit size={14} /></button>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><MdDelete size={14} /></button>
                       </div>
                     </div>
                   )
@@ -1242,24 +1242,24 @@ export default function RoomsManagementPage() {
                   return (
                     <div key={room.id} className={`${styles.roomCard} ${styles[statusInfo.icon]}`}>
                       <div className={styles.roomStatusBadge} style={{ background: statusInfo.bgColor, color: statusInfo.color }}>
-                        {statusInfo.icon === 'check' && <CheckCircle2 size={12} />}
-                        {statusInfo.icon === 'x' && <XCircle size={12} />}
-                        {statusInfo.icon === 'wrench' && <Wrench size={12} />}
+                        {statusInfo.icon === 'check' && <MdCheckCircle size={12} />}
+                        {statusInfo.icon === 'x' && <MdCancel size={12} />}
+                        {statusInfo.icon === 'wrench' && <MdBuild size={12} />}
                         {statusInfo.label}
                       </div>
                       <div className={styles.roomCardIcon} style={{ background: statusInfo.color }}>
-                        <DoorOpen size={20} />
+                        <MdMeetingRoom size={20} />
                       </div>
                       <div className={styles.roomCardInfo}>
                         <h4>{room.room}</h4>
                         <span className={styles.roomLocation}>{room.campus} › {room.building}</span>
                         {room.room_code && <span className={styles.roomCode}>{room.room_code}</span>}
-                        <p><Users size={12} /> Capacity: {room.capacity}</p>
+                        <p><MdPeople size={12} /> Capacity: {room.capacity}</p>
                       </div>
                       <div className={styles.roomAmenities}>
-                        <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><Wind size={14} /></span>
-                        <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><Tv size={14} /></span>
-                        <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><PresentationIcon size={14} /></span>
+                        <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><MdAir size={14} /></span>
+                        <span className={room.has_tv ? styles.hasAmenity : styles.noAmenity} title="TV"><MdTv size={14} /></span>
+                        <span className={room.has_whiteboard ? styles.hasAmenity : styles.noAmenity} title="Board"><MdCoPresent size={14} /></span>
                         {room.id && roomFeatureCounts[room.id] && (
                           <span
                             className={styles.hasAmenity}
@@ -1276,16 +1276,16 @@ export default function RoomsManagementPage() {
                               gap: '3px'
                             }}
                           >
-                            <Tag size={10} /> {roomFeatureCounts[room.id]}
+                            <MdLabel size={10} /> {roomFeatureCounts[room.id]}
                           </span>
                         )}
                       </div>
                       <div className={styles.roomActions}>
                         <button className={styles.infoBtn} onClick={() => handleShowRoomDetail(room)} title="View room details & images">
-                          <Info size={14} />
+                          <MdInfo size={14} />
                         </button>
-                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><Edit size={14} /></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><Trash2 size={14} /></button>
+                        <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><MdEdit size={14} /></button>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><MdDelete size={14} /></button>
                       </div>
                     </div>
                   )
@@ -1436,7 +1436,7 @@ export default function RoomsManagementPage() {
                       checked={formData.has_ac}
                       onChange={e => setFormData(prev => ({ ...prev, has_ac: e.target.checked }))}
                     />
-                    <Wind size={16} /> Air Conditioned
+                    <MdAir size={16} /> Air Conditioned
                   </label>
                   <label className={styles.featureCheckbox}>
                     <input
@@ -1444,7 +1444,7 @@ export default function RoomsManagementPage() {
                       checked={formData.has_whiteboard}
                       onChange={e => setFormData(prev => ({ ...prev, has_whiteboard: e.target.checked }))}
                     />
-                    <PresentationIcon size={16} /> Whiteboard
+                    <MdCoPresent size={16} /> Whiteboard
                   </label>
                   <label className={styles.featureCheckbox}>
                     <input
@@ -1452,7 +1452,7 @@ export default function RoomsManagementPage() {
                       checked={formData.has_tv}
                       onChange={e => setFormData(prev => ({ ...prev, has_tv: e.target.checked }))}
                     />
-                    <Tv size={16} /> TV
+                    <MdTv size={16} /> TV
                   </label>
                 </div>
               </div>
@@ -1461,7 +1461,7 @@ export default function RoomsManagementPage() {
               {editingRoom?.id && (
                 <div className={styles.formGroup}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Tag size={16} /> Equipment & Feature Tags
+                    <MdLabel size={16} /> Equipment & Feature Tags
                     <span style={{
                       fontSize: '11px',
                       color: 'var(--emerald-500)',
@@ -1499,7 +1499,7 @@ export default function RoomsManagementPage() {
                   gap: '10px',
                   marginBottom: '16px'
                 }}>
-                  <Info size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                  <MdInfo size={18} style={{ color: '#3b82f6', flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     <strong>Equipment & Feature Tags</strong> can be added after the room is created.
                     These tags are used by the scheduler to match courses with compatible rooms.
@@ -1521,7 +1521,7 @@ export default function RoomsManagementPage() {
               <div className={styles.modalFooter}>
                 <button type="button" className={styles.btnCancel} onClick={() => resetForm()}>Cancel</button>
                 <button type="submit" className={styles.btnSave}>
-                  <Save size={16} /> {editingRoom ? 'Update Room' : 'Add Room'}
+                  <MdSave size={16} /> {editingRoom ? 'Update Room' : 'Add Room'}
                 </button>
               </div>
             </form>
@@ -1560,13 +1560,13 @@ export default function RoomsManagementPage() {
         <div className={styles.roomDetailOverlay} onClick={handleCloseRoomDetail}>
           <div className={styles.roomDetailModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.roomDetailHeader}>
-              <h3><DoorOpen size={20} /> {selectedRoom.room}</h3>
+              <h3><MdMeetingRoom size={20} /> {selectedRoom.room}</h3>
               <button className={styles.roomDetailClose} onClick={handleCloseRoomDetail}>×</button>
             </div>
             <div className={styles.roomDetailBody}>
               {/* Room Information */}
               <div className={styles.roomDetailSection}>
-                <h4><Building2 size={16} /> Room Information</h4>
+                <h4><MdDomain size={16} /> Room Information</h4>
                 <div className={styles.roomDetailInfo}>
                   <div className={styles.roomDetailItem}>
                     <span className={styles.roomDetailLabel}>Campus</span>
@@ -1605,7 +1605,7 @@ export default function RoomsManagementPage() {
 
               {/* Amenities */}
               <div className={styles.roomDetailSection}>
-                <h4><Wind size={16} /> Amenities</h4>
+                <h4><MdAir size={16} /> Amenities</h4>
                 <div className={styles.roomDetailInfo}>
                   <div className={styles.roomDetailItem}>
                     <span className={styles.roomDetailLabel}>Air Conditioning</span>
@@ -1629,7 +1629,7 @@ export default function RoomsManagementPage() {
               {/* Equipment & Features Tags */}
               {selectedRoom.id && (
                 <div className={styles.roomDetailSection}>
-                  <h4><Tag size={16} /> Equipment & Features</h4>
+                  <h4><MdLabel size={16} /> Equipment & Features</h4>
                   <div style={{ marginTop: '12px' }}>
                     <FeatureTagsManager
                       mode="room"
@@ -1650,7 +1650,7 @@ export default function RoomsManagementPage() {
 
               {/* Room Images */}
               <div className={styles.roomDetailSection}>
-                <h4><ImageIcon size={16} /> Room Images</h4>
+                <h4><MdImage size={16} /> Room Images</h4>
                 {loadingImages ? (
                   <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Loading images...</p>
                 ) : roomImages.length > 0 ? (
@@ -1663,10 +1663,10 @@ export default function RoomsManagementPage() {
                   </div>
                 ) : (
                   <div className={styles.noImages}>
-                    <ImageIcon size={48} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
+                    <MdImage size={48} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
                     <p>No images available for this room</p>
                     <button className={styles.uploadImageBtn} onClick={() => alert('Image upload feature coming soon!')}>
-                      <Upload size={16} /> Upload Images
+                      <MdUpload size={16} /> Upload Images
                     </button>
                   </div>
                 )}

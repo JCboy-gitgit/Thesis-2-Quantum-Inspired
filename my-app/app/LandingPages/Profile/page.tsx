@@ -176,7 +176,7 @@ export default function ProfilePage() {
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className={`${styles['profile-container']} ${sidebarOpen ? styles['with-sidebar'] : ''}`}>
         <button
@@ -504,3 +504,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+

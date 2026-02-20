@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { Bell, Trash2, CheckCircle2, AlertTriangle, Info, Megaphone, AlertCircle } from 'lucide-react'
+import { MdNotifications as Bell, MdDelete as Trash2, MdCheckCircle as CheckCircle2, MdWarning as AlertTriangle, MdInfo as Info, MdCampaign as Megaphone, MdError as AlertCircle } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface AlertItem {
@@ -122,7 +122,7 @@ export default function AdminAlertsPage() {
   return (
     <div className={styles.page}>
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} setSidebarOpen={setSidebarOpen} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.header}>
@@ -200,3 +200,4 @@ export default function AdminAlertsPage() {
     </div>
   )
 }
+

@@ -7,27 +7,7 @@ import styles from '../../CoursesManagement/ClassSchedules.module.css'
 import stylesLocal from './styles.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useColleges } from '@/app/context/CollegesContext'
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Plus,
-  X,
-  Save,
-  Calendar,
-  GraduationCap,
-  Users,
-  Search,
-  Trash2,
-  UserPlus,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Download,
-  Upload,
-  BookMarked,
-  Layers
-} from 'lucide-react'
+import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdAdd as Plus, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdPeople as Users, MdSearch as Search, MdDelete as Trash2, MdPersonAdd as UserPlus, MdDescription as FileText, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdDownload as Download, MdUpload as Upload, MdBookmark as BookMarked, MdLayers as Layers } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -127,7 +107,7 @@ function TeachingLoadAssignmentContent() {
   const [teachingLoads, setTeachingLoads] = useState<TeachingLoadWithDetails[]>([])
   const [selectedFaculty, setSelectedFaculty] = useState<FacultyProfile | null>(null)
   const [expandedFaculties, setExpandedFaculties] = useState<Set<string>>(new Set())
-  
+
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCollege, setFilterCollege] = useState<string>('all')
@@ -148,7 +128,7 @@ function TeachingLoadAssignmentContent() {
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null)
   const [assignmentSection, setAssignmentSection] = useState<string>('')
   const [assignmentNotes, setAssignmentNotes] = useState<string>('')
-  
+
   // Course filter states for modal
   const [courseFilterDegreeProgram, setCourseFilterDegreeProgram] = useState<string>('all')
   const [courseFilterYearLevel, setCourseFilterYearLevel] = useState<string>('all')
@@ -451,8 +431,8 @@ function TeachingLoadAssignmentContent() {
   // Get filtered sections for dropdown
   const getAvailableSections = () => {
     if (!selectedFaculty) return []
-    
-    return sections.filter(s => 
+
+    return sections.filter(s =>
       (s.college === selectedFaculty.college || s.department === selectedFaculty.department) &&
       s.is_active !== false
     )
@@ -468,7 +448,7 @@ function TeachingLoadAssignmentContent() {
   // When section is selected, auto-populate courses
   const handleSectionChange = (sectionId: number | null) => {
     setSelectedSectionId(sectionId)
-    
+
     if (sectionId) {
       const section = sections.find(s => s.id === sectionId)
       if (section) {
@@ -476,7 +456,7 @@ function TeachingLoadAssignmentContent() {
         // Auto-select courses assigned to this section
         const sectionCourses = getCoursesForSection(sectionId)
         setSelectedCourses(sectionCourses)
-        
+
         // Auto-set filters based on section
         setCourseFilterDegreeProgram(section.degree_program)
         setCourseFilterYearLevel(section.year_level.toString())
@@ -511,7 +491,7 @@ function TeachingLoadAssignmentContent() {
           const deptMatch = selectedFaculty.department && c.department && c.department.toLowerCase().includes(selectedFaculty.department.toLowerCase())
           const reverseCollegeMatch = selectedFaculty.college && c.college && selectedFaculty.college.toLowerCase().includes(c.college.toLowerCase())
           const reverseDeptMatch = selectedFaculty.department && c.department && selectedFaculty.department.toLowerCase().includes(c.department.toLowerCase())
-          
+
           return collegeMatch || deptMatch || reverseCollegeMatch || reverseDeptMatch
         })
       }
@@ -540,7 +520,7 @@ function TeachingLoadAssignmentContent() {
     // Apply search filter
     if (courseSearchTerm) {
       const term = courseSearchTerm.toLowerCase()
-      filtered = filtered.filter(c => 
+      filtered = filtered.filter(c =>
         c.course_code.toLowerCase().includes(term) ||
         c.course_name.toLowerCase().includes(term)
       )
@@ -561,12 +541,12 @@ function TeachingLoadAssignmentContent() {
 
     filtered.forEach(course => {
       const program = course.degree_program || 'Unknown Program'
-      
+
       if (!grouped.has(program)) {
         grouped.set(program, new Map())
       }
       const programMap = grouped.get(program)!
-      
+
       if (!programMap.has(course.year_level)) {
         programMap.set(course.year_level, [])
       }
@@ -696,17 +676,17 @@ function TeachingLoadAssignmentContent() {
     try {
       const text = await csvFile.text()
       const lines = text.split('\n').filter(line => line.trim())
-      
+
       if (lines.length < 2) {
         throw new Error('CSV file is empty or invalid')
       }
 
       // Parse CSV: faculty_id, course_code, academic_year, semester, section, notes
       const assignments: any[] = []
-      
+
       for (let i = 1; i < lines.length; i++) {
         const columns = lines[i].split(',').map(col => col.trim().replace(/^"|"$/g, ''))
-        
+
         if (columns.length < 4) continue
 
         const [facultyId, courseCode, academicYear, semester, section = '', notes = ''] = columns
@@ -800,7 +780,7 @@ function TeachingLoadAssignmentContent() {
           const lecHours = load.course.lec_hours || 0
           const labHours = load.course.lab_hours || 0
           const totalUnits = lecHours + labHours
-          
+
           csvContent += `"${load.faculty.faculty_id}",`
           csvContent += `"${load.faculty.full_name}",`
           csvContent += `"${load.faculty.email || ''}",`
@@ -889,7 +869,7 @@ function TeachingLoadAssignmentContent() {
   return (
     <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
@@ -1121,14 +1101,14 @@ function TeachingLoadAssignmentContent() {
                         <div>
                           <div style={{ fontWeight: 700, color: 'var(--text-dark, #1a202c)' }}>
                             {faculty.full_name}
-                            <span style={{ 
-                              marginLeft: 8, 
-                              fontSize: 12, 
-                              fontWeight: 600, 
-                              padding: '2px 8px', 
-                              background: 'var(--primary-gradient, linear-gradient(135deg, #667eea, #764ba2))', 
-                              color: 'white', 
-                              borderRadius: 6 
+                            <span style={{
+                              marginLeft: 8,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              background: 'var(--primary-gradient, linear-gradient(135deg, #667eea, #764ba2))',
+                              color: 'white',
+                              borderRadius: 6
                             }}>
                               ID: {faculty.faculty_id}
                             </span>
@@ -1179,10 +1159,10 @@ function TeachingLoadAssignmentContent() {
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <strong style={{ fontSize: 15 }}>{load.course?.course_code}</strong>
                                     {load.course?.degree_program && (
-                                      <span style={{ 
-                                        fontSize: 11, 
-                                        padding: '2px 6px', 
-                                        background: 'var(--primary-gradient)', 
+                                      <span style={{
+                                        fontSize: 11,
+                                        padding: '2px 6px',
+                                        background: 'var(--primary-gradient)',
                                         color: 'white',
                                         borderRadius: 4,
                                         fontWeight: 600
@@ -1342,9 +1322,9 @@ function TeachingLoadAssignmentContent() {
                   </div>
 
                   {/* Course Filters */}
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                     gap: '12px',
                     marginTop: '20px',
                     marginBottom: '16px',
@@ -1478,9 +1458,9 @@ function TeachingLoadAssignmentContent() {
                       ) : (
                         Array.from(getGroupedCourses()).map(([program, yearMap]) => (
                           <div key={program} style={{ marginBottom: '20px' }}>
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: '8px',
                               padding: '8px 12px',
                               background: 'var(--primary-gradient)',
@@ -1496,9 +1476,9 @@ function TeachingLoadAssignmentContent() {
 
                             {Array.from(yearMap).sort(([a], [b]) => a - b).map(([yearLevel, coursesInYear]) => (
                               <div key={yearLevel} style={{ marginBottom: '16px', marginLeft: '12px' }}>
-                                <div style={{ 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
                                   gap: '6px',
                                   padding: '6px 10px',
                                   background: 'var(--bg-gray-100, #edf2f7)',
@@ -1514,15 +1494,15 @@ function TeachingLoadAssignmentContent() {
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginLeft: '8px' }}>
                                   {coursesInYear.map(course => (
-                                    <label 
-                                      key={course.id} 
+                                    <label
+                                      key={course.id}
                                       style={{
                                         display: 'flex',
                                         alignItems: 'flex-start',
                                         gap: '10px',
                                         padding: '10px 12px',
-                                        background: selectedCourses.includes(course.id) 
-                                          ? 'rgba(99, 102, 241, 0.1)' 
+                                        background: selectedCourses.includes(course.id)
+                                          ? 'rgba(99, 102, 241, 0.1)'
                                           : 'var(--bg-white, #fff)',
                                         border: selectedCourses.includes(course.id)
                                           ? '2px solid rgba(99, 102, 241, 0.5)'
@@ -1541,19 +1521,19 @@ function TeachingLoadAssignmentContent() {
                                       <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                                           <strong style={{ color: 'var(--text-dark, #1a202c)', fontSize: '14px' }}>
-                                          {course.course_code}
+                                            {course.course_code}
                                           </strong>
-                                          <span style={{ 
-                                            padding: '2px 8px', 
-                                            background: 'var(--bg-gray-100, #edf2f7)', 
-                                            borderRadius: '4px', 
+                                          <span style={{
+                                            padding: '2px 8px',
+                                            background: 'var(--bg-gray-100, #edf2f7)',
+                                            borderRadius: '4px',
                                             fontSize: '12px',
                                             color: 'var(--text-medium, #718096)',
                                             fontWeight: 600
                                           }}>
                                             {(course.lec_hours || 0) + (course.lab_hours || 0)} hrs
                                           </span>
-                                          <span style={{ 
+                                          <span style={{
                                             fontSize: '12px',
                                             color: 'var(--text-light, #a0aec0)'
                                           }}>
@@ -1563,8 +1543,8 @@ function TeachingLoadAssignmentContent() {
                                         <div style={{ fontSize: '13px', color: 'var(--text-medium, #718096)' }}>
                                           {course.course_name}
                                         </div>
-                                        <div style={{ 
-                                          fontSize: '12px', 
+                                        <div style={{
+                                          fontSize: '12px',
                                           color: 'var(--text-light, #a0aec0)',
                                           marginTop: '4px',
                                           display: 'flex',
@@ -1726,3 +1706,4 @@ export default function TeachingLoadAssignmentPage() {
     </Suspense>
   )
 }
+

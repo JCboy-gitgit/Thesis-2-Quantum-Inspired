@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, Check, AlertCircle, Loader2, AlertTriangle, Search, ChevronDown, ChevronUp, Zap, Shield, Star, MapPin, Monitor, RotateCcw, CheckCircle } from 'lucide-react'
+import { MdClose as X, MdCheck as Check, MdError as AlertCircle, MdLoop as Loader2, MdWarning as AlertTriangle, MdSearch as Search, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdFlashOn as Zap, MdShield as Shield, MdStar as Star, MdLocationOn as MapPin, MdMonitor as Monitor, MdReplay as RotateCcw, MdCheckCircle as CheckCircle } from 'react-icons/md'
 import styles from './RoomReassignmentModal.module.css'
 
 interface Room {

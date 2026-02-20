@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/hooks/useAuth'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { Building2, ArrowLeft, Search, Users, BookOpen, GraduationCap, Briefcase, FolderOpen, Plus, Edit2, Trash2, X, Save, Check, AlertTriangle, Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Edit, FileText } from 'lucide-react'
+import { MdDomain as Building2, MdArrowBack as ArrowLeft, MdSearch as Search, MdPeople as Users, MdMenuBook as BookOpen, MdSchool as GraduationCap, MdWork as Briefcase, MdFolderOpen as FolderOpen, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdClose as X, MdSave as Save, MdCheck as Check, MdWarning as AlertTriangle, MdUpload as Upload, MdTableChart as FileSpreadsheet, MdDownload as Download, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface Department {
@@ -485,7 +485,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>

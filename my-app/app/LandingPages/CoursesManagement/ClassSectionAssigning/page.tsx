@@ -6,7 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from '../ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useColleges } from '@/app/context/CollegesContext'
-import { BookOpen, ChevronDown, ChevronRight, Plus, Edit3, X, Save, Calendar, GraduationCap, Layers, BookMarked, Users, Search, Trash2, FolderPlus, UserPlus, FileText, CheckCircle, AlertCircle, Download, Edit } from 'lucide-react'
+import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdLayers as Layers, MdBookmark as BookMarked, MdPeople as Users, MdSearch as Search, MdDelete as Trash2, MdCreateNewFolder as FolderPlus, MdPersonAdd as UserPlus, MdDescription as FileText, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdDownload as Download, MdEdit as Edit } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -801,7 +801,7 @@ function ClassSectionAssigningContent() {
     return (
       <div className={styles.pageLayout}>
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
@@ -815,7 +815,7 @@ function ClassSectionAssigningContent() {
   return (
     <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.pageContainer}>
@@ -1621,26 +1621,30 @@ function ClassSectionAssigningContent() {
 
       {/* ==================== Year Batch Modal ==================== */}
       {showYearBatchModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--card-bg, #fff)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '450px',
-            boxShadow: 'var(--shadow-md)'
+        <div
+          onClick={() => setShowYearBatchModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
           }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--card-bg, #fff)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '450px',
+              boxShadow: 'var(--shadow-md)'
+            }}>
             <div style={{
               padding: '20px 24px',
               borderBottom: '1px solid var(--border-color)',
@@ -1755,26 +1759,30 @@ function ClassSectionAssigningContent() {
 
       {/* ==================== Section Modal ==================== */}
       {showSectionModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--card-bg, #fff)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '500px',
-            boxShadow: 'var(--shadow-md)'
+        <div
+          onClick={() => setShowSectionModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
           }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--card-bg, #fff)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '500px',
+              boxShadow: 'var(--shadow-md)'
+            }}>
             <div style={{
               padding: '20px 24px',
               borderBottom: '1px solid var(--border-color)',
@@ -1976,29 +1984,34 @@ function ClassSectionAssigningContent() {
 
       {/* ==================== Assign Courses by Year Level Modal ==================== */}
       {showAssignCoursesModal && selectedSection && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--card-bg, #fff)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '800px',
-            maxHeight: '85vh',
+        <div
+          onClick={() => setShowAssignCoursesModal(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
-            flexDirection: 'column',
-            boxShadow: 'var(--shadow-md)'
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '10px'
           }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--card-bg, #fff)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '800px',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: 'var(--shadow-lg)'
+            }}>
             <div style={{
               padding: '20px 24px',
               borderBottom: '1px solid var(--border-color)',
@@ -2319,3 +2332,4 @@ export default function ClassSectionAssigningPage() {
     </Suspense>
   )
 }
+

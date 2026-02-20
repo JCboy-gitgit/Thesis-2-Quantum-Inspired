@@ -19,7 +19,7 @@ interface FacultyProfile {
   email: string | null
   phone: string | null
   office_location: string | null
-  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  employment_type: 'full-time' | 'part-time' | 'vsl' | 'guest'
   is_active: boolean
   profile_image: string | null
   bio: string | null
@@ -52,7 +52,7 @@ interface FacultyFormData {
   email: string
   phone: string
   office_location: string
-  employment_type: 'full-time' | 'part-time' | 'adjunct' | 'guest'
+  employment_type: 'full-time' | 'part-time' | 'vsl' | 'guest'
   is_active: boolean
 }
 
@@ -141,7 +141,7 @@ function getEmploymentBadge(type: string): { label: string; color: string } {
   switch (type) {
     case 'full-time': return { label: 'Full-Time', color: '#22c55e' }
     case 'part-time': return { label: 'Part-Time', color: '#f59e0b' }
-    case 'adjunct': return { label: 'Adjunct', color: '#8b5cf6' }
+    case 'vsl': return { label: 'VSL', color: '#8b5cf6' }
     case 'guest': return { label: 'Guest', color: '#06b6d4' }
     default: return { label: type, color: '#64748b' }
   }
@@ -304,16 +304,16 @@ function FacultyListsContent() {
 
       // Group by upload_group_id (each CSV file is a separate group)
       const fileMap = new Map<number, { faculty: FacultyProfile[], departments: Set<string>, file_name: string, college: string }>()
-      
+
       data.forEach(f => {
         // Use upload_group_id if available, otherwise use 0 for legacy data
         const groupId = f.upload_group_id || 0
         const fileName = f.file_name || f.college || 'Legacy Import'
-        
+
         if (!fileMap.has(groupId)) {
-          fileMap.set(groupId, { 
-            faculty: [], 
-            departments: new Set(), 
+          fileMap.set(groupId, {
+            faculty: [],
+            departments: new Set(),
             file_name: fileName,
             college: f.college || 'Unassigned'
           })
@@ -586,7 +586,7 @@ function FacultyListsContent() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('faculty_profiles')
-        .update({ 
+        .update({
           file_name: renameFileName.trim(),
           updated_at: new Date().toISOString()
         })
@@ -628,7 +628,7 @@ function FacultyListsContent() {
           .insert({
             item_type: 'faculty_file',
             item_name: selectedFile.file_name,
-            item_data: { 
+            item_data: {
               file_name: selectedFile.file_name,
               college: selectedFile.college,
               faculty_count: selectedFile.faculty_count,
@@ -728,7 +728,7 @@ function FacultyListsContent() {
     return (
       <div className={styles.facultyLayout} data-page="admin">
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
@@ -742,7 +742,7 @@ function FacultyListsContent() {
   return (
     <div className={styles.facultyLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className={`${styles.facultyMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.facultyContainer}>
           {/* File Selection Bar */}
@@ -845,7 +845,7 @@ function FacultyListsContent() {
                     key={group.upload_group_id}
                     className={styles.collegeCard}
                   >
-                    <div 
+                    <div
                       className={styles.collegeCardContent}
                       onClick={() => setSelectedFile(group)}
                       style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, cursor: 'pointer' }}
@@ -863,14 +863,14 @@ function FacultyListsContent() {
                       </div>
                     </div>
                     <div className={styles.fileCardActions}>
-                      <button 
+                      <button
                         className={styles.fileEditBtn}
                         onClick={(e) => { e.stopPropagation(); openRenameModal(group); }}
                         title="Rename file"
                       >
                         <EditIcon />
                       </button>
-                      <button 
+                      <button
                         className={styles.fileDeleteBtn}
                         onClick={(e) => { e.stopPropagation(); openDeleteFileConfirm(group); }}
                         title="Delete file"
@@ -922,7 +922,7 @@ function FacultyListsContent() {
                   <option value="all">All Types</option>
                   <option value="full-time">Full-Time</option>
                   <option value="part-time">Part-Time</option>
-                  <option value="adjunct">Adjunct</option>
+                  <option value="vsl">VSL</option>
                   <option value="guest">Guest</option>
                 </select>
 
@@ -1132,7 +1132,18 @@ function FacultyListsContent() {
             </div>
 
             <div className={styles.modalBody}>
+              {/* Row 1: ID & Name */}
               <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Faculty ID</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value="Auto-generated"
+                    disabled
+                    style={{ backgroundColor: 'var(--bg-gray-50)', fontStyle: 'italic' }}
+                  />
+                </div>
                 <div className={styles.formGroup}>
                   <label>Full Name *</label>
                   <input
@@ -1140,22 +1151,23 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.full_name}
                     onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Position *</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={formData.position}
-                    onChange={e => setFormData({ ...formData, position: e.target.value })}
-                    placeholder="Professor"
+                    placeholder="Bernal, Trina O."
                   />
                 </div>
               </div>
 
+              {/* Row 2: Email & Role */}
               <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    className={styles.formInput}
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="faculty@gmail.com"
+                  />
+                </div>
                 <div className={styles.formGroup}>
                   <label>Role</label>
                   <select
@@ -1171,21 +1183,38 @@ function FacultyListsContent() {
                     <option value="staff">Staff</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Row 3: Position & Employment Type */}
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Position *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.position}
+                    onChange={e => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="Associate Professor"
+                  />
+                </div>
                 <div className={styles.formGroup}>
                   <label>Employment Type</label>
-                  <select
-                    className={styles.formSelect}
-                    value={formData.employment_type}
-                    onChange={e => setFormData({ ...formData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
-                  >
-                    <option value="full-time">Full-Time</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="adjunct">Adjunct</option>
-                    <option value="guest">Guest</option>
-                  </select>
+                  <div className={styles.employmentTypeContainer}>
+                    {(['full-time', 'part-time', 'vsl', 'guest'] as const).map(type => (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`${styles.employmentTypeBtn} ${formData.employment_type === type ? styles.active : ''}`}
+                        onClick={() => setFormData({ ...formData, employment_type: type })}
+                      >
+                        {type === 'vsl' ? 'VSL' : type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
+              {/* Row 4: Department & College */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Department *</label>
@@ -1194,7 +1223,7 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.department}
                     onChange={e => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="Computer Science"
+                    placeholder="College of Science"
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1204,31 +1233,21 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.college}
                     onChange={e => setFormData({ ...formData, college: e.target.value })}
-                    placeholder="College of Science"
+                    placeholder="College of Arts and Letters"
                   />
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label>Email</label>
-                <input
-                  type="email"
-                  className={styles.formInput}
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="john.doe@university.edu"
-                />
-              </div>
-
+              {/* Row 5: Phone & Location */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Phone</label>
+                  <label>Phone Number</label>
                   <input
                     type="text"
                     className={styles.formInput}
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+63 912 345 6789"
+                    placeholder="+63 9xx xxx xxxx"
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1238,7 +1257,7 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.office_location}
                     onChange={e => setFormData({ ...formData, office_location: e.target.value })}
-                    placeholder="Building A, Room 101"
+                    placeholder="Building A, Room 203"
                   />
                 </div>
               </div>
@@ -1268,6 +1287,7 @@ function FacultyListsContent() {
             </div>
 
             <div className={styles.modalBody}>
+              {/* Row 1: ID & Name */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Faculty ID</label>
@@ -1276,7 +1296,31 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.faculty_id}
                     disabled
-                    style={{ backgroundColor: 'var(--bg-gray-50)' }}
+                    style={{ backgroundColor: 'var(--bg-gray-50)', opacity: 0.8 }}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.full_name}
+                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                    placeholder="Bernal, Trina O."
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Email & Active Status */}
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    className={styles.formInput}
+                    value={formData.email}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="faculty@gmail.com"
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1292,27 +1336,7 @@ function FacultyListsContent() {
                 </div>
               </div>
 
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={formData.full_name}
-                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Position *</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={formData.position}
-                    onChange={e => setFormData({ ...formData, position: e.target.value })}
-                  />
-                </div>
-              </div>
-
+              {/* Row 3: Role & Position */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Role</label>
@@ -1330,20 +1354,35 @@ function FacultyListsContent() {
                   </select>
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Employment Type</label>
-                  <select
-                    className={styles.formSelect}
-                    value={formData.employment_type}
-                    onChange={e => setFormData({ ...formData, employment_type: e.target.value as FacultyProfile['employment_type'] })}
-                  >
-                    <option value="full-time">Full-Time</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="adjunct">Adjunct</option>
-                    <option value="guest">Guest</option>
-                  </select>
+                  <label>Current Position *</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={formData.position}
+                    onChange={e => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="Associate Professor"
+                  />
                 </div>
               </div>
 
+              {/* Row 4: Employment Type (Full Width) */}
+              <div className={styles.formGroup} style={{ marginBottom: '24px' }}>
+                <label>Employment Type</label>
+                <div className={styles.employmentTypeContainer}>
+                  {(['full-time', 'part-time', 'vsl', 'guest'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`${styles.employmentTypeBtn} ${formData.employment_type === type ? styles.active : ''}`}
+                      onClick={() => setFormData({ ...formData, employment_type: type })}
+                    >
+                      {type === 'vsl' ? 'VSL' : type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row 5: Department & College */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Department</label>
@@ -1352,6 +1391,7 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.department}
                     onChange={e => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="Science"
                   />
                 </div>
                 <div className={styles.formGroup}>
@@ -1361,23 +1401,15 @@ function FacultyListsContent() {
                     className={styles.formInput}
                     value={formData.college}
                     onChange={e => setFormData({ ...formData, college: e.target.value })}
+                    placeholder="College of Science"
                   />
                 </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label>Email</label>
-                <input
-                  type="email"
-                  className={styles.formInput}
-                  value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
+              {/* Row 6: Phone & Location */}
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Phone</label>
+                  <label>Phone Number</label>
                   <input
                     type="text"
                     className={styles.formInput}
@@ -1555,3 +1587,4 @@ export default function FacultyListsPage() {
     </Suspense>
   )
 }
+

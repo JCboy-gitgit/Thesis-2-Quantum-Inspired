@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, Check, CheckCircle, AlertCircle, Loader2, RotateCcw, Search, ChevronDown, ChevronUp, BookOpen, Clock, Users, GraduationCap } from 'lucide-react'
+import { MdClose as X, MdCheck as Check, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdLoop as Loader2, MdReplay as RotateCcw, MdSearch as Search, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdMenuBook as BookOpen, MdAccessTime as Clock, MdPeople as Users, MdSchool as GraduationCap } from 'react-icons/md'
 import styles from './FacultyAssignmentModal.module.css'
 
 interface Faculty {

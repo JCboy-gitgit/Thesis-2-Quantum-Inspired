@@ -106,8 +106,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-state p {
@@ -160,50 +165,56 @@
   height: 26px;
 }
 
-.stat-icon.rooms { 
+.stat-icon.rooms {
   background: rgba(46, 175, 125, 0.12);
 }
+
 .stat-icon.rooms svg {
   color: #2EAF7D !important;
   stroke: #2EAF7D !important;
 }
 
-.stat-icon.faculty { 
+.stat-icon.faculty {
   background: rgba(68, 147, 66, 0.12);
 }
+
 .stat-icon.faculty svg {
   color: #449342 !important;
   stroke: #449342 !important;
 }
 
-.stat-icon.courses { 
+.stat-icon.courses {
   background: rgba(63, 208, 201, 0.12);
 }
+
 .stat-icon.courses svg {
   color: #3FD0C9 !important;
   stroke: #3FD0C9 !important;
 }
 
-.stat-icon.sections { 
+.stat-icon.sections {
   background: rgba(46, 175, 125, 0.12);
 }
+
 .stat-icon.sections svg {
   color: #2EAF7D !important;
   stroke: #2EAF7D !important;
 }
 
-.stat-icon.schedules { 
+.stat-icon.schedules {
   background: rgba(63, 208, 201, 0.12);
 }
+
 .stat-icon.schedules svg {
   color: #3FD0C9 !important;
   stroke: #3FD0C9 !important;
 }
 
-.stat-icon.online-indicator { 
+.stat-icon.online-indicator {
   background: rgba(34, 197, 94, 0.12);
   position: relative;
 }
+
 .stat-icon.online-indicator svg {
   color: #22c55e !important;
   stroke: #22c55e !important;
@@ -223,8 +234,17 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
 }
 
 .stat-info {
@@ -655,7 +675,83 @@
 
 .calendar-day.holiday {
   background: rgba(220, 38, 38, 0.12);
-  border-color: rgba(220, 38, 38, 0.3);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  cursor: pointer;
+}
+
+.calendar-day.past:not(.today) {
+  background: var(--bg-gray-100, #f7fafc);
+  opacity: 0.6;
+}
+
+/* Holiday Popover Styles */
+.holiday-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  width: 200px;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.2));
+  animation: popoverFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.popover-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 6px;
+  background: var(--bg-white, #ffffff);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.popover-content {
+  background: var(--bg-white, #ffffff);
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  text-align: left;
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.popover-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark, #1a202c);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.popover-date {
+  font-size: 11px;
+  color: var(--text-medium, #718096);
+  font-weight: 500;
 }
 
 .calendar-day.holiday .day-number {
@@ -708,6 +804,12 @@
 
 .legend-dot.holiday {
   background: #dc2626;
+}
+
+.legend-dot.past {
+  background: var(--bg-gray-100, #f7fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  opacity: 0.6;
 }
 
 /* Quick Navigation */
@@ -823,6 +925,7 @@
 [data-theme="green"] .stat-icon.rooms {
   background: linear-gradient(135deg, #2EAF7D, #449342) !important;
 }
+
 [data-theme="green"] .stat-icon.rooms svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -831,6 +934,7 @@
 [data-theme="green"] .stat-icon.faculty {
   background: linear-gradient(135deg, #449342, #2EAF7D) !important;
 }
+
 [data-theme="green"] .stat-icon.faculty svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -839,6 +943,7 @@
 [data-theme="green"] .stat-icon.courses {
   background: linear-gradient(135deg, #3FD0C9, #2EAF7D) !important;
 }
+
 [data-theme="green"] .stat-icon.courses svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -847,6 +952,7 @@
 [data-theme="green"] .stat-icon.sections {
   background: linear-gradient(135deg, #02353C, #2EAF7D) !important;
 }
+
 [data-theme="green"] .stat-icon.sections svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -855,6 +961,7 @@
 [data-theme="green"] .stat-icon.schedules {
   background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
 }
+
 [data-theme="green"] .stat-icon.schedules svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -863,6 +970,7 @@
 [data-theme="green"] .stat-icon.online-indicator {
   background: linear-gradient(135deg, #22c55e, #2EAF7D) !important;
 }
+
 [data-theme="green"] .stat-icon.online-indicator svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
@@ -996,32 +1104,56 @@
 [data-theme="light"] .stat-icon.rooms {
   background: linear-gradient(135deg, #2EAF7D, #449342) !important;
 }
-[data-theme="light"] .stat-icon.rooms svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.rooms svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 [data-theme="light"] .stat-icon.faculty {
   background: linear-gradient(135deg, #449342, #2EAF7D) !important;
 }
-[data-theme="light"] .stat-icon.faculty svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.faculty svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 [data-theme="light"] .stat-icon.courses {
   background: linear-gradient(135deg, #3FD0C9, #2EAF7D) !important;
 }
-[data-theme="light"] .stat-icon.courses svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.courses svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 [data-theme="light"] .stat-icon.sections {
   background: linear-gradient(135deg, #02353C, #2EAF7D) !important;
 }
-[data-theme="light"] .stat-icon.sections svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.sections svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 [data-theme="light"] .stat-icon.schedules {
   background: linear-gradient(135deg, #2EAF7D, #3FD0C9) !important;
 }
-[data-theme="light"] .stat-icon.schedules svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.schedules svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 [data-theme="light"] .stat-icon.online-indicator {
   background: linear-gradient(135deg, #22c55e, #2EAF7D) !important;
 }
-[data-theme="light"] .stat-icon.online-indicator svg { color: #fff !important; stroke: #fff !important; }
+
+[data-theme="light"] .stat-icon.online-indicator svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
 /* Light Theme - Calendar */
 [data-theme="light"] .calendar-day {
@@ -1158,23 +1290,59 @@
   background: rgba(56, 189, 248, 0.15) !important;
 }
 
-[data-theme="dark"] .stat-icon.rooms { background: rgba(14, 165, 233, 0.15) !important; }
-[data-theme="dark"] .stat-icon.rooms svg { color: #38bdf8 !important; stroke: #38bdf8 !important; }
+[data-theme="dark"] .stat-icon.rooms {
+  background: rgba(14, 165, 233, 0.15) !important;
+}
 
-[data-theme="dark"] .stat-icon.faculty { background: rgba(6, 182, 212, 0.15) !important; }
-[data-theme="dark"] .stat-icon.faculty svg { color: #22d3ee !important; stroke: #22d3ee !important; }
+[data-theme="dark"] .stat-icon.rooms svg {
+  color: #38bdf8 !important;
+  stroke: #38bdf8 !important;
+}
 
-[data-theme="dark"] .stat-icon.courses { background: rgba(20, 184, 166, 0.15) !important; }
-[data-theme="dark"] .stat-icon.courses svg { color: #2dd4bf !important; stroke: #2dd4bf !important; }
+[data-theme="dark"] .stat-icon.faculty {
+  background: rgba(6, 182, 212, 0.15) !important;
+}
 
-[data-theme="dark"] .stat-icon.sections { background: rgba(2, 132, 199, 0.15) !important; }
-[data-theme="dark"] .stat-icon.sections svg { color: #0ea5e9 !important; stroke: #0ea5e9 !important; }
+[data-theme="dark"] .stat-icon.faculty svg {
+  color: #22d3ee !important;
+  stroke: #22d3ee !important;
+}
 
-[data-theme="dark"] .stat-icon.schedules { background: rgba(6, 182, 212, 0.15) !important; }
-[data-theme="dark"] .stat-icon.schedules svg { color: #06b6d4 !important; stroke: #06b6d4 !important; }
+[data-theme="dark"] .stat-icon.courses {
+  background: rgba(20, 184, 166, 0.15) !important;
+}
 
-[data-theme="dark"] .stat-icon.online-indicator { background: rgba(34, 211, 238, 0.15) !important; }
-[data-theme="dark"] .stat-icon.online-indicator svg { color: #22d3ee !important; stroke: #22d3ee !important; }
+[data-theme="dark"] .stat-icon.courses svg {
+  color: #2dd4bf !important;
+  stroke: #2dd4bf !important;
+}
+
+[data-theme="dark"] .stat-icon.sections {
+  background: rgba(2, 132, 199, 0.15) !important;
+}
+
+[data-theme="dark"] .stat-icon.sections svg {
+  color: #0ea5e9 !important;
+  stroke: #0ea5e9 !important;
+}
+
+[data-theme="dark"] .stat-icon.schedules {
+  background: rgba(6, 182, 212, 0.15) !important;
+}
+
+[data-theme="dark"] .stat-icon.schedules svg {
+  color: #06b6d4 !important;
+  stroke: #06b6d4 !important;
+}
+
+[data-theme="dark"] .stat-icon.online-indicator {
+  background: rgba(34, 211, 238, 0.15) !important;
+}
+
+[data-theme="dark"] .stat-icon.online-indicator svg {
+  color: #22d3ee !important;
+  stroke: #22d3ee !important;
+}
 
 [data-theme="dark"] .stat-icon.online-indicator::after {
   background: #22d3ee;
@@ -1391,7 +1559,7 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1407,49 +1575,49 @@
   .dashboard-main {
     padding: 16px;
   }
-  
+
   .header-content {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .header-time {
     text-align: center;
   }
-  
+
   .dashboard-title {
     font-size: 24px;
     justify-content: center;
   }
-  
+
   .current-time {
     font-size: 28px;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
-  
+
   .stat-card {
     padding: 16px;
     flex-direction: column;
     text-align: center;
   }
-  
+
   .stat-icon {
     width: 48px;
     height: 48px;
   }
-  
+
   .stat-value {
     font-size: 24px;
   }
-  
+
   .quick-nav-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .card-content {
     padding: 16px;
   }
@@ -1459,20 +1627,20 @@
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .stat-card {
     flex-direction: row;
     text-align: left;
   }
-  
+
   .dashboard-title {
     font-size: 20px;
   }
-  
+
   .dashboard-header {
     padding: 16px;
   }
-  
+
   .calendar-day {
     font-size: 12px;
   }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Check, XCircle, Clock, Calendar, ArrowRight, User, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react'
+import { MdClose as X, MdCheck as Check, MdCancel as XCircle, MdAccessTime as Clock, MdCalendarToday as Calendar, MdArrowForward as ArrowRight, MdPerson as User, MdWarning as AlertTriangle, MdCheckCircle as CheckCircle, MdError as AlertCircle } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './ScheduleRequestsModal.module.css'
 
@@ -137,8 +137,8 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
     if (!isOpen) return null
 
     return (
-        <div className={styles.overlay}>
-            <div className={styles.modal}>
+        <div className={styles.overlay} onClick={onClose}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 <div className={styles.header}>
                     <h2>Pending Schedule Requests</h2>
                     <button onClick={onClose} className={styles.closeBtn}>

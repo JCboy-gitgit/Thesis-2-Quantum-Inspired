@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { Tag, X, Plus, Check, Search, Loader2, Beaker, MonitorSpeaker, Armchair, Shield, Accessibility, Package, Sun, Dumbbell, RotateCcw } from 'lucide-react'
+import { MdLabel as Tag, MdClose as X, MdAdd as Plus, MdCheck as Check, MdSearch as Search, MdLoop as Loader2, MdScience as Beaker, MdSpeaker as MonitorSpeaker, MdChair as Armchair, MdShield as Shield, MdAccessibility as Accessibility, MdInventory as Package, MdWbSunny as Sun, MdFitnessCenter as Dumbbell, MdReplay as RotateCcw } from 'react-icons/md'
 import styles from './FeatureTagsManager.module.css'
 
 // ==================== INTERFACES ====================

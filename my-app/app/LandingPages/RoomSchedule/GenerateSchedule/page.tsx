@@ -14,7 +14,7 @@ import {
   FaBolt, FaAtom, FaFileAlt, FaCalendar, FaChevronDown, FaChevronRight,
   FaEye, FaTimes, FaFilter
 } from 'react-icons/fa'
-import { University, FileSpreadsheet, GraduationCap, BookOpen, Users, Settings, Zap, CheckCircle2, AlertTriangle, Clock, Building2, DoorOpen, ChevronDown, ChevronRight, Play, RotateCcw, Eye, X, Upload, AlertCircle, FileText } from 'lucide-react'
+import { MdSchool, MdTableChart, MdMenuBook, MdPeople, MdSettings, MdFlashOn, MdCheckCircle, MdWarning, MdAccessTime, MdDomain, MdMeetingRoom, MdKeyboardArrowDown, MdKeyboardArrowRight, MdPlayArrow, MdReplay, MdVisibility, MdClose, MdUpload, MdError, MdDescription } from 'react-icons/md'
 import { toast } from 'sonner'
 import { pushAdminNotification } from '@/app/components/NotificationBell'
 
@@ -2095,7 +2095,7 @@ export default function GenerateSchedulePage() {
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.scheduleMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.scheduleContainer}>
@@ -2213,7 +2213,7 @@ export default function GenerateSchedulePage() {
                 {(scheduleResult.onlineClassCount ?? 0) > 0 && (
                   <div className={styles.onlineStatsCard}>
                     <h4 className={styles.onlineStatsTitle}>
-                      <Zap size={16} /> Online Class Distribution
+                      <MdFlashOn size={16} /> Online Class Distribution
                     </h4>
                     <div className={styles.onlineStatsGrid}>
                       <div className={styles.onlineStatItem}>
@@ -2760,7 +2760,7 @@ export default function GenerateSchedulePage() {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1' }}>
-                        <University size={24} style={{ color: '#6366f1' }} />
+                        <MdSchool size={24} style={{ color: '#6366f1' }} />
                         <div>
                           <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)' }}>College Filter</h3>
                           <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
@@ -2810,7 +2810,7 @@ export default function GenerateSchedulePage() {
                         alignItems: 'center',
                         gap: '8px'
                       }}>
-                        <CheckCircle2 size={16} />
+                        <MdCheckCircle size={16} />
                         <span>Scheduling filtered for <strong>{selectedCollege}</strong> - Only {selectedCollege} rooms and sections will be used</span>
                       </div>
                     )}
@@ -2821,7 +2821,7 @@ export default function GenerateSchedulePage() {
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedCampus(!expandedCampus)}>
                       <div className={styles.dataSourceTitle}>
                         <div className={`${styles.dataSourceIcon} ${styles.campusIcon}`}>
-                          <University size={24} />
+                          <MdSchool size={24} />
                         </div>
                         <div>
                           <h3>Campus / Building / Rooms</h3>
@@ -2831,12 +2831,12 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceStatus}>
                         {selectedCampusGroups.length > 0 ? (
                           <span className={styles.selectedBadge}>
-                            <CheckCircle2 size={16} /> {selectedCampusGroups.length} Selected
+                            <MdCheckCircle size={16} /> {selectedCampusGroups.length} Selected
                           </span>
                         ) : (
                           <span className={styles.requiredBadge}>Required</span>
                         )}
-                        {expandedCampus ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        {expandedCampus ? <MdKeyboardArrowDown size={20} /> : <MdKeyboardArrowRight size={20} />}
                       </div>
                     </div>
 
@@ -2844,7 +2844,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceContent}>
                         {campusGroups.length === 0 ? (
                           <div className={styles.emptyDataSource}>
-                            <FileText size={40} />
+                            <MdDescription size={40} />
                             <p>No campus data found. Upload a Campus/Building CSV first.</p>
                             <button onClick={() => router.push('/LandingPages/UploadCSV')}>
                               Upload CSV
@@ -2869,21 +2869,21 @@ export default function GenerateSchedulePage() {
                                     />
                                   </div>
                                   <div className={styles.dataCardHeader}>
-                                    <University size={20} />
+                                    <MdSchool size={20} />
                                     <h4>{group.school_name}</h4>
                                   </div>
                                   <div className={styles.dataCardStats}>
-                                    <span><DoorOpen size={14} /> {group.room_count} rooms</span>
-                                    <span><Users size={14} /> {group.total_capacity} capacity</span>
+                                    <span><MdMeetingRoom size={14} /> {group.room_count} rooms</span>
+                                    <span><MdPeople size={14} /> {group.total_capacity} capacity</span>
                                   </div>
                                   <div className={styles.dataCardFile}>
-                                    <FileText size={14} /> {group.file_name}
+                                    <MdDescription size={14} /> {group.file_name}
                                   </div>
                                   <div className={styles.dataCardDate}>
                                     {new Date(group.created_at).toLocaleDateString()}
                                   </div>
                                   {isSelected && (
-                                    <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
+                                    <div className={styles.selectedCheck}><MdCheckCircle size={20} /></div>
                                   )}
                                 </div>
                               )
@@ -2899,7 +2899,7 @@ export default function GenerateSchedulePage() {
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedSections(!expandedSections)}>
                       <div className={styles.dataSourceTitle}>
                         <div className={`${styles.dataSourceIcon} ${styles.classIcon}`}>
-                          <BookOpen size={24} />
+                          <MdMenuBook size={24} />
                         </div>
                         <div>
                           <h3>Sections & Assigned Courses</h3>
@@ -2909,12 +2909,12 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceStatus}>
                         {selectedYearBatches.length > 0 ? (
                           <span className={styles.selectedBadge}>
-                            <CheckCircle2 size={16} /> {selectedYearBatches.length} Selected
+                            <MdCheckCircle size={16} /> {selectedYearBatches.length} Selected
                           </span>
                         ) : (
                           <span className={styles.requiredBadge}>Required</span>
                         )}
-                        {expandedSections ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        {expandedSections ? <MdKeyboardArrowDown size={20} /> : <MdKeyboardArrowRight size={20} />}
                       </div>
                     </div>
 
@@ -2922,7 +2922,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.dataSourceContent}>
                         {yearBatches.length === 0 ? (
                           <div className={styles.emptyDataSource}>
-                            <FileText size={40} />
+                            <MdDescription size={40} />
                             <p>No year batches found. Please create year batches and sections first.</p>
                             <button onClick={() => router.push('/LandingPages/CoursesManagement/ClassSectionAssigning')}>
                               Go to Class & Section Assigning
@@ -2950,11 +2950,11 @@ export default function GenerateSchedulePage() {
                                     />
                                   </div>
                                   <div className={styles.dataCardHeader}>
-                                    <GraduationCap size={20} />
+                                    <MdSchool size={20} />
                                     <h4>{batch.year_batch}</h4>
                                   </div>
                                   <div className={styles.dataCardStats}>
-                                    <span><Users size={14} /> {batchSections.length} sections</span>
+                                    <span><MdPeople size={14} /> {batchSections.length} sections</span>
                                     <span><FaUserGraduate size={14} /> {totalStudents} students</span>
                                   </div>
                                   <div className={styles.dataCardAcademic}>
@@ -2966,7 +2966,7 @@ export default function GenerateSchedulePage() {
                                     {new Date(batch.created_at).toLocaleDateString()}
                                   </div>
                                   {isSelected && (
-                                    <div className={styles.selectedCheck}><CheckCircle2 size={20} /></div>
+                                    <div className={styles.selectedCheck}><MdCheckCircle size={20} /></div>
                                   )}
                                 </div>
                               )
@@ -2985,7 +2985,7 @@ export default function GenerateSchedulePage() {
                       onClick={() => goToStep(2)}
                     >
                       Continue to Review Data
-                      <ChevronRight size={18} />
+                      <MdKeyboardArrowRight size={18} />
                     </button>
                     {!canProceedToStep2 && (
                       <p className={styles.navigationHint}>
@@ -3003,7 +3003,7 @@ export default function GenerateSchedulePage() {
                   <div className={styles.summaryGrid}>
                     <div className={styles.summaryCard}>
                       <div className={`${styles.summaryIcon} ${styles.campusIcon}`}>
-                        <University size={24} />
+                        <MdSchool size={24} />
                       </div>
                       <div className={styles.summaryInfo}>
                         <h4>
@@ -3021,7 +3021,7 @@ export default function GenerateSchedulePage() {
                     </div>
                     <div className={styles.summaryCard}>
                       <div className={`${styles.summaryIcon} ${styles.classIcon}`}>
-                        <BookOpen size={24} />
+                        <MdMenuBook size={24} />
                       </div>
                       <div className={styles.summaryInfo}>
                         <h4>
@@ -3055,7 +3055,7 @@ export default function GenerateSchedulePage() {
                     <div className={styles.filterSection}>
                       <div className={styles.filterHeader} onClick={() => { }}>
                         <div className={styles.filterTitle}>
-                          <Users size={18} />
+                          <MdPeople size={18} />
                           <h3>Select Sections & Courses</h3>
                         </div>
                         <div className={styles.filterStatus}>
@@ -3129,7 +3129,7 @@ export default function GenerateSchedulePage() {
                                         }}
                                         style={{ cursor: 'pointer', width: '18px', height: '18px', accentColor: '#16a34a' }}
                                       />
-                                      <GraduationCap size={16} />
+                                      <MdSchool size={16} />
                                       <strong style={{ flex: 1 }}>{section.section_name}</strong>
                                       {isSelected && (
                                         <span style={{
@@ -3147,8 +3147,8 @@ export default function GenerateSchedulePage() {
                                   </div>
 
                                   <div className={styles.buildingStats} style={{ marginBottom: '0' }}>
-                                    <span><BookOpen size={14} /> {sectionCourses.length - excludedCount}/{sectionCourses.length} courses</span>
-                                    <span><Users size={14} /> {section.student_count} students</span>
+                                    <span><MdMenuBook size={14} /> {sectionCourses.length - excludedCount}/{sectionCourses.length} courses</span>
+                                    <span><MdPeople size={14} /> {section.student_count} students</span>
                                     {section.college && <span style={{ fontSize: '11px', color: '#6366f1' }}>{section.college}</span>}
                                   </div>
 
@@ -3250,7 +3250,7 @@ export default function GenerateSchedulePage() {
                         ) : (
                           <span className={styles.filterInactiveBadge}>All rooms will be used</span>
                         )}
-                        {showBuildingFilter ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                        {showBuildingFilter ? <MdKeyboardArrowDown size={20} /> : <MdKeyboardArrowRight size={20} />}
                       </div>
                     </div>
 
@@ -3384,7 +3384,7 @@ export default function GenerateSchedulePage() {
                                         accentColor: '#16a34a'
                                       }}
                                     />
-                                    <Building2 size={16} />
+                                    <MdDomain size={16} />
                                     <strong style={{ flex: 1 }}>{building}</strong>
                                     {isActive && (
                                       <span style={{
@@ -3402,8 +3402,8 @@ export default function GenerateSchedulePage() {
                                 </div>
 
                                 <div className={styles.buildingStats} style={{ marginBottom: '0' }}>
-                                  <span><DoorOpen size={14} /> {buildingRooms.length} rooms</span>
-                                  <span><Users size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
+                                  <span><MdMeetingRoom size={14} /> {buildingRooms.length} rooms</span>
+                                  <span><MdPeople size={14} /> {buildingRooms.reduce((sum, r) => sum + r.capacity, 0)} capacity</span>
                                 </div>
 
                                 {/* Collapsible room list for individual selection */}
@@ -3493,7 +3493,7 @@ export default function GenerateSchedulePage() {
                   {/* Data Preview */}
                   <div className={styles.previewSection}>
                     <div className={styles.previewCard}>
-                      <h3><DoorOpen size={20} /> Rooms Preview ({getFilteredRooms().length})</h3>
+                      <h3><MdMeetingRoom size={20} /> Rooms Preview ({getFilteredRooms().length})</h3>
                       <div className={styles.previewTable}>
                         <table>
                           <thead>
@@ -3536,7 +3536,7 @@ export default function GenerateSchedulePage() {
                     </div>
 
                     <div className={styles.previewCard}>
-                      <h3><BookOpen size={20} /> Classes Preview ({classes.length})</h3>
+                      <h3><MdMenuBook size={20} /> Classes Preview ({classes.length})</h3>
                       <div className={styles.previewTable}>
                         <table>
                           <thead>
@@ -3581,25 +3581,25 @@ export default function GenerateSchedulePage() {
 
                   {/* Compatibility Check */}
                   <div className={styles.compatibilityCard}>
-                    <h3><CheckCircle2 size={20} /> Data Compatibility Check</h3>
+                    <h3><MdCheckCircle size={20} /> Data Compatibility Check</h3>
                     <div className={styles.compatibilityList}>
                       <div className={`${styles.compatibilityItem} ${styles.success}`}>
-                        <CheckCircle2 size={18} />
+                        <MdCheckCircle size={18} />
                         <span>Room data loaded successfully ({rooms.length} rooms)</span>
                       </div>
                       <div className={`${styles.compatibilityItem} ${styles.success}`}>
-                        <CheckCircle2 size={18} />
+                        <MdCheckCircle size={18} />
                         <span>Class schedule data loaded ({classes.length} classes)</span>
                       </div>
                       <div className={`${styles.compatibilityItem} ${totalRoomCapacity >= classes.length * 30 ? styles.success : styles.warning}`}>
-                        {totalRoomCapacity >= classes.length * 30 ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                        {totalRoomCapacity >= classes.length * 30 ? <MdCheckCircle size={18} /> : <MdError size={18} />}
                         <span>
                           Capacity check: {totalRoomCapacity} seats for ~{classes.length * 30} estimated students
                         </span>
                       </div>
                       {teachers.length > 0 && (
                         <div className={`${styles.compatibilityItem} ${styles.success}`}>
-                          <CheckCircle2 size={18} />
+                          <MdCheckCircle size={18} />
                           <span>Teacher availability data included ({teachers.length} teachers)</span>
                         </div>
                       )}
@@ -3609,7 +3609,7 @@ export default function GenerateSchedulePage() {
                   {/* Navigation */}
                   <div className={styles.stepNavigation}>
                     <button className={styles.backStepButton} onClick={() => goToStep(1)}>
-                      <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
+                      <MdKeyboardArrowRight size={18} style={{ transform: 'rotate(180deg)' }} />
                       Back
                     </button>
                     <button
@@ -3618,7 +3618,7 @@ export default function GenerateSchedulePage() {
                       onClick={() => goToStep(3)}
                     >
                       Continue to Configuration
-                      <ChevronRight size={18} />
+                      <MdKeyboardArrowRight size={18} />
                     </button>
                   </div>
                 </div>
@@ -3772,7 +3772,7 @@ export default function GenerateSchedulePage() {
                       <FaClock /> Campus Schedule Times (Room/Building Operating Hours)
                     </h3>
                     <div className={styles.timeConfigInfo}>
-                      <Clock size={20} />
+                      <MdAccessTime size={20} />
                       <p>Set the campus operating hours for room allocation. Classes scheduled on "Online Days" will not require rooms, regardless of these times.</p>
                     </div>
 
@@ -3798,7 +3798,7 @@ export default function GenerateSchedulePage() {
                     </div>
 
                     <div className={styles.slotDurationInfo}>
-                      <Clock size={18} />
+                      <MdAccessTime size={18} />
                       <div>
                         <strong>Time Slot Duration:</strong> 90 minutes (1.5 hours)
                         <p className={styles.slotDurationNote}>
@@ -3842,7 +3842,7 @@ export default function GenerateSchedulePage() {
                       </div>
                       <div className={styles.lunchBreakSettings}>
                         <div className={styles.lunchBreakInfo}>
-                          <Clock size={18} />
+                          <MdAccessTime size={18} />
                           <p>
                             <strong>Mandatory 1-hour break</strong> is automatically inserted after
                             <strong> 6 consecutive hours</strong> of class. This applies to both
@@ -3886,10 +3886,10 @@ export default function GenerateSchedulePage() {
                   {/* Online Days Configuration (Quantum Rule: The "Online Day" Rule) */}
                   <div className={styles.formCard}>
                     <h3 className={styles.formSectionTitle}>
-                      <Zap /> Online Days Configuration (Quantum-Inspired Rule)
+                      <MdFlashOn /> Online Days Configuration (Quantum-Inspired Rule)
                     </h3>
                     <div className={styles.timeConfigInfo}>
-                      <Zap size={20} />
+                      <MdFlashOn size={20} />
                       <p>
                         Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations,
                         allowing the quantum algorithm to "tunnel" through problem spaces by shifting F2F demand to available days.
@@ -3940,9 +3940,9 @@ export default function GenerateSchedulePage() {
                       className={styles.advancedToggleButton}
                       onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                     >
-                      <Settings size={18} />
+                      <MdSettings size={18} />
                       Advanced Algorithm Settings
-                      {showAdvancedSettings ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                      {showAdvancedSettings ? <MdKeyboardArrowDown size={18} /> : <MdKeyboardArrowRight size={18} />}
                     </button>
                   </div>
 
@@ -3954,7 +3954,7 @@ export default function GenerateSchedulePage() {
                       </h3>
 
                       <div className={styles.algorithmInfo}>
-                        <Zap size={20} />
+                        <MdFlashOn size={20} />
                         <p>
                           The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation
                           to escape local minima and find globally optimal room allocations. Default settings
@@ -4104,7 +4104,7 @@ export default function GenerateSchedulePage() {
                   {/* Navigation & Generate */}
                   <div className={styles.stepNavigation}>
                     <button className={styles.backStepButton} onClick={() => goToStep(2)}>
-                      <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
+                      <MdKeyboardArrowRight size={18} style={{ transform: 'rotate(180deg)' }} />
                       Back
                     </button>
                   </div>
@@ -4150,7 +4150,7 @@ export default function GenerateSchedulePage() {
                         </>
                       ) : (
                         <>
-                          <Play size={20} /> Generate Room Allocation Schedule
+                          <MdPlayArrow size={20} /> Generate Room Allocation Schedule
                         </>
                       )}
                     </button>
@@ -4161,7 +4161,7 @@ export default function GenerateSchedulePage() {
                     )}
                     {canGenerate && !scheduling && (
                       <p className={styles.generateInfo}>
-                        <Zap size={16} />
+                        <MdFlashOn size={16} />
                         Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
                       </p>
                     )}
@@ -4179,12 +4179,12 @@ export default function GenerateSchedulePage() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>
-                <BookOpen size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
+                <MdMenuBook size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
                   ? selectedBatchInfoList[0]?.year_batch
                   : `${selectedBatchInfoList.length} Year Batches`}
               </h2>
               <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
-                <X size={24} />
+                <MdClose size={24} />
               </button>
             </div>
 
@@ -4352,7 +4352,7 @@ export default function GenerateSchedulePage() {
           <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.viewAllModalHeader}>
               <h3 className={styles.viewAllModalTitle}>
-                <DoorOpen size={24} /> All Rooms ({getFilteredRooms().length})
+                <MdMeetingRoom size={24} /> All Rooms ({getFilteredRooms().length})
               </h3>
               <button className={styles.closeModalButton} onClick={() => setShowAllRooms(false)}>
                 <FaTimes />
@@ -4417,7 +4417,7 @@ export default function GenerateSchedulePage() {
           <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.viewAllModalHeader}>
               <h3 className={styles.viewAllModalTitle}>
-                <BookOpen size={24} /> All Classes ({classes.length})
+                <MdMenuBook size={24} /> All Classes ({classes.length})
               </h3>
               <button className={styles.closeModalButton} onClick={() => setShowAllClasses(false)}>
                 <FaTimes />
@@ -4484,3 +4484,4 @@ export default function GenerateSchedulePage() {
     </div>
   )
 }
+

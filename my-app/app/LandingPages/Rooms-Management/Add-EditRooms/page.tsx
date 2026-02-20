@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import { PenSquare, Plus, Building2, DoorOpen, Users, Save, X, Trash2, Edit2, AlertTriangle, CheckCircle, University, Hotel, FileSpreadsheet, Calendar, ChevronDown, ChevronRight, Landmark, MapPin, Wind, Tv, PresentationIcon, Accessibility, ArrowLeft, Search, AlertCircle, Edit, FileText } from 'lucide-react'
+import { MdEditSquare, MdAdd, MdDomain, MdMeetingRoom, MdPeople, MdSave, MdClose, MdDelete, MdEdit, MdWarning, MdCheckCircle, MdSchool, MdHotel, MdTableChart, MdCalendarToday, MdKeyboardArrowDown, MdKeyboardArrowRight, MdAccountBalance, MdLocationOn, MdAir, MdTv, MdCoPresent, MdAccessibility, MdArrowBack, MdSearch, MdError, MdDescription } from 'react-icons/md'
 
 // Helper function to display "None" for null/undefined values
 const displayValue = (value: any, defaultVal: string = 'None'): string => {
@@ -374,7 +374,7 @@ export default function AddEditRoomsPage() {
         showSidebarToggle={true}
         showAccountIcon={true}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.contentWrapper}>
@@ -383,7 +383,7 @@ export default function AddEditRoomsPage() {
             className={styles.backButton}
             onClick={() => router.push('/LandingPages/Home')}
           >
-            <ArrowLeft size={18} />
+            <MdArrowBack size={18} />
             Back to Home
           </button>
 
@@ -393,7 +393,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.headerInfo}>
                 <div className={styles.headerTitleRow}>
                   <div className={styles.headerIcon}>
-                    <PenSquare size={24} />
+                    <MdEditSquare size={24} />
                   </div>
                   <h1 className={styles.headerTitle}>Add / Edit Rooms</h1>
                 </div>
@@ -405,17 +405,17 @@ export default function AddEditRoomsPage() {
           {/* Messages */}
           {successMessage && (
             <div className={styles.successMessage}>
-              <CheckCircle size={20} />
+              <MdCheckCircle size={20} />
               <span>{successMessage}</span>
             </div>
           )}
 
           {errorMessage && (
             <div className={styles.errorMessage}>
-              <AlertCircle size={20} />
+              <MdError size={20} />
               <span>{errorMessage}</span>
               <button onClick={() => setErrorMessage('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer' }}>
-                <X size={16} />
+                <MdClose size={16} />
               </button>
             </div>
           )}
@@ -428,14 +428,14 @@ export default function AddEditRoomsPage() {
             </div>
           ) : campusGroups.length === 0 ? (
             <div className={styles.emptyState}>
-              <FileText size={64} />
+              <MdDescription size={64} />
               <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
               <p className={styles.emptyText}>Upload a Campus/Building CSV file first to manage rooms</p>
               <button
                 onClick={() => router.push('/LandingPages/UploadCSV')}
                 className={styles.addButton}
               >
-                <Plus size={20} />
+                <MdAdd size={20} />
                 Upload CSV
               </button>
             </div>
@@ -444,7 +444,7 @@ export default function AddEditRoomsPage() {
               {/* Campus Group Cards */}
               <div className={styles.sectionHeader}>
                 <h2>
-                  <University size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                  <MdSchool size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                   Select School/Campus File
                 </h2>
               </div>
@@ -457,23 +457,23 @@ export default function AddEditRoomsPage() {
                     onClick={() => handleSelectGroup(group.upload_group_id)}
                   >
                     <div className={styles.campusCardIcon}>
-                      <University size={32} />
+                      <MdSchool size={32} />
                     </div>
                     <div className={styles.campusCardContent}>
                       <h3>{group.school_name}</h3>
                       <p className={styles.campusCardMeta}>
-                        <DoorOpen size={14} /> {group.room_count} rooms
+                        <MdMeetingRoom size={14} /> {group.room_count} rooms
                       </p>
                       <p className={styles.campusCardFile}>
-                        <FileText size={14} /> {group.file_name}
+                        <MdDescription size={14} /> {group.file_name}
                       </p>
                       <p className={styles.campusCardDate}>
-                        <Calendar size={14} /> {new Date(group.created_at).toLocaleDateString()}
+                        <MdCalendarToday size={14} /> {new Date(group.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     {selectedGroup === group.upload_group_id && (
                       <div className={styles.selectedBadge}>
-                        <CheckCircle size={20} />
+                        <MdCheckCircle size={20} />
                       </div>
                     )}
                   </div>
@@ -486,7 +486,7 @@ export default function AddEditRoomsPage() {
                   <div className={styles.roomsSectionHeader}>
                     <div>
                       <h2>
-                        <Building2 size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                        <MdDomain size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                         Rooms in {selectedGroupData?.school_name}
                       </h2>
                       <p className={styles.roomsSectionSubtitle}>
@@ -495,7 +495,7 @@ export default function AddEditRoomsPage() {
                     </div>
                     <div className={styles.roomsActions}>
                       <div className={styles.searchWrapper}>
-                        <Search size={18} className={styles.searchIcon} />
+                        <MdSearch size={18} className={styles.searchIcon} />
                         <input
                           type="text"
                           placeholder="Search rooms..."
@@ -505,7 +505,7 @@ export default function AddEditRoomsPage() {
                         />
                       </div>
                       <button onClick={() => setShowAddModal(true)} className={styles.addButton}>
-                        <Plus size={20} />
+                        <MdAdd size={20} />
                         Add Room
                       </button>
                     </div>
@@ -518,7 +518,7 @@ export default function AddEditRoomsPage() {
                     </div>
                   ) : rooms.length === 0 ? (
                     <div className={styles.emptyState}>
-                      <DoorOpen size={48} />
+                      <MdMeetingRoom size={48} />
                       <h3>No Rooms Found</h3>
                       <p>Add rooms to this campus group</p>
                     </div>
@@ -536,19 +536,19 @@ export default function AddEditRoomsPage() {
                               onClick={() => toggleBuilding(key)}
                             >
                               <div className={styles.buildingHeaderLeft}>
-                                {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                                <Hotel size={20} />
+                                {isExpanded ? <MdKeyboardArrowDown size={20} /> : <MdKeyboardArrowRight size={20} />}
+                                <MdHotel size={20} />
                                 <div>
                                   <h3>{building}</h3>
                                   <span className={styles.buildingCampus}>
-                                    <Landmark size={14} /> {campus}
+                                    <MdAccountBalance size={14} /> {campus}
                                   </span>
                                 </div>
                               </div>
                               <div className={styles.buildingHeaderRight}>
                                 <span className={styles.roomBadge}>{buildingRooms.length} rooms</span>
                                 <span className={styles.capacityBadge}>
-                                  <Users size={14} /> {totalCapacity} seats
+                                  <MdPeople size={14} /> {totalCapacity} seats
                                 </span>
                               </div>
                             </div>
@@ -571,7 +571,7 @@ export default function AddEditRoomsPage() {
                                       <tr key={room.id}>
                                         <td>
                                           <div className={styles.roomCell}>
-                                            <DoorOpen size={16} />
+                                            <MdMeetingRoom size={16} />
                                             <span>{room.room}</span>
                                             {room.room_code && (
                                               <small style={{ color: 'var(--text-light)', marginLeft: '4px' }}>({room.room_code})</small>
@@ -580,13 +580,13 @@ export default function AddEditRoomsPage() {
                                         </td>
                                         <td>
                                           <div className={styles.floorCell}>
-                                            <MapPin size={14} />
+                                            <MdLocationOn size={14} />
                                             {room.floor_number ? `Floor ${room.floor_number}` : 'None'}
                                           </div>
                                         </td>
                                         <td>
                                           <div className={styles.capacityCell}>
-                                            <Users size={14} />
+                                            <MdPeople size={14} />
                                             {room.capacity}
                                           </div>
                                         </td>
@@ -600,17 +600,17 @@ export default function AddEditRoomsPage() {
                                             <span className={styles.featureIcon} title={`AC: ${displayBool(room.has_ac)}`} style={{
                                               opacity: room.has_ac ? 1 : 0.3
                                             }}>
-                                              <Wind size={14} />
+                                              <MdAir size={14} />
                                             </span>
                                             <span className={styles.featureIcon} title={`Whiteboard: ${displayBool(room.has_whiteboard)}`} style={{
                                               opacity: room.has_whiteboard ? 1 : 0.3
                                             }}>
-                                              <PresentationIcon size={14} />
+                                              <MdCoPresent size={14} />
                                             </span>
                                             <span className={styles.featureIcon} title={`TV: ${displayBool(room.has_tv)}`} style={{
                                               opacity: room.has_tv ? 1 : 0.3
                                             }}>
-                                              <Tv size={14} />
+                                              <MdTv size={14} />
                                             </span>
                                           </div>
                                         </td>
@@ -621,14 +621,14 @@ export default function AddEditRoomsPage() {
                                               className={styles.editBtn}
                                               title="Edit Room"
                                             >
-                                              <Edit size={16} />
+                                              <MdEdit size={16} />
                                             </button>
                                             <button
                                               onClick={() => handleDelete(room.id)}
                                               className={styles.deleteBtn}
                                               title="Delete Room"
                                             >
-                                              <Trash2 size={16} />
+                                              <MdDelete size={16} />
                                             </button>
                                           </div>
                                         </td>
@@ -659,7 +659,7 @@ export default function AddEditRoomsPage() {
                 {editingRoom ? 'Edit Room' : 'Add New Room'}
               </h2>
               <button onClick={resetForm} className={styles.modalCloseButton}>
-                <X size={20} />
+                <MdClose size={20} />
               </button>
             </div>
 
@@ -667,7 +667,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <Landmark size={16} /> Campus/College *
+                    <MdAccountBalance size={16} /> Campus/College *
                   </label>
                   <input
                     type="text"
@@ -680,7 +680,7 @@ export default function AddEditRoomsPage() {
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <Hotel size={16} /> Building *
+                    <MdHotel size={16} /> Building *
                   </label>
                   <input
                     type="text"
@@ -696,7 +696,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <DoorOpen size={16} /> Room Name *
+                    <MdMeetingRoom size={16} /> Room Name *
                   </label>
                   <input
                     type="text"
@@ -724,7 +724,7 @@ export default function AddEditRoomsPage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <Users size={16} /> Capacity *
+                    <MdPeople size={16} /> Capacity *
                   </label>
                   <input
                     type="number"
@@ -737,7 +737,7 @@ export default function AddEditRoomsPage() {
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    <MapPin size={16} /> Floor (Optional)
+                    <MdLocationOn size={16} /> Floor (Optional)
                   </label>
                   <input
                     type="number"
@@ -789,7 +789,7 @@ export default function AddEditRoomsPage() {
                       checked={formData.has_ac || false}
                       onChange={e => setFormData(prev => ({ ...prev, has_ac: e.target.checked }))}
                     />
-                    <Wind size={16} />
+                    <MdAir size={16} />
                     <span>Air Conditioned</span>
                   </label>
                   <label className={styles.featureCheckbox}>
@@ -798,7 +798,7 @@ export default function AddEditRoomsPage() {
                       checked={formData.has_whiteboard || false}
                       onChange={e => setFormData(prev => ({ ...prev, has_whiteboard: e.target.checked }))}
                     />
-                    <PresentationIcon size={16} />
+                    <MdCoPresent size={16} />
                     <span>Whiteboard</span>
                   </label>
                   <label className={styles.featureCheckbox}>
@@ -807,7 +807,7 @@ export default function AddEditRoomsPage() {
                       checked={formData.has_tv || false}
                       onChange={e => setFormData(prev => ({ ...prev, has_tv: e.target.checked }))}
                     />
-                    <Tv size={16} />
+                    <MdTv size={16} />
                     <span>TV</span>
                   </label>
                 </div>
@@ -848,7 +848,7 @@ export default function AddEditRoomsPage() {
                   Cancel
                 </button>
                 <button type="submit" className={styles.saveButton}>
-                  <Save size={18} />
+                  <MdSave size={18} />
                   {editingRoom ? 'Update Room' : 'Add Room'}
                 </button>
               </div>
@@ -859,3 +859,4 @@ export default function AddEditRoomsPage() {
     </div>
   )
 }
+

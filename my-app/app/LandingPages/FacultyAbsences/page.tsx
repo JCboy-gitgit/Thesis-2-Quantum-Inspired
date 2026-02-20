@@ -6,17 +6,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import {
-    Calendar,
-    Clock,
-    User,
-    MapPin,
-    AlertCircle,
-    CheckCircle2,
-    Search,
-    Filter,
-    ArrowLeft
-} from 'lucide-react'
+import { MdCalendarToday as Calendar, MdAccessTime as Clock, MdPerson as User, MdLocationOn as MapPin, MdError as AlertCircle, MdCheckCircle as CheckCircle2, MdSearch as Search, MdFilterList as Filter, MdArrowBack as ArrowLeft } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface AbsenceRecord {
@@ -80,7 +70,7 @@ export default function FacultyAbsencesPage() {
                 showSidebarToggle={true}
                 setSidebarOpen={setSidebarOpen}
             />
-            <Sidebar isOpen={sidebarOpen} />
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <main
                 className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}
@@ -188,3 +178,4 @@ export default function FacultyAbsencesPage() {
         </div>
     )
 }
+

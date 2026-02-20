@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { FileText, Upload, Building2, CheckCircle2, XCircle, ArrowRight, FileSpreadsheet, Info, AlertTriangle, BookOpen, GraduationCap, DoorOpen, Tv, Landmark, AlertCircle } from 'lucide-react'
+import { MdDescription, MdUpload, MdDomain, MdCheckCircle, MdCancel, MdArrowForward, MdTableChart, MdInfo, MdWarning, MdMenuBook, MdSchool, MdMeetingRoom, MdTv, MdAccountBalance, MdError } from 'react-icons/md'
 import styles from './styles/bQtime.module.css'
 import React, { useState } from 'react'
 import type { JSX } from 'react'
@@ -415,11 +415,11 @@ export default function UploadCSVPage(): JSX.Element {
         console.error('Room insert error:', insertError)
         throw insertError
       }
-      
+
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-      
+
       console.log('Room insert result:', insertedData.length, 'rows inserted')
 
       setRoomMessage(
@@ -632,11 +632,11 @@ export default function UploadCSVPage(): JSX.Element {
         console.error('Class schedule insert error:', insertError)
         throw insertError
       }
-      
+
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-      
+
       console.log('Class schedule insert result:', insertedData.length, 'rows inserted')
 
       setClassMessage(
@@ -744,11 +744,11 @@ export default function UploadCSVPage(): JSX.Element {
         console.error('Faculty profiles insert error:', insertError)
         throw insertError
       }
-      
+
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-      
+
       console.log('Faculty profiles insert result:', insertedData.length, 'rows inserted')
 
       // Count by type
@@ -790,7 +790,7 @@ export default function UploadCSVPage(): JSX.Element {
 
       <div className={styles['page-header-content']}>
         <h1>
-          <Upload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
+          <MdUpload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
           Upload CSV Data
         </h1>
         <h2>Upload CSV data for Rooms, Courses, and Faculty</h2>
@@ -802,38 +802,38 @@ export default function UploadCSVPage(): JSX.Element {
           {/* ==================== ROOMS/CAMPUSES UPLOAD ==================== */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
-              <DoorOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
+              <MdMeetingRoom size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Rooms & Buildings
             </h2>
 
             <div className={styles['format-info']}>
               <h3>
-                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdInfo size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
               <p style={{ fontSize: '11px', wordBreak: 'break-word', fontFamily: 'monospace' }}>
                 Room_ID, Room_Name, Building, Floor, College, Primary_Type, Specific_Classification, Capacity, Is_Airconditioned, Has_Whiteboard, Has_TV
               </p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <MdDescription size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Example: CS-101, Room 101, Science Building, 1, CS, Lecture Room, Standard Classroom, 40, true, true, false
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Rooms upload populates RoomsManagement (Rooms & Buildings).</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Room Types:</strong> <span style={{ color: 'var(--text-dark)' }}>Lecture Room, Laboratory, Computer Lab, Conference Room, Auditorium, etc.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
                 <strong style={{ color: '#065f46' }}>College Field:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college code from Admin Settings (e.g., CS, CICT). Use Shared for multi-college rooms.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '4px', fontSize: '12px' }}>
-                <AlertCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
+                <MdError size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
                 <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
               </div>
             </div>
@@ -841,7 +841,7 @@ export default function UploadCSVPage(): JSX.Element {
             <div className={styles['form-row']}>
               <div className={styles['form-group']}>
                 <label className={styles['label']}>
-                  <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                  <MdDomain size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   School Name
                   <input
                     type="text"
@@ -856,7 +856,7 @@ export default function UploadCSVPage(): JSX.Element {
 
               <div className={styles['form-group']}>
                 <label className={styles['label']}>
-                  <Landmark size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                  <MdAccountBalance size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                   Campus Name
                   <input
                     type="text"
@@ -872,7 +872,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
-                <FileText size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdDescription size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Select CSV File
                 <input
                   id="roomFile"
@@ -885,7 +885,7 @@ export default function UploadCSVPage(): JSX.Element {
               </label>
               {roomFile && (
                 <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Selected: {roomFile.name}
                 </small>
               )}
@@ -896,19 +896,19 @@ export default function UploadCSVPage(): JSX.Element {
               disabled={roomLoading || !roomFile || !roomSchoolName || !roomCampusName}
               className={styles['upload-button']}
             >
-              <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+              <MdUpload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
               {roomLoading ? 'Uploading...' : 'Upload Rooms CSV'}
             </button>
 
             {roomMessage && (
               <div className={`${styles['message']} ${styles['success']}`} style={{ whiteSpace: 'pre-line' }}>
-                <CheckCircle2 size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCheckCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {roomMessage}
               </div>
             )}
             {roomError && (
               <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
-                <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCancel size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {roomError}
               </div>
             )}
@@ -917,31 +917,31 @@ export default function UploadCSVPage(): JSX.Element {
           {/* ==================== DEGREE PROGRAM SECTION UPLOAD ==================== */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
-              <BookOpen size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
+              <MdMenuBook size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Degree Program Section
             </h2>
 
             <div className={styles['format-info']}>
               <h3>
-                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdInfo size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
               <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <MdDescription size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Example: BS Biology, 1, 1st Semester, 1.0, BIO 101, General Biology, 1, 3, 2, None
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Degree Programs:</strong> <span style={{ color: 'var(--text-dark)' }}>BS Biology, BS Mathematics, BS Computer Science, BS Chemistry, BS Physics, etc.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Course uploads appear in CoursesManagement and are grouped by college.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
                 <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the CoursesManagement folder.</span>
               </div>
@@ -949,7 +949,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
-                <GraduationCap size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdSchool size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 College Name (from Admin Settings)
                 <input
                   type="text"
@@ -964,7 +964,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
-                <FileText size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdDescription size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Select CSV File
                 <input
                   id="classFile"
@@ -977,7 +977,7 @@ export default function UploadCSVPage(): JSX.Element {
               </label>
               {classFile && (
                 <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Selected: {classFile.name}
                 </small>
               )}
@@ -988,19 +988,19 @@ export default function UploadCSVPage(): JSX.Element {
               disabled={classLoading || !classFile || !degreeProgramName}
               className={styles['upload-button']}
             >
-              <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+              <MdUpload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
               {classLoading ? 'Uploading...' : 'Upload Degree Program CSV'}
             </button>
 
             {classMessage && (
               <div className={`${styles['message']} ${styles['success']}`} style={{ whiteSpace: 'pre-line' }}>
-                <CheckCircle2 size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCheckCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {classMessage}
               </div>
             )}
             {classError && (
               <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
-                <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCancel size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {classError}
               </div>
             )}
@@ -1011,18 +1011,18 @@ export default function UploadCSVPage(): JSX.Element {
           {/* ==================== FACULTY PROFILES UPLOAD ==================== */}
           <div className={styles['upload-card']}>
             <h2 className={styles['section-title']}>
-              <GraduationCap size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
+              <MdSchool size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Faculty Profiles (Officials & Staff)
             </h2>
 
             <div className={styles['format-info']}>
               <h3>
-                <Info size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdInfo size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
               <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Name | Position | Department | Type</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
-                <FileText size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                <MdDescription size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Examples:
               </small>
               <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace' }}>
@@ -1034,16 +1034,16 @@ export default function UploadCSVPage(): JSX.Element {
                 "Karl Kenneth R. Santos" | "Guest Lecturer" | "Science" | "Guest Lecturer"
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
                 <strong style={{ color: '#065f46' }}>Types Supported:</strong> <span style={{ color: 'var(--text-dark)' }}>Official, Staff, Faculty, Faculty (Part-Time), Faculty (Adjunct), Guest Lecturer</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <Info size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
                 <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Faculty uploads appear in FacultyColleges and Faculty Management.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
                 <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the FacultyColleges folder.</span>
               </div>
@@ -1051,7 +1051,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
-                <Building2 size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdDomain size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 College Name (from Admin Settings)
                 <input
                   type="text"
@@ -1066,7 +1066,7 @@ export default function UploadCSVPage(): JSX.Element {
 
             <div className={styles['form-group']}>
               <label className={styles['label']}>
-                <FileText size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                <MdDescription size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Select CSV File
                 <input
                   id="facultyFile"
@@ -1079,7 +1079,7 @@ export default function UploadCSVPage(): JSX.Element {
               </label>
               {facultyFile && (
                 <small style={{ color: '#10b981', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
-                  <CheckCircle2 size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
+                  <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                   Selected: {facultyFile.name}
                 </small>
               )}
@@ -1091,19 +1091,19 @@ export default function UploadCSVPage(): JSX.Element {
               className={styles['upload-button']}
               style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
             >
-              <Upload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+              <MdUpload size={20} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
               {facultyLoading ? 'Uploading...' : 'Upload Faculty Profiles CSV'}
             </button>
 
             {facultyMessage && (
               <div className={`${styles['message']} ${styles['success']}`} style={{ whiteSpace: 'pre-line' }}>
-                <CheckCircle2 size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCheckCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {facultyMessage}
               </div>
             )}
             {facultyError && (
               <div className={`${styles['message']} ${styles['error']}`} style={{ whiteSpace: 'pre-line' }}>
-                <XCircle size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
+                <MdCancel size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />
                 {facultyError}
               </div>
             )}
@@ -1113,7 +1113,7 @@ export default function UploadCSVPage(): JSX.Element {
           <div className={styles['skip-container']}>
             <button onClick={handleSkip} className={styles['skip-button']}>
               Continue to Home
-              <ArrowRight size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '8px' }} />
+              <MdArrowForward size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '8px' }} />
             </button>
           </div>
         </div>

@@ -44,21 +44,28 @@ export default function RootLayout({
     (function() {
       try {
         var isFacultyPage = window.location.pathname.startsWith('/faculty');
-        var themeKey = isFacultyPage ? 'faculty-base-theme' : 'admin-base-theme';
-        var savedTheme = localStorage.getItem(themeKey);
-        var validThemes = ['green', 'light', 'dark'];
-        var theme;
+        var isLoginPage = window.location.pathname === '/' || window.location.pathname === '/login';
         
-        if (validThemes.includes(savedTheme)) {
-          // Faculty pages should never use green theme
-          if (isFacultyPage && savedTheme === 'green') {
-            theme = 'light';
-          } else {
-            theme = savedTheme;
-          }
+        var theme;
+        if (isLoginPage) {
+          var savedLoginTheme = localStorage.getItem('login-theme-preference');
+          theme = (savedLoginTheme === 'dark' || savedLoginTheme === 'light') ? savedLoginTheme : 'light';
         } else {
-          // Default themes: light for faculty, green for admin
-          theme = isFacultyPage ? 'light' : 'green';
+          var themeKey = isFacultyPage ? 'faculty-base-theme' : 'admin-base-theme';
+          var savedTheme = localStorage.getItem(themeKey);
+          var validThemes = ['green', 'light', 'dark'];
+          
+          if (validThemes.includes(savedTheme)) {
+            // Faculty pages should never use green theme
+            if (isFacultyPage && savedTheme === 'green') {
+              theme = 'light';
+            } else {
+              theme = savedTheme;
+            }
+          } else {
+            // Default themes: light for faculty, green for admin
+            theme = isFacultyPage ? 'light' : 'green';
+          }
         }
         
         document.documentElement.setAttribute('data-theme', theme);

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
@@ -35,7 +35,10 @@ import {
     MdGridView,
     MdViewList,
     MdDragIndicator,
-    MdTaskAlt
+    MdTaskAlt,
+    MdFilterList,
+    MdSearch,
+    MdRestartAlt
 } from 'react-icons/md'
 import '@/app/styles/faculty-global.css'
 import styles from './FacultyLiveTimetable.module.css'
@@ -220,6 +223,9 @@ export default function FacultyLiveTimetablePage() {
     // Data
     const [schedule, setSchedule] = useState<Schedule | null>(null)
     const [allAllocations, setAllAllocations] = useState<RoomAllocation[]>([])
+    const [overrides, setOverrides] = useState<any[]>([])
+    const [allAbsences, setAllAbsences] = useState<Absence[]>([])
+    const [allMakeupRequests, setAllMakeupRequests] = useState<MakeupRequest[]>([])
     const [myAbsences, setMyAbsences] = useState<Absence[]>([])
     const [myMakeupRequests, setMyMakeupRequests] = useState<MakeupRequest[]>([])
     const [loading, setLoading] = useState(true)
@@ -252,6 +258,11 @@ export default function FacultyLiveTimetablePage() {
 
     // View/grid state
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+    const [groupBy, setGroupBy] = useState<'all' | 'room' | 'faculty' | 'section'>('all')
+    const [groupPage, setGroupPage] = useState(0)
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // Drag data (for rescheduling my own classes)
     const [draggedAllocId, setDraggedAllocId] = useState<number | null>(null)
     const [dragOverCell, setDragOverCell] = useState<string | null>(null)
     // Floor plan map (building → floor_plan_id for "View on Map" links)
@@ -324,6 +335,9 @@ export default function FacultyLiveTimetablePage() {
             if (data.success) {
                 setSchedule(data.schedule)
                 setAllAllocations(data.allocations || [])
+                setOverrides(data.overrides || [])
+                setAllAbsences(data.absences || [])
+                setAllMakeupRequests(data.makeupClasses || [])
 
                 // Filter absences and makeup requests for this faculty
                 const myAbs = (data.absences || []).filter((a: Absence) => a.faculty_id === user.id)
@@ -522,16 +536,108 @@ export default function FacultyLiveTimetablePage() {
         setDragOverCell(null)
     }
 
-    // Get allocations for selected day — ONLY this faculty's own schedules
-    const getDayAllocations = (day: string) => {
-        return allAllocations
+    // ── Grid / Full Schedule Logic ──
+
+    // Get effective allocation (with override applied)
+    const getEffectiveAllocation = (alloc: RoomAllocation) => {
+        const override = overrides.find(o => o.allocation_id === alloc.id)
+        if (!override) return alloc
+        return {
+            ...alloc,
+            schedule_day: override.override_day || alloc.schedule_day,
+            schedule_time: override.override_time || alloc.schedule_time,
+            room: override.override_room || alloc.room,
+            building: override.override_building || alloc.building,
+            _hasOverride: true,
+            _overrideNote: override.note,
+            _overrideId: override.id
+        } as any
+    }
+
+    const effectiveAllocations = useMemo(() => {
+        const base = allAllocations.map(getEffectiveAllocation)
+        // Add approved makeups as new allocations
+        const makeups = allMakeupRequests
+            .filter(m => m.status === 'approved')
+            .map(m => {
+                const original = allAllocations.find(a => a.id === m.allocation_id)
+                if (!original) return null
+                const date = new Date(m.requested_date)
+                const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
+                return {
+                    ...original,
+                    id: -m.id,
+                    schedule_day: dayName,
+                    schedule_time: m.requested_time,
+                    room: m.requested_room || original.room,
+                    _isMakeup: true,
+                    _makeupId: m.id
+                } as any
+            })
+            .filter(Boolean) as RoomAllocation[]
+
+        return [...base, ...makeups]
+    }, [allAllocations, overrides, allMakeupRequests])
+
+    // Grouping
+    const getGroupValues = (): string[] => {
+        const set = new Set<string>()
+        effectiveAllocations.forEach(a => {
+            if (groupBy === 'room') set.add(`${a.building} – ${a.room}`)
+            else if (groupBy === 'faculty') set.add(a.teacher_name || 'Unassigned')
+            else if (groupBy === 'section') set.add(normalizeSection(a.section) || 'Unknown')
+        })
+        return Array.from(set).sort((a, b) => a.localeCompare(b))
+    }
+
+    const groupValues = groupBy !== 'all' ? getGroupValues() : []
+    const pagedGroupValue = groupBy !== 'all' && groupValues.length > 0
+        ? (groupPage < groupValues.length ? groupValues[groupPage] : groupValues[0])
+        : 'all'
+
+    // Get allocations for Grid (All classes)
+    const getFilteredGridAllocations = (day: string) => {
+        let filtered = effectiveAllocations
+
+        // Apply group filter
+        if (groupBy !== 'all' && pagedGroupValue !== 'all') {
+            filtered = filtered.filter(a => {
+                if (groupBy === 'room') return `${a.building} – ${a.room}` === pagedGroupValue
+                if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === pagedGroupValue
+                if (groupBy === 'section') return (normalizeSection(a.section) || 'Unknown') === pagedGroupValue
+                return true
+            })
+        }
+
+        // Apply search query
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase()
+            filtered = filtered.filter(a =>
+                a.course_code?.toLowerCase().includes(q) ||
+                a.course_name?.toLowerCase().includes(q) ||
+                a.room?.toLowerCase().includes(q) ||
+                a.teacher_name?.toLowerCase().includes(q) ||
+                a.section?.toLowerCase().includes(q)
+            )
+        }
+
+        return filtered
             .filter(a => {
-                // Match by day using expandDays for patterns like TTH, MWF
+                const days = expandDays(a.schedule_day || '')
+                return days.some(d => d.toLowerCase() === day.toLowerCase())
+            })
+            .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
+    }
+
+    // Get allocations for List (My classes only)
+    const getMyDayAllocations = (day: string) => {
+        // We use effectiveAllocations here too so my own view reflects admin overrides/makeups
+        return effectiveAllocations
+            .filter(a => {
                 const days = expandDays(a.schedule_day || '')
                 return days.some(d => d.toLowerCase() === day.toLowerCase())
             })
             .filter(a => {
-                // Only show this faculty's own classes
                 if (!user) return false
                 const name = (a.teacher_name || '').toLowerCase().trim()
                 const myName = (user.full_name || '').toLowerCase().trim()
@@ -540,8 +646,12 @@ export default function FacultyLiveTimetablePage() {
             .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
     }
 
+    const isEffectiveAbsent = (allocId: number, date: string) => {
+        return allAbsences.some(a => a.allocation_id === allocId && a.absence_date === date && a.status !== 'disputed')
+    }
+
     // Total count of MY classes this week (across all days)
-    const myTotalClasses = allAllocations.filter(a => {
+    const myTotalClasses = effectiveAllocations.filter(a => {
         if (!user) return false
         const name = (a.teacher_name || '').toLowerCase().trim()
         const myName = (user.full_name || '').toLowerCase().trim()
@@ -711,19 +821,79 @@ export default function FacultyLiveTimetablePage() {
                             {activeTab === 'timetable' && (
                                 <div className={styles.timetableSection}>
                                     {/* View mode toggle */}
-                                    <div className={styles.viewToggleBar}>
-                                        <button
-                                            className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
-                                            onClick={() => setViewMode('list')}
-                                        >
-                                            <MdViewList /> List
-                                        </button>
-                                        <button
-                                            className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.viewToggleBtnActive : ''}`}
-                                            onClick={() => setViewMode('grid')}
-                                        >
-                                            <MdGridView /> Grid (All Days)
-                                        </button>
+                                    {/* View mode toggle & Toolbar */}
+                                    <div className={styles.timetableToolbar}>
+                                        <div className={styles.viewToggleBar}>
+                                            <button
+                                                className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
+                                                onClick={() => setViewMode('list')}
+                                            >
+                                                <MdViewList /> Use List View (My Classes)
+                                            </button>
+                                            <button
+                                                className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.viewToggleBtnActive : ''}`}
+                                                onClick={() => {
+                                                    setViewMode('grid')
+                                                    setGroupBy('all') // Reset group when switching to grid
+                                                }}
+                                            >
+                                                <MdGridView /> Full Schedule Grid
+                                            </button>
+                                        </div>
+
+                                        {viewMode === 'grid' && (
+                                            <div className={styles.gridControls}>
+                                                <div className={styles.groupSelector}>
+                                                    <div className={styles.groupLabel}>Group By:</div>
+                                                    <select
+                                                        className={styles.groupSelect}
+                                                        value={groupBy}
+                                                        onChange={(e) => {
+                                                            setGroupBy(e.target.value as any)
+                                                            setGroupPage(0)
+                                                        }}
+                                                    >
+                                                        <option value="all">Show All</option>
+                                                        <option value="room">Room</option>
+                                                        <option value="faculty">Faculty</option>
+                                                        <option value="section">Section</option>
+                                                    </select>
+                                                </div>
+
+                                                {groupBy !== 'all' && groupValues.length > 0 && (
+                                                    <div className={styles.groupPaginator}>
+                                                        <button
+                                                            className={styles.groupPageBtn}
+                                                            onClick={() => setGroupPage(p => Math.max(0, p - 1))}
+                                                            disabled={groupPage === 0}
+                                                        >
+                                                            <MdChevronLeft />
+                                                        </button>
+                                                        <div className={styles.groupPageLabel}>
+                                                            <strong>{groupValues[groupPage]}</strong>
+                                                            <span className={styles.groupPageCount}>{groupPage + 1} / {groupValues.length}</span>
+                                                        </div>
+                                                        <button
+                                                            className={styles.groupPageBtn}
+                                                            onClick={() => setGroupPage(p => Math.min(groupValues.length - 1, p + 1))}
+                                                            disabled={groupPage === groupValues.length - 1}
+                                                        >
+                                                            <MdChevronRight />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div className={styles.searchBar}>
+                                                    <MdSearch />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search schedule..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* ── LIST VIEW ── */}
@@ -735,7 +905,7 @@ export default function FacultyLiveTimetablePage() {
                                                     const dayDate = getDayDate(day)
                                                     const isToday = dayDate === formatDate(new Date())
                                                     const dayAbsences = myAbsences.filter(a => a.absence_date === dayDate).length
-                                                    const dayClasses = getDayAllocations(day).length
+                                                    const dayClasses = getMyDayAllocations(day).length
                                                     return (
                                                         <button
                                                             key={day}
@@ -753,13 +923,13 @@ export default function FacultyLiveTimetablePage() {
 
                                             {/* Class list for selected day */}
                                             <div className={styles.classGrid}>
-                                                {getDayAllocations(selectedDay).length === 0 && (
+                                                {getMyDayAllocations(selectedDay).length === 0 && (
                                                     <div className={styles.emptyDay}>
                                                         <MdCalendarToday />
                                                         <p>No classes assigned to you on {selectedDay}</p>
                                                     </div>
                                                 )}
-                                                {getDayAllocations(selectedDay).map(alloc => {
+                                                {getMyDayAllocations(selectedDay).map(alloc => {
                                                     const dayDate = getDayDate(selectedDay)
                                                     const absent = isAbsentOnDate(alloc.id, dayDate)
                                                     const ongoing = !absent && isClassOngoing(alloc.schedule_time || '')
@@ -858,6 +1028,7 @@ export default function FacultyLiveTimetablePage() {
                                     )}
 
                                     {/* ── GRID VIEW ── */}
+                                    {/* ── GRID VIEW (READ ONLY) ── */}
                                     {viewMode === 'grid' && (
                                         <>
                                             {/* Legend */}
@@ -867,9 +1038,8 @@ export default function FacultyLiveTimetablePage() {
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendOngoing}`} /> Ongoing</span>
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDone}`} /> Done</span>
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendAbsent}`} /> Absent</span>
-                                                <span className={`${styles.legendItem} ${styles.dragHint}`}>
-                                                    <MdDragIndicator /> Drag to request makeup at new time
-                                                </span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendOverride}`} /> Modified</span>
+                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendMakeup}`} /> Makeup Event</span>
                                             </div>
 
                                             {/* Grid table: Mon–Sat, 7am–8pm */}
@@ -884,14 +1054,12 @@ export default function FacultyLiveTimetablePage() {
                                                                 {GRID_DAYS.map(day => {
                                                                     const dayDate = getDayDate(day)
                                                                     const isToday = dayDate === formatDate(new Date())
-                                                                    const dayAbsences = myAbsences.filter(a => a.absence_date === dayDate).length
                                                                     return (
                                                                         <th key={day} className={`${styles.gridDayHeader} ${isToday ? styles.gridDayToday : ''}`}>
                                                                             <span>{day.slice(0, 3)}</span>
                                                                             <span className={styles.gridDayDate}>
                                                                                 {dayDate ? new Date(dayDate + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
                                                                             </span>
-                                                                            {dayAbsences > 0 && <span className={styles.gridDayAbsenceBadge}>{dayAbsences}</span>}
                                                                         </th>
                                                                     )
                                                                 })}
@@ -908,15 +1076,17 @@ export default function FacultyLiveTimetablePage() {
                                                                         </td>
                                                                         {GRID_DAYS.map(day => {
                                                                             const dayDate = getDayDate(day)
-                                                                            const dayAllocs = getDayAllocations(day)
+                                                                            // Use Full Grid Allocations Logic
+                                                                            const dayAllocs = getFilteredGridAllocations(day)
+
                                                                             const startingHere = dayAllocs.filter(a => {
-                                                                                const parts = (a.schedule_time || '').split('-').map(s => s.trim())
+                                                                                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
                                                                                 if (parts.length !== 2) return false
                                                                                 const startMin = parseTimeToMinutes(parts[0])
                                                                                 return startMin >= slotMinutes && startMin < slotMinutes + 30
                                                                             })
                                                                             const coveredByEarlier = dayAllocs.some(a => {
-                                                                                const parts = (a.schedule_time || '').split('-').map(s => s.trim())
+                                                                                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
                                                                                 if (parts.length !== 2) return false
                                                                                 const startMin = parseTimeToMinutes(parts[0])
                                                                                 const endMin = parseTimeToMinutes(parts[1])
@@ -926,37 +1096,34 @@ export default function FacultyLiveTimetablePage() {
                                                                             return (
                                                                                 <td
                                                                                     key={`${day}-${slot}`}
-                                                                                    className={`${styles.gridDataCell} ${dragOverCell === `${day}-${slotMinutes}` ? styles.gridDataCellDragOver : ''}`}
-                                                                                    onDragOver={handleFacultyDragOver}
-                                                                                    onDragEnter={() => setDragOverCell(`${day}-${slotMinutes}`)}
-                                                                                    onDragLeave={() => setDragOverCell(null)}
-                                                                                    onDrop={(e) => handleFacultyDrop(e, day, slotMinutes)}
+                                                                                    className={styles.gridDataCell}
                                                                                 >
                                                                                     <div className={styles.gridCellContent}>
                                                                                         {startingHere.map(alloc => {
-                                                                                            const parts = (alloc.schedule_time || '').split('-').map(s => s.trim())
+                                                                                            const parts = (alloc.schedule_time || '').split('-').map((s: string) => s.trim())
                                                                                             const startMin = parseTimeToMinutes(parts[0] || '')
                                                                                             const endMin = parseTimeToMinutes(parts[1] || '')
                                                                                             const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
                                                                                             const compactHeight = durationSlots * 32 - 2
-                                                                                            const absent = isAbsentOnDate(alloc.id, dayDate)
+                                                                                            const absent = isEffectiveAbsent(alloc.id, dayDate)
                                                                                             const ongoing = !absent && isCurrentWeek && isClassOngoing(alloc.schedule_time || '') && day === todayDayName
                                                                                             const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
+                                                                                            const hasOverride = (alloc as any)._hasOverride
+                                                                                            const isMakeup = (alloc as any)._isMakeup
+
                                                                                             return (
                                                                                                 <div
                                                                                                     key={alloc.id}
-                                                                                                    draggable
-                                                                                                    onDragStart={(e) => { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) }}
-                                                                                                    onDragEnd={() => { setDraggedAllocId(null); setDragOverCell(null) }}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${isMakeup ? styles.gridBlockMakeup : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
-                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}\nDrag to request makeup`}
+                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isMakeup ? '\n★ MAKEUP' : ''}`}
                                                                                                 >
                                                                                                     <div className={styles.gridBlockHeader}>
                                                                                                         {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
                                                                                                         {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
                                                                                                         {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
-                                                                                                        <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>
+                                                                                                        {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
+                                                                                                        {isMakeup && <span className={styles.gridBlockMakeupIcon}><MdEventAvailable /></span>}
                                                                                                     </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
@@ -967,15 +1134,6 @@ export default function FacultyLiveTimetablePage() {
                                                                                                     )}
                                                                                                     {durationSlots >= 3 && (
                                                                                                         <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
-                                                                                                    )}
-                                                                                                    {floorPlanMap[alloc.building] && (
-                                                                                                        <button
-                                                                                                            className={styles.gridBlockMapBtn}
-                                                                                                            onClick={(ev) => { ev.stopPropagation(); router.push(`/floor-plan/view/${floorPlanMap[alloc.building]}?room=${encodeURIComponent(alloc.room)}`) }}
-                                                                                                            title="View Room on Map"
-                                                                                                        >
-                                                                                                            <MdMap />
-                                                                                                        </button>
                                                                                                     )}
                                                                                                 </div>
                                                                                             )

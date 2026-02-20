@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { UserCheck, UserX, Clock, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Search, Filter, RefreshCw, Trash2, User, Building2, Loader2, RotateCcw } from 'lucide-react'
+import { MdVerifiedUser as UserCheck, MdPersonOff as UserX, MdAccessTime as Clock, MdMail as Mail, MdCalendarToday as Calendar, MdCheckCircle as CheckCircle2, MdCancel as XCircle, MdError as AlertCircle, MdSearch as Search, MdFilterList as Filter, MdRefresh as RefreshCw, MdDelete as Trash2, MdPerson as User, MdDomain as Building2, MdLoop as Loader2, MdReplay as RotateCcw } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface FacultyRegistration {
@@ -84,7 +84,7 @@ export default function FacultyApprovalPage() {
     setActionLoading(userId)
     try {
       console.log(`Processing ${action} for user:`, userId, user.email)
-      
+
       const response = await fetch('/api/faculty-registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,7 +193,7 @@ export default function FacultyApprovalPage() {
         showSidebarToggle={true}
         setSidebarOpen={setSidebarOpen}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.header}>
@@ -437,3 +437,4 @@ export default function FacultyApprovalPage() {
     </div>
   )
 }
+

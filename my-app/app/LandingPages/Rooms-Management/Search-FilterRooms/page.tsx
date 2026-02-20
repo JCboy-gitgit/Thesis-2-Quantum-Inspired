@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
-import { Search, Building2, DoorOpen, Users, X, ChevronDown, ChevronUp, University, FileSpreadsheet, Calendar, CheckCircle, ArrowLeft, Layers, Wind, Tv, PresentationIcon, MapPin, GraduationCap, Filter, FileText } from 'lucide-react'
+import { MdSearch, MdDomain, MdMeetingRoom, MdPeople, MdClose, MdKeyboardArrowDown, MdKeyboardArrowUp, MdSchool, MdTableChart, MdCalendarToday, MdCheckCircle, MdArrowBack, MdLayers, MdAir, MdTv, MdCoPresent, MdLocationOn, MdFilterList, MdDescription } from 'react-icons/md'
 
 // Helper to display null values
 const displayValue = (value: any, fallback: string = 'N/A'): string => {
@@ -280,7 +280,7 @@ export default function SearchFilterRoomsPage() {
         showSidebarToggle={true}
         showAccountIcon={true}
       />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.contentWrapper}>
@@ -289,7 +289,7 @@ export default function SearchFilterRoomsPage() {
             className={styles.backButton}
             onClick={() => router.push('/LandingPages/Home')}
           >
-            <ArrowLeft size={18} />
+            <MdArrowBack size={18} />
             Back to Home
           </button>
 
@@ -297,7 +297,7 @@ export default function SearchFilterRoomsPage() {
           <div className={styles.headerCard}>
             <div className={styles.headerTitleRow}>
               <div className={styles.headerIcon}>
-                <Search size={24} />
+                <MdSearch size={24} />
               </div>
               <h1 className={styles.headerTitle}>Search & Filter Classrooms</h1>
             </div>
@@ -312,7 +312,7 @@ export default function SearchFilterRoomsPage() {
             </div>
           ) : campusGroups.length === 0 ? (
             <div className={styles.emptyState}>
-              <FileText size={64} />
+              <MdDescription size={64} />
               <h3 className={styles.emptyTitle}>No Campus Data Found</h3>
               <p className={styles.emptyText}>Upload a Campus/Building CSV file first to search rooms</p>
             </div>
@@ -321,7 +321,7 @@ export default function SearchFilterRoomsPage() {
               {/* Campus Group Cards */}
               <div className={styles.sectionHeader}>
                 <h2>
-                  <University size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+                  <MdSchool size={22} style={{ verticalAlign: 'middle', marginRight: 8 }} />
                   Select School/Campus File
                 </h2>
               </div>
@@ -334,23 +334,23 @@ export default function SearchFilterRoomsPage() {
                     onClick={() => handleSelectGroup(group.upload_group_id)}
                   >
                     <div className={styles.campusCardIcon}>
-                      <University size={32} />
+                      <MdSchool size={32} />
                     </div>
                     <div className={styles.campusCardContent}>
                       <h3>{group.school_name}</h3>
                       <p className={styles.campusCardMeta}>
-                        <DoorOpen size={14} /> {group.room_count} rooms
+                        <MdMeetingRoom size={14} /> {group.room_count} rooms
                       </p>
                       <p className={styles.campusCardFile}>
-                        <FileText size={14} /> {group.file_name}
+                        <MdDescription size={14} /> {group.file_name}
                       </p>
                       <p className={styles.campusCardDate}>
-                        <Calendar size={14} /> {new Date(group.created_at).toLocaleDateString()}
+                        <MdCalendarToday size={14} /> {new Date(group.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     {selectedGroup === group.upload_group_id && (
                       <div className={styles.selectedBadge}>
-                        <CheckCircle size={20} />
+                        <MdCheckCircle size={20} />
                       </div>
                     )}
                   </div>
@@ -364,7 +364,7 @@ export default function SearchFilterRoomsPage() {
                     {/* Search Bar */}
                     <div className={styles.searchSection}>
                       <div className={styles.searchInputWrapper}>
-                        <Search className={styles.searchIcon} size={20} />
+                        <MdSearch className={styles.searchIcon} size={20} />
                         <input
                           type="text"
                           value={searchQuery}
@@ -374,7 +374,7 @@ export default function SearchFilterRoomsPage() {
                         />
                         {searchQuery && (
                           <button onClick={() => setSearchQuery('')} className={styles.clearSearchBtn}>
-                            <X size={16} />
+                            <MdClose size={16} />
                           </button>
                         )}
                       </div>
@@ -427,7 +427,7 @@ export default function SearchFilterRoomsPage() {
                           className={`${styles.amenityBtn} ${filterAC ? styles.amenityActive : ''}`}
                           title="Has Air Conditioning"
                         >
-                          <Wind size={16} />
+                          <MdAir size={16} />
                           <span>AC</span>
                         </button>
                         <button
@@ -435,7 +435,7 @@ export default function SearchFilterRoomsPage() {
                           className={`${styles.amenityBtn} ${filterTV ? styles.amenityActive : ''}`}
                           title="Has TV"
                         >
-                          <Tv size={16} />
+                          <MdTv size={16} />
                           <span>TV</span>
                         </button>
                         <button
@@ -443,7 +443,7 @@ export default function SearchFilterRoomsPage() {
                           className={`${styles.amenityBtn} ${filterWhiteboard ? styles.amenityActive : ''}`}
                           title="Has Whiteboard"
                         >
-                          <PresentationIcon size={16} />
+                          <MdCoPresent size={16} />
                           <span>Board</span>
                         </button>
                       </div>
@@ -451,7 +451,7 @@ export default function SearchFilterRoomsPage() {
                       {/* Clear Filters */}
                       {activeFilterCount > 0 && (
                         <button onClick={clearFilters} className={styles.clearFiltersBtn}>
-                          <X size={14} />
+                          <MdClose size={14} />
                           Clear ({activeFilterCount})
                         </button>
                       )}
@@ -474,7 +474,7 @@ export default function SearchFilterRoomsPage() {
                     </div>
                   ) : filteredRooms.length === 0 ? (
                     <div className={styles.emptyState}>
-                      <Search size={48} />
+                      <MdSearch size={48} />
                       <h3 className={styles.emptyTitle}>No Classrooms Found</h3>
                       <p className={styles.emptyText}>Try adjusting your search or filter criteria</p>
                       <button onClick={clearFilters} className={styles.clearFiltersBtn}>
@@ -491,16 +491,16 @@ export default function SearchFilterRoomsPage() {
                             onClick={() => toggleBlock(building)}
                           >
                             <div className={styles.blockTitle}>
-                              <Building2 size={20} />
+                              <MdDomain size={20} />
                               <span>{building}</span>
                               <span className={styles.blockCount}>
                                 {Object.values(floorData).flat().length} rooms
                               </span>
                             </div>
                             {expandedBlocks.has(building) ? (
-                              <ChevronUp size={20} />
+                              <MdKeyboardArrowUp size={20} />
                             ) : (
-                              <ChevronDown size={20} />
+                              <MdKeyboardArrowDown size={20} />
                             )}
                           </div>
 
@@ -516,7 +516,7 @@ export default function SearchFilterRoomsPage() {
                                   {/* Floor Header */}
                                   <div className={styles.floorHeader}>
                                     <div className={styles.floorTitle}>
-                                      <Layers size={16} />
+                                      <MdLayers size={16} />
                                       <span>{floor}</span>
                                       <span className={styles.floorRoomCount}>{floorRooms.length} Rooms</span>
                                     </div>
@@ -529,7 +529,7 @@ export default function SearchFilterRoomsPage() {
                                         {/* Room Header */}
                                         <div className={styles.roomCardHeader}>
                                           <div className={styles.roomIcon}>
-                                            <GraduationCap size={20} />
+                                            <MdSchool size={20} />
                                           </div>
                                           <div className={styles.roomTitleArea}>
                                             <h4 className={styles.roomName}>{room.room}</h4>
@@ -545,16 +545,16 @@ export default function SearchFilterRoomsPage() {
                                         {/* Room Details */}
                                         <div className={styles.roomDetails}>
                                           <div className={styles.roomDetailItem}>
-                                            <Users size={14} />
+                                            <MdPeople size={14} />
                                             <span>Capacity: <strong>{room.capacity}</strong></span>
                                           </div>
                                           <div className={styles.roomDetailItem}>
-                                            <MapPin size={14} />
+                                            <MdLocationOn size={14} />
                                             <span>Floor {displayValue(room.floor_number, 'G')}</span>
                                           </div>
                                           {room.specific_classification && (
                                             <div className={styles.roomDetailItem}>
-                                              <DoorOpen size={14} />
+                                              <MdMeetingRoom size={14} />
                                               <span>{room.specific_classification}</span>
                                             </div>
                                           )}
@@ -566,21 +566,21 @@ export default function SearchFilterRoomsPage() {
                                             className={`${styles.amenityTag} ${room.has_ac ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_ac ? 'Has Air Conditioning' : 'No Air Conditioning'}
                                           >
-                                            <Wind size={14} />
+                                            <MdAir size={14} />
                                             AC
                                           </span>
                                           <span
                                             className={`${styles.amenityTag} ${room.has_tv ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_tv ? 'Has TV' : 'No TV'}
                                           >
-                                            <Tv size={14} />
+                                            <MdTv size={14} />
                                             TV
                                           </span>
                                           <span
                                             className={`${styles.amenityTag} ${room.has_whiteboard ? styles.amenityAvailable : styles.amenityUnavailable}`}
                                             title={room.has_whiteboard ? 'Has Whiteboard' : 'No Whiteboard'}
                                           >
-                                            <PresentationIcon size={14} />
+                                            <MdCoPresent size={14} />
                                             Board
                                           </span>
                                         </div>
@@ -601,7 +601,7 @@ export default function SearchFilterRoomsPage() {
               {/* No selection prompt */}
               {!selectedGroup && (
                 <div className={styles.noSelectionPrompt}>
-                  <University size={64} />
+                  <MdSchool size={64} />
                   <h3>Select a School/Campus File</h3>
                   <p>Choose a campus file above to browse classrooms</p>
                 </div>
@@ -613,3 +613,4 @@ export default function SearchFilterRoomsPage() {
     </div>
   )
 }
+

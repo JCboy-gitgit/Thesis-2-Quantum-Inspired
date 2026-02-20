@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { FaAtom, FaCheck, FaTimes, FaClock, FaSpinner, FaExternalLinkAlt } from 'react-icons/fa'
-import { Loader2, Clock, CheckCircle, XCircle, AlertTriangle, RotateCcw, AlertCircle } from 'lucide-react'
+import { MdLoop as Loader2, MdAccessTime as Clock, MdCheckCircle as CheckCircle, MdCancel as XCircle, MdWarning as AlertTriangle, MdReplay as RotateCcw, MdError as AlertCircle } from 'react-icons/md'
 import styles from './ScheduleJobProgress.module.css'
 
 interface ScheduleJob {
@@ -54,7 +54,7 @@ export default function ScheduleJobProgress({
     const seconds = Math.floor(ms / 1000)
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
-    
+
     if (hours > 0) {
       return `${hours}:${(minutes % 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
     }
@@ -75,7 +75,7 @@ export default function ScheduleJobProgress({
       if (jobData.status === 'completed' && onComplete) {
         onComplete(jobData)
       }
-      
+
       // Handle failure
       if (jobData.status === 'failed') {
         setError(jobData.error_message || 'Generation failed')
@@ -176,8 +176,8 @@ export default function ScheduleJobProgress({
       {(job.status === 'running' || job.status === 'pending') && (
         <div className={styles.progressSection}>
           <div className={styles.progressBar}>
-            <div 
-              className={styles.progressFill} 
+            <div
+              className={styles.progressFill}
               style={{ width: `${job.progress}%` }}
             />
           </div>
@@ -257,9 +257,9 @@ export default function ScheduleJobProgress({
             <FaTimes /> Cancel
           </button>
         )}
-        
+
         {job.status === 'completed' && job.generated_schedule_id && (
-          <a 
+          <a
             href={`/LandingPages/RoomSchedule/ViewSchedule?id=${job.generated_schedule_id}`}
             className={styles.viewButton}
           >
@@ -273,7 +273,7 @@ export default function ScheduleJobProgress({
         <div className={styles.persistenceNotice}>
           <FaClock />
           <p>
-            <strong>You can safely leave this page.</strong> The schedule will continue generating 
+            <strong>You can safely leave this page.</strong> The schedule will continue generating
             in the background. Check the &quot;Schedule History&quot; page to see the result when it&apos;s ready.
           </p>
         </div>

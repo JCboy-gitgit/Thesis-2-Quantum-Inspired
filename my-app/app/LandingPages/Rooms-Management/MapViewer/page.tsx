@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
@@ -8,7 +8,7 @@ import Sidebar from '@/app/components/Sidebar'
 import { useTheme } from '@/app/context/ThemeContext'
 
 import styles from './styles.module.css'
-import { Map, Building2, Layers, Plus, Minus, Move, MousePointer, Square, Type, Trash2, Save, Download, Settings, Eye, EyeOff, ChevronDown, ChevronUp, Search, X, Check, Share2, Link, Grid, ZoomIn, ZoomOut, DoorOpen, Building, Users, GraduationCap, FlaskConical, BookOpen, Coffee, Projector, Thermometer, RefreshCw, FileText, ChevronRight, ChevronLeft, Edit3, FolderOpen, Box, Maximize2, LayoutGrid, Footprints, Info, Monitor, AlertTriangle, PanelLeftClose, PanelLeftOpen, Loader2, RotateCcw, Wifi, Wind, Star, Calendar, Clock, Copy, ExternalLink, Palette, Image, Lock, Unlock, ArrowUpDown, Laptop, Beaker, Library, UtensilsCrossed, Bath, Archive, Dumbbell, Music, Theater, Presentation, Server, CircleDot, Triangle, Hexagon, Pentagon, Octagon, Heart, Zap, Flame, Droplets, Sun, Moon, MoveUp, MoveDown, ChevronsUp, ChevronsDown, LayoutList, Grip, BoxSelect, Menu, Wrench, CheckCircle, Edit } from 'lucide-react'
+import { MdMap as Map, MdDomain as Building2, MdLayers as Layers, MdAdd as Plus, MdRemove as Minus, MdOpenWith as Move, MdTouchApp as MousePointer, MdCropSquare as Square, MdTextFields as Type, MdDelete as Trash2, MdSave as Save, MdDownload as Download, MdSettings as Settings, MdVisibility as Eye, MdVisibilityOff as EyeOff, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdSearch as Search, MdClose as X, MdCheck as Check, MdShare as Share2, MdLink as Link, MdGridOn as Grid, MdZoomIn as ZoomIn, MdZoomOut as ZoomOut, MdMeetingRoom as DoorOpen, MdLocationCity as Building, MdPeople as Users, MdSchool as GraduationCap, MdScience as FlaskConical, MdMenuBook as BookOpen, MdLocalCafe as Coffee, MdVideocam as Projector, MdThermostat as Thermometer, MdRefresh as RefreshCw, MdDescription as FileText, MdKeyboardArrowRight as ChevronRight, MdKeyboardArrowLeft as ChevronLeft, MdEdit as Edit3, MdFolderOpen as FolderOpen, MdCheckBoxOutlineBlank as Box, MdFullscreen as Maximize2, MdGridView as LayoutGrid, MdDirectionsWalk as Footprints, MdInfo as Info, MdMonitor as Monitor, MdWarning as AlertTriangle, MdKeyboardDoubleArrowLeft as PanelLeftClose, MdKeyboardDoubleArrowRight as PanelLeftOpen, MdLoop as Loader2, MdReplay as RotateCcw, MdWifi as Wifi, MdAir as Wind, MdStar as Star, MdCalendarToday as Calendar, MdAccessTime as Clock, MdContentCopy as Copy, MdOpenInNew as ExternalLink, MdPalette as Palette, MdImage as ImageIcon, MdLock as Lock, MdLockOpen as Unlock, MdSwapVert as ArrowUpDown, MdLaptop as Laptop, MdScience as Beaker, MdLocalLibrary as Library, MdRestaurant as UtensilsCrossed, MdBathtub as Bath, MdArchive as Archive, MdFitnessCenter as Dumbbell, MdMusicNote as Music, MdTheaters as Theater, MdCoPresent as Presentation, MdDns as Server, MdRadioButtonChecked as CircleDot, MdChangeHistory as Triangle, MdHexagon as Hexagon, MdPentagon as Pentagon, MdStop as Octagon, MdFavorite as Heart, MdFlashOn as Zap, MdLocalFireDepartment as Flame, MdWaterDrop as Droplets, MdSunny as Sun, MdDarkMode as Moon, MdArrowUpward as MoveUp, MdArrowDownward as MoveDown, MdKeyboardDoubleArrowUp as ChevronsUp, MdKeyboardDoubleArrowDown as ChevronsDown, MdViewList as LayoutList, MdDragHandle as Grip, MdSelectAll as BoxSelect, MdMenu as Menu, MdBuild as Wrench, MdCheckCircle as CheckCircle, MdEdit as Edit } from 'react-icons/md'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -172,13 +172,27 @@ export default function MapViewerPage() {
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
   // Responsive detection
+  const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
   const [showMobileWarning, setShowMobileWarning] = useState(false)
 
   // Panel state
-  const [leftPanelOpen, setLeftPanelOpen] = useState(true)
-  const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  const leftPanelOpenRef = useRef(true)
+  const rightPanelOpenRef = useRef(true)
+
+  const [leftPanelOpen, _setLeftPanelOpen] = useState(true)
+  const [rightPanelOpen, _setRightPanelOpen] = useState(true)
+
+  const setLeftPanelOpen = (val: boolean) => {
+    leftPanelOpenRef.current = val
+    _setLeftPanelOpen(val)
+  }
+
+  const setRightPanelOpen = (val: boolean) => {
+    rightPanelOpenRef.current = val
+    _setRightPanelOpen(val)
+  }
 
   // Resizing state
   const [resizingElement, setResizingElement] = useState<string | null>(null)
@@ -225,7 +239,7 @@ export default function MapViewerPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null)
   const [roomAllocations, setRoomAllocations] = useState<RoomAllocation[]>([])
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [selectedDay, setSelectedDay] = useState<string>('')
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('')
 
@@ -236,6 +250,9 @@ export default function MapViewerPage() {
   const [gridSize, setGridSize] = useState(20)
   const [canvasSize, setCanvasSize] = useState({ width: 1056, height: 816 }) // Letter Bond Paper 11x8.5" landscape at 96 DPI
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const [isSpacePressed, setIsSpacePressed] = useState(false)
   const [canvasBackground, setCanvasBackground] = useState('#ffffff')
 
   // Draggable controls card state
@@ -308,6 +325,21 @@ export default function MapViewerPage() {
   const [dragGhost, setDragGhost] = useState<{ x: number; y: number } | null>(null)
   const [draggingElement, setDraggingElement] = useState<string | null>(null)
   const [pointerDragActive, setPointerDragActive] = useState(false)
+  const [initialDragPositions, setInitialDragPositions] = useState<Record<string, { x: number; y: number }>>({})
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const ignoreUnsavedRef = useRef(false)
+
+  // Interaction Ref to avoid stale state in high-frequency events (panning, dragging, resizing)
+  const interactionRef = useRef({
+    isPanning: false,
+    panStart: { x: 0, y: 0 },
+    draggingElement: null as string | null,
+    resizingElement: null as string | null,
+    resizeHandle: null as string | null,
+    dragOffset: { x: 0, y: 0 },
+    resizeStart: { x: 0, y: 0, width: 0, height: 0, elementX: 0, elementY: 0 },
+    initialDragPositions: {} as Record<string, { x: number; y: number }>
+  })
 
   // UI state
   const [loading, setLoading] = useState(true)
@@ -485,7 +517,57 @@ export default function MapViewerPage() {
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false)
   const [marqueeStart, setMarqueeStart] = useState<{ x: number; y: number } | null>(null)
   const [marqueeEnd, setMarqueeEnd] = useState<{ x: number; y: number } | null>(null)
-  const [selectMode, setSelectMode] = useState<'single' | 'multi'>('single')
+  const [selectMode, setSelectMode] = useState<'single' | 'multi' | 'pan'>('single')
+
+  // Undo/redo history
+  const [history, setHistory] = useState<CanvasElement[][]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const isUndoRedoRef = useRef(false)
+
+  // Record state to history whenever canvasElements changes (but not from undo/redo itself)
+  useEffect(() => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false
+      return
+    }
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1)
+      newHistory.push(canvasElements)
+      // Keep last 50 states
+      if (newHistory.length > 50) newHistory.shift()
+      return newHistory
+    })
+    setHistoryIndex(prev => Math.min(prev + 1, 49))
+
+    if (!isUndoRedoRef.current && !ignoreUnsavedRef.current) {
+      setHasUnsavedChanges(true)
+    }
+    ignoreUnsavedRef.current = false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasElements])
+
+  const undo = useCallback(() => {
+    if (historyIndex <= 0) return
+    const newIndex = historyIndex - 1
+    isUndoRedoRef.current = true
+    setCanvasElements(history[newIndex])
+    setHistoryIndex(newIndex)
+    setSelectedElement(null)
+    // showNotification called after declaration below
+    setNotification({ type: 'info', message: 'Undo' })
+    setTimeout(() => setNotification(null), 3000)
+  }, [history, historyIndex])
+
+  const redo = useCallback(() => {
+    if (historyIndex >= history.length - 1) return
+    const newIndex = historyIndex + 1
+    isUndoRedoRef.current = true
+    setCanvasElements(history[newIndex])
+    setHistoryIndex(newIndex)
+    setSelectedElement(null)
+    setNotification({ type: 'info', message: 'Redo' })
+    setTimeout(() => setNotification(null), 3000)
+  }, [history, historyIndex])
 
   // Editing state
   const [editForm, setEditForm] = useState({
@@ -493,6 +575,8 @@ export default function MapViewerPage() {
     type: '',
     width: 0,
     height: 0,
+    x: 0,
+    y: 0,
     color: '',
     rotation: 0,
     iconType: '',
@@ -515,6 +599,46 @@ export default function MapViewerPage() {
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
   const handleMenuBarToggle = (isHidden: boolean) => setMenuBarHidden(isHidden)
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        redo()
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedElement && viewMode === 'editor') {
+          e.preventDefault()
+          removeElement(selectedElement.id)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [undo, redo, selectedElement, viewMode])
+
+  // Spacebar panning listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        setIsSpacePressed(true)
+        if (e.target === document.body) e.preventDefault()
+      }
+    }
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setIsSpacePressed(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
+
   // Show notification
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message })
@@ -524,49 +648,62 @@ export default function MapViewerPage() {
   // Track whether panels were open before mobile collapse
   const panelsBeforeMobileRef = useRef({ left: true, right: true })
 
-  // Device detection for responsive adjustments (no warning)
-  useEffect(() => {
-    let wasMobile = window.innerWidth < 768
-    let isFirstCheck = true
+  // Device detection for responsive adjustments
+  const wasMobileRef = useRef<boolean | null>(null)
+  const isFirstCheckRef = useRef(true)
 
+  useEffect(() => {
+    setMounted(true)
     const checkDevice = () => {
       const width = window.innerWidth
       const isNowMobile = width < 768
+      const prevWasMobile = wasMobileRef.current
+
       setIsMobile(isNowMobile)
       setIsTablet(width >= 768 && width < 1024)
 
-      if (isFirstCheck && isNowMobile) {
-        // Initial load on mobile: collapse panels and show FAB
-        panelsBeforeMobileRef.current = { left: leftPanelOpen, right: rightPanelOpen }
+      // Only handle transitions to/from mobile, or initial check
+      if (isFirstCheckRef.current) {
+        if (isNowMobile) {
+          // Initial load on mobile: hide panels but don't overwrite ref yet
+          setLeftPanelOpen(false)
+          setRightPanelOpen(false)
+          setShowMobileFAB(true)
+        } else {
+          setShowMobileFAB(false)
+        }
+        isFirstCheckRef.current = false
+      } else if (isNowMobile && prevWasMobile === false) {
+        // Entering mobile from desktop: save current state and collapse
+        panelsBeforeMobileRef.current = { left: leftPanelOpenRef.current, right: rightPanelOpenRef.current }
         setLeftPanelOpen(false)
         setRightPanelOpen(false)
         setShowMobileFAB(true)
-      } else if (isNowMobile && !wasMobile) {
-        // Entering mobile: save current panel state, then collapse
-        panelsBeforeMobileRef.current = { left: leftPanelOpen, right: rightPanelOpen }
-        setLeftPanelOpen(false)
-        setRightPanelOpen(false)
-        setShowMobileFAB(true)
-      } else if (!isNowMobile && wasMobile) {
-        // Leaving mobile: restore panels to their pre-mobile state
+      } else if (!isNowMobile && prevWasMobile === true) {
+        // Leaving mobile to desktop: restore panels
         setLeftPanelOpen(panelsBeforeMobileRef.current.left)
         setRightPanelOpen(panelsBeforeMobileRef.current.right)
         setShowMobileFAB(false)
         setActiveMobilePanel('none')
       }
 
-      isFirstCheck = false
-      wasMobile = isNowMobile
+      wasMobileRef.current = isNowMobile
     }
 
     checkDevice()
     window.addEventListener('resize', checkDevice)
     return () => window.removeEventListener('resize', checkDevice)
-  }, [leftPanelOpen, rightPanelOpen])
+    // Removed leftPanelOpen, rightPanelOpen from dependencies to prevent closure cycle
+  }, []) // Depend on nothing for the resize listener, but it will use current state via closure if we're careful.
+  // Actually, to get current panel state during transition, we might need a ref for them or use the state from the last render.
+  // But wait, the transition only happens ONCE during resize. 
+  // The issue was it re-running on every toggle.
+
 
   // Update current time for live mode
   useEffect(() => {
     if (viewMode === 'live') {
+      if (!currentTime) setCurrentTime(new Date())
       const interval = setInterval(() => {
         setCurrentTime(new Date())
       }, 60000) // Update every minute
@@ -813,6 +950,13 @@ export default function MapViewerPage() {
 
   // Load a floor plan
   const loadFloorPlan = (floorPlan: FloorPlan) => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm("You have unsaved changes that will be lost. Do you want to continue?")) {
+        return
+      }
+    }
+    ignoreUnsavedRef.current = true
+    setHasUnsavedChanges(false)
     setCurrentFloorPlan(floorPlan)
     setFloorPlanName(floorPlan.floor_name)
     setIsDefault(floorPlan.is_default_view)
@@ -876,7 +1020,7 @@ export default function MapViewerPage() {
       return 'unknown'
     }
 
-    const now = currentTime
+    const now = currentTime || new Date()
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     const currentDay = selectedDay || dayNames[now.getDay()]
     const currentHour = now.getHours()
@@ -920,7 +1064,7 @@ export default function MapViewerPage() {
   const getCurrentClass = (roomName: string): RoomAllocation | null => {
     if (!selectedScheduleId || roomAllocations.length === 0) return null
 
-    const now = currentTime
+    const now = currentTime || new Date()
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     const currentDay = selectedDay || dayNames[now.getDay()]
     const currentHour = now.getHours()
@@ -968,12 +1112,34 @@ export default function MapViewerPage() {
   const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
     e.stopPropagation()
     if (element.isLocked && viewMode === 'editor') return
-    setSelectedElement(element)
+
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      setSelectedElements(prev => {
+        if (prev.includes(element.id)) {
+          return prev.filter(id => id !== element.id)
+        } else {
+          return [...prev, element.id]
+        }
+      })
+      // If toggling off the primary selected element, clear it
+      if (selectedElement?.id === element.id) {
+        setSelectedElement(null)
+      } else if (!selectedElement) {
+        // If no primary selected, make this the first one for the properties panel
+        setSelectedElement(element)
+      }
+    } else {
+      setSelectedElement(element)
+      setSelectedElements([element.id])
+    }
+
     setEditForm({
       label: element.label || '',
       type: element.type,
       width: element.width,
       height: element.height,
+      x: element.x,
+      y: element.y,
       color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
       rotation: element.rotation,
       iconType: element.iconType || '',
@@ -982,6 +1148,29 @@ export default function MapViewerPage() {
       borderWidth: element.borderWidth ?? 2
     })
   }
+
+  // Real-time property sync: apply editForm changes to the selected element immediately
+  useEffect(() => {
+    if (!selectedElement || viewMode !== 'editor' || draggingElement || resizingElement) return
+    // Debounce slightly to avoid thrashing during fast input
+    const timer = setTimeout(() => {
+      updateElement(selectedElement.id, {
+        label: editForm.label,
+        width: editForm.width,
+        height: editForm.height,
+        x: editForm.x,
+        y: editForm.y,
+        color: editForm.color,
+        rotation: editForm.rotation,
+        iconType: editForm.iconType,
+        fontSize: editForm.fontSize,
+        opacity: editForm.opacity,
+        borderWidth: editForm.borderWidth
+      })
+    }, 50)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editForm])
 
   // Handle canvas click (deselect)
   const handleCanvasClick = () => {
@@ -1003,6 +1192,12 @@ export default function MapViewerPage() {
     autoHideMobileToolbox()
     setDragItem({ type: 'room', data: room })
     setIsDragging(true)
+
+    // Create a transparent drag image to hide the browser's default ghost
+    const img = new window.Image()
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    e.dataTransfer.setDragImage(img, 0, 0)
+
     e.dataTransfer.effectAllowed = 'copy'
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'room', roomId: room.id }))
   }
@@ -1013,6 +1208,11 @@ export default function MapViewerPage() {
     autoHideMobileToolbox()
     setDragItem({ type: 'toolbox', data: item })
     setIsDragging(true)
+
+    const img = new window.Image()
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    e.dataTransfer.setDragImage(img, 0, 0)
+
     e.dataTransfer.effectAllowed = 'copy'
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'toolbox', itemType: item.type }))
   }
@@ -1023,6 +1223,11 @@ export default function MapViewerPage() {
     autoHideMobileToolbox()
     setDragItem({ type: 'icon', data: iconOption })
     setIsDragging(true)
+
+    const img = new window.Image()
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    e.dataTransfer.setDragImage(img, 0, 0)
+
     e.dataTransfer.effectAllowed = 'copy'
   }
 
@@ -1032,6 +1237,11 @@ export default function MapViewerPage() {
     autoHideMobileToolbox()
     setDragItem({ type: 'shape', data: shapeOption })
     setIsDragging(true)
+
+    const img = new window.Image()
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    e.dataTransfer.setDragImage(img, 0, 0)
+
     e.dataTransfer.effectAllowed = 'copy'
   }
 
@@ -1057,52 +1267,115 @@ export default function MapViewerPage() {
     placeDraggedItem(e.clientX, e.clientY)
   }
 
-  // Handle element drag on canvas
   const handleElementDragStart = (e: React.MouseEvent, element: CanvasElement) => {
     e.stopPropagation()
     if (viewMode !== 'editor' || element.isLocked) return
-    setDraggingElement(element.id)
 
-    // Get the canvas rect and calculate the click position relative to the element
-    // Use the canvas ref to get accurate position regardless of which child element was clicked
-    if (!canvasRef.current) return
+    // Selection logic for dragging
+    if (!selectedElements.includes(element.id)) {
+      if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
+        // Single selection if no modifier key
+        setSelectedElement(element)
+        setSelectedElements([element.id])
+        setEditForm({
+          label: element.label || '',
+          type: element.type,
+          width: element.width,
+          height: element.height,
+          x: element.x,
+          y: element.y,
+          color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
+          rotation: element.rotation,
+          iconType: element.iconType || '',
+          fontSize: element.fontSize || 14,
+          opacity: element.opacity ?? 100,
+          borderWidth: element.borderWidth ?? 2
+        })
+      } else {
+        // Add to selection if modifier key
+        setSelectedElements(prev => [...prev, element.id])
+      }
+    }
+
+    const scale = (zoom || 75) / 100
+    if (!canvasRef.current || scale <= 0) return
     const canvasRect = canvasRef.current.getBoundingClientRect()
-    const scale = zoom / 100
 
-    // Calculate click position in canvas coordinates
     const clickX = (e.clientX - canvasRect.left) / scale
     const clickY = (e.clientY - canvasRect.top) / scale
 
-    // Calculate offset from element's top-left corner
-    setDragOffset({
+    const offset = {
       x: clickX - element.x,
       y: clickY - element.y
+    }
+
+    setDraggingElement(element.id)
+    setDragOffset(offset)
+
+    // Capture initial positions of ALL selected elements for stable relative movement
+    const selections = selectedElements.includes(element.id) ? selectedElements : [element.id]
+    const initialPos: Record<string, { x: number; y: number }> = {}
+    canvasElements.forEach(el => {
+      if (selections.includes(el.id)) {
+        initialPos[el.id] = { x: el.x, y: el.y }
+      }
     })
+    setInitialDragPositions(initialPos)
+
+    // Update Interaction Ref
+    interactionRef.current.draggingElement = element.id
+    interactionRef.current.dragOffset = offset
+    interactionRef.current.initialDragPositions = initialPos
   }
 
-  const handleElementDrag = (e: React.MouseEvent) => {
-    if (!draggingElement || !canvasRef.current || viewMode !== 'editor') return
+  const handleElementDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    const draggingElId = interactionRef.current.draggingElement
+    if (!draggingElId || !canvasRef.current || viewMode !== 'editor') return
 
     const rect = canvasRef.current.getBoundingClientRect()
-    const scale = zoom / 100
+    const scale = (zoom || 75) / 100
+    if (scale <= 0) return
 
-    // Calculate new position: mouse position in canvas coords minus offset
-    let x = (e.clientX - rect.left) / scale - dragOffset.x
-    let y = (e.clientY - rect.top) / scale - dragOffset.y
+    // Anchor element initial position
+    const anchorInitial = interactionRef.current.initialDragPositions[draggingElId]
+    if (!anchorInitial) return
 
-    x = snapToGridPosition(x)
-    y = snapToGridPosition(y)
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
 
-    setCanvasElements(prev => prev.map(el =>
-      el.id === draggingElement ? { ...el, x, y } : el
-    ))
+    // Calculate absolute target position for the anchor
+    const rawX = (clientX - rect.left) / scale - interactionRef.current.dragOffset.x
+    const rawY = (clientY - rect.top) / scale - interactionRef.current.dragOffset.y
+
+    const snappedX = snapToGridPosition(rawX)
+    const snappedY = snapToGridPosition(rawY)
+
+    if (isNaN(snappedX) || isNaN(snappedY)) return
+
+    // Calculate total displacement from the start of the drag
+    const totalDx = snappedX - anchorInitial.x
+    const totalDy = snappedY - anchorInitial.y
+
+    if (totalDx === 0 && totalDy === 0) return
+
+    setCanvasElements(prev => prev.map(el => {
+      const initial = interactionRef.current.initialDragPositions[el.id]
+      if (initial) {
+        const nextX = initial.x + totalDx
+        const nextY = initial.y + totalDy
+        return { ...el, x: isNaN(nextX) ? el.x : nextX, y: isNaN(nextY) ? el.y : nextY }
+      }
+      return el
+    }))
   }
 
   const handleElementDragEnd = () => {
     setDraggingElement(null)
+    setInitialDragPositions({})
+    interactionRef.current.draggingElement = null
+    interactionRef.current.initialDragPositions = {}
   }
 
-  // Handle element resize
   const handleResizeStart = (e: React.MouseEvent, elementId: string, handle: string) => {
     e.stopPropagation()
     e.preventDefault()
@@ -1111,144 +1384,131 @@ export default function MapViewerPage() {
     const element = canvasElements.find(el => el.id === elementId)
     if (!element || element.isLocked) return
 
-    setResizingElement(elementId)
-    setResizeHandle(handle)
-    setResizeStart({
+    const startValues = {
       x: e.clientX,
       y: e.clientY,
       width: element.width,
       height: element.height,
       elementX: element.x,
       elementY: element.y
-    })
+    }
+
+    setResizingElement(elementId)
+    setResizeHandle(handle)
+    setResizeStart(startValues)
+
+    interactionRef.current.resizingElement = elementId
+    interactionRef.current.resizeHandle = handle
+    interactionRef.current.resizeStart = startValues
   }
 
-  const handleResizeMove = (e: React.MouseEvent) => {
-    if (!resizingElement || !resizeHandle || viewMode !== 'editor') return
+  const handleResizeMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const resId = interactionRef.current.resizingElement
+    const handle = interactionRef.current.resizeHandle
+    if (!resId || !handle || viewMode !== 'editor') return
 
-    const element = canvasElements.find(el => el.id === resizingElement)
+    const element = canvasElements.find(el => el.id === resId)
     if (!element) return
 
-    const scale = zoom / 100
-    const deltaX = (e.clientX - resizeStart.x) / scale
-    const deltaY = (e.clientY - resizeStart.y) / scale
+    const scale = (zoom || 75) / 100
+    if (scale <= 0) return
 
-    let newWidth = resizeStart.width
-    let newHeight = resizeStart.height
-    let newX = resizeStart.elementX
-    let newY = resizeStart.elementY
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+
+    const start = interactionRef.current.resizeStart
+    const deltaX = (clientX - start.x) / scale
+    const deltaY = (clientY - start.y) / scale
+
+    if (isNaN(deltaX) || isNaN(deltaY)) return
+
+    let newWidth = start.width
+    let newHeight = start.height
+    let newX = start.elementX
+    let newY = start.elementY
 
     // Handle different resize directions
-    if (resizeHandle.includes('e')) {
-      newWidth = Math.max(40, snapToGridPosition(resizeStart.width + deltaX))
+    if (handle.includes('e')) {
+      newWidth = Math.max(40, snapToGridPosition(start.width + deltaX))
     }
-    if (resizeHandle.includes('w')) {
-      const proposedWidth = snapToGridPosition(resizeStart.width - deltaX)
+    if (handle.includes('w')) {
+      const proposedWidth = snapToGridPosition(start.width - deltaX)
       newWidth = Math.max(40, proposedWidth)
-      // Only adjust X if width actually changed
-      newX = resizeStart.elementX + (resizeStart.width - newWidth)
+      newX = start.elementX + (start.width - newWidth)
     }
-    if (resizeHandle.includes('s')) {
-      newHeight = Math.max(40, snapToGridPosition(resizeStart.height + deltaY))
+    if (handle.includes('s')) {
+      newHeight = Math.max(40, snapToGridPosition(start.height + deltaY))
     }
-    if (resizeHandle.includes('n')) {
-      const proposedHeight = snapToGridPosition(resizeStart.height - deltaY)
+    if (handle.includes('n')) {
+      const proposedHeight = snapToGridPosition(start.height - deltaY)
       newHeight = Math.max(40, proposedHeight)
-      // Only adjust Y if height actually changed
-      newY = resizeStart.elementY + (resizeStart.height - newHeight)
+      newY = start.elementY + (start.height - newHeight)
     }
 
+    if (isNaN(newWidth) || isNaN(newHeight) || isNaN(newX) || isNaN(newY)) return
+
     setCanvasElements(prev => prev.map(el =>
-      el.id === resizingElement ? { ...el, width: newWidth, height: newHeight, x: newX, y: newY } : el
+      el.id === resId ? { ...el, width: newWidth, height: newHeight, x: newX, y: newY } : el
     ))
   }
 
   const handleResizeEnd = () => {
     setResizingElement(null)
     setResizeHandle(null)
+    interactionRef.current.resizingElement = null
+    interactionRef.current.resizeHandle = null
   }
 
   // Touch event handlers for mobile support
   const handleTouchStart = (e: React.TouchEvent, element: CanvasElement) => {
     if (viewMode !== 'editor' || element.isLocked) return
-    e.preventDefault()
     const touch = e.touches[0]
-    setDraggingElement(element.id)
+    if (!touch) return
 
-    // Use canvas ref to get accurate position
     if (!canvasRef.current) return
     const canvasRect = canvasRef.current.getBoundingClientRect()
-    const scale = zoom / 100
+    const scale = (zoom || 75) / 100
+    if (scale <= 0) return
 
-    // Calculate touch position in canvas coordinates
-    const touchX = (touch.clientX - canvasRect.left) / scale
-    const touchY = (touch.clientY - canvasRect.top) / scale
+    const clickX = (touch.clientX - canvasRect.left) / scale
+    const clickY = (touch.clientY - canvasRect.top) / scale
 
-    // Calculate offset from element's top-left corner
-    setDragOffset({
-      x: touchX - element.x,
-      y: touchY - element.y
+    const offset = {
+      x: clickX - element.x,
+      y: clickY - element.y
+    }
+
+    setDraggingElement(element.id)
+    setDragOffset(offset)
+
+    // Capture initial positions of ALL selected elements for stable relative movement
+    const selections = selectedElements.includes(element.id) ? selectedElements : [element.id]
+    const initialPos: Record<string, { x: number; y: number }> = {}
+    canvasElements.forEach(el => {
+      if (selections.includes(el.id)) {
+        initialPos[el.id] = { x: el.x, y: el.y }
+      }
     })
+    setInitialDragPositions(initialPos)
+
+    interactionRef.current.draggingElement = element.id
+    interactionRef.current.dragOffset = offset
+    interactionRef.current.initialDragPositions = initialPos
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!draggingElement && !resizingElement) return
-    if (!canvasRef.current || viewMode !== 'editor') return
+    if (!interactionRef.current.draggingElement && !interactionRef.current.resizingElement) return
 
-    const touch = e.touches[0]
-    const rect = canvasRef.current.getBoundingClientRect()
-    const scale = zoom / 100
+    // Prevent scrolling while interacting with elements
+    if (e.cancelable) e.preventDefault()
 
-    if (draggingElement) {
-      // Calculate new position: touch position in canvas coords minus offset
-      let x = (touch.clientX - rect.left) / scale - dragOffset.x
-      let y = (touch.clientY - rect.top) / scale - dragOffset.y
-      x = snapToGridPosition(x)
-      y = snapToGridPosition(y)
-      setCanvasElements(prev => prev.map(el =>
-        el.id === draggingElement ? { ...el, x, y } : el
-      ))
-    }
-
-    if (resizingElement && resizeHandle) {
-      const element = canvasElements.find(el => el.id === resizingElement)
-      if (!element) return
-
-      const deltaX = (touch.clientX - resizeStart.x) / scale
-      const deltaY = (touch.clientY - resizeStart.y) / scale
-
-      let newWidth = resizeStart.width
-      let newHeight = resizeStart.height
-      let newX = resizeStart.elementX
-      let newY = resizeStart.elementY
-
-      if (resizeHandle.includes('e')) {
-        newWidth = Math.max(40, snapToGridPosition(resizeStart.width + deltaX))
-      }
-      if (resizeHandle.includes('w')) {
-        const proposedWidth = snapToGridPosition(resizeStart.width - deltaX)
-        newWidth = Math.max(40, proposedWidth)
-        newX = resizeStart.elementX + (resizeStart.width - newWidth)
-      }
-      if (resizeHandle.includes('s')) {
-        newHeight = Math.max(40, snapToGridPosition(resizeStart.height + deltaY))
-      }
-      if (resizeHandle.includes('n')) {
-        const proposedHeight = snapToGridPosition(resizeStart.height - deltaY)
-        newHeight = Math.max(40, proposedHeight)
-        newY = resizeStart.elementY + (resizeStart.height - newHeight)
-      }
-
-      setCanvasElements(prev => prev.map(el =>
-        el.id === resizingElement ? { ...el, width: newWidth, height: newHeight, x: newX, y: newY } : el
-      ))
-    }
+    handleElementDrag(e)
+    handleResizeMove(e)
   }
 
   const handleTouchEnd = () => {
-    setDraggingElement(null)
-    setResizingElement(null)
-    setResizeHandle(null)
+    handleElementDragEnd()
+    handleResizeEnd()
   }
 
   const handleResizeTouchStart = (e: React.TouchEvent, elementId: string, handle: string) => {
@@ -1260,16 +1520,22 @@ export default function MapViewerPage() {
     if (!element || element.isLocked) return
 
     const touch = e.touches[0]
-    setResizingElement(elementId)
-    setResizeHandle(handle)
-    setResizeStart({
+    const startValues = {
       x: touch.clientX,
       y: touch.clientY,
       width: element.width,
       height: element.height,
       elementX: element.x,
       elementY: element.y
-    })
+    }
+
+    setResizingElement(elementId)
+    setResizeHandle(handle)
+    setResizeStart(startValues)
+
+    interactionRef.current.resizingElement = elementId
+    interactionRef.current.resizeHandle = handle
+    interactionRef.current.resizeStart = startValues
   }
 
   // Marquee selection handlers
@@ -1336,11 +1602,58 @@ export default function MapViewerPage() {
 
   // Toggle selection mode
   const toggleSelectMode = () => {
-    setSelectMode(prev => prev === 'single' ? 'multi' : 'single')
+    setSelectMode(prev => {
+      if (prev === 'single') return 'multi'
+      if (prev === 'multi') return 'pan'
+      return 'single'
+    })
     setSelectedElements([])
-    if (selectMode === 'single') {
-      showNotification('info', 'Multi-select mode: Click and drag to select multiple elements')
+  }
+
+  // Handle canvas mouse down
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    // Middle click OR Left click with Space OR Left click in Pan mode
+    if (e.button === 1 || (e.button === 0 && (isSpacePressed || selectMode === 'pan'))) {
+      setIsPanning(true)
+      setPanStart({ x: e.clientX, y: e.clientY })
+      interactionRef.current.isPanning = true
+      interactionRef.current.panStart = { x: e.clientX, y: e.clientY }
+      return
     }
+
+    if (selectMode === 'multi') {
+      handleMarqueeStart(e)
+    } else {
+      handleCanvasClick()
+    }
+  }
+
+  // Handle canvas mouse move
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (interactionRef.current.isPanning && canvasContainerRef.current) {
+      const dx = e.clientX - interactionRef.current.panStart.x
+      const dy = e.clientY - interactionRef.current.panStart.y
+
+      // Use scrollLeft/scrollTop for natural panning
+      canvasContainerRef.current.scrollLeft -= dx
+      canvasContainerRef.current.scrollTop -= dy
+
+      interactionRef.current.panStart = { x: e.clientX, y: e.clientY }
+      return
+    }
+
+    handleElementDrag(e)
+    handleResizeMove(e)
+    if (isMarqueeSelecting) handleMarqueeMove(e)
+  }
+
+  // Handle canvas mouse up
+  const handleCanvasMouseUp = () => {
+    setIsPanning(false)
+    interactionRef.current.isPanning = false
+    handleElementDragEnd()
+    handleResizeEnd()
+    if (isMarqueeSelecting) handleMarqueeEnd()
   }
 
   // Clear all selections
@@ -1606,18 +1919,29 @@ export default function MapViewerPage() {
         showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
       }
 
+      setHasUnsavedChanges(false)
       setShowSaveModal(false)
       await fetchSavedFloorPlans(true) // Refresh the list but don't auto-load, as we just set the current plan
-    } catch (error) {
-      console.error('Error saving floor plan:', error)
-      showNotification('error', 'Failed to save floor plan')
+    } catch (error: any) {
+      console.error('Save failure details:', error)
+      const errMsg = error?.message || (typeof error === 'string' ? error : 'See console for details')
+      showNotification('error', `Save failed: ${errMsg}`)
     } finally {
       setSaving(false)
     }
   }
 
+
+
   // Create a new blank draft
   const createNewDraft = () => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm("You have unsaved changes. Are you sure you want to clear the canvas for a new draft?")) {
+        return
+      }
+    }
+    ignoreUnsavedRef.current = true
+    setHasUnsavedChanges(false)
     setCanvasElements([])
     setSelectedElements([])
     setFloorPlanName('')
@@ -1886,6 +2210,19 @@ export default function MapViewerPage() {
     return <ShapeComp size={size} />
   }
 
+  if (!mounted) {
+    return (
+      <div className={styles.layout} data-theme={globalTheme || 'green'}>
+        <div className={styles.authLoadingOverlay}>
+          <div className={styles.authLoadingContent}>
+            <RotateCcw size={48} className={styles.spinnerIcon} />
+            <h2>Loading...</h2>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.layout} data-theme={globalTheme || 'green'}>
       {/* Full page loading overlay during auth check */}
@@ -1899,22 +2236,15 @@ export default function MapViewerPage() {
       )}
 
       <MenuBar onToggleSidebar={toggleSidebar} showSidebarToggle={true} onMenuBarToggle={handleMenuBarToggle} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main
         className={`${styles.main} ${sidebarOpen ? '' : styles.fullWidth} ${menuBarHidden ? styles.menuHidden : ''}`}
-        onMouseMove={(e) => {
-          if (draggingElement) handleElementDrag(e)
-          if (resizingElement) handleResizeMove(e)
-        }}
-        onMouseUp={() => {
-          handleElementDragEnd()
-          handleResizeEnd()
-        }}
-        onMouseLeave={() => {
-          handleElementDragEnd()
-          handleResizeEnd()
-        }}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleCanvasMouseUp}
+        onMouseLeave={handleCanvasMouseUp}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Header Bar */}
         <div className={styles.header}>
@@ -2022,6 +2352,13 @@ export default function MapViewerPage() {
             )}
             <button
               className={styles.loadBtn}
+              onClick={() => createNewDraft()}
+              title="Create New Floor Plan"
+            >
+              <Plus size={18} />
+            </button>
+            <button
+              className={styles.loadBtn}
               onClick={() => setShowLoadModal(true)}
               title="Load Floor Plan"
             >
@@ -2046,367 +2383,416 @@ export default function MapViewerPage() {
 
         <div className={styles.editorContainer}>
           {/* Left Panel - Toolbox & Floor Plans */}
-          {viewMode === 'editor' && (
-            <div className={`${styles.leftPanel} ${leftPanelOpen ? '' : styles.collapsed}`}>
-              <button
-                className={styles.panelToggle}
-                onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-                title={leftPanelOpen ? 'Collapse panel' : 'Expand panel'}
-              >
-                {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-              </button>
+          <div className={`${styles.leftPanel} ${leftPanelOpen ? '' : styles.collapsed}`}>
+            <button
+              className={styles.panelToggle}
+              onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+              title={leftPanelOpen ? 'Collapse panel' : 'Expand panel'}
+            >
+              {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+            </button>
 
-              {leftPanelOpen && (
-                <>
-                  {/* Toolbox Content - Show if not mobile OR if mobile and active panel is toolbox */}
-                  {(!isMobile || activeMobilePanel === 'toolbox') && (
-                    <>
-                      <div className={styles.panelHeader}>
-                        <h3>TOOLBOX</h3>
-                      </div>
-                      <div className={styles.toolboxContent}>
-                        {/* Rooms & Zones Section */}
-                        <div className={styles.toolSection}>
-                          <button
-                            className={styles.sectionHeader}
-                            onClick={() => setSectionsOpen(p => ({ ...p, roomsZones: !p.roomsZones }))}
-                          >
-                            <span><Building2 size={16} /> Rooms & Zones</span>
-                            {sectionsOpen.roomsZones ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
+            {leftPanelOpen && (
+              <>
+                {viewMode === 'editor' ? (
+                  <>
+                    <div className={styles.panelHeader}>
+                      <h3>TOOLBOX</h3>
+                    </div>
+                    <div className={styles.toolboxContent}>
+                      {/* Toolbox Content - Show if not mobile OR if mobile and active panel is toolbox */}
+                      {(!isMobile || activeMobilePanel === 'toolbox') && (
+                        <>
+                          {/* Rooms & Zones Section */}
+                          <div className={styles.toolSection}>
+                            <button
+                              className={styles.sectionHeader}
+                              onClick={() => setSectionsOpen(p => ({ ...p, roomsZones: !p.roomsZones }))}
+                            >
+                              <span><Building2 size={16} /> Rooms & Zones</span>
+                              {sectionsOpen.roomsZones ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
 
-                          {sectionsOpen.roomsZones && (
-                            <div className={styles.sectionContent}>
-                              <div className={styles.searchBox}>
-                                <Search size={16} />
-                                <input
-                                  type="text"
-                                  placeholder="Search rooms..."
-                                  value={searchQuery}
-                                  onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                {searchQuery && (
-                                  <button onClick={() => setSearchQuery('')} className={styles.clearSearch}>
-                                    <X size={14} />
-                                  </button>
-                                )}
+                            {sectionsOpen.roomsZones && (
+                              <div className={styles.sectionContent}>
+                                <div className={styles.searchBox}>
+                                  <Search size={16} />
+                                  <input
+                                    type="text"
+                                    placeholder="Search rooms..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                  />
+                                  {searchQuery && (
+                                    <button onClick={() => setSearchQuery('')} className={styles.clearSearch}>
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div className={styles.roomList}>
+                                  {loading ? (
+                                    <div className={styles.loading}>
+                                      <RotateCcw size={20} className={styles.spinning} />
+                                      Loading rooms...
+                                    </div>
+                                  ) : filteredRooms.length === 0 ? (
+                                    <div className={styles.emptyState}>
+                                      <Info size={20} />
+                                      <span>No rooms found</span>
+                                    </div>
+                                  ) : (
+                                    filteredRooms.slice(0, 30).map(room => (
+                                      <div
+                                        key={room.id}
+                                        className={`${styles.roomItem} ${isRoomOnCanvas(room.id) ? styles.onCanvas : ''}`}
+                                        draggable={true}
+                                        onDragStart={(e) => handleRoomDragStart(e, room)}
+                                        onPointerDown={(e) => {
+                                          if (!isMobile) return
+                                          e.preventDefault()
+                                          handlePointerDragStart('room', room, e.clientX, e.clientY)
+                                        }}
+                                        style={{
+                                          borderLeftColor: getRoomColor(room.room_type).bg
+                                        }}
+                                        title={isRoomOnCanvas(room.id) ? 'Already on canvas' : 'Drag to add to canvas'}
+                                      >
+                                        <Square size={16} style={{ color: getRoomColor(room.room_type).bg }} />
+                                        <div className={styles.roomInfo}>
+                                          <span className={styles.roomName}>{room.room}</span>
+                                          <span className={styles.roomType}>{room.room_type || 'Classroom'}</span>
+                                        </div>
+                                        <div className={styles.roomMeta}>
+                                          <Users size={12} />
+                                          <span>{room.capacity || 30}</span>
+                                        </div>
+                                        {isRoomOnCanvas(room.id) && (
+                                          <CheckCircle size={14} className={styles.addedCheck} />
+                                        )}
+                                      </div>
+                                    ))
+                                  )}
+                                  {filteredRooms.length > 30 && (
+                                    <div className={styles.moreRooms}>
+                                      +{filteredRooms.length - 30} more rooms
+                                    </div>
+                                  )}
+                                </div>
                               </div>
+                            )}
+                          </div>
 
-                              <div className={styles.roomList}>
-                                {loading ? (
-                                  <div className={styles.loading}>
-                                    <RotateCcw size={20} className={styles.spinning} />
-                                    Loading rooms...
-                                  </div>
-                                ) : filteredRooms.length === 0 ? (
-                                  <div className={styles.emptyState}>
-                                    <Info size={20} />
-                                    <span>No rooms found</span>
-                                  </div>
-                                ) : (
-                                  filteredRooms.slice(0, 30).map(room => (
+                          {/* Structures Section */}
+                          <div className={styles.toolSection}>
+                            <button
+                              className={styles.sectionHeader}
+                              onClick={() => setSectionsOpen(p => ({ ...p, structures: !p.structures }))}
+                            >
+                              <span><Box size={16} /> Walls & Structures</span>
+                              {sectionsOpen.structures ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+
+                            {sectionsOpen.structures && (
+                              <div className={styles.sectionContent}>
+                                <div className={styles.toolGrid}>
+                                  {TOOLBOX_ITEMS.structures.map(item => (
                                     <div
-                                      key={room.id}
-                                      className={`${styles.roomItem} ${isRoomOnCanvas(room.id) ? styles.onCanvas : ''}`}
+                                      key={item.type}
+                                      className={styles.toolItem}
                                       draggable={true}
-                                      onDragStart={(e) => handleRoomDragStart(e, room)}
+                                      onDragStart={(e) => handleToolboxDragStart(e, item)}
                                       onPointerDown={(e) => {
                                         if (!isMobile) return
                                         e.preventDefault()
-                                        handlePointerDragStart('room', room, e.clientX, e.clientY)
+                                        handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
                                       }}
-                                      style={{
-                                        borderLeftColor: getRoomColor(room.room_type).bg
-                                      }}
-                                      title={isRoomOnCanvas(room.id) ? 'Already on canvas' : 'Drag to add to canvas'}
                                     >
-                                      <Square size={16} style={{ color: getRoomColor(room.room_type).bg }} />
-                                      <div className={styles.roomInfo}>
-                                        <span className={styles.roomName}>{room.room}</span>
-                                        <span className={styles.roomType}>{room.room_type || 'Classroom'}</span>
-                                      </div>
-                                      <div className={styles.roomMeta}>
-                                        <Users size={12} />
-                                        <span>{room.capacity || 30}</span>
-                                      </div>
-                                      {isRoomOnCanvas(room.id) && (
-                                        <CheckCircle size={14} className={styles.addedCheck} />
+                                      <item.icon size={24} />
+                                      <span>{item.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Doors & Elements Section */}
+                          <div className={styles.toolSection}>
+                            <button
+                              className={styles.sectionHeader}
+                              onClick={() => setSectionsOpen(p => ({ ...p, doorsElements: !p.doorsElements }))}
+                            >
+                              <span><DoorOpen size={16} /> Doors & Elements</span>
+                              {sectionsOpen.doorsElements ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+
+                            {sectionsOpen.doorsElements && (
+                              <div className={styles.sectionContent}>
+                                <div className={styles.toolGrid}>
+                                  {TOOLBOX_ITEMS.elements.map(item => (
+                                    <div
+                                      key={item.type}
+                                      className={styles.toolItem}
+                                      draggable={true}
+                                      onDragStart={(e) => handleToolboxDragStart(e, item)}
+                                      onPointerDown={(e) => {
+                                        if (!isMobile) return
+                                        e.preventDefault()
+                                        handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
+                                      }}
+                                    >
+                                      <item.icon size={24} />
+                                      <span>{item.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Icons Section */}
+                          <div className={styles.toolSection}>
+                            <button
+                              className={styles.sectionHeader}
+                              onClick={() => setSectionsOpen(p => ({ ...p, labelsIcons: !p.labelsIcons }))}
+                            >
+                              <span><Type size={16} /> Labels & Icons</span>
+                              {sectionsOpen.labelsIcons ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+
+                            {sectionsOpen.labelsIcons && (
+                              <div className={styles.sectionContent}>
+                                <div className={styles.toolGrid}>
+                                  {TOOLBOX_ITEMS.labels.map(item => (
+                                    <div
+                                      key={item.type}
+                                      className={styles.toolItem}
+                                      draggable={true}
+                                      onDragStart={(e) => handleToolboxDragStart(e, item)}
+                                      onPointerDown={(e) => {
+                                        if (!isMobile) return
+                                        e.preventDefault()
+                                        handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
+                                      }}
+                                    >
+                                      <item.icon size={24} />
+                                      <span>{item.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className={styles.iconGrid}>
+                                  {ICON_OPTIONS.slice(0, 12).map(iconOpt => (
+                                    <div
+                                      key={iconOpt.name}
+                                      className={styles.iconItem}
+                                      draggable={true}
+                                      onDragStart={(e) => handleIconDragStart(e, iconOpt)}
+                                      onPointerDown={(e) => {
+                                        if (!isMobile) return
+                                        e.preventDefault()
+                                        handlePointerDragStart('icon', iconOpt, e.clientX, e.clientY)
+                                      }}
+                                      title={iconOpt.label}
+                                    >
+                                      <iconOpt.icon size={20} />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Shapes Section */}
+                          <div className={styles.toolSection}>
+                            <button
+                              className={styles.sectionHeader}
+                              onClick={() => setSectionsOpen(p => ({ ...p, shapes: !p.shapes }))}
+                            >
+                              <span><Hexagon size={16} /> Shapes</span>
+                              {sectionsOpen.shapes ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+
+                            {sectionsOpen.shapes && (
+                              <div className={styles.sectionContent}>
+                                <div className={styles.iconGrid}>
+                                  {SHAPE_OPTIONS.map(shapeOpt => (
+                                    <div
+                                      key={shapeOpt.name}
+                                      className={styles.iconItem}
+                                      draggable={true}
+                                      onDragStart={(e) => handleShapeDragStart(e, shapeOpt)}
+                                      onPointerDown={(e) => {
+                                        if (!isMobile) return
+                                        e.preventDefault()
+                                        handlePointerDragStart('shape', shapeOpt, e.clientX, e.clientY)
+                                      }}
+                                      title={shapeOpt.label}
+                                    >
+                                      <shapeOpt.icon size={20} />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Floor Plans Section - Show if not mobile OR if mobile and active panel is floorPlans */}
+                    {(!isMobile || activeMobilePanel === 'floorPlans') && (
+                      <>
+                        <div className={styles.panelHeader} style={{ marginTop: isMobile ? 0 : 16, paddingTop: isMobile ? 0 : 16, borderTop: isMobile ? 'none' : '1px solid var(--border-color)' }}>
+                          <h3>FLOOR PLANS</h3>
+                          <button
+                            className={styles.iconBtn}
+                            onClick={() => {
+                              setFloorPlanName('')
+                              setCurrentFloorPlan(null)
+                              setIsDefault(false)
+                              setCanvasElements([])
+                              showNotification('success', 'Ready for new draft')
+                              if (isMobile) toggleMobilePanel('floorPlans')
+                            }}
+                            title="New Draft"
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+
+                        <div className={styles.toolboxContent}>
+                          {savedFloorPlans.length === 0 ? (
+                            <div className={styles.emptyState}>
+                              <Info size={20} />
+                              <span>No saved plans</span>
+                              <button className={styles.textBtn} onClick={createNewDraft}>Create New</button>
+                            </div>
+                          ) : (
+                            <div className={styles.floorPlanGrid} style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, padding: '0 8px' }}>
+                              {savedFloorPlans
+                                .filter(fp => {
+                                  // Filter by current building if selected
+                                  if (!selectedBuilding) return true
+                                  return fp.floor_name?.includes(selectedBuilding)
+                                })
+                                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                .map(fp => (
+                                  <div
+                                    key={fp.id}
+                                    className={`${styles.floorPlanCard} ${currentFloorPlan?.id === fp.id ? styles.active : ''}`}
+                                    onClick={() => loadFloorPlan(fp)}
+                                    style={{ padding: 10 }}
+                                  >
+                                    <div className={styles.cardStatus} style={{ top: 6, right: 6, display: 'flex', gap: 4, flexDirection: 'column' }}>
+                                      {fp.is_default_view && (
+                                        <span
+                                          className={`${styles.statusDot} ${styles.published}`}
+                                          title="Default View"
+                                          style={{ fontSize: 10 }}
+                                        >
+                                          ⭐
+                                        </span>
+                                      )}
+                                      {fp.is_published && !fp.is_default_view && (
+                                        <span
+                                          className={`${styles.statusDot} ${styles.published}`}
+                                          title="Published"
+                                          style={{ fontSize: 10 }}
+                                        >
+                                          👁
+                                        </span>
+                                      )}
+                                      {!fp.is_published && !fp.is_default_view && (
+                                        <span
+                                          className={`${styles.statusDot} ${styles.draft}`}
+                                          title="Draft"
+                                          style={{ fontSize: 10 }}
+                                        >
+                                          📝
+                                        </span>
                                       )}
                                     </div>
-                                  ))
-                                )}
-                                {filteredRooms.length > 30 && (
-                                  <div className={styles.moreRooms}>
-                                    +{filteredRooms.length - 30} more rooms
+
+                                    <div className={styles.cardIcon} style={{ width: 36, height: 36, marginBottom: 8 }}>
+                                      <FileText size={18} />
+                                    </div>
+
+                                    <div className={styles.cardName} style={{ fontSize: 12 }}>
+                                      {fp.floor_name?.replace(selectedBuilding + ' - ', '') || fp.floor_name}
+                                    </div>
+
+                                    <div className={styles.cardMeta} style={{ fontSize: 10 }}>
+                                      {fp.is_default_view ? 'Default' : fp.is_published ? 'Published' : 'Draft'}
+                                    </div>
                                   </div>
-                                )}
-                              </div>
+                                ))}
                             </div>
                           )}
                         </div>
-
-                        {/* Structures Section */}
-                        <div className={styles.toolSection}>
-                          <button
-                            className={styles.sectionHeader}
-                            onClick={() => setSectionsOpen(p => ({ ...p, structures: !p.structures }))}
-                          >
-                            <span><Box size={16} /> Walls & Structures</span>
-                            {sectionsOpen.structures ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-
-                          {sectionsOpen.structures && (
-                            <div className={styles.sectionContent}>
-                              <div className={styles.toolGrid}>
-                                {TOOLBOX_ITEMS.structures.map(item => (
-                                  <div
-                                    key={item.type}
-                                    className={styles.toolItem}
-                                    draggable={true}
-                                    onDragStart={(e) => handleToolboxDragStart(e, item)}
-                                    onPointerDown={(e) => {
-                                      if (!isMobile) return
-                                      e.preventDefault()
-                                      handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
-                                    }}
-                                  >
-                                    <item.icon size={24} />
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* In Non-Editor View modes, we can show Floor Plans list for quick switching if desired */}
+                    <div className={styles.panelHeader} style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+                      <h3>FLOOR PLANS</h3>
+                      <button
+                        className={styles.headerBtn}
+                        onClick={() => {
+                          setViewMode('editor')
+                          createNewDraft()
+                        }}
+                        title="Create New Draft"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <div className={styles.toolboxContent}>
+                      {savedFloorPlans.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          <span>No floors found</span>
                         </div>
-
-                        {/* Doors & Elements Section */}
-                        <div className={styles.toolSection}>
-                          <button
-                            className={styles.sectionHeader}
-                            onClick={() => setSectionsOpen(p => ({ ...p, doorsElements: !p.doorsElements }))}
-                          >
-                            <span><DoorOpen size={16} /> Doors & Elements</span>
-                            {sectionsOpen.doorsElements ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-
-                          {sectionsOpen.doorsElements && (
-                            <div className={styles.sectionContent}>
-                              <div className={styles.toolGrid}>
-                                {TOOLBOX_ITEMS.elements.map(item => (
-                                  <div
-                                    key={item.type}
-                                    className={styles.toolItem}
-                                    draggable={true}
-                                    onDragStart={(e) => handleToolboxDragStart(e, item)}
-                                    onPointerDown={(e) => {
-                                      if (!isMobile) return
-                                      e.preventDefault()
-                                      handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
-                                    }}
-                                  >
-                                    <item.icon size={24} />
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Icons Section */}
-                        <div className={styles.toolSection}>
-                          <button
-                            className={styles.sectionHeader}
-                            onClick={() => setSectionsOpen(p => ({ ...p, labelsIcons: !p.labelsIcons }))}
-                          >
-                            <span><Type size={16} /> Labels & Icons</span>
-                            {sectionsOpen.labelsIcons ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-
-                          {sectionsOpen.labelsIcons && (
-                            <div className={styles.sectionContent}>
-                              <div className={styles.toolGrid}>
-                                {TOOLBOX_ITEMS.labels.map(item => (
-                                  <div
-                                    key={item.type}
-                                    className={styles.toolItem}
-                                    draggable={true}
-                                    onDragStart={(e) => handleToolboxDragStart(e, item)}
-                                    onPointerDown={(e) => {
-                                      if (!isMobile) return
-                                      e.preventDefault()
-                                      handlePointerDragStart('toolbox', item, e.clientX, e.clientY)
-                                    }}
-                                  >
-                                    <item.icon size={24} />
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className={styles.iconGrid}>
-                                {ICON_OPTIONS.slice(0, 12).map(iconOpt => (
-                                  <div
-                                    key={iconOpt.name}
-                                    className={styles.iconItem}
-                                    draggable={true}
-                                    onDragStart={(e) => handleIconDragStart(e, iconOpt)}
-                                    onPointerDown={(e) => {
-                                      if (!isMobile) return
-                                      e.preventDefault()
-                                      handlePointerDragStart('icon', iconOpt, e.clientX, e.clientY)
-                                    }}
-                                    title={iconOpt.label}
-                                  >
-                                    <iconOpt.icon size={20} />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Shapes Section */}
-                        <div className={styles.toolSection}>
-                          <button
-                            className={styles.sectionHeader}
-                            onClick={() => setSectionsOpen(p => ({ ...p, shapes: !p.shapes }))}
-                          >
-                            <span><Hexagon size={16} /> Shapes</span>
-                            {sectionsOpen.shapes ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-
-                          {sectionsOpen.shapes && (
-                            <div className={styles.sectionContent}>
-                              <div className={styles.iconGrid}>
-                                {SHAPE_OPTIONS.map(shapeOpt => (
-                                  <div
-                                    key={shapeOpt.name}
-                                    className={styles.iconItem}
-                                    draggable={true}
-                                    onDragStart={(e) => handleShapeDragStart(e, shapeOpt)}
-                                    onPointerDown={(e) => {
-                                      if (!isMobile) return
-                                      e.preventDefault()
-                                      handlePointerDragStart('shape', shapeOpt, e.clientX, e.clientY)
-                                    }}
-                                    title={shapeOpt.label}
-                                  >
-                                    <shapeOpt.icon size={20} />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Floor Plans Section - Show if not mobile OR if mobile and active panel is floorPlans */}
-                  {(!isMobile || activeMobilePanel === 'floorPlans') && (
-                    <>
-                      <div className={styles.panelHeader} style={{ marginTop: isMobile ? 0 : 16, paddingTop: isMobile ? 0 : 16, borderTop: isMobile ? 'none' : '1px solid var(--border-color)' }}>
-                        <h3>FLOOR PLANS</h3>
-                        <button
-                          className={styles.iconBtn}
-                          onClick={() => {
-                            setFloorPlanName('')
-                            setCurrentFloorPlan(null)
-                            setIsDefault(false)
-                            setCanvasElements([])
-                            showNotification('success', 'Ready for new draft')
-                            if (isMobile) toggleMobilePanel('floorPlans')
-                          }}
-                          title="New Draft"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-
-                      <div className={styles.toolboxContent}>
-                        {savedFloorPlans.length === 0 ? (
-                          <div className={styles.emptyState}>
-                            <Info size={20} />
-                            <span>No saved plans</span>
-                            <button className={styles.textBtn} onClick={createNewDraft}>Create New</button>
-                          </div>
-                        ) : (
-                          <div className={styles.floorPlanGrid} style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, padding: '0 8px' }}>
-                            {savedFloorPlans
-                              .filter(fp => {
-                                // Filter by current building if selected
-                                if (!selectedBuilding) return true
-                                return fp.floor_name?.includes(selectedBuilding)
-                              })
-                              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                              .map(fp => (
-                                <div
-                                  key={fp.id}
-                                  className={`${styles.floorPlanCard} ${currentFloorPlan?.id === fp.id ? styles.active : ''}`}
-                                  onClick={() => loadFloorPlan(fp)}
-                                  style={{ padding: 10 }}
-                                >
-                                  <div className={styles.cardStatus} style={{ top: 6, right: 6, display: 'flex', gap: 4, flexDirection: 'column' }}>
-                                    {fp.is_default_view && (
-                                      <span
-                                        className={`${styles.statusDot} ${styles.published}`}
-                                        title="Default View"
-                                        style={{ fontSize: 10 }}
-                                      >
-                                        ⭐
-                                      </span>
-                                    )}
-                                    {fp.is_published && !fp.is_default_view && (
-                                      <span
-                                        className={`${styles.statusDot} ${styles.published}`}
-                                        title="Published"
-                                        style={{ fontSize: 10 }}
-                                      >
-                                        👁
-                                      </span>
-                                    )}
-                                    {!fp.is_published && !fp.is_default_view && (
-                                      <span
-                                        className={`${styles.statusDot} ${styles.draft}`}
-                                        title="Draft"
-                                        style={{ fontSize: 10 }}
-                                      >
-                                        📝
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div className={styles.cardIcon} style={{ width: 36, height: 36, marginBottom: 8 }}>
-                                    <FileText size={18} />
-                                  </div>
-
-                                  <div className={styles.cardName} style={{ fontSize: 12 }}>
-                                    {fp.floor_name?.replace(selectedBuilding + ' - ', '') || fp.floor_name}
-                                  </div>
-
-                                  <div className={styles.cardMeta} style={{ fontSize: 10 }}>
-                                    {fp.is_default_view ? 'Default' : fp.is_published ? 'Published' : 'Draft'}
-                                  </div>
+                      ) : (
+                        <div className={styles.floorPlanGrid} style={{ gridTemplateColumns: '1fr', gap: 8 }}>
+                          {savedFloorPlans
+                            .filter(fp => !selectedBuilding || fp.floor_name?.includes(selectedBuilding))
+                            .map(fp => (
+                              <div
+                                key={fp.id}
+                                className={`${styles.floorPlanCard} ${currentFloorPlan?.id === fp.id ? styles.active : ''}`}
+                                onClick={() => loadFloorPlan(fp)}
+                                style={{ padding: '8px 12px', minHeight: 'auto' }}
+                              >
+                                <div className={styles.cardName} style={{ fontSize: 13 }}>
+                                  {fp.floor_name?.replace(selectedBuilding + ' - ', '') || fp.floor_name}
                                 </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Main Canvas Area */}
           <div className={styles.canvasArea}>
             <div
               ref={canvasContainerRef}
-              className={`${styles.canvasContainer} ${viewMode !== 'editor' ? styles.viewOnly : ''}`}
+              className={`${styles.canvasContainer} ${viewMode !== 'editor' ? styles.viewOnly : ''} ${selectMode === 'pan' || isSpacePressed ? styles.panMode : ''} ${isPanning ? styles.panning : ''}`}
               onDragOver={viewMode === 'editor' ? handleDragOver : undefined}
               onDrop={viewMode === 'editor' ? handleDrop : undefined}
               onDragLeave={() => setDragGhost(null)}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               {/* Scale wrapper — sized to the visual (scaled) canvas so scroll area matches */}
               <div
@@ -2418,7 +2804,7 @@ export default function MapViewerPage() {
               >
                 <div
                   ref={canvasRef}
-                  className={`${styles.canvas} ${selectMode === 'multi' ? styles.multiSelectMode : ''}`}
+                  className={`${styles.canvas} ${selectMode === 'multi' ? styles.multiSelectMode : ''} ${selectMode === 'pan' || isSpacePressed ? styles.panMode : ''} ${isPanning ? styles.panning : ''} ${(draggingElement || resizingElement) ? styles.isInteracting : ''}`}
                   style={{
                     width: canvasSize.width,
                     height: canvasSize.height,
@@ -2430,22 +2816,6 @@ export default function MapViewerPage() {
                     backgroundSize: showGrid && viewMode === 'editor' ? `${gridSize}px ${gridSize}px` : 'none'
                   }}
                   onClick={handleCanvasClick}
-                  onMouseDown={selectMode === 'multi' ? handleMarqueeStart : undefined}
-                  onMouseMove={(e) => {
-                    handleElementDrag(e)
-                    handleResizeMove(e)
-                    if (isMarqueeSelecting) handleMarqueeMove(e)
-                  }}
-                  onMouseUp={() => {
-                    handleElementDragEnd()
-                    handleResizeEnd()
-                    if (isMarqueeSelecting) handleMarqueeEnd()
-                  }}
-                  onMouseLeave={() => {
-                    handleElementDragEnd()
-                    handleResizeEnd()
-                    if (isMarqueeSelecting) handleMarqueeEnd()
-                  }}
                 >
                   {/* Marquee Selection Box */}
                   {isMarqueeSelecting && marqueeStart && marqueeEnd && (
@@ -2490,8 +2860,6 @@ export default function MapViewerPage() {
                           onClick={(e) => handleElementClick(element, e)}
                           onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
                           onTouchStart={(e) => viewMode === 'editor' && !element.isLocked && handleTouchStart(e, element)}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={handleTouchEnd}
                         >
                           {element.type === 'room' && (
                             <>
@@ -2557,14 +2925,14 @@ export default function MapViewerPage() {
                           {/* Resize handles - only show when selected and in editor mode */}
                           {isSelected && viewMode === 'editor' && !element.isLocked && (
                             <>
-                              <div className={`${styles.resizeHandle} ${styles.resizeN}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'n')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'n')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeS}`} onMouseDown={(e) => handleResizeStart(e, element.id, 's')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 's')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'e')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'e')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'w')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'w')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeNE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'ne')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeNW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'nw')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeSE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'se')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'se')} />
-                              <div className={`${styles.resizeHandle} ${styles.resizeSW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')} onTouchStart={(e) => handleResizeTouchStart(e, element.id, 'sw')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeN}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'n')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeS}`} onMouseDown={(e) => handleResizeStart(e, element.id, 's')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'e')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'w')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeNE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'ne')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeNW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'nw')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeSE}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'se')} />
+                              <div className={`${styles.resizeHandle} ${styles.resizeSW}`} onMouseDown={(e) => handleResizeStart(e, element.id, 'sw')} />
                             </>
                           )}
                         </div>
@@ -2623,11 +2991,11 @@ export default function MapViewerPage() {
                 <Grip size={14} />
               </div>
               <div className={styles.zoomControls} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
-                <button onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(25, z - 25)); }}>
+                <button onClick={(e) => { e.stopPropagation(); setZoom(z => Math.max(25, z - 25)); }} title="Zoom Out">
                   <ZoomOut size={18} />
                 </button>
                 <span>Zoom: {zoom}%</span>
-                <button onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(500, z + 25)); }}>
+                <button onClick={(e) => { e.stopPropagation(); setZoom(z => Math.min(500, z + 25)); }} title="Zoom In">
                   <ZoomIn size={18} />
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); setZoom(100); }} title="Reset zoom">
@@ -2636,15 +3004,37 @@ export default function MapViewerPage() {
               </div>
 
               {viewMode === 'editor' && (
+                <div className={styles.undoRedoControls} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+                  <button
+                    className={styles.undoRedoBtn}
+                    onClick={(e) => { e.stopPropagation(); undo(); }}
+                    disabled={historyIndex <= 0}
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                  <button
+                    className={styles.undoRedoBtn}
+                    onClick={(e) => { e.stopPropagation(); redo(); }}
+                    disabled={historyIndex >= history.length - 1}
+                    title="Redo (Ctrl+Y)"
+                    style={{ transform: 'scaleX(-1)' }}
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                </div>
+              )}
+
+              {viewMode === 'editor' && (
                 <>
                   <div className={styles.selectControl}>
                     <button
-                      className={`${styles.selectModeBtn} ${selectMode === 'multi' ? styles.active : ''}`}
+                      className={`${styles.selectModeBtn} ${selectMode !== 'single' ? styles.active : ''}`}
                       onClick={toggleSelectMode}
-                      title={selectMode === 'single' ? 'Enable multi-select (drag to select multiple)' : 'Disable multi-select'}
+                      title={selectMode === 'single' ? 'Enable multi-select' : selectMode === 'multi' ? 'Enable pan tool' : 'Return to single select'}
                     >
-                      <BoxSelect size={16} />
-                      {!isMobile && <span>{selectMode === 'multi' ? 'Multi' : 'Single'}</span>}
+                      {selectMode === 'multi' ? <BoxSelect size={16} /> : selectMode === 'pan' ? <Move size={16} /> : <MousePointer size={16} />}
+                      {!isMobile && <span>{selectMode === 'multi' ? 'Multi' : selectMode === 'pan' ? 'Pan' : 'Select'}</span>}
                     </button>
                     {selectedElements.length > 0 && (
                       <span className={styles.selectedCount}>{selectedElements.length} selected</span>
@@ -2682,7 +3072,7 @@ export default function MapViewerPage() {
                 <span>Elements: {canvasElements.length}</span>
               </div>
 
-              {viewMode === 'live' && showScheduleOverlay && (
+              {viewMode === 'live' && showScheduleOverlay && currentTime && (
                 <div className={styles.timeDisplay}>
                   <Clock size={16} />
                   <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -2694,32 +3084,7 @@ export default function MapViewerPage() {
             </div>
           </div>
 
-          {/* Mobile Floating Action Buttons */}
-          {showMobileFAB && viewMode === 'editor' && (
-            <div className={styles.mobileFAB}>
-              <button
-                className={`${styles.fabButton} ${activeMobilePanel === 'toolbox' ? styles.active : ''}`}
-                onClick={() => toggleMobilePanel('toolbox')}
-                title="Toolbox"
-              >
-                <Wrench size={22} />
-              </button>
-              <button
-                className={`${styles.fabButton} ${activeMobilePanel === 'floorPlans' ? styles.active : ''}`}
-                onClick={() => toggleMobilePanel('floorPlans')}
-                title="Floor Plans"
-              >
-                <FileText size={22} />
-              </button>
-              <button
-                className={`${styles.fabButton} ${activeMobilePanel === 'properties' ? styles.active : ''}`}
-                onClick={() => toggleMobilePanel('properties')}
-                title="Properties"
-              >
-                <Settings size={22} />
-              </button>
-            </div>
-          )}          {/* Right Properties/Layers Panel */}
+          {/* Right Properties/Layers Panel */}
           <div className={`${styles.rightPanel} ${rightPanelOpen ? '' : styles.collapsed}`}>
             <button
               className={styles.panelToggleRight}
@@ -2763,6 +3128,12 @@ export default function MapViewerPage() {
                         <>
                           {viewMode === 'editor' && (
                             <>
+                              {/* Live-update indicator */}
+                              <div className={styles.liveUpdateBadge}>
+                                <CheckCircle size={12} />
+                                <span>Changes apply live</span>
+                              </div>
+
                               <div className={styles.propertyGroup}>
                                 <label>Label Name</label>
                                 <input
@@ -2780,6 +3151,8 @@ export default function MapViewerPage() {
                                 </div>
                               </div>
 
+                              {/* Size controls */}
+                              <div className={styles.propertyGroupLabel}>Size</div>
                               <div className={styles.propertyRow}>
                                 <div className={styles.propertyGroup}>
                                   <label>Width</label>
@@ -2800,6 +3173,35 @@ export default function MapViewerPage() {
                                       type="number"
                                       value={editForm.height}
                                       onChange={(e) => setEditForm(p => ({ ...p, height: Number(e.target.value) }))}
+                                      className={styles.propertyInput}
+                                    />
+                                    <span>px</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Position controls */}
+                              <div className={styles.propertyGroupLabel}>Position</div>
+                              <div className={styles.propertyRow}>
+                                <div className={styles.propertyGroup}>
+                                  <label>X</label>
+                                  <div className={styles.sizeInput}>
+                                    <input
+                                      type="number"
+                                      value={Math.round(editForm.x)}
+                                      onChange={(e) => setEditForm(p => ({ ...p, x: Number(e.target.value) }))}
+                                      className={styles.propertyInput}
+                                    />
+                                    <span>px</span>
+                                  </div>
+                                </div>
+                                <div className={styles.propertyGroup}>
+                                  <label>Y</label>
+                                  <div className={styles.sizeInput}>
+                                    <input
+                                      type="number"
+                                      value={Math.round(editForm.y)}
+                                      onChange={(e) => setEditForm(p => ({ ...p, y: Number(e.target.value) }))}
                                       className={styles.propertyInput}
                                     />
                                     <span>px</span>
@@ -3014,27 +3416,6 @@ export default function MapViewerPage() {
                           {viewMode === 'editor' && (
                             <>
                               <button
-                                className={styles.applyBtn}
-                                onClick={() => {
-                                  updateElement(selectedElement.id, {
-                                    label: editForm.label,
-                                    width: editForm.width,
-                                    height: editForm.height,
-                                    color: editForm.color,
-                                    rotation: editForm.rotation,
-                                    iconType: editForm.iconType,
-                                    fontSize: editForm.fontSize,
-                                    opacity: editForm.opacity,
-                                    borderWidth: editForm.borderWidth
-                                  })
-                                  showNotification('success', 'Element updated!')
-                                }}
-                              >
-                                <CheckCircle size={16} />
-                                Apply Changes
-                              </button>
-
-                              <button
                                 className={styles.lockBtn}
                                 onClick={() => toggleElementLock(selectedElement.id)}
                               >
@@ -3183,6 +3564,8 @@ export default function MapViewerPage() {
                                     type: element.type,
                                     width: element.width,
                                     height: element.height,
+                                    x: element.x,
+                                    y: element.y,
                                     color: element.color || '',
                                     rotation: element.rotation,
                                     iconType: element.iconType || '',
@@ -3296,350 +3679,354 @@ export default function MapViewerPage() {
             )}
           </div>
         </div>
-      </main>
+      </main >
 
       {/* Load Modal */}
-      {showLoadModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowLoadModal(false)}>
-          <div className={`${styles.modal} ${styles.largeModal}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', width: '90%' }}>
-            <div className={styles.modalHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', borderRadius: '0.5rem', background: 'var(--primary-light)', color: 'var(--primary-color)' }}>
-                  <FolderOpen size={24} />
+      {
+        showLoadModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowLoadModal(false)}>
+            <div className={`${styles.modal} ${styles.largeModal}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', width: '90%' }}>
+              <div className={styles.modalHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ padding: '0.5rem', borderRadius: '0.5rem', background: 'var(--primary-light)', color: 'var(--primary-color)' }}>
+                    <FolderOpen size={24} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Load Floor Plan</h2>
+                    <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Select a floor plan to edit or view</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Load Floor Plan</h2>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>Select a floor plan to edit or view</p>
-                </div>
+                <button onClick={() => setShowLoadModal(false)} className={styles.closeBtn}><X size={20} /></button>
               </div>
-              <button onClick={() => setShowLoadModal(false)} className={styles.closeBtn}><X size={20} /></button>
-            </div>
 
-            <div className={styles.loadModalBody}>
-              {/* Left Column: Plan List */}
-              <div className={styles.planListColumn}>
-                {savedFloorPlans.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <FolderOpen size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                    <p>No saved floor plans yet.</p>
-                    <button className={styles.createNewBtn} onClick={createNewDraft} style={{ marginTop: '1rem' }}>
-                      Create New Draft
+              <div className={styles.loadModalBody}>
+                {/* Left Column: Plan List */}
+                <div className={styles.planListColumn}>
+                  {savedFloorPlans.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <FolderOpen size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                      <p>No saved floor plans yet.</p>
+                      <button className={styles.createNewBtn} onClick={createNewDraft} style={{ marginTop: '1rem' }}>
+                        Create New Draft
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.groupList}>
+                      {/* Group by Building */}
+                      {Object.entries(
+                        savedFloorPlans.reduce((acc, plan) => {
+                          const building = plan.canvas_data?.building || 'Uncategorized';
+                          if (!acc[building]) acc[building] = [];
+                          acc[building].push(plan);
+                          return acc;
+                        }, {} as Record<string, FloorPlan[]>)
+                      ).sort((a, b) => a[0].localeCompare(b[0])).map(([buildingName, plans]) => (
+                        <div key={buildingName} className={styles.buildingGroup} style={{ marginBottom: '1.5rem' }}>
+                          <h3 style={{
+                            fontSize: '0.875rem',
+                            fontWeight: 700,
+                            color: '#6b7280',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            marginBottom: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <Building2 size={14} />
+                            {buildingName}
+                          </h3>
+
+                          {/* Group by Floor within Building */}
+                          {Object.entries(
+                            plans.reduce((acc, plan) => {
+                              const floor = plan.floor_number;
+                              if (!acc[floor]) acc[floor] = [];
+                              acc[floor].push(plan);
+                              return acc;
+                            }, {} as Record<number, FloorPlan[]>)
+                          ).sort((a, b) => Number(a[0]) - Number(b[0])).map(([floorNum, floorPlans]) => (
+                            <div key={floorNum} className={styles.floorGroup} style={{ marginLeft: '0.75rem', marginBottom: '1rem' }}>
+                              <div style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                color: '#374151',
+                                marginBottom: '0.5rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                              }}>
+                                <Layers size={12} />
+                                Floor {floorNum}
+                              </div>
+                              <div className={styles.planGrid} style={{ display: 'grid', gap: '0.5rem' }}>
+                                {floorPlans.map(plan => (
+                                  <div
+                                    key={plan.id}
+                                    onClick={() => {
+                                      loadFloorPlan(plan);
+                                      if (window.innerWidth < 768) {
+                                        setShowMobileDetails(true);
+                                      }
+                                    }}
+                                    className={styles.planItem}
+                                    style={{
+                                      padding: '0.75rem',
+                                      borderRadius: '0.5rem',
+                                      border: currentFloorPlan?.id === plan.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                                      background: currentFloorPlan?.id === plan.id ? 'var(--primary-light)' : 'var(--bg-secondary)',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                      <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{plan.floor_name}</span>
+                                      {plan.is_default_view && <Star size={12} fill="#eab308" color="#eab308" />}
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                      {new Date(plan.created_at || Date.now()).toLocaleDateString()}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Selected Plan Details */}
+                <div className={`${styles.planDetailsColumn} ${showMobileDetails ? styles.mobileVisible : ''}`}>
+                  <div className={styles.mobileDetailsHeader}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Info size={16} /> Selected Plan Details
+                    </h3>
+                    <button
+                      className={styles.mobileToggleDetailsBtn}
+                      onClick={() => setShowMobileDetails(!showMobileDetails)}
+                    >
+                      {showMobileDetails ? <ChevronsDown size={18} /> : <ChevronsUp size={18} />}
                     </button>
                   </div>
-                ) : (
-                  <div className={styles.groupList}>
-                    {/* Group by Building */}
-                    {Object.entries(
-                      savedFloorPlans.reduce((acc, plan) => {
-                        const building = plan.canvas_data?.building || 'Uncategorized';
-                        if (!acc[building]) acc[building] = [];
-                        acc[building].push(plan);
-                        return acc;
-                      }, {} as Record<string, FloorPlan[]>)
-                    ).sort((a, b) => a[0].localeCompare(b[0])).map(([buildingName, plans]) => (
-                      <div key={buildingName} className={styles.buildingGroup} style={{ marginBottom: '1.5rem' }}>
-                        <h3 style={{
-                          fontSize: '0.875rem',
-                          fontWeight: 700,
-                          color: '#6b7280',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          marginBottom: '0.75rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}>
-                          <Building2 size={14} />
-                          {buildingName}
-                        </h3>
 
-                        {/* Group by Floor within Building */}
-                        {Object.entries(
-                          plans.reduce((acc, plan) => {
-                            const floor = plan.floor_number;
-                            if (!acc[floor]) acc[floor] = [];
-                            acc[floor].push(plan);
-                            return acc;
-                          }, {} as Record<number, FloorPlan[]>)
-                        ).sort((a, b) => Number(a[0]) - Number(b[0])).map(([floorNum, floorPlans]) => (
-                          <div key={floorNum} className={styles.floorGroup} style={{ marginLeft: '0.75rem', marginBottom: '1rem' }}>
-                            <div style={{
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              color: '#374151',
-                              marginBottom: '0.5rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}>
-                              <Layers size={12} />
-                              Floor {floorNum}
-                            </div>
-                            <div className={styles.planGrid} style={{ display: 'grid', gap: '0.5rem' }}>
-                              {floorPlans.map(plan => (
-                                <div
-                                  key={plan.id}
-                                  onClick={() => {
-                                    loadFloorPlan(plan);
-                                    if (window.innerWidth < 768) {
-                                      setShowMobileDetails(true);
-                                    }
-                                  }}
-                                  className={styles.planItem}
-                                  style={{
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: currentFloorPlan?.id === plan.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
-                                    background: currentFloorPlan?.id === plan.id ? 'var(--primary-light)' : 'var(--bg-secondary)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s'
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{plan.floor_name}</span>
-                                    {plan.is_default_view && <Star size={12} fill="#eab308" color="#eab308" />}
-                                  </div>
-                                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                                    {new Date(plan.created_at || Date.now()).toLocaleDateString()}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  {currentFloorPlan ? (
+                    <div style={{ flex: 1 }}>
+                      <div className={styles.detailCard}>
 
-              {/* Right Column: Selected Plan Details */}
-              <div className={`${styles.planDetailsColumn} ${showMobileDetails ? styles.mobileVisible : ''}`}>
-                <div className={styles.mobileDetailsHeader}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Info size={16} /> Selected Plan Details
-                  </h3>
-                  <button
-                    className={styles.mobileToggleDetailsBtn}
-                    onClick={() => setShowMobileDetails(!showMobileDetails)}
-                  >
-                    {showMobileDetails ? <ChevronsDown size={18} /> : <ChevronsUp size={18} />}
-                  </button>
-                </div>
-
-                {currentFloorPlan ? (
-                  <div style={{ flex: 1 }}>
-                    <div className={styles.detailCard}>
-
-                      {isEditingMetadata ? (
-                        <>
-                          <div className={styles.formGroup}>
-                            <label>PLAN NAME</label>
-                            <input
-                              type="text"
-                              value={metadataForm.floor_name}
-                              onChange={e => setMetadataForm({ ...metadataForm, floor_name: e.target.value })}
-                              className={styles.modalInput}
-                            />
-                          </div>
-
-                          <div className={styles.formGrid}>
-                            <div>
-                              <label>BUILDING</label>
-                              <select
-                                value={metadataForm.building}
-                                onChange={e => setMetadataForm({ ...metadataForm, building: e.target.value })}
-                                className={styles.modalSelect}
-                              >
-                                {buildings.map(b => (
-                                  <option key={b} value={b}>{b}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label>FLOOR</label>
+                        {isEditingMetadata ? (
+                          <>
+                            <div className={styles.formGroup}>
+                              <label>PLAN NAME</label>
                               <input
-                                type="number"
-                                value={metadataForm.floor_number}
-                                onChange={e => setMetadataForm({ ...metadataForm, floor_number: Number(e.target.value) })}
+                                type="text"
+                                value={metadataForm.floor_name}
+                                onChange={e => setMetadataForm({ ...metadataForm, floor_name: e.target.value })}
                                 className={styles.modalInput}
                               />
                             </div>
-                          </div>
 
-                          <div className={styles.editActions}>
-                            <button
-                              onClick={updateFloorPlanMetadata}
-                              className={styles.saveModalBtn}
-                              disabled={saving}
-                            >
-                              {saving ? <RotateCcw size={14} className={styles.spinning} /> : <CheckCircle size={14} />} Save
-                            </button>
-                            <button
-                              onClick={() => setIsEditingMetadata(false)}
-                              className={styles.cancelBtn}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className={styles.editBtnWrapper}>
-                            <button
-                              onClick={startEditingMetadata}
-                              className={styles.iconBtn}
-                              title="Edit Details"
-                            >
-                              <Edit size={16} />
-                            </button>
-                          </div>
-
-                          <div className={styles.fieldGroup}>
-                            <label>PLAN NAME</label>
-                            <div className={styles.fieldValue}>{currentFloorPlan.floor_name}</div>
-                          </div>
-
-                          <div className={styles.formGrid}>
-                            <div>
-                              <label>BUILDING</label>
-                              <div className={styles.fieldValue}>{currentFloorPlan.canvas_data?.building || 'Unknown'}</div>
+                            <div className={styles.formGrid}>
+                              <div>
+                                <label>BUILDING</label>
+                                <select
+                                  value={metadataForm.building}
+                                  onChange={e => setMetadataForm({ ...metadataForm, building: e.target.value })}
+                                  className={styles.modalSelect}
+                                >
+                                  {buildings.map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label>FLOOR</label>
+                                <input
+                                  type="number"
+                                  value={metadataForm.floor_number}
+                                  onChange={e => setMetadataForm({ ...metadataForm, floor_number: Number(e.target.value) })}
+                                  className={styles.modalInput}
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <label>FLOOR</label>
-                              <div className={styles.fieldValue}>{currentFloorPlan.floor_number}</div>
+
+                            <div className={styles.editActions}>
+                              <button
+                                onClick={updateFloorPlanMetadata}
+                                className={styles.saveModalBtn}
+                                disabled={saving}
+                              >
+                                {saving ? <RotateCcw size={14} className={styles.spinning} /> : <CheckCircle size={14} />} Save
+                              </button>
+                              <button
+                                onClick={() => setIsEditingMetadata(false)}
+                                className={styles.cancelBtn}
+                              >
+                                Cancel
+                              </button>
                             </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className={styles.editBtnWrapper}>
+                              <button
+                                onClick={startEditingMetadata}
+                                className={styles.iconBtn}
+                                title="Edit Details"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                              <label>PLAN NAME</label>
+                              <div className={styles.fieldValue}>{currentFloorPlan.floor_name}</div>
+                            </div>
+
+                            <div className={styles.formGrid}>
+                              <div>
+                                <label>BUILDING</label>
+                                <div className={styles.fieldValue}>{currentFloorPlan.canvas_data?.building || 'Unknown'}</div>
+                              </div>
+                              <div>
+                                <label>FLOOR</label>
+                                <div className={styles.fieldValue}>{currentFloorPlan.floor_number}</div>
+                              </div>
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                              <label>LAST UPDATED</label>
+                              <div className={styles.fieldValue}>{new Date(currentFloorPlan.updated_at || currentFloorPlan.created_at || Date.now()).toLocaleString()}</div>
+                            </div>
+                          </>
+                        )}
+
+                        {currentFloorPlan.is_default_view && (
+                          <div className={styles.defaultBadge}>
+                            <Star size={14} fill="currentColor" />
+                            <span>This is the default view for visitors</span>
                           </div>
+                        )}
+                      </div>
 
-                          <div className={styles.fieldGroup}>
-                            <label>LAST UPDATED</label>
-                            <div className={styles.fieldValue}>{new Date(currentFloorPlan.updated_at || currentFloorPlan.created_at || Date.now()).toLocaleString()}</div>
-                          </div>
-                        </>
-                      )}
+                      <div className={styles.actionButtons} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <button
+                          onClick={() => setShowLoadModal(false)}
+                          style={{
+                            width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                            background: 'var(--primary-color)', color: 'white', border: 'none',
+                            fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                          }}
+                        >
+                          <CheckCircle size={18} /> Confirm Selection
+                        </button>
 
-                      {currentFloorPlan.is_default_view && (
-                        <div className={styles.defaultBadge}>
-                          <Star size={14} fill="currentColor" />
-                          <span>This is the default view for visitors</span>
-                        </div>
-                      )}
+                        <button
+                          onClick={() => deleteFloorPlan(currentFloorPlan.id)}
+                          style={{
+                            width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
+                            background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca',
+                            fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                          }}
+                        >
+                          <Trash2 size={18} /> Delete Plan
+                        </button>
+                      </div>
                     </div>
-
-                    <div className={styles.actionButtons} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      <button
-                        onClick={() => setShowLoadModal(false)}
-                        style={{
-                          width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                          background: 'var(--primary-color)', color: 'white', border: 'none',
-                          fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                        }}
-                      >
-                        <CheckCircle size={18} /> Confirm Selection
-                      </button>
-
-                      <button
-                        onClick={() => deleteFloorPlan(currentFloorPlan.id)}
-                        style={{
-                          width: '100%', padding: '0.75rem', borderRadius: '0.5rem',
-                          background: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca',
-                          fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                        }}
-                      >
-                        <Trash2 size={18} /> Delete Plan
-                      </button>
+                  ) : (
+                    <div style={{ textAlign: 'center', color: '#6b7280', marginTop: '2rem' }}>
+                      <MousePointer size={32} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                      <p>Select a floor plan from the list to view details.</p>
                     </div>
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', color: '#6b7280', marginTop: '2rem' }}>
-                    <MousePointer size={32} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                    <p>Select a floor plan from the list to view details.</p>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.modalFooter} style={{ justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', padding: '1rem 1.5rem' }}>
+                <button className={styles.createNewBtn} onClick={createNewDraft} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Plus size={16} /> Create New Draft
+                </button>
+                <button className={styles.cancelBtn} onClick={() => setShowLoadModal(false)}>
+                  Close
+                </button>
               </div>
             </div>
-
-            <div className={styles.modalFooter} style={{ justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', padding: '1rem 1.5rem' }}>
-              <button className={styles.createNewBtn} onClick={createNewDraft} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Plus size={16} /> Create New Draft
-              </button>
-              <button className={styles.cancelBtn} onClick={() => setShowLoadModal(false)}>
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Save Modal */}
-      {showSaveModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowSaveModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2><Save size={20} /> Save Floor Plan</h2>
-              <button onClick={() => setShowSaveModal(false)}><X size={20} /></button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label>Floor Plan Name</label>
-                <input
-                  type="text"
-                  value={floorPlanName}
-                  onChange={(e) => setFloorPlanName(e.target.value)}
-                  placeholder={`${selectedBuilding} - Floor ${selectedFloor}`}
-                  className={styles.modalInput}
-                />
+      {
+        showSaveModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowSaveModal(false)}>
+            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2><Save size={20} /> Save Floor Plan</h2>
+                <button onClick={() => setShowSaveModal(false)}><X size={20} /></button>
               </div>
-              <div className={styles.formGroup}>
-                <label>Link to Schedule (for Live View)</label>
-                <select
-                  value={selectedScheduleId || ''}
-                  onChange={(e) => setSelectedScheduleId(Number(e.target.value) || null)}
-                  className={styles.modalSelect}
-                >
-                  <option value="">No linked schedule</option>
-                  {schedules.map(s => (
-                    <option key={s.id} value={s.id}>{s.schedule_name} {s.is_default ? '(Default)' : ''}</option>
-                  ))}
-                </select>
+              <div className={styles.modalBody}>
+                <div className={styles.formGroup}>
+                  <label>Floor Plan Name</label>
+                  <input
+                    type="text"
+                    value={floorPlanName}
+                    onChange={(e) => setFloorPlanName(e.target.value)}
+                    placeholder={`${selectedBuilding} - Floor ${selectedFloor}`}
+                    className={styles.modalInput}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Link to Schedule (for Live View)</label>
+                  <select
+                    value={selectedScheduleId || ''}
+                    onChange={(e) => setSelectedScheduleId(Number(e.target.value) || null)}
+                    className={styles.modalSelect}
+                  >
+                    <option value="">No linked schedule</option>
+                    {schedules.map(s => (
+                      <option key={s.id} value={s.id}>{s.schedule_name} {s.is_default ? '(Default)' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.checkboxGroup}>
+                  <input
+                    type="checkbox"
+                    id="isDefault"
+                    checked={isDefault}
+                    onChange={(e) => setIsDefault(e.target.checked)}
+                  />
+                  <label htmlFor="isDefault">
+                    <Star size={16} />
+                    Set as default floor plan (faculty will see this)
+                  </label>
+                </div>
+                <div className={styles.checkboxGroup}>
+                  <input
+                    type="checkbox"
+                    id="isPublished"
+                    checked={isPublished}
+                    onChange={(e) => setIsPublished(e.target.checked)}
+                  />
+                  <label htmlFor="isPublished">
+                    <Eye size={16} />
+                    Publish floor plan (make visible to faculty)
+                  </label>
+                </div>
               </div>
-              <div className={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  id="isDefault"
-                  checked={isDefault}
-                  onChange={(e) => setIsDefault(e.target.checked)}
-                />
-                <label htmlFor="isDefault">
-                  <Star size={16} />
-                  Set as default floor plan (faculty will see this)
-                </label>
+              <div className={styles.modalFooter}>
+                <button className={styles.cancelBtn} onClick={() => setShowSaveModal(false)}>
+                  Cancel
+                </button>
+                <button className={styles.saveModalBtn} onClick={saveFloorPlan} disabled={saving}>
+                  {saving ? <RotateCcw size={16} className={styles.spinning} /> : <Save size={16} />}
+                  {saving ? 'Saving...' : 'Save Floor Plan'}
+                </button>
               </div>
-              <div className={styles.checkboxGroup}>
-                <input
-                  type="checkbox"
-                  id="isPublished"
-                  checked={isPublished}
-                  onChange={(e) => setIsPublished(e.target.checked)}
-                />
-                <label htmlFor="isPublished">
-                  <Eye size={16} />
-                  Publish floor plan (make visible to faculty)
-                </label>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setShowSaveModal(false)}>
-                Cancel
-              </button>
-              <button className={styles.saveModalBtn} onClick={saveFloorPlan} disabled={saving}>
-                {saving ? <RotateCcw size={16} className={styles.spinning} /> : <Save size={16} />}
-                {saving ? 'Saving...' : 'Save Floor Plan'}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
 
 
@@ -3658,7 +4045,7 @@ export default function MapViewerPage() {
                   <input
                     type="text"
                     readOnly
-                    value={currentFloorPlan?.id ? `${typeof window !== 'undefined' ? window.location.origin : ''}/floor-plan/view/${currentFloorPlan.id}` : 'Save floor plan first'}
+                    value={currentFloorPlan?.id ? `${mounted ? window.location.origin : ''}/floor-plan/view/${currentFloorPlan.id}` : 'Save floor plan first'}
                     className={styles.modalInput}
                   />
                   <button
@@ -3688,30 +4075,39 @@ export default function MapViewerPage() {
         )
       }
 
-      {/* Mobile Floating Action Buttons */}
+      {/* Mobile Floating Action Buttons - shown in all view modes */}
       {
-        showMobileFAB && viewMode === 'editor' && (
+        showMobileFAB && (
           <div className={styles.mobileFAB}>
+            {viewMode === 'editor' && (
+              <button
+                className={`${styles.fabButton} ${activeMobilePanel === 'toolbox' ? styles.active : ''}`}
+                onClick={() => toggleMobilePanel('toolbox')}
+                title="Toolbox"
+              >
+                <Wrench size={20} />
+              </button>
+            )}
             <button
-              className={`${styles.fabButton} ${activeMobilePanel === 'toolbox' ? styles.active : ''}`}
-              onClick={() => toggleMobilePanel('toolbox')}
-              title="Toolbox"
+              className={`${styles.fabButton} ${activeMobilePanel === 'properties' ? styles.active : ''}`}
+              onClick={() => toggleMobilePanel('properties')}
+              title={viewMode === 'editor' ? "Properties" : "Room Info"}
             >
-              <Wrench size={22} />
+              {viewMode === 'editor' ? <Settings size={20} /> : <Info size={20} />}
+            </button>
+            <button
+              className={`${styles.fabButton} ${activeMobilePanel === 'floorPlans' ? styles.active : ''}`}
+              onClick={() => toggleMobilePanel('floorPlans')}
+              title="Floor Plans"
+            >
+              <FileText size={20} />
             </button>
             <button
               className={styles.fabButton}
               onClick={() => setShowLoadModal(true)}
               title="Load Floor Plan"
             >
-              <FolderOpen size={22} />
-            </button>
-            <button
-              className={`${styles.fabButton} ${activeMobilePanel === 'properties' ? styles.active : ''}`}
-              onClick={() => toggleMobilePanel('properties')}
-              title="Properties"
-            >
-              <Settings size={22} />
+              <FolderOpen size={20} />
             </button>
           </div>
         )
@@ -3745,3 +4141,4 @@ export default function MapViewerPage() {
     </div >
   )
 }
+

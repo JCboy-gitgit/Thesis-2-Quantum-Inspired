@@ -29,10 +29,11 @@ import './Sidebar.css'
 
 interface SidebarProps {
   isOpen: boolean
+  onClose?: () => void
   menuBarHidden?: boolean
 }
 
-export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   // Track open state for each submenu by index
@@ -166,55 +167,61 @@ export default function Sidebar({ isOpen, menuBarHidden }: SidebarProps) {
   }
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : 'closed'} ${menuBarHidden ? 'menuHidden' : ''}`}>
-      <nav className="sidebar-nav">
-        {menuItems.map((item, index) => (
-          <div key={index}>
-            {item.hasSubmenu ? (
-              <>
+    <>
+      <div
+        className={`sidebar-overlay ${isOpen ? 'active' : ''}`}
+        onClick={onClose}
+      />
+      <aside className={`sidebar ${isOpen ? 'open' : 'closed'} ${menuBarHidden ? 'menuHidden' : ''}`}>
+        <nav className="sidebar-nav">
+          {menuItems.map((item, index) => (
+            <div key={index}>
+              {item.hasSubmenu ? (
+                <>
+                  <button
+                    onClick={() => toggleSubmenu(index)}
+                    className={`sidebar-item ${openSubmenus[index] ? 'active' : ''}`}
+                    aria-expanded={openSubmenus[index] ? 'true' : 'false'}
+                    aria-controls={`submenu-${index}`}
+                  >
+                    <item.icon className="sidebar-icon" size={20} />
+                    <span className="sidebar-label">{item.label}</span>
+                    {openSubmenus[index] ? (
+                      <MdKeyboardArrowDown className="submenu-icon" size={16} />
+                    ) : (
+                      <MdKeyboardArrowRight className="submenu-icon" size={16} />
+                    )}
+                  </button>
+                  {openSubmenus[index] && (
+                    <div className="submenu" id={`submenu-${index}`}>
+                      {item.submenu?.map((subItem, subIndex) => (
+                        <button
+                          key={subIndex}
+                          onClick={() => handleNavigation(subItem.path)}
+                          className={`submenu-item ${isActiveSubmenu(subItem) ? 'active' : ''}`}
+                          aria-current={isActiveSubmenu(subItem) ? 'page' : undefined}
+                        >
+                          {subItem.icon && <subItem.icon className="submenu-item-icon" size={16} />}
+                          <span>{subItem.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
                 <button
-                  onClick={() => toggleSubmenu(index)}
-                  className={`sidebar-item ${openSubmenus[index] ? 'active' : ''}`}
-                  aria-expanded={openSubmenus[index] ? 'true' : 'false'}
-                  aria-controls={`submenu-${index}`}
+                  onClick={() => handleNavigation(item.path ?? '/')}
+                  className={`sidebar-item ${pathname === item.path ? 'active' : ''}`}
+                  aria-current={pathname === item.path ? 'page' : undefined}
                 >
                   <item.icon className="sidebar-icon" size={20} />
                   <span className="sidebar-label">{item.label}</span>
-                  {openSubmenus[index] ? (
-                    <MdKeyboardArrowDown className="submenu-icon" size={16} />
-                  ) : (
-                    <MdKeyboardArrowRight className="submenu-icon" size={16} />
-                  )}
                 </button>
-                {openSubmenus[index] && (
-                  <div className="submenu" id={`submenu-${index}`}>
-                    {item.submenu?.map((subItem, subIndex) => (
-                      <button
-                        key={subIndex}
-                        onClick={() => handleNavigation(subItem.path)}
-                        className={`submenu-item ${isActiveSubmenu(subItem) ? 'active' : ''}`}
-                        aria-current={isActiveSubmenu(subItem) ? 'page' : undefined}
-                      >
-                        {subItem.icon && <subItem.icon className="submenu-item-icon" size={16} />}
-                        <span>{subItem.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <button
-                onClick={() => handleNavigation(item.path ?? '/')}
-                className={`sidebar-item ${pathname === item.path ? 'active' : ''}`}
-                aria-current={pathname === item.path ? 'page' : undefined}
-              >
-                <item.icon className="sidebar-icon" size={20} />
-                <span className="sidebar-label">{item.label}</span>
-              </button>
-            )}
-          </div>
-        ))}
-      </nav>
-    </aside>
+              )}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </>
   )
 }

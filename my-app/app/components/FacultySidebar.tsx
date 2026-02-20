@@ -39,6 +39,10 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
 
   const handleLogout = async () => {
     try {
+      // Sync current theme to login preference
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'
+      localStorage.setItem('login-theme-preference', currentTheme === 'dark' ? 'dark' : 'light')
+
       await supabase.auth.signOut()
       router.push('/')
     } catch (error) {

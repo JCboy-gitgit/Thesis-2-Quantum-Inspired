@@ -945,19 +945,23 @@ function FacultyCollegesContent() {
       const fileName = `faculty_${selectedFacultyProfile.id}_${Date.now()}.${fileExt}`
       const filePath = `faculty-avatars/${fileName}`
 
-      // Upload to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(filePath, file, { upsert: true })
+      // 🚀 Admin Priority: Upload via API route to bypass RLS restrictions
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('filePath', filePath)
+      formData.append('bucket', 'profile-images')
 
-      if (uploadError) throw uploadError
+      const response = await fetch('/api/faculty/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
 
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Upload failed')
+      }
 
-      const publicUrl = publicUrlData.publicUrl
+      const { publicUrl } = await response.json()
 
       // Update faculty_profiles table
       const { error: updateError } = await supabase
@@ -1365,7 +1369,7 @@ function FacultyCollegesContent() {
     return (
       <div className={styles.layout} data-page="admin">
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
             <div className={styles.spinner}></div>
@@ -1379,7 +1383,7 @@ function FacultyCollegesContent() {
   return (
     <div className={styles.layout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.container}>
           {/* Breadcrumb / Navigation Bar */}
@@ -2876,3 +2880,4 @@ export default function FacultyCollegesPage() {
     </Suspense>
   )
 }
+

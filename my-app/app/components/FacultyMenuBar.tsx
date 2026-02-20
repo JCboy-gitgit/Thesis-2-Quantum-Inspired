@@ -225,6 +225,10 @@ export default function FacultyMenuBar({
 
   const handleLogout = async () => {
     try {
+      // Sync current theme to login preference before logging out
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light'
+      localStorage.setItem('login-theme-preference', currentTheme === 'dark' ? 'dark' : 'light')
+
       await clearBrowserCaches()
       await supabase.auth.signOut()
       router.push('/')
@@ -245,8 +249,8 @@ export default function FacultyMenuBar({
       {/* Main Header - Theme & College Theme Aware */}
       <header
         className={`fixed top-0 left-0 right-0 h-14 sm:h-16 md:h-[70px] flex items-center justify-between px-3 sm:px-4 md:px-8 backdrop-blur-md border-b-2 z-[90] transition-all duration-300 shadow-lg ${isHidden ? '-translate-y-full' : ''} ${isLightMode
-            ? `bg-white/95 ${colors.border}`
-            : `bg-slate-900/95 ${colors.border}`
+          ? `bg-white/95 ${colors.border}`
+          : `bg-slate-900/95 ${colors.border}`
           }`}
         style={{ ['--menu-accent' as string]: colors.primary, ['--menu-accent-rgb' as string]: colors.primaryRgb }}
       >
@@ -302,8 +306,8 @@ export default function FacultyMenuBar({
         {/* Toggle Arrow Button - inside header */}
         <button
           className={`absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 border-2 border-t-0 rounded-b-xl cursor-pointer flex items-center justify-center transition-all z-[91] shadow-lg faculty-menu-btn ${isLightMode
-              ? `bg-white/95 ${colors.border} ${colors.text}`
-              : `bg-slate-900/95 ${colors.border} ${colors.text}`
+            ? `bg-white/95 ${colors.border} ${colors.text}`
+            : `bg-slate-900/95 ${colors.border} ${colors.text}`
             }`}
           style={{ ['--btn-hover-border' as string]: colors.primary, ['--btn-hover-bg' as string]: `rgba(${colors.primaryRgb}, 0.1)` }}
           onClick={toggleHidden}
@@ -317,8 +321,8 @@ export default function FacultyMenuBar({
       {isHidden && (
         <button
           className={`fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 border-2 border-t-0 rounded-b-2xl cursor-pointer flex items-center justify-center transition-all z-[1001] shadow-lg hover:translate-y-1 faculty-menu-btn ${isLightMode
-              ? `bg-white/95 ${colors.border} ${colors.text}`
-              : `bg-slate-900/95 ${colors.border} ${colors.text}`
+            ? `bg-white/95 ${colors.border} ${colors.text}`
+            : `bg-slate-900/95 ${colors.border} ${colors.text}`
             }`}
           style={{ ['--btn-hover-border' as string]: colors.primary, ['--btn-hover-bg' as string]: `rgba(${colors.primaryRgb}, 0.1)` }}
           onClick={toggleHidden}
@@ -343,8 +347,8 @@ export default function FacultyMenuBar({
           {/* Dropdown Content */}
           <div
             className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[320px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-3 ${isLightMode
-                ? `bg-white ${colors.border}`
-                : `bg-slate-900 ${colors.border}`
+              ? `bg-white ${colors.border}`
+              : `bg-slate-900 ${colors.border}`
               }`}
             style={{ pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
@@ -352,8 +356,8 @@ export default function FacultyMenuBar({
             {/* Close Button */}
             <button
               className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isLightMode
-                  ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-                  : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                 }`}
               onClick={() => setShowNotifications(false)}
               type="button"
@@ -390,8 +394,8 @@ export default function FacultyMenuBar({
           {/* Menu Content */}
           <div
             className={`absolute right-4 sm:right-6 md:right-8 top-[70px] sm:top-[72px] w-[280px] max-w-[calc(100vw-32px)] border-2 rounded-2xl shadow-2xl p-2 ${isLightMode
-                ? `bg-white ${colors.border}`
-                : `bg-slate-900 ${colors.border}`
+              ? `bg-white ${colors.border}`
+              : `bg-slate-900 ${colors.border}`
               }`}
             style={{ pointerEvents: 'auto' }}
             onClick={(e) => e.stopPropagation()}
@@ -399,8 +403,8 @@ export default function FacultyMenuBar({
             {/* Close Button */}
             <button
               className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isLightMode
-                  ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-                  : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                ? 'bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                 }`}
               onClick={() => setShowUserMenu(false)}
               type="button"
@@ -422,8 +426,8 @@ export default function FacultyMenuBar({
             {/* Profile Button */}
             <button
               className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
-                  ? `text-gray-700`
-                  : `text-white/90`
+                ? `text-gray-700`
+                : `text-white/90`
                 }`}
               style={{ ['--tw-bg-opacity' as string]: '0.1', ['--item-hover-color' as string]: colors.primary }}
               onClick={() => {
@@ -439,8 +443,8 @@ export default function FacultyMenuBar({
             {/* Settings Button */}
             <button
               className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
-                  ? `text-gray-700`
-                  : `text-white/90`
+                ? `text-gray-700`
+                : `text-white/90`
                 }`}
               style={{ ['--item-hover-color' as string]: colors.primary }}
               onClick={() => {
@@ -457,8 +461,8 @@ export default function FacultyMenuBar({
             {isInstallable && (
               <button
                 className={`w-full p-3 bg-transparent border-none rounded-xl cursor-pointer flex items-center gap-3 text-sm font-medium transition-all text-left faculty-menu-item ${isLightMode
-                    ? `text-gray-700`
-                    : `text-white/90`
+                  ? `text-gray-700`
+                  : `text-white/90`
                   }`}
                 style={{ ['--item-hover-color' as string]: colors.primary }}
                 onClick={handleInstallClick}

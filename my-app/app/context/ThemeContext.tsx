@@ -128,29 +128,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   // Separate theme storage keys for admin and faculty to prevent conflicts
-  const getThemeStorageKey = (isFaculty: boolean) => 
+  const getThemeStorageKey = (isFaculty: boolean) =>
     isFaculty ? 'faculty-base-theme' : 'admin-base-theme'
-  
-  const getCollegeThemeStorageKey = (isFaculty: boolean) => 
+
+  const getCollegeThemeStorageKey = (isFaculty: boolean) =>
     isFaculty ? 'faculty-college-theme' : 'admin-college-theme'
 
   // Use useLayoutEffect to apply theme BEFORE paint - prevents flash
   useLayoutEffect(() => {
     const isFacultyPage = pathname?.startsWith('/faculty') ?? false
     const isLoginPage = pathname === '/' || pathname === '/login'
-    
+
     // Skip theme management for login page (it has its own styles)
     if (isLoginPage) return
-    
+
     const themeKey = getThemeStorageKey(isFacultyPage)
     const savedTheme = localStorage.getItem(themeKey) as BaseTheme
-    
+
     // Define valid themes
     const allowedThemes: BaseTheme[] = ['green', 'light', 'dark']
-    
+
     // Determine the correct theme for this context
     let themeToApply: BaseTheme
-    
+
     if (savedTheme && allowedThemes.includes(savedTheme)) {
       // Use saved theme, but enforce light/dark for faculty (never green)
       if (isFacultyPage) {
@@ -162,13 +162,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // Default: green for admin, light for faculty
       themeToApply = isFacultyPage ? 'light' : 'green'
     }
-    
+
     // Apply the theme
     setThemeState(themeToApply)
     document.documentElement.setAttribute('data-theme', themeToApply)
     // Keep body in sync to prevent stale ancestor selector conflicts
     document.body.setAttribute('data-theme', themeToApply)
-    
+
     // For faculty pages, also clear any admin-specific body classes
     if (isFacultyPage) {
       const adminClasses = ['admin-dashboard', 'admin-page', 'green', 'admin', 'admin-layout']
@@ -177,7 +177,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         document.documentElement.classList.remove(cls)
       })
     }
-    
+
   }, [pathname])
 
   // Initial mount: set up college theme
@@ -217,6 +217,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const storageKey = getThemeStorageKey(isFacultyPage)
     setThemeState(normalizedTheme)
     localStorage.setItem(storageKey, normalizedTheme)
+    // Sync with login page preference as well
+    localStorage.setItem('login-theme-preference', normalizedTheme)
     document.documentElement.setAttribute('data-theme', normalizedTheme)
     document.body.setAttribute('data-theme', normalizedTheme)
   }

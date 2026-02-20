@@ -95,6 +95,14 @@ function PageContent(): JSX.Element {
   // Login page theme (independent of app theme)
   const [loginTheme, setLoginTheme] = useState<'dark' | 'light'>('light')
 
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('login-theme-preference')
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      setLoginTheme(savedTheme)
+    }
+  }, [])
+
   // Particle data
   const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
   const [sparkleParticles, setSparkleParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
@@ -258,6 +266,12 @@ function PageContent(): JSX.Element {
         if (staySignedIn) {
           localStorage.setItem('adminStaySignedIn', 'true')
         }
+
+        // Default admin to green mode regardless of login theme
+        localStorage.setItem('admin-base-theme', 'green')
+        document.documentElement.setAttribute('data-theme', 'green')
+        document.body.setAttribute('data-theme', 'green')
+
         setLoginMessage('Admin login successful. Redirecting...')
         sessionStorage.setItem('sidebar_fresh_login', 'true')
         setTimeout(() => {
@@ -331,13 +345,15 @@ function PageContent(): JSX.Element {
       }
 
       // Set theme before navigation
-      const savedTheme = localStorage.getItem('faculty-base-theme') || 'light'
+      // Sync theme to faculty preference
+      localStorage.setItem('faculty-base-theme', loginTheme)
       const savedCollegeTheme = localStorage.getItem('faculty-college-theme') || 'default'
-      const effectiveTheme = savedTheme === 'green' ? 'light' : savedTheme
+
+      const effectiveTheme = loginTheme
       document.documentElement.setAttribute('data-theme', effectiveTheme)
       document.body.setAttribute('data-theme', effectiveTheme)
 
-      const bgColor = savedTheme === 'green' ? '#f0fdf4' : (savedTheme === 'light' ? '#f5f7fa' : '#0a0e27')
+      const bgColor = effectiveTheme === 'light' ? '#f5f7fa' : '#0a0e27'
       document.body.style.backgroundColor = bgColor
       document.documentElement.style.backgroundColor = bgColor
 
@@ -426,7 +442,9 @@ function PageContent(): JSX.Element {
 
   // Toggle login page theme
   const toggleLoginTheme = () => {
-    setLoginTheme(prev => prev === 'dark' ? 'light' : 'dark')
+    const newTheme = loginTheme === 'dark' ? 'light' : 'dark'
+    setLoginTheme(newTheme)
+    localStorage.setItem('login-theme-preference', newTheme)
   }
 
   // Theme toggle button SVGs
