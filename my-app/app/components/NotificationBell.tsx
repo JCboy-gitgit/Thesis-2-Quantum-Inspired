@@ -175,7 +175,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       const regData = await regResponse.json()
 
       const registrationNotifs: Notification[] = (regData.registrations || [])
-        .filter((reg: any) => !archivedIds.includes(`reg_${reg.id}`))
+        .filter((reg: any) => !archivedIds.includes(`reg_${reg.id}`) && reg.email !== 'system_event_placeholder@qtime.local')
         .map((reg: any) => ({
           id: `reg_${reg.id}`,
           type: 'registration' as const,

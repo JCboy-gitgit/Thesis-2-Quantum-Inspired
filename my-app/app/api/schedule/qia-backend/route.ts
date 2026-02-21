@@ -736,6 +736,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
       department: entry.department || classData?.department || 'N/A',
       lec_hours: entry.lec_hours || classData?.lec_hours || 0,
       lab_hours: entry.lab_hours || classData?.lab_hours || 0,
+      component: entry.component || (entry.requires_lab ? 'LAB' : 'LEC'),
       is_online: entry.is_online || false  // BulSU QSA: Online class flag
     }
   }) || []

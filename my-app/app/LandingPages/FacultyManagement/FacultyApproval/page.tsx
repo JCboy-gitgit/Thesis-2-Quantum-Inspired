@@ -68,7 +68,12 @@ export default function FacultyApprovalPage() {
         throw new Error(data.error)
       }
 
-      setRegistrations(data.registrations || [])
+      // Hide the dummy system account from the approval list
+      const cleanRegistrations = (data.registrations || []).filter(
+        (reg: FacultyRegistration) => reg.email !== 'system_event_placeholder@qtime.local'
+      )
+
+      setRegistrations(cleanRegistrations)
     } catch (error: any) {
       console.error('Error fetching registrations:', error)
       setMessage({ type: 'error', text: error.message || 'Failed to fetch registrations' })

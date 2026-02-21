@@ -2702,7 +2702,8 @@
   height: 40px;
   background: var(--bg-white);
   position: relative;
-  overflow: visible;
+  overflow: hidden;
+  /* Prevent overflow into other cells */
 }
 
 .spanningCell {
@@ -2720,6 +2721,27 @@
   position: relative;
   z-index: 5;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.allocationCard.labClass {
+  border-left: 4px solid #ef4444;
+  /* Distinct red border for LAB */
+}
+
+.componentBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 7px;
+  font-weight: 800;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .allocationCard.onlineClass {

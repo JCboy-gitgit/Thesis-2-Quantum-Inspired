@@ -1,0 +1,245 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-primary, #f8fafc);
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+    padding-left: 280px;
+}
+
+.fullWidth {
+    padding-left: 0;
+}
+
+.container {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.backBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #64748b;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.backBtn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+}
+
+.content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.controlPanel {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+}
+
+.formGroup label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.select {
+    padding: 10px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 15px;
+    min-width: 300px;
+    outline: none;
+    background: #f8fafc;
+    color: #1e293b;
+    transition: border-color 0.2s;
+}
+
+.select:focus {
+    border-color: #10b981;
+}
+
+.saveBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s;
+}
+
+.saveBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.saveBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.gridContainer {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grid th,
+.grid td {
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.timeHeader {
+    width: 100px;
+    padding: 12px;
+    background: #f8fafc;
+    font-weight: 600;
+    font-size: 13px;
+    color: #64748b;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.dayHeader {
+    padding: 12px;
+    background: #f8fafc;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.timeCell {
+    padding: 8px;
+    background: #f8fafc;
+    font-weight: 500;
+    font-size: 12px;
+    color: #64748b;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    border-right: 2px solid #e2e8f0;
+    vertical-align: top;
+    line-height: 1;
+}
+
+.cellBase {
+    height: 24px;
+    cursor: pointer;
+    background: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.cellBase:hover {
+    background-color: #f1f5f9;
+}
+
+.cellPreferred {
+    background-color: #10b981 !important;
+    /* Green */
+    border-color: #059669;
+}
+
+.cellPreferred:hover {
+    background-color: #059669 !important;
+}
+
+.cellNotPreferred {
+    background-color: #ef4444 !important;
+    /* Red */
+    border-color: #dc2626;
+}
+
+.cellNotPreferred:hover {
+    background-color: #dc2626 !important;
+}
+
+/* Dark theme specific fixes if needed can be added via global selectors */
+:global([data-theme="dark"]) .content {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+}
+
+:global([data-theme="dark"]) .title {
+    color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .grid th,
+:global([data-theme="dark"]) .grid td {
+    border-color: #334155;
+}
+
+:global([data-theme="dark"]) .timeHeader,
+:global([data-theme="dark"]) .dayHeader,
+:global([data-theme="dark"]) .timeCell {
+    background: #1e293b;
+    color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .cellBase:hover {
+    background-color: #334155;
+}
+
+:global([data-theme="dark"]) .select {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+}

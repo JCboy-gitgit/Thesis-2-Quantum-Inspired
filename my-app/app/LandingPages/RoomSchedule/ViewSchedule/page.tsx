@@ -61,7 +61,7 @@ interface ApprovedFaculty {
 }
 
 // ==================== Types ====================
-type TimetableViewMode = 'all' | 'room' | 'section' | 'teacher' | 'course'
+type TimetableViewMode = 'all' | 'room' | 'section' | 'teacher' | 'course' | 'college'
 
 interface OptimizationStats {
   initial_cost?: number
@@ -189,12 +189,15 @@ export default function ViewSchedulePage() {
   const [selectedSection, setSelectedSection] = useState<string>('all')
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all')
   const [selectedCourse, setSelectedCourse] = useState<string>('all')
+  const [selectedCollege, setSelectedCollege] = useState<string>('all')
 
   // Search states for view mode selectors
   const [roomSearchFilter, setRoomSearchFilter] = useState('')
   const [sectionSearchFilter, setSectionSearchFilter] = useState('')
   const [teacherSearchFilter, setTeacherSearchFilter] = useState('')
   const [courseSearchFilter, setCourseSearchFilter] = useState('')
+  const [collegeSearchFilter, setCollegeSearchFilter] = useState('')
+  const [filterCollege, setFilterCollege] = useState<string>('all')
 
   // Timetable ref for export
   const timetableRef = useRef<HTMLDivElement>(null)
@@ -217,6 +220,7 @@ export default function ViewSchedulePage() {
   const [sections, setSections] = useState<string[]>([])
   const [teachers, setTeachers] = useState<string[]>([])
   const [courses, setCourses] = useState<string[]>([])
+  const [colleges, setColleges] = useState<string[]>([])
 
   // Building-Room mapping for connected filters
   const [buildingRoomMap, setBuildingRoomMap] = useState<Map<string, string[]>>(new Map())
@@ -279,7 +283,7 @@ export default function ViewSchedulePage() {
   // Reset timetable index when view mode or selections change
   useEffect(() => {
     setCurrentTimetableIndex(0)
-  }, [timetableViewMode, selectedRoom, selectedSection, selectedTeacher, selectedCourse, filterBuilding, filterRoom, filterDay, searchQuery])
+  }, [timetableViewMode, selectedRoom, selectedSection, selectedTeacher, selectedCourse, selectedCollege, filterBuilding, filterRoom, filterDay, filterCollege, searchQuery])
 
   const checkAuth = async (): Promise<boolean> => {
     try {
@@ -650,6 +654,7 @@ export default function ViewSchedulePage() {
         ).filter((s: any): s is string => !!s))]
         const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
         const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
+        const uniqueColleges: string[] = [...new Set(enrichedAllocations.map((a: any) => a.college).filter((c: any): c is string => !!c))].sort()
 
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
@@ -670,6 +675,7 @@ export default function ViewSchedulePage() {
         setSections(uniqueSections)
         setTeachers(uniqueTeachers)
         setCourses(uniqueCourses)
+        setColleges(uniqueColleges)
         setBuildingRoomMap(brMap)
       } else {
         // Try to build allocations from class_schedules and campuses
@@ -836,9 +842,14 @@ export default function ViewSchedulePage() {
       filtered = filtered.filter(a => a.teacher_name === selectedTeacher)
     } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
       filtered = filtered.filter(a => a.course_code === selectedCourse)
+    } else if (timetableViewMode === 'college' && selectedCollege !== 'all') {
+      filtered = filtered.filter(a => a.college === selectedCollege)
     }
 
     // Apply additional filters
+    if (filterCollege !== 'all') {
+      filtered = filtered.filter(a => a.college === filterCollege)
+    }
     if (filterBuilding !== 'all') {
       filtered = filtered.filter(a => a.building === filterBuilding)
     }
@@ -2137,7 +2148,7 @@ export default function ViewSchedulePage() {
                 <div className={styles.viewModeButtons}>
                   <button
                     className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
-                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); }}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); setSelectedCollege('all'); }}
                   >
                     <MdGridView size={16} /> All
                   </button>
@@ -2164,6 +2175,12 @@ export default function ViewSchedulePage() {
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('course'); }}
                   >
                     <MdMenuBook size={16} /> By Course
+                  </button>
+                  <button
+                    className={`${styles.viewModeButton} ${timetableViewMode === 'college' ? styles.active : ''}`}
+                    onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('college'); }}
+                  >
+                    <MdSchool size={16} /> By College
                   </button>
                 </div>
 
@@ -2304,10 +2321,57 @@ export default function ViewSchedulePage() {
                     </div>
                   </div>
                 )}
+                {timetableViewMode === 'college' && (
+                  <div className={styles.viewModeSelector}>
+                    <label>Select College:</label>
+                    <div className={styles.searchableSelect}>
+                      <div className={styles.searchInputWrapper}>
+                        <MdSearch size={14} />
+                        <input
+                          type="text"
+                          placeholder="Search colleges..."
+                          value={collegeSearchFilter}
+                          onChange={(e) => setCollegeSearchFilter(e.target.value)}
+                          className={styles.selectSearchInput}
+                        />
+                        {collegeSearchFilter && (
+                          <button onClick={() => setCollegeSearchFilter('')} className={styles.clearSelectSearch}>
+                            <MdClose size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <select
+                        value={selectedCollege}
+                        onChange={(e) => setSelectedCollege(e.target.value)}
+                        className={styles.viewModeSelect}
+                      >
+                        <option value="all">All Colleges ({colleges.length})</option>
+                        {colleges
+                          .filter(c => c.toLowerCase().includes(collegeSearchFilter.toLowerCase()))
+                          .map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Filters */}
               <div className={styles.filtersBar}>
+                <div className={styles.filterGroup}>
+                  <label>College</label>
+                  <select
+                    value={filterCollege}
+                    onChange={(e) => setFilterCollege(e.target.value)}
+                    className={styles.filterSelect}
+                  >
+                    <option value="all">All Colleges</option>
+                    {colleges.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className={styles.filterGroup}>
                   <label>Building</label>
                   <select
@@ -2397,6 +2461,8 @@ export default function ViewSchedulePage() {
                             {timetableViewMode === 'teacher' && selectedTeacher === 'all' && 'All Teachers Timetable'}
                             {timetableViewMode === 'course' && selectedCourse !== 'all' && `Course Timetable: ${selectedCourse}`}
                             {timetableViewMode === 'course' && selectedCourse === 'all' && 'All Courses Timetable'}
+                            {timetableViewMode === 'college' && selectedCollege !== 'all' && `College Timetable: ${selectedCollege}`}
+                            {timetableViewMode === 'college' && selectedCollege === 'all' && 'All Colleges Timetable'}
                           </h3>
                           <p className={styles.timetableSubtitle}>
                             {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations

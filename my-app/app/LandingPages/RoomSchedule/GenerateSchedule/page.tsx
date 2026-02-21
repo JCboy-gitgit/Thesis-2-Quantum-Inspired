@@ -140,6 +140,30 @@ interface ScheduleConfig {
   strictLabRoomMatching: boolean // NEW
   strictLectureRoomMatching: boolean // NEW
   allowSplitSessions: boolean // NEW
+  // NEW: Soft Constraint Penalties (Fine-tuning)
+  softRoomTypeMismatch: number
+  softRoomTypeMajorMismatch: number
+  softCapacityWaste: number
+  softLunchOverlap: number
+  softTeacherOverload: number
+  softAccessibilityBonus: number
+  softMorningPreference: number
+  softDayDistribution: number
+  softSiblingDifferentDay: number
+  softOverloadedTeacher: number
+  softTeacherNoBreak: number
+  softConsecutiveHoursExceeded: number
+  softFacultyIdleTime: number
+  softLoadImbalance: number
+  softLateClass: number
+  softRoomIdleGap: number
+  softUnevenSectionDist: number
+  softConsecutiveDayPenalty: number
+  softSectionGap: number
+  softFacultyNightClass: number
+  softFacultyDailySpan: number
+  softVslShiftMismatch: number
+  softPartTimeSaturday: number
 }
 
 interface TimeSettings {
@@ -305,9 +329,32 @@ export default function GenerateSchedulePage() {
     lunchMode: 'auto',
     lunchStartHour: 13, // 1:00 PM
     lunchEndHour: 14,   // 2:00 PM
-    strictLabRoomMatching: true,
     strictLectureRoomMatching: true,
     allowSplitSessions: true,
+    // Soft Penalties Defaults
+    softRoomTypeMismatch: 50,
+    softRoomTypeMajorMismatch: 500,
+    softCapacityWaste: 15,
+    softLunchOverlap: 500,
+    softTeacherOverload: 80,
+    softAccessibilityBonus: -10,
+    softMorningPreference: 5,
+    softDayDistribution: 20,
+    softSiblingDifferentDay: 100,
+    softOverloadedTeacher: 200,
+    softTeacherNoBreak: 1000,
+    softConsecutiveHoursExceeded: 500,
+    softFacultyIdleTime: 200,
+    softLoadImbalance: 300,
+    softLateClass: 150,
+    softRoomIdleGap: 100,
+    softUnevenSectionDist: 250,
+    softConsecutiveDayPenalty: 0,
+    softSectionGap: 50,
+    softFacultyNightClass: 200,
+    softFacultyDailySpan: 500,
+    softVslShiftMismatch: 500,
+    softPartTimeSaturday: 2000,
   })
 
   // Time Configuration
@@ -1117,7 +1164,9 @@ export default function GenerateSchedulePage() {
               semester: course.semester || '',
               academic_year: course.academic_year || '',
               teacher_name: assignedTeacher?.faculty_name || '',
-              required_features: reqMap.get(courseId) || []
+              required_features: reqMap.get(courseId) || [],
+              component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
+                (course.lab_hours > 0) ? 'LAB' : 'LEC'
             })
           }
         }
@@ -1255,7 +1304,9 @@ export default function GenerateSchedulePage() {
               semester: course.semester || '',
               academic_year: course.academic_year || '',
               teacher_name: assignedTeacher?.faculty_name || '',
-              required_features: reqMap.get(courseId) || []
+              required_features: reqMap.get(courseId) || [],
+              component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
+                (course.lab_hours > 0) ? 'LAB' : 'LEC'
             })
           }
         }
@@ -1503,8 +1554,32 @@ export default function GenerateSchedulePage() {
           lunch_start_hour: config.lunchStartHour,
           lunch_end_hour: config.lunchEndHour,
           strict_lab_room_matching: config.strictLabRoomMatching,
-          strict_lecture_room_matching: config.strictLectureRoomMatching,
+          strictLectureRoomMatching: config.strictLectureRoomMatching,
           allow_split_sessions: config.allowSplitSessions,
+          // Soft Penalties
+          SOFT_ROOM_TYPE_MISMATCH: config.softRoomTypeMismatch,
+          SOFT_ROOM_TYPE_MAJOR_MISMATCH: config.softRoomTypeMajorMismatch,
+          SOFT_CAPACITY_WASTE: config.softCapacityWaste,
+          SOFT_LUNCH_OVERLAP: config.softLunchOverlap,
+          SOFT_TEACHER_OVERLOAD: config.softTeacherOverload,
+          SOFT_ACCESSIBILITY_BONUS: config.softAccessibilityBonus,
+          SOFT_MORNING_PREFERENCE: config.softMorningPreference,
+          SOFT_DAY_DISTRIBUTION: config.softDayDistribution,
+          SOFT_SIBLING_DIFFERENT_DAY: config.softSiblingDifferentDay,
+          SOFT_OVERLOADED_TEACHER: config.softOverloadedTeacher,
+          SOFT_TEACHER_NO_BREAK: config.softTeacherNoBreak,
+          SOFT_CONSECUTIVE_HOURS_EXCEEDED: config.softConsecutiveHoursExceeded,
+          SOFT_FACULTY_IDLE_TIME: config.softFacultyIdleTime,
+          SOFT_LOAD_IMBALANCE: config.softLoadImbalance,
+          SOFT_LATE_CLASS: config.softLateClass,
+          SOFT_ROOM_IDLE_GAP: config.softRoomIdleGap,
+          SOFT_UNEVEN_SECTION_DIST: config.softUnevenSectionDist,
+          SOFT_CONSECUTIVE_DAY_PENALTY: config.softConsecutiveDayPenalty,
+          SOFT_SECTION_GAP: config.softSectionGap,
+          SOFT_FACULTY_NIGHT_CLASS: config.softFacultyNightClass,
+          SOFT_FACULTY_DAILY_SPAN: config.softFacultyDailySpan,
+          SOFT_VSL_SHIFT_MISMATCH: config.softVslShiftMismatch,
+          SOFT_PART_TIME_SATURDAY: config.softPartTimeSaturday,
         },
         manual_allocations: manualAllocations // NEW: Manual edits to prioritize
       }
@@ -1708,8 +1783,42 @@ export default function GenerateSchedulePage() {
   const handleNewSchedule = () => {
     setShowResults(false)
     setScheduleResult(null)
+    setManualAllocations([])
     setConfig(prev => ({ ...prev, scheduleName: '' }))
     goToStep(1)
+  }
+
+  // Reset penalties to default values
+  const resetPenalties = () => {
+    setConfig(prev => ({
+      ...prev,
+      softRoomTypeMismatch: 50,
+      softRoomTypeMajorMismatch: 500,
+      softCapacityWaste: 15,
+      softLunchOverlap: 500,
+      softTeacherOverload: 80,
+      softAccessibilityBonus: -10,
+      softMorningPreference: 5,
+      softDayDistribution: 20,
+      softSiblingDifferentDay: 100,
+      softOverloadedTeacher: 200,
+      softTeacherNoBreak: 1000,
+      softConsecutiveHoursExceeded: 500,
+      softFacultyIdleTime: 200,
+      softLoadImbalance: 300,
+      softLateClass: 150,
+      softRoomIdleGap: 100,
+      softUnevenSectionDist: 250,
+      softConsecutiveDayPenalty: 0,
+      softSectionGap: 50,
+      softFacultyNightClass: 200,
+      softFacultyDailySpan: 500,
+      softVslShiftMismatch: 500,
+      softPartTimeSaturday: 2000,
+    }))
+    toast.info('Penalty settings reset to default values', {
+      icon: <FaSync className={styles.spinnerIcon} style={{ animation: 'none' }} />
+    })
   }
 
   // Export schedule to PDF
@@ -2564,6 +2673,7 @@ export default function GenerateSchedulePage() {
                           startMinutes: number;
                           endMinutes: number;
                           is_online: boolean;
+                          component: string;
                         };
 
                         const combinedBlocks: CombinedBlock[] = [];
@@ -2628,7 +2738,8 @@ export default function GenerateSchedulePage() {
                                 day: (alloc.schedule_day || '').toLowerCase(),
                                 startMinutes: startMins,
                                 endMinutes: endMins,
-                                is_online: alloc.is_online || false
+                                is_online: alloc.is_online || false,
+                                component: alloc.component || ''
                               };
                             }
                           });
@@ -2746,8 +2857,13 @@ export default function GenerateSchedulePage() {
                                                   justifyContent: 'flex-start',
                                                   boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
                                                 }}
-                                                title={`${block.course_code} - ${block.course_name}\nSection: ${block.section}\nRoom: ${block.room}\nTime: ${displayTimeRange}\nTeacher: ${block.teacher_name || 'TBD'}`}
+                                                title={`${block.course_code} - ${block.course_name}\nSection: ${block.section}\nRoom: ${block.room}\nTime: ${displayTimeRange}\nTeacher: ${block.teacher_name || 'TBD'}\nType: ${block.component || 'N/A'}`}
                                               >
+                                                {block.component && (
+                                                  <div className={styles.componentBadge}>
+                                                    {block.component}
+                                                  </div>
+                                                )}
                                                 <div style={{ fontWeight: 700, fontSize: '12px', marginBottom: '3px' }}>
                                                   {block.course_code || 'N/A'}
                                                 </div>
@@ -4326,6 +4442,124 @@ export default function GenerateSchedulePage() {
                     </div>
                   )}
 
+                  {/* Soft Constraint Penalties */}
+                  <div className={styles.formCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                      <h3 className={styles.formSectionTitle} style={{ margin: 0 }}>
+                        <FaBolt /> Soft Constraint Penalties (Fine-Tuning)
+                      </h3>
+                      <button
+                        className={styles.backButton}
+                        style={{ margin: 0, padding: '8px 16px', fontSize: '13px' }}
+                        onClick={resetPenalties}
+                      >
+                        <FaSync /> Reset to Defaults
+                      </button>
+                    </div>
+                    <div className={styles.timeConfigInfo}>
+                      <FaBolt size={20} />
+                      <p>Adjust these values to change how the algorithm prioritizes different soft constraints. Higher values mean the algorithm will try harder to avoid that specific issue. Use 0 to ignore a constraint.</p>
+                    </div>
+
+                    <div className={styles.penaltyGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '20px' }}>
+                      {/* Room & Capacity Penalties */}
+                      <div className={styles.penaltyGroup}>
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FaBuilding /> Room & Capacity
+                        </h4>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Room Type Mismatch <span className={styles.formHint}>Lecture in Lab or vice versa</span></label>
+                          <input type="number" className={styles.formInput} value={config.softRoomTypeMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMismatch: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Major Type Mismatch <span className={styles.formHint}>Specialized room mismatch</span></label>
+                          <input type="number" className={styles.formInput} value={config.softRoomTypeMajorMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMajorMismatch: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Capacity Waste <span className={styles.formHint}>Penalty per wasted seat</span></label>
+                          <input type="number" className={styles.formInput} value={config.softCapacityWaste} onChange={e => setConfig(p => ({ ...p, softCapacityWaste: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Accessibility Bonus <span className={styles.formHint}>Lower is better (negative value)</span></label>
+                          <input type="number" className={styles.formInput} value={config.softAccessibilityBonus} onChange={e => setConfig(p => ({ ...p, softAccessibilityBonus: parseInt(e.target.value) }))} />
+                        </div>
+                      </div>
+
+                      {/* Faculty Welfare Penalties */}
+                      <div className={styles.penaltyGroup}>
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FaChalkboardTeacher /> Faculty Welfare
+                        </h4>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Consecutive Hours <span className={styles.formHint}>Exceeding max hours without break</span></label>
+                          <input type="number" className={styles.formInput} value={config.softConsecutiveHoursExceeded} onChange={e => setConfig(p => ({ ...p, softConsecutiveHoursExceeded: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>No Break Penalty <span className={styles.formHint}>Missing required lunch break</span></label>
+                          <input type="number" className={styles.formInput} value={config.softTeacherNoBreak} onChange={e => setConfig(p => ({ ...p, softTeacherNoBreak: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Faculty Daily Span <span className={styles.formHint}>Penalty for >10hr daily span</span></label>
+                          <input type="number" className={styles.formInput} value={config.softFacultyDailySpan} onChange={e => setConfig(p => ({ ...p, softFacultyDailySpan: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Night Class Penalty <span className={styles.formHint}>FT faculty night class without preference</span></label>
+                          <input type="number" className={styles.formInput} value={config.softFacultyNightClass} onChange={e => setConfig(p => ({ ...p, softFacultyNightClass: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Idle Time Penalty <span className={styles.formHint}>Long gaps between classes</span></label>
+                          <input type="number" className={styles.formInput} value={config.softFacultyIdleTime} onChange={e => setConfig(p => ({ ...p, softFacultyIdleTime: parseInt(e.target.value) }))} />
+                        </div>
+                      </div>
+
+                      {/* Schedule Quality Penalties */}
+                      <div className={styles.penaltyGroup}>
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <MdTableChart /> Schedule Quality
+                        </h4>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Lunch Overlap <span className={styles.formHint}>Classes during lunch hours</span></label>
+                          <input type="number" className={styles.formInput} value={config.softLunchOverlap} onChange={e => setConfig(p => ({ ...p, softLunchOverlap: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Day Distribution <span className={styles.formHint}>Poor spreading across days</span></label>
+                          <input type="number" className={styles.formInput} value={config.softDayDistribution} onChange={e => setConfig(p => ({ ...p, softDayDistribution: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Uneven Section Dist <span className={styles.formHint}>Sections of same course on same day</span></label>
+                          <input type="number" className={styles.formInput} value={config.softUnevenSectionDist} onChange={e => setConfig(p => ({ ...p, softUnevenSectionDist: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Section Gap <span className={styles.formHint}>Long gaps between subject sessions</span></label>
+                          <input type="number" className={styles.formInput} value={config.softSectionGap} onChange={e => setConfig(p => ({ ...p, softSectionGap: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Late Class <span className={styles.formHint}>Penalty for classes after 6PM</span></label>
+                          <input type="number" className={styles.formInput} value={config.softLateClass} onChange={e => setConfig(p => ({ ...p, softLateClass: parseInt(e.target.value) }))} />
+                        </div>
+                      </div>
+
+                      {/* Professional Constraints */}
+                      <div className={styles.penaltyGroup}>
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FaUserGraduate /> Specific Rules
+                        </h4>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>VSL Shift Mismatch <span className={styles.formHint}>VSL faculty outside shift pref</span></label>
+                          <input type="number" className={styles.formInput} value={config.softVslShiftMismatch} onChange={e => setConfig(p => ({ ...p, softVslShiftMismatch: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Part-Time Sat <span className={styles.formHint}>Part-timers on Saturdays</span></label>
+                          <input type="number" className={styles.formInput} value={config.softPartTimeSaturday} onChange={e => setConfig(p => ({ ...p, softPartTimeSaturday: parseInt(e.target.value) }))} />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Morning Preference <span className={styles.formHint}>Bonus for morning sessions</span></label>
+                          <input type="number" className={styles.formInput} value={config.softMorningPreference} onChange={e => setConfig(p => ({ ...p, softMorningPreference: parseInt(e.target.value) }))} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Navigation & Generate */}
                   <div className={styles.stepNavigation}>
                     <button className={styles.backStepButton} onClick={() => goToStep(2)}>
@@ -4333,7 +4567,6 @@ export default function GenerateSchedulePage() {
                       Back
                     </button>
                   </div>
-
 
                   {/* Generate Button */}
                   <div className={styles.generateSection}>
@@ -4375,347 +4608,356 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
                 </div>
-              )}
-            </div>
+                </div>
           )}
         </div>
-      </main>
+          )}
+    </div>
+      </main >
 
-      {/* File Viewer Modal */}
-      {showClassFileViewer && (
-        <div className={styles.modalOverlay} onClick={closeFileViewer}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>
-                <MdMenuBook size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
-                  ? selectedBatchInfoList[0]?.year_batch
-                  : `${selectedBatchInfoList.length} Year Batches`}
-              </h2>
-              <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
-                <MdClose size={24} />
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {viewerLoading ? (
-                <div className={styles.modalLoading}>
-                  <FaSpinner className={styles.spinnerIcon} />
-                  <p>Loading data...</p>
-                </div>
-              ) : viewerData.length === 0 ? (
-                <div className={styles.modalEmpty}>
-                  <p>No data found.</p>
-                </div>
-              ) : (
-                <div className={styles.tableWrapper}>
-                  <table className={styles.viewerTable}>
-                    <thead>
-                      <tr>
-                        <th>Course Code</th>
-                        <th>Course Name</th>
-                        <th>Section</th>
-                        <th>Year Level</th>
-                        <th>Students</th>
-                        <th>Lec Hours</th>
-                        <th>Lab Hours</th>
-                        <th>Department</th>
-                        <th>Semester</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewerData.map((item: any, idx: number) => (
-                        <tr key={idx}>
-                          <td>{item.course_code || 'N/A'}</td>
-                          <td>{item.course_name || 'N/A'}</td>
-                          <td>{item.section || 'N/A'}</td>
-                          <td>{item.year_level || 'N/A'}</td>
-                          <td>{item.student_count || 'N/A'}</td>
-                          <td>{item.lec_hours || 0}</td>
-                          <td>{item.lab_hours || 0}</td>
-                          <td>{item.department || 'N/A'}</td>
-                          <td>{item.semester || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              <div className={styles.modalFooter}>
-                <p><strong>Total Records:</strong> {viewerData.length}</p>
-              </div>
-            </div>
+    {/* File Viewer Modal */ }
+  {
+    showClassFileViewer && (
+      <div className={styles.modalOverlay} onClick={closeFileViewer}>
+        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h2>
+              <MdMenuBook size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
+                ? selectedBatchInfoList[0]?.year_batch
+                : `${selectedBatchInfoList.length} Year Batches`}
+            </h2>
+            <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
+              <MdClose size={24} />
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* Unassigned Courses Warning Modal */}
-      {showUnassignedWarning && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.unassignedModal}>
-            <div className={styles.warningModalHeader}>
-              <h3 className={styles.warningModalTitle}>
-                <FaExclamationTriangle /> Courses Without Assigned Professors
-              </h3>
-              <button className={styles.closeModalButton} onClick={() => setShowUnassignedWarning(false)}>
-                <FaTimes />
-              </button>
-            </div>
-
-            <div className={styles.warningModalBody}>
-              <div className={styles.warningBox}>
-                <p className={styles.warningTitle}>
-                  ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
-                </p>
-                <p className={styles.warningDescription}>
-                  Please assign professors to these courses in the Teaching Load Assignment page,
-                  or you can bypass this check and schedule them without professors (TBD will be shown).
-                </p>
+          <div className={styles.modalBody}>
+            {viewerLoading ? (
+              <div className={styles.modalLoading}>
+                <FaSpinner className={styles.spinnerIcon} />
+                <p>Loading data...</p>
               </div>
-
-              <div className={styles.warningActions}>
-                <button
-                  onClick={downloadUnassignedCoursesCSV}
-                  className={`${styles.warningActionBtn} ${styles.download}`}
-                >
-                  <FaDownload /> Download CSV of Unassigned Courses
-                </button>
-                <button
-                  onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
-                  className={`${styles.warningActionBtn} ${styles.teaching}`}
-                >
-                  <FaChalkboardTeacher /> Go to Teaching Load Assignment
-                </button>
+            ) : viewerData.length === 0 ? (
+              <div className={styles.modalEmpty}>
+                <p>No data found.</p>
               </div>
-
-              <div className={styles.tableScrollContainer}>
+            ) : (
+              <div className={styles.tableWrapper}>
                 <table className={styles.viewerTable}>
                   <thead>
                     <tr>
                       <th>Course Code</th>
                       <th>Course Name</th>
                       <th>Section</th>
+                      <th>Year Level</th>
+                      <th>Students</th>
+                      <th>Lec Hours</th>
+                      <th>Lab Hours</th>
                       <th>Department</th>
+                      <th>Semester</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {unassignedCourses.map((course, idx) => (
+                    {viewerData.map((item: any, idx: number) => (
                       <tr key={idx}>
-                        <td>{course.course_code}</td>
-                        <td>{course.course_name}</td>
-                        <td>{course.section}</td>
-                        <td>{course.department}</td>
+                        <td>{item.course_code || 'N/A'}</td>
+                        <td>{item.course_name || 'N/A'}</td>
+                        <td>{item.section || 'N/A'}</td>
+                        <td>{item.year_level || 'N/A'}</td>
+                        <td>{item.student_count || 'N/A'}</td>
+                        <td>{item.lec_hours || 0}</td>
+                        <td>{item.lab_hours || 0}</td>
+                        <td>{item.department || 'N/A'}</td>
+                        <td>{item.semester || 'N/A'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+            )}
 
-              <div className={styles.bypassSection}>
-                <label className={styles.bypassLabel}>
-                  <input
-                    type="checkbox"
-                    checked={bypassTeacherCheck}
-                    onChange={(e) => setBypassTeacherCheck(e.target.checked)}
-                  />
-                  <span>
-                    Bypass teacher check (Professors will be shown as "TBD" in schedule)
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            <div className={styles.warningModalFooter}>
-              <div className={styles.modalActions}>
-                <button
-                  onClick={() => setShowUnassignedWarning(false)}
-                  className={styles.cancelBtn}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (bypassTeacherCheck) {
-                      executeScheduleGeneration()
-                    } else {
-                      toast.warning('Bypass Required', {
-                        description: 'Please enable the bypass option to proceed without assigned professors.',
-                      })
-                    }
-                  }}
-                  disabled={!bypassTeacherCheck}
-                  className={styles.proceedBtn}
-                >
-                  <FaPlay /> Proceed with Scheduling
-                </button>
-              </div>
+            <div className={styles.modalFooter}>
+              <p><strong>Total Records:</strong> {viewerData.length}</p>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {/* View All Rooms Modal */}
-      {showAllRooms && (
-        <div className={styles.modalOverlay} onClick={() => setShowAllRooms(false)}>
-          <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.viewAllModalHeader}>
-              <h3 className={styles.viewAllModalTitle}>
-                <MdMeetingRoom size={24} /> All Rooms ({getFilteredRooms().length})
-              </h3>
-              <button className={styles.closeModalButton} onClick={() => setShowAllRooms(false)}>
-                <FaTimes />
-              </button>
-            </div>
-
-            <div className={styles.viewAllModalSearch}>
-              <input
-                type="text"
-                placeholder="Search rooms..."
-                value={previewSearchQuery}
-                onChange={(e) => setPreviewSearchQuery(e.target.value)}
-                className={styles.viewAllSearchInput}
-              />
-            </div>
-
-            <div className={styles.viewAllModalBody}>
-              <table className={styles.viewAllTable}>
-                <thead>
-                  <tr>
-                    <th>Room</th>
-                    <th>Building</th>
-                    <th>Campus</th>
-                    <th>Capacity</th>
-                    <th>Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredRooms()
-                    .filter(room =>
-                      previewSearchQuery === '' ||
-                      room.room.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      room.building.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      room.campus.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      room.room_type.toLowerCase().includes(previewSearchQuery.toLowerCase())
-                    )
-                    .map(room => (
-                      <tr key={room.id}>
-                        <td>{room.room}</td>
-                        <td>{room.building}</td>
-                        <td>{room.campus}</td>
-                        <td>{room.capacity}</td>
-                        <td>{room.room_type}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className={styles.viewAllModalFooter}>
-              <button className={styles.closeBtn} onClick={() => setShowAllRooms(false)}>
-                Close
-              </button>
-            </div>
+  {/* Unassigned Courses Warning Modal */ }
+  {
+    showUnassignedWarning && (
+      <div className={styles.modalOverlay}>
+        <div className={styles.unassignedModal}>
+          <div className={styles.warningModalHeader}>
+            <h3 className={styles.warningModalTitle}>
+              <FaExclamationTriangle /> Courses Without Assigned Professors
+            </h3>
+            <button className={styles.closeModalButton} onClick={() => setShowUnassignedWarning(false)}>
+              <FaTimes />
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* View All Classes Modal */}
-      {showAllClasses && (
-        <div className={styles.modalOverlay} onClick={() => setShowAllClasses(false)}>
-          <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.viewAllModalHeader}>
-              <h3 className={styles.viewAllModalTitle}>
-                <MdMenuBook size={24} /> All Classes ({classes.length})
-              </h3>
-              <button className={styles.closeModalButton} onClick={() => setShowAllClasses(false)}>
-                <FaTimes />
+          <div className={styles.warningModalBody}>
+            <div className={styles.warningBox}>
+              <p className={styles.warningTitle}>
+                ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
+              </p>
+              <p className={styles.warningDescription}>
+                Please assign professors to these courses in the Teaching Load Assignment page,
+                or you can bypass this check and schedule them without professors (TBD will be shown).
+              </p>
+            </div>
+
+            <div className={styles.warningActions}>
+              <button
+                onClick={downloadUnassignedCoursesCSV}
+                className={`${styles.warningActionBtn} ${styles.download}`}
+              >
+                <FaDownload /> Download CSV of Unassigned Courses
+              </button>
+              <button
+                onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
+                className={`${styles.warningActionBtn} ${styles.teaching}`}
+              >
+                <FaChalkboardTeacher /> Go to Teaching Load Assignment
               </button>
             </div>
 
-            <div className={styles.viewAllModalSearch}>
-              <input
-                type="text"
-                placeholder="Search classes..."
-                value={previewSearchQuery}
-                onChange={(e) => setPreviewSearchQuery(e.target.value)}
-                className={styles.viewAllSearchInput}
-              />
-            </div>
-
-            <div className={styles.viewAllModalBody}>
-              <table className={styles.viewAllTable}>
+            <div className={styles.tableScrollContainer}>
+              <table className={styles.viewerTable}>
                 <thead>
                   <tr>
                     <th>Course Code</th>
                     <th>Course Name</th>
                     <th>Section</th>
-                    <th>Day</th>
-                    <th>Time</th>
-                    <th>Lec Hours</th>
-                    <th>Lab Hours</th>
-                    <th>Professor</th>
+                    <th>Department</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {classes
-                    .filter(cls =>
-                      previewSearchQuery === '' ||
-                      cls.course_code.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      cls.course_name.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      cls.section.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                      (cls.schedule_day && cls.schedule_day.toLowerCase().includes(previewSearchQuery.toLowerCase()))
-                    )
-                    .map(cls => (
-                      <tr key={cls.id}>
-                        <td>{cls.course_code}</td>
-                        <td>{cls.course_name}</td>
-                        <td>{cls.section}</td>
-                        <td>{cls.schedule_day || 'TBD'}</td>
-                        <td>{cls.schedule_time || 'TBD'}</td>
-                        <td>{cls.lec_hours}h</td>
-                        <td>{cls.lab_hours}h</td>
-                        <td>{cls.teacher_name || 'TBD'}</td>
-                      </tr>
-                    ))}
+                  {unassignedCourses.map((course, idx) => (
+                    <tr key={idx}>
+                      <td>{course.course_code}</td>
+                      <td>{course.course_name}</td>
+                      <td>{course.section}</td>
+                      <td>{course.department}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
-            <div className={styles.viewAllModalFooter}>
-              <button className={styles.closeBtn} onClick={() => setShowAllClasses(false)}>
-                Close
+            <div className={styles.bypassSection}>
+              <label className={styles.bypassLabel}>
+                <input
+                  type="checkbox"
+                  checked={bypassTeacherCheck}
+                  onChange={(e) => setBypassTeacherCheck(e.target.checked)}
+                />
+                <span>
+                  Bypass teacher check (Professors will be shown as "TBD" in schedule)
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.warningModalFooter}>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => setShowUnassignedWarning(false)}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (bypassTeacherCheck) {
+                    executeScheduleGeneration()
+                  } else {
+                    toast.warning('Bypass Required', {
+                      description: 'Please enable the bypass option to proceed without assigned professors.',
+                    })
+                  }
+                }}
+                disabled={!bypassTeacherCheck}
+                className={styles.proceedBtn}
+              >
+                <FaPlay /> Proceed with Scheduling
               </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      {/* Manual Edit Modal */}
-      <ManualEditModal
-        isOpen={showManualModal}
-        onClose={() => setShowManualModal(false)}
-        onSave={(newManualAllocations) => {
-          setManualAllocations(newManualAllocations)
-          toast.success('Manual preferences saved', {
-            description: `${newManualAllocations.length} classes will be prioritized during generation.`
-          })
+  {/* View All Rooms Modal */ }
+  {
+    showAllRooms && (
+      <div className={styles.modalOverlay} onClick={() => setShowAllRooms(false)}>
+        <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.viewAllModalHeader}>
+            <h3 className={styles.viewAllModalTitle}>
+              <MdMeetingRoom size={24} /> All Rooms ({getFilteredRooms().length})
+            </h3>
+            <button className={styles.closeModalButton} onClick={() => setShowAllRooms(false)}>
+              <FaTimes />
+            </button>
+          </div>
 
-          if (newManualAllocations.length > 0) {
-            createSystemAlert({
-              title: 'Manual Preferences Updated',
-              message: `${newManualAllocations.length} manual allocations have been set for the next schedule generation.`,
-              audience: 'admin',
-              severity: 'info',
-              category: 'manual_edit'
-            })
-          }
-        }}
-        rooms={getFilteredRooms()}
-        classes={allLoadedClasses}
-        timeSettings={timeSettings}
-        initialAllocations={manualAllocations}
-      />
-    </div>
+          <div className={styles.viewAllModalSearch}>
+            <input
+              type="text"
+              placeholder="Search rooms..."
+              value={previewSearchQuery}
+              onChange={(e) => setPreviewSearchQuery(e.target.value)}
+              className={styles.viewAllSearchInput}
+            />
+          </div>
+
+          <div className={styles.viewAllModalBody}>
+            <table className={styles.viewAllTable}>
+              <thead>
+                <tr>
+                  <th>Room</th>
+                  <th>Building</th>
+                  <th>Campus</th>
+                  <th>Capacity</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getFilteredRooms()
+                  .filter(room =>
+                    previewSearchQuery === '' ||
+                    room.room.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    room.building.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    room.campus.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    room.room_type.toLowerCase().includes(previewSearchQuery.toLowerCase())
+                  )
+                  .map(room => (
+                    <tr key={room.id}>
+                      <td>{room.room}</td>
+                      <td>{room.building}</td>
+                      <td>{room.campus}</td>
+                      <td>{room.capacity}</td>
+                      <td>{room.room_type}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.viewAllModalFooter}>
+            <button className={styles.closeBtn} onClick={() => setShowAllRooms(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {/* View All Classes Modal */ }
+  {
+    showAllClasses && (
+      <div className={styles.modalOverlay} onClick={() => setShowAllClasses(false)}>
+        <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.viewAllModalHeader}>
+            <h3 className={styles.viewAllModalTitle}>
+              <MdMenuBook size={24} /> All Classes ({classes.length})
+            </h3>
+            <button className={styles.closeModalButton} onClick={() => setShowAllClasses(false)}>
+              <FaTimes />
+            </button>
+          </div>
+
+          <div className={styles.viewAllModalSearch}>
+            <input
+              type="text"
+              placeholder="Search classes..."
+              value={previewSearchQuery}
+              onChange={(e) => setPreviewSearchQuery(e.target.value)}
+              className={styles.viewAllSearchInput}
+            />
+          </div>
+
+          <div className={styles.viewAllModalBody}>
+            <table className={styles.viewAllTable}>
+              <thead>
+                <tr>
+                  <th>Course Code</th>
+                  <th>Course Name</th>
+                  <th>Section</th>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Lec Hours</th>
+                  <th>Lab Hours</th>
+                  <th>Professor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classes
+                  .filter(cls =>
+                    previewSearchQuery === '' ||
+                    cls.course_code.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    cls.course_name.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    cls.section.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                    (cls.schedule_day && cls.schedule_day.toLowerCase().includes(previewSearchQuery.toLowerCase()))
+                  )
+                  .map(cls => (
+                    <tr key={cls.id}>
+                      <td>{cls.course_code}</td>
+                      <td>{cls.course_name}</td>
+                      <td>{cls.section}</td>
+                      <td>{cls.schedule_day || 'TBD'}</td>
+                      <td>{cls.schedule_time || 'TBD'}</td>
+                      <td>{cls.lec_hours}h</td>
+                      <td>{cls.lab_hours}h</td>
+                      <td>{cls.teacher_name || 'TBD'}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.viewAllModalFooter}>
+            <button className={styles.closeBtn} onClick={() => setShowAllClasses(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {/* Manual Edit Modal */ }
+  <ManualEditModal
+    isOpen={showManualModal}
+    onClose={() => setShowManualModal(false)}
+    onSave={(newManualAllocations) => {
+      setManualAllocations(newManualAllocations)
+      toast.success('Manual preferences saved', {
+        description: `${newManualAllocations.length} classes will be prioritized during generation.`
+      })
+
+      if (newManualAllocations.length > 0) {
+        createSystemAlert({
+          title: 'Manual Preferences Updated',
+          message: `${newManualAllocations.length} manual allocations have been set for the next schedule generation.`,
+          audience: 'admin',
+          severity: 'info',
+          category: 'manual_edit'
+        })
+      }
+    }}
+    rooms={getFilteredRooms()}
+    classes={allLoadedClasses}
+    timeSettings={timeSettings}
+    initialAllocations={manualAllocations}
+  />
+    </div >
   )
 }
 

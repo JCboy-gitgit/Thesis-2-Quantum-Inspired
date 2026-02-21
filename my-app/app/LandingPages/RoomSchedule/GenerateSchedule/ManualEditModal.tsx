@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import {
     MdClose, MdTableChart, MdSearch, MdFilterList, MdCheckCircle,
     MdWarning, MdMeetingRoom, MdLayers, MdPerson, MdGroups, MdAccessTime, MdAdd, MdDelete, MdSave,
-    MdDragIndicator, MdChevronLeft, MdChevronRight, MdRemove
+    MdDragIndicator, MdChevronLeft, MdChevronRight, MdRemove, MdSchool
 } from 'react-icons/md'
 import { FaChalkboardTeacher, FaDoorOpen, FaUsers } from 'react-icons/fa'
 import styles from './ManualEditModal.module.css'
@@ -19,7 +19,7 @@ interface ManualEditModalProps {
     initialAllocations: any[]
 }
 
-type ViewMode = 'room' | 'faculty' | 'section'
+type ViewMode = 'room' | 'faculty' | 'section' | 'college'
 
 const formatTimeAMPM = (time24: string) => {
     const [h, m] = time24.split(':').map(Number)
@@ -37,6 +37,7 @@ export default function ManualEditModal({
     const [activeItemIndex, setActiveItemIndex] = useState(0)
     const [searchQuery, setSearchQuery] = useState('')
     const [filterSection, setFilterSection] = useState('all')
+    const [filterCollege, setFilterCollege] = useState('all')
     const [draggedClassId, setDraggedClassId] = useState<number | null>(null)
     const [resizingAllocId, setResizingAllocId] = useState<number | null>(null)
     const [draggingCourse, setDraggingCourse] = useState<any | null>(null)
@@ -67,12 +68,18 @@ export default function ManualEditModal({
         return unique
     }, [classes])
 
+    const colleges = useMemo(() => {
+        const unique = [...new Set(classes.map(c => c.college || 'N/A'))].sort()
+        return unique
+    }, [classes])
+
     const navigationItems = useMemo(() => {
         if (viewMode === 'room') return rooms
         if (viewMode === 'faculty') return faculties
         if (viewMode === 'section') return sections
+        if (viewMode === 'college') return colleges
         return []
-    }, [viewMode, rooms, faculties, sections])
+    }, [viewMode, rooms, faculties, sections, colleges])
 
     const activeItem = navigationItems[activeItemIndex]
 
@@ -105,22 +112,30 @@ export default function ManualEditModal({
         return slots
     }, [timeSettings])
 
-    // 4. Classes with Remaining Hours
+    // 4. Classes with Remaining Hours (Split by Lec/Lab)
     const classesWithStats = useMemo(() => {
         return classes.map(c => {
-            const allottedInManual = allocations
-                .filter(a => a.class_id === c.id)
+            const lecAllotted = allocations
+                .filter(a => a.class_id === c.id && a.component === 'LEC')
                 .reduce((acc, a) => {
                     const startMins = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])?.startMinutes || 0
-                    const endMins = timeSlots.find(s => s.end.split(' ')[0] === a.schedule_time.split(' - ')[1].split(' ')[0])?.endMinutes || 0
+                    const endMins = timeSlots.find(s => s.end.includes(a.schedule_time.split(' - ')[1]))?.endMinutes || 0
                     return acc + (endMins - startMins) / 60
                 }, 0)
 
-            const totalHours = c.lec_hours + c.lab_hours
+            const labAllotted = allocations
+                .filter(a => a.class_id === c.id && a.component === 'LAB')
+                .reduce((acc, a) => {
+                    const startMins = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])?.startMinutes || 0
+                    const endMins = timeSlots.find(s => s.end.includes(a.schedule_time.split(' - ')[1]))?.endMinutes || 0
+                    return acc + (endMins - startMins) / 60
+                }, 0)
+
             return {
                 ...c,
-                remainingHours: Math.max(0, totalHours - allottedInManual),
-                totalHours
+                lecRemaining: Math.max(0, (c.lec_hours || 0) - lecAllotted),
+                labRemaining: Math.max(0, (c.lab_hours || 0) - labAllotted),
+                totalHours: (c.lec_hours || 0) + (c.lab_hours || 0)
             }
         })
     }, [classes, allocations, timeSlots])
@@ -128,13 +143,12 @@ export default function ManualEditModal({
     // 5. Equipment Filter Logic
     const filteredClasses = useMemo(() => {
         return classesWithStats.filter(c => {
-            // Basic search/section filters
             const matchesSearch = c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.section.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesSection = filterSection === 'all' || c.section === filterSection
+            const matchesCollege = filterCollege === 'all' || (c.college || 'N/A') === filterCollege
 
-            // Equipment filter (only if in room view and room selected)
             let equipmentMatch = true
             if (viewMode === 'room' && activeItem) {
                 const room = activeItem as any
@@ -143,9 +157,9 @@ export default function ManualEditModal({
                 equipmentMatch = reqFeatures.every((f: string) => roomFeatures.has(f))
             }
 
-            return matchesSearch && matchesSection && (c.remainingHours > 0) && equipmentMatch
+            return matchesSearch && matchesSection && matchesCollege && (c.lecRemaining > 0 || c.labRemaining > 0) && equipmentMatch
         })
-    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem])
+    }, [classesWithStats, searchQuery, filterSection, filterCollege, viewMode, activeItem])
 
     // 6. Conflict Detection
     const checkConflicts = useCallback((newAlloc: any, ignoreId?: number) => {
@@ -192,21 +206,28 @@ export default function ManualEditModal({
         }
     }
 
-    const handleDrop = (day: string, slot: any) => {
+    const handleDrop = (day: string, slot: any, component?: 'LEC' | 'LAB') => {
         if (!draggedClassId) return
         const classInfo = classesWithStats.find(c => c.id === draggedClassId)
         if (!classInfo) return
 
-        // Default duration based on remaining or 1.5h
-        const durationMins = Math.min(classInfo.remainingHours * 60, 90)
+        // If component not specified (from direct drop), pick one that has remaining hours
+        const targetComponent = component || (classInfo.lecRemaining > 0 ? 'LEC' : 'LAB')
+        const remainingHours = targetComponent === 'LEC' ? classInfo.lecRemaining : classInfo.labRemaining
+
+        if (remainingHours <= 0) {
+            toast.error(`No remaining hours for ${targetComponent}`)
+            return
+        }
+
+        const durationMins = Math.min(remainingHours * 60, 90)
         const endSlotIdx = timeSlots.indexOf(slot) + Math.ceil(durationMins / 30) - 1
         const endSlot = timeSlots[Math.min(endSlotIdx, timeSlots.length - 1)]
 
-        // For room view, use active room. For others, need to select a room?
-        // Let's assume room view is the primary way to allot physical space.
         let roomInfo = viewMode === 'room' ? (activeItem as any) : rooms[0]
 
         const newAlloc = {
+            id: Date.now(), // Local temporary ID
             class_id: classInfo.id,
             room_id: roomInfo.id,
             course_code: classInfo.course_code,
@@ -219,6 +240,7 @@ export default function ManualEditModal({
             building: roomInfo.building,
             room: roomInfo.room,
             teacher_name: classInfo.teacher_name || 'TBD',
+            component: targetComponent,
             status: 'scheduled'
         }
 
@@ -229,7 +251,7 @@ export default function ManualEditModal({
 
         setAllocations(prev => [...prev, newAlloc])
         setDraggedClassId(null)
-        toast.success(`Allocated ${classInfo.course_code}`)
+        toast.success(`Allocated ${classInfo.course_code} ${targetComponent}`)
     }
 
     const handleResize = (allocId: number, day: string, newEndSlot: any) => {
@@ -273,8 +295,8 @@ export default function ManualEditModal({
         }))
     }
 
-    const handleRemoveAlloc = (classId: number) => {
-        setAllocations(prev => prev.filter(a => a.class_id !== classId))
+    const handleRemoveAlloc = (allocId: any) => {
+        setAllocations(prev => prev.filter(a => (a.id || a.class_id) !== allocId))
     }
 
     const handleSave = () => {
@@ -312,6 +334,12 @@ export default function ManualEditModal({
                             >
                                 <FaUsers /> Section
                             </button>
+                            <button
+                                className={viewMode === 'college' ? styles.active : ''}
+                                onClick={() => { setViewMode('college'); setActiveItemIndex(0); }}
+                            >
+                                <MdSchool /> College
+                            </button>
                         </div>
                     </div>
                     <button className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
@@ -332,6 +360,22 @@ export default function ManualEditModal({
                                     onChange={e => setSearchQuery(e.target.value)}
                                 />
                             </div>
+                            <div className={styles.filterRow}>
+                                <div className={styles.filterBox}>
+                                    <MdGroups />
+                                    <select value={filterSection} onChange={e => setFilterSection(e.target.value)}>
+                                        <option value="all">All Sections</option>
+                                        {sections.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div className={styles.filterBox}>
+                                    <MdSchool />
+                                    <select value={filterCollege} onChange={e => setFilterCollege(e.target.value)}>
+                                        <option value="all">All Colleges</option>
+                                        {colleges.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div className={styles.classList}>
                             {filteredClasses.length === 0 ? (
@@ -344,19 +388,44 @@ export default function ManualEditModal({
                                     <div
                                         key={c.id}
                                         className={styles.classCard}
-                                        draggable
-                                        onDragStart={() => setDraggedClassId(c.id)}
                                     >
                                         <div className={styles.classHeader}>
                                             <strong>{c.course_code}</strong>
-                                            <span className={styles.hoursBadge}>{c.remainingHours}h left</span>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                {c.lecRemaining > 0 && <span className={styles.hoursBadge}>Lec {c.lecRemaining}h</span>}
+                                                {c.labRemaining > 0 && <span className={styles.hoursBadge} style={{ background: '#e0f2fe', color: '#0284c7' }}>Lab {c.labRemaining}h</span>}
+                                            </div>
                                         </div>
                                         <p>{c.course_name}</p>
                                         <div className={styles.classDetails}>
                                             <span><MdPerson /> {c.teacher_name || 'TBD'}</span>
                                             <span><MdGroups /> {c.section}</span>
-                                            <span><MdAccessTime /> Lec {c.lec_hours || 0}h / Lab {c.lab_hours || 0}h</span>
                                         </div>
+
+                                        <div className={styles.componentButtons}>
+                                            {c.lecRemaining > 0 && (
+                                                <div
+                                                    className={styles.compBtn}
+                                                    draggable
+                                                    onDragStart={() => setDraggedClassId(c.id)}
+                                                    title="Drag Lecture"
+                                                >
+                                                    <MdLayers /> LEC
+                                                </div>
+                                            )}
+                                            {c.labRemaining > 0 && (
+                                                <div
+                                                    className={styles.compBtn}
+                                                    style={{ borderColor: '#0ea5e9', color: '#0ea5e9' }}
+                                                    draggable
+                                                    onDragStart={() => setDraggedClassId(c.id)}
+                                                    title="Drag Laboratory"
+                                                >
+                                                    <MdSchool /> LAB
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {c.required_features?.length > 0 && (
                                             <div className={styles.featureTags}>
                                                 {c.required_features.map((f: any) => (
@@ -364,9 +433,6 @@ export default function ManualEditModal({
                                                 ))}
                                             </div>
                                         )}
-                                        <div style={{ position: 'absolute', right: '12px', bottom: '12px', opacity: 0.1 }}>
-                                            <MdDragIndicator size={20} />
-                                        </div>
                                     </div>
                                 ))
                             )}
@@ -437,6 +503,20 @@ export default function ManualEditModal({
                                             </select>
                                         </>
                                     )}
+                                    {viewMode === 'college' && (
+                                        <>
+                                            <MdSchool />
+                                            <select
+                                                value={activeItemIndex}
+                                                onChange={(e) => setActiveItemIndex(Number(e.target.value))}
+                                                style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
+                                            >
+                                                {navigationItems.map((item: any, idx) => (
+                                                    <option key={idx} value={idx}>{item}</option>
+                                                ))}
+                                            </select>
+                                        </>
+                                    )}
                                 </div>
                                 <button onClick={() => handleNavigation('next')} title="Next">
                                     <MdChevronRight />
@@ -468,6 +548,11 @@ export default function ManualEditModal({
                                                     if (viewMode === 'room') return a.room_id === (activeItem as any)?.id && slotInRange
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
                                                     if (viewMode === 'section') return a.section === (activeItem as string) && slotInRange
+                                                    if (viewMode === 'college') {
+                                                        const classObj = classes.find(c => c.id === a.class_id)
+                                                        const collegeName = classObj ? classObj.college || 'N/A' : 'N/A'
+                                                        return collegeName === (activeItem as string) && slotInRange
+                                                    }
                                                     return false
                                                 })
 
@@ -487,27 +572,32 @@ export default function ManualEditModal({
                                                     >
                                                         {isStart && allocs.map(a => {
                                                             const confs = checkConflicts(a, a.class_id)
+                                                            const actualId = a.id || a.class_id
+                                                            const isLabComp = a.component === 'LAB'
                                                             return (
-                                                                <div key={a.class_id} className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''}`} style={{
-                                                                    height: `${((timeSlots.find(s => s.end === a.schedule_time.split(' - ')[1])?.endMinutes || 0) - slot.startMinutes) / 30 * 100}%`,
+                                                                <div key={actualId} className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''} ${isLabComp ? styles.labComp : ''}`} style={{
+                                                                    height: `calc(${((timeSlots.find(s => s.end === a.schedule_time.split(' - ')[1])?.endMinutes || 0) - slot.startMinutes) / 30 * 100}% - 8px)`,
                                                                     zIndex: 10
                                                                 }}>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                                        <strong>{a.course_code}</strong>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                            <strong>{a.course_code}</strong>
+                                                                            <span className={styles.compLabel}>{a.component}</span>
+                                                                        </div>
                                                                         {confs.length > 0 && <span title={confs.join('\n')} style={{ color: '#fee2e2', opacity: 1, cursor: 'help' }}><MdWarning size={16} /></span>}
                                                                     </div>
                                                                     <span>{a.section}</span>
                                                                     <div className={styles.allocTools}>
-                                                                        <button onClick={() => adjustDuration(a.class_id, 30)} title="Add 30 mins"><MdAdd /></button>
-                                                                        <button onClick={() => adjustDuration(a.class_id, -30)} title="Reduce 30 mins"><MdRemove /></button>
-                                                                        <button onClick={() => handleRemoveAlloc(a.class_id)} title="Remove allocation">
+                                                                        <button onClick={() => adjustDuration(actualId, 30)} title="Add 30 mins"><MdAdd /></button>
+                                                                        <button onClick={() => adjustDuration(actualId, -30)} title="Reduce 30 mins"><MdRemove /></button>
+                                                                        <button onClick={() => handleRemoveAlloc(actualId)} title="Remove allocation">
                                                                             <MdDelete />
                                                                         </button>
                                                                     </div>
                                                                     <div
                                                                         className={styles.resizeHandle}
-                                                                        onMouseDown={() => setResizingAllocId(a.class_id)}
-                                                                        onTouchStart={() => setResizingAllocId(a.class_id)}
+                                                                        onMouseDown={() => setResizingAllocId(actualId)}
+                                                                        onTouchStart={() => setResizingAllocId(actualId)}
                                                                     />
                                                                 </div>
                                                             )

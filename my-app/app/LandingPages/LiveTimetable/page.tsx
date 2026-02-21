@@ -64,6 +64,7 @@ interface RoomAllocation {
     capacity?: number
     lec_hours?: number
     lab_hours?: number
+    college?: string
 }
 
 interface LiveOverride {
@@ -268,7 +269,7 @@ export default function AdminLiveTimetablePage() {
     const [filterStatus, setFilterStatus] = useState<string>('all')
 
     // Grouping
-    type GroupByType = 'all' | 'room' | 'faculty' | 'section'
+    type GroupByType = 'all' | 'room' | 'faculty' | 'section' | 'college'
     const [groupBy, setGroupBy] = useState<GroupByType>('all')
     const [searchFocused, setSearchFocused] = useState(false)
 
@@ -814,6 +815,7 @@ export default function AdminLiveTimetablePage() {
             if (type === 'room') set.add(`${a.building} – ${a.room}`)
             else if (type === 'faculty') set.add(a.teacher_name || 'Unassigned')
             else if (type === 'section') set.add(normalizeSection(a.section) || 'Unknown')
+            else if (type === 'college') set.add(a.college || 'N/A')
         })
         return Array.from(set).sort((a, b) => a.localeCompare(b))
     }
@@ -835,17 +837,20 @@ export default function AdminLiveTimetablePage() {
         const rooms = new Set<string>()
         const faculties = new Set<string>()
         const sections = new Set<string>()
+        const colleges = new Set<string>()
 
         effectiveAllocations.forEach(a => {
             rooms.add(`${a.building} – ${a.room}`)
             if (a.teacher_name) faculties.add(a.teacher_name)
             if (a.section) sections.add(normalizeSection(a.section))
+            if (a.college) colleges.add(a.college)
         })
 
         const results: { type: GroupByType, label: string, value: string }[] = []
         Array.from(rooms).sort().forEach(r => { if (r.toLowerCase().includes(q)) results.push({ type: 'room', label: r, value: r }) })
         Array.from(faculties).sort().forEach(f => { if (f.toLowerCase().includes(q)) results.push({ type: 'faculty', label: f, value: f }) })
         Array.from(sections).sort().forEach(s => { if (s.toLowerCase().includes(q)) results.push({ type: 'section', label: s, value: s }) })
+        Array.from(colleges).sort().forEach(c => { if (c.toLowerCase().includes(q)) results.push({ type: 'college', label: c, value: c }) })
 
         return results.slice(0, 15)
     }, [searchQuery, effectiveAllocations])
@@ -858,6 +863,7 @@ export default function AdminLiveTimetablePage() {
             if (groupBy === 'room') return `${a.building} – ${a.room}` === activeGroup
             if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === activeGroup
             if (groupBy === 'section') return (normalizeSection(a.section) || 'Unknown') === activeGroup
+            if (groupBy === 'college') return (a.college || 'N/A') === activeGroup
             return true
         })
     }
@@ -1109,6 +1115,7 @@ export default function AdminLiveTimetablePage() {
                                                     <option value="room">Room</option>
                                                     <option value="faculty">Faculty</option>
                                                     <option value="section">Section</option>
+                                                    <option value="college">College</option>
                                                 </select>
                                                 {groupBy !== 'all' && groupValues.length > 0 && (
                                                     <div className={styles.groupPaginator}>

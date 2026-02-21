@@ -345,6 +345,31 @@ class ScheduleGenerationRequest(BaseModel):
     
     # NEW: Fixed/Manual allocations to prioritize
     fixed_allocations: Optional[List[Dict[str, Any]]] = None
+    
+    # NEW: Soft Constraint Penalties (Fine-tuning)
+    SOFT_ROOM_TYPE_MISMATCH: Optional[int] = 50
+    SOFT_ROOM_TYPE_MAJOR_MISMATCH: Optional[int] = 500
+    SOFT_CAPACITY_WASTE: Optional[int] = 15
+    SOFT_LUNCH_OVERLAP: Optional[int] = 500
+    SOFT_TEACHER_OVERLOAD: Optional[int] = 80
+    SOFT_ACCESSIBILITY_BONUS: Optional[int] = -10
+    SOFT_MORNING_PREFERENCE: Optional[int] = 5
+    SOFT_DAY_DISTRIBUTION: Optional[int] = 20
+    SOFT_SIBLING_DIFFERENT_DAY: Optional[int] = 100
+    SOFT_OVERLOADED_TEACHER: Optional[int] = 200
+    SOFT_TEACHER_NO_BREAK: Optional[int] = 1000
+    SOFT_CONSECUTIVE_HOURS_EXCEEDED: Optional[int] = 500
+    SOFT_FACULTY_IDLE_TIME: Optional[int] = 200
+    SOFT_LOAD_IMBALANCE: Optional[int] = 300
+    SOFT_LATE_CLASS: Optional[int] = 150
+    SOFT_ROOM_IDLE_GAP: Optional[int] = 100
+    SOFT_UNEVEN_SECTION_DIST: Optional[int] = 250
+    SOFT_CONSECUTIVE_DAY_PENALTY: Optional[int] = 0
+    SOFT_SECTION_GAP: Optional[int] = 50
+    SOFT_FACULTY_NIGHT_CLASS: Optional[int] = 200
+    SOFT_FACULTY_DAILY_SPAN: Optional[int] = 500
+    SOFT_VSL_SHIFT_MISMATCH: Optional[int] = 500
+    SOFT_PART_TIME_SATURDAY: Optional[int] = 2000
 
 
 class ScheduleGenerationResponse(BaseModel):
@@ -479,8 +504,31 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "strict_lecture_room_matching": request.strict_lecture_room_matching,
             # Split session settings
             "allow_split_sessions": request.allow_split_sessions,
-            # Faculty Type Rules
-            "faculty_types": request.faculty_types
+            "faculty_types": request.faculty_types,
+            # Soft Penalties
+            "SOFT_ROOM_TYPE_MISMATCH": request.SOFT_ROOM_TYPE_MISMATCH,
+            "SOFT_ROOM_TYPE_MAJOR_MISMATCH": request.SOFT_ROOM_TYPE_MAJOR_MISMATCH,
+            "SOFT_CAPACITY_WASTE": request.SOFT_CAPACITY_WASTE,
+            "SOFT_LUNCH_OVERLAP": request.SOFT_LUNCH_OVERLAP,
+            "SOFT_TEACHER_OVERLOAD": request.SOFT_TEACHER_OVERLOAD,
+            "SOFT_ACCESSIBILITY_BONUS": request.SOFT_ACCESSIBILITY_BONUS,
+            "SOFT_MORNING_PREFERENCE": request.SOFT_MORNING_PREFERENCE,
+            "SOFT_DAY_DISTRIBUTION": request.SOFT_DAY_DISTRIBUTION,
+            "SOFT_SIBLING_DIFFERENT_DAY": request.SOFT_SIBLING_DIFFERENT_DAY,
+            "SOFT_OVERLOADED_TEACHER": request.SOFT_OVERLOADED_TEACHER,
+            "SOFT_TEACHER_NO_BREAK": request.SOFT_TEACHER_NO_BREAK,
+            "SOFT_CONSECUTIVE_HOURS_EXCEEDED": request.SOFT_CONSECUTIVE_HOURS_EXCEEDED,
+            "SOFT_FACULTY_IDLE_TIME": request.SOFT_FACULTY_IDLE_TIME,
+            "SOFT_LOAD_IMBALANCE": request.SOFT_LOAD_IMBALANCE,
+            "SOFT_LATE_CLASS": request.SOFT_LATE_CLASS,
+            "SOFT_ROOM_IDLE_GAP": request.SOFT_ROOM_IDLE_GAP,
+            "SOFT_UNEVEN_SECTION_DIST": request.SOFT_UNEVEN_SECTION_DIST,
+            "SOFT_CONSECUTIVE_DAY_PENALTY": request.SOFT_CONSECUTIVE_DAY_PENALTY,
+            "SOFT_SECTION_GAP": request.SOFT_SECTION_GAP,
+            "SOFT_FACULTY_NIGHT_CLASS": request.SOFT_FACULTY_NIGHT_CLASS,
+            "SOFT_FACULTY_DAILY_SPAN": request.SOFT_FACULTY_DAILY_SPAN,
+            "SOFT_VSL_SHIFT_MISMATCH": request.SOFT_VSL_SHIFT_MISMATCH,
+            "SOFT_PART_TIME_SATURDAY": request.SOFT_PART_TIME_SATURDAY
         }
         
         print("🎯 Running Enhanced Quantum-Inspired Annealing Algorithm...")
@@ -574,6 +622,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                     # "college": entry.get("college", ""),  # REVERT: Removed as column missing in DB
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
+                    "component": entry.get("component") or entry.get("section_type", "lecture"),
                     "status": "scheduled"
                 }
                 all_allocations.append(allocation)

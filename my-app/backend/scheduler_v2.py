@@ -458,6 +458,7 @@ class SchedulingConstraints:
     auto_break_after_consecutive_hours: int = 4  # Threshold for mandatory 1hr break
     auto_break_duration_minutes: int = 60  # 1hr mandatory break
     allow_split_sessions: bool = True  # Whether to split long classes into multiple days
+    combine_split_lectures: bool = True  # NEW: If True, large groups share one LEC but split for LAB
     
     # Faculty Type Rules
     faculty_type_rules: Dict[str, FacultyTypeConfig] = field(default_factory=lambda: FACULTY_TYPE_RULES)
@@ -465,6 +466,31 @@ class SchedulingConstraints:
     # Penalties
     SOFT_VSL_SHIFT_MISMATCH: int = 500  # Penalty for VSL teaching outside preferred shift
     SOFT_PART_TIME_SATURDAY: int = 2000  # High soft/Hard for Part-time on Saturday (usually HARD)
+    
+    # Soft Constraint Penalties (Fine-tuning knobs)
+    SOFT_ROOM_TYPE_MISMATCH: int = 50
+    SOFT_ROOM_TYPE_MAJOR_MISMATCH: int = 500
+    SOFT_CAPACITY_WASTE: int = 15
+    SOFT_LUNCH_OVERLAP: int = 500
+    SOFT_TEACHER_OVERLOAD: int = 80
+    SOFT_ACCESSIBILITY_BONUS: int = -10
+    SOFT_MORNING_PREFERENCE: int = 5
+    SOFT_DAY_DISTRIBUTION: int = 20
+    SOFT_SIBLING_DIFFERENT_DAY: int = 100
+    SOFT_OVERLOADED_TEACHER: int = 200
+    SOFT_TEACHER_NO_BREAK: int = 1000
+    SOFT_CONSECUTIVE_HOURS_EXCEEDED: int = 500
+    SOFT_FACULTY_IDLE_TIME: int = 200
+    SOFT_LOAD_IMBALANCE: int = 300
+    SOFT_LATE_CLASS: int = 150
+    SOFT_ROOM_IDLE_GAP: int = 100
+    SOFT_UNEVEN_SECTION_DIST: int = 250
+    SOFT_CONSECUTIVE_DAY_PENALTY: int = 0
+    
+    # Welfare and Miscellaneous Penalties
+    SOFT_SECTION_GAP: int = 50
+    SOFT_FACULTY_NIGHT_CLASS: int = 200
+    SOFT_FACULTY_DAILY_SPAN: int = 500
 
 
 @dataclass
@@ -855,40 +881,89 @@ class EnhancedQuantumScheduler:
 
     def _decompose_oversized_sections(self, sections: List[Section]) -> List[Section]:
         """
-        Problem 3: Conditional Resource Decomposition (Anchor & Satellite Rule)
+        Conditional Resource Decomposition (Anchor & Satellite Rule)
         
         ANCHOR & SATELLITE MODEL:
         - ANCHOR (Lecture _LEC): Stays at FULL student count. Shared by all students.
-          When moved, the schedule updates for both G1 and G2 students.
-        - SATELLITE (Lab _LAB_G1 / _LAB_G2): Lab section split into two groups.
-          Each scheduled independently. Same professor cannot teach both at the same time.
+        - SATELLITE (Lab _G1 / _G2): Split into two groups for labs.
         
-        Only splits _LAB sections where student_count > lab room capacity.
-        _LEC sections are NEVER split (they're the anchor).
+        If a section has both LEC and LAB hours and is oversized:
+        - Create 1 LEC section (Full students)
+        - Create 2 LAB sections (Half students each)
         """
-        # Determine lab capacity threshold from actual lab rooms
-        lab_rooms = [r for r in self.rooms.values() if 'lab' in (r.room_type or '').lower() or 'com' in (r.room_type or '').lower()]
+        lab_rooms = [r for r in self.rooms.values() if self._is_lab_room(r.id)]
         if not lab_rooms:
-             return sections  # No labs, can't split
+             return sections
         
-        # Use the median lab room capacity as threshold
         lab_capacities = sorted([r.capacity for r in lab_rooms])
         LAB_CAPACITY_THRESHOLD = lab_capacities[len(lab_capacities) // 2] if lab_capacities else 30
         
         new_sections = []
         next_id = max((s.id for s in sections), default=0) + 1
-        teacher_load_warnings = []
         
         for section in sections:
-            # ANCHOR RULE: Only split LAB sections, never LEC sections
-            is_lab_section = (
-                getattr(section, 'section_type', '') == 'lab' or
-                section.requires_lab or
-                (section.lab_hours > 0 and section.lec_hours == 0)
-            )
+            has_lec = (section.lec_hours or 0) > 0
+            has_lab = (section.lab_hours or 0) > 0 or section.requires_lab
             
-            if is_lab_section and section.student_count > LAB_CAPACITY_THRESHOLD:
-                # Create SATELLITE G1
+            # If no specific hours set, assume it's one or the other based on requires_lab
+            if not has_lec and not has_lab:
+                has_lec = not section.requires_lab
+                has_lab = section.requires_lab
+
+            needs_split = has_lab and section.student_count > LAB_CAPACITY_THRESHOLD
+            
+            if needs_split and self.constraints.combine_split_lectures:
+                print(f"⚓ Splitting '{section.section_code}' into Anchor(LEC) + Satellites(G1/G2)")
+                
+                # 1. Create ANCHOR (LEC)
+                if has_lec:
+                    lec_anchor = replace(section)
+                    lec_anchor.id = next_id
+                    lec_anchor.section_code = f"{section.section_code}_LEC"
+                    lec_anchor.lab_hours = 0
+                    lec_anchor.weekly_hours = section.lec_hours or 0
+                    lec_anchor.section_type = "lecture"
+                    lec_anchor.requires_lab = False
+                    lec_anchor.original_section_id = section.id
+                    new_sections.append(lec_anchor)
+                    next_id += 1
+                
+                # 2. Create SATELLITE G1 (LAB)
+                g1 = replace(section)
+                g1.id = next_id
+                g1.section_code = f"{section.section_code}_G1"
+                g1.student_count = section.student_count // 2 + (section.student_count % 2)
+                g1.lec_hours = 0
+                g1.weekly_hours = section.lab_hours or 0
+                g1.section_type = "lab"
+                g1.requires_lab = True
+                g1.is_split_group = True
+                g1.split_type = "G1"
+                g1.original_section_id = section.id
+                
+                # 3. Create SATELLITE G2 (LAB)
+                g2 = replace(section)
+                g2.id = next_id + 1
+                g2.section_code = f"{section.section_code}_G2"
+                g2.student_count = section.student_count // 2
+                g2.lec_hours = 0
+                g2.weekly_hours = section.lab_hours or 0
+                g2.section_type = "lab"
+                g2.requires_lab = True
+                g2.is_split_group = True
+                g2.split_type = "G2"
+                g2.original_section_id = section.id
+                
+                # Link satellites
+                g1.linked_section_id = g2.id
+                g2.linked_section_id = g1.id
+                
+                new_sections.append(g1)
+                new_sections.append(g2)
+                next_id += 2
+            elif needs_split:
+                # Traditional Split (G1/G2 get both Lec and Lab)
+                # ... already implemented in previous version, keeping it as fallback
                 g1 = replace(section)
                 g1.id = next_id
                 g1.section_code = f"{section.section_code}_G1"
@@ -896,7 +971,6 @@ class EnhancedQuantumScheduler:
                 g1.is_split_group = True
                 g1.split_type = "G1"
                 
-                # Create SATELLITE G2
                 g2 = replace(section)
                 g2.id = next_id + 1
                 g2.section_code = f"{section.section_code}_G2"
@@ -904,36 +978,14 @@ class EnhancedQuantumScheduler:
                 g2.is_split_group = True
                 g2.split_type = "G2"
                 
-                # Link satellites to each other (for overlap detection)
                 g1.linked_section_id = g2.id
                 g2.linked_section_id = g1.id
                 
-                # Both point back to the original section (the anchor's parent)
-                g1.original_section_id = section.original_section_id or section.id
-                g2.original_section_id = section.original_section_id or section.id
-                
                 new_sections.append(g1)
                 new_sections.append(g2)
-                
-                # TEACHER LOAD ALERT: Splitting doubles the lab hours for the professor
-                if section.teacher_id:
-                    teacher_name = section.teacher_name or f"Teacher#{section.teacher_id}"
-                    lab_load = section.weekly_hours * 2  # Doubled because 2 groups
-                    teacher_load_warnings.append(
-                        f"Warning: Prof {teacher_name}: {section.section_code} split -> "
-                        f"{lab_load}hr lab load (2 x {section.weekly_hours}hr)"
-                    )
-                
                 next_id += 2
-                print(f"Split '{section.section_code}': "
-                      f"G1({g1.student_count}) + G2({g2.student_count}) "
-                      f"[threshold={LAB_CAPACITY_THRESHOLD}]")
             else:
                 new_sections.append(section)
-        
-        # Print teacher load warnings
-        for warning in teacher_load_warnings:
-            print(warning)
         
         return new_sections
         
@@ -1283,23 +1335,26 @@ class EnhancedQuantumScheduler:
     @staticmethod
     def _get_base_section_code_static(section_code: str) -> str:
         """Static version for use in constructor before self is fully initialized"""
-        for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY']:
-            if section_code.upper().endswith(suffix):
-                return section_code[:-len(suffix)].strip()
-        return section_code.strip()
+        # Strip both component and group suffixes to find the cohort
+        base = section_code.upper()
+        for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY', '_G1', '_G2', '_G1_LAB', '_G2_LAB']:
+            if base.endswith(suffix):
+                base = base[:-len(suffix)]
+        return base.strip()
     
     def _get_base_section_code(self, section_code: str) -> str:
         """
-        Extract the base student group from a section code.
+        Extract the cohort/student-group from a section code.
         e.g., "BSM CS 2B - G2_LEC" -> "BSM CS 2B - G2"
-              "BSM CS 2B - G2_LAB" -> "BSM CS 2B - G2"
-              "BSCS-3A" -> "BSCS-3A"
+              "BSM CS 2B_G1" -> "BSM CS 2B"
         """
-        # Remove common suffixes
-        for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY']:
-            if section_code.upper().endswith(suffix):
-                return section_code[:-len(suffix)].strip()
-        return section_code.strip()
+        base = section_code.upper()
+        # Order matters: strip longer suffixes first or multi-pass
+        for _ in range(2): # Handle things like _G1_LAB
+            for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY', '_G1_LAB', '_G2_LAB', '_G1', '_G2']:
+                if base.endswith(suffix):
+                    base = base[:-len(suffix)].strip()
+        return base.strip()
     
     def _check_student_group_conflict(
         self,
@@ -1310,31 +1365,36 @@ class EnhancedQuantumScheduler:
         slot_count: int
     ) -> bool:
         """
-        CRITICAL: Check if the same STUDENT GROUP has another class at overlapping times.
-        OPTIMIZED: Uses pre-computed index to only check sections in the same student group.
+        Check if the student group already has a class.
+        Hierarchy Aware: BSMCS 1A_G1 belongs to BSMCS 1A.
         """
-        # Use pre-computed base section code
-        base_section = self.section_base_codes.get(section_id) or self._get_base_section_code(section_code)
+        base_group = self._get_base_section_code(section_code)
+        # Groups to check: The group itself AND its parent (if any)
+        # BSMCS 1A_G1 -> [BSMCS 1A_G1, BSMCS 1A]
+        # BSMCS 1A -> [BSMCS 1A]
+        groups_to_check = {section_code, base_group}
+        
         new_end = start_slot_id + slot_count
         
-        # Only check sections that belong to the same student group (MUCH faster)
-        related_section_ids = self.student_group_sections.get(base_section, [])
-        
-        for related_id in related_section_ids:
-            if related_id == section_id:
+        # Optimization: Check all sections that might belong to these groups
+        for other_sid, other_assignments in self.section_assignments.items():
+            if other_sid == section_id:
                 continue
             
-            # Check if this related section has any assignments on this day that overlap
-            for room_id, sched_day, start_slot, slot_cnt in self.section_assignments.get(related_id, []):
-                if sched_day != day:
-                    continue
+            other_section = self.sections.get(other_sid)
+            if not other_section:
+                continue
                 
-                existing_end = start_slot + slot_cnt
-                
-                # Overlap if: new_start < existing_end AND existing_start < new_end
-                if start_slot_id < existing_end and start_slot < new_end:
-                    return True
-        
+            other_base = self._get_base_section_code(other_section.section_code)
+            other_groups = {other_section.section_code, other_base}
+            
+            # Intersection means they share students
+            if groups_to_check.intersection(other_groups):
+                for _, sched_day, sched_start, sched_count in other_assignments:
+                    if sched_day == day:
+                        existing_end = sched_start + sched_count
+                        if start_slot_id < existing_end and sched_start < new_end:
+                            return True
         return False
     
     def _check_section_conflict(
@@ -1852,7 +1912,7 @@ class EnhancedQuantumScheduler:
                 for i in range(len(slots_sorted) - 1):
                     gap = slots_sorted[i + 1] - slots_sorted[i]
                     if gap >= 6:  # 3+ hour gap
-                        cost += 50
+                        cost += self.constraints.SOFT_SECTION_GAP
         
         # Second pass: Soft constraint penalties
         for key, slot in self.schedule.items():
@@ -1889,24 +1949,24 @@ class EnhancedQuantumScheduler:
                         cost += 50000 # Extremely high soft penalty (effectively hard)
                     elif is_act_special and is_lecture_class:
                         # Case 2: Lecture in specialized lab (Waste of resources)
-                        cost += SOFT_ROOM_TYPE_MAJOR_MISMATCH
+                        cost += self.constraints.SOFT_ROOM_TYPE_MAJOR_MISMATCH
                     else:
                         # Case 3: Normal mismatch (e.g. Lecture in wrong type of classroom)
-                        cost += SOFT_ROOM_TYPE_MISMATCH
+                        cost += self.constraints.SOFT_ROOM_TYPE_MISMATCH
             
             # Excessive room capacity waste (SOFT)
             if section.student_count > 0:
                 capacity_ratio = room.capacity / section.student_count
                 if capacity_ratio > 2.0:
-                    cost += SOFT_CAPACITY_WASTE * (capacity_ratio - 2.0)
+                    cost += self.constraints.SOFT_CAPACITY_WASTE * (capacity_ratio - 2.0)
             
             # Lunch break overlap (SOFT)
             if self._is_during_lunch(slot.start_slot_id, slot.slot_count):
-                cost += SOFT_LUNCH_OVERLAP
+                cost += self.constraints.SOFT_LUNCH_OVERLAP
             
             # Accessibility bonus (SOFT - negative cost)
             if self.constraints.prioritize_accessibility and room.is_accessible:
-                cost += SOFT_ACCESSIBILITY_BONUS
+                cost += self.constraints.SOFT_ACCESSIBILITY_BONUS
         
         # Teacher workload balance (SOFT)
         teacher_daily_slots = defaultdict(lambda: defaultdict(int))
@@ -1924,7 +1984,7 @@ class EnhancedQuantumScheduler:
         for teacher_id, daily_slots in teacher_daily_slots.items():
             for day, slots in daily_slots.items():
                 if slots > max_daily_slots:
-                    cost += SOFT_TEACHER_OVERLOAD * (slots - max_daily_slots)
+                    cost += self.constraints.SOFT_TEACHER_OVERLOAD * (slots - max_daily_slots)
         
         # FACULTY WELFARE: Check consecutive teaching hours (max 4 hours without break)
         for (teacher_id, day), slot_ids in teacher_slot_times.items():
@@ -1944,7 +2004,7 @@ class EnhancedQuantumScheduler:
             
             # Penalty if more than 4 consecutive hours (8 slots)
             if max_consecutive > MAX_CONSECUTIVE_TEACHING_SLOTS:
-                cost += SOFT_CONSECUTIVE_HOURS_EXCEEDED * (max_consecutive - MAX_CONSECUTIVE_TEACHING_SLOTS)
+                cost += self.constraints.SOFT_CONSECUTIVE_HOURS_EXCEEDED * (max_consecutive - MAX_CONSECUTIVE_TEACHING_SLOTS)
         
         # FACULTY WELFARE: Check for mandatory lunch break
         # If a teacher has classes before AND after lunch, they MUST have lunch free
@@ -1975,7 +2035,7 @@ class EnhancedQuantumScheduler:
                 
                 # If teaching both before AND after lunch, they NEED the lunch break
                 if has_morning_class and has_afternoon_class and has_class_during_lunch:
-                    cost += SOFT_TEACHER_NO_BREAK
+                    cost += self.constraints.SOFT_TEACHER_NO_BREAK
         
         # FACULTY PREFERENCES: Shift & Employment Type Check
         # VSL/Part-time often have specific availability (e.g., Night/Weekend)
@@ -2028,7 +2088,7 @@ class EnhancedQuantumScheduler:
             if 'full-time' in employment_type or 'regular' in employment_type:
                 # Generally avoid late night unless preferred
                 if has_night_class and 'night' not in preferences:
-                    cost += 200  # Slight penalty for Full-time night class without preference
+                    cost += self.constraints.SOFT_FACULTY_NIGHT_CLASS  # Slight penalty for Full-time night class without preference
 
             # faculty welfare: Daily Span Check (Avoid split shifts > 10 hours)
             if slot_ids:
@@ -2037,7 +2097,7 @@ class EnhancedQuantumScheduler:
                 span = end_slot - start_slot + 1
                 if span > 20: # > 10 hours
                      # High penalty for excessive daily span
-                     cost += 500 * (span - 20)
+                     cost += self.constraints.SOFT_FACULTY_DAILY_SPAN * (span - 20)
             
             # Faculty Welfare: Turnaround Time Check (Late Night -> Early Morning)
             # This requires checking the *previous* day's last slot. 
@@ -2066,7 +2126,7 @@ class EnhancedQuantumScheduler:
             
             # Penalty if they overlap on same day (we want them on DIFFERENT days)
             if section_days and sibling_days and section_days.intersection(sibling_days):
-                cost += SOFT_SIBLING_DIFFERENT_DAY
+                cost += self.constraints.SOFT_SIBLING_DIFFERENT_DAY
         
         # ==================== MANDATORY RECOVERY BLOCK (6-Hour Rule) ====================
         # AUTO lunch mode: If any teacher or student group has 6+ consecutive hours,
@@ -3484,6 +3544,7 @@ class EnhancedQuantumScheduler:
                     'is_online': is_online,
                     # Type-Based Splitting fields for hybrid courses
                     'section_type': section.section_type,  # "lecture", "lab", or "combined"
+                    'component': 'LAB' if section.section_type == 'lab' or section.requires_lab else 'LEC',
                     'original_section_id': section.original_section_id,  # Original ID before splitting
                     'sibling_id': section.sibling_id,  # ID of sibling section (LEC <-> LAB)
                     'college': section.college  # NEW: Include college in result
@@ -3821,7 +3882,31 @@ def run_enhanced_scheduler(
         strict_lecture_room_matching=config.get('strict_lecture_room_matching', True),
         require_faculty_lunch_break=True,  # Faculty MUST have lunch break if teaching all day
         auto_break_after_consecutive_hours=max_consecutive,
-        allow_split_sessions=config.get('allow_split_sessions', True)
+        allow_split_sessions=config.get('allow_split_sessions', True),
+        # Pass through all soft penalties from config if present
+        SOFT_ROOM_TYPE_MISMATCH=config.get('SOFT_ROOM_TYPE_MISMATCH', 50),
+        SOFT_ROOM_TYPE_MAJOR_MISMATCH=config.get('SOFT_ROOM_TYPE_MAJOR_MISMATCH', 500),
+        SOFT_CAPACITY_WASTE=config.get('SOFT_CAPACITY_WASTE', 15),
+        SOFT_LUNCH_OVERLAP=config.get('SOFT_LUNCH_OVERLAP', 500),
+        SOFT_TEACHER_OVERLOAD=config.get('SOFT_TEACHER_OVERLOAD', 80),
+        SOFT_ACCESSIBILITY_BONUS=config.get('SOFT_ACCESSIBILITY_BONUS', -10),
+        SOFT_MORNING_PREFERENCE=config.get('SOFT_MORNING_PREFERENCE', 5),
+        SOFT_DAY_DISTRIBUTION=config.get('SOFT_DAY_DISTRIBUTION', 20),
+        SOFT_SIBLING_DIFFERENT_DAY=config.get('SOFT_SIBLING_DIFFERENT_DAY', 100),
+        SOFT_OVERLOADED_TEACHER=config.get('SOFT_OVERLOADED_TEACHER', 200),
+        SOFT_TEACHER_NO_BREAK=config.get('SOFT_TEACHER_NO_BREAK', 1000),
+        SOFT_CONSECUTIVE_HOURS_EXCEEDED=config.get('SOFT_CONSECUTIVE_HOURS_EXCEEDED', 500),
+        SOFT_FACULTY_IDLE_TIME=config.get('SOFT_FACULTY_IDLE_TIME', 200),
+        SOFT_LOAD_IMBALANCE=config.get('SOFT_LOAD_IMBALANCE', 300),
+        SOFT_LATE_CLASS=config.get('SOFT_LATE_CLASS', 150),
+        SOFT_ROOM_IDLE_GAP=config.get('SOFT_ROOM_IDLE_GAP', 100),
+        SOFT_UNEVEN_SECTION_DIST=config.get('SOFT_UNEVEN_SECTION_DIST', 250),
+        SOFT_CONSECUTIVE_DAY_PENALTY=config.get('SOFT_CONSECUTIVE_DAY_PENALTY', 0),
+        SOFT_SECTION_GAP=config.get('SOFT_SECTION_GAP', 50),
+        SOFT_FACULTY_NIGHT_CLASS=config.get('SOFT_FACULTY_NIGHT_CLASS', 200),
+        SOFT_FACULTY_DAILY_SPAN=config.get('SOFT_FACULTY_DAILY_SPAN', 500),
+        SOFT_VSL_SHIFT_MISMATCH=config.get('SOFT_VSL_SHIFT_MISMATCH', 500),
+        SOFT_PART_TIME_SATURDAY=config.get('SOFT_PART_TIME_SATURDAY', 2000)
     )
     
     if lunch_mode == 'auto':

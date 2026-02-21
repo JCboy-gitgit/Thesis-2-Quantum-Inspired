@@ -1467,6 +1467,28 @@ function FacultyCollegesContent() {
                     </svg>
                     Teaching Load Assignment
                   </button>
+                  <button
+                    className={styles.secondaryBtn}
+                    onClick={() => window.location.href = '/LandingPages/FacultyColleges/PreferredSchedules'}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z" />
+                    </svg>
+                    Preferred Schedules
+                  </button>
                   <button className={styles.addBtn} onClick={() => { resetCollegeForm(); setShowAddCollegeModal(true); }}>
                     <PlusIcon />
                     Add College
