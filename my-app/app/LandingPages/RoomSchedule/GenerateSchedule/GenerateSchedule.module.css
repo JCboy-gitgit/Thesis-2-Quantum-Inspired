@@ -7325,3 +7325,403 @@ input:checked+.toggleSlider:before {
     transform: translateY(0);
   }
 }
+
+/* Manual Edit First Button */
+.generateButtonGroup {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.manualEditButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.manualEditButton:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #334155 0%, #475569 100%);
+}
+
+.manualEditButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:global([data-theme="green"]) .manualEditButton {
+  background: linear-gradient(135deg, #02353c 0%, #166534 100%);
+  box-shadow: 0 8px 16px rgba(22, 101, 52, 0.25);
+}
+
+:global([data-theme="green"]) .manualEditButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+  box-shadow: 0 12px 24px rgba(22, 101, 52, 0.4);
+}
+
+/* ==================== Manual Edit Modal ==================== */
+.manualEditModal {
+  background: var(--card-bg);
+  width: 95vw;
+  max-width: 1500px;
+  height: 90vh;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--card-border);
+  position: relative;
+  z-index: 1000;
+}
+
+.manualEditBody {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.viewSelector {
+  display: flex;
+  background: var(--bg-gray-100);
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.viewSelector button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viewSelector button.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.itemNavigator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.itemNavigator button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 24px;
+}
+
+.itemNavigator button:hover {
+  background: var(--bg-gray-50);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.currentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.hoursBadge {
+  background: rgba(0, 166, 81, 0.1);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.featureTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.fTag {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.manualTimetable th {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  font-weight: 700;
+}
+
+.timeLabel {
+  width: 120px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-medium);
+  background: var(--bg-gray-50);
+  border: 1px solid var(--border-color);
+  text-align: right;
+  padding-right: 12px;
+}
+
+.slotCell {
+  height: 60px;
+  /* Shorter slots for 30min intervals */
+  border: 1px solid var(--border-color);
+  position: relative;
+  background: white;
+}
+
+.occupied {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.placedClass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.allocTools {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.placedClass:hover .allocTools {
+  opacity: 1;
+}
+
+.allocTools button {
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resizeHandle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: center;
+}
+
+.resizeHandle::after {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: white;
+  margin-top: 3px;
+  border-radius: 1px;
+}
+
+:global([data-theme="dark"]) .viewSelector {
+  background: #0f172a;
+}
+
+:global([data-theme="dark"]) .viewSelector button {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .viewSelector button.active {
+  background: #1e293b;
+  color: #10b981;
+}
+
+:global([data-theme="dark"]) .currentItem {
+  color: white;
+}
+
+:global([data-theme="dark"]) .itemNavigator button {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .itemNavigator button:hover {
+  background: #334155;
+  color: #10b981;
+  border-color: #10b981;
+}
+
+:global([data-theme="dark"]) .manualTimetable th {
+  background: #1e293b;
+  color: white;
+  border-color: #334155;
+}
+
+:global([data-theme="dark"]) .timeLabel {
+  background: #0f172a;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+:global([data-theme="dark"]) .slotCell {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+:global([data-theme="dark"]) .slotCell:hover {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+:global([data-theme="dark"]) .occupied {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:global([data-theme="dark"]) .fTag {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+:global([data-theme="dark"]) .manualEditBody {
+  background: #0f172a;
+}
+
+:global([data-theme="green"]) .viewSelector {
+  background: rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .viewSelector button {
+  color: #166534;
+}
+
+:global([data-theme="green"]) .viewSelector button.active {
+  background: white;
+  color: #2EAF7D;
+  box-shadow: 0 2px 10px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .itemNavigator button {
+  background: white;
+  border-color: rgba(46, 175, 125, 0.3);
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .itemNavigator button:hover {
+  background: #f0fdf4;
+  color: #2EAF7D;
+  border-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .currentItem {
+  color: #02353C;
+}
+
+:global([data-theme="green"]) .manualTimetable th {
+  background: #f0fdf4;
+  color: #02353C;
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .timeLabel {
+  background: #f8fafc;
+  color: #166534;
+  border-color: rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .slotCell:hover {
+  background: rgba(46, 175, 125, 0.05);
+}
+
+:global([data-theme="green"]) .occupied {
+  background: rgba(46, 175, 125, 0.03);
+}
+
+:global([data-theme="green"]) .fTag {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .manualEditModal {
+  background: #ffffff;
+  border-color: rgba(46, 175, 125, 0.3);
+}
+
+:global([data-theme="green"]) .manualEditBody {
+  background: #f0fdf4;
+}
+
+:global([data-theme="green"]) .placedClass {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="green"]) .hoursBadge {
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+}

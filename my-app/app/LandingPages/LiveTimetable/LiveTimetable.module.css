@@ -264,19 +264,19 @@
 }
 
 .page[data-theme="green"] .gridPageNav {
-    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(193,246,237,0.2) 100%);
-    border: 1px solid rgba(46,175,125,0.18);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.2) 100%);
+    border: 1px solid rgba(46, 175, 125, 0.18);
 }
 
 .page[data-theme="green"] .gridPageBtn {
-    background: rgba(255,255,255,0.9);
-    border: 1px solid rgba(46,175,125,0.2);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(46, 175, 125, 0.2);
     color: #276749;
 }
 
 .page[data-theme="green"] .gridPageBtn:hover,
 .page[data-theme="green"] .gridPageBtnActive {
-    background: rgba(46,175,125,0.12) !important;
+    background: rgba(46, 175, 125, 0.12) !important;
     border-color: #2EAF7D !important;
     color: #1a5c3a !important;
 }
@@ -286,8 +286,8 @@
 }
 
 .page[data-theme="green"] .gridBlockEditBtn {
-    background: rgba(46,175,125,0.12);
-    border-color: rgba(46,175,125,0.3);
+    background: rgba(46, 175, 125, 0.12);
+    border-color: rgba(46, 175, 125, 0.3);
     color: #2EAF7D;
 }
 
@@ -1583,6 +1583,82 @@
     display: inline-block;
 }
 
+/* ── Quick Actions ───────────────────────────────────────────── */
+.modalQuickActions {
+    padding: 20px 24px;
+    background: var(--lt-surface2);
+    border-top: 1px dashed var(--lt-border);
+    margin-top: 10px;
+}
+
+.modalQuickActions h4 {
+    margin: 0 0 12px 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--lt-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.quickActionBtns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.actionBtnPrimary,
+.actionBtnSecondary,
+.actionBtnDanger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 140px;
+    gap: 8px;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.actionBtnPrimary {
+    background: var(--lt-primary);
+    color: white;
+    box-shadow: 0 4px 12px var(--lt-primary-glow);
+}
+
+.actionBtnPrimary:hover {
+    background: var(--lt-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--lt-primary-glow);
+}
+
+.actionBtnSecondary {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--lt-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.actionBtnSecondary:hover {
+    background: rgba(16, 185, 129, 0.2);
+    transform: translateY(-2px);
+}
+
+.actionBtnDanger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--lt-danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.actionBtnDanger:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: var(--lt-danger);
+    transform: translateY(-2px);
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .main {
@@ -1866,8 +1942,7 @@
 }
 
 .gridNowRow td {
-    background: rgba(var(--lt-primary-rgb), 0.06) !important;
-    border-top: 2px solid var(--lt-primary) !important;
+    background: rgba(var(--lt-primary-rgb), 0.04) !important;
 }
 
 /* ── Time Cells ── */
@@ -1884,6 +1959,8 @@
     background: var(--lt-surface);
     height: 32px;
     white-space: nowrap;
+    position: relative;
+    z-index: 1;
 }
 
 .gridHourMark {
@@ -1902,22 +1979,60 @@
     font-weight: 700 !important;
     opacity: 1 !important;
     background: rgba(var(--lt-primary-rgb), 0.08) !important;
-    border-right-color: var(--lt-primary) !important;
+    border-right: 2px solid var(--lt-primary) !important;
 }
 
-.gridNowIndicator {
-    display: block;
-    font-size: 0.6rem;
-    font-weight: 800;
-    color: var(--lt-primary);
-    letter-spacing: 0.5px;
-    margin-top: 1px;
-    animation: nowPulse 2s ease-in-out infinite;
+/* The Continuous Straight Line */
+.gridNowTimeCell::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    /* Align with row start */
+    left: 100%;
+    width: 2500px;
+    /* High width to cover entire grid */
+    height: 2px;
+    background: var(--lt-primary);
+    z-index: 50;
+    /* Above all class blocks */
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(var(--lt-primary-rgb), 0.4);
+    transition: all 0.3s ease;
 }
 
-@keyframes nowPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+.gridNowIndicatorWrapper {
+    position: absolute;
+    top: -10px;
+    right: 4px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+}
+
+.gridNowIndicatorLabel {
+    background: var(--lt-primary);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(var(--lt-primary-rgb), 0.3);
+    animation: nowTagPulse 2s ease-in-out infinite;
+}
+
+@keyframes nowTagPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
 }
 
 /* ── Data Cells ── */
@@ -1928,7 +2043,17 @@
     height: 32px;
     position: relative;
     background: var(--lt-surface);
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+}
+
+.gridDataCellToday {
+    background: rgba(var(--lt-primary-rgb), 0.02) !important;
+    border-left: 1px solid rgba(var(--lt-primary-rgb), 0.1);
+    border-right: 1px solid rgba(var(--lt-primary-rgb), 0.1) !important;
+}
+
+.page[data-theme="green"] .gridDataCellToday {
+    background: rgba(46, 175, 125, 0.04) !important;
 }
 
 .gridDataCellDragOver {
@@ -2484,18 +2609,18 @@
 }
 
 .page[data-theme="green"] .groupPaginator {
-    background: rgba(255,255,255,0.9);
-    border-color: rgba(46,175,125,0.3);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(46, 175, 125, 0.3);
 }
 
 .page[data-theme="green"] .groupPageBtn {
-    background: rgba(255,255,255,0.8);
-    border-color: rgba(46,175,125,0.15);
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(46, 175, 125, 0.15);
     color: #276749;
 }
 
 .page[data-theme="green"] .groupPageBtn:hover:not(:disabled) {
-    background: rgba(46,175,125,0.12);
+    background: rgba(46, 175, 125, 0.12);
     border-color: #2EAF7D;
     color: #1a5c3a;
 }

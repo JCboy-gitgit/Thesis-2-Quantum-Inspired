@@ -3041,7 +3041,13 @@ export default function MapViewerPage() {
                 const isMale = iconType === 'men_room' || lowLabel.includes('men') || lowLabel.includes('boy')
                 const isFemale = iconType === 'women_room' || lowLabel.includes('women') || lowLabel.includes('girl')
 
-                if (isMale) {
+                const userColor = element.color || '#6366f1'
+                const hasCustomColor = userColor !== '#6366f1'
+
+                if (hasCustomColor) {
+                  const rgb = hexToRgb(userColor)
+                  pdf.setFillColor(rgb.r, rgb.g, rgb.b)
+                } else if (isMale) {
                   pdf.setFillColor(37, 99, 235) // blue
                 } else if (isFemale) {
                   pdf.setFillColor(219, 39, 119) // pink
@@ -3244,12 +3250,14 @@ export default function MapViewerPage() {
   }
 
   // Get icon component
-  const getIconComponent = (iconName: string, size: number = 24) => {
+  const getIconComponent = (iconName: string, size: number = 24, color?: string) => {
     const iconMap: Record<string, any> = {
       exit: DoorOpen,
       stairs: Footprints,
       elevator: ArrowUpDown,
       restroom: Bath,
+      men_room: MdMan,
+      women_room: MdWoman,
       computer: Laptop,
       lab: Beaker,
       library: Library,
@@ -3268,11 +3276,11 @@ export default function MapViewerPage() {
       warning: AlertTriangle,
     }
     const IconComp = iconMap[iconName] || Info
-    return <IconComp size={size} />
+    return <IconComp size={size} color={color} />
   }
 
   // Get shape component
-  const getShapeComponent = (shapeName: string, size: number = 24) => {
+  const getShapeComponent = (shapeName: string, size: number = 24, color?: string) => {
     const shapeMap: Record<string, any> = {
       circle: CircleDot,
       triangle: Triangle,
@@ -3283,7 +3291,7 @@ export default function MapViewerPage() {
       heart: Heart,
     }
     const ShapeComp = shapeMap[shapeName] || CircleDot
-    return <ShapeComp size={size} />
+    return <ShapeComp size={size} color={color} />
   }
 
   if (!mounted) {
@@ -4009,13 +4017,13 @@ export default function MapViewerPage() {
                           )}
                           {element.type === 'icon' && (
                             <div className={styles.iconElement}>
-                              {getIconComponent(element.iconType || 'info', 28)}
+                              {getIconComponent(element.iconType || 'info', 28, element.color)}
                               {element.label && <span>{element.label}</span>}
                             </div>
                           )}
                           {element.type === 'shape' && (
                             <div className={styles.shapeElement}>
-                              {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7)}
+                              {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7, element.color)}
                             </div>
                           )}
 

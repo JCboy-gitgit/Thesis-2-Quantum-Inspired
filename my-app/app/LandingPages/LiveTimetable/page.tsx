@@ -59,6 +59,7 @@ interface RoomAllocation {
     building: string
     room: string
     teacher_name?: string
+    teacher_id?: string
     department?: string
     capacity?: number
     lec_hours?: number
@@ -279,6 +280,7 @@ export default function AdminLiveTimetablePage() {
     const [reviewingMakeup, setReviewingMakeup] = useState<MakeupRequest | null>(null)
     const [adminNote, setAdminNote] = useState('')
     const [reviewingAbsence, setReviewingAbsence] = useState<Absence | null>(null)
+    const [creatingMakeup, setCreatingMakeup] = useState<{ allocation: RoomAllocation; date: string; time: string; room: string; reason: string } | null>(null)
 
     useEffect(() => {
         setMounted(true)
@@ -523,6 +525,76 @@ export default function AdminLiveTimetablePage() {
             await fetchLiveData()
         } catch (err) {
             console.error('Review absence failed:', err)
+        }
+    }
+
+    const handleAdminMarkAbsent = async (alloc: RoomAllocation, date: string) => {
+        if (!alloc.teacher_id) {
+            alert('Cannot mark absent: No teacher ID associated with this class.')
+            return
+        }
+        if (!confirm(`Mark ${alloc.course_code} as absent on ${date}?`)) return
+
+        try {
+            const res = await fetch('/api/live-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create-absence-admin',
+                    allocation_id: alloc.id,
+                    faculty_id: alloc.teacher_id,
+                    absence_date: date,
+                    reason: 'Marked by Administrator'
+                })
+            })
+            if (res.ok) await fetchLiveData()
+        } catch (err) {
+            console.error('Admin mark absent failed:', err)
+        }
+    }
+
+    const handleAdminUnmarkAbsent = async (allocId: number, date: string) => {
+        const absence = absences.find(a => a.allocation_id === allocId && a.absence_date === date)
+        if (!absence) return
+        if (!confirm('Remove this absence record?')) return
+
+        try {
+            const res = await fetch(`/api/live-timetable?type=absence&id=${absence.id}`, { method: 'DELETE' })
+            if (res.ok) await fetchLiveData()
+        } catch (err) {
+            console.error('Admin unmark absent failed:', err)
+        }
+    }
+
+    const handleAdminCreateMakeup = async () => {
+        if (!creatingMakeup) return
+        const { allocation, date, time, room, reason } = creatingMakeup
+
+        if (!allocation.teacher_id) {
+            alert('Cannot create makeup: No teacher ID associated.')
+            return
+        }
+
+        try {
+            const res = await fetch('/api/live-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create-makeup-admin',
+                    allocation_id: allocation.id,
+                    faculty_id: allocation.teacher_id,
+                    requested_date: date,
+                    requested_time: time,
+                    requested_room: room,
+                    reason: reason || 'Scheduled by Admin'
+                })
+            })
+            if (res.ok) {
+                await fetchLiveData()
+                setCreatingMakeup(null)
+            }
+        } catch (err) {
+            console.error('Admin create makeup failed:', err)
         }
     }
 
@@ -922,10 +994,15 @@ export default function AdminLiveTimetablePage() {
                                                                     <tr key={slot} className={`${isHour ? styles.gridHourRow : styles.gridHalfRow} ${isNowSlot ? styles.gridNowRow : ''}`}>
                                                                         <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark} ${isNowSlot ? styles.gridNowTimeCell : ''}`}>
                                                                             {isHour ? slot : ''}
-                                                                            {isNowSlot && <span className={styles.gridNowIndicator}>▶ NOW</span>}
+                                                                            {isNowSlot && (
+                                                                                <div className={styles.gridNowIndicatorWrapper}>
+                                                                                    <span className={styles.gridNowIndicatorLabel}>NOW</span>
+                                                                                </div>
+                                                                            )}
                                                                         </td>
                                                                         {DAYS.filter(d => d !== 'Sunday').map(day => {
                                                                             const dayDate = getDayDate(day)
+                                                                            const isToday = dayDate === formatDate(new Date())
                                                                             const dayAllocs = getFilteredDayAllocations(day)
                                                                                 .filter(a => {
                                                                                     if (!searchQuery) return true
@@ -961,7 +1038,7 @@ export default function AdminLiveTimetablePage() {
                                                                             return (
                                                                                 <td
                                                                                     key={`${day}-${slot}`}
-                                                                                    className={`${styles.gridDataCell} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
+                                                                                    className={`${styles.gridDataCell} ${isToday ? styles.gridDataCellToday : ''} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
                                                                                     onDragOver={handleDragOver}
                                                                                     onDragEnter={() => {
                                                                                         setDragOverCell(`${day}-${slotMinutes}`)
@@ -1463,6 +1540,33 @@ export default function AdminLiveTimetablePage() {
                                 />
                             </div>
                         </div>
+                        <div className={styles.modalQuickActions}>
+                            <h4>Quick Actions</h4>
+                            <div className={styles.quickActionBtns}>
+                                {(() => {
+                                    const date = getDayDate(editingOverride.day)
+                                    const isCurrentlyAbsent = isAbsent(editingOverride.allocationId, date)
+                                    const alloc = allocations.find(a => a.id === editingOverride.allocationId)
+
+                                    return (
+                                        <>
+                                            {isCurrentlyAbsent ? (
+                                                <button className={styles.actionBtnSecondary} onClick={() => handleAdminUnmarkAbsent(editingOverride.allocationId, date)}>
+                                                    <MdCheckCircle /> Mark as Present
+                                                </button>
+                                            ) : (
+                                                <button className={styles.actionBtnDanger} onClick={() => { if (alloc) handleAdminMarkAbsent(alloc, date) }}>
+                                                    <MdEventBusy /> Mark as Absent
+                                                </button>
+                                            )}
+                                            <button className={styles.actionBtnPrimary} onClick={() => { if (alloc) setCreatingMakeup({ allocation: alloc, date: date, time: editingOverride.time, room: editingOverride.room, reason: '' }) }}>
+                                                <MdEventAvailable /> Schedule Makeup
+                                            </button>
+                                        </>
+                                    )
+                                })()}
+                            </div>
+                        </div>
                         <div className={styles.modalFooter}>
                             <button className={styles.cancelBtn} onClick={() => setEditingOverride(null)}>Cancel</button>
                             <button className={styles.saveBtn} onClick={handleSaveOverride} disabled={savingOverride}>
@@ -1474,97 +1578,159 @@ export default function AdminLiveTimetablePage() {
                 </div>
             )}
 
-            {/* ── Makeup Review Modal ── */}
-            {reviewingMakeup && (
-                <div className={styles.modalOverlay} onClick={() => setReviewingMakeup(null)}>
+            {/* ── Admin Create Makeup Modal ── */}
+            {creatingMakeup && (
+                <div className={styles.modalOverlay} onClick={() => setCreatingMakeup(null)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3><MdEventAvailable /> Review Makeup Request</h3>
-                            <button className={styles.modalClose} onClick={() => setReviewingMakeup(null)}><MdClose /></button>
+                            <h3><MdEventAvailable /> Schedule Makeup Class</h3>
+                            <button className={styles.modalClose} onClick={() => setCreatingMakeup(null)}><MdClose /></button>
                         </div>
                         <div className={styles.modalBody}>
-                            {(() => {
-                                const makeupAlloc = allocations.find(al => al.id === reviewingMakeup.allocation_id)
-                                return (
-                                    <div className={styles.reviewInfo}>
-                                        <p><strong>Faculty:</strong> {reviewingMakeup.faculty_profiles?.full_name}</p>
-                                        {makeupAlloc && (
-                                            <>
-                                                <p><strong>Course:</strong> {makeupAlloc.course_code} – {makeupAlloc.course_name}</p>
-                                                <p><strong>Section:</strong> {normalizeSection(makeupAlloc.section)}</p>
-                                                <p><strong>Original Schedule:</strong> {makeupAlloc.schedule_day} · {makeupAlloc.schedule_time}</p>
-                                            </>
-                                        )}
-                                        {reviewingMakeup.original_absence_date && <p><strong>For Absence On:</strong> {reviewingMakeup.original_absence_date}</p>}
-                                        <p><strong>Requested Date:</strong> {reviewingMakeup.requested_date}</p>
-                                        <p><strong>Requested Time:</strong> {reviewingMakeup.requested_time}</p>
-                                        {reviewingMakeup.requested_room && <p><strong>Requested Room:</strong> {reviewingMakeup.requested_room}</p>}
-                                        {reviewingMakeup.reason && <p><strong>Reason:</strong> {reviewingMakeup.reason}</p>}
-                                    </div>
-                                )
-                            })()}
+                            <p className={styles.modalSubtitle}>Scheduling for {creatingMakeup.allocation.course_code} ({creatingMakeup.allocation.section})</p>
+
+                            <div className={styles.formGrid}>
+                                <div className={styles.formGroup}>
+                                    <label>Makeup Date</label>
+                                    <input
+                                        type="date"
+                                        className={styles.formInput}
+                                        value={creatingMakeup.date}
+                                        onChange={e => setCreatingMakeup({ ...creatingMakeup, date: e.target.value })}
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Time Range</label>
+                                    <input
+                                        className={styles.formInput}
+                                        value={creatingMakeup.time}
+                                        onChange={e => setCreatingMakeup({ ...creatingMakeup, time: e.target.value })}
+                                        placeholder="e.g. 10:00 AM - 11:30 AM"
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Room</label>
+                                    <input
+                                        className={styles.formInput}
+                                        value={creatingMakeup.room}
+                                        onChange={e => setCreatingMakeup({ ...creatingMakeup, room: e.target.value })}
+                                    />
+                                </div>
+                            </div>
                             <div className={styles.formGroup}>
-                                <label>Admin Note (optional)</label>
+                                <label>Internal Note / Reason</label>
                                 <textarea
                                     className={styles.formTextarea}
-                                    value={adminNote}
-                                    onChange={e => setAdminNote(e.target.value)}
-                                    placeholder="Add a note for the faculty..."
-                                    rows={3}
+                                    rows={2}
+                                    value={creatingMakeup.reason}
+                                    onChange={e => setCreatingMakeup({ ...creatingMakeup, reason: e.target.value })}
+                                    placeholder="e.g. Rescheduled due to holiday"
                                 />
                             </div>
                         </div>
                         <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setReviewingMakeup(null)}>Cancel</button>
-                            <button className={styles.rejectBtn} onClick={() => handleReviewMakeup('rejected')}>
-                                <MdCancel /> Reject
-                            </button>
-                            <button className={styles.approveBtn} onClick={() => handleReviewMakeup('approved')}>
-                                <MdCheckCircle /> Approve
+                            <button className={styles.cancelBtn} onClick={() => setCreatingMakeup(null)}>Cancel</button>
+                            <button className={styles.approveBtn} onClick={handleAdminCreateMakeup}>
+                                <MdCheckCircle /> Create & Approve
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* ── Absence Review Modal ── */}
-            {reviewingAbsence && (
-                <div className={styles.modalOverlay} onClick={() => setReviewingAbsence(null)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h3><MdEventBusy /> Review Absence</h3>
-                            <button className={styles.modalClose} onClick={() => setReviewingAbsence(null)}><MdClose /></button>
-                        </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.reviewInfo}>
-                                <p><strong>Faculty:</strong> {reviewingAbsence.faculty_profiles?.full_name}</p>
-                                <p><strong>Date:</strong> {reviewingAbsence.absence_date}</p>
-                                {reviewingAbsence.reason && <p><strong>Reason:</strong> {reviewingAbsence.reason}</p>}
-                                <p><strong>Current Status:</strong> {reviewingAbsence.status}</p>
+            {/* ── Makeup Review Modal ── */}
+            {
+                reviewingMakeup && (
+                    <div className={styles.modalOverlay} onClick={() => setReviewingMakeup(null)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <div className={styles.modalHeader}>
+                                <h3><MdEventAvailable /> Review Makeup Request</h3>
+                                <button className={styles.modalClose} onClick={() => setReviewingMakeup(null)}><MdClose /></button>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label>Admin Note (optional)</label>
-                                <textarea
-                                    className={styles.formTextarea}
-                                    value={adminNote}
-                                    onChange={e => setAdminNote(e.target.value)}
-                                    placeholder="Add a note..."
-                                    rows={3}
-                                />
+                            <div className={styles.modalBody}>
+                                {(() => {
+                                    const makeupAlloc = allocations.find(al => al.id === reviewingMakeup.allocation_id)
+                                    return (
+                                        <div className={styles.reviewInfo}>
+                                            <p><strong>Faculty:</strong> {reviewingMakeup.faculty_profiles?.full_name}</p>
+                                            {makeupAlloc && (
+                                                <>
+                                                    <p><strong>Course:</strong> {makeupAlloc.course_code} – {makeupAlloc.course_name}</p>
+                                                    <p><strong>Section:</strong> {normalizeSection(makeupAlloc.section)}</p>
+                                                    <p><strong>Original Schedule:</strong> {makeupAlloc.schedule_day} · {makeupAlloc.schedule_time}</p>
+                                                </>
+                                            )}
+                                            {reviewingMakeup.original_absence_date && <p><strong>For Absence On:</strong> {reviewingMakeup.original_absence_date}</p>}
+                                            <p><strong>Requested Date:</strong> {reviewingMakeup.requested_date}</p>
+                                            <p><strong>Requested Time:</strong> {reviewingMakeup.requested_time}</p>
+                                            {reviewingMakeup.requested_room && <p><strong>Requested Room:</strong> {reviewingMakeup.requested_room}</p>}
+                                            {reviewingMakeup.reason && <p><strong>Reason:</strong> {reviewingMakeup.reason}</p>}
+                                        </div>
+                                    )
+                                })()}
+                                <div className={styles.formGroup}>
+                                    <label>Admin Note (optional)</label>
+                                    <textarea
+                                        className={styles.formTextarea}
+                                        value={adminNote}
+                                        onChange={e => setAdminNote(e.target.value)}
+                                        placeholder="Add a note for the faculty..."
+                                        rows={3}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setReviewingAbsence(null)}>Cancel</button>
-                            <button className={styles.rejectBtn} onClick={() => handleReviewAbsence('disputed')}>
-                                <MdWarning /> Mark Disputed
-                            </button>
-                            <button className={styles.approveBtn} onClick={() => handleReviewAbsence('confirmed')}>
-                                <MdCheckCircle /> Confirm
-                            </button>
+                            <div className={styles.modalFooter}>
+                                <button className={styles.cancelBtn} onClick={() => setReviewingMakeup(null)}>Cancel</button>
+                                <button className={styles.rejectBtn} onClick={() => handleReviewMakeup('rejected')}>
+                                    <MdCancel /> Reject
+                                </button>
+                                <button className={styles.approveBtn} onClick={() => handleReviewMakeup('approved')}>
+                                    <MdCheckCircle /> Approve
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+
+            {/* ── Absence Review Modal ── */}
+            {
+                reviewingAbsence && (
+                    <div className={styles.modalOverlay} onClick={() => setReviewingAbsence(null)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <div className={styles.modalHeader}>
+                                <h3><MdEventBusy /> Review Absence</h3>
+                                <button className={styles.modalClose} onClick={() => setReviewingAbsence(null)}><MdClose /></button>
+                            </div>
+                            <div className={styles.modalBody}>
+                                <div className={styles.reviewInfo}>
+                                    <p><strong>Faculty:</strong> {reviewingAbsence.faculty_profiles?.full_name}</p>
+                                    <p><strong>Date:</strong> {reviewingAbsence.absence_date}</p>
+                                    {reviewingAbsence.reason && <p><strong>Reason:</strong> {reviewingAbsence.reason}</p>}
+                                    <p><strong>Current Status:</strong> {reviewingAbsence.status}</p>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Admin Note (optional)</label>
+                                    <textarea
+                                        className={styles.formTextarea}
+                                        value={adminNote}
+                                        onChange={e => setAdminNote(e.target.value)}
+                                        placeholder="Add a note..."
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                            <div className={styles.modalFooter}>
+                                <button className={styles.cancelBtn} onClick={() => setReviewingAbsence(null)}>Cancel</button>
+                                <button className={styles.rejectBtn} onClick={() => handleReviewAbsence('disputed')}>
+                                    <MdWarning /> Mark Disputed
+                                </button>
+                                <button className={styles.approveBtn} onClick={() => handleReviewAbsence('confirmed')}>
+                                    <MdCheckCircle /> Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
     )
 }

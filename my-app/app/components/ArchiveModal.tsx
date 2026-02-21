@@ -36,9 +36,10 @@ interface ArchiveModalProps {
   onRestore?: (item: ArchivedItem) => void
   onPermanentDelete?: (item: ArchivedItem) => void
   forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification'
+  excludeType?: 'notification' | 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room'
 }
 
-export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete, forcedType }: ArchiveModalProps) {
+export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete, forcedType, excludeType }: ArchiveModalProps) {
   const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -414,7 +415,9 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
 
   const filteredItems = archivedItems.filter(item => {
     const matchesSearch = item.item_name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === 'all' || item.item_type === filterType
+    const matchesType = filterType === 'all'
+      ? (excludeType ? item.item_type !== excludeType : true)
+      : item.item_type === filterType
     return matchesSearch && matchesType
   })
 
@@ -461,12 +464,12 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             <MdFilterList size={18} />
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="all">All Types</option>
-              <option value="csv_file">CSV Files</option>
-              <option value="department">Departments</option>
-              <option value="faculty">Faculty</option>
-              <option value="schedule">Schedules</option>
-              <option value="room">Rooms</option>
-              <option value="notification">Notifications</option>
+              {excludeType !== 'csv_file' && <option value="csv_file">CSV Files</option>}
+              {excludeType !== 'department' && <option value="department">Departments</option>}
+              {excludeType !== 'faculty' && <option value="faculty">Faculty</option>}
+              {excludeType !== 'schedule' && <option value="schedule">Schedules</option>}
+              {excludeType !== 'room' && <option value="room">Rooms</option>}
+              {excludeType !== 'notification' && <option value="notification">Notifications</option>}
             </select>
           </div>
 

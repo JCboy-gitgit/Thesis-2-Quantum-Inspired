@@ -342,6 +342,9 @@ class ScheduleGenerationRequest(BaseModel):
     
     # Use enhanced scheduler
     use_enhanced_scheduler: bool = True
+    
+    # NEW: Fixed/Manual allocations to prioritize
+    fixed_allocations: Optional[List[Dict[str, Any]]] = None
 
 
 class ScheduleGenerationResponse(BaseModel):
@@ -503,7 +506,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                 time_slots_data=time_slots,
                 config=config,
                 online_days=request.online_days,  # BulSU QSA: Pass online days
-                faculty_profiles_data=all_teachers  # Pass teacher data for constraints
+                faculty_profiles_data=all_teachers,  # Pass teacher data for constraints
+                fixed_allocations=request.fixed_allocations # NEW: Manual edits to prioritize
             )
             # Map result to expected format
             result["schedule_entries"] = result.get("allocations", [])

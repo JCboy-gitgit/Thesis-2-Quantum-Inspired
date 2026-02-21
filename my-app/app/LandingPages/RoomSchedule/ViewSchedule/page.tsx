@@ -1790,18 +1790,7 @@ export default function ViewSchedulePage() {
         <div className={styles.qtimeContainer}>
           {/* Header */}
           <div className={styles.pageHeader}>
-            <button className={styles.backButton} onClick={() => {
-              window.scrollTo(0, 0)
-              if (selectedSchedule) {
-                setSelectedSchedule(null)
-                setAllocations([])
-                setViewMode('list')
-              } else {
-                router.back()
-              }
-            }}>
-              <FaArrowLeft /> {selectedSchedule ? 'Back to History' : 'Back'}
-            </button>
+            {/* Removed Back Button as requested */}
 
             {selectedSchedule && (
               <div className={styles.headerActions}>
@@ -2513,6 +2502,7 @@ export default function ViewSchedulePage() {
                     fetchSchedules()
                     setShowArchiveModal(false)
                   }}
+                  excludeType="notification"
                 />
               )}
 

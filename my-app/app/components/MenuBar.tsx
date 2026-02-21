@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { MdMenu as Menu, MdPerson as User, MdLogout as LogOut, MdSettings as SettingsIcon, MdAccountCircle as UserCircle, MdKeyboardArrowUp as ChevronUp, MdKeyboardArrowDown as ChevronDown, MdArchive as Archive, MdDownload as Download } from 'react-icons/md'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import SettingsModal from './SettingsModal'
-import ArchiveModal from './ArchiveModal'
 import ProfileModal from './ProfileModal'
+import ArchiveModal from './ArchiveModal'
 import NotificationBell from './NotificationBell'
 import './MenuBar.css'
 
@@ -23,8 +23,8 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const router = useRouter()
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [showArchive, setShowArchive] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
@@ -213,18 +213,6 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                     <UserCircle size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                     Profile
                   </div>
-                  {isAdmin && (
-                    <div
-                      className="account-menu-item"
-                      onClick={() => {
-                        setShowAccountMenu(false)
-                        setShowArchive(true)
-                      }}
-                    >
-                      <Archive size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                      Archive
-                    </div>
-                  )}
                   <div
                     className="account-menu-item"
                     onClick={() => {
@@ -234,6 +222,16 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
                   >
                     <SettingsIcon size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                     Settings
+                  </div>
+                  <div
+                    className="account-menu-item"
+                    onClick={() => {
+                      setShowAccountMenu(false)
+                      setShowArchive(true)
+                    }}
+                  >
+                    <Archive size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
+                    Archive
                   </div>
                   {isInstallable && (
                     <div
@@ -288,14 +286,16 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         onClose={() => setShowSettings(false)}
       />
 
-      <ArchiveModal
-        isOpen={showArchive}
-        onClose={() => setShowArchive(false)}
-      />
 
       <ProfileModal
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}
+      />
+
+      <ArchiveModal
+        isOpen={showArchive}
+        onClose={() => setShowArchive(false)}
+        excludeType="notification"
       />
     </>
   )

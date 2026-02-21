@@ -276,12 +276,12 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
                       if (!notification.receipt || notification.receipt.status === 'unread') {
                         markAsRead(notification.id)
                       }
-                      if (notification.category === 'schedule_request') {
+                      if (notification.category === 'schedule_request' || notification.category === 'schedule_published') {
                         router.push('/faculty/schedules')
                         setOpen(false)
                       }
                     }}
-                    style={{ cursor: notification.category === 'schedule_request' ? 'pointer' : 'default' }}
+                    style={{ cursor: (notification.category === 'schedule_request' || notification.category === 'schedule_published') ? 'pointer' : 'default' }}
                   >
                     <div className={styles.itemContent}>
                       <div className={styles.itemHeader}>

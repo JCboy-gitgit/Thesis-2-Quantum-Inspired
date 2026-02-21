@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const formatted = (alerts || []).map(alert => ({
       ...alert,
       receipt: receipts[alert.id] || null
-    }))
+    })).filter(alert => !alert.receipt || alert.receipt.status !== 'dismissed')
 
     return NextResponse.json({ alerts: formatted })
   } catch (error: any) {

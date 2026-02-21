@@ -216,6 +216,73 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, data })
         }
 
+        if (action === 'create-absence-admin') {
+            const { allocation_id, faculty_id, absence_date, reason } = body
+
+            if (!allocation_id || !faculty_id || !absence_date) {
+                return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+            }
+
+            // Resolve schedule_id
+            const { data: allocRow } = await supabaseAdmin
+                .from('room_allocations')
+                .select('schedule_id')
+                .eq('id', allocation_id)
+                .single()
+            const resolvedScheduleId = allocRow?.schedule_id || null
+
+            const { data, error } = await supabaseAdmin
+                .from('live_timetable_absences')
+                .insert({
+                    allocation_id,
+                    faculty_id,
+                    absence_date,
+                    reason: reason || 'Market by Admin',
+                    schedule_id: resolvedScheduleId,
+                    status: 'confirmed'
+                })
+                .select()
+                .single()
+
+            if (error) throw error
+            return NextResponse.json({ success: true, data })
+        }
+
+        if (action === 'create-makeup-admin') {
+            const { allocation_id, faculty_id, requested_date, requested_time, requested_room, reason, original_absence_date } = body
+
+            if (!allocation_id || !faculty_id || !requested_date || !requested_time) {
+                return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+            }
+
+            // Resolve schedule_id
+            const { data: allocRow2 } = await supabaseAdmin
+                .from('room_allocations')
+                .select('schedule_id')
+                .eq('id', allocation_id)
+                .single()
+            const resolvedScheduleId2 = allocRow2?.schedule_id || null
+
+            const { data, error } = await supabaseAdmin
+                .from('live_makeup_requests')
+                .insert({
+                    allocation_id,
+                    faculty_id,
+                    requested_date,
+                    requested_time,
+                    requested_room: requested_room || null,
+                    reason: reason || 'Scheduled by Admin',
+                    schedule_id: resolvedScheduleId2,
+                    original_absence_date: original_absence_date || null,
+                    status: 'approved',
+                    reviewed_at: new Date().toISOString()
+                })
+                .select()
+                .single()
+
+            if (error) throw error
+            return NextResponse.json({ success: true, data })
+        }
         if (action === 'makeup-request') {
             const { allocation_id, faculty_id, requested_date, requested_time, requested_room, reason, original_absence_date } = body
 
@@ -274,7 +341,6 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({ success: true, data })
         }
-
         if (action === 'override') {
             // Admin overrides a slot for the current week
             const { schedule_id, allocation_id, week_start, override_day, override_time, override_room, override_building, note, admin_id } = body

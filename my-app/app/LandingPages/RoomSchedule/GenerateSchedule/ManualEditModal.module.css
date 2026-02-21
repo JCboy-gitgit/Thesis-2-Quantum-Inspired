@@ -1,0 +1,682 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.manualEditModal {
+    background: #ffffff;
+    width: 95vw;
+    max-width: 1600px;
+    height: 90vh;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.modalHeader {
+    padding: 24px 32px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.headerLeft h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+.headerLeft h2 svg {
+    color: #10b981;
+}
+
+.viewSelector {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 12px;
+    gap: 4px;
+}
+
+.viewSelector button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
+}
+
+.viewSelector button.active {
+    background: white;
+    color: #10b981;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.modalCloseBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.modalCloseBtn:hover {
+    background: #ef4444;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.manualEditBody {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+/* Courses Panel */
+.coursesPanel {
+    width: 320px;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    flex-shrink: 0;
+}
+
+.panelHeader {
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.panelHeader h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 16px 0;
+}
+
+.searchBox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f1f5f9;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.searchBox:focus-within {
+    background: white;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.searchBox svg {
+    color: #94a3b8;
+}
+
+.searchBox input {
+    background: transparent;
+    border: none;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e293b;
+    outline: none;
+}
+
+.classList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.classCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+    cursor: grab;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.classCard:hover {
+    border-color: #10b981;
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.05);
+    transform: translateY(-2px);
+}
+
+.classCard:active {
+    cursor: grabbing;
+}
+
+.classHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.classHeader strong {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 800;
+}
+
+.hoursBadge {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.classCard p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+.classDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.classDetails span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.classDetails span svg {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.featureTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.fTag {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    font-weight: 600;
+}
+
+/* Timetable Panel */
+.timetablePanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.timetablePanel .panelHeader {
+    background: white;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.itemNavigator {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.itemNavigator button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #64748b;
+}
+
+.itemNavigator button:hover {
+    background: #f1f5f9;
+    color: #10b981;
+    border-color: #10b981;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);
+}
+
+.currentItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 800;
+    color: #1e293b;
+    padding: 0 20px;
+}
+
+.currentItem svg {
+    color: #10b981;
+}
+
+.timetableScrollContainer {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background: #f8fafc;
+}
+
+.manualTimetable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.manualTimetable th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #f8fafc;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    font-weight: 700;
+    color: #475569;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.timeLabel {
+    width: 120px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    text-align: right;
+    padding-right: 16px;
+}
+
+.slotCell {
+    height: 60px;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    background: white;
+    transition: background 0.2s;
+}
+
+.slotCell:hover {
+    background: #f1f5f9;
+}
+
+.occupied {
+    background: #f8fafc;
+}
+
+.placedClass {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s;
+    cursor: default;
+}
+
+.placedClass:hover {
+    transform: scale(1.02);
+    z-index: 20 !important;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
+
+.placedClass strong {
+    font-size: 13px;
+    margin-bottom: 2px;
+    font-weight: 800;
+}
+
+.placedClass span {
+    opacity: 0.9;
+    font-weight: 600;
+}
+
+.allocTools {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.placedClass:hover .allocTools {
+    opacity: 1;
+}
+
+.allocTools button {
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.allocTools button:hover {
+    background: #ef4444;
+}
+
+.resizeHandle {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    cursor: ns-resize;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.placedClass:hover .resizeHandle {
+    opacity: 1;
+}
+
+.resizeHandle::after {
+    content: '';
+    width: 24px;
+    height: 3px;
+    background: white;
+    margin-top: 3px;
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+/* Modal Footer */
+.modalFooter {
+    padding: 24px 32px;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footerStats {
+    font-size: 15px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.footerStats strong {
+    color: #10b981;
+    font-size: 18px;
+}
+
+.footerActions {
+    display: flex;
+    gap: 16px;
+}
+
+.cancelBtn {
+    padding: 12px 28px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
+}
+
+.cancelBtn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+.saveBtn {
+    padding: 12px 32px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 15px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.saveBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+.saveBtn svg {
+    font-size: 20px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Dark Theme Support */
+:global([data-theme="dark"]) .manualEditModal {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+:global([data-theme="dark"]) .modalHeader,
+:global([data-theme="dark"]) .modalFooter,
+:global([data-theme="dark"]) .coursesPanel,
+:global([data-theme="dark"]) .timetablePanel .panelHeader {
+    background: #0f172a;
+    border-color: #1e293b;
+}
+
+:global([data-theme="dark"]) .headerLeft h2 {
+    color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .viewSelector {
+    background: #1e293b;
+}
+
+:global([data-theme="dark"]) .viewSelector button {
+    color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .viewSelector button.active {
+    background: #334155;
+    color: #10b981;
+}
+
+:global([data-theme="dark"]) .manualEditBody {
+    background: #020617;
+}
+
+:global([data-theme="dark"]) .classCard {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+:global([data-theme="dark"]) .classCard strong {
+    color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .manualTimetable {
+    background: #0f172a;
+}
+
+:global([data-theme="dark"]) .manualTimetable th,
+:global([data-theme="dark"]) .timeLabel {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+:global([data-theme="dark"]) .slotCell {
+    background: #0f172a;
+    border-color: #1e293b;
+}
+
+:global([data-theme="dark"]) .slotCell:hover {
+    background: #1e293b;
+}
+
+:global([data-theme="dark"]) .currentItem {
+    color: #f8fafc;
+}
+
+/* Green Theme Support */
+:global([data-theme="green"]) .manualEditModal {
+    background: #ffffff;
+    border-color: rgba(46, 175, 125, 0.4);
+}
+
+:global([data-theme="green"]) .modalHeader {
+    border-bottom-color: rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .manualEditBody {
+    background: #f0fdf4;
+}
+
+:global([data-theme="green"]) .viewSelector {
+    background: rgba(46, 175, 125, 0.15);
+}
+
+:global([data-theme="green"]) .viewSelector button {
+    color: #166534;
+}
+
+:global([data-theme="green"]) .viewSelector button.active {
+    background: white;
+    color: #2EAF7D;
+    box-shadow: 0 4px 12px rgba(46, 175, 125, 0.2);
+}
+
+:global([data-theme="green"]) .classCard:hover {
+    border-color: #2EAF7D;
+    box-shadow: 0 10px 15px -3px rgba(46, 175, 125, 0.1);
+}
+
+:global([data-theme="green"]) .hoursBadge {
+    background: rgba(46, 175, 125, 0.15);
+    color: #166534;
+}
+
+:global([data-theme="green"]) .placedClass {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
+}
+
+:global([data-theme="green"]) .currentItem {
+    color: #02353C;
+}
+
+:global([data-theme="green"]) .currentItem svg,
+:global([data-theme="green"]) .headerLeft h2 svg {
+    color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .itemNavigator button:hover {
+    background: white;
+    color: #2EAF7D;
+    border-color: #2EAF7D;
+}
+
+:global([data-theme="green"]) .saveBtn {
+    background: linear-gradient(135deg, #2EAF7D 0%, #166534 100%);
+    box-shadow: 0 6px 15px rgba(46, 175, 125, 0.3);
+}

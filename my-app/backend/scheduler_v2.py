@@ -647,7 +647,8 @@ class EnhancedQuantumScheduler:
         constraints: Optional[SchedulingConstraints] = None,
         active_days: Optional[List[str]] = None,
         online_days: Optional[List[str]] = None,  # NEW: Days where all classes are online
-        faculty_profiles: Optional[List[FacultyProfile]] = None  # NEW: Detailed faculty data
+        faculty_profiles: Optional[List[FacultyProfile]] = None,  # NEW: Detailed faculty data
+        fixed_allocations: Optional[List[Dict[str, Any]]] = None  # NEW: Manual edits
     ):
         # Problem 3: Decompose BEFORE storing sections
         # We need self.rooms initialized first to check capacities
@@ -746,6 +747,111 @@ class EnhancedQuantumScheduler:
         
         # Optimization stats
         self.stats = OptimizationStats()
+        
+        # NEW: Apply fixed/manual allocations from frontend
+        if fixed_allocations:
+            self._apply_fixed_allocations(fixed_allocations)
+
+    def _apply_fixed_allocations(self, fixed_allocations: List[Dict[str, Any]]):
+        """
+        Manually apply reservations/assignments from the frontend.
+        These are marked as 'is_pinned' so the QSA algorithm won't move them.
+        handles split sections (hybrid courses) by mapping original_section_id.
+        """
+        print(f"📌 Applying {len(fixed_allocations)} manual reservations...")
+        
+        # Build a map of original_id -> list of (split) sections
+        original_map = defaultdict(list)
+        for s in self.sections.values():
+            orig_id = getattr(s, 'original_section_id', None)
+            if orig_id is not None:
+                original_map[orig_id].append(s)
+        
+        for alloc in fixed_allocations:
+            section_id = alloc.get('class_id')
+            room_id = alloc.get('room_id')
+            day = (alloc.get('schedule_day', '') or '').lower()
+            time_range = alloc.get('schedule_time', '')
+            
+            if not all([section_id, day, time_range]):
+                continue
+                
+            # 1. Find the target section(s)
+            target_sections = []
+            if section_id in self.sections:
+                target_sections = [self.sections[section_id]]
+            elif section_id in original_map:
+                target_sections = original_map[section_id]
+            
+            if not target_sections:
+                print(f"   ⚠️ Could not find section {section_id} for manual allocation")
+                continue
+            
+            # 2. Find the starting slot index
+            parts = time_range.split(' - ')
+            start_time_str = parts[0]
+            start_slot = next((t for t in self.time_slots if t.start_time == start_time_str), None)
+            
+            if not start_slot:
+                print(f"   ⚠️ Invalid time slot '{start_time_str}' for manual allocation")
+                continue
+            
+            # 3. Match the best section (if multiple split sections exist)
+            # Heuristic: if room is LAB-ready, prefer lab section
+            room = self.rooms.get(room_id)
+            is_lab_room = self._is_lab_room(room_id) if room_id else False
+            
+            section = target_sections[0]
+            if len(target_sections) > 1:
+                # Try to match by type
+                for s in target_sections:
+                    if is_lab_room and s.requires_lab:
+                        section = s
+                        break
+                    if not is_lab_room and not s.requires_lab:
+                        section = s
+                        break
+            
+            # Skip if already pinned
+            if section.is_pinned:
+                # Maybe try another split section if available?
+                other_sections = [s for s in target_sections if not s.is_pinned]
+                if other_sections:
+                    section = other_sections[0]
+                else:
+                    continue
+            
+            needed_slots = self._get_required_slot_count(section)
+            
+            # Pin the section
+            section.is_pinned = True
+            section.pinned_day = day
+            section.pinned_room_id = room_id
+            section.pinned_time_slot = start_slot.id
+            
+            # Actually place it in the initial schedule
+            # Note: We don't check conflicts here because it's a manual override
+            slot_count = needed_slots
+            
+            assignment = (room_id, day, start_slot.id, slot_count)
+            self.section_assignments[section.id].append(assignment)
+            
+            # Mark slots as occupied
+            for i in range(slot_count):
+                slot_id = start_slot.id + i
+                if (room_id, day, slot_id) in self.time_slots_by_id:
+                    self.schedule[(room_id, day, slot_id)] = ScheduleSlot(
+                        section_id=section.id, # Use REAL section ID
+                        room_id=room_id,
+                        day_of_week=day,
+                        start_slot_id=start_slot.id,
+                        slot_count=slot_count,
+                        teacher_id=section.teacher_id,
+                        is_lab=section.requires_lab,
+                        is_pinned=True
+                    )
+            
+            print(f"   ✅ Pinned {section.section_code} to {day} {time_range} (Room {room_id})")
 
     def _decompose_oversized_sections(self, sections: List[Section]) -> List[Section]:
         """
@@ -3394,7 +3500,8 @@ def run_enhanced_scheduler(
     time_slots_data: Optional[List[Dict[str, Any]]] = None,
     config: Optional[Dict[str, Any]] = None,
     online_days: Optional[List[str]] = None,
-    faculty_profiles_data: Optional[List[Dict[str, Any]]] = None  # NEW: Faculty data passed from API
+    faculty_profiles_data: Optional[List[Dict[str, Any]]] = None,  # NEW: Faculty data passed from API
+    fixed_allocations: Optional[List[Dict[str, Any]]] = None # NEW: Manual edits
 ) -> Dict[str, Any]:
     """
     Run the enhanced Quantum-Inspired Annealing scheduler with BulSU QSA rules.
@@ -3794,7 +3901,8 @@ def run_enhanced_scheduler(
         constraints=constraints,
         active_days=active_days,
         online_days=normalized_online_days,
-        faculty_profiles=faculty_profiles  # Pass the profiles
+        faculty_profiles=faculty_profiles,  # Pass the profiles
+        fixed_allocations=fixed_allocations # NEW: Manual edits
     )
     
     allocations, stats = scheduler.optimize(

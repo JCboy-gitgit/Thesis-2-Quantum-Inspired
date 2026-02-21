@@ -17,6 +17,8 @@ import {
 import { MdSchool, MdTableChart, MdMenuBook, MdPeople, MdSettings, MdFlashOn, MdCheckCircle, MdWarning, MdAccessTime, MdDomain, MdMeetingRoom, MdKeyboardArrowDown, MdKeyboardArrowRight, MdPlayArrow, MdReplay, MdVisibility, MdClose, MdUpload, MdError, MdDescription } from 'react-icons/md'
 import { toast } from 'sonner'
 import { pushAdminNotification } from '@/app/components/NotificationBell'
+import { createSystemAlert } from '@/lib/notificationUtils'
+import ManualEditModal from './ManualEditModal'
 
 // ==================== Types ====================
 interface CampusGroup {
@@ -86,6 +88,7 @@ interface CampusRoom {
   has_projector: boolean
   is_pwd_accessible: boolean
   college?: string | null
+  feature_tags?: string[] // NEW: Tags like 'Computer Lab', 'Projector', etc.
 }
 
 interface ClassSchedule {
@@ -104,6 +107,7 @@ interface ClassSchedule {
   semester: string
   academic_year: string
   teacher_name?: string  // Assigned professor/teacher
+  required_features?: string[] // NEW: Room features required by the course
 }
 
 interface TeacherSchedule {
@@ -116,19 +120,6 @@ interface TeacherSchedule {
   email: string
 }
 
-interface FacultyTypeRule {
-  maxHoursPerWeek: number
-  maxHoursPerDay: number
-  maxSectionsTotal: number
-  maxSectionsPerCourse: number
-}
-
-const DEFAULT_FACULTY_RULES: Record<string, FacultyTypeRule> = {
-  FullTime: { maxHoursPerWeek: 24, maxHoursPerDay: 6, maxSectionsTotal: 6, maxSectionsPerCourse: 2 },
-  PartTime: { maxHoursPerWeek: 12, maxHoursPerDay: 4, maxSectionsTotal: 3, maxSectionsPerCourse: 2 },
-  VSL: { maxHoursPerWeek: 15, maxHoursPerDay: 6, maxSectionsTotal: 4, maxSectionsPerCourse: 3 },
-  COS: { maxHoursPerWeek: 18, maxHoursPerDay: 6, maxSectionsTotal: 5, maxSectionsPerCourse: 2 }
-}
 
 interface ScheduleConfig {
   scheduleName: string
@@ -149,7 +140,6 @@ interface ScheduleConfig {
   strictLabRoomMatching: boolean // NEW
   strictLectureRoomMatching: boolean // NEW
   allowSplitSessions: boolean // NEW
-  facultyTypeRules: Record<string, FacultyTypeRule> // NEW
 }
 
 interface TimeSettings {
@@ -318,7 +308,6 @@ export default function GenerateSchedulePage() {
     strictLabRoomMatching: true,
     strictLectureRoomMatching: true,
     allowSplitSessions: true,
-    facultyTypeRules: { ...DEFAULT_FACULTY_RULES }
   })
 
   // Time Configuration
@@ -346,6 +335,8 @@ export default function GenerateSchedulePage() {
   const [selectedTimetableRoom, setSelectedTimetableRoom] = useState<string>('all') // NEW: Filter by specific room
   const [selectedTimetableSection, setSelectedTimetableSection] = useState<string>('all') // NEW: Filter by specific section
   const [selectedTimetableTeacher, setSelectedTimetableTeacher] = useState<string>('all') // NEW: Filter by specific teacher
+  const [manualAllocations, setManualAllocations] = useState<RoomAllocation[]>([]) // NEW: Manual edits
+  const [showManualModal, setShowManualModal] = useState(false) // NEW: Modal toggle
 
   // Expanded sections
   const [expandedCampus, setExpandedCampus] = useState(false)
@@ -364,10 +355,6 @@ export default function GenerateSchedulePage() {
   const [viewerData, setViewerData] = useState<any[]>([])
   const [viewerLoading, setViewerLoading] = useState(false)
 
-  // Auto-generate toggle state
-  const [autoGenerateEnabled, setAutoGenerateEnabled] = useState(false)
-  const [lastDataHash, setLastDataHash] = useState<string>('')
-  const [autoGenerateCountdown, setAutoGenerateCountdown] = useState(0)
 
   // Unassigned courses/teacher warning states
   const [unassignedCourses, setUnassignedCourses] = useState<{
@@ -583,6 +570,21 @@ export default function GenerateSchedulePage() {
         return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
       })
 
+      // Fetch room features (tags) for these rooms
+      const roomIds = filteredData.map((r: any) => r.id)
+      const { data: featureData } = await supabase
+        .from('room_features')
+        .select('room_id, feature_tags(tag_name)')
+        .in('room_id', roomIds)
+
+      const featureMap = new Map<number, string[]>()
+      if (featureData) {
+        featureData.forEach((f: any) => {
+          if (!featureMap.has(f.room_id)) featureMap.set(f.room_id, [])
+          if (f.feature_tags?.tag_name) featureMap.get(f.room_id)!.push(f.feature_tags.tag_name)
+        })
+      }
+
       setRooms(filteredData.map((r: any) => ({
         id: r.id,
         campus: r.campus || '',
@@ -594,7 +596,8 @@ export default function GenerateSchedulePage() {
         has_ac: r.has_ac || false,
         has_projector: r.has_projector || false,
         is_pwd_accessible: r.is_pwd_accessible || r.is_first_floor || false,
-        college: r.college || null
+        college: r.college || null,
+        feature_tags: featureMap.get(r.id) || []
       })))
     }
   }
@@ -1067,10 +1070,25 @@ export default function GenerateSchedulePage() {
           })
         }
 
+        // Fetch course requirements
+        const { data: reqData } = await supabase
+          .from('subject_room_requirements')
+          .select('course_id, feature_tags(tag_name)')
+          .in('course_id', filteredCourses.map((c: any) => c.id))
+
+        const reqMap = new Map<number, string[]>()
+        if (reqData) {
+          reqData.forEach((r: any) => {
+            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, [])
+            if (r.feature_tags?.tag_name) reqMap.get(r.course_id)!.push(r.feature_tags.tag_name)
+          })
+        }
+
         for (const section of batchSections) {
           const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
           const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
           for (const course of sectionCourses) {
+            const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
             const teacherKeyNoSection = `${course.id}-`
             const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
@@ -1098,7 +1116,8 @@ export default function GenerateSchedulePage() {
               department: course.department || section.department || '',
               semester: course.semester || '',
               academic_year: course.academic_year || '',
-              teacher_name: assignedTeacher?.faculty_name || ''
+              teacher_name: assignedTeacher?.faculty_name || '',
+              required_features: reqMap.get(courseId) || []
             })
           }
         }
@@ -1189,10 +1208,25 @@ export default function GenerateSchedulePage() {
           })
         }
 
+        // Fetch course requirements
+        const { data: reqData } = await supabase
+          .from('subject_room_requirements')
+          .select('course_id, feature_tags(tag_name)')
+          .in('course_id', filteredCourses.map((c: any) => c.id))
+
+        const reqMap = new Map<number, string[]>()
+        if (reqData) {
+          reqData.forEach((r: any) => {
+            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, [])
+            if (r.feature_tags?.tag_name) reqMap.get(r.course_id)!.push(r.feature_tags.tag_name)
+          })
+        }
+
         for (const section of batchSections) {
           const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
           const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
           for (const course of sectionCourses) {
+            const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
             const teacherKeyNoSection = `${course.id}-`
             const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
@@ -1218,9 +1252,10 @@ export default function GenerateSchedulePage() {
               lab_hours: course.lab_hours || 0,
               total_hours: (course.lec_hours || 0) + (course.lab_hours || 0),
               department: course.department || section.department || '',
-              semester: course.semester || selectedSemester,
+              semester: course.semester || '',
               academic_year: course.academic_year || '',
-              teacher_name: assignedTeacher?.faculty_name || ''
+              teacher_name: assignedTeacher?.faculty_name || '',
+              required_features: reqMap.get(courseId) || []
             })
           }
         }
@@ -1470,17 +1505,8 @@ export default function GenerateSchedulePage() {
           strict_lab_room_matching: config.strictLabRoomMatching,
           strict_lecture_room_matching: config.strictLectureRoomMatching,
           allow_split_sessions: config.allowSplitSessions,
-          // NEW: Professional Faculty Type Rules
-          faculty_types: Object.entries(config.facultyTypeRules).reduce((acc, [key, value]) => ({
-            ...acc,
-            [key]: {
-              max_hours_per_week: value.maxHoursPerWeek,
-              max_hours_per_day: value.maxHoursPerDay,
-              max_sections_total: value.maxSectionsTotal,
-              max_sections_per_course: value.maxSectionsPerCourse
-            }
-          }), {})
-        }
+        },
+        manual_allocations: manualAllocations // NEW: Manual edits to prioritize
       }
 
       console.log('[GenerateSchedule] Sending to Python backend:', JSON.stringify({
@@ -1602,6 +1628,16 @@ export default function GenerateSchedulePage() {
           severity: 'success',
           link: '/LandingPages/RoomSchedule/ViewSchedule'
         })
+
+        // Persist to database
+        createSystemAlert({
+          title: 'Schedule Generated Successfully',
+          message: `${scheduledCount} classes successfully scheduled with zero conflicts for ${config.scheduleName}.`,
+          audience: 'admin',
+          severity: 'success',
+          category: 'schedule_generation',
+          metadata: { scheduleName: config.scheduleName, scheduledCount }
+        })
       } else if (conflictCount > 0 || unscheduledCount > 0) {
         // Schedule has conflicts or unscheduled classes
         toast.warning('Schedule Generated with Issues', {
@@ -1619,6 +1655,16 @@ export default function GenerateSchedulePage() {
           message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts.`,
           severity: 'warning',
           link: '/LandingPages/RoomSchedule/ViewSchedule'
+        })
+
+        // Persist to database
+        createSystemAlert({
+          title: 'Schedule Generated with Issues',
+          message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts for ${config.scheduleName}. Review needed.`,
+          audience: 'admin',
+          severity: 'warning',
+          category: 'schedule_generation',
+          metadata: { scheduleName: config.scheduleName, scheduledCount, conflictCount, unscheduledCount }
         })
       } else {
         toast.success('Schedule Generated', {
@@ -4110,95 +4156,6 @@ export default function GenerateSchedulePage() {
 
                       <div className={styles.divider} />
 
-                      {/* Professional Faculty Type Rules (New Section) */}
-                      <div className={styles.facultyRulesSection}>
-                        <div className={styles.sectionHeader}>
-                          <div className={styles.constraintLabelGroup}>
-                            <label className={styles.formLabel}>Faculty Type Load Limits</label>
-                            <span className={styles.formHint}>Professional teaching hour limits based on employment type</span>
-                          </div>
-                        </div>
-
-                        <div className={styles.facultyRulesGrid}>
-                          {Object.entries(config.facultyTypeRules).map(([type, rules]) => (
-                            <div key={type} className={styles.facultyTypeCard}>
-                              <div className={styles.facultyTypeHeader}>
-                                <span className={styles.facultyTypeName}>{type}</span>
-                              </div>
-                              <div className={styles.facultyTypeInputs}>
-                                <div className={styles.miniInputGroup}>
-                                  <label>Weekly Hrs</label>
-                                  <input
-                                    type="number"
-                                    value={rules.maxHoursPerWeek}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0
-                                      setConfig(prev => ({
-                                        ...prev,
-                                        facultyTypeRules: {
-                                          ...prev.facultyTypeRules,
-                                          [type]: { ...rules, maxHoursPerWeek: val }
-                                        }
-                                      }))
-                                    }}
-                                  />
-                                </div>
-                                <div className={styles.miniInputGroup}>
-                                  <label>Daily Hrs</label>
-                                  <input
-                                    type="number"
-                                    value={rules.maxHoursPerDay}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0
-                                      setConfig(prev => ({
-                                        ...prev,
-                                        facultyTypeRules: {
-                                          ...prev.facultyTypeRules,
-                                          [type]: { ...rules, maxHoursPerDay: val }
-                                        }
-                                      }))
-                                    }}
-                                  />
-                                </div>
-                                <div className={styles.miniInputGroup}>
-                                  <label>Max Sec</label>
-                                  <input
-                                    type="number"
-                                    value={rules.maxSectionsTotal}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0
-                                      setConfig(prev => ({
-                                        ...prev,
-                                        facultyTypeRules: {
-                                          ...prev.facultyTypeRules,
-                                          [type]: { ...rules, maxSectionsTotal: val }
-                                        }
-                                      }))
-                                    }}
-                                  />
-                                </div>
-                                <div className={styles.miniInputGroup}>
-                                  <label>Sec/Course</label>
-                                  <input
-                                    type="number"
-                                    value={rules.maxSectionsPerCourse}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0
-                                      setConfig(prev => ({
-                                        ...prev,
-                                        facultyTypeRules: {
-                                          ...prev.facultyTypeRules,
-                                          [type]: { ...rules, maxSectionsPerCourse: val }
-                                        }
-                                      }))
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -4377,51 +4334,34 @@ export default function GenerateSchedulePage() {
                     </button>
                   </div>
 
-                  {/* Auto-Generate Toggle */}
-                  <div className={styles.autoGenerateSection}>
-                    <div className={styles.autoGenerateHeader}>
-                      <div className={styles.autoGenerateInfo}>
-                        <FaSync className={autoGenerateEnabled ? styles.autoSyncActive : ''} />
-                        <div>
-                          <h4>Auto-Generate Schedules</h4>
-                          <p>Automatically regenerate schedules when data changes (30 min interval)</p>
-                        </div>
-                      </div>
-                      <label className={styles.toggleSwitch}>
-                        <input
-                          type="checkbox"
-                          checked={autoGenerateEnabled}
-                          onChange={(e) => setAutoGenerateEnabled(e.target.checked)}
-                        />
-                        <span className={styles.toggleSlider}></span>
-                      </label>
-                    </div>
-                    {autoGenerateEnabled && (
-                      <div className={styles.autoGenerateStatus}>
-                        <FaClock />
-                        <span>Auto-generate is active. System will check for data changes every 30 minutes.</span>
-                      </div>
-                    )}
-                  </div>
 
                   {/* Generate Button */}
                   <div className={styles.generateSection}>
-                    <button
-                      className={`${styles.generateButton} ${scheduling ? styles.generating : ''}`}
-                      onClick={handleGenerateSchedule}
-                      disabled={scheduling || !canGenerate}
-                    >
-                      {scheduling ? (
-                        <>
-                          <FaSpinner className={styles.spinnerIcon} />
-                          Generating Schedule... {(timer / 1000).toFixed(1)}s
-                        </>
-                      ) : (
-                        <>
-                          <MdPlayArrow size={20} /> Generate Room Allocation Schedule
-                        </>
-                      )}
-                    </button>
+                    <div className={styles.generateButtonGroup}>
+                      <button
+                        className={`${styles.manualEditButton}`}
+                        onClick={() => setShowManualModal(true)}
+                        disabled={scheduling || !canGenerate}
+                      >
+                        <MdTableChart size={20} /> Manual Edit First
+                      </button>
+                      <button
+                        className={`${styles.generateButton} ${scheduling ? styles.generating : ''}`}
+                        onClick={handleGenerateSchedule}
+                        disabled={scheduling || !canGenerate}
+                      >
+                        {scheduling ? (
+                          <>
+                            <FaSpinner className={styles.spinnerIcon} />
+                            Generating Schedule... {(timer / 1000).toFixed(1)}s
+                          </>
+                        ) : (
+                          <>
+                            <MdPlayArrow size={20} /> Generate Room Allocation Schedule
+                          </>
+                        )}
+                      </button>
+                    </div>
                     {!canGenerate && (
                       <p className={styles.generateHint}>
                         Please enter a schedule name to generate
@@ -4749,6 +4689,32 @@ export default function GenerateSchedulePage() {
           </div>
         </div>
       )}
+
+      {/* Manual Edit Modal */}
+      <ManualEditModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onSave={(newManualAllocations) => {
+          setManualAllocations(newManualAllocations)
+          toast.success('Manual preferences saved', {
+            description: `${newManualAllocations.length} classes will be prioritized during generation.`
+          })
+
+          if (newManualAllocations.length > 0) {
+            createSystemAlert({
+              title: 'Manual Preferences Updated',
+              message: `${newManualAllocations.length} manual allocations have been set for the next schedule generation.`,
+              audience: 'admin',
+              severity: 'info',
+              category: 'manual_edit'
+            })
+          }
+        }}
+        rooms={getFilteredRooms()}
+        classes={allLoadedClasses}
+        timeSettings={timeSettings}
+        initialAllocations={manualAllocations}
+      />
     </div>
   )
 }

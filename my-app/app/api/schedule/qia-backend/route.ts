@@ -283,8 +283,56 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   const sortedSections = [...sections].sort((a, b) => b.student_count - a.student_count)
 
   let scheduledCount = 0
+  const pinnedSectionIds = new Set<number>()
+
+  // Process manual allocations first
+  const manualAllocations = (body as any).manual_allocations || []
+  if (manualAllocations.length > 0) {
+    console.log(`📌 Fallback: Pre-filling ${manualAllocations.length} manual allocations`)
+    for (const manual of manualAllocations) {
+      const section = sections.find(s => s.id === manual.class_id)
+      if (!section) continue
+
+      const startTime = manual.schedule_time.split(' - ')[0]
+      const startSlot = timeSlots.find(s => s.start_time === startTime)
+      const endSlot = timeSlots.find(s => s.start_time === manual.schedule_time.split(' - ')[1] || s.end_time === manual.schedule_time.split(' - ')[1])
+
+      if (!startSlot) continue
+
+      const day = manual.schedule_day
+      const roomId = manual.room_id
+      const isOnline = manual.is_online || false
+
+      // Mark occupancy
+      const slotIdx = timeSlots.indexOf(startSlot)
+      const weeklyHours = section.weekly_hours || 3
+      const slotCount = Math.max(2, weeklyHours * 2)
+
+      for (let i = 0; i < slotCount && (slotIdx + i) < timeSlots.length; i++) {
+        const s = timeSlots[slotIdx + i]
+        occupancy.set(`${roomId}-${day}-${s.id}`, true)
+      }
+
+      allocations.push({
+        ...manual,
+        is_online: isOnline,
+        status: 'scheduled'
+      })
+
+      pinnedSectionIds.add(section.id)
+      scheduledCount++
+
+      // Update tracking
+      const slotEndMins = parseTimeToMinutes(timeSlots[Math.min(slotIdx + slotCount - 1, timeSlots.length - 1)].end_time)
+      const group = getStudentGroup(section.section_code || '')
+      updateGroupTracking(group, day.toLowerCase(), parseTimeToMinutes(startSlot.start_time), slotEndMins)
+      updateGroupCourseTracking(group, day.toLowerCase(), section.course_code)
+    }
+  }
 
   for (const section of sortedSections) {
+    // Skip if already pinned/manual
+    if (pinnedSectionIds.has(section.id)) continue
     // Calculate required 30-min slots: hours * 2 (since each hour = 2 thirty-minute slots)
     // Example: 5 hours = 10 slots = 2 sessions of 2.5 hours (5 slots each)
     const weeklyHours = section.weekly_hours || ((section.lec_hours || 0) + (section.lab_hours || 0)) || 3
@@ -894,7 +942,8 @@ export async function POST(request: NextRequest) {
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
       strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? true, // Lectures should NOT be in lab rooms
       // Split session settings - allow classes to be divided into multiple sessions
-      allow_split_sessions: body.config.allow_split_sessions ?? true // Default: enabled
+      allow_split_sessions: body.config.allow_split_sessions ?? true, // Default: enabled
+      fixed_allocations: (body as any).manual_allocations || [] // NEW: Manual edits to prioritize
     }
 
     console.log('📡 Trying to connect to Python backend...')

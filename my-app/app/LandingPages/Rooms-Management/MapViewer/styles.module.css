@@ -1931,29 +1931,29 @@
 }
 
 .element_wall {
-  background: #374151 !important;
-  border: none !important;
+  background: #374151;
+  border: none;
 }
 
 .element_hallway {
-  background: #d1d5db !important;
-  border: 2px dashed #9ca3af !important;
+  background: #d1d5db;
+  border: 2px dashed #9ca3af;
 }
 
 .element_door {
-  background: #d1fae5 !important;
-  border-color: #10b981 !important;
+  background: #d1fae5;
+  border-color: #10b981;
 }
 
 .element_stair {
-  background: #fef3c7 !important;
-  border-color: #f59e0b !important;
+  background: #fef3c7;
+  border-color: #f59e0b;
   gap: 4px;
 }
 
 .element_text {
-  background: transparent !important;
-  border: 1px dashed #9ca3af !important;
+  background: transparent;
+  border: 1px dashed #9ca3af;
 }
 
 /* Resizing state */
@@ -3623,9 +3623,9 @@
 }
 
 .element_icon {
-  background: #6366f1 !important;
-  border-color: #4f46e5 !important;
-  border-radius: 8px !important;
+  background: #6366f1;
+  border-color: #4f46e5;
+  border-radius: 8px;
 }
 
 /* ==================== Shape Element ==================== */
@@ -3637,9 +3637,9 @@
 }
 
 .element_shape {
-  background: #10b981 !important;
-  border-color: #059669 !important;
-  border-radius: 8px !important;
+  background: #10b981;
+  border-color: #059669;
+  border-radius: 8px;
 }
 
 /* ==================== View Only Mode ==================== */

@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MdNotifications, MdPersonAdd, MdAccessTime, MdCheckCircle, MdBolt, MdWarning, MdInfo, MdDelete, MdArchive } from 'react-icons/md'
+import { MdNotifications, MdPersonAdd, MdAccessTime, MdCheckCircle, MdBolt, MdWarning, MdInfo, MdDelete, MdArchive, MdRefresh, MdArrowBack, MdSearch, MdClose } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
-import ArchiveModal from './ArchiveModal'
+import { toast } from 'sonner'
 import './NotificationBell.css'
 
 interface Notification {
@@ -16,6 +16,17 @@ interface Notification {
   read: boolean
   severity?: 'info' | 'success' | 'warning' | 'error'
   link?: string
+}
+
+interface ArchivedItem {
+  id: string
+  item_type: string
+  item_name: string
+  item_data: any
+  deleted_at: string
+  deleted_by: string | null
+  original_table: string
+  original_id: string | number
 }
 
 interface NotificationBellProps {
@@ -70,7 +81,9 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const [view, setView] = useState<'list' | 'archive'>('list')
+  const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
+  const [archiveSearch, setArchiveSearch] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -78,6 +91,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+        setView('list') // Reset to list when closing
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -96,8 +110,11 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
   // Fetch when opening
   useEffect(() => {
-    if (isOpen) fetchNotifications()
-  }, [isOpen])
+    if (isOpen) {
+      fetchNotifications()
+      if (view === 'archive') fetchArchivedItems()
+    }
+  }, [isOpen, view])
 
   // Load on mount + poll every 30s + Realtime
   useEffect(() => {
@@ -114,8 +131,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'system_alerts',
-          filter: 'audience=eq.admin'
+          table: 'system_alerts'
         },
         (payload) => {
           // Refresh notifications when new admin alert comes in
@@ -130,23 +146,46 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     }
   }, [])
 
+  const fetchArchivedItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('archived_items')
+        .select('*')
+        .eq('item_type', 'notification')
+        .order('deleted_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setArchivedItems(data || [])
+      return (data || []).map(i => String(i.original_id))
+    } catch (error) {
+      console.error('Error fetching archive:', error)
+      return []
+    }
+  }
+
   const fetchNotifications = useCallback(async () => {
     setLoading(true)
     try {
+      // 0. Fetch archived IDs first to filter them out
+      const archivedIds = await fetchArchivedItems()
+
       // 1. Fetch pending registrations
       const regResponse = await fetch('/api/faculty-registration?status=pending')
       const regData = await regResponse.json()
 
-      const registrationNotifs: Notification[] = (regData.registrations || []).map((reg: any) => ({
-        id: `reg_${reg.id}`,
-        type: 'registration' as const,
-        title: 'New Faculty Registration',
-        message: `${reg.email} has requested to register`,
-        timestamp: new Date(reg.created_at),
-        read: false,
-        severity: 'info' as const,
-        link: '/LandingPages/FacultyManagement/FacultyApproval'
-      }))
+      const registrationNotifs: Notification[] = (regData.registrations || [])
+        .filter((reg: any) => !archivedIds.includes(`reg_${reg.id}`))
+        .map((reg: any) => ({
+          id: `reg_${reg.id}`,
+          type: 'registration' as const,
+          title: 'New Faculty Registration',
+          message: `${reg.email} has requested to register`,
+          timestamp: new Date(reg.created_at),
+          read: false,
+          severity: 'info' as const,
+          link: '/LandingPages/FacultyManagement/FacultyApproval'
+        }))
 
       // 2. Fetch system alerts from DB
       let alertNotifs: Notification[] = []
@@ -157,18 +196,20 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
           const contentType = alertResponse.headers.get('content-type')
           if (contentType?.includes('application/json')) {
             const alertData = await alertResponse.json()
-            alertNotifs = (alertData.alerts || []).map((alert: any) => ({
-              id: `alert_${alert.id}`,
-              type: 'alert' as const,
-              title: alert.title,
-              message: alert.message,
-              timestamp: new Date(alert.created_at),
-              read: alert.receipt?.status === 'read' || alert.receipt?.status === 'confirmed',
-              severity: alert.severity || 'info',
-              link: alert.category === 'schedule_request'
-                ? '/LandingPages/RoomSchedule/ViewSchedule'
-                : undefined
-            }))
+            alertNotifs = (alertData.alerts || [])
+              .filter((alert: any) => !archivedIds.includes(`alert_${alert.id}`))
+              .map((alert: any) => ({
+                id: `alert_${alert.id}`,
+                type: 'alert' as const,
+                title: alert.title,
+                message: alert.message,
+                timestamp: new Date(alert.created_at),
+                read: alert.receipt?.status === 'read' || alert.receipt?.status === 'confirmed',
+                severity: alert.severity || 'info',
+                link: alert.category === 'schedule_request' || alert.category === 'schedule_generation'
+                  ? '/LandingPages/RoomSchedule/ViewSchedule'
+                  : undefined
+              }))
           }
         }
       } catch {
@@ -176,7 +217,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       }
 
       // 3. Load persisted local notifications (schedule events, etc.)
-      const persisted = loadPersistedNotifications()
+      const persisted = loadPersistedNotifications().filter(n => !archivedIds.includes(n.id))
 
       // Merge all, deduplicate by id, sort newest first
       const allMap = new Map<string, Notification>()
@@ -198,11 +239,31 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  const handleNotificationClick = (notif: Notification) => {
-    // Mark as read
+  const handleNotificationClick = async (notif: Notification) => {
+    // 1. Update local state
     const updated = notifications.map(n => n.id === notif.id ? { ...n, read: true } : n)
     setNotifications(updated)
     savePersistedNotifications(updated.filter(n => n.type !== 'registration'))
+
+    // 2. Persist to DB if it's an alert
+    if (notif.type === 'alert') {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          await fetch('/api/alerts', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: session.user.id,
+              alertId: notif.id.replace('alert_', ''),
+              action: 'read'
+            })
+          })
+        }
+      } catch (err) {
+        console.error('Failed to mark as read in DB:', err)
+      }
+    }
 
     if (notif.link) {
       router.push(notif.link)
@@ -266,25 +327,66 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     const { data: { session } } = await supabase.auth.getSession()
     const userId = session?.user?.id
 
-    // Archive
-    await supabase.from('archived_items').insert({
-      item_type: 'notification',
-      item_name: notif.title,
-      item_data: notif,
-      deleted_by: userId,
-      original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
-      original_id: notif.id
-    })
-
+    // Optimistic UI update
     setNotifications(prev => prev.filter(n => n.id !== id))
     savePersistedNotifications(notifications.filter(n => n.id !== id && n.type !== 'registration'))
 
-    if (userId && notif.type === 'alert') {
-      await fetch('/api/alerts', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ alertId: notif.id.replace('alert_', ''), userId })
+    try {
+      // Archive
+      await supabase.from('archived_items').insert({
+        item_type: 'notification',
+        item_name: notif.title,
+        item_data: notif,
+        deleted_by: userId,
+        original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
+        original_id: notif.id
       })
+
+      if (userId && notif.type === 'alert') {
+        const res = await fetch('/api/alerts', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alertId: notif.id.replace('alert_', ''), userId, action: 'clear_all' })
+        })
+        if (!res.ok) throw new Error('Failed to delete from server')
+      }
+      toast.success('Notification archived')
+    } catch (err) {
+      console.error('Delete failed:', err)
+      // Rollback on failure? For now, just refresh
+      fetchNotifications()
+    }
+  }
+
+  const handleRestore = async (item: ArchivedItem) => {
+    try {
+      const { id, ...notifData } = item.item_data
+      // Restore logic
+      if (item.original_table === 'system_alerts') {
+        await supabase.from('system_alerts').insert(notifData)
+      } else {
+        pushAdminNotification(notifData)
+      }
+
+      // Delete from archive
+      await supabase.from('archived_items').delete().eq('id', item.id)
+
+      setArchivedItems(prev => prev.filter(i => i.id !== item.id))
+      fetchNotifications()
+      toast.success('Notification restored')
+    } catch (err) {
+      console.error('Restore failed:', err)
+      toast.error('Failed to restore notification')
+    }
+  }
+
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      await supabase.from('archived_items').delete().eq('id', id)
+      setArchivedItems(prev => prev.filter(i => i.id !== id))
+      toast.success('Removed permanently')
+    } catch (err) {
+      toast.error('Failed to remove')
     }
   }
 
@@ -335,103 +437,137 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
       {isOpen && (
         <div className="notification-dropdown">
-          <div className="notification-header">
-            <h3>Notifications</h3>
-            <div className="notification-header-actions">
-              {unreadCount > 0 && (
-                <button
-                  className="mark-all-btn"
-                  onClick={markAllRead}
-                  title="Mark all as read"
-                >
-                  <MdCheckCircle size={14} />
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  className="archive-btn"
-                  onClick={() => setIsArchiveOpen(true)}
-                  title="View Archive"
-                >
-                  <MdArchive size={14} />
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button
-                  className="clear-all-btn"
-                  onClick={clearAllNotifications}
-                  title="Clear all"
-                >
-                  <MdDelete size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+          {view === 'list' ? (
+            <>
+              <div className="notification-header">
+                <h3>Notifications</h3>
+                <div className="notification-header-actions">
+                  {unreadCount > 0 && (
+                    <button className="mark-all-btn" onClick={markAllRead} title="Mark all as read">
+                      <MdCheckCircle size={14} />
+                    </button>
+                  )}
+                  <button className="archive-btn" onClick={() => setView('archive')} title="View Archive">
+                    <MdArchive size={14} />
+                  </button>
+                  {notifications.length > 0 && (
+                    <button className="clear-all-btn" onClick={clearAllNotifications} title="Clear all">
+                      <MdDelete size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-          <div className="notification-list">
-            {loading && notifications.length === 0 ? (
-              <div className="notification-empty">
-                <div className="loading-spinner"></div>
-                <p>Loading...</p>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="notification-empty">
-                <MdNotifications size={40} />
-                <p>No new notifications</p>
-              </div>
-            ) : (
-              notifications.slice(0, 20).map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`notification-item ${!notif.read ? 'unread' : ''} ${notif.severity === 'error' ? 'error' : ''} ${notif.severity === 'success' ? 'success' : ''}`}
-                  onClick={() => handleNotificationClick(notif)}
-                >
-                  <div className={`notification-icon ${notif.type}`}>
-                    {getNotificationIcon(notif)}
+              <div className="notification-list">
+                {loading && notifications.length === 0 ? (
+                  <div className="notification-empty">
+                    <div className="loading-spinner"></div>
+                    <p>Loading...</p>
                   </div>
-                  <div className="notification-content">
-                    <span className="notification-title">{notif.title}</span>
-                    <span className="notification-message">{notif.message}</span>
-                    <span className="notification-time">
-                      <MdAccessTime size={12} /> {formatTime(notif.timestamp)}
-                    </span>
+                ) : notifications.length === 0 ? (
+                  <div className="notification-empty">
+                    <MdNotifications size={40} />
+                    <p>No new notifications</p>
                   </div>
+                ) : (
+                  notifications.slice(0, 20).map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`notification-item ${!notif.read ? 'unread' : ''} ${notif.severity === 'error' ? 'error' : ''} ${notif.severity === 'success' ? 'success' : ''}`}
+                      onClick={() => handleNotificationClick(notif)}
+                    >
+                      <div className={`notification-icon ${notif.type}`}>
+                        {getNotificationIcon(notif)}
+                      </div>
+                      <div className="notification-content">
+                        <span className="notification-title">{notif.title}</span>
+                        <span className="notification-message">{notif.message}</span>
+                        <span className="notification-time">
+                          <MdAccessTime size={12} /> {formatTime(notif.timestamp)}
+                        </span>
+                      </div>
+                      <button
+                        className="item-delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteNotification(notif.id)
+                        }}
+                      >
+                        <MdDelete size={14} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {notifications.some(n => n.type === 'registration' && !n.read) && (
+                <div className="notification-footer">
                   <button
-                    className="item-delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteNotification(notif.id)
+                    className="approve-all-btn"
+                    onClick={() => {
+                      router.push('/LandingPages/FacultyManagement/FacultyApproval')
+                      setIsOpen(false)
                     }}
                   >
-                    <MdDelete size={14} />
+                    <MdPersonAdd size={16} />
+                    Review Pending Requests
                   </button>
                 </div>
-              ))
-            )}
-          </div>
-
-          {notifications.some(n => n.type === 'registration' && !n.read) && (
-            <div className="notification-footer">
-              <button
-                className="approve-all-btn"
-                onClick={() => {
-                  router.push('/LandingPages/FacultyManagement/FacultyApproval')
-                  setIsOpen(false)
-                }}
-              >
-                <MdPersonAdd size={16} />
-                Review Pending Requests
-              </button>
-            </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="notification-header">
+                <div className="archive-view-header">
+                  <button className="back-btn" onClick={() => setView('list')}><MdArrowBack /></button>
+                  <h3>Archived</h3>
+                </div>
+                <div className="archive-search-mini">
+                  <MdSearch size={14} />
+                  <input
+                    type="text"
+                    placeholder="Search archive..."
+                    value={archiveSearch}
+                    onChange={e => setArchiveSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="notification-list archive-list-mini">
+                {archivedItems.length === 0 ? (
+                  <div className="notification-empty">
+                    <MdArchive size={40} />
+                    <p>Archive is empty</p>
+                  </div>
+                ) : (
+                  archivedItems
+                    .filter(i => i.item_name.toLowerCase().includes(archiveSearch.toLowerCase()))
+                    .map(item => (
+                      <div key={item.id} className="notification-item archived">
+                        <div className="notification-icon">
+                          <MdArchive size={18} />
+                        </div>
+                        <div className="notification-content">
+                          <span className="notification-title">{item.item_name}</span>
+                          <span className="notification-time">
+                            Deleted {formatTime(new Date(item.deleted_at))}
+                          </span>
+                        </div>
+                        <div className="archive-actions-mini">
+                          <button className="restore-btn-mini" onClick={() => handleRestore(item)} title="Restore">
+                            <MdRefresh size={14} />
+                          </button>
+                          <button className="delete-btn-mini" onClick={() => handlePermanentDelete(item.id)} title="Delete permanently">
+                            <MdClose size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+            </>
           )}
         </div>
       )}
-      <ArchiveModal
-        isOpen={isArchiveOpen}
-        onClose={() => setIsArchiveOpen(false)}
-        onRestore={() => fetchNotifications()}
-        forcedType="notification"
-      />
     </div>
   )
 }

@@ -341,6 +341,37 @@
   transform: translateY(-1px);
 }
 
+/* Archive View */
+.notification-archive-view {
+  padding: 15px 20px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification-archive-view p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.notification-archive-view .archive-action-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notification-archive-view .archive-action-btn:hover {
+  background: var(--primary-dark);
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .notification-dropdown {
@@ -437,6 +468,23 @@
   background: linear-gradient(135deg, #00a651 0%, #4cff96 100%);
 }
 
+[data-theme="light"] .notification-archive-view {
+  background: rgba(255, 255, 255, 0.98);
+  border-top-color: rgba(0, 166, 81, 0.15);
+}
+
+[data-theme="light"] .notification-archive-view p {
+  color: #4a5568;
+}
+
+[data-theme="light"] .notification-archive-view .archive-action-btn {
+  background: #00a651;
+}
+
+[data-theme="light"] .notification-archive-view .archive-action-btn:hover {
+  background: #005826;
+}
+
 /* ==================== Green Theme Overrides ==================== */
 [data-theme="green"] .notification-bell-btn {
   background: rgba(46, 175, 125, 0.15);
@@ -526,6 +574,23 @@
   background: linear-gradient(135deg, #2EAF7D, #3FD0C9);
 }
 
+[data-theme="green"] .notification-archive-view {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.98), rgba(220, 252, 231, 0.98));
+  border-top-color: rgba(46, 175, 125, 0.2);
+}
+
+[data-theme="green"] .notification-archive-view p {
+  color: #166534;
+}
+
+[data-theme="green"] .notification-archive-view .archive-action-btn {
+  background: linear-gradient(135deg, #449342, #2EAF7D);
+}
+
+[data-theme="green"] .notification-archive-view .archive-action-btn:hover {
+  background: linear-gradient(135deg, #2EAF7D, #3FD0C9);
+}
+
 /* ==================== Improved Mobile Responsiveness ==================== */
 @media (max-width: 480px) {
   .notification-dropdown {
@@ -593,4 +658,113 @@
     top: -4px;
     right: -4px;
   }
+}
+
+/* Integrated Archive View Styles */
+.archive-view-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.archive-search-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-alpha);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 4px 12px;
+  margin-left: 10px;
+  flex: 1;
+}
+
+.archive-search-mini input {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 100%;
+}
+
+.archive-search-mini input:focus {
+  outline: none;
+}
+
+.archive-list-mini {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.notification-item.archived {
+  opacity: 0.85;
+  border-bottom: 1px dashed var(--card-border);
+}
+
+.archive-actions-mini {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.restore-btn-mini,
+.delete-btn-mini {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.restore-btn-mini {
+  color: var(--primary);
+}
+
+.restore-btn-mini:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.delete-btn-mini {
+  color: #ef4444;
+}
+
+.delete-btn-mini:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+[data-theme="green"] .archive-search-mini {
+  background: white;
+  border-color: rgba(46, 175, 125, 0.3);
+}
+
+[data-theme="green"] .archive-search-mini input {
+  color: #02353C;
 }

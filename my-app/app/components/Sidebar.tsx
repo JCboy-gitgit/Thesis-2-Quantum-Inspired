@@ -23,8 +23,10 @@ import {
   MdHowToReg,
   MdManageAccounts,
   MdNotifications,
-  MdLiveTv
+  MdLiveTv,
+  MdArchive
 } from 'react-icons/md'
+import ArchiveModal from './ArchiveModal'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -38,6 +40,7 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
   const pathname = usePathname()
   // Track open state for each submenu by index
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({})
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
 
   // Auto-expand schedule menu if on a schedule-related page
   useEffect(() => {
@@ -145,9 +148,14 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
       ]
     },
     { icon: MdUpload, label: 'Upload CSV', path: '/LandingPages/UploadCSV' },
+
   ]
 
   const handleNavigation = (path: string) => {
+    if (path === '#archive') {
+      setIsArchiveOpen(true)
+      return
+    }
     router.push(path)
   }
 
@@ -222,6 +230,12 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
           ))}
         </nav>
       </aside>
+
+      <ArchiveModal
+        isOpen={isArchiveOpen}
+        onClose={() => setIsArchiveOpen(false)}
+        excludeType="notification"
+      />
     </>
   )
 }
