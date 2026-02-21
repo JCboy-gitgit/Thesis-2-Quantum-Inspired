@@ -103,6 +103,17 @@ interface MakeupRequest {
     faculty_profiles?: { full_name: string; email: string }
 }
 
+interface SpecialEvent {
+    id: number
+    room: string
+    building: string
+    event_date: string
+    time_start?: string
+    time_end?: string
+    reason?: string
+    created_at: string
+}
+
 interface Schedule {
     id: number
     schedule_name: string
@@ -241,6 +252,7 @@ export default function AdminLiveTimetablePage() {
     const [overrides, setOverrides] = useState<LiveOverride[]>([])
     const [absences, setAbsences] = useState<Absence[]>([])
     const [makeupRequests, setMakeupRequests] = useState<MakeupRequest[]>([])
+    const [specialEvents, setSpecialEvents] = useState<SpecialEvent[]>([])
     const [loading, setLoading] = useState(true)
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
@@ -258,6 +270,7 @@ export default function AdminLiveTimetablePage() {
     // Grouping
     type GroupByType = 'all' | 'room' | 'faculty' | 'section'
     const [groupBy, setGroupBy] = useState<GroupByType>('all')
+    const [searchFocused, setSearchFocused] = useState(false)
 
     // Override editing
     const [editingOverride, setEditingOverride] = useState<{ allocationId: number; day: string; time: string; room: string; building: string; note: string } | null>(null)
@@ -281,6 +294,8 @@ export default function AdminLiveTimetablePage() {
     const [adminNote, setAdminNote] = useState('')
     const [reviewingAbsence, setReviewingAbsence] = useState<Absence | null>(null)
     const [creatingMakeup, setCreatingMakeup] = useState<{ allocation: RoomAllocation; date: string; time: string; room: string; reason: string } | null>(null)
+    const [creatingEvent, setCreatingEvent] = useState<{ room: string; date: string; reason: string; timeRangeStart?: string; timeRangeEnd?: string } | null>(null)
+    const [savingEvent, setSavingEvent] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -344,6 +359,7 @@ export default function AdminLiveTimetablePage() {
                 setOverrides(data.overrides || [])
                 setAbsences(data.absences || [])
                 setMakeupRequests(data.makeupClasses || [])
+                setSpecialEvents(data.specialEvents || [])
                 setLastRefresh(new Date())
             }
         } catch (err) {
@@ -427,6 +443,20 @@ export default function AdminLiveTimetablePage() {
         }
     }
 
+    const handleDeleteSpecialEvent = async (id: number) => {
+        if (!confirm('Are you sure you want to cancel this Special Event? All related room absences will be removed and classes will resume normally.')) return
+        try {
+            const res = await fetch(`/api/live-timetable?type=special-event&id=${id}`, { method: 'DELETE' })
+            if (res.ok) {
+                await fetchLiveData()
+            } else {
+                alert('Failed to cancel special event')
+            }
+        } catch (err) {
+            console.error('Delete special event failed:', err)
+        }
+    }
+
     const handleReviewMakeup = async (status: 'approved' | 'rejected') => {
         if (!reviewingMakeup) return
         try {
@@ -440,6 +470,95 @@ export default function AdminLiveTimetablePage() {
             await fetchLiveData()
         } catch (err) {
             console.error('Review makeup failed:', err)
+        }
+    }
+
+    const handleCreateEventAbsences = async () => {
+        if (!creatingEvent || !creatingEvent.room || !creatingEvent.date) return
+
+        setSavingEvent(true)
+        try {
+            const [year, month, day] = creatingEvent.date.split('-')
+            const selectedDate = new Date(Number(year), Number(month) - 1, Number(day))
+            const dayName = DAYS[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]
+
+            // Find all allocations for this room on this day
+            const targetAllocations = allocations.filter(a => {
+                const combinedRoom = `${a.building} – ${a.room}`
+                if (combinedRoom !== creatingEvent.room && a.room !== creatingEvent.room) return false
+                const days = expandDays(a.schedule_day || '')
+                const isSameDay = days.some(d => d.toLowerCase() === dayName.toLowerCase())
+                if (!isSameDay) return false
+
+                if (creatingEvent.timeRangeStart && creatingEvent.timeRangeEnd && creatingEvent.timeRangeStart !== 'all' && creatingEvent.timeRangeEnd !== 'all') {
+                    const evtStart = parseTimeToMinutes(creatingEvent.timeRangeStart)
+                    const evtEnd = parseTimeToMinutes(creatingEvent.timeRangeEnd)
+                    const aParts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
+                    if (aParts.length === 2) {
+                        const aStart = parseTimeToMinutes(aParts[0])
+                        const aEnd = parseTimeToMinutes(aParts[1])
+                        if (evtStart > 0 && evtEnd > 0 && aStart > 0 && aEnd > 0) {
+                            return evtStart < aEnd && evtEnd > aStart
+                        }
+                    }
+                }
+                return true
+            })
+
+            if (targetAllocations.length === 0) {
+                alert('No classes found in this room on the selected date.')
+                setSavingEvent(false)
+                return
+            }
+
+            // Prepare absences payload
+            const reasonBase = creatingEvent.reason || 'Special Event / Room Unavailable'
+            const timeRangeStr = creatingEvent.timeRangeStart && creatingEvent.timeRangeEnd && creatingEvent.timeRangeStart !== 'all' && creatingEvent.timeRangeEnd !== 'all' ? `${creatingEvent.timeRangeStart} - ${creatingEvent.timeRangeEnd}` : null
+            const finalReason = timeRangeStr ? `${reasonBase} (${timeRangeStr})` : reasonBase
+
+            const newAbsences = targetAllocations.map(a => ({
+                allocation_id: a.id,
+                faculty_id: a.teacher_id || null,
+                absence_date: creatingEvent.date,
+                reason: finalReason,
+                schedule_id: a.schedule_id,
+                status: 'confirmed'
+            }))
+
+            if (newAbsences.length === 0) {
+                alert('No valid classes found to generate absences for.')
+                setSavingEvent(false)
+                return
+            }
+
+            const res = await fetch('/api/live-timetable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create-event-absences',
+                    absences: newAbsences,
+                    eventDetails: {
+                        room: creatingEvent.room.split(' – ')[1] || creatingEvent.room,
+                        building: creatingEvent.room.split(' – ')[0] || '',
+                        event_date: creatingEvent.date,
+                        time_start: creatingEvent.timeRangeStart !== 'all' ? creatingEvent.timeRangeStart : null,
+                        time_end: creatingEvent.timeRangeEnd !== 'all' ? creatingEvent.timeRangeEnd : null,
+                        reason: creatingEvent.reason || 'Special Event'
+                    }
+                })
+            })
+
+            if (res.ok) {
+                await fetchLiveData()
+                setCreatingEvent(null)
+            } else {
+                const data = await res.json()
+                alert(data.error || 'Failed to create event absences')
+            }
+        } catch (err) {
+            console.error('Failed to create event absences:', err)
+        } finally {
+            setSavingEvent(false)
         }
     }
 
@@ -649,7 +768,8 @@ export default function AdminLiveTimetablePage() {
                 if (!original) return null
 
                 // Determine day name from requested_date
-                const date = new Date(m.requested_date)
+                const [year, month, day] = m.requested_date.split('-')
+                const date = new Date(Number(year), Number(month) - 1, Number(day))
                 const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
 
                 // Create a synthetic allocation object
@@ -665,17 +785,41 @@ export default function AdminLiveTimetablePage() {
             })
             .filter(Boolean) as RoomAllocation[]
 
-        return [...base, ...makeups]
-    }, [allocations, overrides, makeupRequests])
+        const specials = specialEvents.map(se => {
+            const [year, month, day] = se.event_date.split('-')
+            const date = new Date(Number(year), Number(month) - 1, Number(day))
+            const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
 
-    const getGroupValues = (): string[] => {
+            return {
+                id: -(100000 + se.id), // negative id so it doesn't collide
+                building: se.building,
+                room: se.room,
+                course_code: 'SPECIAL EVENT',
+                course_name: se.reason || 'Room Unavailable',
+                section: '',
+                schedule_day: dayName,
+                schedule_time: se.time_start && se.time_end ? `${se.time_start} - ${se.time_end}` : '07:00 AM - 09:00 PM',
+                teacher_name: 'N/A',
+                _isSpecialEvent: true,
+                _specialEventReason: se.reason,
+            } as any
+        })
+
+        return [...base, ...makeups, ...specials]
+    }, [allocations, overrides, makeupRequests, specialEvents])
+
+    const getGroupValuesForType = (type: GroupByType): string[] => {
         const set = new Set<string>()
         effectiveAllocations.forEach(a => {
-            if (groupBy === 'room') set.add(`${a.building} – ${a.room}`)
-            else if (groupBy === 'faculty') set.add(a.teacher_name || 'Unassigned')
-            else if (groupBy === 'section') set.add(normalizeSection(a.section) || 'Unknown')
+            if (type === 'room') set.add(`${a.building} – ${a.room}`)
+            else if (type === 'faculty') set.add(a.teacher_name || 'Unassigned')
+            else if (type === 'section') set.add(normalizeSection(a.section) || 'Unknown')
         })
         return Array.from(set).sort((a, b) => a.localeCompare(b))
+    }
+
+    const getGroupValues = (): string[] => {
+        return getGroupValuesForType(groupBy)
     }
 
     // Reset group page when groupBy or groupValues change
@@ -684,6 +828,27 @@ export default function AdminLiveTimetablePage() {
     const pagedGroupValue = groupBy !== 'all' && groupValues.length > 0
         ? (groupPage < groupValues.length ? groupValues[groupPage] : groupValues[0])
         : 'all'
+
+    const searchSuggestions = useMemo(() => {
+        if (!searchQuery) return []
+        const q = searchQuery.toLowerCase()
+        const rooms = new Set<string>()
+        const faculties = new Set<string>()
+        const sections = new Set<string>()
+
+        effectiveAllocations.forEach(a => {
+            rooms.add(`${a.building} – ${a.room}`)
+            if (a.teacher_name) faculties.add(a.teacher_name)
+            if (a.section) sections.add(normalizeSection(a.section))
+        })
+
+        const results: { type: GroupByType, label: string, value: string }[] = []
+        Array.from(rooms).sort().forEach(r => { if (r.toLowerCase().includes(q)) results.push({ type: 'room', label: r, value: r }) })
+        Array.from(faculties).sort().forEach(f => { if (f.toLowerCase().includes(q)) results.push({ type: 'faculty', label: f, value: f }) })
+        Array.from(sections).sort().forEach(s => { if (s.toLowerCase().includes(q)) results.push({ type: 'section', label: s, value: s }) })
+
+        return results.slice(0, 15)
+    }, [searchQuery, effectiveAllocations])
 
     const getFilteredAllocations = (): RoomAllocation[] => {
         if (groupBy === 'all') return effectiveAllocations
@@ -756,6 +921,12 @@ export default function AdminLiveTimetablePage() {
                                 <MdRefresh className={loading ? styles.spinning : ''} />
                                 Refresh
                             </button>
+                            {schedule && (
+                                <button className={styles.actionBtnPrimary} onClick={() => setCreatingEvent({ room: '', date: '', reason: '' })} title="Mark a room unavailable">
+                                    <MdEventBusy />
+                                    Special Event (Room Unavailable)
+                                </button>
+                            )}
                             {schedule && (
                                 <button className={styles.resetBtn} onClick={handleResetWeek} title="Reset week to original locked schedule">
                                     <MdRestartAlt />
@@ -881,16 +1052,45 @@ export default function AdminLiveTimetablePage() {
                                                 <MdViewList /> List
                                             </button>
                                         </div>
-                                        <div className={styles.searchBar}>
-                                            <MdSearch />
-                                            <input
-                                                type="text"
-                                                placeholder="Search course, room, teacher, section..."
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                className={styles.searchInput}
-                                            />
-                                            {searchQuery && <button onClick={() => setSearchQuery('')} className={styles.clearSearch}><MdClose /></button>}
+                                        <div className={styles.searchBarContainer} style={{ position: 'relative' }}>
+                                            <div className={styles.searchBar}>
+                                                <MdSearch />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search room, teacher, section..."
+                                                    value={searchQuery}
+                                                    onChange={e => setSearchQuery(e.target.value)}
+                                                    onFocus={() => setSearchFocused(true)}
+                                                    onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                                                    className={styles.searchInput}
+                                                />
+                                                {searchQuery && <button onClick={() => setSearchQuery('')} className={styles.clearSearch}><MdClose /></button>}
+                                            </div>
+                                            {searchFocused && searchSuggestions.length > 0 && (
+                                                <div className={styles.searchSuggestions} style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', borderRadius: '8px', zIndex: 100, marginTop: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: '300px', overflowY: 'auto' }}>
+                                                    {searchSuggestions.map((s, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className={styles.searchSuggestionItem}
+                                                            style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--lt-border)' }}
+                                                            onClick={() => {
+                                                                setGroupBy(s.type as any)
+                                                                setViewMode('grid')
+                                                                setSearchQuery('')
+                                                                const values = getGroupValuesForType(s.type)
+                                                                const sIdx = values.indexOf(s.value)
+                                                                if (sIdx !== -1) {
+                                                                    setGroupPage(sIdx)
+                                                                }
+                                                                setSearchFocused(false)
+                                                            }}
+                                                        >
+                                                            <span style={{ fontSize: '0.7rem', color: 'var(--lt-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.type}</span>
+                                                            <span style={{ fontSize: '0.9rem', color: 'var(--lt-text)', fontWeight: 600 }}>{s.label}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -952,7 +1152,7 @@ export default function AdminLiveTimetablePage() {
                                                     <span className={`${styles.legendDot} ${styles.legendDone}`} /> Done
                                                 </span>
                                                 <span className={styles.legendItem}>
-                                                    <span className={`${styles.legendDot} ${styles.legendAbsent}`} /> Absent
+                                                    <span className={`${styles.legendDot} ${styles.legendAbsent}`} /> Absent/Excused
                                                 </span>
                                                 <span className={styles.legendItem}>
                                                     <span className={`${styles.legendDot} ${styles.legendOverride}`} /> Modified
@@ -1055,61 +1255,70 @@ export default function AdminLiveTimetablePage() {
                                                                                             const startMin = parseTimeToMinutes(parts[0] || '')
                                                                                             const endMin = parseTimeToMinutes(parts[1] || '')
                                                                                             const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
-                                                                                            const blockHeight = durationSlots * 40 - 4
-
-                                                                                            const absent = isAbsent(alloc.id, dayDate)
+                                                                                            const absenceRecord = absences.find(ab => ab.allocation_id === alloc.id && ab.absence_date === dayDate && ab.status !== 'disputed')
+                                                                                            const absent = !!absenceRecord
+                                                                                            const isEventExcused = !!(absenceRecord && absenceRecord.faculty_id === 'e943b0c1-6f7b-40fd-867d-86df1edce7a2')
                                                                                             const ongoing = !absent && isCurrentWeek && isClassOngoing(alloc.schedule_time || '') && day === todayDayName
                                                                                             const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
                                                                                             const hasOverride = (alloc as any)._hasOverride
+                                                                                            const isSpecialEvent = (alloc as any)._isSpecialEvent
                                                                                             const overrideNote = (alloc as any)._overrideNote
                                                                                             const compactHeight = durationSlots * 32 - 2
 
                                                                                             return (
                                                                                                 <div
                                                                                                     key={alloc.id}
-                                                                                                    draggable
-                                                                                                    onDragStart={(e) => { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) }}
-                                                                                                    onDragEnd={() => { setDraggedAllocId(null); setDragOverCell(null) }}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${(alloc as any)._isMakeup ? styles.gridBlockMakeup : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
+                                                                                                    draggable={!isSpecialEvent}
+                                                                                                    onDragStart={(e) => { if (!isSpecialEvent) { e.dataTransfer.setData('allocId', String(alloc.id)); setDraggedAllocId(alloc.id) } }}
+                                                                                                    onDragEnd={() => { if (!isSpecialEvent) { setDraggedAllocId(null); setDragOverCell(null) } }}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${(alloc as any)._isMakeup ? styles.gridBlockMakeup : ''} ${isSpecialEvent ? styles.gridBlockAbsent : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
-                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}`}
-                                                                                                    onClick={() => setEditingOverride({
-                                                                                                        allocationId: alloc.id,
-                                                                                                        day: day,
-                                                                                                        time: alloc.schedule_time,
-                                                                                                        room: alloc.room,
-                                                                                                        building: alloc.building,
-                                                                                                        note: overrideNote || ''
-                                                                                                    })}
+                                                                                                    title={`${alloc.course_code} ${isSpecialEvent ? alloc.course_name : '· ' + normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name && !isSpecialEvent ? '\n' + alloc.teacher_name : ''}${absent ? (isEventExcused ? '\n⚠ EXCUSED' : '\n⚠ ABSENT') : ''}${ongoing && !isSpecialEvent ? '\n● ONGOING' : ''}${done && !isSpecialEvent ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isSpecialEvent ? '\n\n(Click to Cancel)' : ''}`}
+                                                                                                    onClick={() => {
+                                                                                                        if (isSpecialEvent) {
+                                                                                                            handleDeleteSpecialEvent(Math.abs(alloc.id) - 100000)
+                                                                                                        } else {
+                                                                                                            setEditingOverride({
+                                                                                                                allocationId: alloc.id,
+                                                                                                                day: day,
+                                                                                                                time: alloc.schedule_time,
+                                                                                                                room: alloc.room,
+                                                                                                                building: alloc.building,
+                                                                                                                note: overrideNote || ''
+                                                                                                            })
+                                                                                                        }
+                                                                                                    }}
                                                                                                 >
                                                                                                     <div className={styles.gridBlockHeader}>
-                                                                                                        {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
-                                                                                                        {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
-                                                                                                        {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
-                                                                                                        {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
+                                                                                                        {ongoing && !isSpecialEvent && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
+                                                                                                        {(absent || isSpecialEvent) && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
+                                                                                                        {done && !isSpecialEvent && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
+                                                                                                        {hasOverride && !absent && !done && !isSpecialEvent && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
                                                                                                         {(alloc as any)._isMakeup && <span className={styles.gridBlockMakeupIcon}><MdEventAvailable /></span>}
-                                                                                                        <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>
+                                                                                                        {!isSpecialEvent && <span className={styles.gridBlockDragHandle}><MdDragIndicator /></span>}
                                                                                                     </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
                                                                                                         <>
-                                                                                                            <span className={styles.gridBlockSection}>{normalizeSection(alloc.section)}</span>
+                                                                                                            <span className={styles.gridBlockSection}>{isSpecialEvent ? alloc.course_name : normalizeSection(alloc.section)}</span>
                                                                                                             <span className={styles.gridBlockRoom}>{alloc.room}</span>
                                                                                                         </>
                                                                                                     )}
-                                                                                                    {durationSlots >= 3 && alloc.teacher_name && (
+                                                                                                    {durationSlots >= 3 && alloc.teacher_name && !isSpecialEvent && (
                                                                                                         <span className={styles.gridBlockTeacher}>{alloc.teacher_name}</span>
                                                                                                     )}
                                                                                                     {durationSlots >= 3 && (
                                                                                                         <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
                                                                                                     )}
-                                                                                                    <button
-                                                                                                        className={styles.gridBlockEditBtn}
-                                                                                                        onClick={(ev) => { ev.stopPropagation(); setEditingOverride({ allocationId: alloc.id, day: day, time: alloc.schedule_time, room: alloc.room, building: alloc.building, note: overrideNote || '' }) }}
-                                                                                                        title="Edit Slot"
-                                                                                                    >
-                                                                                                        <MdEdit />
-                                                                                                    </button>
+                                                                                                    {!isSpecialEvent && (
+                                                                                                        <button
+                                                                                                            className={styles.gridBlockEditBtn}
+                                                                                                            onClick={(ev) => { ev.stopPropagation(); setEditingOverride({ allocationId: alloc.id, day: day, time: alloc.schedule_time, room: alloc.room, building: alloc.building, note: overrideNote || '' }) }}
+                                                                                                            title="Edit Slot"
+                                                                                                        >
+                                                                                                            <MdEdit />
+                                                                                                        </button>
+                                                                                                    )}
                                                                                                     {floorPlanMap[alloc.building] && (
                                                                                                         <button
                                                                                                             className={styles.gridBlockMapBtn}
@@ -1173,7 +1382,9 @@ export default function AdminLiveTimetablePage() {
                                                     })
                                                     .map(alloc => {
                                                         const dayDate = getDayDate(selectedDay)
-                                                        const absent = isAbsent(alloc.id, dayDate)
+                                                        const absenceRecord = absences.find(ab => ab.allocation_id === alloc.id && ab.absence_date === dayDate && ab.status !== 'disputed')
+                                                        const absent = !!absenceRecord
+                                                        const isEventExcused = !!(absenceRecord && absenceRecord.faculty_id === 'e943b0c1-6f7b-40fd-867d-86df1edce7a2')
                                                         const ongoing = !absent && isCurrentWeek && selectedDay === todayDayName && isClassOngoing(alloc.schedule_time || '')
                                                         const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', selectedDay, todayDayName)))
                                                         const hasOverride = (alloc as any)._hasOverride
@@ -1199,7 +1410,7 @@ export default function AdminLiveTimetablePage() {
                                                                     )}
                                                                     {absent && (
                                                                         <span className={styles.absentBadge}>
-                                                                            <MdEventBusy /> ABSENT
+                                                                            <MdEventBusy /> {isEventExcused ? 'EXCUSED' : 'ABSENT'}
                                                                         </span>
                                                                     )}
                                                                     {hasOverride && (
@@ -1308,8 +1519,8 @@ export default function AdminLiveTimetablePage() {
                                                         <div className={styles.requestCardLeft}>
                                                             <div className={styles.requestFaculty}>
                                                                 <MdPerson />
-                                                                <span>{absence.faculty_profiles?.full_name || 'Unknown Faculty'}</span>
-                                                                <span className={styles.requestEmail}>{absence.faculty_profiles?.email}</span>
+                                                                <span>{absence.faculty_id !== 'e943b0c1-6f7b-40fd-867d-86df1edce7a2' && absence.faculty_profiles?.full_name ? absence.faculty_profiles.full_name : (alloc?.teacher_name || 'System / Unassigned')}</span>
+                                                                {absence.faculty_profiles?.email && <span className={styles.requestEmail}>{absence.faculty_profiles.email}</span>}
                                                             </div>
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
@@ -1375,8 +1586,8 @@ export default function AdminLiveTimetablePage() {
                                                         <div className={styles.requestCardLeft}>
                                                             <div className={styles.requestFaculty}>
                                                                 <MdPerson />
-                                                                <span>{req.faculty_profiles?.full_name || 'Unknown Faculty'}</span>
-                                                                <span className={styles.requestEmail}>{req.faculty_profiles?.email}</span>
+                                                                <span>{req.faculty_id !== 'e943b0c1-6f7b-40fd-867d-86df1edce7a2' && req.faculty_profiles?.full_name ? req.faculty_profiles.full_name : (alloc?.teacher_name || 'System / Unassigned')}</span>
+                                                                {req.faculty_profiles?.email && <span className={styles.requestEmail}>{req.faculty_profiles.email}</span>}
                                                             </div>
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
@@ -1638,6 +1849,86 @@ export default function AdminLiveTimetablePage() {
                 </div>
             )}
 
+            {/* ─── Special Event / Room Unavailable Modal ─── */}
+            {creatingEvent && (
+                <div className={styles.modalOverlay} onClick={() => setCreatingEvent(null)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3><MdEventBusy /> Declare Room Unavailable</h3>
+                            <button className={styles.modalClose} onClick={() => setCreatingEvent(null)}><MdClose /></button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <p className={styles.modalSubtitle}>All classes scheduled in the selected room on the given date will be informed/marked absent.</p>
+
+                            <div className={styles.formGrid}>
+                                <div className={styles.formGroup}>
+                                    <label>Room</label>
+                                    <select
+                                        className={styles.formInput}
+                                        value={creatingEvent.room}
+                                        onChange={e => setCreatingEvent({ ...creatingEvent, room: e.target.value })}
+                                    >
+                                        <option value="">Select a Room</option>
+                                        {Array.from(new Set(allocations.map(a => `${a.building} – ${a.room}`).filter(r => r && r !== 'undefined – undefined'))).sort().map(r => (
+                                            <option key={r} value={r}>{r}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Date</label>
+                                    <input
+                                        type="date"
+                                        className={styles.formInput}
+                                        value={creatingEvent.date}
+                                        onChange={e => setCreatingEvent({ ...creatingEvent, date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Specific Time Range (Optional)</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <select
+                                        className={styles.formInput}
+                                        value={creatingEvent.timeRangeStart || 'all'}
+                                        onChange={e => setCreatingEvent({ ...creatingEvent, timeRangeStart: e.target.value })}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <option value="all">Start Time</option>
+                                        {TIME_SLOTS.map(time => <option key={time} value={time}>{time}</option>)}
+                                    </select>
+                                    <span style={{ display: 'flex', alignItems: 'center' }}>-</span>
+                                    <select
+                                        className={styles.formInput}
+                                        value={creatingEvent.timeRangeEnd || 'all'}
+                                        onChange={e => setCreatingEvent({ ...creatingEvent, timeRangeEnd: e.target.value })}
+                                        style={{ flex: 1 }}
+                                    >
+                                        <option value="all">End Time</option>
+                                        {TIME_SLOTS.map(time => <option key={time} value={time}>{time}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Event Name / Reason</label>
+                                <textarea
+                                    className={styles.formTextarea}
+                                    rows={2}
+                                    value={creatingEvent.reason}
+                                    onChange={e => setCreatingEvent({ ...creatingEvent, reason: e.target.value })}
+                                    placeholder="e.g. Special Event, Board Exam, Maintenance..."
+                                />
+                            </div>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button className={styles.cancelBtn} onClick={() => setCreatingEvent(null)}>Cancel</button>
+                            <button className={styles.approveBtn} onClick={handleCreateEventAbsences} disabled={savingEvent}>
+                                <MdCheckCircle /> {savingEvent ? 'Saving...' : 'Apply Event'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Makeup Review Modal ── */}
             {
                 reviewingMakeup && (
@@ -1652,7 +1943,7 @@ export default function AdminLiveTimetablePage() {
                                     const makeupAlloc = allocations.find(al => al.id === reviewingMakeup.allocation_id)
                                     return (
                                         <div className={styles.reviewInfo}>
-                                            <p><strong>Faculty:</strong> {reviewingMakeup.faculty_profiles?.full_name}</p>
+                                            <p><strong>Faculty:</strong> {reviewingMakeup.faculty_id !== 'e943b0c1-6f7b-40fd-867d-86df1edce7a2' && reviewingMakeup.faculty_profiles?.full_name ? reviewingMakeup.faculty_profiles.full_name : (makeupAlloc?.teacher_name || 'System / Unassigned')}</p>
                                             {makeupAlloc && (
                                                 <>
                                                     <p><strong>Course:</strong> {makeupAlloc.course_code} – {makeupAlloc.course_name}</p>
@@ -1703,7 +1994,7 @@ export default function AdminLiveTimetablePage() {
                             </div>
                             <div className={styles.modalBody}>
                                 <div className={styles.reviewInfo}>
-                                    <p><strong>Faculty:</strong> {reviewingAbsence.faculty_profiles?.full_name}</p>
+                                    <p><strong>Faculty:</strong> {reviewingAbsence.faculty_id !== 'e943b0c1-6f7b-40fd-867d-86df1edce7a2' && reviewingAbsence.faculty_profiles?.full_name ? reviewingAbsence.faculty_profiles.full_name : (allocations.find(al => al.id === reviewingAbsence.allocation_id)?.teacher_name || 'System / Unassigned')}</p>
                                     <p><strong>Date:</strong> {reviewingAbsence.absence_date}</p>
                                     {reviewingAbsence.reason && <p><strong>Reason:</strong> {reviewingAbsence.reason}</p>}
                                     <p><strong>Current Status:</strong> {reviewingAbsence.status}</p>

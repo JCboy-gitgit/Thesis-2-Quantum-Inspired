@@ -226,6 +226,7 @@ export default function FacultyLiveTimetablePage() {
     const [overrides, setOverrides] = useState<any[]>([])
     const [allAbsences, setAllAbsences] = useState<Absence[]>([])
     const [allMakeupRequests, setAllMakeupRequests] = useState<MakeupRequest[]>([])
+    const [specialEvents, setSpecialEvents] = useState<any[]>([])
     const [myAbsences, setMyAbsences] = useState<Absence[]>([])
     const [myMakeupRequests, setMyMakeupRequests] = useState<MakeupRequest[]>([])
     const [loading, setLoading] = useState(true)
@@ -338,6 +339,7 @@ export default function FacultyLiveTimetablePage() {
                 setOverrides(data.overrides || [])
                 setAllAbsences(data.absences || [])
                 setAllMakeupRequests(data.makeupClasses || [])
+                setSpecialEvents(data.specialEvents || [])
 
                 // Filter absences and makeup requests for this faculty
                 const myAbs = (data.absences || []).filter((a: Absence) => a.faculty_id === user.id)
@@ -576,8 +578,28 @@ export default function FacultyLiveTimetablePage() {
             })
             .filter(Boolean) as RoomAllocation[]
 
-        return [...base, ...makeups]
-    }, [allAllocations, overrides, allMakeupRequests])
+        const specials = specialEvents.map(se => {
+            const [year, month, day] = se.event_date.split('-')
+            const date = new Date(Number(year), Number(month) - 1, Number(day))
+            const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
+
+            return {
+                id: -(100000 + se.id),
+                building: se.building,
+                room: se.room,
+                course_code: 'SPECIAL EVENT',
+                course_name: se.reason || 'Room Unavailable',
+                section: '',
+                schedule_day: dayName,
+                schedule_time: se.time_start && se.time_end ? `${se.time_start} - ${se.time_end}` : '07:00 AM - 09:00 PM',
+                teacher_name: 'N/A',
+                _isSpecialEvent: true,
+                _specialEventReason: se.reason,
+            } as any
+        })
+
+        return [...base, ...makeups, ...specials]
+    }, [allAllocations, overrides, allMakeupRequests, specialEvents])
 
     // Grouping
     const getGroupValues = (): string[] => {
@@ -1110,29 +1132,30 @@ export default function FacultyLiveTimetablePage() {
                                                                                             const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
                                                                                             const hasOverride = (alloc as any)._hasOverride
                                                                                             const isMakeup = (alloc as any)._isMakeup
+                                                                                            const isSpecialEvent = (alloc as any)._isSpecialEvent
 
                                                                                             return (
                                                                                                 <div
                                                                                                     key={alloc.id}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${isMakeup ? styles.gridBlockMakeup : ''}`}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${isMakeup ? styles.gridBlockMakeup : ''} ${isSpecialEvent ? styles.gridBlockAbsent : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
-                                                                                                    title={`${alloc.course_code} · ${normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing ? '\n● ONGOING' : ''}${done ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isMakeup ? '\n★ MAKEUP' : ''}`}
+                                                                                                    title={`${alloc.course_code} ${isSpecialEvent ? alloc.course_name : '· ' + normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name && !isSpecialEvent ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing && !isSpecialEvent ? '\n● ONGOING' : ''}${done && !isSpecialEvent ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isMakeup ? '\n★ MAKEUP' : ''}`}
                                                                                                 >
                                                                                                     <div className={styles.gridBlockHeader}>
-                                                                                                        {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
-                                                                                                        {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
-                                                                                                        {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
-                                                                                                        {hasOverride && !absent && !done && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
+                                                                                                        {ongoing && !isSpecialEvent && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
+                                                                                                        {(absent || isSpecialEvent) && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
+                                                                                                        {done && !isSpecialEvent && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
+                                                                                                        {hasOverride && !absent && !done && !isSpecialEvent && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
                                                                                                         {isMakeup && <span className={styles.gridBlockMakeupIcon}><MdEventAvailable /></span>}
                                                                                                     </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
                                                                                                         <>
-                                                                                                            <span className={styles.gridBlockSection}>{normalizeSection(alloc.section)}</span>
+                                                                                                            <span className={styles.gridBlockSection}>{isSpecialEvent ? alloc.course_name : normalizeSection(alloc.section)}</span>
                                                                                                             <span className={styles.gridBlockRoom}>{alloc.room}</span>
                                                                                                         </>
                                                                                                     )}
-                                                                                                    {durationSlots >= 3 && (
+                                                                                                    {durationSlots >= 3 && !isSpecialEvent && (
                                                                                                         <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
                                                                                                     )}
                                                                                                 </div>

@@ -47,41 +47,84 @@ export async function GET(request: NextRequest) {
             }
 
             // 2. Get base allocations from room_allocations
-            const { data: allocations } = await supabaseAdmin
+            const { data: allocationsData } = await supabaseAdmin
                 .from('room_allocations')
                 .select('*')
                 .eq('schedule_id', schedule.id)
                 .order('schedule_day')
                 .order('schedule_time')
 
-            // 3. Get weekly overrides (admin edits for this week)
-            const { data: overrides } = await supabaseAdmin
-                .from('live_timetable_overrides')
-                .select('*')
-                .eq('schedule_id', schedule.id)
-                .eq('week_start', mondayStr)
+            // Fetch faculty profiles to map teacher_id
+            const { data: facultyProfiles } = await supabaseAdmin
+                .from('faculty_profiles')
+                .select('id, user_id, full_name, email')
 
-            // 4. Get absences for this week
-            const { data: absences } = await supabaseAdmin
-                .from('live_timetable_absences')
-                .select(`*, faculty_profiles(full_name, email)`)
-                .gte('absence_date', mondayStr)
-                .lte('absence_date', sundayStr)
+            const allocations = allocationsData?.map(alloc => {
+                const profile = facultyProfiles?.find((fp: any) => fp.full_name === alloc.teacher_name)
+                return {
+                    ...alloc,
+                    teacher_id: profile ? profile.user_id : null,
+                    faculty_id: profile ? profile.user_id : null
+                }
+            }) || []
 
-            // 5. Get makeup class requests for this week
-            const { data: makeupClasses } = await supabaseAdmin
-                .from('live_makeup_requests')
-                .select(`*, faculty_profiles(full_name, email)`)
-                .gte('requested_date', mondayStr)
-                .lte('requested_date', sundayStr)
+            // 3. Get weekly overrides (admin edits for this week), absences, makeup requests, and special events
+            const [
+                { data: overrides },
+                { data: absencesData },
+                { data: makeupClassesData },
+                { data: specialEventsData }
+            ] = await Promise.all([
+                supabaseAdmin
+                    .from('live_timetable_overrides')
+                    .select('*')
+                    .eq('schedule_id', schedule.id)
+                    .eq('week_start', mondayStr),
+                supabaseAdmin
+                    .from('live_timetable_absences')
+                    .select('*')
+                    .eq('schedule_id', schedule.id)
+                    .gte('absence_date', mondayStr)
+                    .lte('absence_date', sundayStr),
+                supabaseAdmin
+                    .from('live_makeup_requests')
+                    .select('*')
+                    .eq('schedule_id', schedule.id)
+                    .gte('requested_date', mondayStr)
+                    .lte('requested_date', sundayStr),
+                supabaseAdmin
+                    .from('live_special_events')
+                    .select('*')
+                    .gte('event_date', mondayStr)
+                    .lte('event_date', sundayStr)
+            ])
+
+            const absences = absencesData?.map(a => {
+                const fp = facultyProfiles?.find((f: any) => f.user_id === a.faculty_id)
+                return {
+                    ...a,
+                    faculty_profiles: fp ? { full_name: fp.full_name, email: fp.email } : null
+                }
+            }) || []
+
+            const makeupClasses = makeupClassesData?.map(m => {
+                const fp = facultyProfiles?.find((f: any) => f.user_id === m.faculty_id)
+                return {
+                    ...m,
+                    faculty_profiles: fp ? { full_name: fp.full_name, email: fp.email } : null
+                }
+            }) || []
+
+            const specialEvents = specialEventsData || []
 
             return NextResponse.json({
                 success: true,
                 schedule,
                 allocations: allocations || [],
                 overrides: overrides || [],
-                absences: absences || [],
-                makeupClasses: makeupClasses || [],
+                absences: absences,
+                makeupClasses: makeupClasses,
+                specialEvents: specialEvents,
                 weekStart: mondayStr,
                 weekEnd: sundayStr
             })
@@ -90,28 +133,42 @@ export async function GET(request: NextRequest) {
         if (action === 'absences') {
             let query = supabaseAdmin
                 .from('live_timetable_absences')
-                .select(`*, faculty_profiles(full_name, email)`)
+                .select('*')
                 .order('absence_date', { ascending: false })
 
             if (facultyId) query = query.eq('faculty_id', facultyId)
             if (date) query = query.eq('absence_date', date)
 
-            const { data, error } = await query
+            const { data: absencesData, error } = await query
             if (error) throw error
-            return NextResponse.json({ success: true, data: data || [] })
+
+            const { data: facultyProfiles } = await supabaseAdmin.from('faculty_profiles').select('id, user_id, full_name, email')
+            const absences = absencesData?.map(a => {
+                const fp = facultyProfiles?.find((f: any) => f.user_id === a.faculty_id)
+                return { ...a, faculty_profiles: fp ? { full_name: fp.full_name, email: fp.email } : null }
+            }) || []
+
+            return NextResponse.json({ success: true, data: absences })
         }
 
         if (action === 'makeup') {
             let query = supabaseAdmin
                 .from('live_makeup_requests')
-                .select(`*, faculty_profiles(full_name, email)`)
+                .select('*')
                 .order('created_at', { ascending: false })
 
             if (facultyId) query = query.eq('faculty_id', facultyId)
 
-            const { data, error } = await query
+            const { data: makeupData, error } = await query
             if (error) throw error
-            return NextResponse.json({ success: true, data: data || [] })
+
+            const { data: facultyProfiles } = await supabaseAdmin.from('faculty_profiles').select('id, user_id, full_name, email')
+            const makeups = makeupData?.map(m => {
+                const fp = facultyProfiles?.find((f: any) => f.user_id === m.faculty_id)
+                return { ...m, faculty_profiles: fp ? { full_name: fp.full_name, email: fp.email } : null }
+            }) || []
+
+            return NextResponse.json({ success: true, data: makeups })
         }
 
         if (action === 'overrides') {
@@ -246,6 +303,32 @@ export async function POST(request: NextRequest) {
 
             if (error) throw error
             return NextResponse.json({ success: true, data })
+        }
+
+        if (action === 'create-event-absences') {
+            const { absences, eventDetails } = body
+
+            // Insert absences if there are conflicting classes
+            if (absences && Array.isArray(absences) && absences.length > 0) {
+                const cleanAbsences = absences.map((a: any) => ({
+                    ...a,
+                    faculty_id: a.faculty_id || 'e943b0c1-6f7b-40fd-867d-86df1edce7a2'
+                }))
+                const { error: absError } = await supabaseAdmin
+                    .from('live_timetable_absences')
+                    .insert(cleanAbsences)
+                if (absError) console.error("Event Absences Error:", absError)
+            }
+
+            // Always tracking the block in live_special_events
+            if (eventDetails) {
+                const { error: eventError } = await supabaseAdmin
+                    .from('live_special_events')
+                    .insert(eventDetails)
+                if (eventError) console.error("Special Event Insert Error:", eventError)
+            }
+
+            return NextResponse.json({ success: true })
         }
 
         if (action === 'create-makeup-admin') {
@@ -454,6 +537,37 @@ export async function DELETE(request: NextRequest) {
         } else if (type === 'makeup') {
             const { error } = await supabaseAdmin.from('live_makeup_requests').delete().eq('id', id)
             if (error) throw error
+        } else if (type === 'special-event') {
+            // First get the event details so we can delete related absences
+            const { data: eventRow } = await supabaseAdmin
+                .from('live_special_events')
+                .select('*')
+                .eq('id', id)
+                .single()
+
+            if (eventRow) {
+                // Delete the event
+                const { error } = await supabaseAdmin.from('live_special_events').delete().eq('id', id)
+                if (error) throw error
+
+                // Delete related absences linked to this special event
+                // (which share the same date and have the dummy faculty_id or similar reason)
+                const reasonSearch = eventRow.reason || 'Special Event / Room Unavailable'
+                await supabaseAdmin
+                    .from('live_timetable_absences')
+                    .delete()
+                    .eq('absence_date', eventRow.event_date)
+                    .ilike('reason', `${reasonSearch}%`)
+
+                // Notify everyone
+                await supabaseAdmin.from('system_alerts').insert({
+                    title: 'Special Event Cancelled',
+                    message: `The special event for room ${eventRow.room} on ${eventRow.event_date} has been cancelled. Classes will resume normally.`,
+                    audience: 'all',
+                    severity: 'info',
+                    category: 'event_cancelled'
+                })
+            }
         }
 
         return NextResponse.json({ success: true })

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import {
     MdClose, MdTableChart, MdSearch, MdFilterList, MdCheckCircle,
     MdWarning, MdMeetingRoom, MdLayers, MdPerson, MdGroups, MdAccessTime, MdAdd, MdDelete, MdSave,
-    MdDragIndicator, MdChevronLeft, MdChevronRight
+    MdDragIndicator, MdChevronLeft, MdChevronRight, MdRemove
 } from 'react-icons/md'
 import { FaChalkboardTeacher, FaDoorOpen, FaUsers } from 'react-icons/fa'
 import styles from './ManualEditModal.module.css'
@@ -45,6 +45,18 @@ export default function ManualEditModal({
     useEffect(() => {
         setAllocations(initialAllocations)
     }, [initialAllocations])
+
+    // Global event listeners for resizing
+    useEffect(() => {
+        const handleGlobalMouseUp = () => setResizingAllocId(null)
+        window.addEventListener('mouseup', handleGlobalMouseUp)
+        window.addEventListener('touchend', handleGlobalMouseUp)
+        return () => {
+            window.removeEventListener('mouseup', handleGlobalMouseUp)
+            window.removeEventListener('touchend', handleGlobalMouseUp)
+        }
+    }, [])
+
     const faculties = useMemo(() => {
         const unique = [...new Set(classes.map(c => c.teacher_name || 'TBD'))].sort()
         return unique
@@ -221,20 +233,44 @@ export default function ManualEditModal({
     }
 
     const handleResize = (allocId: number, day: string, newEndSlot: any) => {
-        const alloc = allocations.find(a => a.class_id === allocId)
-        if (!alloc) return
+        setAllocations(prev => prev.map(a => {
+            if (a.class_id !== allocId || a.schedule_day !== day) return a
 
-        const startSlot = timeSlots.find(s => s.start === alloc.schedule_time.split(' - ')[0])
-        if (!startSlot) return
+            const startSlot = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])
+            if (!startSlot) return a
 
-        if (newEndSlot.endMinutes <= startSlot.startMinutes) return
+            if (newEndSlot.endMinutes <= startSlot.startMinutes) return a
 
-        const updatedAlloc = {
-            ...alloc,
-            schedule_time: `${startSlot.start} - ${newEndSlot.end}`
-        }
+            return {
+                ...a,
+                schedule_time: `${startSlot.start} - ${newEndSlot.end}`
+            }
+        }))
+    }
 
-        setAllocations(prev => prev.map(a => a.class_id === allocId ? updatedAlloc : a))
+    const adjustDuration = (allocId: number, amountMins: number) => {
+        setAllocations(prev => prev.map(a => {
+            if (a.class_id !== allocId) return a
+
+            const startParts = a.schedule_time.split(' - ')[0]
+            const endParts = a.schedule_time.split(' - ')[1]
+
+            const startSlot = timeSlots.find(s => s.start === startParts)
+            const endSlot = timeSlots.find(s => s.end.includes(endParts) || s.end === endParts)
+
+            if (!startSlot || !endSlot) return a
+
+            let newEndMins = endSlot.endMinutes + amountMins
+            if (newEndMins <= startSlot.startMinutes) return a
+
+            const lastSlot = timeSlots[timeSlots.length - 1]
+            if (newEndMins > lastSlot.endMinutes) return a
+
+            const newEndSlot = timeSlots.find(s => s.endMinutes === newEndMins)
+            if (!newEndSlot) return a
+
+            return { ...a, schedule_time: `${startSlot.start} - ${newEndSlot.end}` }
+        }))
     }
 
     const handleRemoveAlloc = (classId: number) => {
@@ -319,6 +355,7 @@ export default function ManualEditModal({
                                         <div className={styles.classDetails}>
                                             <span><MdPerson /> {c.teacher_name || 'TBD'}</span>
                                             <span><MdGroups /> {c.section}</span>
+                                            <span><MdAccessTime /> Lec {c.lec_hours || 0}h / Lab {c.lab_hours || 0}h</span>
                                         </div>
                                         {c.required_features?.length > 0 && (
                                             <div className={styles.featureTags}>
@@ -347,23 +384,57 @@ export default function ManualEditModal({
                                         <>
                                             <FaDoorOpen />
                                             <span>
-                                                {(activeItem as any)?.building} - {(activeItem as any)?.room}
-                                                <small style={{ marginLeft: '10px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
+                                                <select
+                                                    value={activeItemIndex}
+                                                    onChange={(e) => setActiveItemIndex(Number(e.target.value))}
+                                                    style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
+                                                >
+                                                    {navigationItems.map((item: any, idx) => (
+                                                        <option key={idx} value={idx}>{item.building} - {item.room}</option>
+                                                    ))}
+                                                </select>
+                                                <small style={{ marginLeft: '10px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
                                                     {(activeItem as any)?.capacity} seats
                                                 </small>
+                                                {(activeItem as any)?.floor_level && (
+                                                    <small style={{ marginLeft: '6px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
+                                                        Floor {(activeItem as any)?.floor_level}
+                                                    </small>
+                                                )}
+                                                {(activeItem as any)?.college && (
+                                                    <small style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                                        {(activeItem as any)?.college}
+                                                    </small>
+                                                )}
                                             </span>
                                         </>
                                     )}
                                     {viewMode === 'faculty' && (
                                         <>
                                             <FaChalkboardTeacher />
-                                            <span>{activeItem as string}</span>
+                                            <select
+                                                value={activeItemIndex}
+                                                onChange={(e) => setActiveItemIndex(Number(e.target.value))}
+                                                style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
+                                            >
+                                                {navigationItems.map((item: any, idx) => (
+                                                    <option key={idx} value={idx}>{item}</option>
+                                                ))}
+                                            </select>
                                         </>
                                     )}
                                     {viewMode === 'section' && (
                                         <>
                                             <FaUsers />
-                                            <span>{activeItem as string}</span>
+                                            <select
+                                                value={activeItemIndex}
+                                                onChange={(e) => setActiveItemIndex(Number(e.target.value))}
+                                                style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
+                                            >
+                                                {navigationItems.map((item: any, idx) => (
+                                                    <option key={idx} value={idx}>{item}</option>
+                                                ))}
+                                            </select>
                                         </>
                                     )}
                                 </div>
@@ -408,27 +479,39 @@ export default function ManualEditModal({
                                                         className={`${styles.slotCell} ${allocs.length > 0 ? styles.occupied : ''}`}
                                                         onDragOver={e => e.preventDefault()}
                                                         onDrop={() => handleDrop(day, slot)}
+                                                        onMouseEnter={() => {
+                                                            if (resizingAllocId !== null) {
+                                                                handleResize(resizingAllocId, day, slot)
+                                                            }
+                                                        }}
                                                     >
-                                                        {isStart && allocs.map(a => (
-                                                            <div key={a.class_id} className={styles.placedClass} style={{
-                                                                height: `${((timeSlots.find(s => s.end === a.schedule_time.split(' - ')[1])?.endMinutes || 0) - slot.startMinutes) / 30 * 100}%`,
-                                                                zIndex: 10
-                                                            }}>
-                                                                <strong>{a.course_code}</strong>
-                                                                <span>{a.section}</span>
-                                                                <div className={styles.allocTools}>
-                                                                    <button onClick={() => handleRemoveAlloc(a.class_id)} title="Remove allocation">
-                                                                        <MdDelete />
-                                                                    </button>
+                                                        {isStart && allocs.map(a => {
+                                                            const confs = checkConflicts(a, a.class_id)
+                                                            return (
+                                                                <div key={a.class_id} className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''}`} style={{
+                                                                    height: `${((timeSlots.find(s => s.end === a.schedule_time.split(' - ')[1])?.endMinutes || 0) - slot.startMinutes) / 30 * 100}%`,
+                                                                    zIndex: 10
+                                                                }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                                        <strong>{a.course_code}</strong>
+                                                                        {confs.length > 0 && <span title={confs.join('\n')} style={{ color: '#fee2e2', opacity: 1, cursor: 'help' }}><MdWarning size={16} /></span>}
+                                                                    </div>
+                                                                    <span>{a.section}</span>
+                                                                    <div className={styles.allocTools}>
+                                                                        <button onClick={() => adjustDuration(a.class_id, 30)} title="Add 30 mins"><MdAdd /></button>
+                                                                        <button onClick={() => adjustDuration(a.class_id, -30)} title="Reduce 30 mins"><MdRemove /></button>
+                                                                        <button onClick={() => handleRemoveAlloc(a.class_id)} title="Remove allocation">
+                                                                            <MdDelete />
+                                                                        </button>
+                                                                    </div>
+                                                                    <div
+                                                                        className={styles.resizeHandle}
+                                                                        onMouseDown={() => setResizingAllocId(a.class_id)}
+                                                                        onTouchStart={() => setResizingAllocId(a.class_id)}
+                                                                    />
                                                                 </div>
-                                                                <div
-                                                                    className={styles.resizeHandle}
-                                                                    onMouseDown={() => setResizingAllocId(a.class_id)}
-                                                                    onMouseUp={() => setResizingAllocId(null)}
-                                                                    onMouseEnter={() => resizingAllocId === a.class_id && handleResize(a.class_id, day, slot)}
-                                                                />
-                                                            </div>
-                                                        ))}
+                                                            )
+                                                        })}
                                                     </td>
                                                 )
                                             })}
