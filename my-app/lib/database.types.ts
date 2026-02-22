@@ -458,7 +458,7 @@ export const TABLE_NAMES = {
 // ARCHIVED ITEMS
 // ============================================================================
 
-export type ArchivedItemType = 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room';
+export type ArchivedItemType = 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification';
 
 export interface ArchivedItem {
   id: string;

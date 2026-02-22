@@ -250,12 +250,15 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
+          // Remove potential prefix added for local mapping
+          const alertId = notif.id.startsWith('alert_') ? notif.id.replace('alert_', '') : notif.id;
+
           await fetch('/api/alerts', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: session.user.id,
-              alertId: notif.id.replace('alert_', ''),
+              alertId: alertId,
               action: 'read'
             })
           })
@@ -391,12 +394,17 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   }
 
   const getNotificationIcon = (notif: Notification) => {
+    // Check if it's a schedule alert which should have a bolt icon
+    const isScheduleAlert = notif.title.toLowerCase().includes('schedule') ||
+      notif.message.toLowerCase().includes('schedule');
+
     switch (notif.type) {
       case 'registration':
         return <MdPersonAdd size={18} />
       case 'schedule':
         return <MdBolt size={18} />
       case 'alert':
+        if (isScheduleAlert) return <MdBolt size={18} />
         if (notif.severity === 'warning' || notif.severity === 'error')
           return <MdWarning size={18} />
         if (notif.severity === 'success')

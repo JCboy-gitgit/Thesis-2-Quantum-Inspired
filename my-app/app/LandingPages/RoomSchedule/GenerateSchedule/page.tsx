@@ -370,7 +370,7 @@ export default function GenerateSchedulePage() {
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
     endTime: '20:00',
-    slotDuration: 90, // Fixed to 90 minutes (1.5 hours) - standard academic period
+    slotDuration: 30, // 30 minutes for better granularity and alignment with manual editor
     includeSaturday: true,
     includeSunday: false,
     // Lunch break settings - AUTO MODE (1hr break after 6hrs consecutive)
@@ -1751,13 +1751,6 @@ export default function GenerateSchedulePage() {
           `${scheduledCount} classes scheduled successfully with no conflicts.`,
           'success'
         )
-        pushAdminNotification({
-          type: 'schedule',
-          title: 'Schedule Generated Successfully',
-          message: `${scheduledCount} classes scheduled with zero conflicts.`,
-          severity: 'success',
-          link: '/LandingPages/RoomSchedule/ViewSchedule'
-        })
 
         // Persist to database
         createSystemAlert({
@@ -1779,13 +1772,6 @@ export default function GenerateSchedulePage() {
           `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts. Review needed.`,
           'error'
         )
-        pushAdminNotification({
-          type: 'schedule',
-          title: 'Schedule Has Issues',
-          message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts.`,
-          severity: 'warning',
-          link: '/LandingPages/RoomSchedule/ViewSchedule'
-        })
 
         // Persist to database
         createSystemAlert({
@@ -1802,32 +1788,34 @@ export default function GenerateSchedulePage() {
           duration: 6000,
         })
         sendBrowserNotification('Schedule Generated', `${scheduledCount} classes scheduled.`, 'success')
-        pushAdminNotification({
-          type: 'schedule',
+
+        createSystemAlert({
           title: 'Schedule Generated',
-          message: result.message || `${scheduledCount} classes scheduled.`,
+          message: result.message || `${scheduledCount} classes scheduled for ${config.scheduleName}.`,
+          audience: 'admin',
           severity: 'success',
-          link: '/LandingPages/RoomSchedule/ViewSchedule'
+          category: 'schedule_generation',
+          metadata: { scheduleName: config.scheduleName, scheduledCount }
         })
       }
     } catch (error: any) {
       console.error('Schedule generation failed:', error)
-      // Handle error properly - stringify if it's an object
       const errorMessage = typeof error === 'object'
         ? (error.message || JSON.stringify(error, null, 2))
         : String(error)
 
-      // Show error toast and browser notification
       toast.error('Schedule Generation Failed', {
         description: errorMessage,
         duration: 10000,
       })
       sendBrowserNotification('Schedule Generation Failed', errorMessage, 'error')
-      pushAdminNotification({
-        type: 'schedule',
+
+      createSystemAlert({
         title: 'Schedule Generation Failed',
         message: errorMessage.slice(0, 200),
-        severity: 'error'
+        audience: 'admin',
+        severity: 'error',
+        category: 'schedule_error'
       })
     } finally {
       setScheduling(false)
@@ -1908,6 +1896,8 @@ export default function GenerateSchedulePage() {
           .replace(/_LEC$/i, '')
           .replace(/_LECTURE$/i, '')
           .replace(/_LABORATORY$/i, '')
+          .replace(/_G[12](_LAB)?$/i, '')
+          .replace(/ G[12]$/i, '')
           .replace(/, LAB$/i, '')
           .replace(/, LEC$/i, '')
           .replace(/, LECTURE$/i, '')
@@ -2667,7 +2657,7 @@ export default function GenerateSchedulePage() {
                       >
                         <option value="all">All Sections</option>
                         {[...new Set(scheduleResult.allocations.map(a =>
-                          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+                          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
                         ).filter(Boolean))].map(section => (
                           <option key={section} value={section}>{section}</option>
                         ))}
@@ -2738,7 +2728,7 @@ export default function GenerateSchedulePage() {
                           if (timetableView === 'room') {
                             if (selectedTimetableRoom !== 'all' && a.room !== selectedTimetableRoom) return false;
                           } else if (timetableView === 'section') {
-                            const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '');
+                            const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '');
                             if (selectedTimetableSection !== 'all' && baseSection !== selectedTimetableSection) return false;
                           } else if (timetableView === 'teacher') {
                             if (selectedTimetableTeacher !== 'all' && a.teacher_name !== selectedTimetableTeacher) return false;

@@ -824,8 +824,8 @@ class EnhancedQuantumScheduler:
             
             # 3. Match the best section (if multiple split sections exist)
             # Heuristic: if room is LAB-ready, prefer lab section
-            room = self.rooms.get(room_id)
-            is_lab_room = self._is_lab_room(room_id) if room_id else False
+            is_online = (room_id == 0 or room_id is None)
+            is_lab_room = self._is_lab_room(room_id) if (room_id and room_id != 0) else False
             
             section = target_sections[0]
             if len(target_sections) > 1:
@@ -834,7 +834,7 @@ class EnhancedQuantumScheduler:
                     if is_lab_room and s.requires_lab:
                         section = s
                         break
-                    if not is_lab_room and not s.requires_lab:
+                    if not is_lab_room and not s.requires_lab and not is_online:
                         section = s
                         break
             
@@ -847,26 +847,41 @@ class EnhancedQuantumScheduler:
                 else:
                     continue
             
-            needed_slots = self._get_required_slot_count(section)
-            
+            # 4. Determine duration from manual allocation or section defaults
+            # Calculate duration in slots
+            try:
+                end_time_str = parts[1]
+                end_slot = next((t for t in self.time_slots if t.end_time == end_time_str), None)
+                if end_slot and end_slot.id >= start_slot.id:
+                    slot_count = end_slot.id - start_slot.id + 1
+                    actual_duration = (end_slot.start_minutes + end_slot.duration_minutes) - start_slot.start_minutes
+                else:
+                    slot_count = self._get_required_slot_count(section)
+                    actual_duration = slot_count * self.slot_duration_minutes
+            except Exception:
+                slot_count = self._get_required_slot_count(section)
+                actual_duration = slot_count * self.slot_duration_minutes
+
             # Pin the section
             section.is_pinned = True
             section.pinned_day = day
             section.pinned_room_id = room_id
             section.pinned_time_slot = start_slot.id
+            section.pinned_slot_count = slot_count # Store for later use
             
             # Actually place it in the initial schedule
             # Note: We don't check conflicts here because it's a manual override
-            slot_count = needed_slots
-            
             assignment = (room_id, day, start_slot.id, slot_count)
             self.section_assignments[section.id].append(assignment)
+            self.assignment_durations[(section.id, room_id, day, start_slot.id)] = actual_duration
             
             # Mark slots as occupied
             for i in range(slot_count):
                 slot_id = start_slot.id + i
-                if (room_id, day, slot_id) in self.time_slots_by_id:
-                    self.schedule[(room_id, day, slot_id)] = ScheduleSlot(
+                if slot_id in self.time_slots_by_id:
+                    # Key for online classes uses room_id=0 or None
+                    schedule_key = (room_id, day, slot_id)
+                    self.schedule[schedule_key] = ScheduleSlot(
                         section_id=section.id, # Use REAL section ID
                         room_id=room_id,
                         day_of_week=day,
@@ -874,8 +889,13 @@ class EnhancedQuantumScheduler:
                         slot_count=slot_count,
                         teacher_id=section.teacher_id,
                         is_lab=section.requires_lab,
-                        is_pinned=True
+                        is_pinned=True,
+                        is_online=is_online,
+                        actual_duration_minutes=actual_duration
                     )
+            
+            # Update subject-day index
+            self._update_subject_days_index(section, day, add=True)
             
             print(f"   ✅ Pinned {section.section_code} to {day} {time_range} (Room {room_id})")
 
@@ -1356,6 +1376,15 @@ class EnhancedQuantumScheduler:
                     base = base[:-len(suffix)].strip()
         return base.strip()
     
+    def _get_cohort_code(self, section_code: str) -> str:
+        """Strip only component suffixes, keep group suffixes like _G1."""
+        base = section_code.upper()
+        for _ in range(2):
+            for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY']:
+                if base.endswith(suffix):
+                    base = base[:-len(suffix)].strip()
+        return base
+
     def _check_student_group_conflict(
         self,
         section_id: int,
@@ -1366,17 +1395,14 @@ class EnhancedQuantumScheduler:
     ) -> bool:
         """
         Check if the student group already has a class.
-        Hierarchy Aware: BSMCS 1A_G1 belongs to BSMCS 1A.
+        Hierarchy Aware: BSMCS 1A_G1 and BSMCS 1A_G2 are separate cohorts, 
+        but both are children of BSMCS 1A.
         """
-        base_group = self._get_base_section_code(section_code)
-        # Groups to check: The group itself AND its parent (if any)
-        # BSMCS 1A_G1 -> [BSMCS 1A_G1, BSMCS 1A]
-        # BSMCS 1A -> [BSMCS 1A]
-        groups_to_check = {section_code, base_group}
+        my_cohort = self._get_cohort_code(section_code)
+        my_base = self._get_base_section_code(section_code)
         
         new_end = start_slot_id + slot_count
         
-        # Optimization: Check all sections that might belong to these groups
         for other_sid, other_assignments in self.section_assignments.items():
             if other_sid == section_id:
                 continue
@@ -1385,11 +1411,18 @@ class EnhancedQuantumScheduler:
             if not other_section:
                 continue
                 
-            other_base = self._get_base_section_code(other_section.section_code)
-            other_groups = {other_section.section_code, other_base}
+            other_code = other_section.section_code
+            other_cohort = self._get_cohort_code(other_code)
+            other_base = self._get_base_section_code(other_code)
             
-            # Intersection means they share students
-            if groups_to_check.intersection(other_groups):
+            # Conflict if:
+            # 1. Exact same cohort (e.g. both are G1)
+            # 2. Hierarchy overlap (e.g. one is parent BSCS 1A and other is child BSCS 1A_G1)
+            has_overlap = (my_cohort == other_cohort) or \
+                          (my_cohort == other_base) or \
+                          (my_base == other_cohort)
+            
+            if has_overlap:
                 for _, sched_day, sched_start, sched_count in other_assignments:
                     if sched_day == day:
                         existing_end = sched_start + sched_count
@@ -2425,8 +2458,8 @@ class EnhancedQuantumScheduler:
         for section in sorted_sections:
             # Handle pinned sections
             if getattr(section, 'is_pinned', False):
-                if section.pinned_day and section.pinned_room_id and section.pinned_time_slot:
-                    pinned_slots = self._get_required_slot_count(section)
+                if section.pinned_day and section.pinned_time_slot:
+                    pinned_slots = getattr(section, 'pinned_slot_count', self._get_required_slot_count(section))
                     self._allocate_section(
                         section,
                         section.pinned_room_id,
@@ -3695,11 +3728,17 @@ def run_enhanced_scheduler(
         ]
         print(f"⏰ Using {len(time_slots)} time slots from input ({slot_duration} min each)")
     
+    # Calculate max lab capacity to determine if G1/G2 split is needed
+    lab_rooms_raw = [r for r in rooms_data if 'lab' in (r.get('room_type') or '').lower()]
+    max_lab_capacity = max((r.get('capacity', 0) for r in lab_rooms_raw), default=30)
+    print(f"🔬 Max Lab Capacity detected: {max_lab_capacity}. Sections above this will be split G1/G2.")
+
     # Convert data to objects with TYPE-BASED SPLITTING for hybrid courses
     # Hybrid courses (lec_hours > 0 AND lab_hours > 0) are split into separate _LEC and _LAB sections
     sections = []
     next_generated_id = max((s.get('id', 0) for s in sections_data), default=0) + 10000  # Start generated IDs high
     split_count = 0  # Track how many sections were split
+    g1_g2_split_count = 0  # Track G1/G2 splits
     
     for i, s in enumerate(sections_data):
         # lec_hours and lab_hours are the actual contact hours per week
@@ -3724,6 +3763,39 @@ def run_enhanced_scheduler(
         
         required_features_set = generic_reqs
         
+        # Helper to decide if we should split a lab section into G1/G2
+        def should_split_lab(count, hours):
+            return hours > 0 and count > max_lab_capacity
+
+        # Helper to create a section object
+        def create_section_obj(sid, code, l_hrs, b_hrs, is_lab, st_count, parent_id=None, sibling_id=None, s_type="combined", split_t=None):
+            return Section(
+                id=sid,
+                section_code=code,
+                course_code=s.get('course_code', ''),
+                course_name=s.get('course_name', ''),
+                subject_code=s.get('subject_code', s.get('course_code', '')),
+                subject_name=s.get('subject_name', s.get('course_name', '')),
+                teacher_id=s.get('teacher_id', 0),
+                teacher_name=s.get('teacher_name', ''),
+                year_level=s.get('year_level', 1),
+                student_count=max(1, st_count),
+                required_room_type='Computer Lab' if is_lab else 'Lecture Room',
+                weekly_hours=l_hrs + b_hrs,
+                lec_hours=l_hrs,
+                lab_hours=b_hrs,
+                requires_lab=is_lab,
+                department=s.get('department') or s.get('courses', {}).get('department', ''),
+                college=s.get('college') or s.get('courses', {}).get('college', ''),
+                semester=s.get('semester', '1st Semester'),
+                required_features=lab_reqs if is_lab else lec_reqs,
+                sibling_id=sibling_id,
+                original_section_id=parent_id or original_id,
+                section_type=s_type,
+                is_split_group=(split_t is not None),
+                split_type=split_t
+            )
+
         # TYPE-BASED SPLITTING: Check if this is a hybrid course
         if lec_hours > 0 and lab_hours > 0:
             # This is a HYBRID course - split into two separate sections
@@ -3731,100 +3803,45 @@ def run_enhanced_scheduler(
             
             # Generate unique IDs for the split sections
             lec_section_id = next_generated_id
-            lab_section_id = next_generated_id + 1
+            lab_base_id = next_generated_id + 1
             next_generated_id += 2
             
             # Create LECTURE section (_LEC)
-            lec_section = Section(
-                id=lec_section_id,
-                section_code=f"{base_section_code}_LEC",
-                course_code=s.get('course_code', ''),
-                course_name=s.get('course_name', ''),
-                subject_code=s.get('subject_code', s.get('course_code', '')),
-                subject_name=s.get('subject_name', s.get('course_name', '')),
-                teacher_id=s.get('teacher_id', 0),
-                teacher_name=s.get('teacher_name', ''),
-                year_level=s.get('year_level', 1),
-                student_count=max(1, student_count),
-                required_room_type='Lecture Room',  # Force lecture room type
-                weekly_hours=lec_hours,
-                lec_hours=lec_hours,
-                lab_hours=0,  # No lab hours for lecture section
-                requires_lab=False,
-                department=s.get('department') or s.get('courses', {}).get('department', ''),
-                college=s.get('college') or s.get('courses', {}).get('college', ''),
-                semester=s.get('semester', '1st Semester'),
-                required_features=lec_reqs,  # Use specific lecture requirements
-                sibling_id=lab_section_id,  # Link to lab sibling
-                original_section_id=original_id,
-                section_type="lecture"
-            )
+            sections.append(create_section_obj(lec_section_id, f"{base_section_code}_LEC", lec_hours, 0, False, student_count, sibling_id=lab_base_id, s_type="lecture"))
             
-            # Create LABORATORY section (_LAB)
-            lab_section = Section(
-                id=lab_section_id,
-                section_code=f"{base_section_code}_LAB",
-                course_code=s.get('course_code', ''),
-                course_name=s.get('course_name', ''),
-                subject_code=s.get('subject_code', s.get('course_code', '')),
-                subject_name=s.get('subject_name', s.get('course_name', '')),
-                teacher_id=s.get('teacher_id', 0),
-                teacher_name=s.get('teacher_name', ''),
-                year_level=s.get('year_level', 1),
-                student_count=max(1, student_count),
-                required_room_type='Computer Lab',  # Force lab room type
-                weekly_hours=lab_hours,
-                lec_hours=0,  # No lecture hours for lab section
-                lab_hours=lab_hours,
-                requires_lab=True,  # Lab section requires lab room
-                department=s.get('department') or s.get('courses', {}).get('department', ''),
-                college=s.get('college') or s.get('courses', {}).get('college', ''),
-                semester=s.get('semester', '1st Semester'),
-                required_features=lab_reqs,  # Use specific lab requirements
-                sibling_id=lec_section_id,  # Link to lecture sibling
-                original_section_id=original_id,
-                section_type="lab"
-            )
+            # Check if LABORATORY section needs G1/G2 split
+            if should_split_lab(student_count, lab_hours):
+                g1_g2_split_count += 1
+                g1_id = next_generated_id
+                g2_id = next_generated_id + 1
+                next_generated_id += 2
+                
+                sections.append(create_section_obj(g1_id, f"{base_section_code}_G1_LAB", 0, lab_hours, True, math.ceil(student_count/2), parent_id=original_id, s_type="lab", split_t="G1"))
+                sections.append(create_section_obj(g2_id, f"{base_section_code}_G2_LAB", 0, lab_hours, True, math.floor(student_count/2), parent_id=original_id, s_type="lab", split_t="G2"))
+                print(f"   👥 Split LAB component of hybrid course '{base_section_code}' into G1 and G2")
+            else:
+                sections.append(create_section_obj(lab_base_id, f"{base_section_code}_LAB", 0, lab_hours, True, student_count, sibling_id=lec_section_id, s_type="lab"))
             
-            sections.append(lec_section)
-            sections.append(lab_section)
             print(f"   🔀 Split hybrid course '{base_section_code}': {lec_hours}hr LEC + {lab_hours}hr LAB")
         else:
-            # Regular course (lecture only or lab only) - no splitting needed
+            # Regular course (lecture only or lab only)
             weekly_hours = lec_hours + lab_hours
             if weekly_hours == 0:
-                weekly_hours = 3  # Default 3 hours if not specified
+                weekly_hours = 3
             
             is_lab_only = lab_hours > 0 and lec_hours == 0
             
-            sections.append(Section(
-                id=original_id,
-                section_code=base_section_code,
-                course_code=s.get('course_code', ''),
-                course_name=s.get('course_name', ''),
-                subject_code=s.get('subject_code', s.get('course_code', '')),
-                subject_name=s.get('subject_name', s.get('course_name', '')),
-                teacher_id=s.get('teacher_id', 0),
-                teacher_name=s.get('teacher_name', ''),
-                year_level=s.get('year_level', 1),
-                student_count=max(1, student_count),
-                required_room_type=s.get('required_room_type', 'Computer Lab' if is_lab_only else 'Lecture Room'),
-                weekly_hours=weekly_hours,
-                lec_hours=lec_hours,
-                lab_hours=lab_hours,
-                requires_lab=is_lab_only or s.get('requires_lab', False),
-                department=s.get('department') or s.get('courses', {}).get('department', ''),
-                college=s.get('college') or s.get('courses', {}).get('college', ''),
-                semester=s.get('semester', '1st Semester'),
-                # Use appropriate requirements based on section type
-                required_features=(
-                    lab_reqs if is_lab_only 
-                    else (lec_reqs if lab_hours == 0 else lec_reqs.union(lab_reqs))
-                ),
-                sibling_id=None,
-                original_section_id=None,
-                section_type="lab" if is_lab_only else "lecture"
-            ))
+            if is_lab_only and should_split_lab(student_count, lab_hours):
+                g1_g2_split_count += 1
+                g1_id = next_generated_id
+                g2_id = next_generated_id + 1
+                next_generated_id += 2
+                
+                sections.append(create_section_obj(g1_id, f"{base_section_code}_G1", 0, lab_hours, True, math.ceil(student_count/2), s_type="lab", split_t="G1"))
+                sections.append(create_section_obj(g2_id, f"{base_section_code}_G2", 0, lab_hours, True, math.floor(student_count/2), s_type="lab", split_t="G2"))
+                print(f"   👥 Split Lab-only course '{base_section_code}' into G1 and G2")
+            else:
+                sections.append(create_section_obj(original_id, base_section_code, lec_hours, lab_hours, is_lab_only, student_count, s_type="lab" if is_lab_only else "lecture"))
     
     if split_count > 0:
         print(f"📊 Type-Based Splitting: {split_count} hybrid courses split into {split_count * 2} sections")

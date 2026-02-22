@@ -192,9 +192,12 @@ function normalizeDay(day: string): string {
 
 function normalizeSection(section: string): string {
     if (!section) return section
-    // Strip _Lab or _Lec suffix (case-insensitive) — e.g. "BSM CS 4A_Lab" → "BSM CS 4A"
-    // Sections like "BSM CS 4A G1" naturally have no such suffix and are left untouched
-    return section.replace(/_(Lab|Lec)$/i, '').trim()
+    // Strip _Lab, _Lec, _G1, _G2 suffixes (case-insensitive)
+    return section
+        .replace(/_(Lab|Lec)$/i, '')
+        .replace(/_G[12](_LAB)?$/i, '')
+        .replace(/ G[12]$/i, '')
+        .trim()
 }
 
 function expandDays(dayStr: string): string[] {

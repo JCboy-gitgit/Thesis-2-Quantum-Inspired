@@ -206,14 +206,105 @@ export default function ManualEditModal({
                 if (classInfo.teacher_name && classInfo.teacher_name === existing.teacher_name) {
                     conflicts.push(`Prof conflict: ${classInfo.teacher_name} is in Room ${existing.room}`)
                 }
-                if (classInfo.section === existing.section) {
-                    conflicts.push(`Section conflict: ${classInfo.section} is in Room ${existing.room}`)
+                const getBase = (s: string) => s.replace(/ G[12]$/i, '').replace(/_G[12](_LAB)?$/i, '');
+                const baseNew = getBase(newAlloc.section);
+                const baseExisting = getBase(existing.section);
+
+                if (baseNew === baseExisting) {
+                    // Conflict if they are the exact same section name (e.g. both G1 or both full section)
+                    if (newAlloc.section === existing.section) {
+                        conflicts.push(`Section conflict: ${newAlloc.section} is in Room ${existing.room}`);
+                    }
+                    // Conflict if one is a full section and the other is a split group
+                    else if (!newAlloc.section.includes(' G1') && !newAlloc.section.includes(' G2') &&
+                        !newAlloc.section.includes('_G1') && !newAlloc.section.includes('_G2')) {
+                        conflicts.push(`Section conflict: ${newAlloc.section} (full) vs ${existing.section} in Room ${existing.room}`);
+                    }
+                    else if (!existing.section.includes(' G1') && !existing.section.includes(' G2') &&
+                        !existing.section.includes('_G1') && !existing.section.includes('_G2')) {
+                        conflicts.push(`Section conflict: ${newAlloc.section} vs ${existing.section} (full) in Room ${existing.room}`);
+                    }
+                    // Note: If both are split (one G1, one G2), they don't conflict.
                 }
             }
         })
 
         return conflicts
     }, [classes, allocations, timeSlots])
+
+    // NEW: Find the best available room based on requirements and availability
+    const findOptimalRoom = useCallback((classInfo: any, component: string, day: string, startSlot: any, durationMins: number, ignoreAllocId?: any) => {
+        if (!classInfo || !rooms.length) return null;
+
+        const isLab = component.includes('LAB');
+        const students = component.includes('G1') || component.includes('G2')
+            ? Math.ceil((classInfo.student_count || 0) / 2)
+            : (classInfo.student_count || 0);
+
+        // 1. Determine required features
+        const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
+        let reqFeatures: string[] = [];
+        if (isLab) {
+            reqFeatures = (classInfo.required_lab_features?.length > 0)
+                ? classInfo.required_lab_features
+                : classInfo.required_features || [];
+        } else {
+            reqFeatures = (classInfo.required_lec_features?.length > 0)
+                ? classInfo.required_lec_features
+                : (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
+        }
+
+        const startMins = startSlot.startMinutes;
+        const endMins = startSlot.startMinutes + durationMins;
+
+        // 2. Score candidate rooms
+        const candidates = rooms.map(room => {
+            let score = 0;
+            const rType = room.room_type?.toLowerCase() || '';
+            const roomIsLab = rType.includes('lab');
+
+            // --- HARD CONSTRAINTS ---
+            // a) Room Type Compatibility
+            if (isLab && !roomIsLab) return { room, score: -1000 };
+
+            // b) Capacity Fit
+            if (room.capacity < students) return { room, score: -1000 };
+
+            // c) Availability Check
+            const isBusy = allocations.some(a => {
+                if (ignoreAllocId && (a.id || a.class_id) === ignoreAllocId) return false;
+                if (a.room_id !== room.id || a.schedule_day !== day) return false;
+
+                const aStartParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5);
+                const aEndParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5);
+                const aStartMins = timeSlots.find(s => s.start === aStartParts)?.startMinutes || 0;
+                const aEndMins = timeSlots.find(s => s.end === aEndParts)?.endMinutes || 0;
+
+                return (startMins < aEndMins && endMins > aStartMins);
+            });
+            if (isBusy) return { room, score: -1000 };
+
+            // d) Feature Requirements
+            const roomFeats = new Set(room.feature_tags || []);
+            if (reqFeatures.some(f => !roomFeats.has(f))) return { room, score: -1000 };
+
+            // --- SOFT PREFERENCES ---
+            if (!isLab && !roomIsLab) score += 200; // Prefer LEC in Lecture rooms
+            if (!isLab && roomIsLab) score -= 100; // Penalize LEC in Lab
+
+            const waste = room.capacity - students;
+            score += Math.max(0, 100 - waste); // Prefer closer fit to avoid wasting large rooms
+
+            return { room, score };
+        });
+
+        // Pick highest score
+        const sorted = candidates
+            .filter(c => c.score > -900)
+            .sort((a, b) => b.score - a.score);
+
+        return sorted.length > 0 ? sorted[0].room : null;
+    }, [rooms, allocations, timeSlots])
 
     // 7. Actions
     const handleNavigation = (direction: 'next' | 'prev') => {
@@ -225,6 +316,7 @@ export default function ManualEditModal({
     }
 
     const handleDrop = (day: string, slot: any, component?: string) => {
+        // --- CASE 1: MOVING EXISTING ALLOCATION ---
         if (draggedAllocId) {
             const existingAlloc = allocations.find(a => (a.id || a.class_id) === draggedAllocId);
             if (!existingAlloc) {
@@ -241,40 +333,19 @@ export default function ManualEditModal({
             const endSlotIdx = timeSlots.indexOf(slot) + Math.ceil(durationMins / 30) - 1
             const endSlot = timeSlots[Math.min(endSlotIdx, timeSlots.length - 1)]
 
-            let roomInfo: any = viewMode === 'room' ? (activeItem as any) : { id: existingAlloc.room_id, campus: existingAlloc.campus, building: existingAlloc.building, room: existingAlloc.room, capacity: existingAlloc.capacity };
-            if (!roomInfo) roomInfo = rooms[0];
-
             const classInfo = classes.find(c => c.id === existingAlloc.class_id);
-            if (roomInfo && classInfo) {
-                if (existingAlloc.student_count > (roomInfo.capacity || 0)) {
-                    toast.warning(`Warning: Students exceed room capacity.`)
-                }
-                const componentType = existingAlloc.component || '';
-                const isLab = componentType.includes('LAB');
-                const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
+            if (!classInfo) { setDraggedAllocId(null); return; }
 
-                let featuresToCheck = [];
-                if (isLab) {
-                    featuresToCheck = (classInfo.required_lab_features && classInfo.required_lab_features.length > 0)
-                        ? classInfo.required_lab_features
-                        : classInfo.required_features;
-                } else {
-                    if (classInfo.required_lec_features && classInfo.required_lec_features.length > 0) {
-                        featuresToCheck = classInfo.required_lec_features;
-                    } else {
-                        // Heuristic: only require "lecture-safe" features if no explicit LEC notes found
-                        featuresToCheck = (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
-                    }
-                }
-
-                if (featuresToCheck && featuresToCheck.length > 0) {
-                    const roomFeats = new Set(roomInfo.feature_tags || []);
-                    const missing = featuresToCheck.filter((f: string) => !roomFeats.has(f));
-                    if (missing.length > 0) {
-                        toast.error(`Error: Room lacks required features for ${componentType || 'block'}: ${missing.join(', ')}`);
-                        setDraggedAllocId(null);
-                        return;
-                    }
+            // Auto-detect best room if not in Room View
+            let roomInfo = null;
+            if (viewMode === 'room') {
+                roomInfo = (activeItem as any);
+            } else {
+                roomInfo = findOptimalRoom(classInfo, existingAlloc.component, day, slot, durationMins, draggedAllocId);
+                if (!roomInfo) {
+                    toast.error(`No suitable/available room found for ${existingAlloc.component} at this time.`);
+                    setDraggedAllocId(null);
+                    return;
                 }
             }
 
@@ -297,15 +368,15 @@ export default function ManualEditModal({
 
             setAllocations(prev => prev.map(a => (a.id || a.class_id) === draggedAllocId ? updatedAlloc : a))
             setDraggedAllocId(null);
-            toast.success(`Moved ${existingAlloc.course_code}`);
+            toast.success(`Moved ${existingAlloc.course_code} to Room ${roomInfo.room}`);
             return;
         }
 
+        // --- CASE 2: ALLOCATING NEW CARD ---
         if (!draggedClassId) return
         const classInfo = classesWithStats.find(c => c.id === draggedClassId)
         if (!classInfo) return
 
-        // If component not specified (from direct drop), pick one that has remaining hours
         const targetComponent = component || draggingComponent || (classInfo.lecRemaining > 0 ? 'LEC' : 'LAB')
 
         let remainingHours = 0;
@@ -334,46 +405,44 @@ export default function ManualEditModal({
             return
         }
 
-        const durationMins = Math.min(remainingHours * 60, 90)
+        const durationMins = Math.min(remainingHours * 60, 90) // Default to 1.5h blocks or remaining
         const endSlotIdx = timeSlots.indexOf(slot) + Math.ceil(durationMins / 30) - 1
         const endSlot = timeSlots[Math.min(endSlotIdx, timeSlots.length - 1)]
 
-        let roomInfo = viewMode === 'room' ? (activeItem as any) : rooms[0]
-
-        if (roomInfo) {
-            if (targetStudents > (roomInfo.capacity || 0)) {
-                toast.warning(`Warning: Students (${targetStudents}) exceed capacity (${roomInfo.capacity})`)
+        // Auto-detect and assign best room
+        let roomInfo = null;
+        if (viewMode === 'room') {
+            roomInfo = (activeItem as any);
+        } else {
+            roomInfo = findOptimalRoom(classInfo, targetComponent, day, slot, durationMins);
+            if (!roomInfo) {
+                toast.error(`No suitable/available room found for ${targetComponent} at this time.`);
+                setDraggedClassId(null);
+                setDraggingComponent(null);
+                return;
             }
-            const isLab = saveComponent?.includes('LAB');
+        }
+
+        // Double check features if dropped manually in Room View
+        if (viewMode === 'room' && roomInfo) {
+            const isLabComp = saveComponent?.includes('LAB');
             const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
+            let featuresToCheck = isLabComp
+                ? (classInfo.required_lab_features?.length > 0 ? classInfo.required_lab_features : classInfo.required_features || [])
+                : (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
 
-            let featuresToCheck = [];
-            if (isLab) {
-                featuresToCheck = (classInfo.required_lab_features && classInfo.required_lab_features.length > 0)
-                    ? classInfo.required_lab_features
-                    : classInfo.required_features;
-            } else {
-                if (classInfo.required_lec_features && classInfo.required_lec_features.length > 0) {
-                    featuresToCheck = classInfo.required_lec_features;
-                } else {
-                    featuresToCheck = (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
-                }
-            }
-
-            if (featuresToCheck && featuresToCheck.length > 0) {
-                const roomFeats = new Set(roomInfo.feature_tags || []);
-                const missing = featuresToCheck.filter((f: string) => !roomFeats.has(f));
-                if (missing.length > 0) {
-                    toast.error(`Error: Room lacks required features for ${saveComponent}: ${missing.join(', ')}`);
-                    setDraggedClassId(null);
-                    setDraggingComponent(null);
-                    return;
-                }
+            const roomFeats = new Set(roomInfo.feature_tags || []);
+            const missing = (featuresToCheck as string[]).filter((f: string) => !roomFeats.has(f));
+            if (missing.length > 0) {
+                toast.error(`Error: Room lacks required features: ${missing.join(', ')}`);
+                setDraggedClassId(null);
+                setDraggingComponent(null);
+                return;
             }
         }
 
         const newAlloc = {
-            id: Date.now(), // Local temporary ID
+            id: Date.now(),
             class_id: classInfo.id,
             room_id: roomInfo.id,
             course_code: classInfo.course_code,
@@ -401,7 +470,7 @@ export default function ManualEditModal({
         setAllocations(prev => [...prev, newAlloc])
         setDraggedClassId(null)
         setDraggingComponent(null)
-        toast.success(`Allocated ${classInfo.course_code} ${targetComponent}`)
+        toast.success(`Allocated ${classInfo.course_code} ${targetComponent} in Room ${roomInfo.room}`)
     }
 
     const handleResize = (allocId: any, day: string, newEndSlot: any) => {
@@ -750,7 +819,8 @@ export default function ManualEditModal({
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
                                                     if (viewMode === 'section') {
                                                         const activeSec = (activeItem as string);
-                                                        const isMatch = a.section === activeSec || (activeSec.endsWith(' G1') && a.section === activeSec.replace(' G1', '')) || (activeSec.endsWith(' G2') && a.section === activeSec.replace(' G2', ''));
+                                                        const getBase = (s: string) => s.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '');
+                                                        const isMatch = a.section === activeSec || getBase(a.section) === getBase(activeSec);
                                                         return isMatch && slotInRange;
                                                     }
                                                     return false

@@ -2702,8 +2702,6 @@
   height: 40px;
   background: var(--bg-white);
   position: relative;
-  overflow: hidden;
-  /* Prevent overflow into other cells */
 }
 
 .spanningCell {

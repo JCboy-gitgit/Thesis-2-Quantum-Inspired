@@ -650,7 +650,7 @@ export default function ViewSchedulePage() {
         const uniqueRooms: string[] = [...new Set(enrichedAllocations.map((a: any) => a.room).filter((r: any): r is string => !!r))]
         // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
         const uniqueSections: string[] = [...new Set(enrichedAllocations.map((a: any) =>
-          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
         ).filter((s: any): s is string => !!s))]
         const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
         const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
@@ -794,7 +794,7 @@ export default function ViewSchedulePage() {
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
         // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
         const uniqueSections = [...new Set(mockAllocations.map(a =>
-          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
         ).filter((s): s is string => !!s))]
         const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
         const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
@@ -835,7 +835,7 @@ export default function ViewSchedulePage() {
     } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
       // Match both LAB and LEC variants of the section
       filtered = filtered.filter(a => {
-        const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
+        const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
         return baseSection === selectedSection
       })
     } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
@@ -1576,6 +1576,8 @@ export default function ViewSchedulePage() {
               .replace(/_LEC$/i, '')
               .replace(/_LECTURE$/i, '')
               .replace(/_LABORATORY$/i, '')
+              .replace(/_G[12](_LAB)?$/i, '')
+              .replace(/ G[12]$/i, '')
               .replace(/, LAB$/i, '')
               .replace(/, LEC$/i, '')
               .replace(/, LECTURE$/i, '')
@@ -1620,6 +1622,8 @@ export default function ViewSchedulePage() {
             .replace(/_LEC$/i, '')
             .replace(/_LECTURE$/i, '')
             .replace(/_LABORATORY$/i, '')
+            .replace(/_G[12](_LAB)?$/i, '')
+            .replace(/ G[12]$/i, '')
             .replace(/, LAB$/i, '')
             .replace(/, LEC$/i, '')
             .replace(/, LECTURE$/i, '')
