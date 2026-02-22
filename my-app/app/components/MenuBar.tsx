@@ -9,6 +9,8 @@ import SettingsModal from './SettingsModal'
 import ProfileModal from './ProfileModal'
 import ArchiveModal from './ArchiveModal'
 import NotificationBell from './NotificationBell'
+import AdminTutorial from './AdminTutorial'
+import { MdHelpOutline as HelpIcon } from 'react-icons/md'
 import './MenuBar.css'
 
 interface MenuBarProps {
@@ -31,8 +33,18 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const [isAdmin, setIsAdmin] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isInstallable, setIsInstallable] = useState(false)
+  const [tutorialRunning, setTutorialRunning] = useState(false)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const flowPath = localStorage.getItem('admin_tutorial_flow')
+      if (flowPath) {
+        setTutorialRunning(true)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     // Get current user email
@@ -171,6 +183,17 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         </div>
 
         <div className="menu-bar-right">
+          {/* Tutorial Button */}
+          {isAdmin && (
+            <button
+              className="tutorial-btn"
+              onClick={() => setTutorialRunning(true)}
+              title="Page Tutorial / Help"
+            >
+              <HelpIcon size={20} />
+            </button>
+          )}
+
           {/* Notification Bell - Only for Admin */}
           {isAdmin && showAccountIcon && (
             <NotificationBell
@@ -296,6 +319,24 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         isOpen={showArchive}
         onClose={() => setShowArchive(false)}
         excludeType="notification"
+      />
+
+      <AdminTutorial
+        run={tutorialRunning}
+        setRun={setTutorialRunning}
+        onStepChange={(step) => {
+          if (step.target === '.sidebar') {
+            if (setSidebarOpen) {
+              setSidebarOpen(true)
+            } else {
+              // Fallback: Check if sidebar is currently closed before toggling
+              const sidebar = document.querySelector('.sidebar')
+              if (sidebar && sidebar.classList.contains('closed')) {
+                onToggleSidebar()
+              }
+            }
+          }
+        }}
       />
     </>
   )

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { MdClose as X, MdDarkMode as Moon, MdLightMode as Sun, MdEco as Leaf, MdMonitor as Monitor, MdDomain as Building2, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdCheck as Check, MdDragIndicator as GripVertical, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdCheckCircle as CheckCircle, MdEdit as Edit } from 'react-icons/md'
 import { useTheme } from '../context/ThemeContext'
 import { useColleges, BulSUCollege } from '../context/CollegesContext'
+import GlobalTagsSettings from './GlobalTagsSettings'
 import './SettingsModal.css'
 
 interface SettingsModalProps {
@@ -316,6 +317,9 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
               </button>
             </div>
           </div>
+
+          {/* Equipment & Feature Tags Section */}
+          <GlobalTagsSettings />
         </div>
 
         <div className="settings-footer">

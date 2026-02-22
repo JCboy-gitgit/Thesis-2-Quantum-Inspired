@@ -2356,7 +2356,7 @@ export default function GenerateSchedulePage() {
                 <h1 className={styles.scheduleTitle}>
                   Quantum-Inspired Room Allocation
                 </h1>
-                <p className={styles.scheduleSubtitle}>
+                <p className={styles.scheduleSubtitle} id="gen-steps-indicator">
                   Advanced QIA Algorithm for Optimal Class-Room-Teacher Scheduling
                 </p>
               </div>
@@ -2369,9 +2369,8 @@ export default function GenerateSchedulePage() {
               <FaSpinner className={styles.spinnerIcon} />
               <p>Loading CSV data sources...</p>
             </div>
-          ) : showResults && scheduleResult ? (
-            /* Results Section */
-            <div className={styles.resultsSection}>
+          ) : (showResults && scheduleResult) ? (
+            <div className={styles.resultsSection} id="gen-results-container">
               <div className={`${styles.resultCard} ${scheduleResult.success ? styles.success : styles.warning}`}>
                 <div className={styles.resultIcon}>
                   {scheduleResult.success ? (
@@ -2966,7 +2965,6 @@ export default function GenerateSchedulePage() {
               )}
             </div>
           ) : (
-            /* Main Configuration Section */
             <div className={styles.formSection}>
               {/* Step Progress */}
               <div className={styles.stepProgress}>
@@ -3003,7 +3001,7 @@ export default function GenerateSchedulePage() {
 
               {/* Step 1: Select Data Sources */}
               {activeStep === 1 && (
-                <div className={styles.dataSourcesSection}>
+                <div className={styles.dataSourcesSection} id="gen-step1-container">
                   {/* College Filter - Filter rooms and sections by college */}
                   <div style={{
                     background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
@@ -3071,7 +3069,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   {/* Campus/Rooms Selection */}
-                  <div className={styles.dataSourceCard}>
+                  <div className={styles.dataSourceCard} id="gen-campus-selection">
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedCampus(!expandedCampus)}>
                       <div className={styles.dataSourceTitle}>
                         <div className={`${styles.dataSourceIcon} ${styles.campusIcon}`}>
@@ -3149,7 +3147,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   {/* Courses & Sections Selection */}
-                  <div className={styles.dataSourceCard}>
+                  <div className={styles.dataSourceCard} id="gen-course-selection">
                     <div className={styles.dataSourceHeader} onClick={() => setExpandedSections(!expandedSections)}>
                       <div className={styles.dataSourceTitle}>
                         <div className={`${styles.dataSourceIcon} ${styles.classIcon}`}>
@@ -3252,7 +3250,7 @@ export default function GenerateSchedulePage() {
 
               {/* Step 2: Review Data */}
               {activeStep === 2 && (
-                <div className={styles.reviewSection}>
+                <div className={styles.reviewSection} id="gen-step2-container">
                   {/* Summary Cards */}
                   <div className={styles.summaryGrid}>
                     <div className={styles.summaryCard}>
@@ -3306,7 +3304,7 @@ export default function GenerateSchedulePage() {
 
                   {/* Section & Course Multi-Select Filter */}
                   {selectedYearBatches.length > 0 && (
-                    <div className={styles.filterSection}>
+                    <div className={styles.filterSection} id="gen-section-filter">
                       <div className={styles.filterHeader} onClick={() => { }}>
                         <div className={styles.filterTitle}>
                           <MdPeople size={18} />
@@ -3488,7 +3486,7 @@ export default function GenerateSchedulePage() {
                   )}
 
                   {/* Building and Room Filter */}
-                  <div className={styles.filterSection}>
+                  <div className={styles.filterSection} id="gen-room-filter">
                     <div className={styles.filterHeader} onClick={() => setShowBuildingFilter(!showBuildingFilter)}>
                       <div className={styles.filterTitle}>
                         <FaFilter size={18} />
@@ -3880,7 +3878,7 @@ export default function GenerateSchedulePage() {
 
               {/* Step 3: Configure & Generate */}
               {activeStep === 3 && (
-                <div className={styles.configSection}>
+                <div className={styles.configSection} id="gen-step3-container">
                   {/* Schedule Info */}
                   <div className={styles.formCard}>
                     <h3 className={styles.formSectionTitle}>
@@ -4021,7 +4019,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   {/* Time Configuration */}
-                  <div className={styles.formCard}>
+                  <div className={styles.formCard} id="gen-time-config">
                     <h3 className={styles.formSectionTitle}>
                       <FaClock /> Campus Schedule Times (Room/Building Operating Hours)
                     </h3>
@@ -4138,7 +4136,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   {/* Online Days Configuration (Quantum Rule: The "Online Day" Rule) */}
-                  <div className={styles.formCard}>
+                  <div className={styles.formCard} id="gen-online-config">
                     <h3 className={styles.formSectionTitle}>
                       <MdFlashOn /> Online Days Configuration (Quantum-Inspired Rule)
                     </h3>
@@ -4631,7 +4629,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   {/* Generate Button */}
-                  <div className={styles.generateSection}>
+                  <div className={styles.generateSection} id="gen-generate-action">
                     <div className={styles.generateButtonGroup}>
                       <button
                         className={`${styles.manualEditButton}`}
@@ -4674,6 +4672,8 @@ export default function GenerateSchedulePage() {
             </div>
           )}
         </div>
+
+
       </main >
 
       {/* File Viewer Modal */}

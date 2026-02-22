@@ -202,7 +202,7 @@ export default function FacultyApprovalPage() {
 
       <main className={`${styles.mainContent} ${sidebarOpen ? styles.withSidebar : ''}`}>
         <div className={styles.header}>
-          <div className={styles.headerTitle}>
+          <div className={styles.headerTitle} id="approval-header-section">
             <UserCheck size={32} />
             <div>
               <h1>Faculty Registration Approval</h1>
@@ -229,7 +229,7 @@ export default function FacultyApprovalPage() {
 
         {/* Controls */}
         <div className={styles.controls}>
-          <div className={styles.searchBox}>
+          <div className={styles.searchBox} id="approval-search">
             <Search size={18} />
             <input
               type="text"
@@ -243,18 +243,21 @@ export default function FacultyApprovalPage() {
             <button
               className={`${styles.filterTab} ${filter === 'pending' ? styles.active : ''}`}
               onClick={() => setFilter('pending')}
+              id="tab-pending"
             >
               <Clock size={16} /> Pending
             </button>
             <button
               className={`${styles.filterTab} ${filter === 'approved' ? styles.active : ''}`}
               onClick={() => setFilter('approved')}
+              id="tab-approved"
             >
               <CheckCircle2 size={16} /> Approved
             </button>
             <button
               className={`${styles.filterTab} ${filter === 'rejected' ? styles.active : ''}`}
               onClick={() => setFilter('rejected')}
+              id="tab-rejected"
             >
               <XCircle size={16} /> Rejected
             </button>
@@ -272,7 +275,7 @@ export default function FacultyApprovalPage() {
         </div>
 
         {/* Registration Cards */}
-        <div className={styles.cardGrid}>
+        <div className={styles.cardGrid} id="approval-card-grid">
           {loading ? (
             <div className={styles.loadingState}>
               <RotateCcw size={40} className={styles.spinning} />

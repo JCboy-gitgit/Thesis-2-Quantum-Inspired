@@ -10,6 +10,7 @@
     flex-direction: column;
     transition: margin-left 0.3s ease;
     padding-left: 280px;
+    padding-top: 70px;
 }
 
 .fullWidth {
@@ -182,7 +183,7 @@
 }
 
 .cellBase {
-    height: 24px;
+    height: 48px;
     cursor: pointer;
     background: transparent;
     transition: background-color 0.15s ease;

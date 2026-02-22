@@ -446,7 +446,7 @@ export default function AdminDashboard() {
         <div className="dashboard-container">
 
           {/* Header Section */}
-          <header className="dashboard-header">
+          <header className="dashboard-header" id="dash-header">
             <div className="header-content">
               <div className="header-text">
                 <h1 className="dashboard-title">
@@ -472,7 +472,7 @@ export default function AdminDashboard() {
           ) : (
             <>
               {/* Stats Cards */}
-              <section className="stats-section">
+              <section className="stats-section" id="dash-stats-grid">
                 <div className="stats-grid">
                   <div className="stat-card" onClick={() => router.push('/LandingPages/RoomsManagement')}>
                     <div className="stat-icon rooms">
@@ -538,7 +538,7 @@ export default function AdminDashboard() {
                 <div className="dashboard-column left">
 
                   {/* Online Faculty */}
-                  <section className="dashboard-card online-faculty-card">
+                  <section className="dashboard-card online-faculty-card" id="dash-online-faculty">
                     <div className="card-header">
                       <h2>
                         <MdHowToReg size={22} />
@@ -580,7 +580,7 @@ export default function AdminDashboard() {
                   </section>
 
                   {/* Current Schedule */}
-                  <section className="dashboard-card schedule-card">
+                  <section className="dashboard-card schedule-card" id="dash-current-schedule">
                     <div className="card-header">
                       <h2>
                         <MdCalendarMonth size={22} />
@@ -635,7 +635,7 @@ export default function AdminDashboard() {
                   </section>
 
                   {/* Upcoming Holidays */}
-                  <section className="dashboard-card holidays-card">
+                  <section className="dashboard-card holidays-card" id="dash-holidays">
                     <div className="card-header">
                       <h2>
                         <MdNotifications size={22} />
@@ -662,7 +662,7 @@ export default function AdminDashboard() {
                 <div className="dashboard-column right">
 
                   {/* Calendar */}
-                  <section className="dashboard-card calendar-card">
+                  <section className="dashboard-card calendar-card" id="dash-calendar">
                     <div className="card-header">
                       <h2>
                         <MdCalendarToday size={22} />
@@ -747,7 +747,7 @@ export default function AdminDashboard() {
                   </section>
 
                   {/* Quick Navigation */}
-                  <section className="dashboard-card quick-nav-card">
+                  <section className="dashboard-card quick-nav-card" id="dash-quick-nav">
                     <div className="card-header">
                       <h2>
                         <MdTrendingUp size={22} />

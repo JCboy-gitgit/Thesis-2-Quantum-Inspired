@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.90.0",
+    "@types/react-joyride": "^2.0.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.1.0",
     "lucide-react": "^0.562.0",
@@ -19,6 +20,7 @@
     "react": "^19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.5.0",
+    "react-joyride": "^2.9.3",
     "sonner": "^2.0.7",
     "supabase": "^2.71.3",
     "tesseract.js": "^7.0.0"

@@ -3331,7 +3331,7 @@ export default function MapViewerPage() {
         onTouchEnd={handleTouchEnd}
       >
         {/* Header Bar */}
-        <div className={styles.header}>
+        <div className={styles.header} id="map-header">
           <div className={styles.headerLeft}>
             <div className={styles.buildingSelector}>
               <Building2 size={20} />
@@ -3449,7 +3449,7 @@ export default function MapViewerPage() {
               <FolderOpen size={18} />
             </button>
             {viewMode === 'editor' && (
-              <button className={styles.saveBtn} onClick={() => setShowSaveModal(true)} disabled={saving}>
+              <button className={styles.saveBtn} onClick={() => setShowSaveModal(true)} disabled={saving} id="map-save-btn">
                 {saving ? <RotateCcw size={18} className={styles.spinning} /> : <Save size={18} />}
                 Save
               </button>
@@ -3458,7 +3458,7 @@ export default function MapViewerPage() {
               <Download size={18} />
               Export PDF
             </button>
-            <button className={styles.shareBtn} onClick={generateShareLink}>
+            <button className={styles.shareBtn} onClick={generateShareLink} id="map-share-btn">
               <Share2 size={18} />
               Share
             </button>
@@ -3480,7 +3480,7 @@ export default function MapViewerPage() {
               <>
                 {viewMode === 'editor' ? (
                   <>
-                    <div className={styles.panelHeader}>
+                    <div className={styles.panelHeader} id="map-toolbox-header">
                       <h3>TOOLBOX</h3>
                     </div>
                     <div className={styles.toolboxContent}>
@@ -3727,7 +3727,7 @@ export default function MapViewerPage() {
                     {/* Floor Plans Section - Show if not mobile OR if mobile and active panel is floorPlans */}
                     {(!isMobile || activeMobilePanel === 'floorPlans') && (
                       <>
-                        <div className={styles.panelHeader} style={{ marginTop: isMobile ? 0 : 16, paddingTop: isMobile ? 0 : 16, borderTop: isMobile ? 'none' : '1px solid var(--border-color)' }}>
+                        <div className={styles.panelHeader} style={{ marginTop: isMobile ? 0 : 16, paddingTop: isMobile ? 0 : 16, borderTop: isMobile ? 'none' : '1px solid var(--border-color)' }} id="map-floorplans-header">
                           <h3>FLOOR PLANS</h3>
                           <button
                             className={styles.iconBtn}
@@ -4235,7 +4235,7 @@ export default function MapViewerPage() {
               <>
                 {/* Tab Navigation */}
                 {viewMode === 'editor' && (
-                  <div className={styles.panelTabs}>
+                  <div className={styles.panelTabs} id="map-panel-tabs">
                     <button
                       className={`${styles.panelTab} ${activeRightTab === 'properties' ? styles.active : ''}`}
                       onClick={() => setActiveRightTab('properties')}

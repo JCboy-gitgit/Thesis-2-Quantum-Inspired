@@ -265,6 +265,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data, message: 'Tag created' })
     }
 
+    if (action === 'update_tag') {
+      const { id, tag_name, tag_category, description, icon } = body
+
+      if (!id) throw new Error('Tag ID is required for update')
+
+      const { data, error } = await supabase
+        .from('feature_tags')
+        .update({
+          tag_name,
+          tag_category,
+          description,
+          icon
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return NextResponse.json({ success: true, data, message: 'Tag updated' })
+    }
+
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 })
 
   } catch (error: any) {
@@ -346,6 +367,16 @@ export async function DELETE(request: NextRequest) {
 
       if (error) throw error
       return NextResponse.json({ success: true, message: 'All requirements removed from course' })
+    }
+
+    if (action === 'delete_tag' && id) {
+      const { error } = await supabase
+        .from('feature_tags')
+        .delete()
+        .eq('id', parseInt(id))
+
+      if (error) throw error
+      return NextResponse.json({ success: true, message: 'Global tag deleted' })
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action or missing parameters' }, { status: 400 })

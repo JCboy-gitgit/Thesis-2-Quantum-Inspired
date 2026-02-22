@@ -4,74 +4,106 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.75);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
+    z-index: 10000;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
 }
 
 .modal {
-    background: white;
+    background: var(--card-bg);
     width: 90%;
-    max-width: 600px;
+    max-width: 650px;
     max-height: 85vh;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-lg), 0 0 30px var(--glow-color);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideIn {
     from {
-        transform: translateY(20px);
+        transform: translateY(30px) scale(0.95);
         opacity: 0;
     }
 
     to {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
         opacity: 1;
     }
 }
 
 .header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--card-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: linear-gradient(to right, var(--primary-alpha), transparent);
 }
 
 .header h2 {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1e293b;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
 }
 
 .closeBtn {
-    background: none;
+    background: var(--primary-alpha);
     border: none;
     cursor: pointer;
-    color: #64748b;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: all 0.2s;
+    color: var(--text-primary);
+    padding: 0.6rem;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .closeBtn:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
+    background-color: var(--error);
+    color: white;
+    transform: rotate(90deg);
 }
 
 .content {
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     overflow-y: auto;
     flex: 1;
-    background-color: #f8fafc;
+    background-color: transparent;
+}
+
+/* Custom scrollbars */
+.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+    background: var(--primary-alpha);
+    border-radius: 10px;
 }
 
 .loading,
@@ -80,53 +112,80 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3rem;
-    color: #64748b;
-    gap: 1rem;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+    gap: 1.25rem;
+    text-align: center;
+}
+
+.loading p,
+.empty p {
+    font-size: 1.1rem;
+    font-weight: 500;
 }
 
 .emptyIcon {
-    color: #10b981;
+    color: var(--success);
+    filter: drop-shadow(0 0 10px var(--success));
 }
 
 .list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1rem;
-    transition: box-shadow 0.2s;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px solid var(--card-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-gradient);
 }
 
 .card:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .cardHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--card-border);
 }
 
 .requester {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    color: #334155;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
 }
 
 .date {
-    font-size: 0.875rem;
-    color: #94a3b8;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--primary-alpha);
+    padding: 4px 10px;
+    border-radius: 20px;
 }
 
 .details {
@@ -134,20 +193,37 @@
 }
 
 .courseInfo {
-    font-size: 1.125rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.roomBadge {
+    display: inline-block;
+    background: var(--primary-alpha);
+    color: var(--primary);
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 8px;
     font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 1rem;
+    border: 1px solid var(--card-border);
+    text-transform: uppercase;
 }
 
 .moveInfo {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
+    gap: 1.5rem;
+    background-color: var(--primary-alpha);
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--card-border);
 }
 
 .timeBlock {
@@ -155,187 +231,230 @@
 }
 
 .label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    margin-bottom: 0.25rem;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    font-weight: 700;
 }
 
 .value {
-    font-weight: 500;
-    color: #334155;
-    font-size: 0.95rem;
-    line-height: 1.4;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .arrow {
-    color: #94a3b8;
+    color: var(--primary);
+    filter: drop-shadow(0 0 5px var(--primary));
 }
 
 .reason {
-    background-color: #fffbeb;
-    border: 1px solid #fcd34d;
-    padding: 0.75rem;
-    border-radius: 6px;
-    color: #92400e;
+    background-color: var(--warning-bg);
+    border: 1px solid var(--warning-orange);
+    padding: 1rem;
+    border-radius: 12px;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.reason::after {
+    content: 'Reason';
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: var(--card-bg);
+    padding: 0 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--warning-orange);
+    border-radius: 4px;
 }
 
 .reason p {
     margin: 0;
     font-size: 0.95rem;
+    line-height: 1.5;
+    font-style: italic;
 }
 
 .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .rejectBtn,
 .approveBtn {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1.5px solid transparent;
+    font-size: 0.95rem;
 }
 
 .rejectBtn {
-    background-color: white;
-    border-color: #e2e8f0;
-    color: #64748b;
+    background-color: transparent;
+    border-color: var(--card-border);
+    color: var(--text-secondary);
 }
 
 .rejectBtn:hover {
-    background-color: #f1f5f9;
-    color: #ef4444;
-    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    border-color: var(--error);
 }
 
 .approveBtn {
-    background-color: #10b981;
+    background: var(--primary-gradient);
     color: white;
+    box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .approveBtn:hover {
-    background-color: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px var(--glow-color);
+    filter: brightness(1.1);
+}
+
+.approveBtn:active {
+    transform: translateY(0);
 }
 
 .approveBtn:disabled,
 .rejectBtn:disabled {
-    opacity: 0.7;
+    opacity: 0.5;
     cursor: not-allowed;
-}
-
-.roomBadge {
-    display: inline-block;
-    background-color: #e0f2fe;
-    color: #0369a1;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    margin-left: 0.5rem;
-    font-weight: 500;
-    vertical-align: middle;
-    border: 1px solid #bae6fd;
+    transform: none;
+    box-shadow: none;
 }
 
 .rejectForm {
-    margin-top: 1rem;
-    border-top: 1px solid #f1f5f9;
-    padding-top: 1rem;
-    animation: fadeIn 0.2s ease-out;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--card-border);
+    padding-top: 1.5rem;
+    animation: slideUp 0.3s ease-out;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .rejectInput {
     width: 100%;
-    min-height: 80px;
-    padding: 0.75rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    margin-bottom: 0.75rem;
+    min-height: 100px;
+    padding: 1rem;
+    background: var(--input-bg);
+    color: var(--input-text);
+    border: 1.5px solid var(--input-border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: 1rem;
     resize: vertical;
     transition: all 0.2s;
 }
 
 .rejectInput:focus {
     outline: none;
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    border-color: var(--error);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
 }
 
 .rejectActions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .cancelBtn {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     background: transparent;
-    border: 1px solid #cbd5e1;
-    color: #64748b;
-    border-radius: 6px;
-    font-weight: 500;
+    border: 1.5px solid var(--card-border);
+    color: var(--text-secondary);
+    border-radius: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .cancelBtn:hover {
-    background: #f8fafc;
-    color: #334155;
-    border-color: #94a3b8;
+    background: var(--primary-alpha);
+    border-color: var(--primary);
 }
 
 .confirmRejectBtn {
-    padding: 0.5rem 1rem;
-    background: #ef4444;
+    padding: 0.75rem 1.5rem;
+    background: var(--error);
     border: none;
     color: white;
-    border-radius: 6px;
-    font-weight: 500;
+    border-radius: 12px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .confirmRejectBtn:hover {
     background: #dc2626;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
 }
 
 .confirmRejectBtn:disabled {
-    background: #fca5a5;
+    opacity: 0.5;
     cursor: not-allowed;
     transform: none;
 }
 
 .errorBanner {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #b91c1c;
-    border-radius: 6px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    animation: shake 0.3s ease-in-out;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
 }

@@ -864,7 +864,7 @@ function CoursesManagementContent() {
           {viewMode === 'selection' && (
             <>
               {/* Header with Title and Navigation Tabs */}
-              <div className={styles.welcomeSection}>
+              <div className={styles.welcomeSection} id="courses-selection-header">
                 <h1 className={styles.welcomeTitle}>
                   <BookOpen size={32} style={{ marginRight: '12px' }} />
                   Courses Management
@@ -881,7 +881,7 @@ function CoursesManagementContent() {
                 marginBottom: '24px',
                 borderBottom: '2px solid var(--border-color, #e2e8f0)',
                 paddingBottom: '0'
-              }}>
+              }} id="courses-selection-tabs">
                 <div style={{
                   padding: '12px 24px',
                   fontWeight: 700,
@@ -997,7 +997,7 @@ function CoursesManagementContent() {
                       College Folders
                     </h3>
                   </div>
-                  <div className={styles.schedulesGrid}>
+                  <div className={styles.schedulesGrid} id="courses-college-grid">
                     {/* Get unique colleges from upload groups */}
                     {Array.from(new Set(uploadGroups
                       .filter(group =>
@@ -1430,7 +1430,7 @@ function CoursesManagementContent() {
                     <ArrowLeft size={18} />
                     Back to Groups
                   </button>
-                  <div className={styles.headerInfo}>
+                  <div className={styles.headerInfo} id="courses-list-header">
                     <h1 className={styles.pageTitle}>
                       <BookOpen size={28} />
                       {uploadGroups.find(g => g.upload_group_id === selectedGroupId)?.college || 'Courses'}
@@ -1466,7 +1466,7 @@ function CoursesManagementContent() {
               </div>
 
               {/* Stats Grid - Updated with SVG icons and Year Level Stats */}
-              <div className={styles.statsGrid}>
+              <div className={styles.statsGrid} id="courses-stats-ribbon">
                 <div className={`${styles.statCard} ${styles.blue}`}>
                   <div className={styles.statIcon}>
                     <BookOpen size={24} />
@@ -1565,7 +1565,7 @@ function CoursesManagementContent() {
                 marginBottom: '24px',
                 flexWrap: 'wrap',
                 alignItems: 'center'
-              }}>
+              }} id="courses-list-filters">
                 <div className={styles.searchBox} style={{ flex: '1', minWidth: '250px' }}>
                   <Search className={styles.searchIcon} size={18} />
                   <input
@@ -2233,7 +2233,7 @@ function CoursesManagementContent() {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px' }} id="course-modal-details">
               {/* Course Info Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
@@ -2433,7 +2433,7 @@ function CoursesManagementContent() {
                     background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
                     borderRadius: '8px',
                     border: '1px solid rgba(139, 92, 246, 0.2)'
-                  }}>
+                  }} id="course-equipment-section">
                     <Beaker size={18} style={{ color: '#8b5cf6' }} />
                     <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
                       Required Room Equipment
@@ -2447,7 +2447,7 @@ function CoursesManagementContent() {
                       (Scheduler will only assign rooms with these features)
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }} id="course-equipment-tabs">
                     <button
                       onClick={() => setFeaturesTab('lec')}
                       style={{

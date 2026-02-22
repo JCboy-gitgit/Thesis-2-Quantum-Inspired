@@ -1437,7 +1437,7 @@ function FacultyCollegesContent() {
                   <div className={styles.headerIconWrapper}>
                     <UsersIcon />
                   </div>
-                  <div className={styles.headerText}>
+                  <div className={styles.headerText} id="colleges-header">
                     <h1 className={styles.title}>Faculty Colleges</h1>
                     <p className={styles.subtitle}>
                       Manage faculty members organized by college
@@ -1489,7 +1489,7 @@ function FacultyCollegesContent() {
                     </svg>
                     Preferred Schedules
                   </button>
-                  <button className={styles.addBtn} onClick={() => { resetCollegeForm(); setShowAddCollegeModal(true); }}>
+                  <button className={styles.addBtn} onClick={() => { resetCollegeForm(); setShowAddCollegeModal(true); }} id="add-college-btn">
                     <PlusIcon />
                     Add College
                   </button>
@@ -1522,7 +1522,7 @@ function FacultyCollegesContent() {
               </div>
 
               {/* College Cards Grid */}
-              <div className={styles.collegeGrid}>
+              <div className={styles.collegeGrid} id="colleges-grid">
                 {colleges.map(college => (
                   <div key={college.id} className={styles.collegeCard}>
                     <div className={styles.collegeCardContent} onClick={() => handleSelectCollege(college)}>
@@ -1687,6 +1687,7 @@ function FacultyCollegesContent() {
                     className={styles.addBtn}
                     onClick={() => { resetFacultyForm(); setShowAddFacultyModal(true); }}
                     title="Add new faculty member"
+                    id="add-faculty-btn"
                   >
                     <PlusIcon />
                     Add Faculty
@@ -2538,6 +2539,7 @@ function FacultyCollegesContent() {
                   <input
                     type="email"
                     className={styles.formInput}
+                    id="faculty-email-input"
                     value={facultyFormData.email}
                     onChange={e => handleEmailInputChange(e.target.value)}
                     onFocus={() => {

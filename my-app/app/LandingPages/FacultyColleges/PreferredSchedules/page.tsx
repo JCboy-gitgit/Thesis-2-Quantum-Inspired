@@ -11,14 +11,9 @@ import { MdOutlineArrowBack, MdSave } from 'react-icons/md'
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const generateTimeSlots = () => {
     const slots = []
-    for (let i = 7 * 2; i <= 20 * 2; i++) {
-        const h = Math.floor(i / 2)
-        const m = (i % 2) * 30
-        const nextH = Math.floor((i + 1) / 2)
-        const nextM = ((i + 1) % 2) * 30
-
-        const timeStart = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
-        const timeEnd = `${nextH.toString().padStart(2, '0')}:${nextM.toString().padStart(2, '0')}`
+    for (let h = 7; h <= 20; h++) {
+        const timeStart = `${h.toString().padStart(2, '0')}:00`
+        const timeEnd = `${(h + 1).toString().padStart(2, '0')}:00`
         slots.push(`${timeStart}-${timeEnd}`)
     }
     return slots
@@ -186,10 +181,10 @@ export default function AdminPreferredSchedules() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {TIME_SLOTS.map((slot, idx) => (
+                                    {TIME_SLOTS.map((slot) => (
                                         <tr key={slot}>
                                             <td className={styles.timeCell}>
-                                                {idx % 2 === 0 ? formatTimeLabel(slot) : ''}
+                                                {formatTimeLabel(slot)}
                                             </td>
                                             {DAYS.map(day => {
                                                 const state = (preferences[day] || {})[slot] || ''

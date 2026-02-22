@@ -2529,6 +2529,7 @@
   background: #f5f5f5;
   color: #1a1a1a;
 }
+
 .requestBtn {
   display: flex;
   align-items: center;
@@ -2569,7 +2570,7 @@
   top: -5px;
   right: -5px;
   font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* ==================== Current Schedule Badge ==================== */
@@ -2591,69 +2592,80 @@
 }
 
 @keyframes currentBadgePulse {
-  0%, 100% { box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.15); }
-  50% { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6), 0 0 0 6px rgba(16, 185, 129, 0.1); }
+
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4), 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.6), 0 0 0 6px rgba(16, 185, 129, 0.1);
+  }
 }
 
 /* ==================== Batch Faculty Assignment Modal ==================== */
 .batchModalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .batchModalContent {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: 20px;
   width: 100%;
-  max-width: 560px;
+  max-width: 600px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg), 0 0 30px var(--glow-color);
+  border: 1px solid var(--card-border);
   overflow: hidden;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .batchModalHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--card-border);
+  background: linear-gradient(to right, var(--primary-alpha), transparent);
 }
 
 .batchModalHeader h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .batchModalSubtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 14px;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
 .batchModalClose {
-  background: none;
+  background: var(--primary-alpha);
   border: none;
   cursor: pointer;
-  color: #94a3b8;
-  padding: 4px;
-  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 8px;
+  border-radius: 10px;
   transition: all 0.2s;
 }
 
 .batchModalClose:hover {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--error);
+  color: white;
 }
 
 .batchModalBody {
@@ -2665,12 +2677,18 @@
 .batchSearchBox {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  transition: all 0.2s;
+}
+
+.batchSearchBox:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha);
 }
 
 .batchSearchBox svg {
@@ -2683,8 +2701,8 @@
   border: none;
   background: none;
   outline: none;
-  font-size: 14px;
-  color: #1e293b;
+  font-size: 15px;
+  color: var(--text-primary);
 }
 
 .batchClearSearch {
@@ -2697,9 +2715,10 @@
 
 .batchFacultyCount {
   font-size: 13px;
-  color: #64748b;
-  margin-bottom: 12px;
-  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  font-weight: 600;
+  padding: 0 4px;
 }
 
 .batchFacultyList {
@@ -2713,24 +2732,26 @@
 .batchFacultyItem {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1.5px solid var(--card-border);
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #ffffff;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
 }
 
 .batchFacultyItem:hover {
-  border-color: #8b5cf6;
-  background: #faf5ff;
+  border-color: var(--primary);
+  background: var(--primary-alpha);
+  transform: translateX(4px);
 }
 
 .batchFacultyItem.batchSelected {
-  border-color: #8b5cf6;
-  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+  border-color: var(--primary);
+  background: var(--primary-alpha);
+  box-shadow: 0 4px 12px var(--primary-alpha);
 }
 
 .batchCheckbox {
@@ -2750,22 +2771,23 @@
 }
 
 .batchFacultyName {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .batchFacultyEmail {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 13px;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .batchCheckIcon {
-  color: #8b5cf6;
+  color: var(--primary);
   flex-shrink: 0;
+  filter: drop-shadow(0 0 5px var(--primary));
 }
 
 .batchLoading,
@@ -2802,45 +2824,48 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid #e2e8f0;
+  gap: 16px;
+  padding: 20px 28px;
+  border-top: 1px solid var(--card-border);
+  background: linear-gradient(to right, transparent, var(--primary-alpha));
 }
 
 .batchCancelBtn {
-  padding: 10px 20px;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-weight: 600;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .batchCancelBtn:hover {
-  background: #e2e8f0;
+  background: var(--primary-alpha);
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
 .batchConfirmBtn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--primary-gradient);
   color: #ffffff;
   border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px var(--glow-color);
 }
 
 .batchConfirmBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--glow-color);
+  filter: brightness(1.1);
 }
 
 .batchConfirmBtn:disabled {
@@ -2853,6 +2878,11 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }

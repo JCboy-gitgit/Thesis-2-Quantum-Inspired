@@ -1584,3 +1584,27 @@
   color: #dc2626;
   border-color: rgba(239, 68, 68, 0.3);
 }
+
+/* Tutorial Button */
+.tutorial-btn {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.tutorial-btn:hover {
+  background: var(--primary-alpha);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--glow-color);
+}

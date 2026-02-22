@@ -800,7 +800,7 @@ export default function UploadCSVPage(): JSX.Element {
         <div className={styles['upload-wrapper']}>
 
           {/* ==================== ROOMS/CAMPUSES UPLOAD ==================== */}
-          <div className={styles['upload-card']}>
+          <div className={styles['upload-card']} id="upload-card-rooms">
             <h2 className={styles['section-title']}>
               <MdMeetingRoom size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Rooms & Buildings
@@ -914,8 +914,8 @@ export default function UploadCSVPage(): JSX.Element {
             )}
           </div>
 
-          {/* ==================== DEGREE PROGRAM SECTION UPLOAD ==================== */}
-          <div className={styles['upload-card']}>
+          {/* ==================== DEGREE PROGRAMS UPLOAD ==================== */}
+          <div className={styles['upload-card']} id="upload-card-courses">
             <h2 className={styles['section-title']}>
               <MdMenuBook size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Degree Program Section
@@ -1009,7 +1009,7 @@ export default function UploadCSVPage(): JSX.Element {
           {/* Teacher schedules removed */}
 
           {/* ==================== FACULTY PROFILES UPLOAD ==================== */}
-          <div className={styles['upload-card']}>
+          <div className={styles['upload-card']} id="upload-card-faculty">
             <h2 className={styles['section-title']}>
               <MdSchool size={28} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '10px' }} />
               Faculty Profiles (Officials & Staff)

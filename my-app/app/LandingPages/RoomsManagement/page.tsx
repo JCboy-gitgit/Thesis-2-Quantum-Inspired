@@ -828,7 +828,7 @@ export default function RoomsManagementPage() {
           )}
 
           {/* Header */}
-          <div className={styles.header}>
+          <div className={styles.header} id="rooms-header">
             <div className={styles.headerTitleSection}>
               <div className={styles.headerIconWrapper}>
                 <MdDomain size={28} />
@@ -844,7 +844,7 @@ export default function RoomsManagementPage() {
               </div>
             </div>
             {selectedFile && (
-              <button className={styles.addBtn} onClick={() => setShowAddModal(true)}>
+              <button className={styles.addBtn} onClick={() => setShowAddModal(true)} id="rooms-add-btn">
                 <MdAdd size={18} />
                 Add Room
               </button>
@@ -853,7 +853,7 @@ export default function RoomsManagementPage() {
 
           {/* Stats Grid - Only show when a file is selected */}
           {selectedFile && !loadingData && (
-            <div className={styles.statsGrid}>
+            <div className={styles.statsGrid} id="rooms-stats">
               <div className={styles.statCard}>
                 <div className={styles.statIcon}><MdAccountBalance size={24} /></div>
                 <div className={styles.statContent}>
@@ -901,7 +901,7 @@ export default function RoomsManagementPage() {
 
           {/* Search & Filter Section */}
           {selectedFile && currentView !== 'files' && (
-            <div className={styles.searchSection}>
+            <div className={styles.searchSection} id="rooms-search">
               <div className={styles.searchBox}>
                 <MdSearch className={styles.searchIcon} size={18} />
                 <input
@@ -969,12 +969,12 @@ export default function RoomsManagementPage() {
                   <MdDescription size={64} />
                   <h3>No Campus Files Found</h3>
                   <p>Upload a Campus/Building CSV file to get started</p>
-                  <button className={styles.addBtn} onClick={() => router.push('/LandingPages/UploadCSV')}>
+                  <button className={styles.addBtn} onClick={() => router.push('/LandingPages/UploadCSV')} id="rooms-empty-upload-btn">
                     <MdAdd size={18} /> Upload CSV
                   </button>
                 </div>
               ) : (
-                <div className={styles.fileGrid}>
+                <div className={styles.fileGrid} id="rooms-file-grid">
                   {campusFiles.map(file => {
                     const fileKey = `file-${file.upload_group_id}`
                     return (
@@ -1157,10 +1157,10 @@ export default function RoomsManagementPage() {
                 <span className={styles.roomCount}>{roomsForBuilding.length} rooms</span>
               </div>
               <div className={styles.roomsGrid}>
-                {roomsForBuilding.map(room => {
+                {roomsForBuilding.map((room, index) => {
                   const statusInfo = getRoomStatusInfo(room.status)
                   return (
-                    <div key={room.id} className={`${styles.roomCard} ${styles[statusInfo.icon]}`}>
+                    <div key={room.id} className={`${styles.roomCard} ${styles[statusInfo.icon]}`} id={index === 0 ? "first-room-card" : undefined}>
                       <div className={styles.roomStatusBadge} style={{ background: statusInfo.bgColor, color: statusInfo.color }}>
                         {statusInfo.icon === 'check' && <MdCheckCircle size={12} />}
                         {statusInfo.icon === 'x' && <MdCancel size={12} />}
@@ -1428,7 +1428,7 @@ export default function RoomsManagementPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Basic Amenities</label>
+                <label id="rooms-amenities-label">Basic Amenities</label>
                 <div className={styles.featuresGrid}>
                   <label className={styles.featureCheckbox}>
                     <input
@@ -1460,7 +1460,7 @@ export default function RoomsManagementPage() {
               {/* Equipment & Feature Tags - Only for existing rooms */}
               {editingRoom?.id && (
                 <div className={styles.formGroup}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }} id="rooms-equipment-label">
                     <MdLabel size={16} /> Equipment & Feature Tags
                     <span style={{
                       fontSize: '11px',
@@ -1477,7 +1477,7 @@ export default function RoomsManagementPage() {
                     borderRadius: '12px',
                     padding: '16px',
                     border: '1px solid var(--border-color)'
-                  }}>
+                  }} id="rooms-equipment-manager">
                     <FeatureTagsManager
                       mode="room"
                       entityId={editingRoom.id}

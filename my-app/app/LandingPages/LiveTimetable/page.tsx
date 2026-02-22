@@ -905,9 +905,9 @@ export default function AdminLiveTimetablePage() {
 
                 <main className={`${styles.main} ${menuBarHidden ? styles.menuHidden : ''}`}>
                     {/* ── Header ── */}
-                    <div className={styles.header}>
-                        <div className={styles.headerLeft}>
-                            <div className={styles.liveIndicator}>
+                    <div className={styles.header} id="live-header">
+                        <div className={styles.headerLeft} id="live-title-section">
+                            <div className={styles.liveIndicator} id="live-indicator">
                                 <MdFiberManualRecord className={styles.liveDot} />
                                 <span>LIVE</span>
                             </div>
@@ -921,23 +921,23 @@ export default function AdminLiveTimetablePage() {
                                 </p>
                             </div>
                         </div>
-                        <div className={styles.headerRight}>
+                        <div className={styles.headerRight} id="live-controls">
                             <div className={styles.clockDisplay}>
                                 <MdAccessTime />
                                 <span>{currentTime.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                             </div>
-                            <button className={styles.refreshBtn} onClick={fetchLiveData} disabled={loading}>
+                            <button className={styles.refreshBtn} onClick={fetchLiveData} disabled={loading} id="live-refresh-btn">
                                 <MdRefresh className={loading ? styles.spinning : ''} />
                                 Refresh
                             </button>
                             {schedule && (
-                                <button className={styles.actionBtnPrimary} onClick={() => setCreatingEvent({ room: '', date: '', reason: '' })} title="Mark a room unavailable">
+                                <button className={styles.actionBtnPrimary} onClick={() => setCreatingEvent({ room: '', date: '', reason: '' })} title="Mark a room unavailable" id="live-special-event-btn">
                                     <MdEventBusy />
                                     Special Event (Room Unavailable)
                                 </button>
                             )}
                             {schedule && (
-                                <button className={styles.resetBtn} onClick={handleResetWeek} title="Reset week to original locked schedule">
+                                <button className={styles.resetBtn} onClick={handleResetWeek} title="Reset week to original locked schedule" id="live-reset-btn">
                                     <MdRestartAlt />
                                     Reset Week
                                 </button>
@@ -946,7 +946,7 @@ export default function AdminLiveTimetablePage() {
                     </div>
 
                     {/* ── Stats Row ── */}
-                    <div className={styles.statsRow}>
+                    <div className={styles.statsRow} id="live-stats-row">
                         <div className={styles.statCard}>
                             <div className={styles.statIconCircle}>
                                 <MdGroup className={styles.statIcon} />
@@ -986,7 +986,7 @@ export default function AdminLiveTimetablePage() {
                     </div>
 
                     {/* ── Week Navigator ── */}
-                    <div className={styles.weekNav}>
+                    <div className={styles.weekNav} id="live-week-nav">
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
                             <MdChevronLeft /> Prev Week
                         </button>
@@ -1007,7 +1007,7 @@ export default function AdminLiveTimetablePage() {
                     </div>
 
                     {/* ── Tabs ── */}
-                    <div className={styles.tabs}>
+                    <div className={styles.tabs} id="live-tabs">
                         {(['timetable', 'absences', 'makeup', 'overrides'] as ViewTab[]).map(tab => (
                             <button
                                 key={tab}
@@ -1107,7 +1107,7 @@ export default function AdminLiveTimetablePage() {
                                     {viewMode === 'grid' && (
                                         <>
                                             {/* Group Selector */}
-                                            <div className={styles.groupSelector}>
+                                            <div className={styles.groupSelector} id="live-group-selector">
                                                 <span className={styles.groupLabel}><MdFilterList /> Group by:</span>
                                                 <select
                                                     className={styles.groupSelect}
@@ -1121,7 +1121,7 @@ export default function AdminLiveTimetablePage() {
                                                     <option value="college">College</option>
                                                 </select>
                                                 {groupBy !== 'all' && groupValues.length > 0 && (
-                                                    <div className={styles.groupPaginator}>
+                                                    <div className={styles.groupPaginator} id="live-group-paginator">
                                                         <button
                                                             className={styles.groupPageBtn}
                                                             onClick={() => setGroupPage(p => Math.max(0, p - 1))}
@@ -1150,7 +1150,7 @@ export default function AdminLiveTimetablePage() {
                                             </div>
 
                                             {/* Legend */}
-                                            <div className={styles.gridLegend}>
+                                            <div className={styles.gridLegend} id="live-legend">
                                                 <span className={styles.legendTitle}>Legend:</span>
                                                 <span className={styles.legendItem}>
                                                     <span className={`${styles.legendDot} ${styles.legendNormal}`} /> Upcoming
@@ -1170,7 +1170,7 @@ export default function AdminLiveTimetablePage() {
                                             </div>
 
                                             {/* Timetable grid — Mon to Sat, full day 7am-8pm */}
-                                            <div className={styles.gridWrapper}>
+                                            <div className={styles.gridWrapper} id="live-grid-container">
                                                 <div className={styles.gridContainer}>
                                                     <table className={styles.gridTable}>
                                                         <thead>

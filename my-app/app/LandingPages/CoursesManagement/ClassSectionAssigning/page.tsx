@@ -844,7 +844,7 @@ function ClassSectionAssigningContent() {
           )}
 
           {/* Header */}
-          <div className={styles.welcomeSection}>
+          <div className={styles.welcomeSection} id="assigning-header">
             <h1 className={styles.welcomeTitle}>
               <Users size={32} style={{ marginRight: '12px' }} />
               Class & Section Assigning
@@ -903,6 +903,7 @@ function ClassSectionAssigningContent() {
           }}>
             <button
               onClick={openCreateYearBatchModal}
+              id="add-batch-btn"
               style={{
                 padding: '12px 20px',
                 background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
@@ -923,6 +924,7 @@ function ClassSectionAssigningContent() {
             </button>
             <button
               onClick={() => openCreateSectionModal()}
+              id="add-section-btn"
               style={{
                 padding: '12px 20px',
                 background: 'var(--card-bg, #fff)',
@@ -1487,7 +1489,7 @@ function ClassSectionAssigningContent() {
                                           </div>
 
                                           {/* Assigned Courses */}
-                                          <div style={{ marginBottom: '12px' }}>
+                                          <div style={{ marginBottom: '12px' }} id="section-card-courses">
                                             <div style={{
                                               fontSize: '11px',
                                               color: 'var(--text-secondary, #718096)',
@@ -1546,6 +1548,7 @@ function ClassSectionAssigningContent() {
                                               e.stopPropagation()
                                               openAssignCoursesModal(section)
                                             }}
+                                            id="assign-courses-btn"
                                             onMouseEnter={(e) => {
                                               e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
                                               e.currentTarget.style.borderColor = 'var(--primary-dark, #276749)'
@@ -1674,7 +1677,7 @@ function ClassSectionAssigningContent() {
               </button>
             </div>
 
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px' }} id="batch-modal-form">
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
                   Year Batch Name * <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(max 40 chars)</span>
@@ -1812,7 +1815,7 @@ function ClassSectionAssigningContent() {
               </button>
             </div>
 
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px' }} id="section-modal-form">
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px' }}>
                   Section Name *
@@ -2046,7 +2049,7 @@ function ClassSectionAssigningContent() {
               </button>
             </div>
 
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)' }} id="assign-modal-form">
               {/* Year Level Selection */}
               <div style={{
                 display: 'grid',
