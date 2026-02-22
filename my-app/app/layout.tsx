@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Inter, Roboto_Mono } from "next/font/google";
 import Providers from "./components/Providers";
 import { Toaster } from "./components/Toaster";
 import "./globals.css";
 import "./styles/green-theme.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const firaMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-fira-mono" });
 
 export const metadata: Metadata = {
   title: "Qtime Scheduler",
@@ -81,7 +83,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+        className={`${inter.variable} ${firaMono.variable} antialiased`}
         style={{ backgroundColor: 'var(--background, #f0fdf4)' }}
       >
         <Providers>
