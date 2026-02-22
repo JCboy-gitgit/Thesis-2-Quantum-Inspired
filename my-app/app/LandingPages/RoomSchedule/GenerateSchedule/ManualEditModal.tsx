@@ -5,7 +5,7 @@ import {
     MdWarning, MdMeetingRoom, MdLayers, MdPerson, MdGroups, MdAccessTime, MdAdd, MdDelete, MdSave,
     MdDragIndicator, MdChevronLeft, MdChevronRight, MdRemove, MdSchool
 } from 'react-icons/md'
-import { FaChalkboardTeacher, FaDoorOpen, FaUsers } from 'react-icons/fa'
+import { FaChalkboardTeacher, FaDoorOpen, FaUsers, FaAtom } from 'react-icons/fa'
 import styles from './ManualEditModal.module.css'
 import { toast } from 'sonner'
 
@@ -19,7 +19,7 @@ interface ManualEditModalProps {
     initialAllocations: any[]
 }
 
-type ViewMode = 'room' | 'faculty' | 'section' | 'college'
+type ViewMode = 'room' | 'faculty' | 'section'
 
 const formatTimeAMPM = (time24: string) => {
     const [h, m] = time24.split(':').map(Number)
@@ -37,10 +37,11 @@ export default function ManualEditModal({
     const [activeItemIndex, setActiveItemIndex] = useState(0)
     const [searchQuery, setSearchQuery] = useState('')
     const [filterSection, setFilterSection] = useState('all')
-    const [filterCollege, setFilterCollege] = useState('all')
     const [draggedClassId, setDraggedClassId] = useState<number | null>(null)
+    const [draggingComponent, setDraggingComponent] = useState<string | null>(null)
+    const [draggedAllocId, setDraggedAllocId] = useState<any | null>(null)
     const [resizingAllocId, setResizingAllocId] = useState<number | null>(null)
-    const [draggingCourse, setDraggingCourse] = useState<any | null>(null)
+    const [splitLabClasses, setSplitLabClasses] = useState<number[]>([])
 
     // Sync with props if they change
     useEffect(() => {
@@ -58,30 +59,7 @@ export default function ManualEditModal({
         }
     }, [])
 
-    const faculties = useMemo(() => {
-        const unique = [...new Set(classes.map(c => c.teacher_name || 'TBD'))].sort()
-        return unique
-    }, [classes])
-
-    const sections = useMemo(() => {
-        const unique = [...new Set(classes.map(c => c.section))].sort()
-        return unique
-    }, [classes])
-
-    const colleges = useMemo(() => {
-        const unique = [...new Set(classes.map(c => c.college || 'N/A'))].sort()
-        return unique
-    }, [classes])
-
-    const navigationItems = useMemo(() => {
-        if (viewMode === 'room') return rooms
-        if (viewMode === 'faculty') return faculties
-        if (viewMode === 'section') return sections
-        if (viewMode === 'college') return colleges
-        return []
-    }, [viewMode, rooms, faculties, sections, colleges])
-
-    const activeItem = navigationItems[activeItemIndex]
+    // Moved sections down below classesWithStats
 
     // 3. Time Slots (Force 30-min intervals for fine-grained manual control)
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -114,31 +92,76 @@ export default function ManualEditModal({
 
     // 4. Classes with Remaining Hours (Split by Lec/Lab)
     const classesWithStats = useMemo(() => {
-        return classes.map(c => {
-            const lecAllotted = allocations
-                .filter(a => a.class_id === c.id && a.component === 'LEC')
-                .reduce((acc, a) => {
-                    const startMins = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])?.startMinutes || 0
-                    const endMins = timeSlots.find(s => s.end.includes(a.schedule_time.split(' - ')[1]))?.endMinutes || 0
-                    return acc + (endMins - startMins) / 60
-                }, 0)
+        const labRooms = rooms.filter(r => r.room_type?.toLowerCase().includes('lab'));
+        const maxLabCapacity = labRooms.length > 0 ? Math.max(...labRooms.map(r => r.capacity || 0)) : 30;
 
-            const labAllotted = allocations
-                .filter(a => a.class_id === c.id && a.component === 'LAB')
-                .reduce((acc, a) => {
-                    const startMins = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])?.startMinutes || 0
-                    const endMins = timeSlots.find(s => s.end.includes(a.schedule_time.split(' - ')[1]))?.endMinutes || 0
-                    return acc + (endMins - startMins) / 60
-                }, 0)
+        return classes.map(c => {
+            const calculateAllotted = (compStr: string, suffix?: string) => {
+                return allocations
+                    .filter(a => a.class_id === c.id && a.component === compStr && (!suffix || a.section.trim().endsWith(suffix)))
+                    .reduce((acc, a) => {
+                        const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5);
+                        const endParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5);
+                        const startMins = timeSlots.find(s => s.start === startParts)?.startMinutes || 0
+                        const endMins = timeSlots.find(s => s.end.includes(endParts))?.endMinutes || 0
+                        return acc + (endMins - startMins) / 60
+                    }, 0)
+            }
+
+            const lecAllotted = calculateAllotted('LEC')
+
+            const isAutoSplitLab = (c.student_count || 0) > maxLabCapacity && (c.lab_hours > 0);
+            const isManuallySplit = splitLabClasses.includes(c.id);
+            const isSplitLab = isAutoSplitLab || isManuallySplit;
+
+            let labAllotted = 0;
+            let labG1Allotted = 0;
+            let labG2Allotted = 0;
+
+            if (isSplitLab) {
+                labG1Allotted = calculateAllotted('LAB', 'G1')
+                labG2Allotted = calculateAllotted('LAB', 'G2')
+            } else {
+                labAllotted = calculateAllotted('LAB')
+            }
 
             return {
                 ...c,
                 lecRemaining: Math.max(0, (c.lec_hours || 0) - lecAllotted),
-                labRemaining: Math.max(0, (c.lab_hours || 0) - labAllotted),
+                isSplitLab,
+                labRemaining: isSplitLab ? 0 : Math.max(0, (c.lab_hours || 0) - labAllotted),
+                labG1Remaining: isSplitLab ? Math.max(0, (c.lab_hours || 0) - labG1Allotted) : 0,
+                labG2Remaining: isSplitLab ? Math.max(0, (c.lab_hours || 0) - labG2Allotted) : 0,
                 totalHours: (c.lec_hours || 0) + (c.lab_hours || 0)
             }
         })
-    }, [classes, allocations, timeSlots])
+    }, [classes, allocations, timeSlots, rooms, splitLabClasses])
+
+    const faculties = useMemo(() => {
+        const unique = [...new Set(classes.map(c => c.teacher_name || 'TBD'))].sort()
+        return unique
+    }, [classes])
+
+    const sections = useMemo(() => {
+        const unique = new Set<string>();
+        classesWithStats.forEach(c => {
+            unique.add(c.section);
+            if (c.isSplitLab) {
+                unique.add(`${c.section} G1`);
+                unique.add(`${c.section} G2`);
+            }
+        });
+        return Array.from(unique).sort((a, b) => a.localeCompare(b));
+    }, [classesWithStats])
+
+    const navigationItems = useMemo(() => {
+        if (viewMode === 'room') return rooms
+        if (viewMode === 'faculty') return faculties
+        if (viewMode === 'section') return sections
+        return []
+    }, [viewMode, rooms, faculties, sections])
+
+    const activeItem = navigationItems[activeItemIndex]
 
     // 5. Equipment Filter Logic
     const filteredClasses = useMemo(() => {
@@ -146,37 +169,32 @@ export default function ManualEditModal({
             const matchesSearch = c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.section.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchesSection = filterSection === 'all' || c.section === filterSection
-            const matchesCollege = filterCollege === 'all' || (c.college || 'N/A') === filterCollege
-
-            let equipmentMatch = true
-            if (viewMode === 'room' && activeItem) {
-                const room = activeItem as any
-                const roomFeatures = new Set(room.feature_tags || [])
-                const reqFeatures = c.required_features || []
-                equipmentMatch = reqFeatures.every((f: string) => roomFeatures.has(f))
-            }
-
-            return matchesSearch && matchesSection && matchesCollege && (c.lecRemaining > 0 || c.labRemaining > 0) && equipmentMatch
+            const matchesSection = filterSection === 'all' || c.section === filterSection || `${c.section} G1` === filterSection || `${c.section} G2` === filterSection;
+            return matchesSearch && matchesSection && (c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0)
         })
-    }, [classesWithStats, searchQuery, filterSection, filterCollege, viewMode, activeItem])
+    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem])
 
     // 6. Conflict Detection
-    const checkConflicts = useCallback((newAlloc: any, ignoreId?: number) => {
+    const checkConflicts = useCallback((newAlloc: any, ignoreAllocId?: any) => {
         const conflicts: string[] = []
         const { class_id, schedule_day, schedule_time, room_id } = newAlloc
         const classInfo = classes.find(c => c.id === class_id)
         if (!classInfo) return []
 
         const startParts = schedule_time.split(' - ')
-        const startMin = timeSlots.find(s => s.start === startParts[0])?.startMinutes || 0
-        const endMin = timeSlots.find(s => s.end === startParts[1])?.endMinutes || 0
+        const p1 = (startParts[0] || '').trim().substring(0, 5)
+        const p2 = (startParts[1] || '').trim().substring(0, 5)
+        const startMin = timeSlots.find(s => s.start === p1)?.startMinutes || 0
+        const endMin = timeSlots.find(s => s.end.includes(p2))?.endMinutes || 0
 
         allocations.forEach(existing => {
-            if (ignoreId && existing.class_id === ignoreId && existing.schedule_day === schedule_day) return
+            if (ignoreAllocId && (existing.id || existing.class_id) === ignoreAllocId) return
 
-            const eStart = timeSlots.find(s => s.start === existing.schedule_time.split(' - ')[0])?.startMinutes || 0
-            const eEnd = timeSlots.find(s => s.end === existing.schedule_time.split(' - ')[1])?.endMinutes || 0
+            const exParts = existing.schedule_time.split(' - ')
+            const ex1 = (exParts[0] || '').trim().substring(0, 5)
+            const ex2 = (exParts[1] || '').trim().substring(0, 5)
+            const eStart = timeSlots.find(s => s.start === ex1)?.startMinutes || 0
+            const eEnd = timeSlots.find(s => s.end.includes(ex2))?.endMinutes || 0
 
             const timeOverlap = schedule_day === existing.schedule_day &&
                 ((startMin >= eStart && startMin < eEnd) || (endMin > eStart && endMin <= eEnd) || (startMin <= eStart && endMin >= eEnd))
@@ -206,14 +224,110 @@ export default function ManualEditModal({
         }
     }
 
-    const handleDrop = (day: string, slot: any, component?: 'LEC' | 'LAB') => {
+    const handleDrop = (day: string, slot: any, component?: string) => {
+        if (draggedAllocId) {
+            const existingAlloc = allocations.find(a => (a.id || a.class_id) === draggedAllocId);
+            if (!existingAlloc) {
+                setDraggedAllocId(null);
+                return;
+            }
+
+            const startParts = (existingAlloc.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
+            const endParts = (existingAlloc.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
+            const oldStart = timeSlots.find(s => s.start === startParts)?.startMinutes || 0
+            const oldEnd = timeSlots.find(s => s.end.includes(endParts) || s.end === endParts)?.endMinutes || 0
+            const durationMins = oldEnd - oldStart;
+
+            const endSlotIdx = timeSlots.indexOf(slot) + Math.ceil(durationMins / 30) - 1
+            const endSlot = timeSlots[Math.min(endSlotIdx, timeSlots.length - 1)]
+
+            let roomInfo: any = viewMode === 'room' ? (activeItem as any) : { id: existingAlloc.room_id, campus: existingAlloc.campus, building: existingAlloc.building, room: existingAlloc.room, capacity: existingAlloc.capacity };
+            if (!roomInfo) roomInfo = rooms[0];
+
+            const classInfo = classes.find(c => c.id === existingAlloc.class_id);
+            if (roomInfo && classInfo) {
+                if (existingAlloc.student_count > (roomInfo.capacity || 0)) {
+                    toast.warning(`Warning: Students exceed room capacity.`)
+                }
+                const componentType = existingAlloc.component || '';
+                const isLab = componentType.includes('LAB');
+                const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
+
+                let featuresToCheck = [];
+                if (isLab) {
+                    featuresToCheck = (classInfo.required_lab_features && classInfo.required_lab_features.length > 0)
+                        ? classInfo.required_lab_features
+                        : classInfo.required_features;
+                } else {
+                    if (classInfo.required_lec_features && classInfo.required_lec_features.length > 0) {
+                        featuresToCheck = classInfo.required_lec_features;
+                    } else {
+                        // Heuristic: only require "lecture-safe" features if no explicit LEC notes found
+                        featuresToCheck = (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
+                    }
+                }
+
+                if (featuresToCheck && featuresToCheck.length > 0) {
+                    const roomFeats = new Set(roomInfo.feature_tags || []);
+                    const missing = featuresToCheck.filter((f: string) => !roomFeats.has(f));
+                    if (missing.length > 0) {
+                        toast.error(`Error: Room lacks required features for ${componentType || 'block'}: ${missing.join(', ')}`);
+                        setDraggedAllocId(null);
+                        return;
+                    }
+                }
+            }
+
+            const updatedAlloc = {
+                ...existingAlloc,
+                schedule_day: day,
+                schedule_time: `${slot.start} - ${endSlot.end}`,
+                room_id: roomInfo.id,
+                campus: roomInfo.campus,
+                building: roomInfo.building,
+                room: roomInfo.room
+            }
+
+            const conflicts = checkConflicts(updatedAlloc, draggedAllocId)
+            if (conflicts.length > 0) {
+                conflicts.forEach(c => toast.error(c))
+                setDraggedAllocId(null);
+                return;
+            }
+
+            setAllocations(prev => prev.map(a => (a.id || a.class_id) === draggedAllocId ? updatedAlloc : a))
+            setDraggedAllocId(null);
+            toast.success(`Moved ${existingAlloc.course_code}`);
+            return;
+        }
+
         if (!draggedClassId) return
         const classInfo = classesWithStats.find(c => c.id === draggedClassId)
         if (!classInfo) return
 
         // If component not specified (from direct drop), pick one that has remaining hours
-        const targetComponent = component || (classInfo.lecRemaining > 0 ? 'LEC' : 'LAB')
-        const remainingHours = targetComponent === 'LEC' ? classInfo.lecRemaining : classInfo.labRemaining
+        const targetComponent = component || draggingComponent || (classInfo.lecRemaining > 0 ? 'LEC' : 'LAB')
+
+        let remainingHours = 0;
+        let targetSection = classInfo.section;
+        let targetStudents = classInfo.student_count || 0;
+        let saveComponent = targetComponent;
+
+        if (targetComponent === 'LEC') {
+            remainingHours = classInfo.lecRemaining;
+        } else if (targetComponent === 'LAB') {
+            remainingHours = classInfo.labRemaining;
+        } else if (targetComponent === 'LAB G1') {
+            remainingHours = classInfo.labG1Remaining;
+            targetSection = `${classInfo.section} G1`;
+            targetStudents = Math.ceil(targetStudents / 2);
+            saveComponent = 'LAB';
+        } else if (targetComponent === 'LAB G2') {
+            remainingHours = classInfo.labG2Remaining;
+            targetSection = `${classInfo.section} G2`;
+            targetStudents = Math.floor(targetStudents / 2);
+            saveComponent = 'LAB';
+        }
 
         if (remainingHours <= 0) {
             toast.error(`No remaining hours for ${targetComponent}`)
@@ -226,13 +340,45 @@ export default function ManualEditModal({
 
         let roomInfo = viewMode === 'room' ? (activeItem as any) : rooms[0]
 
+        if (roomInfo) {
+            if (targetStudents > (roomInfo.capacity || 0)) {
+                toast.warning(`Warning: Students (${targetStudents}) exceed capacity (${roomInfo.capacity})`)
+            }
+            const isLab = saveComponent?.includes('LAB');
+            const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
+
+            let featuresToCheck = [];
+            if (isLab) {
+                featuresToCheck = (classInfo.required_lab_features && classInfo.required_lab_features.length > 0)
+                    ? classInfo.required_lab_features
+                    : classInfo.required_features;
+            } else {
+                if (classInfo.required_lec_features && classInfo.required_lec_features.length > 0) {
+                    featuresToCheck = classInfo.required_lec_features;
+                } else {
+                    featuresToCheck = (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
+                }
+            }
+
+            if (featuresToCheck && featuresToCheck.length > 0) {
+                const roomFeats = new Set(roomInfo.feature_tags || []);
+                const missing = featuresToCheck.filter((f: string) => !roomFeats.has(f));
+                if (missing.length > 0) {
+                    toast.error(`Error: Room lacks required features for ${saveComponent}: ${missing.join(', ')}`);
+                    setDraggedClassId(null);
+                    setDraggingComponent(null);
+                    return;
+                }
+            }
+        }
+
         const newAlloc = {
             id: Date.now(), // Local temporary ID
             class_id: classInfo.id,
             room_id: roomInfo.id,
             course_code: classInfo.course_code,
             course_name: classInfo.course_name,
-            section: classInfo.section,
+            section: targetSection,
             year_level: classInfo.year_level,
             schedule_day: day,
             schedule_time: `${slot.start} - ${endSlot.end}`,
@@ -240,42 +386,51 @@ export default function ManualEditModal({
             building: roomInfo.building,
             room: roomInfo.room,
             teacher_name: classInfo.teacher_name || 'TBD',
-            component: targetComponent,
+            component: saveComponent,
             status: 'scheduled'
         }
 
         const conflicts = checkConflicts(newAlloc)
         if (conflicts.length > 0) {
             conflicts.forEach(c => toast.error(c))
+            setDraggedClassId(null);
+            setDraggingComponent(null);
+            return;
         }
 
         setAllocations(prev => [...prev, newAlloc])
         setDraggedClassId(null)
+        setDraggingComponent(null)
         toast.success(`Allocated ${classInfo.course_code} ${targetComponent}`)
     }
 
-    const handleResize = (allocId: number, day: string, newEndSlot: any) => {
+    const handleResize = (allocId: any, day: string, newEndSlot: any) => {
         setAllocations(prev => prev.map(a => {
-            if (a.class_id !== allocId || a.schedule_day !== day) return a
+            if ((a.id || a.class_id) !== allocId || a.schedule_day !== day) return a
 
-            const startSlot = timeSlots.find(s => s.start === a.schedule_time.split(' - ')[0])
+            const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
+            const startSlot = timeSlots.find(s => s.start === startParts)
             if (!startSlot) return a
 
             if (newEndSlot.endMinutes <= startSlot.startMinutes) return a
 
-            return {
-                ...a,
-                schedule_time: `${startSlot.start} - ${newEndSlot.end}`
+            const updatedAlloc = { ...a, schedule_time: `${startSlot.start} - ${newEndSlot.end}` }
+            const conflicts = checkConflicts(updatedAlloc, allocId)
+            if (conflicts.length > 0) {
+                toast.error(conflicts[0]);
+                return a;
             }
+
+            return updatedAlloc
         }))
     }
 
-    const adjustDuration = (allocId: number, amountMins: number) => {
+    const adjustDuration = (allocId: any, amountMins: number) => {
         setAllocations(prev => prev.map(a => {
-            if (a.class_id !== allocId) return a
+            if ((a.id || a.class_id) !== allocId) return a
 
-            const startParts = a.schedule_time.split(' - ')[0]
-            const endParts = a.schedule_time.split(' - ')[1]
+            const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
+            const endParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
 
             const startSlot = timeSlots.find(s => s.start === startParts)
             const endSlot = timeSlots.find(s => s.end.includes(endParts) || s.end === endParts)
@@ -288,10 +443,29 @@ export default function ManualEditModal({
             const lastSlot = timeSlots[timeSlots.length - 1]
             if (newEndMins > lastSlot.endMinutes) return a
 
+            // Apply size checking
+            if (amountMins > 0) {
+                const classObj = classes.find(c => c.id === a.class_id);
+                if (classObj) {
+                    const maxMins = a.component.includes('LAB') ? (classObj.lab_hours || 0) * 60 : (classObj.lec_hours || 0) * 60;
+                    if ((newEndMins - startSlot.startMinutes) > maxMins && maxMins > 0) {
+                        toast.warning(`Maximum hours (${maxMins / 60}h) reached for component.`);
+                        return a;
+                    }
+                }
+            }
+
             const newEndSlot = timeSlots.find(s => s.endMinutes === newEndMins)
             if (!newEndSlot) return a
 
-            return { ...a, schedule_time: `${startSlot.start} - ${newEndSlot.end}` }
+            const updatedAlloc = { ...a, schedule_time: `${startSlot.start} - ${newEndSlot.end}` }
+            const conflicts = checkConflicts(updatedAlloc, allocId)
+            if (conflicts.length > 0) {
+                toast.error(conflicts[0]);
+                return a;
+            }
+
+            return updatedAlloc
         }))
     }
 
@@ -334,12 +508,6 @@ export default function ManualEditModal({
                             >
                                 <FaUsers /> Section
                             </button>
-                            <button
-                                className={viewMode === 'college' ? styles.active : ''}
-                                onClick={() => { setViewMode('college'); setActiveItemIndex(0); }}
-                            >
-                                <MdSchool /> College
-                            </button>
                         </div>
                     </div>
                     <button className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
@@ -368,13 +536,6 @@ export default function ManualEditModal({
                                         {sections.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
-                                <div className={styles.filterBox}>
-                                    <MdSchool />
-                                    <select value={filterCollege} onChange={e => setFilterCollege(e.target.value)}>
-                                        <option value="all">All Colleges</option>
-                                        {colleges.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </div>
                             </div>
                         </div>
                         <div className={styles.classList}>
@@ -393,7 +554,9 @@ export default function ManualEditModal({
                                             <strong>{c.course_code}</strong>
                                             <div style={{ display: 'flex', gap: '4px' }}>
                                                 {c.lecRemaining > 0 && <span className={styles.hoursBadge}>Lec {c.lecRemaining}h</span>}
-                                                {c.labRemaining > 0 && <span className={styles.hoursBadge} style={{ background: '#e0f2fe', color: '#0284c7' }}>Lab {c.labRemaining}h</span>}
+                                                {(!c.isSplitLab) && c.labRemaining > 0 && <span className={styles.hoursBadge} style={{ background: '#e0f2fe', color: '#0284c7' }}>Lab {c.labRemaining}h</span>}
+                                                {c.isSplitLab && c.labG1Remaining > 0 && <span className={styles.hoursBadge} style={{ background: '#e0f2fe', color: '#0284c7' }}>Lab G1 {c.labG1Remaining}h</span>}
+                                                {c.isSplitLab && c.labG2Remaining > 0 && <span className={styles.hoursBadge} style={{ background: '#e0f2fe', color: '#0284c7' }}>Lab G2 {c.labG2Remaining}h</span>}
                                             </div>
                                         </div>
                                         <p>{c.course_name}</p>
@@ -407,29 +570,76 @@ export default function ManualEditModal({
                                                 <div
                                                     className={styles.compBtn}
                                                     draggable
-                                                    onDragStart={() => setDraggedClassId(c.id)}
+                                                    onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LEC'); }}
                                                     title="Drag Lecture"
                                                 >
                                                     <MdLayers /> LEC
                                                 </div>
                                             )}
-                                            {c.labRemaining > 0 && (
+                                            {(!c.isSplitLab) && c.labRemaining > 0 && (
                                                 <div
                                                     className={styles.compBtn}
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9' }}
                                                     draggable
-                                                    onDragStart={() => setDraggedClassId(c.id)}
+                                                    onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB'); }}
                                                     title="Drag Laboratory"
                                                 >
                                                     <MdSchool /> LAB
                                                 </div>
                                             )}
+                                            {c.isSplitLab && c.labG1Remaining > 0 && (
+                                                <div
+                                                    className={styles.compBtn}
+                                                    style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
+                                                    draggable
+                                                    onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB G1'); }}
+                                                    title="Drag Laboratory Group 1"
+                                                >
+                                                    <MdSchool /> LAB - Section G1 ({Math.ceil((c.student_count || 0) / 2)})
+                                                </div>
+                                            )}
+                                            {c.isSplitLab && c.labG2Remaining > 0 && (
+                                                <div
+                                                    className={styles.compBtn}
+                                                    style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
+                                                    draggable
+                                                    onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB G2'); }}
+                                                    title="Drag Laboratory Group 2"
+                                                >
+                                                    <MdSchool /> LAB - Section G2 ({Math.floor((c.student_count || 0) / 2)})
+                                                </div>
+                                            )}
+                                            {(c.lab_hours > 0) && (
+                                                <button
+                                                    onClick={() => setSplitLabClasses(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}
+                                                    className={styles.compBtn}
+                                                    style={{ background: 'transparent', color: '#64748b', borderColor: '#cbd5e1', fontSize: '0.7em', padding: '2px 8px', height: 'fit-content', cursor: 'pointer', borderStyle: 'dashed' }}
+                                                    title="Manually split/merge lab sections"
+                                                >
+                                                    {c.isSplitLab ? 'Merge Lab' : 'Split Lab'}
+                                                </button>
+                                            )}
                                         </div>
 
-                                        {c.required_features?.length > 0 && (
-                                            <div className={styles.featureTags}>
-                                                {c.required_features.map((f: any) => (
-                                                    <span key={f} className={styles.fTag}>{f}</span>
+                                        {((c.required_features?.length > 0) || (c.required_lec_features?.length > 0) || (c.required_lab_features?.length > 0)) && (
+                                            <div className={styles.featureTags} style={{ marginTop: '8px', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                {/* Show LEC tags */}
+                                                {c.required_lec_features?.map((f: any) => (
+                                                    <span key={`lec-${f}`} className={styles.fTag} style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', border: '1px solid #bbf7d0' }} title="LEC Requirement">
+                                                        <FaAtom style={{ display: 'inline', marginRight: '3px' }} /> LEC: {f}
+                                                    </span>
+                                                ))}
+                                                {/* Show LAB tags */}
+                                                {c.required_lab_features?.map((f: any) => (
+                                                    <span key={`lab-${f}`} className={styles.fTag} style={{ fontSize: '0.65rem', background: '#fef9c3', color: '#854d0e', padding: '2px 6px', borderRadius: '4px', border: '1px solid #fef08a' }} title="LAB Requirement">
+                                                        <FaAtom style={{ display: 'inline', marginRight: '3px' }} /> LAB: {f}
+                                                    </span>
+                                                ))}
+                                                {/* Show neutral tags only if lec/lab explicit lists are empty or they are not duplicated */}
+                                                {c.required_features?.filter((f: any) => !c.required_lec_features?.includes(f) && !c.required_lab_features?.includes(f)).map((f: any) => (
+                                                    <span key={f} className={styles.fTag} style={{ fontSize: '0.65rem', background: '#f0fdf4', color: '#166534', padding: '2px 6px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                                                        <FaAtom style={{ display: 'inline', marginRight: '3px' }} /> {f}
+                                                    </span>
                                                 ))}
                                             </div>
                                         )}
@@ -472,6 +682,11 @@ export default function ManualEditModal({
                                                         {(activeItem as any)?.college}
                                                     </small>
                                                 )}
+                                                {(activeItem as any)?.feature_tags?.length > 0 && (
+                                                    <small style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                                        {(activeItem as any)?.feature_tags.join(', ')}
+                                                    </small>
+                                                )}
                                             </span>
                                         </>
                                     )}
@@ -492,20 +707,6 @@ export default function ManualEditModal({
                                     {viewMode === 'section' && (
                                         <>
                                             <FaUsers />
-                                            <select
-                                                value={activeItemIndex}
-                                                onChange={(e) => setActiveItemIndex(Number(e.target.value))}
-                                                style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
-                                            >
-                                                {navigationItems.map((item: any, idx) => (
-                                                    <option key={idx} value={idx}>{item}</option>
-                                                ))}
-                                            </select>
-                                        </>
-                                    )}
-                                    {viewMode === 'college' && (
-                                        <>
-                                            <MdSchool />
                                             <select
                                                 value={activeItemIndex}
                                                 onChange={(e) => setActiveItemIndex(Number(e.target.value))}
@@ -541,22 +742,21 @@ export default function ManualEditModal({
                                                     const matchesDay = a.schedule_day === day
                                                     if (!matchesDay) return false
 
-                                                    const sTime = a.schedule_time.split(' - ')[0]
-                                                    const eTime = a.schedule_time.split(' - ')[1]
+                                                    const sTime = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
+                                                    const eTime = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
                                                     const slotInRange = slot.start >= sTime && slot.start < eTime
 
                                                     if (viewMode === 'room') return a.room_id === (activeItem as any)?.id && slotInRange
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
-                                                    if (viewMode === 'section') return a.section === (activeItem as string) && slotInRange
-                                                    if (viewMode === 'college') {
-                                                        const classObj = classes.find(c => c.id === a.class_id)
-                                                        const collegeName = classObj ? classObj.college || 'N/A' : 'N/A'
-                                                        return collegeName === (activeItem as string) && slotInRange
+                                                    if (viewMode === 'section') {
+                                                        const activeSec = (activeItem as string);
+                                                        const isMatch = a.section === activeSec || (activeSec.endsWith(' G1') && a.section === activeSec.replace(' G1', '')) || (activeSec.endsWith(' G2') && a.section === activeSec.replace(' G2', ''));
+                                                        return isMatch && slotInRange;
                                                     }
                                                     return false
                                                 })
 
-                                                const isStart = allocs.some(a => a.schedule_time.startsWith(slot.start))
+                                                const isStart = allocs.some(a => (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5) === slot.start)
 
                                                 return (
                                                     <td
@@ -575,16 +775,23 @@ export default function ManualEditModal({
                                                             const actualId = a.id || a.class_id
                                                             const isLabComp = a.component === 'LAB'
                                                             return (
-                                                                <div key={actualId} className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''} ${isLabComp ? styles.labComp : ''}`} style={{
-                                                                    height: `calc(${((timeSlots.find(s => s.end === a.schedule_time.split(' - ')[1])?.endMinutes || 0) - slot.startMinutes) / 30 * 100}% - 8px)`,
-                                                                    zIndex: 10
-                                                                }}>
+                                                                <div
+                                                                    key={actualId}
+                                                                    draggable
+                                                                    onDragStart={() => setDraggedAllocId(actualId)}
+                                                                    className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''} ${isLabComp ? styles.labComp : ''}`}
+                                                                    style={{
+                                                                        height: `calc(${((timeSlots.find(s => s.end.includes((a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)))?.endMinutes || 0) - slot.startMinutes) / 30 * 100}% - 8px)`,
+                                                                        zIndex: 10
+                                                                    }}>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                            <strong>{a.course_code}</strong>
+                                                                            <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                {a.course_code}
+                                                                                {confs.length > 0 && <span title={confs.join('\n')} style={{ color: '#ef4444', opacity: 1, cursor: 'help', display: 'flex' }}><MdWarning size={14} /></span>}
+                                                                            </strong>
                                                                             <span className={styles.compLabel}>{a.component}</span>
                                                                         </div>
-                                                                        {confs.length > 0 && <span title={confs.join('\n')} style={{ color: '#fee2e2', opacity: 1, cursor: 'help' }}><MdWarning size={16} /></span>}
                                                                     </div>
                                                                     <span>{a.section}</span>
                                                                     <div className={styles.allocTools}>
@@ -607,6 +814,14 @@ export default function ManualEditModal({
                                             })}
                                         </tr>
                                     ))}
+                                    <tr key="endTimeMarker">
+                                        <td className={styles.timeLabel} style={{ height: '30px', borderBottom: 'none' }}>
+                                            {formatTimeAMPM(timeSettings.endTime || "20:00")}
+                                        </td>
+                                        {days.map(day => (
+                                            <td key={`${day}-end`} style={{ border: 'none' }}></td>
+                                        ))}
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

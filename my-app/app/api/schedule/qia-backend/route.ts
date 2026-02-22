@@ -37,6 +37,7 @@ interface RoomData {
 
 interface ClassData {
   id: number
+  course_id?: number
   course_code: string
   course_name: string
   section: string
@@ -51,6 +52,9 @@ interface ClassData {
   semester: string
   academic_year: string
   college?: string | null  // NEW: College assignment for room separation
+  required_features?: string[]
+  required_lec_features?: string[]
+  required_lab_features?: string[]
 }
 
 interface TeacherData {
@@ -133,40 +137,50 @@ function getTeacherIdFromName(name: string): number {
  * Convert frontend classes to backend sections format
  * lec_hours and lab_hours are actual contact hours per week
  */
-function convertClassesToSections(classes: ClassData[], courseRequirements: Map<number, string[]>): any[] {
+function convertClassesToSections(classes: ClassData[], courseRequirements: Map<number, { all: string[], lec: string[], lab: string[] }>): any[] {
   return classes.map((cls, index) => {
     const lecHours = cls.lec_hours || 0
     const labHours = cls.lab_hours || 0
-    // Total weekly contact hours = lec + lab hours
     const weeklyHours = lecHours + labHours
 
-    // Use teacher_name from class data if available, otherwise 'TBD'
     const teacherName = (cls as any).teacher_name || 'TBD'
-
-    // Generate a consistent numeric teacher_id from the teacher's name
-    // This enables the scheduler's teacher conflict detection
     const teacherId = getTeacherIdFromName(teacherName)
 
-    // Get required features for this course (based on course_id from class_schedules table)
-    const courseId = (cls as any).course_id || cls.id
+    // Prefer pre-fetched requirements from frontend, fallback to bridge fetch
+    const courseId = cls.course_id || cls.id
+    const bridgeReqs = courseRequirements.get(courseId) || { all: [], lec: [], lab: [] }
+
+    const requiredFeatures = (cls.required_features && cls.required_features.length > 0)
+      ? cls.required_features
+      : bridgeReqs.all;
+
+    const lecRequiredFeatures = (cls.required_lec_features && cls.required_lec_features.length > 0)
+      ? cls.required_lec_features
+      : bridgeReqs.lec;
+
+    const labRequiredFeatures = (cls.required_lab_features && cls.required_lab_features.length > 0)
+      ? cls.required_lab_features
+      : bridgeReqs.lab;
 
     return {
-      id: typeof cls.id === 'number' ? cls.id : index + 1, // Ensure numeric ID
+      id: typeof cls.id === 'number' ? cls.id : index + 1,
       section_code: cls.section || `SEC-${index + 1}`,
       course_code: cls.course_code || '',
       course_name: cls.course_name || '',
-      teacher_id: teacherId, // Unique ID derived from teacher_name for conflict detection
+      teacher_id: teacherId,
       teacher_name: teacherName,
       year_level: cls.year_level || parseInt(cls.section?.charAt(0)) || 1,
-      student_count: cls.student_count || 30, // Use actual student count from class data
+      student_count: cls.student_count || 30,
       required_room_type: labHours > 0 ? 'Laboratory' : 'Lecture Room',
-      weekly_hours: weeklyHours || 3, // Default 3 hours if not specified
+      weekly_hours: weeklyHours || 3,
       requires_lab: labHours > 0,
       department: cls.department || '',
       lec_hours: lecHours,
       lab_hours: labHours,
-      required_features: courseRequirements.get(courseId) || [],  // NEW: Required equipment tags
-      college: cls.college || (cls as any).college || null  // NEW: College assignment for room separation
+      required_features: requiredFeatures,
+      lec_required_features: lecRequiredFeatures,
+      lab_required_features: labRequiredFeatures,
+      college: cls.college || (cls as any).college || null
     }
   })
 }
@@ -848,38 +862,44 @@ export async function POST(request: NextRequest) {
       console.warn('   ⚠️ Could not fetch room features (table may not exist yet)')
     }
 
-    // Fetch course requirements (course_id -> list of required feature tag names)
-    // Using the teaching_loads course_id (which links to class_schedules.id)
-    const courseIds = body.classes.map(c => (c as any).course_id || c.id)
-    let courseRequirements = new Map<number, string[]>()
+    // Fetch course requirements (course_id -> categorized required feature tag names)
+    const courseIds = body.classes.map(c => c.course_id || c.id)
+    let courseRequirements = new Map<number, { all: string[], lec: string[], lab: string[] }>()
 
     try {
       const { data: courseReqData, error: courseReqError } = await supabase
         .from('subject_room_requirements')
         .select(`
           course_id,
-          is_mandatory,
+          notes,
           feature_tags (tag_name)
         `)
         .in('course_id', courseIds)
-        .eq('is_mandatory', true)  // Only get mandatory requirements
 
       if (!courseReqError && courseReqData) {
-        // Group by course_id
         courseReqData.forEach((cr: any) => {
           const courseId = cr.course_id
           const tagName = cr.feature_tags?.tag_name
           if (tagName) {
             if (!courseRequirements.has(courseId)) {
-              courseRequirements.set(courseId, [])
+              courseRequirements.set(courseId, { all: [], lec: [], lab: [] })
             }
-            courseRequirements.get(courseId)!.push(tagName)
+            const mapEntry = courseRequirements.get(courseId)!
+            mapEntry.all.push(tagName)
+
+            const note = (cr.notes || '').toUpperCase()
+            if (note === 'LEC') mapEntry.lec.push(tagName)
+            else if (note === 'LAB') mapEntry.lab.push(tagName)
+            else {
+              mapEntry.lec.push(tagName)
+              mapEntry.lab.push(tagName)
+            }
           }
         })
         console.log(`   ✅ Found requirements for ${courseRequirements.size} courses`)
       }
     } catch (e) {
-      console.warn('   ⚠️ Could not fetch course requirements (table may not exist yet)')
+      console.warn('   ⚠️ Could not fetch course requirements')
     }
     // ===========================================================================
 

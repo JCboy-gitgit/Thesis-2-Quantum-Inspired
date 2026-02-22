@@ -93,6 +93,7 @@ interface CampusRoom {
 
 interface ClassSchedule {
   id: number
+  course_id?: number
   course_code: string
   course_name: string
   section: string
@@ -108,6 +109,9 @@ interface ClassSchedule {
   academic_year: string
   teacher_name?: string  // Assigned professor/teacher
   required_features?: string[] // NEW: Room features required by the course
+  required_lec_features?: string[] // NEW: Room features specifically for LEC
+  required_lab_features?: string[] // NEW: Room features specifically for LAB
+  component?: string
 }
 
 interface TeacherSchedule {
@@ -190,6 +194,7 @@ interface TimeSlot {
 
 interface RoomAllocation {
   class_id: number
+  course_id?: number
   room_id: number
   course_code: string
   course_name: string
@@ -206,6 +211,9 @@ interface RoomAllocation {
   lab_hours: number
   teacher_name?: string  // BulSU QSA: Teacher/faculty name
   is_online?: boolean    // BulSU QSA: Online class flag
+  component?: string
+  required_lec_features?: string[]
+  required_lab_features?: string[]
 }
 
 interface UnscheduledItem {
@@ -329,6 +337,7 @@ export default function GenerateSchedulePage() {
     lunchMode: 'auto',
     lunchStartHour: 13, // 1:00 PM
     lunchEndHour: 14,   // 2:00 PM
+    strictLabRoomMatching: true,
     strictLectureRoomMatching: true,
     allowSplitSessions: true,
     // Soft Penalties Defaults
@@ -373,6 +382,7 @@ export default function GenerateSchedulePage() {
 
   // UI states
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+  const [showConstraintSettings, setShowConstraintSettings] = useState(false)
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1)
   const [timer, setTimer] = useState(0)
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
@@ -1016,6 +1026,28 @@ export default function GenerateSchedulePage() {
           is_pwd_accessible: r.is_pwd_accessible || r.is_first_floor || false,
           college: r.college || null
         }))
+
+        // Fetch feature tags for these rooms
+        if (mappedRooms.length > 0) {
+          const roomIds = mappedRooms.map((r: any) => r.id)
+          const { data: featureData } = await supabase
+            .from('room_features')
+            .select('room_id, feature_tags(tag_name)')
+            .in('room_id', roomIds)
+
+          const featureMap = new Map<number, string[]>()
+          if (featureData) {
+            featureData.forEach((f: any) => {
+              if (!featureMap.has(f.room_id)) featureMap.set(f.room_id, [])
+              if (f.feature_tags?.tag_name) featureMap.get(f.room_id)!.push(f.feature_tags.tag_name)
+            })
+          }
+
+          mappedRooms.forEach((r: any) => {
+            r.feature_tags = featureMap.get(r.id) || []
+          })
+        }
+
         allRooms.push(...mappedRooms)
       }
     }
@@ -1120,14 +1152,22 @@ export default function GenerateSchedulePage() {
         // Fetch course requirements
         const { data: reqData } = await supabase
           .from('subject_room_requirements')
-          .select('course_id, feature_tags(tag_name)')
+          .select('course_id, notes, feature_tags(tag_name)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
 
-        const reqMap = new Map<number, string[]>()
+        const reqMap = new Map<number, { all: string[], lec: string[], lab: string[] }>()
         if (reqData) {
           reqData.forEach((r: any) => {
-            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, [])
-            if (r.feature_tags?.tag_name) reqMap.get(r.course_id)!.push(r.feature_tags.tag_name)
+            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, { all: [], lec: [], lab: [] })
+            if (r.feature_tags?.tag_name) {
+              const tag = r.feature_tags.tag_name
+              const note = (r.notes || '').toUpperCase()
+              const mapEntry = reqMap.get(r.course_id)!
+              mapEntry.all.push(tag)
+              if (note === 'LEC') mapEntry.lec.push(tag)
+              else if (note === 'LAB') mapEntry.lab.push(tag)
+              // Neutral requirements are only added to 'all', not explicitly to lec/lab
+            }
           })
         }
 
@@ -1164,7 +1204,10 @@ export default function GenerateSchedulePage() {
               semester: course.semester || '',
               academic_year: course.academic_year || '',
               teacher_name: assignedTeacher?.faculty_name || '',
-              required_features: reqMap.get(courseId) || [],
+              course_id: course.id,
+              required_features: reqMap.get(courseId)?.all || [],
+              required_lec_features: reqMap.get(courseId)?.lec || [],
+              required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
                 (course.lab_hours > 0) ? 'LAB' : 'LEC'
             })
@@ -1198,6 +1241,7 @@ export default function GenerateSchedulePage() {
       console.error('Error loading multiple class data:', error)
     }
   }
+
 
   // Load class data from multiple year batches with explicit semester filter
   const loadMultipleClassDataWithSemester = async (yearBatchIds: number[], selectedSemester: string, collegeFilter?: string) => {
@@ -1260,14 +1304,22 @@ export default function GenerateSchedulePage() {
         // Fetch course requirements
         const { data: reqData } = await supabase
           .from('subject_room_requirements')
-          .select('course_id, feature_tags(tag_name)')
+          .select('course_id, notes, feature_tags(tag_name)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
 
-        const reqMap = new Map<number, string[]>()
+        const reqMap = new Map<number, { all: string[], lec: string[], lab: string[] }>()
         if (reqData) {
           reqData.forEach((r: any) => {
-            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, [])
-            if (r.feature_tags?.tag_name) reqMap.get(r.course_id)!.push(r.feature_tags.tag_name)
+            if (!reqMap.has(r.course_id)) reqMap.set(r.course_id, { all: [], lec: [], lab: [] })
+            if (r.feature_tags?.tag_name) {
+              const tag = r.feature_tags.tag_name
+              const note = (r.notes || '').toUpperCase()
+              const mapEntry = reqMap.get(r.course_id)!
+              mapEntry.all.push(tag)
+              if (note === 'LEC') mapEntry.lec.push(tag)
+              else if (note === 'LAB') mapEntry.lab.push(tag)
+              // Neutral requirements are only added to 'all', not explicitly to lec/lab
+            }
           })
         }
 
@@ -1304,7 +1356,10 @@ export default function GenerateSchedulePage() {
               semester: course.semester || '',
               academic_year: course.academic_year || '',
               teacher_name: assignedTeacher?.faculty_name || '',
-              required_features: reqMap.get(courseId) || [],
+              course_id: course.id,
+              required_features: reqMap.get(courseId)?.all || [],
+              required_lec_features: reqMap.get(courseId)?.lec || [],
+              required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
                 (course.lab_hours > 0) ? 'LAB' : 'LEC'
             })
@@ -2607,7 +2662,7 @@ export default function GenerateSchedulePage() {
                     {timetableView === 'section' && (
                       <select
                         value={selectedTimetableSection}
-                        onChange={(e) => setSelectedTimetableSection(e.target.value)}
+                        onChange={(e) => setSelectedTimetableViewSection(e.target.value)}
                         className={styles.filterSelect}
                       >
                         <option value="all">All Sections</option>
@@ -2621,7 +2676,7 @@ export default function GenerateSchedulePage() {
                     {timetableView === 'teacher' && (
                       <select
                         value={selectedTimetableTeacher}
-                        onChange={(e) => setSelectedTimetableTeacher(e.target.value)}
+                        onChange={(e) => setSelectedTimetableViewTeacher(e.target.value)}
                         className={styles.filterSelect}
                       >
                         <option value="all">All Teachers</option>
@@ -3949,7 +4004,7 @@ export default function GenerateSchedulePage() {
                               onChange={(e) => setBypassTeacherCheck(e.target.checked)}
                               style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                             />
-                            <span>Bypass teacher check (show "TBD" in schedule)</span>
+                            <span>Bypass teacher check (show &quot;TBD&quot; in schedule)</span>
                           </label>
                         </div>
                       </div>
@@ -3982,7 +4037,7 @@ export default function GenerateSchedulePage() {
                     </h3>
                     <div className={styles.timeConfigInfo}>
                       <MdAccessTime size={20} />
-                      <p>Set the campus operating hours for room allocation. Classes scheduled on "Online Days" will not require rooms, regardless of these times.</p>
+                      <p>Set the campus operating hours for room allocation. Classes scheduled on &quot;Online Days&quot; will not require rooms, regardless of these times.</p>
                     </div>
 
                     <div className={styles.formRow}>
@@ -4011,7 +4066,7 @@ export default function GenerateSchedulePage() {
                       <div>
                         <strong>Time Slot Duration:</strong> 90 minutes (1.5 hours)
                         <p className={styles.slotDurationNote}>
-                          Standard academic period. Schedule generation automatically allocates multiple slots based on each class's Lec Hours + Lab Hours from the CSV file.
+                          Standard academic period. Schedule generation automatically allocates multiple slots based on each class&apos;s Lec Hours + Lab Hours from the CSV file.
                         </p>
                       </div>
                     </div>
@@ -4101,7 +4156,7 @@ export default function GenerateSchedulePage() {
                       <MdFlashOn size={20} />
                       <p>
                         Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations,
-                        allowing the quantum algorithm to "tunnel" through problem spaces by shifting F2F demand to available days.
+                        allowing the quantum algorithm to &quot;tunnel&quot; through problem spaces by shifting F2F demand to available days.
                       </p>
                     </div>
 
@@ -4143,137 +4198,272 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
 
-                  {/* Detailed Scheduling Constraints & Rules (New Section) */}
-                  <div className={styles.formCard}>
-                    <h3 className={styles.formSectionTitle}>
-                      <FaFilter /> Scheduling Constraints & Rules
-                    </h3>
-                    <div className={styles.timeConfigInfo}>
-                      <FaCog size={20} />
-                      <p>
-                        Configure how the algorithm handles specific BulSU scheduling rules. These constraints directly influence the cost matrix of the quantum simulation.
-                      </p>
-                    </div>
-
-                    <div className={styles.constraintsWrapper}>
-                      {/* Lunch Mode Selection */}
-                      <div className={styles.constraintItem}>
-                        <div className={styles.constraintLabelGroup}>
-                          <label className={styles.formLabel}>Lunch Break Mode</label>
-                          <span className={styles.formHint}>How the mandatory lunch break should be enforced</span>
-                        </div>
-                        <div className={styles.constraintInputGroup}>
-                          <select
-                            className={styles.formSelect}
-                            value={config.lunchMode}
-                            onChange={(e) => setConfig(prev => ({ ...prev, lunchMode: e.target.value as any }))}
-                          >
-                            <option value="auto">Auto (1hr break after 6hrs consecutive)</option>
-                            <option value="strict">Strict (Fixed 1hr gap for everyone)</option>
-                            <option value="flexible">Flexible (Prefer gap, but override if tight)</option>
-                            <option value="none">Disabled (No lunch enforcement)</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {config.lunchMode !== 'auto' && config.lunchMode !== 'none' && (
-                        <div className={styles.formRow} style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}>
-                          <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Lunch Start Hour</label>
-                            <select
-                              className={styles.formSelect}
-                              value={config.lunchStartHour}
-                              onChange={(e) => setConfig(prev => ({ ...prev, lunchStartHour: parseInt(e.target.value) }))}
-                            >
-                              {[11, 12, 13, 14].map(h => (
-                                <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Lunch End Hour</label>
-                            <select
-                              className={styles.formSelect}
-                              value={config.lunchEndHour}
-                              onChange={(e) => setConfig(prev => ({ ...prev, lunchEndHour: parseInt(e.target.value) }))}
-                            >
-                              {[12, 13, 14, 15].map(h => (
-                                <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className={styles.divider} />
-
-                      {/* Rule Toggles */}
-                      <div className={styles.ruleToggles}>
-                        <div className={styles.ruleItem}>
-                          <div className={styles.ruleInfo}>
-                            <span className={styles.ruleTitle}>Strict Lab Room Matching</span>
-                            <span className={styles.ruleDesc}>Lab classes MUST ONLY be placed in Laboratory/Computer Lab rooms</span>
-                          </div>
-                          <label className={styles.toggleSwitch}>
-                            <input
-                              type="checkbox"
-                              checked={config.strictLabRoomMatching}
-                              onChange={(e) => setConfig(prev => ({ ...prev, strictLabRoomMatching: e.target.checked }))}
-                            />
-                            <span className={styles.toggleSlider}></span>
-                          </label>
-                        </div>
-
-                        <div className={styles.ruleItem}>
-                          <div className={styles.ruleInfo}>
-                            <span className={styles.ruleTitle}>Strict Lecture Room Matching</span>
-                            <span className={styles.ruleDesc}>Lecture classes should avoid specialized laboratory rooms</span>
-                          </div>
-                          <label className={styles.toggleSwitch}>
-                            <input
-                              type="checkbox"
-                              checked={config.strictLectureRoomMatching}
-                              onChange={(e) => setConfig(prev => ({ ...prev, strictLectureRoomMatching: e.target.checked }))}
-                            />
-                            <span className={styles.toggleSlider}></span>
-                          </label>
-                        </div>
-
-                        <div className={styles.ruleItem}>
-                          <div className={styles.ruleInfo}>
-                            <span className={styles.ruleTitle}>Allow Split Sessions</span>
-                            <span className={styles.ruleDesc}>Split long classes (3hr+) into multiple sessions (e.g. 1.5hr Mon + 1.5hr Thu)</span>
-                          </div>
-                          <label className={styles.toggleSwitch}>
-                            <input
-                              type="checkbox"
-                              checked={config.allowSplitSessions}
-                              onChange={(e) => setConfig(prev => ({ ...prev, allowSplitSessions: e.target.checked }))}
-                            />
-                            <span className={styles.toggleSlider}></span>
-                          </label>
-                        </div>
-
-                        <div className={styles.ruleItem}>
-                          <div className={styles.ruleInfo}>
-                            <span className={styles.ruleTitle}>Avoid Conflicts (Strict)</span>
-                            <span className={styles.ruleDesc}>Zero-tolerance for room/teacher/student overlaps</span>
-                          </div>
-                          <label className={styles.toggleSwitch}>
-                            <input
-                              type="checkbox"
-                              checked={config.avoidConflicts}
-                              onChange={(e) => setConfig(prev => ({ ...prev, avoidConflicts: e.target.checked }))}
-                            />
-                            <span className={styles.toggleSlider}></span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className={styles.divider} />
-
-                    </div>
+                  {/* Configuration Constraints Toggle */}
+                  <div className={styles.advancedToggle}>
+                    <button
+                      className={styles.advancedToggleButton}
+                      onClick={() => setShowConstraintSettings(!showConstraintSettings)}
+                    >
+                      <FaFilter size={18} />
+                      Scheduling Constraints & Rules
+                      {showConstraintSettings ? <MdKeyboardArrowDown size={18} /> : <MdKeyboardArrowRight size={18} />}
+                    </button>
                   </div>
+
+                  {showConstraintSettings && (
+                    <div className={styles.combinedConstraintsContainer}>
+                      {/* Detailed Scheduling Constraints & Rules (New Section) */}
+                      <div className={styles.formCard}>
+                        <h3 className={styles.formSectionTitle}>
+                          <FaFilter /> Scheduling Constraints & Rules
+                        </h3>
+                        <div className={styles.timeConfigInfo}>
+                          <FaCog size={20} />
+                          <p>
+                            Configure how the algorithm handles specific BulSU scheduling rules. These constraints directly influence the cost matrix of the quantum simulation.
+                          </p>
+                        </div>
+
+                        <div className={styles.constraintsWrapper}>
+                          {/* Lunch Mode Selection */}
+                          <div className={styles.constraintItem}>
+                            <div className={styles.constraintLabelGroup}>
+                              <label className={styles.formLabel}>Lunch Break Mode</label>
+                              <span className={styles.formHint}>How the mandatory lunch break should be enforced</span>
+                            </div>
+                            <div className={styles.constraintInputGroup}>
+                              <select
+                                className={styles.formSelect}
+                                value={config.lunchMode}
+                                onChange={(e) => setConfig(prev => ({ ...prev, lunchMode: e.target.value as any }))}
+                              >
+                                <option value="auto">Auto (1hr break after 6hrs consecutive)</option>
+                                <option value="strict">Strict (Fixed 1hr gap for everyone)</option>
+                                <option value="flexible">Flexible (Prefer gap, but override if tight)</option>
+                                <option value="none">Disabled (No lunch enforcement)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {config.lunchMode !== 'auto' && config.lunchMode !== 'none' && (
+                            <div className={styles.formRow} style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}>
+                              <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>Lunch Start Hour</label>
+                                <select
+                                  className={styles.formSelect}
+                                  value={config.lunchStartHour}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, lunchStartHour: parseInt(e.target.value) }))}
+                                >
+                                  {[11, 12, 13, 14].map(h => (
+                                    <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className={styles.formGroup}>
+                                <label className={styles.formLabel}>Lunch End Hour</label>
+                                <select
+                                  className={styles.formSelect}
+                                  value={config.lunchEndHour}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, lunchEndHour: parseInt(e.target.value) }))}
+                                >
+                                  {[12, 13, 14, 15].map(h => (
+                                    <option key={h} value={h}>{h === 12 ? '12:00 PM' : h > 12 ? `${h - 12}:00 PM` : `${h}:00 AM`}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className={styles.divider} />
+
+                          {/* Rule Toggles */}
+                          <div className={styles.ruleToggles}>
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>Strict Lab Room Matching</span>
+                                <span className={styles.ruleDesc}>Lab classes MUST ONLY be placed in Laboratory/Computer Lab rooms</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.strictLabRoomMatching}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, strictLabRoomMatching: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>Strict Lecture Room Matching</span>
+                                <span className={styles.ruleDesc}>Lecture classes should avoid specialized laboratory rooms</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.strictLectureRoomMatching}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, strictLectureRoomMatching: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>Allow Split Sessions</span>
+                                <span className={styles.ruleDesc}>Split long classes (3hr+) into multiple sessions (e.g. 1.5hr Mon + 1.5hr Thu)</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.allowSplitSessions}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, allowSplitSessions: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>Avoid Conflicts (Strict)</span>
+                                <span className={styles.ruleDesc}>Zero-tolerance for room/teacher/student overlaps</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.avoidConflicts}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, avoidConflicts: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className={styles.divider} />
+
+                        </div>
+                      </div>
+
+                      {/* Soft Constraint Penalties */}
+                      <div className={styles.formCard}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                          <h3 className={styles.formSectionTitle} style={{ margin: 0 }}>
+                            <FaBolt /> Soft Constraint Penalties (Fine-Tuning)
+                          </h3>
+                          <button
+                            className={styles.backButton}
+                            style={{ margin: 0, padding: '8px 16px', fontSize: '13px' }}
+                            onClick={resetPenalties}
+                          >
+                            <FaSync /> Reset to Defaults
+                          </button>
+                        </div>
+                        <div className={styles.timeConfigInfo}>
+                          <FaBolt size={20} />
+                          <p>Adjust these values to change how the algorithm prioritizes different soft constraints. Higher values mean the algorithm will try harder to avoid that specific issue. Use 0 to ignore a constraint.</p>
+                        </div>
+
+                        <div className={styles.penaltyGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '20px' }}>
+                          {/* Room & Capacity Penalties */}
+                          <div className={styles.penaltyGroup}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <FaBuilding /> Room & Capacity
+                            </h4>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Room Type Mismatch <span className={styles.formHint}>Lecture in Lab or vice versa</span></label>
+                              <input type="number" className={styles.formInput} value={config.softRoomTypeMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMismatch: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Major Type Mismatch <span className={styles.formHint}>Specialized room mismatch</span></label>
+                              <input type="number" className={styles.formInput} value={config.softRoomTypeMajorMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMajorMismatch: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Capacity Waste <span className={styles.formHint}>Penalty per wasted seat</span></label>
+                              <input type="number" className={styles.formInput} value={config.softCapacityWaste} onChange={e => setConfig(p => ({ ...p, softCapacityWaste: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Accessibility Bonus <span className={styles.formHint}>Lower is better (negative value)</span></label>
+                              <input type="number" className={styles.formInput} value={config.softAccessibilityBonus} onChange={e => setConfig(p => ({ ...p, softAccessibilityBonus: parseInt(e.target.value) }))} />
+                            </div>
+                          </div>
+
+                          {/* Faculty Welfare Penalties */}
+                          <div className={styles.penaltyGroup}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <FaChalkboardTeacher /> Faculty Welfare
+                            </h4>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Consecutive Hours <span className={styles.formHint}>Exceeding max hours without break</span></label>
+                              <input type="number" className={styles.formInput} value={config.softConsecutiveHoursExceeded} onChange={e => setConfig(p => ({ ...p, softConsecutiveHoursExceeded: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>No Break Penalty <span className={styles.formHint}>Missing required lunch break</span></label>
+                              <input type="number" className={styles.formInput} value={config.softTeacherNoBreak} onChange={e => setConfig(p => ({ ...p, softTeacherNoBreak: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Faculty Daily Span <span className={styles.formHint}>Penalty for {'>'}10hr daily span</span></label>
+                              <input type="number" className={styles.formInput} value={config.softFacultyDailySpan} onChange={e => setConfig(p => ({ ...p, softFacultyDailySpan: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Night Class Penalty <span className={styles.formHint}>FT faculty night class without preference</span></label>
+                              <input type="number" className={styles.formInput} value={config.softFacultyNightClass} onChange={e => setConfig(p => ({ ...p, softFacultyNightClass: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Idle Time Penalty <span className={styles.formHint}>Long gaps between classes</span></label>
+                              <input type="number" className={styles.formInput} value={config.softFacultyIdleTime} onChange={e => setConfig(p => ({ ...p, softFacultyIdleTime: parseInt(e.target.value) }))} />
+                            </div>
+                          </div>
+
+                          {/* Schedule Quality Penalties */}
+                          <div className={styles.penaltyGroup}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <MdTableChart /> Schedule Quality
+                            </h4>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Lunch Overlap <span className={styles.formHint}>Classes during lunch hours</span></label>
+                              <input type="number" className={styles.formInput} value={config.softLunchOverlap} onChange={e => setConfig(p => ({ ...p, softLunchOverlap: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Day Distribution <span className={styles.formHint}>Poor spreading across days</span></label>
+                              <input type="number" className={styles.formInput} value={config.softDayDistribution} onChange={e => setConfig(p => ({ ...p, softDayDistribution: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Uneven Section Dist <span className={styles.formHint}>Sections of same course on same day</span></label>
+                              <input type="number" className={styles.formInput} value={config.softUnevenSectionDist} onChange={e => setConfig(p => ({ ...p, softUnevenSectionDist: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Section Gap <span className={styles.formHint}>Long gaps between subject sessions</span></label>
+                              <input type="number" className={styles.formInput} value={config.softSectionGap} onChange={e => setConfig(p => ({ ...p, softSectionGap: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Late Class <span className={styles.formHint}>Penalty for classes after 6PM</span></label>
+                              <input type="number" className={styles.formInput} value={config.softLateClass} onChange={e => setConfig(p => ({ ...p, softLateClass: parseInt(e.target.value) }))} />
+                            </div>
+                          </div>
+
+                          {/* Professional Constraints */}
+                          <div className={styles.penaltyGroup}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <FaUserGraduate /> Specific Rules
+                            </h4>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>VSL Shift Mismatch <span className={styles.formHint}>VSL faculty outside shift pref</span></label>
+                              <input type="number" className={styles.formInput} value={config.softVslShiftMismatch} onChange={e => setConfig(p => ({ ...p, softVslShiftMismatch: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Part-Time Sat <span className={styles.formHint}>Part-timers on Saturdays</span></label>
+                              <input type="number" className={styles.formInput} value={config.softPartTimeSaturday} onChange={e => setConfig(p => ({ ...p, softPartTimeSaturday: parseInt(e.target.value) }))} />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label className={styles.formLabel}>Morning Preference <span className={styles.formHint}>Bonus for morning sessions</span></label>
+                              <input type="number" className={styles.formInput} value={config.softMorningPreference} onChange={e => setConfig(p => ({ ...p, softMorningPreference: parseInt(e.target.value) }))} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  )}
 
                   {/* Advanced Settings Toggle */}
                   <div className={styles.advancedToggle}>
@@ -4442,124 +4632,6 @@ export default function GenerateSchedulePage() {
                     </div>
                   )}
 
-                  {/* Soft Constraint Penalties */}
-                  <div className={styles.formCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                      <h3 className={styles.formSectionTitle} style={{ margin: 0 }}>
-                        <FaBolt /> Soft Constraint Penalties (Fine-Tuning)
-                      </h3>
-                      <button
-                        className={styles.backButton}
-                        style={{ margin: 0, padding: '8px 16px', fontSize: '13px' }}
-                        onClick={resetPenalties}
-                      >
-                        <FaSync /> Reset to Defaults
-                      </button>
-                    </div>
-                    <div className={styles.timeConfigInfo}>
-                      <FaBolt size={20} />
-                      <p>Adjust these values to change how the algorithm prioritizes different soft constraints. Higher values mean the algorithm will try harder to avoid that specific issue. Use 0 to ignore a constraint.</p>
-                    </div>
-
-                    <div className={styles.penaltyGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '20px' }}>
-                      {/* Room & Capacity Penalties */}
-                      <div className={styles.penaltyGroup}>
-                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FaBuilding /> Room & Capacity
-                        </h4>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Room Type Mismatch <span className={styles.formHint}>Lecture in Lab or vice versa</span></label>
-                          <input type="number" className={styles.formInput} value={config.softRoomTypeMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMismatch: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Major Type Mismatch <span className={styles.formHint}>Specialized room mismatch</span></label>
-                          <input type="number" className={styles.formInput} value={config.softRoomTypeMajorMismatch} onChange={e => setConfig(p => ({ ...p, softRoomTypeMajorMismatch: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Capacity Waste <span className={styles.formHint}>Penalty per wasted seat</span></label>
-                          <input type="number" className={styles.formInput} value={config.softCapacityWaste} onChange={e => setConfig(p => ({ ...p, softCapacityWaste: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Accessibility Bonus <span className={styles.formHint}>Lower is better (negative value)</span></label>
-                          <input type="number" className={styles.formInput} value={config.softAccessibilityBonus} onChange={e => setConfig(p => ({ ...p, softAccessibilityBonus: parseInt(e.target.value) }))} />
-                        </div>
-                      </div>
-
-                      {/* Faculty Welfare Penalties */}
-                      <div className={styles.penaltyGroup}>
-                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FaChalkboardTeacher /> Faculty Welfare
-                        </h4>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Consecutive Hours <span className={styles.formHint}>Exceeding max hours without break</span></label>
-                          <input type="number" className={styles.formInput} value={config.softConsecutiveHoursExceeded} onChange={e => setConfig(p => ({ ...p, softConsecutiveHoursExceeded: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>No Break Penalty <span className={styles.formHint}>Missing required lunch break</span></label>
-                          <input type="number" className={styles.formInput} value={config.softTeacherNoBreak} onChange={e => setConfig(p => ({ ...p, softTeacherNoBreak: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Faculty Daily Span <span className={styles.formHint}>Penalty for >10hr daily span</span></label>
-                          <input type="number" className={styles.formInput} value={config.softFacultyDailySpan} onChange={e => setConfig(p => ({ ...p, softFacultyDailySpan: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Night Class Penalty <span className={styles.formHint}>FT faculty night class without preference</span></label>
-                          <input type="number" className={styles.formInput} value={config.softFacultyNightClass} onChange={e => setConfig(p => ({ ...p, softFacultyNightClass: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Idle Time Penalty <span className={styles.formHint}>Long gaps between classes</span></label>
-                          <input type="number" className={styles.formInput} value={config.softFacultyIdleTime} onChange={e => setConfig(p => ({ ...p, softFacultyIdleTime: parseInt(e.target.value) }))} />
-                        </div>
-                      </div>
-
-                      {/* Schedule Quality Penalties */}
-                      <div className={styles.penaltyGroup}>
-                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <MdTableChart /> Schedule Quality
-                        </h4>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Lunch Overlap <span className={styles.formHint}>Classes during lunch hours</span></label>
-                          <input type="number" className={styles.formInput} value={config.softLunchOverlap} onChange={e => setConfig(p => ({ ...p, softLunchOverlap: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Day Distribution <span className={styles.formHint}>Poor spreading across days</span></label>
-                          <input type="number" className={styles.formInput} value={config.softDayDistribution} onChange={e => setConfig(p => ({ ...p, softDayDistribution: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Uneven Section Dist <span className={styles.formHint}>Sections of same course on same day</span></label>
-                          <input type="number" className={styles.formInput} value={config.softUnevenSectionDist} onChange={e => setConfig(p => ({ ...p, softUnevenSectionDist: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Section Gap <span className={styles.formHint}>Long gaps between subject sessions</span></label>
-                          <input type="number" className={styles.formInput} value={config.softSectionGap} onChange={e => setConfig(p => ({ ...p, softSectionGap: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Late Class <span className={styles.formHint}>Penalty for classes after 6PM</span></label>
-                          <input type="number" className={styles.formInput} value={config.softLateClass} onChange={e => setConfig(p => ({ ...p, softLateClass: parseInt(e.target.value) }))} />
-                        </div>
-                      </div>
-
-                      {/* Professional Constraints */}
-                      <div className={styles.penaltyGroup}>
-                        <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <FaUserGraduate /> Specific Rules
-                        </h4>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>VSL Shift Mismatch <span className={styles.formHint}>VSL faculty outside shift pref</span></label>
-                          <input type="number" className={styles.formInput} value={config.softVslShiftMismatch} onChange={e => setConfig(p => ({ ...p, softVslShiftMismatch: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Part-Time Sat <span className={styles.formHint}>Part-timers on Saturdays</span></label>
-                          <input type="number" className={styles.formInput} value={config.softPartTimeSaturday} onChange={e => setConfig(p => ({ ...p, softPartTimeSaturday: parseInt(e.target.value) }))} />
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Morning Preference <span className={styles.formHint}>Bonus for morning sessions</span></label>
-                          <input type="number" className={styles.formInput} value={config.softMorningPreference} onChange={e => setConfig(p => ({ ...p, softMorningPreference: parseInt(e.target.value) }))} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Navigation & Generate */}
                   <div className={styles.stepNavigation}>
                     <button className={styles.backStepButton} onClick={() => goToStep(2)}>
@@ -4608,355 +4680,354 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
                 </div>
-                </div>
+              )}
+            </div>
           )}
         </div>
-          )}
-    </div>
       </main >
 
-    {/* File Viewer Modal */ }
-  {
-    showClassFileViewer && (
-      <div className={styles.modalOverlay} onClick={closeFileViewer}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h2>
-              <MdMenuBook size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
-                ? selectedBatchInfoList[0]?.year_batch
-                : `${selectedBatchInfoList.length} Year Batches`}
-            </h2>
-            <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
-              <MdClose size={24} />
-            </button>
-          </div>
+      {/* File Viewer Modal */}
+      {
+        showClassFileViewer && (
+          <div className={styles.modalOverlay} onClick={closeFileViewer}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2>
+                  <MdMenuBook size={24} /> Sections & Assigned Courses: {selectedBatchInfoList.length === 1
+                    ? selectedBatchInfoList[0]?.year_batch
+                    : `${selectedBatchInfoList.length} Year Batches`}
+                </h2>
+                <button className={styles.modalCloseBtn} onClick={closeFileViewer}>
+                  <MdClose size={24} />
+                </button>
+              </div>
 
-          <div className={styles.modalBody}>
-            {viewerLoading ? (
-              <div className={styles.modalLoading}>
-                <FaSpinner className={styles.spinnerIcon} />
-                <p>Loading data...</p>
+              <div className={styles.modalBody}>
+                {viewerLoading ? (
+                  <div className={styles.modalLoading}>
+                    <FaSpinner className={styles.spinnerIcon} />
+                    <p>Loading data...</p>
+                  </div>
+                ) : viewerData.length === 0 ? (
+                  <div className={styles.modalEmpty}>
+                    <p>No data found.</p>
+                  </div>
+                ) : (
+                  <div className={styles.tableWrapper}>
+                    <table className={styles.viewerTable}>
+                      <thead>
+                        <tr>
+                          <th>Course Code</th>
+                          <th>Course Name</th>
+                          <th>Section</th>
+                          <th>Year Level</th>
+                          <th>Students</th>
+                          <th>Lec Hours</th>
+                          <th>Lab Hours</th>
+                          <th>Department</th>
+                          <th>Semester</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewerData.map((item: any, idx: number) => (
+                          <tr key={idx}>
+                            <td>{item.course_code || 'N/A'}</td>
+                            <td>{item.course_name || 'N/A'}</td>
+                            <td>{item.section || 'N/A'}</td>
+                            <td>{item.year_level || 'N/A'}</td>
+                            <td>{item.student_count || 'N/A'}</td>
+                            <td>{item.lec_hours || 0}</td>
+                            <td>{item.lab_hours || 0}</td>
+                            <td>{item.department || 'N/A'}</td>
+                            <td>{item.semester || 'N/A'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className={styles.modalFooter}>
+                  <p><strong>Total Records:</strong> {viewerData.length}</p>
+                </div>
               </div>
-            ) : viewerData.length === 0 ? (
-              <div className={styles.modalEmpty}>
-                <p>No data found.</p>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Unassigned Courses Warning Modal */}
+      {
+        showUnassignedWarning && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.unassignedModal}>
+              <div className={styles.warningModalHeader}>
+                <h3 className={styles.warningModalTitle}>
+                  <FaExclamationTriangle /> Courses Without Assigned Professors
+                </h3>
+                <button className={styles.closeModalButton} onClick={() => setShowUnassignedWarning(false)}>
+                  <FaTimes />
+                </button>
               </div>
-            ) : (
-              <div className={styles.tableWrapper}>
-                <table className={styles.viewerTable}>
+
+              <div className={styles.warningModalBody}>
+                <div className={styles.warningBox}>
+                  <p className={styles.warningTitle}>
+                    ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
+                  </p>
+                  <p className={styles.warningDescription}>
+                    Please assign professors to these courses in the Teaching Load Assignment page,
+                    or you can bypass this check and schedule them without professors (TBD will be shown).
+                  </p>
+                </div>
+
+                <div className={styles.warningActions}>
+                  <button
+                    onClick={downloadUnassignedCoursesCSV}
+                    className={`${styles.warningActionBtn} ${styles.download}`}
+                  >
+                    <FaDownload /> Download CSV of Unassigned Courses
+                  </button>
+                  <button
+                    onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
+                    className={`${styles.warningActionBtn} ${styles.teaching}`}
+                  >
+                    <FaChalkboardTeacher /> Go to Teaching Load Assignment
+                  </button>
+                </div>
+
+                <div className={styles.tableScrollContainer}>
+                  <table className={styles.viewerTable}>
+                    <thead>
+                      <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Section</th>
+                        <th>Department</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {unassignedCourses.map((course, idx) => (
+                        <tr key={idx}>
+                          <td>{course.course_code}</td>
+                          <td>{course.course_name}</td>
+                          <td>{course.section}</td>
+                          <td>{course.department}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className={styles.bypassSection}>
+                  <label className={styles.bypassLabel}>
+                    <input
+                      type="checkbox"
+                      checked={bypassTeacherCheck}
+                      onChange={(e) => setBypassTeacherCheck(e.target.checked)}
+                    />
+                    <span>
+                      Bypass teacher check (Professors will be shown as &quot;TBD&quot; in schedule)
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.warningModalFooter}>
+                <div className={styles.modalActions}>
+                  <button
+                    onClick={() => setShowUnassignedWarning(false)}
+                    className={styles.cancelBtn}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (bypassTeacherCheck) {
+                        executeScheduleGeneration()
+                      } else {
+                        toast.warning('Bypass Required', {
+                          description: 'Please enable the bypass option to proceed without assigned professors.',
+                        })
+                      }
+                    }}
+                    disabled={!bypassTeacherCheck}
+                    className={styles.proceedBtn}
+                  >
+                    <FaPlay /> Proceed with Scheduling
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* View All Rooms Modal */}
+      {
+        showAllRooms && (
+          <div className={styles.modalOverlay} onClick={() => setShowAllRooms(false)}>
+            <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.viewAllModalHeader}>
+                <h3 className={styles.viewAllModalTitle}>
+                  <MdMeetingRoom size={24} /> All Rooms ({getFilteredRooms().length})
+                </h3>
+                <button className={styles.closeModalButton} onClick={() => setShowAllRooms(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className={styles.viewAllModalSearch}>
+                <input
+                  type="text"
+                  placeholder="Search rooms..."
+                  value={previewSearchQuery}
+                  onChange={(e) => setPreviewSearchQuery(e.target.value)}
+                  className={styles.viewAllSearchInput}
+                />
+              </div>
+
+              <div className={styles.viewAllModalBody}>
+                <table className={styles.viewAllTable}>
+                  <thead>
+                    <tr>
+                      <th>Room</th>
+                      <th>Building</th>
+                      <th>Campus</th>
+                      <th>Capacity</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getFilteredRooms()
+                      .filter(room =>
+                        previewSearchQuery === '' ||
+                        room.room.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        room.building.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        room.campus.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        room.room_type.toLowerCase().includes(previewSearchQuery.toLowerCase())
+                      )
+                      .map(room => (
+                        <tr key={room.id}>
+                          <td>{room.room}</td>
+                          <td>{room.building}</td>
+                          <td>{room.campus}</td>
+                          <td>{room.capacity}</td>
+                          <td>{room.room_type}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={styles.viewAllModalFooter}>
+                <button className={styles.closeBtn} onClick={() => setShowAllRooms(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* View All Classes Modal */}
+      {
+        showAllClasses && (
+          <div className={styles.modalOverlay} onClick={() => setShowAllClasses(false)}>
+            <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.viewAllModalHeader}>
+                <h3 className={styles.viewAllModalTitle}>
+                  <MdMenuBook size={24} /> All Classes ({classes.length})
+                </h3>
+                <button className={styles.closeModalButton} onClick={() => setShowAllClasses(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className={styles.viewAllModalSearch}>
+                <input
+                  type="text"
+                  placeholder="Search classes..."
+                  value={previewSearchQuery}
+                  onChange={(e) => setPreviewSearchQuery(e.target.value)}
+                  className={styles.viewAllSearchInput}
+                />
+              </div>
+
+              <div className={styles.viewAllModalBody}>
+                <table className={styles.viewAllTable}>
                   <thead>
                     <tr>
                       <th>Course Code</th>
                       <th>Course Name</th>
                       <th>Section</th>
-                      <th>Year Level</th>
-                      <th>Students</th>
+                      <th>Day</th>
+                      <th>Time</th>
                       <th>Lec Hours</th>
                       <th>Lab Hours</th>
-                      <th>Department</th>
-                      <th>Semester</th>
+                      <th>Professor</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {viewerData.map((item: any, idx: number) => (
-                      <tr key={idx}>
-                        <td>{item.course_code || 'N/A'}</td>
-                        <td>{item.course_name || 'N/A'}</td>
-                        <td>{item.section || 'N/A'}</td>
-                        <td>{item.year_level || 'N/A'}</td>
-                        <td>{item.student_count || 'N/A'}</td>
-                        <td>{item.lec_hours || 0}</td>
-                        <td>{item.lab_hours || 0}</td>
-                        <td>{item.department || 'N/A'}</td>
-                        <td>{item.semester || 'N/A'}</td>
-                      </tr>
-                    ))}
+                    {classes
+                      .filter(cls =>
+                        previewSearchQuery === '' ||
+                        cls.course_code.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        cls.course_name.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        cls.section.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
+                        (cls.schedule_day && cls.schedule_day.toLowerCase().includes(previewSearchQuery.toLowerCase()))
+                      )
+                      .map(cls => (
+                        <tr key={cls.id}>
+                          <td>{cls.course_code}</td>
+                          <td>{cls.course_name}</td>
+                          <td>{cls.section}</td>
+                          <td>{cls.schedule_day || 'TBD'}</td>
+                          <td>{cls.schedule_time || 'TBD'}</td>
+                          <td>{cls.lec_hours}h</td>
+                          <td>{cls.lab_hours}h</td>
+                          <td>{cls.teacher_name || 'TBD'}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
-            )}
 
-            <div className={styles.modalFooter}>
-              <p><strong>Total Records:</strong> {viewerData.length}</p>
+              <div className={styles.viewAllModalFooter}>
+                <button className={styles.closeBtn} onClick={() => setShowAllClasses(false)}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  {/* Unassigned Courses Warning Modal */ }
-  {
-    showUnassignedWarning && (
-      <div className={styles.modalOverlay}>
-        <div className={styles.unassignedModal}>
-          <div className={styles.warningModalHeader}>
-            <h3 className={styles.warningModalTitle}>
-              <FaExclamationTriangle /> Courses Without Assigned Professors
-            </h3>
-            <button className={styles.closeModalButton} onClick={() => setShowUnassignedWarning(false)}>
-              <FaTimes />
-            </button>
-          </div>
-
-          <div className={styles.warningModalBody}>
-            <div className={styles.warningBox}>
-              <p className={styles.warningTitle}>
-                ⚠️ {unassignedCourses.length} course(s) do not have assigned professors yet.
-              </p>
-              <p className={styles.warningDescription}>
-                Please assign professors to these courses in the Teaching Load Assignment page,
-                or you can bypass this check and schedule them without professors (TBD will be shown).
-              </p>
-            </div>
-
-            <div className={styles.warningActions}>
-              <button
-                onClick={downloadUnassignedCoursesCSV}
-                className={`${styles.warningActionBtn} ${styles.download}`}
-              >
-                <FaDownload /> Download CSV of Unassigned Courses
-              </button>
-              <button
-                onClick={() => router.push('/LandingPages/FacultyColleges/TeachingLoadAssignment')}
-                className={`${styles.warningActionBtn} ${styles.teaching}`}
-              >
-                <FaChalkboardTeacher /> Go to Teaching Load Assignment
-              </button>
-            </div>
-
-            <div className={styles.tableScrollContainer}>
-              <table className={styles.viewerTable}>
-                <thead>
-                  <tr>
-                    <th>Course Code</th>
-                    <th>Course Name</th>
-                    <th>Section</th>
-                    <th>Department</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unassignedCourses.map((course, idx) => (
-                    <tr key={idx}>
-                      <td>{course.course_code}</td>
-                      <td>{course.course_name}</td>
-                      <td>{course.section}</td>
-                      <td>{course.department}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className={styles.bypassSection}>
-              <label className={styles.bypassLabel}>
-                <input
-                  type="checkbox"
-                  checked={bypassTeacherCheck}
-                  onChange={(e) => setBypassTeacherCheck(e.target.checked)}
-                />
-                <span>
-                  Bypass teacher check (Professors will be shown as "TBD" in schedule)
-                </span>
-              </label>
-            </div>
-          </div>
-
-          <div className={styles.warningModalFooter}>
-            <div className={styles.modalActions}>
-              <button
-                onClick={() => setShowUnassignedWarning(false)}
-                className={styles.cancelBtn}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (bypassTeacherCheck) {
-                    executeScheduleGeneration()
-                  } else {
-                    toast.warning('Bypass Required', {
-                      description: 'Please enable the bypass option to proceed without assigned professors.',
-                    })
-                  }
-                }}
-                disabled={!bypassTeacherCheck}
-                className={styles.proceedBtn}
-              >
-                <FaPlay /> Proceed with Scheduling
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  {/* View All Rooms Modal */ }
-  {
-    showAllRooms && (
-      <div className={styles.modalOverlay} onClick={() => setShowAllRooms(false)}>
-        <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.viewAllModalHeader}>
-            <h3 className={styles.viewAllModalTitle}>
-              <MdMeetingRoom size={24} /> All Rooms ({getFilteredRooms().length})
-            </h3>
-            <button className={styles.closeModalButton} onClick={() => setShowAllRooms(false)}>
-              <FaTimes />
-            </button>
-          </div>
-
-          <div className={styles.viewAllModalSearch}>
-            <input
-              type="text"
-              placeholder="Search rooms..."
-              value={previewSearchQuery}
-              onChange={(e) => setPreviewSearchQuery(e.target.value)}
-              className={styles.viewAllSearchInput}
-            />
-          </div>
-
-          <div className={styles.viewAllModalBody}>
-            <table className={styles.viewAllTable}>
-              <thead>
-                <tr>
-                  <th>Room</th>
-                  <th>Building</th>
-                  <th>Campus</th>
-                  <th>Capacity</th>
-                  <th>Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredRooms()
-                  .filter(room =>
-                    previewSearchQuery === '' ||
-                    room.room.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    room.building.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    room.campus.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    room.room_type.toLowerCase().includes(previewSearchQuery.toLowerCase())
-                  )
-                  .map(room => (
-                    <tr key={room.id}>
-                      <td>{room.room}</td>
-                      <td>{room.building}</td>
-                      <td>{room.campus}</td>
-                      <td>{room.capacity}</td>
-                      <td>{room.room_type}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className={styles.viewAllModalFooter}>
-            <button className={styles.closeBtn} onClick={() => setShowAllRooms(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  {/* View All Classes Modal */ }
-  {
-    showAllClasses && (
-      <div className={styles.modalOverlay} onClick={() => setShowAllClasses(false)}>
-        <div className={styles.viewAllModal} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.viewAllModalHeader}>
-            <h3 className={styles.viewAllModalTitle}>
-              <MdMenuBook size={24} /> All Classes ({classes.length})
-            </h3>
-            <button className={styles.closeModalButton} onClick={() => setShowAllClasses(false)}>
-              <FaTimes />
-            </button>
-          </div>
-
-          <div className={styles.viewAllModalSearch}>
-            <input
-              type="text"
-              placeholder="Search classes..."
-              value={previewSearchQuery}
-              onChange={(e) => setPreviewSearchQuery(e.target.value)}
-              className={styles.viewAllSearchInput}
-            />
-          </div>
-
-          <div className={styles.viewAllModalBody}>
-            <table className={styles.viewAllTable}>
-              <thead>
-                <tr>
-                  <th>Course Code</th>
-                  <th>Course Name</th>
-                  <th>Section</th>
-                  <th>Day</th>
-                  <th>Time</th>
-                  <th>Lec Hours</th>
-                  <th>Lab Hours</th>
-                  <th>Professor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classes
-                  .filter(cls =>
-                    previewSearchQuery === '' ||
-                    cls.course_code.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    cls.course_name.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    cls.section.toLowerCase().includes(previewSearchQuery.toLowerCase()) ||
-                    (cls.schedule_day && cls.schedule_day.toLowerCase().includes(previewSearchQuery.toLowerCase()))
-                  )
-                  .map(cls => (
-                    <tr key={cls.id}>
-                      <td>{cls.course_code}</td>
-                      <td>{cls.course_name}</td>
-                      <td>{cls.section}</td>
-                      <td>{cls.schedule_day || 'TBD'}</td>
-                      <td>{cls.schedule_time || 'TBD'}</td>
-                      <td>{cls.lec_hours}h</td>
-                      <td>{cls.lab_hours}h</td>
-                      <td>{cls.teacher_name || 'TBD'}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className={styles.viewAllModalFooter}>
-            <button className={styles.closeBtn} onClick={() => setShowAllClasses(false)}>
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  {/* Manual Edit Modal */ }
-  <ManualEditModal
-    isOpen={showManualModal}
-    onClose={() => setShowManualModal(false)}
-    onSave={(newManualAllocations) => {
-      setManualAllocations(newManualAllocations)
-      toast.success('Manual preferences saved', {
-        description: `${newManualAllocations.length} classes will be prioritized during generation.`
-      })
-
-      if (newManualAllocations.length > 0) {
-        createSystemAlert({
-          title: 'Manual Preferences Updated',
-          message: `${newManualAllocations.length} manual allocations have been set for the next schedule generation.`,
-          audience: 'admin',
-          severity: 'info',
-          category: 'manual_edit'
-        })
+        )
       }
-    }}
-    rooms={getFilteredRooms()}
-    classes={allLoadedClasses}
-    timeSettings={timeSettings}
-    initialAllocations={manualAllocations}
-  />
+
+      {/* Manual Edit Modal */}
+      <ManualEditModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onSave={(newManualAllocations) => {
+          setManualAllocations(newManualAllocations)
+          toast.success('Manual preferences saved', {
+            description: `${newManualAllocations.length} classes will be prioritized during generation.`
+          })
+
+          if (newManualAllocations.length > 0) {
+            createSystemAlert({
+              title: 'Manual Preferences Updated',
+              message: `${newManualAllocations.length} manual allocations have been set for the next schedule generation.`,
+              audience: 'admin',
+              severity: 'info',
+              category: 'manual_edit'
+            })
+          }
+        }}
+        rooms={getFilteredRooms()}
+        classes={allLoadedClasses}
+        timeSettings={timeSettings}
+        initialAllocations={manualAllocations}
+      />
     </div >
   )
 }
