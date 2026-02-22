@@ -10,17 +10,25 @@ const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
 // Service role to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    global: { fetch: fetchWithNoCache }
-  }
-)
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabaseAdmin) {
+      _supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          },
+          global: { fetch: fetchWithNoCache }
+        }
+      )
+    }
+    return (_supabaseAdmin as any)[prop]
+  },
+})
 
 export async function GET(request: NextRequest) {
   try {

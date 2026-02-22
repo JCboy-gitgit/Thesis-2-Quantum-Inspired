@@ -10,11 +10,19 @@ export const revalidate = 0
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { global: { fetch: fetchWithNoCache } }
-)
+let _supabase: ReturnType<typeof createClient> | null = null
+const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabase) {
+      _supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithNoCache } }
+      )
+    }
+    return (_supabase as any)[prop]
+  },
+})
 
 export async function POST(req: NextRequest) {
   console.log('\n' + '='.repeat(80))

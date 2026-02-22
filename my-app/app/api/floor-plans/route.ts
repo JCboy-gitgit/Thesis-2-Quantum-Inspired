@@ -7,9 +7,17 @@ export const revalidate = 0
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  global: {
-    fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
+let _supabase: ReturnType<typeof createClient> | null = null
+const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabase) {
+      _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
+        },
+      })
+    }
+    return (_supabase as any)[prop]
   },
 })
 

@@ -3,32 +3,49 @@ import { createClient } from '@supabase/supabase-js'
 // Re-export all types from database.types for convenience
 export * from './database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Lazy singleton — created on first property access so the module can be
+// safely imported at build time even when env vars are not yet available.
+let _supabaseInstance: ReturnType<typeof createClient> | null = null
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+function getSupabaseInstance() {
+  if (!_supabaseInstance) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    // Create typed Supabase client with session persistence
+    // IMPORTANT: Disable fetch caching to always get fresh data
+    _supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'supabase.auth.token',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // Session expires in 7 days (604800 seconds) when "keep me signed in" is used
+        // This is controlled at Supabase dashboard level, but we ensure refresh is enabled
+      },
+      global: {
+        // Disable Next.js fetch caching for all Supabase requests
+        fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
+          return fetch(url, {
+            ...options,
+            cache: 'no-store',
+          })
+        },
+      },
+    })
+  }
+  return _supabaseInstance
 }
 
-// Create typed Supabase client with session persistence
-// IMPORTANT: Disable fetch caching to always get fresh data
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    storageKey: 'supabase.auth.token',
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    // Session expires in 7 days (604800 seconds) when "keep me signed in" is used
-    // This is controlled at Supabase dashboard level, but we ensure refresh is enabled
-  },
-  global: {
-    // Disable Next.js fetch caching for all Supabase requests
-    fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
-      return fetch(url, {
-        ...options,
-        cache: 'no-store',
-      })
-    },
+// Proxy defers client creation until first use, so importing this module
+// during the Next.js build phase (without env vars) will not throw.
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    return (getSupabaseInstance() as any)[prop]
   },
 })
 

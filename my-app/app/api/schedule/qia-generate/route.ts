@@ -7,17 +7,33 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { global: { fetch: fetchWithNoCache } }
-)
+let _supabase: ReturnType<typeof createClient> | null = null
+const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabase) {
+      _supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithNoCache } }
+      )
+    }
+    return (_supabase as any)[prop]
+  },
+})
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { global: { fetch: fetchWithNoCache } }
-)
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabaseAdmin) {
+      _supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithNoCache } }
+      )
+    }
+    return (_supabaseAdmin as any)[prop]
+  },
+})
 
 export const dynamic = 'force-dynamic'
 

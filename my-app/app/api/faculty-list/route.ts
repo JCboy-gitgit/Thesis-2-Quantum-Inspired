@@ -7,11 +7,19 @@ export const revalidate = 0
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { global: { fetch: fetchWithNoCache } }
-)
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabaseAdmin) {
+      _supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithNoCache } }
+      )
+    }
+    return (_supabaseAdmin as any)[prop]
+  },
+})
 
 // GET - Fetch all faculty profiles with teaching load data (mirrors TeachingLoadAssignment page)
 export async function GET(request: NextRequest) {

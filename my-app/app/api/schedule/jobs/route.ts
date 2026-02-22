@@ -8,9 +8,17 @@ export const revalidate = 0
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  global: {
-    fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
+let _supabase: ReturnType<typeof createClient> | null = null
+const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabase) {
+      _supabase = createClient(supabaseUrl, supabaseServiceKey, {
+        global: {
+          fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }),
+        },
+      })
+    }
+    return (_supabase as any)[prop]
   },
 })
 

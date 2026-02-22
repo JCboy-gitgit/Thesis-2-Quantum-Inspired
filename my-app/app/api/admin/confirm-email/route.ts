@@ -10,11 +10,19 @@ const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
 // Use service role for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { global: { fetch: fetchWithNoCache } }
-)
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
+const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_, prop) {
+    if (!_supabaseAdmin) {
+      _supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { fetch: fetchWithNoCache } }
+      )
+    }
+    return (_supabaseAdmin as any)[prop]
+  },
+})
 
 // POST - Manually confirm a user's email (admin only)
 export async function POST(request: NextRequest) {

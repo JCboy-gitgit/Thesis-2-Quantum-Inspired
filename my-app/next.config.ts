@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
     // Optimize package imports for faster builds
     optimizePackageImports: ['lucide-react', 'react-icons'],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
