@@ -24,6 +24,7 @@ from enum import Enum
 import random
 import time
 import math
+import re
 from collections import defaultdict
 from datetime import datetime
 
@@ -820,6 +821,10 @@ class EnhancedQuantumScheduler:
             if room_id not in (None, 0) and room_id not in self.rooms:
                 print(f"   ⚠️ Skipping manual allocation with unknown room_id={room_id} for section {section_id}")
                 continue
+
+            section_code_hint = str(alloc.get('section', '') or '').strip().upper()
+            component_hint = str(alloc.get('component', '') or '').strip().lower()
+            split_hint = str(alloc.get('split_type', '') or '').strip().upper()
                 
             # 1. Find the target section(s)
             target_sections = []
@@ -827,6 +832,20 @@ class EnhancedQuantumScheduler:
                 target_sections = [self.sections[section_id]]
             elif section_id in original_map:
                 target_sections = original_map[section_id]
+
+            if not target_sections and section_code_hint:
+                normalized_hint_lookup = section_code_hint.replace('-', '_').replace(' ', '_')
+                for s in self.sections.values():
+                    normalized_code = s.section_code.upper().replace('-', '_').replace(' ', '_')
+                    if normalized_code == normalized_hint_lookup:
+                        target_sections.append(s)
+                        continue
+
+                    # Accept lecture hint by base code (e.g., "BSM CS 1A G1" -> "BSM_CS_1A_LEC")
+                    stripped_hint = re.sub(r'(?:_|\b)G[12](?:_|\b)', '_', normalized_hint_lookup)
+                    stripped_hint = re.sub(r'_+', '_', stripped_hint).strip('_')
+                    if normalized_code.endswith('_LEC') and normalized_code.startswith(stripped_hint):
+                        target_sections.append(s)
             
             if not target_sections:
                 print(f"   ⚠️ Could not find section {section_id} for manual allocation")
@@ -842,10 +861,6 @@ class EnhancedQuantumScheduler:
                 continue
             
             # 3. Match the best section (if multiple split sections exist)
-            section_code_hint = str(alloc.get('section', '') or '').strip().upper()
-            component_hint = str(alloc.get('component', '') or '').strip().lower()
-            split_hint = str(alloc.get('split_type', '') or '').strip().upper()
-
             normalized_hint = section_code_hint.replace('-', '_').replace(' ', '_')
             if not split_hint:
                 if '_G1' in normalized_hint or 'G1' in section_code_hint:
@@ -3829,6 +3844,41 @@ def run_enhanced_scheduler(
     next_generated_id = max((s.get('id', 0) for s in sections_data), default=0) + 10000  # Start generated IDs high
     split_count = 0  # Track how many sections were split
     g1_g2_split_count = 0  # Track G1/G2 splits
+    combine_split_lectures = config.get('combine_split_lectures', True)
+
+    def parse_section_group(section_code: str) -> Tuple[str, Optional[str]]:
+        raw = str(section_code or '').strip()
+        if not raw:
+            return raw, None
+
+        compact = raw.replace('_', ' ').replace('-', ' ')
+        match = re.search(r'\b(G[12])\b', compact, flags=re.IGNORECASE)
+        if not match:
+            return raw, None
+
+        group = match.group(1).upper()
+        base = re.sub(r'\bG[12]\b', ' ', compact, flags=re.IGNORECASE)
+        base = re.sub(r'\s+', ' ', base).strip()
+        return base or raw, group
+
+    # Precompute shared lecture capacity target for pre-split groups (G1/G2)
+    shared_lecture_student_counts: Dict[Tuple[str, str], int] = defaultdict(int)
+    if combine_split_lectures:
+        for src in sections_data:
+            src_lec_hours = src.get('lec_hours', 0) or 0
+            if src_lec_hours <= 0:
+                continue
+
+            src_code = src.get('section_code', src.get('section', ''))
+            src_base, src_group = parse_section_group(src_code)
+            if src_group not in ('G1', 'G2'):
+                continue
+
+            src_course = str(src.get('course_code', '') or '').strip().upper()
+            key = (src_base.upper(), src_course)
+            shared_lecture_student_counts[key] += max(1, src.get('student_count', 30) or 30)
+
+    created_shared_lecture_keys: Set[Tuple[str, str]] = set()
     
     for i, s in enumerate(sections_data):
         # lec_hours and lab_hours are the actual contact hours per week
@@ -3838,6 +3888,9 @@ def run_enhanced_scheduler(
         student_count = s.get('student_count', 30) or 30
         original_id = s.get('id', i+1)
         base_section_code = s.get('section_code', s.get('section', f'SEC-{i+1}'))
+        group_base_code, input_group = parse_section_group(base_section_code)
+        section_course_key = str(s.get('course_code', '') or '').strip().upper()
+        shared_key = (group_base_code.upper(), section_course_key)
         
         # Parse required features from list to set
         # ENHANCED: Use separate Lec/Lab requirements if available (populated by database.py)
@@ -3891,16 +3944,54 @@ def run_enhanced_scheduler(
             # This is a HYBRID course - split into two separate sections
             split_count += 1
             
-            # Generate unique IDs for the split sections
-            lec_section_id = next_generated_id
-            lab_base_id = next_generated_id + 1
-            next_generated_id += 2
-            
-            # Create LECTURE section (_LEC)
-            sections.append(create_section_obj(lec_section_id, f"{base_section_code}_LEC", lec_hours, 0, False, student_count, sibling_id=lab_base_id, s_type="lecture"))
+            # Create SHARED LECTURE section once for G1/G2 pairs (if configured)
+            if combine_split_lectures and input_group in ('G1', 'G2'):
+                if shared_key not in created_shared_lecture_keys:
+                    lec_section_id = next_generated_id
+                    next_generated_id += 1
+                    merged_count = shared_lecture_student_counts.get(shared_key, student_count)
+                    sections.append(create_section_obj(
+                        lec_section_id,
+                        f"{group_base_code}_LEC",
+                        lec_hours,
+                        0,
+                        False,
+                        merged_count,
+                        parent_id=original_id,
+                        s_type="lecture"
+                    ))
+                    created_shared_lecture_keys.add(shared_key)
+            else:
+                lec_section_id = next_generated_id
+                lab_base_id = next_generated_id + 1
+                next_generated_id += 2
+                sections.append(create_section_obj(
+                    lec_section_id,
+                    f"{base_section_code}_LEC",
+                    lec_hours,
+                    0,
+                    False,
+                    student_count,
+                    sibling_id=lab_base_id,
+                    s_type="lecture"
+                ))
             
             # Check if LABORATORY section needs G1/G2 split
-            if should_split_lab(student_count, lab_hours):
+            if combine_split_lectures and input_group in ('G1', 'G2'):
+                # Already pre-split at source by G1/G2: keep group-specific lab as-is
+                sections.append(create_section_obj(
+                    next_generated_id,
+                    f"{group_base_code}_{input_group}_LAB",
+                    0,
+                    lab_hours,
+                    True,
+                    student_count,
+                    parent_id=original_id,
+                    s_type="lab",
+                    split_t=input_group
+                ))
+                next_generated_id += 1
+            elif should_split_lab(student_count, lab_hours):
                 g1_g2_split_count += 1
                 g1_id = next_generated_id
                 g2_id = next_generated_id + 1
@@ -3920,8 +4011,38 @@ def run_enhanced_scheduler(
                 weekly_hours = 3
             
             is_lab_only = lab_hours > 0 and lec_hours == 0
+            is_lecture_only = lec_hours > 0 and lab_hours == 0
             
-            if is_lab_only and should_split_lab(student_count, lab_hours):
+            if combine_split_lectures and is_lecture_only and input_group in ('G1', 'G2'):
+                if shared_key not in created_shared_lecture_keys:
+                    merged_count = shared_lecture_student_counts.get(shared_key, student_count)
+                    sections.append(create_section_obj(
+                        next_generated_id,
+                        f"{group_base_code}_LEC",
+                        lec_hours,
+                        0,
+                        False,
+                        merged_count,
+                        parent_id=original_id,
+                        s_type="lecture"
+                    ))
+                    next_generated_id += 1
+                    created_shared_lecture_keys.add(shared_key)
+            elif is_lab_only and combine_split_lectures and input_group in ('G1', 'G2'):
+                # Already split by input groups, keep one lab section per group
+                sections.append(create_section_obj(
+                    next_generated_id,
+                    f"{group_base_code}_{input_group}",
+                    0,
+                    lab_hours,
+                    True,
+                    student_count,
+                    parent_id=original_id,
+                    s_type="lab",
+                    split_t=input_group
+                ))
+                next_generated_id += 1
+            elif is_lab_only and should_split_lab(student_count, lab_hours):
                 g1_g2_split_count += 1
                 g1_id = next_generated_id
                 g2_id = next_generated_id + 1

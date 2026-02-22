@@ -120,6 +120,92 @@ interface TimetableCell {
   allocations: RoomAllocation[]
 }
 
+type SectionGroup = 'G1' | 'G2'
+
+const normalizeSectionBase = (section: string): string => {
+  if (!section) return ''
+  return section
+    .replace(/_LAB$/i, '')
+    .replace(/_LEC$/i, '')
+    .replace(/_LECTURE$/i, '')
+    .replace(/_LABORATORY$/i, '')
+    .replace(/_G[12](_LAB)?$/i, '')
+    .replace(/ G[12]$/i, '')
+    .replace(/, LAB$/i, '')
+    .replace(/, LEC$/i, '')
+    .replace(/, LECTURE$/i, '')
+    .replace(/, LABORATORY$/i, '')
+    .replace(/ LAB$/i, '')
+    .replace(/ LEC$/i, '')
+    .replace(/-LAB$/i, '')
+    .replace(/-LEC$/i, '')
+    .trim()
+}
+
+const extractSectionGroup = (section: string): SectionGroup | null => {
+  if (!section) return null
+  const normalized = section.replace(/[-_]/g, ' ')
+  const match = normalized.match(/\b(G1|G2)\b/i)
+  if (!match) return null
+  const group = match[1].toUpperCase()
+  return group === 'G1' || group === 'G2' ? group : null
+}
+
+const parseSectionViewLabel = (label: string): { base: string, group: SectionGroup | null } => {
+  const trimmed = (label || '').trim()
+  const match = trimmed.match(/^(.*)\s+(G1|G2)$/i)
+  if (!match) {
+    return { base: normalizeSectionBase(trimmed), group: null }
+  }
+  return {
+    base: normalizeSectionBase(match[1].trim()),
+    group: match[2].toUpperCase() as SectionGroup
+  }
+}
+
+const buildSectionViewOptions = (allocations: RoomAllocation[]): string[] => {
+  const baseGroups = new Map<string, Set<SectionGroup>>()
+
+  allocations.forEach((allocation) => {
+    const base = normalizeSectionBase(allocation.section || '')
+    if (!base) return
+    const group = extractSectionGroup(allocation.section || '')
+    if (!group) return
+    if (!baseGroups.has(base)) baseGroups.set(base, new Set())
+    baseGroups.get(base)!.add(group)
+  })
+
+  const labels = new Set<string>()
+  allocations.forEach((allocation) => {
+    const base = normalizeSectionBase(allocation.section || '')
+    if (!base) return
+    const group = extractSectionGroup(allocation.section || '')
+    const knownGroups = baseGroups.get(base)
+
+    if (group) {
+      labels.add(`${base} ${group}`)
+    } else if (knownGroups && knownGroups.size > 0) {
+      knownGroups.forEach(g => labels.add(`${base} ${g}`))
+    } else {
+      labels.add(base)
+    }
+  })
+
+  return Array.from(labels)
+}
+
+const matchesSectionView = (allocation: RoomAllocation, sectionViewLabel: string): boolean => {
+  const allocationBase = normalizeSectionBase(allocation.section || '')
+  const allocationGroup = extractSectionGroup(allocation.section || '')
+  const { base: selectedBase, group: selectedGroup } = parseSectionViewLabel(sectionViewLabel)
+
+  if (!allocationBase || allocationBase !== selectedBase) return false
+  if (!selectedGroup) return true
+
+  // Shared lecture rows (no explicit group) should appear in both G1 and G2 timetable exports/views.
+  return allocationGroup === selectedGroup || allocationGroup === null
+}
+
 // Days of the week
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -648,10 +734,7 @@ export default function ViewSchedulePage() {
         // Extract unique buildings, rooms, sections and teachers
         const uniqueBuildings: string[] = [...new Set(enrichedAllocations.map((a: any) => a.building).filter((b: any): b is string => !!b))]
         const uniqueRooms: string[] = [...new Set(enrichedAllocations.map((a: any) => a.room).filter((r: any): r is string => !!r))]
-        // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
-        const uniqueSections: string[] = [...new Set(enrichedAllocations.map((a: any) =>
-          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
-        ).filter((s: any): s is string => !!s))]
+        const uniqueSections: string[] = buildSectionViewOptions(enrichedAllocations)
         const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
         const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
         const uniqueColleges: string[] = [...new Set(enrichedAllocations.map((a: any) => a.college).filter((c: any): c is string => !!c))].sort()
@@ -792,10 +875,7 @@ export default function ViewSchedulePage() {
 
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
-        // Combine LAB and LEC sections into single entries by stripping all variants of suffixes
-        const uniqueSections = [...new Set(mockAllocations.map(a =>
-          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
-        ).filter((s): s is string => !!s))]
+        const uniqueSections = buildSectionViewOptions(mockAllocations)
         const uniqueTeachers = [...new Set(mockAllocations.map(a => a.teacher_name).filter((t): t is string => !!t))]
         const uniqueCourses = [...new Set(mockAllocations.map(a => a.course_code).filter((c): c is string => !!c))]
 
@@ -833,11 +913,7 @@ export default function ViewSchedulePage() {
     if (timetableViewMode === 'room' && selectedRoom !== 'all') {
       filtered = filtered.filter(a => a.room === selectedRoom)
     } else if (timetableViewMode === 'section' && selectedSection !== 'all') {
-      // Match both LAB and LEC variants of the section
-      filtered = filtered.filter(a => {
-        const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
-        return baseSection === selectedSection
-      })
+      filtered = filtered.filter(a => matchesSectionView(a, selectedSection))
     } else if (timetableViewMode === 'teacher' && selectedTeacher !== 'all') {
       filtered = filtered.filter(a => a.teacher_name === selectedTeacher)
     } else if (timetableViewMode === 'course' && selectedCourse !== 'all') {
@@ -1568,27 +1644,7 @@ export default function ViewSchedulePage() {
           currentAllocations = allocations.filter(a => a.room === selectedRoom)
           viewLabel = `Room: ${selectedRoom}`
         } else if (timetableViewMode === 'section' && selectedSection) {
-          // Helper to get base section (strip LAB/LEC suffixes including all variants)
-          const getBaseSection = (s: string) => {
-            if (!s) return ''
-            return s
-              .replace(/_LAB$/i, '')
-              .replace(/_LEC$/i, '')
-              .replace(/_LECTURE$/i, '')
-              .replace(/_LABORATORY$/i, '')
-              .replace(/_G[12](_LAB)?$/i, '')
-              .replace(/ G[12]$/i, '')
-              .replace(/, LAB$/i, '')
-              .replace(/, LEC$/i, '')
-              .replace(/, LECTURE$/i, '')
-              .replace(/, LABORATORY$/i, '')
-              .replace(/ LAB$/i, '')
-              .replace(/ LEC$/i, '')
-              .replace(/-LAB$/i, '')
-              .replace(/-LEC$/i, '')
-              .trim()
-          }
-          currentAllocations = allocations.filter(a => getBaseSection(a.section) === selectedSection)
+          currentAllocations = allocations.filter(a => matchesSectionView(a, selectedSection))
           viewLabel = `Section: ${selectedSection}`
         } else if (timetableViewMode === 'teacher' && selectedTeacher) {
           currentAllocations = allocations.filter(a => a.teacher_name === selectedTeacher)
@@ -1614,29 +1670,8 @@ export default function ViewSchedulePage() {
         }
       } else if (exportType === 'all-sections') {
         // Export all sections as pages in one PDF
-        // Helper to get base section (strip LAB/LEC suffixes including all variants)
-        const getBaseSection = (s: string) => {
-          if (!s) return ''
-          return s
-            .replace(/_LAB$/i, '')
-            .replace(/_LEC$/i, '')
-            .replace(/_LECTURE$/i, '')
-            .replace(/_LABORATORY$/i, '')
-            .replace(/_G[12](_LAB)?$/i, '')
-            .replace(/ G[12]$/i, '')
-            .replace(/, LAB$/i, '')
-            .replace(/, LEC$/i, '')
-            .replace(/, LECTURE$/i, '')
-            .replace(/, LABORATORY$/i, '')
-            .replace(/ LAB$/i, '')
-            .replace(/ LEC$/i, '')
-            .replace(/-LAB$/i, '')
-            .replace(/-LEC$/i, '')
-            .trim()
-        }
         for (const section of sections) {
-          // Match allocations where base section matches (includes both LAB and LEC variants)
-          const sectionAllocs = allocations.filter(a => getBaseSection(a.section) === section)
+          const sectionAllocs = allocations.filter(a => matchesSectionView(a, section))
           if (sectionAllocs.length > 0) {
             drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
           }
@@ -1777,6 +1812,24 @@ export default function ViewSchedulePage() {
     setSidebarOpen(prev => !prev)
   }
 
+  const handleBackNavigation = () => {
+    if (selectedSchedule) {
+      setSelectedSchedule(null)
+      setAllocations([])
+      setDisplayAllocations([])
+      setViewMode('list')
+      router.push('/LandingPages/RoomSchedule/ViewSchedule')
+      return
+    }
+
+    if (window.history.length > 1) {
+      router.back()
+      return
+    }
+
+    router.push('/LandingPages/RoomSchedule/GenerateSchedule')
+  }
+
   // Get cell color based on building or department - Using solid colors instead of transparency
   const getCellColor = (allocation: RoomAllocation): string => {
     // Light pastel colors that are easier to read and don't use transparency
@@ -1805,7 +1858,14 @@ export default function ViewSchedulePage() {
         <div className={styles.qtimeContainer}>
           {/* Header */}
           <div className={styles.pageHeader}>
-            {/* Removed Back Button as requested */}
+            <button
+              className={styles.backButton}
+              onClick={handleBackNavigation}
+              title={selectedSchedule ? 'Back to schedule history' : 'Go back'}
+            >
+              <FaArrowLeft size={14} />
+              {selectedSchedule ? 'Back to History' : 'Back'}
+            </button>
 
             {selectedSchedule && (
               <div className={styles.headerActions}>
