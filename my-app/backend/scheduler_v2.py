@@ -842,26 +842,72 @@ class EnhancedQuantumScheduler:
                 continue
             
             # 3. Match the best section (if multiple split sections exist)
-            section_code_hint = alloc.get('section', '').upper()
+            section_code_hint = str(alloc.get('section', '') or '').strip().upper()
+            component_hint = str(alloc.get('component', '') or '').strip().lower()
+            split_hint = str(alloc.get('split_type', '') or '').strip().upper()
+
+            normalized_hint = section_code_hint.replace('-', '_').replace(' ', '_')
+            if not split_hint:
+                if '_G1' in normalized_hint or 'G1' in section_code_hint:
+                    split_hint = 'G1'
+                elif '_G2' in normalized_hint or 'G2' in section_code_hint:
+                    split_hint = 'G2'
+
+            if not component_hint:
+                if '_LAB' in normalized_hint or ' LAB' in section_code_hint:
+                    component_hint = 'lab'
+                elif '_LEC' in normalized_hint or ' LEC' in section_code_hint:
+                    component_hint = 'lecture'
+
             is_online = (room_id == 0 or room_id is None)
             is_lab_room = self._is_lab_room(room_id) if (room_id and room_id != 0) else False
             
             section = target_sections[0]
             if len(target_sections) > 1:
-                # 1. Try to match by exact section code (e.g. BSCS 1A_G1)
-                for s in target_sections:
-                    if s.section_code.upper() == section_code_hint:
-                        section = s
-                        break
-                else:
-                    # 2. Try to match by type heuristic
-                    for s in target_sections:
-                        if is_lab_room and s.requires_lab:
-                            section = s
-                            break
-                        if not is_lab_room and not s.requires_lab and not is_online:
-                            section = s
-                            break
+                candidates = list(target_sections)
+
+                # 1. Exact/normalized section code match first
+                if section_code_hint:
+                    exact = [
+                        s for s in candidates
+                        if s.section_code.upper() == section_code_hint
+                        or s.section_code.upper().replace('-', '_').replace(' ', '_') == normalized_hint
+                    ]
+                    if exact:
+                        candidates = exact
+
+                # 2. Split group hint (G1/G2)
+                if split_hint in ('G1', 'G2'):
+                    split_matched = [
+                        s for s in candidates
+                        if (getattr(s, 'split_type', None) or '').upper() == split_hint
+                        or s.section_code.upper().endswith(f'_{split_hint}')
+                    ]
+                    if split_matched:
+                        candidates = split_matched
+
+                # 3. Component hint (lecture/lab)
+                if component_hint in ('lab', 'lecture', 'lec'):
+                    want_lab = component_hint == 'lab'
+                    component_matched = [
+                        s for s in candidates
+                        if (s.section_type == 'lab') == want_lab or s.requires_lab == want_lab
+                    ]
+                    if component_matched:
+                        candidates = component_matched
+
+                # 4. Fallback by room type heuristic
+                if len(candidates) > 1:
+                    if is_lab_room:
+                        room_matched = [s for s in candidates if s.requires_lab or s.section_type == 'lab']
+                        if room_matched:
+                            candidates = room_matched
+                    elif not is_online:
+                        room_matched = [s for s in candidates if (not s.requires_lab) or s.section_type == 'lecture']
+                        if room_matched:
+                            candidates = room_matched
+
+                section = candidates[0]
             
             # Skip if this specific section already has THIS slot pinned (avoid duplicates)
             is_already_pinned = False
@@ -3944,6 +3990,7 @@ def run_enhanced_scheduler(
         require_faculty_lunch_break=True,  # Faculty MUST have lunch break if teaching all day
         auto_break_after_consecutive_hours=max_consecutive,
         allow_split_sessions=config.get('allow_split_sessions', True),
+        combine_split_lectures=config.get('combine_split_lectures', True),
         # Pass through all soft penalties from config if present
         SOFT_ROOM_TYPE_MISMATCH=config.get('SOFT_ROOM_TYPE_MISMATCH', 50),
         SOFT_ROOM_TYPE_MAJOR_MISMATCH=config.get('SOFT_ROOM_TYPE_MAJOR_MISMATCH', 500),

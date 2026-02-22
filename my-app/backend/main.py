@@ -336,6 +336,7 @@ class ScheduleGenerationRequest(BaseModel):
     # Split session settings - allow classes to be split into multiple sessions
     # e.g., a 3hr class can become 1.5hr on Monday + 1.5hr on Thursday
     allow_split_sessions: bool = True  # Default: enabled
+    combine_split_lectures: bool = True  # If True: split only LAB into G1/G2 while LEC stays combined
     
     # Faculty Type overrides
     faculty_types: Optional[Dict[str, FacultyTypeModel]] = None
@@ -504,6 +505,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "strict_lecture_room_matching": request.strict_lecture_room_matching,
             # Split session settings
             "allow_split_sessions": request.allow_split_sessions,
+            "combine_split_lectures": request.combine_split_lectures,
             "faculty_types": request.faculty_types,
             # Soft Penalties
             "SOFT_ROOM_TYPE_MISMATCH": request.SOFT_ROOM_TYPE_MISMATCH,
