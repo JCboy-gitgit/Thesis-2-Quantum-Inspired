@@ -2652,7 +2652,7 @@ export default function GenerateSchedulePage() {
                     {timetableView === 'section' && (
                       <select
                         value={selectedTimetableSection}
-                        onChange={(e) => setSelectedTimetableViewSection(e.target.value)}
+                        onChange={(e) => setSelectedTimetableSection(e.target.value)}
                         className={styles.filterSelect}
                       >
                         <option value="all">All Sections</option>
@@ -2666,7 +2666,7 @@ export default function GenerateSchedulePage() {
                     {timetableView === 'teacher' && (
                       <select
                         value={selectedTimetableTeacher}
-                        onChange={(e) => setSelectedTimetableViewTeacher(e.target.value)}
+                        onChange={(e) => setSelectedTimetableTeacher(e.target.value)}
                         className={styles.filterSelect}
                       >
                         <option value="all">All Teachers</option>

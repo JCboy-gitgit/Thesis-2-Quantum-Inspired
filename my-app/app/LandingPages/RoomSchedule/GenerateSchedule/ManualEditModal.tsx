@@ -429,7 +429,7 @@ export default function ManualEditModal({
             const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV'];
             let featuresToCheck = isLabComp
                 ? (classInfo.required_lab_features?.length > 0 ? classInfo.required_lab_features : classInfo.required_features || [])
-                : (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f));
+                : (classInfo.required_lec_features?.length > 0 ? classInfo.required_lec_features : (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f)));
 
             const roomFeats = new Set(roomInfo.feature_tags || []);
             const missing = (featuresToCheck as string[]).filter((f: string) => !roomFeats.has(f));

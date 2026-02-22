@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 // Backend URLs - Use environment variable first, then Render, then localhost for development
 const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
-const LOCAL_BACKEND_URL = 'http://localhost:8000'
+const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
 
 // Determine if we're in production (Vercel)
 const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
@@ -180,7 +180,7 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
       required_features: requiredFeatures,
       lec_required_features: lecRequiredFeatures,
       lab_required_features: labRequiredFeatures,
-      college: cls.college || (cls as any).college || null
+      college: cls.college || (cls as any).courses?.college || (cls as any).college || null
     }
   })
 }
@@ -297,7 +297,8 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   const sortedSections = [...sections].sort((a, b) => b.student_count - a.student_count)
 
   let scheduledCount = 0
-  const pinnedSectionIds = new Set<number>()
+  // Track how many slots have already been assigned (pinned) per section
+  const slotsAlreadyScheduledMap = new Map<number, number>()
 
   // Process manual allocations first
   const manualAllocations = (body as any).manual_allocations || []
@@ -309,9 +310,16 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
 
       const startTime = manual.schedule_time.split(' - ')[0]
       const startSlot = timeSlots.find(s => s.start_time === startTime)
-      const endSlot = timeSlots.find(s => s.start_time === manual.schedule_time.split(' - ')[1] || s.end_time === manual.schedule_time.split(' - ')[1])
 
       if (!startSlot) continue
+
+      // Determine slot count from name or duration
+      const endParts = manual.schedule_time.split(' - ')[1] || ''
+      const endSlot = timeSlots.find(s => s.start_time === endParts || s.end_time === endParts)
+      let currentSlotCount = 2 // default
+      if (endSlot && startSlot) {
+        currentSlotCount = Math.max(1, (timeSlots.indexOf(endSlot) - timeSlots.indexOf(startSlot)) + 1)
+      }
 
       const day = manual.schedule_day
       const roomId = manual.room_id
@@ -319,10 +327,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
 
       // Mark occupancy
       const slotIdx = timeSlots.indexOf(startSlot)
-      const weeklyHours = section.weekly_hours || 3
-      const slotCount = Math.max(2, weeklyHours * 2)
-
-      for (let i = 0; i < slotCount && (slotIdx + i) < timeSlots.length; i++) {
+      for (let i = 0; i < currentSlotCount && (slotIdx + i) < timeSlots.length; i++) {
         const s = timeSlots[slotIdx + i]
         occupancy.set(`${roomId}-${day}-${s.id}`, true)
       }
@@ -333,11 +338,13 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
         status: 'scheduled'
       })
 
-      pinnedSectionIds.add(section.id)
+      const prevScheduled = slotsAlreadyScheduledMap.get(section.id) || 0
+      slotsAlreadyScheduledMap.set(section.id, prevScheduled + currentSlotCount)
       scheduledCount++
 
       // Update tracking
-      const slotEndMins = parseTimeToMinutes(timeSlots[Math.min(slotIdx + slotCount - 1, timeSlots.length - 1)].end_time)
+      const lastActiveSlot = timeSlots[Math.min(slotIdx + currentSlotCount - 1, timeSlots.length - 1)]
+      const slotEndMins = parseTimeToMinutes(lastActiveSlot.end_time)
       const group = getStudentGroup(section.section_code || '')
       updateGroupTracking(group, day.toLowerCase(), parseTimeToMinutes(startSlot.start_time), slotEndMins)
       updateGroupCourseTracking(group, day.toLowerCase(), section.course_code)
@@ -345,13 +352,13 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   }
 
   for (const section of sortedSections) {
-    // Skip if already pinned/manual
-    if (pinnedSectionIds.has(section.id)) continue
-    // Calculate required 30-min slots: hours * 2 (since each hour = 2 thirty-minute slots)
-    // Example: 5 hours = 10 slots = 2 sessions of 2.5 hours (5 slots each)
+    // Calculate required 30-min slots
     const weeklyHours = section.weekly_hours || ((section.lec_hours || 0) + (section.lab_hours || 0)) || 3
     const requiredSlots = Math.max(2, weeklyHours * 2)
-    let slotsAssigned = 0
+
+    let slotsAssigned = slotsAlreadyScheduledMap.get(section.id) || 0
+    if (slotsAssigned >= requiredSlots) continue
+
     const group = getStudentGroup(section.section_code || '')
     const courseCode = section.course_code || ''
     const courseKey = `${group}:${courseCode}`
@@ -1005,6 +1012,8 @@ export async function POST(request: NextRequest) {
     for (const backend of uniqueBackendUrls) {
       try {
         console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
+
+        require('fs').writeFileSync('C:\\AntiGravity_Repo\\Thesis-2-Quantum-Inspired\\my-app\\backend\\last_payload.json', JSON.stringify(backendPayload, null, 2))
 
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',

@@ -1,0 +1,2251 @@
+{
+  "schedule_name": "g1g2123123",
+  "semester": "First Semester",
+  "academic_year": "2024-2025",
+  "campus_group_id": 1,
+  "class_group_id": 8,
+  "section_ids": null,
+  "room_ids": null,
+  "time_slots": [
+    {
+      "id": 1,
+      "slot_name": "07:00 - 07:30",
+      "start_time": "07:00",
+      "end_time": "07:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 2,
+      "slot_name": "07:30 - 08:00",
+      "start_time": "07:30",
+      "end_time": "08:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 3,
+      "slot_name": "08:00 - 08:30",
+      "start_time": "08:00",
+      "end_time": "08:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 4,
+      "slot_name": "08:30 - 09:00",
+      "start_time": "08:30",
+      "end_time": "09:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 5,
+      "slot_name": "09:00 - 09:30",
+      "start_time": "09:00",
+      "end_time": "09:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 6,
+      "slot_name": "09:30 - 10:00",
+      "start_time": "09:30",
+      "end_time": "10:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 7,
+      "slot_name": "10:00 - 10:30",
+      "start_time": "10:00",
+      "end_time": "10:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 8,
+      "slot_name": "10:30 - 11:00",
+      "start_time": "10:30",
+      "end_time": "11:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 9,
+      "slot_name": "11:00 - 11:30",
+      "start_time": "11:00",
+      "end_time": "11:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 10,
+      "slot_name": "11:30 - 12:00",
+      "start_time": "11:30",
+      "end_time": "12:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 11,
+      "slot_name": "12:00 - 12:30",
+      "start_time": "12:00",
+      "end_time": "12:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 12,
+      "slot_name": "12:30 - 13:00",
+      "start_time": "12:30",
+      "end_time": "13:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 13,
+      "slot_name": "13:00 - 13:30",
+      "start_time": "13:00",
+      "end_time": "13:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 14,
+      "slot_name": "13:30 - 14:00",
+      "start_time": "13:30",
+      "end_time": "14:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 15,
+      "slot_name": "14:00 - 14:30",
+      "start_time": "14:00",
+      "end_time": "14:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 16,
+      "slot_name": "14:30 - 15:00",
+      "start_time": "14:30",
+      "end_time": "15:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 17,
+      "slot_name": "15:00 - 15:30",
+      "start_time": "15:00",
+      "end_time": "15:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 18,
+      "slot_name": "15:30 - 16:00",
+      "start_time": "15:30",
+      "end_time": "16:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 19,
+      "slot_name": "16:00 - 16:30",
+      "start_time": "16:00",
+      "end_time": "16:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 20,
+      "slot_name": "16:30 - 17:00",
+      "start_time": "16:30",
+      "end_time": "17:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 21,
+      "slot_name": "17:00 - 17:30",
+      "start_time": "17:00",
+      "end_time": "17:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 22,
+      "slot_name": "17:30 - 18:00",
+      "start_time": "17:30",
+      "end_time": "18:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 23,
+      "slot_name": "18:00 - 18:30",
+      "start_time": "18:00",
+      "end_time": "18:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 24,
+      "slot_name": "18:30 - 19:00",
+      "start_time": "18:30",
+      "end_time": "19:00",
+      "duration_minutes": 30
+    },
+    {
+      "id": 25,
+      "slot_name": "19:00 - 19:30",
+      "start_time": "19:00",
+      "end_time": "19:30",
+      "duration_minutes": 30
+    },
+    {
+      "id": 26,
+      "slot_name": "19:30 - 20:00",
+      "start_time": "19:30",
+      "end_time": "20:00",
+      "duration_minutes": 30
+    }
+  ],
+  "active_days": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ],
+  "online_days": [],
+  "sections_data": [
+    {
+      "id": 1,
+      "section_code": "BSM  CS 2A",
+      "course_code": "MAT 201",
+      "course_name": "Calculus III",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 5,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 5,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 2,
+      "section_code": "BSM  CS 2A",
+      "course_code": "MAT 207",
+      "course_name": "Abstract Algebra",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 3,
+      "section_code": "BSM  CS 2A",
+      "course_code": "MAT 208",
+      "course_name": "Statistical Theory",
+      "teacher_id": 2088699411,
+      "teacher_name": "Bala, Elcharle D.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 4,
+      "section_code": "BSM  CS 2A",
+      "course_code": "MCS 201a",
+      "course_name": "Data Structure and Algorithms",
+      "teacher_id": 1952789717,
+      "teacher_name": "Galvez, Arcel F.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 5,
+      "section_code": "BSM  CS 2A",
+      "course_code": "PHY201a",
+      "course_name": "Mechanics and Heat",
+      "teacher_id": 1050608741,
+      "teacher_name": "Canta, Kristan Diane B.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 6,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 6,
+      "section_code": "BSM  CS 2A",
+      "course_code": "MST 101a",
+      "course_name": "Environmental Science",
+      "teacher_id": 68458007,
+      "teacher_name": "Bernardo, Emily K.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 7,
+      "section_code": "BSM  CS 2A",
+      "course_code": "ETH 101",
+      "course_name": "Ethics",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 8,
+      "section_code": "BSM  CS 2A",
+      "course_code": "PE 12",
+      "course_name": "PATHFIT 3",
+      "teacher_id": 68458007,
+      "teacher_name": "Bernardo, Emily K.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 2,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 9,
+      "section_code": "BSM CS 1A",
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC"
+      ],
+      "college": null
+    },
+    {
+      "id": 10,
+      "section_code": "BSM CS 1A",
+      "course_code": "MAT 103",
+      "course_name": "Calculus I",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 5,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 5,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 11,
+      "section_code": "BSM CS 1A",
+      "course_code": "MCS 102a",
+      "course_name": "Computer Programming I",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 12,
+      "section_code": "BSM CS 1A",
+      "course_code": "MMW 101",
+      "course_name": "Mathematics in the Modern World",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 13,
+      "section_code": "BSM CS 1A",
+      "course_code": "PCM 101",
+      "course_name": "Purposive Communication",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 14,
+      "section_code": "BSM CS 1A",
+      "course_code": "PAL 101",
+      "course_name": "Panitikan at Lipunan",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 15,
+      "section_code": "BSM CS 1A",
+      "course_code": "PE 10",
+      "course_name": "PATHFIT 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 2,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 0,
+      "required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lec_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lab_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "college": null
+    },
+    {
+      "id": 16,
+      "section_code": "BSM CS 1A",
+      "course_code": "NSTP 10",
+      "course_name": "National Service Training Program 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 17,
+      "section_code": "BSM CS 1B",
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC"
+      ],
+      "college": null
+    },
+    {
+      "id": 18,
+      "section_code": "BSM CS 1B",
+      "course_code": "MAT 103",
+      "course_name": "Calculus I",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 5,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 5,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 19,
+      "section_code": "BSM CS 1B",
+      "course_code": "MCS 102a",
+      "course_name": "Computer Programming I",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 20,
+      "section_code": "BSM CS 1B",
+      "course_code": "MMW 101",
+      "course_name": "Mathematics in the Modern World",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 21,
+      "section_code": "BSM CS 1B",
+      "course_code": "PCM 101",
+      "course_name": "Purposive Communication",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 22,
+      "section_code": "BSM CS 1B",
+      "course_code": "PAL 101",
+      "course_name": "Panitikan at Lipunan",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 23,
+      "section_code": "BSM CS 1B",
+      "course_code": "PE 10",
+      "course_name": "PATHFIT 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 2,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 0,
+      "required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lec_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lab_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "college": null
+    },
+    {
+      "id": 24,
+      "section_code": "BSM CS 1B",
+      "course_code": "NSTP 10",
+      "course_name": "National Service Training Program 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 1,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 25,
+      "section_code": "BSM CS 2B",
+      "course_code": "MAT 201",
+      "course_name": "Calculus III",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 5,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 5,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 26,
+      "section_code": "BSM CS 2B",
+      "course_code": "MAT 207",
+      "course_name": "Abstract Algebra",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 27,
+      "section_code": "BSM CS 2B",
+      "course_code": "MAT 208",
+      "course_name": "Statistical Theory",
+      "teacher_id": 2088699411,
+      "teacher_name": "Bala, Elcharle D.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 28,
+      "section_code": "BSM CS 2B",
+      "course_code": "MCS 201a",
+      "course_name": "Data Structure and Algorithms",
+      "teacher_id": 1952789717,
+      "teacher_name": "Galvez, Arcel F.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 29,
+      "section_code": "BSM CS 2B",
+      "course_code": "PHY201a",
+      "course_name": "Mechanics and Heat",
+      "teacher_id": 1050608741,
+      "teacher_name": "Canta, Kristan Diane B.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 6,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 30,
+      "section_code": "BSM CS 2B",
+      "course_code": "MST 101a",
+      "course_name": "Environmental Science",
+      "teacher_id": 68458007,
+      "teacher_name": "Bernardo, Emily K.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 31,
+      "section_code": "BSM CS 2B",
+      "course_code": "ETH 101",
+      "course_name": "Ethics",
+      "teacher_id": 1253710602,
+      "teacher_name": "Carpio, Alfredo P.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 32,
+      "section_code": "BSM CS 2B",
+      "course_code": "PE 12",
+      "course_name": "PATHFIT 3",
+      "teacher_id": 68458007,
+      "teacher_name": "Bernardo, Emily K.",
+      "year_level": 2,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 2,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 33,
+      "section_code": "BSM CS 3A",
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC"
+      ],
+      "college": null
+    },
+    {
+      "id": 34,
+      "section_code": "BSM CS 3A",
+      "course_code": "MAT 103",
+      "course_name": "Calculus I",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 5,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 5,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 35,
+      "section_code": "BSM CS 3A",
+      "course_code": "MCS 102a",
+      "course_name": "Computer Programming I",
+      "teacher_id": 161213249,
+      "teacher_name": "Clavio, Rachel D.C.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Desktop_PC",
+        "Laptop_Stations",
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 36,
+      "section_code": "BSM CS 3A",
+      "course_code": "MMW 101",
+      "course_name": "Mathematics in the Modern World",
+      "teacher_id": 1486670818,
+      "teacher_name": "Dela Cruz, Luzviminda F.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 37,
+      "section_code": "BSM CS 3A",
+      "course_code": "PCM 101",
+      "course_name": "Purposive Communication",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 38,
+      "section_code": "BSM CS 3A",
+      "course_code": "PAL 101",
+      "course_name": "Panitikan at Lipunan",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 39,
+      "section_code": "BSM CS 3A",
+      "course_code": "PE 10",
+      "course_name": "PATHFIT 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 2,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 0,
+      "required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lec_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "lab_required_features": [
+        "Covered_Court",
+        "Sports_Court"
+      ],
+      "college": null
+    },
+    {
+      "id": 40,
+      "section_code": "BSM CS 3A",
+      "course_code": "NSTP 10",
+      "course_name": "National Service Training Program 1",
+      "teacher_id": 722536929,
+      "teacher_name": "Dela Cruz, Ma. Agustina P.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [
+        "Whiteboard"
+      ],
+      "lec_required_features": [
+        "Whiteboard"
+      ],
+      "lab_required_features": [
+        "Whiteboard"
+      ],
+      "college": null
+    },
+    {
+      "id": 41,
+      "section_code": "BSM CS 3B",
+      "course_code": "MAT 301",
+      "course_name": "Advanced Calculus",
+      "teacher_id": 1796008137,
+      "teacher_name": "Camara, Evelyn R.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 42,
+      "section_code": "BSM CS 3B",
+      "course_code": "MAT 302",
+      "course_name": "Modern Geometry",
+      "teacher_id": 1796008137,
+      "teacher_name": "Camara, Evelyn R.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 43,
+      "section_code": "BSM CS 3B",
+      "course_code": "MAT 304a",
+      "course_name": "Operations Research",
+      "teacher_id": 1952789717,
+      "teacher_name": "Galvez, Arcel F.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 44,
+      "section_code": "BSM CS 3B",
+      "course_code": "MCS 305",
+      "course_name": "Software Engineering",
+      "teacher_id": 133222403,
+      "teacher_name": "Balagtas, Michael R.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 45,
+      "section_code": "BSM CS 3B",
+      "course_code": "MCS 306",
+      "course_name": "Introduction to Artificial Intelligence",
+      "teacher_id": 133222403,
+      "teacher_name": "Balagtas, Michael R.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 46,
+      "section_code": "BSM CS 3B",
+      "course_code": "TWM 301",
+      "course_name": "Technical Writing in Mathematics",
+      "teacher_id": 1557083823,
+      "teacher_name": "Carcosia, Imelda Cristina B.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 47,
+      "section_code": "BSM CS 3B",
+      "course_code": "TCW 101",
+      "course_name": "The Contemporary World",
+      "teacher_id": 1557083823,
+      "teacher_name": "Carcosia, Imelda Cristina B.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 48,
+      "section_code": "BSM CS 3B",
+      "course_code": "AAP 101",
+      "course_name": "Art Appreciation",
+      "teacher_id": 133222403,
+      "teacher_name": "Balagtas, Michael R.",
+      "year_level": 3,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 49,
+      "section_code": "BSM CS 4A",
+      "course_code": "MAT 400c",
+      "course_name": "Thesis II",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 50,
+      "section_code": "BSM CS 4A",
+      "course_code": "MAT 403",
+      "course_name": "Numerical Analysis",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 51,
+      "section_code": "BSM CS 4A",
+      "course_code": "MAT 406",
+      "course_name": "Complex Analysis",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 52,
+      "section_code": "BSM CS 4A",
+      "course_code": "FEL 401c",
+      "course_name": "Free Elective I",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 53,
+      "section_code": "BSM CS 4A",
+      "course_code": "RLW 401",
+      "course_name": "Rizal's Life and Works",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 54,
+      "section_code": "BSM CS 4B",
+      "course_code": "MAT 400c",
+      "course_name": "Thesis II",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 55,
+      "section_code": "BSM CS 4B",
+      "course_code": "MAT 403",
+      "course_name": "Numerical Analysis",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 56,
+      "section_code": "BSM CS 4B",
+      "course_code": "MAT 406",
+      "course_name": "Complex Analysis",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 57,
+      "section_code": "BSM CS 4B",
+      "course_code": "FEL 401c",
+      "course_name": "Free Elective I",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Laboratory",
+      "weekly_hours": 5,
+      "requires_lab": true,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 2,
+      "lab_hours": 3,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    },
+    {
+      "id": 58,
+      "section_code": "BSM CS 4B",
+      "course_code": "RLW 401",
+      "course_name": "Rizal's Life and Works",
+      "teacher_id": 1109194375,
+      "teacher_name": "Barre, Atheena Cammara T.",
+      "year_level": 4,
+      "student_count": 30,
+      "required_room_type": "Lecture Room",
+      "weekly_hours": 3,
+      "requires_lab": false,
+      "department": "Bachelor of Science in Mathematics - Computer Science",
+      "lec_hours": 3,
+      "lab_hours": 0,
+      "required_features": [],
+      "lec_required_features": [],
+      "lab_required_features": [],
+      "college": null
+    }
+  ],
+  "rooms_data": [
+    {
+      "id": 677,
+      "room_code": "Activity Center-Activity Center",
+      "room_name": "Activity Center",
+      "building": "Activity Center",
+      "campus": "Main Campus",
+      "capacity": 300,
+      "room_type": "Other",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Covered_Court",
+        "Sports_Court",
+        "Gymnasium"
+      ],
+      "college": "Shared"
+    },
+    {
+      "id": 489,
+      "room_code": "Federizo Hall-FH 305",
+      "room_name": "FH 305",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 467,
+      "room_code": "Federizo Hall-Physics Laboratory",
+      "room_name": "Physics Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 463,
+      "room_code": "Federizo Hall-Biology Laboratory",
+      "room_name": "Biology Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 40,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Dissection_Kit",
+        "Microscope",
+        "Incubator",
+        "Chemical_Storage"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 461,
+      "room_code": "Federizo Hall-Medical Laboratory A",
+      "room_name": "Medical Laboratory A",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 462,
+      "room_code": "Federizo Hall-Medical Laboratory B",
+      "room_name": "Medical Laboratory B",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 466,
+      "room_code": "Federizo Hall-Research Laboratory",
+      "room_name": "Research Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 10,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 680,
+      "room_code": "Federizo Hall-Computer Laboratory ",
+      "room_name": "Computer Laboratory ",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 20,
+      "room_type": "Computer Lab",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Desktop_PC",
+        "TV_Display",
+        "Laptop_Stations",
+        "Whiteboard"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 469,
+      "room_code": "Federizo Hall-FH 201A",
+      "room_name": "FH 201A",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard",
+        "TV_Display"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 474,
+      "room_code": "Federizo Hall-Audio Visual Room B",
+      "room_name": "Audio Visual Room B",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "AVR",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "TV_Display",
+        "Whiteboard"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 476,
+      "room_code": "Federizo Hall-FH 206",
+      "room_name": "FH 206",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard",
+        "TV_Display"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 470,
+      "room_code": "Federizo Hall-FH 201B",
+      "room_name": "FH 201B",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard",
+        "TV_Display"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 477,
+      "room_code": "Federizo Hall-Multimedia Laboratory",
+      "room_name": "Multimedia Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard",
+        "Laptop_Stations",
+        "TV_Display"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 486,
+      "room_code": "Federizo Hall-FH 302",
+      "room_name": "FH 302",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 492,
+      "room_code": "Federizo Hall-FH 308",
+      "room_name": "FH 308",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 483,
+      "room_code": "Federizo Hall-Research and Extension",
+      "room_name": "Research and Extension",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 3,
+      "room_type": "Office",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 473,
+      "room_code": "Federizo Hall-Audio Visual Room A",
+      "room_name": "Audio Visual Room A",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "AVR",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "TV_Display"
+      ],
+      "college": "CAFA"
+    },
+    {
+      "id": 482,
+      "room_code": "Federizo Hall-Dean's Office",
+      "room_name": "Dean's Office",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 6,
+      "room_type": "Conference Room",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Fume_Hood"
+      ],
+      "college": "CAFA"
+    },
+    {
+      "id": 487,
+      "room_code": "Federizo Hall-FH 303",
+      "room_name": "FH 303",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 35,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 484,
+      "room_code": "Federizo Hall-Accreditation Room",
+      "room_name": "Accreditation Room",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 30,
+      "room_type": "Office",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "TV_Display",
+        "Projector"
+      ],
+      "college": "CAFA"
+    },
+    {
+      "id": 485,
+      "room_code": "Federizo Hall-FH 301",
+      "room_name": "FH 301",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 488,
+      "room_code": "Federizo Hall-FH 304",
+      "room_name": "FH 304",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 490,
+      "room_code": "Federizo Hall-FH 306",
+      "room_name": "FH 306",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 491,
+      "room_code": "Federizo Hall-FH 307",
+      "room_name": "FH 307",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 493,
+      "room_code": "Federizo Hall-FH 309",
+      "room_name": "FH 309",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 494,
+      "room_code": "Federizo Hall-FH 311a",
+      "room_name": "FH 311a",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 471,
+      "room_code": "Federizo Hall-N 202",
+      "room_name": "N 202",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 475,
+      "room_code": "Federizo Hall-Statistics Laboratory",
+      "room_name": "Statistics Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 472,
+      "room_code": "Federizo Hall-Research & Extension",
+      "room_name": "Research & Extension",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 20,
+      "room_type": "Other",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 496,
+      "room_code": "Federizo Hall-Computer Room",
+      "room_name": "Computer Room",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Computer Lab",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [
+        "Desktop_PC",
+        "Whiteboard",
+        "Laptop_Stations",
+        "TV_Display"
+      ],
+      "college": "CAFA"
+    },
+    {
+      "id": 495,
+      "room_code": "Federizo Hall-FH 311b",
+      "room_name": "FH 311b",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 500,
+      "room_code": "Federizo Hall-FH 314",
+      "room_name": "FH 314",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Drafting Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 501,
+      "room_code": "Federizo Hall-FH 315",
+      "room_name": "FH 315",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Drafting Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 502,
+      "room_code": "Federizo Hall-FH 316",
+      "room_name": "FH 316",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Drafting Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 503,
+      "room_code": "Federizo Hall-FH 317",
+      "room_name": "FH 317",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Drafting Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 497,
+      "room_code": "Federizo Hall-Old AVR",
+      "room_name": "Old AVR",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 499,
+      "room_code": "Federizo Hall-Photo Lab",
+      "room_name": "Photo Lab",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 10,
+      "room_type": "Laboratory",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 498,
+      "room_code": "Federizo Hall-Tropical Lab",
+      "room_name": "Tropical Lab",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 35,
+      "room_type": "Laboratory",
+      "floor": 3,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CAFA"
+    },
+    {
+      "id": 464,
+      "room_code": "Federizo Hall-Physics Laboratory",
+      "room_name": "Physics Laboratory",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 40,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 465,
+      "room_code": "Federizo Hall-FH 108",
+      "room_name": "FH 108",
+      "building": "Federizo Hall",
+      "campus": "Main Campus",
+      "capacity": 30,
+      "room_type": "Lecture Room",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 481,
+      "room_code": "SLRC-Chemistry Laboratory",
+      "room_name": "Chemistry Laboratory",
+      "building": "SLRC",
+      "campus": "Main Campus",
+      "capacity": 45,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [
+        "Chemical_Storage",
+        "Microscope"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 480,
+      "room_code": "SLRC-Environmental and Food Laboratory",
+      "room_name": "Environmental and Food Laboratory",
+      "building": "SLRC",
+      "campus": "Main Campus",
+      "capacity": 45,
+      "room_type": "Laboratory",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 478,
+      "room_code": "SLRC-Biology Laboratory",
+      "room_name": "Biology Laboratory",
+      "building": "SLRC",
+      "campus": "Main Campus",
+      "capacity": 45,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    },
+    {
+      "id": 479,
+      "room_code": "SLRC-Physics Laboratory",
+      "room_name": "Physics Laboratory",
+      "building": "SLRC",
+      "campus": "Main Campus",
+      "capacity": 45,
+      "room_type": "Laboratory",
+      "floor": 1,
+      "is_accessible": false,
+      "feature_tags": [
+        "Whiteboard"
+      ],
+      "college": "CS"
+    },
+    {
+      "id": 468,
+      "room_code": "SLRC-Accreditation Room",
+      "room_name": "Accreditation Room",
+      "building": "SLRC",
+      "campus": "Main Campus",
+      "capacity": 50,
+      "room_type": "Lecture Room",
+      "floor": 2,
+      "is_accessible": false,
+      "feature_tags": [],
+      "college": "CS"
+    }
+  ],
+  "max_iterations": 10000,
+  "initial_temperature": 200,
+  "cooling_rate": 0.999,
+  "quantum_tunneling_probability": 0.15,
+  "max_teacher_hours_per_day": 8,
+  "max_consecutive_hours": 4,
+  "avoid_conflicts": true,
+  "lunch_mode": "auto",
+  "lunch_start_hour": 13,
+  "lunch_end_hour": 14,
+  "strict_lab_room_matching": true,
+  "strict_lecture_room_matching": true,
+  "allow_split_sessions": true,
+  "fixed_allocations": [
+    {
+      "id": 1771737812468,
+      "class_id": 9,
+      "room_id": 680,
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "section": "BSM CS 1A G1",
+      "year_level": 1,
+      "schedule_day": "Tuesday",
+      "schedule_time": "07:00 - 10:00",
+      "campus": "Main Campus",
+      "building": "Federizo Hall",
+      "room": "Computer Laboratory ",
+      "teacher_name": "Clavio, Rachel D.C.",
+      "component": "LAB",
+      "status": "scheduled"
+    },
+    {
+      "id": 1771737814217,
+      "class_id": 9,
+      "room_id": 680,
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "section": "BSM CS 1A G2",
+      "year_level": 1,
+      "schedule_day": "Monday",
+      "schedule_time": "07:00 - 10:00",
+      "campus": "Main Campus",
+      "building": "Federizo Hall",
+      "room": "Computer Laboratory ",
+      "teacher_name": "Clavio, Rachel D.C.",
+      "component": "LAB",
+      "status": "scheduled"
+    },
+    {
+      "id": 1771737823351,
+      "class_id": 9,
+      "room_id": 469,
+      "course_code": "MAT 102",
+      "course_name": "Fundamentals of Computing",
+      "section": "BSM CS 1A",
+      "year_level": 1,
+      "schedule_day": "Wednesday",
+      "schedule_time": "07:00 - 09:00",
+      "campus": "Main Campus",
+      "building": "Federizo Hall",
+      "room": "FH 201A",
+      "teacher_name": "Clavio, Rachel D.C.",
+      "component": "LEC",
+      "status": "scheduled"
+    }
+  ]
+}

@@ -314,6 +314,8 @@ class Section:
     pinned_day: Optional[str] = None  # NEW: Force specific day
     pinned_room_id: Optional[int] = None  # NEW: Force specific room
     pinned_time_slot: Optional[int] = None  # NEW: Force specific time
+    pinned_slot_count: Optional[int] = None  # NEW: Force specific duration
+    pinned_assignments: List[Dict[str, Any]] = field(default_factory=list) # NEW: Allow multiple manual sessions
     required_features: Set[str] = field(default_factory=set)  # NEW: Required equipment tags
     
     # Type-Based Splitting fields for Hybrid courses (Lecture + Lab)
@@ -823,29 +825,36 @@ class EnhancedQuantumScheduler:
                 continue
             
             # 3. Match the best section (if multiple split sections exist)
-            # Heuristic: if room is LAB-ready, prefer lab section
+            section_code_hint = alloc.get('section', '').upper()
             is_online = (room_id == 0 or room_id is None)
             is_lab_room = self._is_lab_room(room_id) if (room_id and room_id != 0) else False
             
             section = target_sections[0]
             if len(target_sections) > 1:
-                # Try to match by type
+                # 1. Try to match by exact section code (e.g. BSCS 1A_G1)
                 for s in target_sections:
-                    if is_lab_room and s.requires_lab:
+                    if s.section_code.upper() == section_code_hint:
                         section = s
                         break
-                    if not is_lab_room and not s.requires_lab and not is_online:
-                        section = s
-                        break
-            
-            # Skip if already pinned
-            if section.is_pinned:
-                # Maybe try another split section if available?
-                other_sections = [s for s in target_sections if not s.is_pinned]
-                if other_sections:
-                    section = other_sections[0]
                 else:
-                    continue
+                    # 2. Try to match by type heuristic
+                    for s in target_sections:
+                        if is_lab_room and s.requires_lab:
+                            section = s
+                            break
+                        if not is_lab_room and not s.requires_lab and not is_online:
+                            section = s
+                            break
+            
+            # Skip if this specific section already has THIS slot pinned (avoid duplicates)
+            is_already_pinned = False
+            for p in section.pinned_assignments:
+                if p['day'] == day and p['start_slot_id'] == start_slot.id:
+                    is_already_pinned = True
+                    break
+            
+            if is_already_pinned:
+                continue
             
             # 4. Determine duration from manual allocation or section defaults
             # Calculate duration in slots
@@ -862,12 +871,24 @@ class EnhancedQuantumScheduler:
                 slot_count = self._get_required_slot_count(section)
                 actual_duration = slot_count * self.slot_duration_minutes
 
-            # Pin the section
+            # Pin the section and store this specific assignment
             section.is_pinned = True
+            
+            # Legacy fields for backward compatibility (stores last assignment)
             section.pinned_day = day
             section.pinned_room_id = room_id
             section.pinned_time_slot = start_slot.id
-            section.pinned_slot_count = slot_count # Store for later use
+            section.pinned_slot_count = slot_count 
+            
+            # Record in the new multi-assignment list
+            section.pinned_assignments.append({
+                'day': day,
+                'room_id': room_id,
+                'start_slot_id': start_slot.id,
+                'slot_count': slot_count,
+                'actual_duration': actual_duration,
+                'is_online': is_online
+            })
             
             # Actually place it in the initial schedule
             # Note: We don't check conflicts here because it's a manual override
@@ -879,10 +900,9 @@ class EnhancedQuantumScheduler:
             for i in range(slot_count):
                 slot_id = start_slot.id + i
                 if slot_id in self.time_slots_by_id:
-                    # Key for online classes uses room_id=0 or None
                     schedule_key = (room_id, day, slot_id)
                     self.schedule[schedule_key] = ScheduleSlot(
-                        section_id=section.id, # Use REAL section ID
+                        section_id=section.id,
                         room_id=room_id,
                         day_of_week=day,
                         start_slot_id=start_slot.id,
@@ -2456,45 +2476,53 @@ class EnhancedQuantumScheduler:
         print(f"📋 Heuristic ordering: {len([s for s in sorted_sections if s.requires_lab or s.lab_hours > 0])} lab classes prioritized")
         
         for section in sorted_sections:
-            # Handle pinned sections
-            if getattr(section, 'is_pinned', False):
-                if section.pinned_day and section.pinned_time_slot:
-                    pinned_slots = getattr(section, 'pinned_slot_count', self._get_required_slot_count(section))
-                    self._allocate_section(
-                        section,
-                        section.pinned_room_id,
-                        section.pinned_day,
-                        section.pinned_time_slot,
-                        pinned_slots
-                    )
-                    continue
+            # Handle pinned sections (Manual Edits)
+            # Find how many slots are already scheduled from pins/manual edits
+            slots_already_pinned = sum(a[3] for a in self.section_assignments.get(section.id, []))
+            
+            # If fully scheduled by pins, we are done with this section
+            total_needed = self._get_required_slot_count(section)
+            if slots_already_pinned >= total_needed:
+                continue
             
             compatible_rooms = self.compatible_rooms.get(section.id, [])
             
             # FIX: Do NOT fallback to all rooms if compatible_rooms is empty.
-            # Empty list means strict constraints (capacity, college, etc.) blocked all rooms.
             if not compatible_rooms:
-                pass # section will remain unscheduled until aggressive pass (which also respects constraints now)
+                pass 
             
             # Calculate sessions with proper lec/lab separation
-            # Returns list of (slot_count, is_lab, actual_duration_minutes) tuples
             sessions = self._calculate_sessions(section)
             
-            # Track how many sessions we have - used to enforce different days for splits
+            # Substract already pinned slots from the sessions we need to schedule
+            # This is a bit simplified: we just reduce the slots_assigned counter
+            slots_assigned = slots_already_pinned
+            # Determine if we should enforce different days (if multiple sessions total)
             total_sessions = len(sessions)
-            require_different_days = total_sessions > 1  # If split, prefer different days
+            require_different_days = total_sessions > 1
+            total_slots_needed = total_needed
             
-            slots_assigned = 0
-            total_slots_needed = self._get_required_slot_count(section)
-            days_used = []
-            lab_days_used = []  # Track days used for lab separately
-            session_index = 0  # Track current session for day distribution
+            # For day distribution, we need to know which days are already used by pins
+            days_used = [pin['day'].lower() for pin in getattr(section, 'pinned_assignments', [])]
+            lab_days_used = [pin['day'].lower() for pin in getattr(section, 'pinned_assignments', []) if section.requires_lab]
             
+            # Skip sessions that are already covered by pins
+            # We skip session by session until we match the pinned slot count
+            remaining_sessions = []
+            running_total = 0
             for session_slots, is_lab_session, session_actual_minutes in sessions:
+                running_total += session_slots
+                if running_total <= slots_already_pinned:
+                    continue
+                # If a session is partially covered (unlikely with 1.5h blocks but possible), 
+                # we just schedule the whole remaining part of it
+                remaining_sessions.append((session_slots, is_lab_session, session_actual_minutes))
+
+            session_index = 0
+            for session_slots, is_lab_session, session_actual_minutes in remaining_sessions:
                 if slots_assigned >= total_slots_needed:
                     break
                 
-                # Check max subject sessions per week BEFORE trying to place
                 if self._check_max_subject_sessions_per_week(section):
                     break
                 
@@ -2679,15 +2707,14 @@ class EnhancedQuantumScheduler:
         scheduled_in_pass = 0
         
         for section in self.sections.values():
-            # Skip pinned sections
-            if getattr(section, 'is_pinned', False):
-                continue
-                
             assigned = sum(c for _, _, _, c in self.section_assignments.get(section.id, []))
             needed = self._get_required_slot_count(section)
             
             if assigned >= needed:
                 continue
+            
+            # If partially pinned, we still want to schedule the rest
+            # If fully pinned, we already skipped above
             
             # Check max subject sessions per week before even trying
             if self._check_max_subject_sessions_per_week(section):
