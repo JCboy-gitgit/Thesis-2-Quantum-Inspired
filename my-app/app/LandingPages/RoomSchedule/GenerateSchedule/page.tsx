@@ -5014,7 +5014,7 @@ export default function GenerateSchedulePage() {
           }
         }}
         rooms={getFilteredRooms()}
-        classes={allLoadedClasses}
+        classes={classes}
         timeSettings={timeSettings}
         initialAllocations={manualAllocations}
       />

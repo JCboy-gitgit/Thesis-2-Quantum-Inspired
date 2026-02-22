@@ -125,6 +125,13 @@ interface RequestBody {
     // Split session settings
     allow_split_sessions?: boolean // Allow splitting classes into multiple sessions (e.g., 3hr class -> 1.5hr Mon + 1.5hr Thu)
   }
+  manual_allocations?: Array<{
+    class_id?: number | string
+    room_id?: number | string | null
+    schedule_day?: string
+    schedule_time?: string
+    section?: string
+  }>
 }
 
 /**
@@ -929,6 +936,33 @@ export async function POST(request: NextRequest) {
       duration_minutes: slot.duration_minutes
     }))
 
+        // Normalize and filter manual allocations to avoid backend crashes from stale IDs
+        const validSectionIds = new Set<number>(sections.map((section: any) => section.id).filter((id: any) => typeof id === 'number'))
+        const validRoomIds = new Set<number>(rooms.map((room: any) => room.id).filter((id: any) => typeof id === 'number'))
+        const normalizedManualAllocations = (body.manual_allocations || [])
+          .map((alloc: any) => {
+            const classId = Number(alloc?.class_id)
+            const rawRoomId = alloc?.room_id
+            const roomId = rawRoomId === null || rawRoomId === undefined || rawRoomId === ''
+              ? null
+              : Number(rawRoomId)
+            const scheduleDay = String(alloc?.schedule_day || '').trim()
+            const scheduleTime = String(alloc?.schedule_time || '').trim()
+
+            if (!Number.isFinite(classId) || !validSectionIds.has(classId)) return null
+            if (!scheduleDay || !scheduleTime) return null
+            if (roomId !== null && roomId !== 0 && (!Number.isFinite(roomId) || !validRoomIds.has(roomId))) return null
+
+            return {
+              class_id: classId,
+              room_id: roomId,
+              schedule_day: scheduleDay,
+              schedule_time: scheduleTime,
+              section: alloc?.section
+            }
+          })
+          .filter((alloc): alloc is NonNullable<typeof alloc> => alloc !== null)
+
     console.log('🔄 Data converted for Python backend')
     console.log('   Sections:', sections.length)
     console.log('   Rooms:', rooms.length)
@@ -976,10 +1010,10 @@ export async function POST(request: NextRequest) {
       lunch_start_hour: lunchStartHour,  // Only used if lunch_mode is 'strict'/'flexible'
       lunch_end_hour: lunchEndHour,      // Only used if lunch_mode is 'strict'/'flexible'
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
-      strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? true, // Lectures should NOT be in lab rooms
+          strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? (body.config as any).strictLectureRoomMatching ?? true, // Lectures should NOT be in lab rooms
       // Split session settings - allow classes to be divided into multiple sessions
       allow_split_sessions: body.config.allow_split_sessions ?? true, // Default: enabled
-      fixed_allocations: (body as any).manual_allocations || [] // NEW: Manual edits to prioritize
+          fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
     console.log('📡 Trying to connect to Python backend...')

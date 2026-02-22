@@ -800,8 +800,25 @@ class EnhancedQuantumScheduler:
             room_id = alloc.get('room_id')
             day = (alloc.get('schedule_day', '') or '').lower()
             time_range = alloc.get('schedule_time', '')
+
+            try:
+                section_id = int(section_id)
+            except (TypeError, ValueError):
+                continue
+
+            if room_id in ('', 'null', 'None'):
+                room_id = None
+            elif room_id is not None:
+                try:
+                    room_id = int(room_id)
+                except (TypeError, ValueError):
+                    continue
             
             if not all([section_id, day, time_range]):
+                continue
+
+            if room_id not in (None, 0) and room_id not in self.rooms:
+                print(f"   ⚠️ Skipping manual allocation with unknown room_id={room_id} for section {section_id}")
                 continue
                 
             # 1. Find the target section(s)
