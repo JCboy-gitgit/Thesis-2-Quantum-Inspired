@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import type { Database } from '@/lib/database.types'
 
 // Backend URLs - Use environment variable first, then Render, then localhost for development
 const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
@@ -8,16 +11,30 @@ const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
 
 // Determine if we're in production (Vercel)
 const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
+const shouldSaveDebugPayload = process.env.QIA_DEBUG_SAVE_PAYLOAD === 'true'
+
+async function saveBackendPayloadDebug(payload: unknown) {
+  if (!shouldSaveDebugPayload) return
+
+  const debugPayloadPath = path.join(process.cwd(), 'backend', 'last_payload.json')
+
+  try {
+    await writeFile(debugPayloadPath, JSON.stringify(payload, null, 2), 'utf8')
+    console.log('📝 Debug payload saved to:', debugPayloadPath)
+  } catch (error: any) {
+    console.warn('⚠️ Debug payload save skipped:', error?.message || error)
+  }
+}
 
 // Cache-busting wrapper to prevent Next.js from caching Supabase requests
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
   fetch(url, { ...options, cache: 'no-store' })
 
-let _supabase: ReturnType<typeof createClient> | null = null
-const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+let _supabase: SupabaseClient<Database> | null = null
+const supabase = new Proxy({} as SupabaseClient<Database>, {
   get(_, prop) {
     if (!_supabase) {
-      _supabase = createClient(
+      _supabase = createClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { global: { fetch: fetchWithNoCache } }
@@ -615,10 +632,11 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
   // Frontend sends campus_group_ids (array) and year_batch_id
   const resolvedCampusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
   const resolvedClassGroupId = body.class_group_id || body.year_batch_id || 1
+  const supabaseUntyped = supabase as any
 
   try {
     // Create schedule record
-    const { data: scheduleData, error: scheduleError } = await supabase
+    const { data: scheduleData, error: scheduleError }: { data: { id: number } | null; error: any } = await supabaseUntyped
       .from('generated_schedules')
       .insert({
         schedule_name: body.schedule_name,
@@ -669,7 +687,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
       }))
 
       if (roomAllocations.length > 0) {
-        const { error: allocError } = await supabase
+        const { error: allocError } = await supabaseUntyped
           .from('room_allocations')
           .insert(roomAllocations)
 
@@ -1051,11 +1069,11 @@ export async function POST(request: NextRequest) {
     let usedBackendUrl = ''
     let lastError: any = null
 
+    await saveBackendPayloadDebug(backendPayload)
+
     for (const backend of uniqueBackendUrls) {
       try {
         console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
-
-        require('fs').writeFileSync('C:\\AntiGravity_Repo\\Thesis-2-Quantum-Inspired\\my-app\\backend\\last_payload.json', JSON.stringify(backendPayload, null, 2))
 
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
