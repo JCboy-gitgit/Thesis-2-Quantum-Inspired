@@ -789,7 +789,7 @@ export default function UploadCSVPage(): JSX.Element {
       <MenuBar onToggleSidebar={() => { }} showSidebarToggle={false} showAccountIcon={false} />
 
       <div className={styles['page-header-content']}>
-        <h1>
+        <h1 id="upload-header">
           <MdUpload size={32} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '12px' }} />
           Upload CSV Data
         </h1>

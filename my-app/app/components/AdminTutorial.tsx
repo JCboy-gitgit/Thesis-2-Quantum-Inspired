@@ -30,7 +30,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
             if (pathname.includes('/Home')) {
                 pageSteps = [
                     {
-                        target: '.admin-dashboard',
+                        target: '#dash-header',
                         placement: 'center',
                         content: 'Welcome to QTime Scheduler! Let\'s tour your powerful new admin dashboard. Fast, fluid, and intuitive!',
                         disableBeacon: true,
@@ -42,11 +42,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                     const header = document.querySelector('#dash-header');
 
                     if (header) {
-                        pageSteps.push({
-                            target: '#dash-header',
-                            content: 'The Dashboard Header: Your command center for university scheduling. Notice the "Welcome" message that updates based on the time of day.',
-                            placement: 'bottom',
-                        });
+                        // Header already targeted by first step
                     }
 
                     const stats = document.querySelector('#dash-stats-grid');
@@ -124,8 +120,8 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
             } else if (pathname.includes('/UploadCSV')) {
                 pageSteps = [
                     {
-                        target: 'body',
-                        placement: 'center',
+                        target: '#upload-header',
+                        placement: 'bottom',
                         content: 'Welcome to the Upload CSV Center! Let\'s go over what each section here is meant for.',
                         disableBeacon: true,
                     },
@@ -151,8 +147,8 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
             } else if (pathname.includes('Rooms-Management/MapViewer')) {
                 pageSteps = [
                     {
-                        target: 'body',
-                        placement: 'center',
+                        target: '#map-header',
+                        placement: 'bottom',
                         content: 'Welcome to the 2D Map Editor! Here you can visually orchestrate your campus layout. Let\'s walk through the workspace.',
                         disableBeacon: true,
                     },
@@ -369,8 +365,8 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                 if (pathname.includes('TeachingLoadAssignment')) {
                     pageSteps = [
                         {
-                            target: 'body',
-                            placement: 'center',
+                            target: '#teaching-header',
+                            placement: 'bottom',
                             content: 'Teaching Loads! Assign exact subjects, monitor max units, and define specific tasks per faculty member.',
                             disableBeacon: true,
                         }
@@ -378,8 +374,8 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                 } else if (pathname.includes('PreferredSchedules')) {
                     pageSteps = [
                         {
-                            target: 'body',
-                            placement: 'center',
+                            target: '#preferred-header',
+                            placement: 'bottom',
                             content: 'Preferred Schedules! View and manage when your faculty members are available to teach, aligning with their personal constraints.',
                             disableBeacon: true,
                         }
@@ -856,24 +852,12 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
 
         if (([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status)) {
             setRun(false)
-            document.body.style.overflow = 'auto'
         }
 
         if (action === 'next' || action === 'prev' || action === 'start') {
             onStepChange?.(step, index)
         }
     }
-
-    useEffect(() => {
-        if (run) {
-            document.body.style.overflow = 'hidden'
-        } else {
-            document.body.style.overflow = 'auto'
-        }
-        return () => {
-            document.body.style.overflow = 'auto'
-        }
-    }, [run])
 
     if (!isMounted) return null;
 
@@ -885,7 +869,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
             run={run}
             scrollToFirstStep
             scrollOffset={60}
-            disableScrolling={true}
+            disableScrolling={false}
             disableScrollParentFix={true}
             disableOverlayClose={true}
             spotlightPadding={10}

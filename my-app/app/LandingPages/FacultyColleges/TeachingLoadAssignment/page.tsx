@@ -856,7 +856,7 @@ function TeachingLoadAssignmentContent() {
           )}
 
           <div className={styles.welcomeSection}>
-            <h1 className={styles.welcomeTitle}>
+            <h1 className={styles.welcomeTitle} id="teaching-header">
               <BookMarked size={32} style={{ marginRight: '12px' }} />
               Teaching Load Assignment
             </h1>

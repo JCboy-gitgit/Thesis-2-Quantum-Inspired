@@ -145,7 +145,7 @@ export default function AdminPreferredSchedules() {
                             <MdOutlineArrowBack /> Back
                         </button>
                         <div style={{ marginLeft: '16px' }}>
-                            <h1 className={styles.title}>Faculty Preferred Schedules</h1>
+                            <h1 className={styles.title} id="preferred-header">Faculty Preferred Schedules</h1>
                             <p className={styles.subtitle}>View and manage availability preferences for all faculties (Green = Preferred, Red = Not Preferred)</p>
                         </div>
                     </div>
