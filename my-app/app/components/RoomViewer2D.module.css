@@ -2670,6 +2670,93 @@
   margin-bottom: 8px;
 }
 
+/* Modal Theme Overrides */
+:global([data-theme="light"]) .modalOverlay {
+  background-color: rgba(15, 23, 42, 0.45);
+}
+
+:global([data-theme="light"]) .modalContent {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.18);
+}
+
+:global([data-theme="light"]) .modalHeader {
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.04) 0%, rgba(15, 23, 42, 0.02) 100%);
+}
+
+:global([data-theme="light"]) .roomTitle {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .roomSubtitle {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .closeModalBtn {
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .modalTabs {
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+:global([data-theme="light"]) .tabBtn {
+  border-color: rgba(15, 23, 42, 0.16);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .tabBtn:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.24);
+}
+
+:global([data-theme="light"]) .detailLabel {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .detailValue {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .currentClassSection,
+:global([data-theme="light"]) .scheduleItem,
+:global([data-theme="light"]) .imageViewer,
+:global([data-theme="light"]) .imageCaption,
+:global([data-theme="light"]) .imageNavigation,
+:global([data-theme="light"]) .thumbnail,
+:global([data-theme="light"]) .emptyState {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+:global([data-theme="light"]) .classInfo,
+:global([data-theme="light"]) .scheduleSection,
+:global([data-theme="light"]) .imageCaption,
+:global([data-theme="light"]) .imageCounter,
+:global([data-theme="light"]) .emptyState {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .scheduleCourse {
+  color: #0f172a;
+}
+
+:global([data-theme="dark"]) .modalOverlay,
+:global([data-theme="green"]) .modalOverlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+:global([data-theme="dark"]) .modalContent,
+:global([data-theme="green"]) .modalContent {
+  background: var(--card-bg, rgba(15, 23, 42, 0.98));
+  border-color: var(--college-primary, #00d4ff);
+}
+
 .spinner {
   animation: spin 1s linear infinite;
 }
