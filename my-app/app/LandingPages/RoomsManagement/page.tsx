@@ -82,6 +82,29 @@ const displayBool = (value: boolean | null | undefined): string => {
   return value ? 'Yes' : 'No'
 }
 
+const ROOM_TYPE_OPTIONS = [
+  'Computer Room (Lab)',
+  'Lecture Room (Lec)',
+  'Laboratory Room (Lab)',
+  'Other (Lec)'
+] as const
+
+const normalizeRoomType = (roomType?: string | null): string => {
+  if (!roomType) return 'Other (Lec)'
+
+  const value = roomType.trim().toLowerCase()
+
+  if (value.includes('computer')) return 'Computer Room (Lab)'
+  if (value.includes('laboratory') || value === 'lab') return 'Laboratory Room (Lab)'
+  if (value.includes('lecture') || value.includes('classroom') || value.includes('hall')) return 'Lecture Room (Lec)'
+
+  if (value === 'computer room (lab)' || value === 'lecture room (lec)' || value === 'laboratory room (lab)' || value === 'other (lec)') {
+    return roomType
+  }
+
+  return 'Other (Lec)'
+}
+
 const getRoomStatusInfo = (status: string | null | undefined) => {
   switch (status?.toLowerCase()) {
     case 'usable':
@@ -162,7 +185,7 @@ export default function RoomsManagementPage() {
     room_code: '',
     capacity: 30,
     floor_number: 1,
-    room_type: 'Classroom',
+    room_type: 'Lecture Room (Lec)',
     specific_classification: '',
     has_ac: false,
     has_whiteboard: true,
@@ -442,7 +465,7 @@ export default function RoomsManagementPage() {
         if (!matchesSearch) return false
       }
       if (filterFloor !== 'all' && room.floor_number !== parseInt(filterFloor)) return false
-      if (filterRoomType !== 'all' && room.room_type !== filterRoomType) return false
+      if (filterRoomType !== 'all' && normalizeRoomType(room.room_type) !== filterRoomType) return false
       if (filterCollege !== 'all' && room.college !== filterCollege) return false
       if (filterAC && !room.has_ac) return false
       if (filterTV && !room.has_tv) return false
@@ -457,7 +480,7 @@ export default function RoomsManagementPage() {
     const floors = new Set(allRooms.map(r => r.floor_number).filter(f => f !== null))
     return Array.from(floors).sort((a, b) => (a as number) - (b as number)) as number[]
   }, [allRooms])
-  const uniqueRoomTypes = useMemo(() => [...new Set(allRooms.map(r => r.room_type).filter(t => t))].sort(), [allRooms])
+  const uniqueRoomTypes = useMemo(() => ROOM_TYPE_OPTIONS, [])
   const uniqueColleges = useMemo(() => [...new Set(allRooms.map(r => r.college).filter(c => c))].sort(), [allRooms])
 
   // Filtered rooms for search view
@@ -476,7 +499,7 @@ export default function RoomsManagementPage() {
       }
       if (filterBuilding !== 'all' && room.building !== filterBuilding) return false
       if (filterFloor !== 'all' && room.floor_number !== parseInt(filterFloor)) return false
-      if (filterRoomType !== 'all' && room.room_type !== filterRoomType) return false
+      if (filterRoomType !== 'all' && normalizeRoomType(room.room_type) !== filterRoomType) return false
       if (filterCollege !== 'all' && room.college !== filterCollege) return false
       if (filterAC && !room.has_ac) return false
       if (filterTV && !room.has_tv) return false
@@ -728,7 +751,7 @@ export default function RoomsManagementPage() {
       room_code: room.room_code || '',
       capacity: room.capacity || 30,
       floor_number: room.floor_number || 1,
-      room_type: room.room_type || 'Classroom',
+      room_type: normalizeRoomType(room.room_type),
       specific_classification: room.specific_classification || '',
       has_ac: room.has_ac || false,
       has_whiteboard: room.has_whiteboard ?? true,
@@ -750,7 +773,7 @@ export default function RoomsManagementPage() {
       room_code: '',
       capacity: 30,
       floor_number: 1,
-      room_type: 'Classroom',
+      room_type: 'Lecture Room (Lec)',
       specific_classification: '',
       has_ac: false,
       has_whiteboard: true,
@@ -1192,7 +1215,7 @@ export default function RoomsManagementPage() {
                           <p><MdPeople size={11} /> Capacity: {room.capacity}</p>
                           <p><MdLocationOn size={11} /> Floor {displayValue(room.floor_number, 'G')}</p>
                         </div>
-                        <p className={styles.roomType}>{room.room_type || 'Classroom'}</p>
+                        <p className={styles.roomType}>{normalizeRoomType(room.room_type)}</p>
                       </div>
                       <div className={styles.roomAmenities}>
                         <span className={room.has_ac ? styles.hasAmenity : styles.noAmenity} title="AC"><MdAir size={14} /></span>
@@ -1387,13 +1410,9 @@ export default function RoomsManagementPage() {
                     onChange={e => setFormData(prev => ({ ...prev, room_type: e.target.value }))}
                     className={styles.formSelect}
                   >
-                    <option value="Lecture Room">Lecture Room</option>
-                    <option value="Laboratory">Laboratory</option>
-                    <option value="Computer Lab">Computer Lab</option>
-                    <option value="Lecture Hall">Lecture Hall</option>
-                    <option value="Conference Room">Conference Room</option>
-                    <option value="Classroom">Classroom</option>
-                    <option value="Other">Other</option>
+                    {ROOM_TYPE_OPTIONS.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
                   </select>
                 </div>
                 <div className={styles.formGroup}>
@@ -1590,7 +1609,7 @@ export default function RoomsManagementPage() {
                   </div>
                   <div className={styles.roomDetailItem}>
                     <span className={styles.roomDetailLabel}>Room Type</span>
-                    <span className={styles.roomDetailValue}>{displayValue(selectedRoom.room_type)}</span>
+                    <span className={styles.roomDetailValue}>{normalizeRoomType(selectedRoom.room_type)}</span>
                   </div>
                   <div className={styles.roomDetailItem}>
                     <span className={styles.roomDetailLabel}>Status</span>
