@@ -867,7 +867,7 @@ function CoursesManagementContent() {
               <div className={styles.welcomeSection} id="courses-selection-header">
                 <h1 className={styles.welcomeTitle}>
                   <BookOpen size={32} style={{ marginRight: '12px' }} />
-                  Courses Management
+                  Course Management
                 </h1>
                 <p className={styles.welcomeSubtitle}>
                   View and manage uploaded course curricula from CSV files
