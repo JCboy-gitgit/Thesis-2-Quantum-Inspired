@@ -914,7 +914,7 @@ export default function AdminLiveTimetablePage() {
                             <div>
                                 <h1 className={styles.title}>
                                     <MdLiveTv className={styles.titleIcon} />
-                                    Live Timetable Monitor
+                                    Live Schedule Monitor
                                 </h1>
                                 <p className={styles.subtitle}>
                                     {schedule ? `${schedule.schedule_name} · ${schedule.semester} ${schedule.academic_year}` : 'No locked schedule found'}

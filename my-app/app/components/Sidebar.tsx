@@ -140,7 +140,7 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
           icon: MdVisibility
         },
         {
-          label: 'Live Timetable',
+          label: 'Live Schedule',
           path: '/LandingPages/LiveTimetable',
           icon: MdLiveTv,
           exact: true
