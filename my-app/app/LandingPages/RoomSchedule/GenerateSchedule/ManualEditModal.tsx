@@ -212,8 +212,19 @@ export default function ManualEditModal({
             if (collegeRoomMatchingEnabled) {
                 const s_col = classInfo.college?.trim().toUpperCase();
                 const r_col = room.college?.trim().toUpperCase();
-                if (s_col && r_col && r_col !== 'SHARED' && r_col !== s_col) {
-                    conflicts.push(`College conflict: Room is ${r_col}, Class is ${s_col}`);
+                if (s_col && r_col && r_col !== 'SHARED') {
+                    // Extract abbreviation from parentheses, e.g. "COLLEGE OF SCIENCE (CS)" → "CS"
+                    const extractAbbr = (col: string) => {
+                        const match = col.match(/\(([^)]+)\)\s*$/);
+                        return match ? match[1].trim() : col;
+                    };
+                    const s_abbr = extractAbbr(s_col);
+                    const r_abbr = extractAbbr(r_col);
+                    // Match if either the full strings match OR their abbreviations match
+                    const isMatch = r_col === s_col || r_abbr === s_abbr || r_col === s_abbr || r_abbr === s_col;
+                    if (!isMatch) {
+                        conflicts.push(`College conflict: Room is ${r_col}, Class is ${s_col}`);
+                    }
                 }
             }
         }

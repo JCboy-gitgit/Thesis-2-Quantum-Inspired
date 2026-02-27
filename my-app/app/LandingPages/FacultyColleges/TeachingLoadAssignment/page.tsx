@@ -1101,17 +1101,133 @@ function TeachingLoadAssignmentContent() {
 
                   <div className={stylesLocal.courseSelection}>
                     <h3>Select Courses ({selectedCourses.length})</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginTop: 10, maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border-color)', padding: 10, borderRadius: 10 }}>
-                      {getFilteredCoursesForAssignment().map(course => (
-                        <label key={course.id} style={{ display: 'flex', gap: 8, padding: 8, background: selectedCourses.includes(course.id) ? 'var(--bg-gray-100)' : 'transparent', borderRadius: 8, cursor: 'pointer' }}>
-                          <input type="checkbox" checked={selectedCourses.includes(course.id)} onChange={() => toggleCourseSelection(course.id)} />
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 13 }}>{course.course_code}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-medium)' }}>{course.course_name}</div>
-                          </div>
-                        </label>
-                      ))}
+
+                    {/* Section Auto-Fill */}
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-medium)', marginBottom: 4, display: 'block' }}>Quick Fill from Section</label>
+                      <select
+                        value={selectedSectionId || ''}
+                        onChange={(e) => handleSectionChange(e.target.value ? parseInt(e.target.value) : null)}
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '2px solid var(--border-color)', background: 'var(--bg-white)', fontSize: 13, color: 'var(--text-dark)' }}
+                      >
+                        <option value="">— Select a section to auto-fill its courses —</option>
+                        {getAvailableSections().map(s => (
+                          <option key={s.id} value={s.id}>{s.section_name} — {s.degree_program} (Year {s.year_level}, {s.student_count} students)</option>
+                        ))}
+                      </select>
                     </div>
+
+                    {/* Search + Filters Row */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <div style={{ flex: '1 1 200px', position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+                        <input
+                          type="text"
+                          placeholder="Search course code or name..."
+                          value={courseSearchTerm}
+                          onChange={(e) => setCourseSearchTerm(e.target.value)}
+                          style={{ width: '100%', padding: '8px 12px 8px 30px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 13, background: 'var(--bg-white)', color: 'var(--text-dark)' }}
+                        />
+                      </div>
+                      <select value={courseFilterDegreeProgram} onChange={(e) => setCourseFilterDegreeProgram(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 12, background: 'var(--bg-white)', color: 'var(--text-dark)', minWidth: 120 }}>
+                        <option value="all">All Programs</option>
+                        {getDegreePrograms().map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                      <select value={courseFilterYearLevel} onChange={(e) => setCourseFilterYearLevel(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 12, background: 'var(--bg-white)', color: 'var(--text-dark)', minWidth: 90 }}>
+                        <option value="all">All Years</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
+                      </select>
+                      <select value={courseFilterSemester} onChange={(e) => setCourseFilterSemester(e.target.value)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 12, background: 'var(--bg-white)', color: 'var(--text-dark)', minWidth: 120 }}>
+                        <option value="all">All Semesters</option>
+                        {semesters.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      {selectedCourses.length > 0 && (
+                        <button onClick={() => setSelectedCourses([])} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #ef4444', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                          Clear All ({selectedCourses.length})
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Grouped Course List */}
+                    <div style={{ maxHeight: 340, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 10, background: 'var(--bg-white)' }}>
+                      {(() => {
+                        const grouped = getGroupedCourses()
+                        const totalFiltered = getFilteredCoursesForAssignment().length
+
+                        if (totalFiltered === 0) {
+                          return (
+                            <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
+                              No courses found matching your filters.
+                            </div>
+                          )
+                        }
+
+                        return Array.from(grouped.entries()).map(([program, yearMap]) => (
+                          <div key={program}>
+                            {/* Program Header */}
+                            <div style={{ padding: '8px 14px', background: 'var(--primary-alpha)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 1 }}>
+                              <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>📚 {program}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-medium)', marginLeft: 8 }}>
+                                ({Array.from(yearMap.values()).reduce((sum, arr) => sum + arr.length, 0)} courses)
+                              </span>
+                            </div>
+                            {Array.from(yearMap.entries()).sort(([a], [b]) => a - b).map(([yearLevel, yearCourses]) => (
+                              <div key={`${program}-${yearLevel}`}>
+                                {/* Year Level Subheader */}
+                                <div style={{ padding: '5px 14px 5px 28px', background: 'var(--bg-gray-50)', borderBottom: '1px solid var(--border-color)', fontSize: 11, fontWeight: 600, color: 'var(--text-medium)' }}>
+                                  Year {yearLevel} — {yearCourses.length} course{yearCourses.length !== 1 ? 's' : ''}
+                                </div>
+                                {yearCourses.map(course => {
+                                  const isSelected = selectedCourses.includes(course.id)
+                                  const totalHrs = (course.lec_hours || 0) + (course.lab_hours || 0)
+                                  return (
+                                    <label
+                                      key={course.id}
+                                      style={{
+                                        display: 'flex', gap: 10, padding: '10px 14px', cursor: 'pointer',
+                                        borderBottom: '1px solid var(--border-color)',
+                                        background: isSelected ? 'rgba(46,175,125,0.08)' : 'transparent',
+                                        transition: 'background 0.15s',
+                                        alignItems: 'flex-start'
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleCourseSelection(course.id)}
+                                        style={{ marginTop: 3, accentColor: 'var(--primary)' }}
+                                      />
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                          <strong style={{ fontSize: 13, color: 'var(--text-dark)' }}>{course.course_code}</strong>
+                                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: totalHrs > 0 ? 'var(--primary-alpha)' : '#fee2e2', color: totalHrs > 0 ? 'var(--primary)' : '#ef4444' }}>
+                                            {course.lec_hours || 0}L + {course.lab_hours || 0}Lab = {totalHrs}h
+                                          </span>
+                                          {course.semester && (
+                                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, fontWeight: 500, background: 'var(--bg-gray-100)', color: 'var(--text-medium)' }}>
+                                              {course.semester === 'First Semester' ? '1st Sem' : course.semester === 'Second Semester' ? '2nd Sem' : course.semester}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div style={{ fontSize: 12, color: 'var(--text-medium)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{course.course_name}</div>
+                                      </div>
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                    {selectedCourses.length > 0 && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}>
+                        ✓ {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''} selected
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className={stylesLocal.modalFooter}>
