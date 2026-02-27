@@ -113,6 +113,9 @@ interface ClassSchedule {
   required_lec_features?: string[] // NEW: Room features specifically for LEC
   required_lab_features?: string[] // NEW: Room features specifically for LAB
   component?: string
+  college: string // NEW: College assigned to the section/course
+  is_split_group?: boolean
+  split_type?: string
 }
 
 interface TeacherSchedule {
@@ -147,6 +150,7 @@ interface ScheduleConfig {
   allowSplitSessions: boolean // NEW
   collegeRoomMatchingEnabled: boolean // NEW: Enforce college-room rule
   allowG1G2SplitSessions: boolean // NEW: Toggle G1/G2 splitting
+  enforceG1G2EqualHours: boolean // NEW: Ensure G1/G2 have balanced scheduled hours
   // NEW: Soft Constraint Penalties (Fine-tuning)
   softRoomTypeMismatch: number
   softRoomTypeMajorMismatch: number
@@ -217,6 +221,9 @@ interface RoomAllocation {
   component?: string
   required_lec_features?: string[]
   required_lab_features?: string[]
+  college?: string
+  is_split_group?: boolean
+  split_type?: string
 }
 
 interface UnscheduledItem {
@@ -257,8 +264,14 @@ interface ScheduleResult {
   allocations: RoomAllocation[]
   // BulSU QSA: Online class stats
   onlineDays?: string[]
-  onlineClassCount?: number
-  physicalClassCount?: number
+  onlineClassCount: number
+  physicalClassCount: number
+  splitSessionStats?: {
+    original_sections_count: number
+    after_split_count: number
+    hybrid_courses_split: number
+    split_sections_created: number
+  }
 }
 
 // Days for timetable
@@ -345,6 +358,7 @@ export default function GenerateSchedulePage() {
     allowSplitSessions: true,
     collegeRoomMatchingEnabled: true,
     allowG1G2SplitSessions: true,
+    enforceG1G2EqualHours: true,
     // Soft Penalties Defaults
     softRoomTypeMismatch: 50,
     softRoomTypeMajorMismatch: 500,
@@ -490,13 +504,18 @@ export default function GenerateSchedulePage() {
       const selectedSectionNames = sections
         .filter(s => selectedSectionIds.includes(s.id))
         .map(s => s.section_name)
-      filtered = filtered.filter(cls => selectedSectionNames.includes(cls.section))
+      filtered = filtered.filter(cls => {
+        // Strip G1/G2 suffix to match against original section names
+        const baseSectionName = cls.section.replace(/ G[12]$/, '')
+        return selectedSectionNames.includes(baseSectionName) || selectedSectionNames.includes(cls.section)
+      })
     }
     // Exclude specific course-section combos
     if (excludedCourseKeys.size > 0) {
       filtered = filtered.filter(cls => {
-        // Find the section id by name
-        const sec = sections.find(s => s.section_name === cls.section)
+        // Strip G1/G2 suffix to find the correct base section ID
+        const baseSectionName = cls.section.replace(/ G[12]$/, '')
+        const sec = sections.find(s => s.section_name === baseSectionName || s.section_name === cls.section)
         if (!sec) return true
         const key = `${sec.id}-${cls.course_code}`
         return !excludedCourseKeys.has(key)
@@ -758,14 +777,40 @@ export default function GenerateSchedulePage() {
       const unassigned: typeof unassignedCourses = []
       let autoId = 1 // Generate unique numeric IDs
 
+      // Helper to split hybrid classes into G1/G2 if lab capacity is exceeded
+      const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
+        if (!config.allowG1G2SplitSessions) return classList
+
+        const labRooms = rooms.filter(r => r.room_type?.toLowerCase().includes('lab'))
+        const maxLabCap = labRooms.length > 0 ? Math.max(...labRooms.map(r => r.capacity || 0)) : 30
+
+        const result: ClassSchedule[] = []
+        classList.forEach(c => {
+          const needsSplit = (c.lab_hours > 0) && (c.student_count > maxLabCap)
+
+          if (needsSplit) {
+            if (c.lec_hours > 0) {
+              result.push({ ...c, id: autoId++, lab_hours: 0, total_hours: c.lec_hours, component: 'LEC' })
+            }
+            const g1Count = Math.ceil(c.student_count / 2)
+            const g2Count = Math.floor(c.student_count / 2)
+            result.push({ ...c, id: autoId++, section: `${c.section} G1`, student_count: g1Count, lec_hours: 0, total_hours: c.lab_hours, component: 'LAB' })
+            result.push({ ...c, id: autoId++, section: `${c.section} G2`, student_count: g2Count, lec_hours: 0, total_hours: c.lab_hours, component: 'LAB' })
+          } else {
+            result.push(c)
+          }
+        })
+        return result
+      }
+
       for (const section of batchSections) {
         const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
         const sectionCourses = filteredCourses.filter((c: any) =>
           sectionAssignments.some((a: any) => a.course_id === c.id)
         )
 
+        const currentSectionClasses: ClassSchedule[] = []
         for (const course of sectionCourses) {
-          // Check if this course-section has an assigned teacher
           const teacherKey = `${course.id}-${section.section_name}`
           const teacherKeyNoSection = `${course.id}-`
           const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
@@ -780,8 +825,8 @@ export default function GenerateSchedulePage() {
             })
           }
 
-          classSchedules.push({
-            id: autoId++, // Use auto-incrementing numeric ID
+          currentSectionClasses.push({
+            id: autoId++,
             course_code: course.course_code || '',
             course_name: course.course_name || '',
             section: section.section_name || '',
@@ -795,9 +840,10 @@ export default function GenerateSchedulePage() {
             department: course.department || section.department || '',
             semester: course.semester || '',
             academic_year: course.academic_year || '',
-            teacher_name: assignedTeacher?.faculty_name || ''  // Include assigned teacher
+            teacher_name: assignedTeacher?.faculty_name || ''
           })
         }
+        classSchedules.push(...splitClasses(currentSectionClasses))
       }
 
       setAllLoadedClasses(classSchedules)
@@ -1169,9 +1215,91 @@ export default function GenerateSchedulePage() {
           })
         }
 
+        // Helper to split hybrid classes into G1/G2 if room capacity is exceeded
+        const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
+          if (!config.allowG1G2SplitSessions) return classList
+
+          const result: ClassSchedule[] = []
+          classList.forEach(c => {
+            // Determine appropriate max capacity for this specific class type
+            const isLabComponent = c.lab_hours > 0 || c.component === 'LAB'
+            const targetRoomType = isLabComponent ? 'lab' : 'lecture'
+
+            // Find rooms compatible with this class's college and required type
+            const compatibleRooms = rooms.filter(r => {
+              const rType = (r.room_type || '').toLowerCase()
+              const rCollege = (r.college || '').toUpperCase()
+              const cCollege = (c.college || '').toUpperCase()
+
+              const typeMatch = rType.includes(targetRoomType) || (targetRoomType === 'lab' && rType.includes('computer'))
+              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || rCollege === cCollege
+
+              return typeMatch && collegeMatch
+            })
+
+            // Determine threshold: use actual max compatible room capacity, but capped at reasonable defaults 
+            // to ensure pedagogical quality (e.g. don't put 60 students in one lab even if room fits)
+            const maxCap = compatibleRooms.length > 0
+              ? Math.max(...compatibleRooms.map(r => r.capacity || 0))
+              : (isLabComponent ? 30 : 50)
+
+            // Make splitting MORE STRICT: 
+            // 1. If Lab and > 40 students, split (standard pedagogical limit)
+            // 2. If Class size > max available room capacity of that type
+            const needsSplit = (isLabComponent && (c.student_count > 40 || c.student_count > maxCap)) ||
+              (!isLabComponent && c.student_count > maxCap)
+
+            if (needsSplit) {
+              console.log(`👥 Strictly splitting section ${c.section} (${c.course_code}) because student count ${c.student_count} > max capacity ${maxCap}`)
+              // Split into shared LEC and G1/G2 LABs
+              if (c.lec_hours > 0) {
+                result.push({
+                  ...c,
+                  id: autoId++,
+                  lab_hours: 0,
+                  total_hours: c.lec_hours,
+                  component: 'LEC'
+                })
+              }
+
+              const g1Count = Math.ceil(c.student_count / 2)
+              const g2Count = Math.floor(c.student_count / 2)
+
+              result.push({
+                ...c,
+                id: autoId++,
+                section: `${c.section} G1`,
+                lec_hours: 0,
+                student_count: g1Count,
+                total_hours: c.lab_hours,
+                component: 'LAB',
+                is_split_group: true,
+                split_type: 'G1'
+              })
+
+              result.push({
+                ...c,
+                id: autoId++,
+                section: `${c.section} G2`,
+                lec_hours: 0,
+                student_count: g2Count,
+                total_hours: c.lab_hours,
+                component: 'LAB',
+                is_split_group: true,
+                split_type: 'G2'
+              })
+            } else {
+              result.push(c)
+            }
+          })
+          return result
+        }
+
         for (const section of batchSections) {
           const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
           const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
+
+          const currentSectionClasses: ClassSchedule[] = []
           for (const course of sectionCourses) {
             const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
@@ -1186,7 +1314,7 @@ export default function GenerateSchedulePage() {
                 department: course.department || section.department || ''
               })
             }
-            allClassSchedules.push({
+            currentSectionClasses.push({
               id: autoId++,
               course_code: course.course_code || '',
               course_name: course.course_name || '',
@@ -1207,9 +1335,12 @@ export default function GenerateSchedulePage() {
               required_lec_features: reqMap.get(courseId)?.lec || [],
               required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
-                (course.lab_hours > 0) ? 'LAB' : 'LEC'
+                (course.lab_hours > 0) ? 'LAB' : 'LEC',
+              college: course.college || section.college || ''
             })
           }
+
+          allClassSchedules.push(...splitClasses(currentSectionClasses))
         }
       }
 
@@ -1321,9 +1452,91 @@ export default function GenerateSchedulePage() {
           })
         }
 
+        // Helper to split hybrid classes into G1/G2 if lab capacity is exceeded
+        const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
+          if (!config.allowG1G2SplitSessions) return classList
+
+          const result: ClassSchedule[] = []
+          classList.forEach(c => {
+            // Determine appropriate max capacity for this specific class type
+            const isLabComponent = c.lab_hours > 0 || c.component === 'LAB'
+            const targetRoomType = isLabComponent ? 'lab' : 'lecture'
+
+            // Find rooms compatible with this class's college and required type
+            const compatibleRooms = rooms.filter(r => {
+              const rType = (r.room_type || '').toLowerCase()
+              const rCollege = (r.college || '').toUpperCase()
+              const cCollege = (c.college || '').toUpperCase()
+
+              const typeMatch = rType.includes(targetRoomType) || (targetRoomType === 'lab' && rType.includes('computer'))
+              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || rCollege === cCollege
+
+              return typeMatch && collegeMatch
+            })
+
+            // Determine threshold: use actual max compatible room capacity, but capped at reasonable defaults 
+            // to ensure pedagogical quality (e.g. don't put 60 students in one lab even if room fits)
+            const maxCap = compatibleRooms.length > 0
+              ? Math.max(...compatibleRooms.map(r => r.capacity || 0))
+              : (isLabComponent ? 30 : 50)
+
+            // Make splitting MORE STRICT: 
+            // 1. If Lab and > 40 students, split (standard pedagogical limit)
+            // 2. If Class size > max available room capacity of that type
+            const needsSplit = (isLabComponent && (c.student_count > 40 || c.student_count > maxCap)) ||
+              (!isLabComponent && c.student_count > maxCap)
+
+            if (needsSplit) {
+              console.log(`👥 Strictly splitting section ${c.section} (${c.course_code}) because student count ${c.student_count} > max capacity ${maxCap}`)
+              // Split into shared LEC and G1/G2 LABs
+              if (c.lec_hours > 0) {
+                result.push({
+                  ...c,
+                  id: autoId++,
+                  lab_hours: 0,
+                  total_hours: c.lec_hours,
+                  component: 'LEC'
+                })
+              }
+
+              const g1Count = Math.ceil(c.student_count / 2)
+              const g2Count = Math.floor(c.student_count / 2)
+
+              result.push({
+                ...c,
+                id: autoId++,
+                section: `${c.section} G1`,
+                lec_hours: 0,
+                student_count: g1Count,
+                total_hours: c.lab_hours,
+                component: 'LAB',
+                is_split_group: true,
+                split_type: 'G1'
+              })
+
+              result.push({
+                ...c,
+                id: autoId++,
+                section: `${c.section} G2`,
+                lec_hours: 0,
+                student_count: g2Count,
+                total_hours: c.lab_hours,
+                component: 'LAB',
+                is_split_group: true,
+                split_type: 'G2'
+              })
+            } else {
+              result.push(c)
+            }
+          })
+          return result
+        }
+
         for (const section of batchSections) {
           const sectionAssignments = assignments.filter((a: any) => a.section_id === section.id)
           const sectionCourses = filteredCourses.filter((c: any) => sectionAssignments.some((a: any) => a.course_id === c.id))
+
+          const currentSectionClasses: ClassSchedule[] = []
           for (const course of sectionCourses) {
             const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
@@ -1338,7 +1551,7 @@ export default function GenerateSchedulePage() {
                 department: course.department || section.department || ''
               })
             }
-            allClassSchedules.push({
+            currentSectionClasses.push({
               id: autoId++,
               course_code: course.course_code || '',
               course_name: course.course_name || '',
@@ -1359,9 +1572,11 @@ export default function GenerateSchedulePage() {
               required_lec_features: reqMap.get(courseId)?.lec || [],
               required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
-                (course.lab_hours > 0) ? 'LAB' : 'LEC'
+                (course.lab_hours > 0) ? 'LAB' : 'LEC',
+              college: course.college || section.college || ''
             })
           }
+          allClassSchedules.push(...splitClasses(currentSectionClasses))
         }
       }
 
@@ -1609,6 +1824,7 @@ export default function GenerateSchedulePage() {
           allow_split_sessions: config.allowSplitSessions,
           college_room_matching_enabled: config.collegeRoomMatchingEnabled,
           allow_g1_g2_split_sessions: config.allowG1G2SplitSessions,
+          enforce_g1_g2_equal_hours: config.enforceG1G2EqualHours,
           // Soft Penalties
           SOFT_ROOM_TYPE_MISMATCH: config.softRoomTypeMismatch,
           SOFT_ROOM_TYPE_MAJOR_MISMATCH: config.softRoomTypeMajorMismatch,
@@ -1730,7 +1946,8 @@ export default function GenerateSchedulePage() {
         // BulSU QSA: Online class stats
         onlineDays: result.online_days || [],
         onlineClassCount: result.online_class_count || 0,
-        physicalClassCount: result.physical_class_count || 0
+        physicalClassCount: result.physical_class_count || 0,
+        splitSessionStats: result.split_session_stats
       })
       setShowResults(true)
       setShowTimetable(true)
@@ -1892,6 +2109,26 @@ export default function GenerateSchedulePage() {
       // Get unique values for export all
       const rooms = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.room))].filter(Boolean).sort() as string[]
       // Helper to get base section (strip LAB/LEC suffixes including comma-separated variants)
+      // Helper to get base section (strips LEC/LAB but keeps G1/G2)
+      const getViewingSectionName = (s: string) => {
+        if (!s) return ''
+        return s
+          .replace(/_LAB$/i, '')
+          .replace(/_LEC$/i, '')
+          .replace(/_LECTURE$/i, '')
+          .replace(/_LABORATORY$/i, '')
+          .replace(/, LAB$/i, '')
+          .replace(/, LEC$/i, '')
+          .replace(/, LECTURE$/i, '')
+          .replace(/, LABORATORY$/i, '')
+          .replace(/-LAB$/i, '')
+          .replace(/-LEC$/i, '')
+          .replace(/ LAB$/i, '')
+          .replace(/ LEC$/i, '')
+          .replace(/_/g, ' ')
+          .trim()
+      }
+
       const getBaseSection = (s: string) => {
         if (!s) return ''
         return s
@@ -1899,8 +2136,8 @@ export default function GenerateSchedulePage() {
           .replace(/_LEC$/i, '')
           .replace(/_LECTURE$/i, '')
           .replace(/_LABORATORY$/i, '')
-          .replace(/_G[12](_LAB)?$/i, '')
-          .replace(/ G[12]$/i, '')
+          .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+          .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
           .replace(/, LAB$/i, '')
           .replace(/, LEC$/i, '')
           .replace(/, LECTURE$/i, '')
@@ -1909,6 +2146,7 @@ export default function GenerateSchedulePage() {
           .replace(/ LEC$/i, '')
           .replace(/-LAB$/i, '')
           .replace(/-LEC$/i, '')
+          .replace(/_/g, ' ')
           .trim()
       }
       // Get unique base sections (combining LAB and LEC into one)
@@ -2498,6 +2736,30 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
                 )}
+
+                {/* BulSU QSA: Split Session Statistics */}
+                {scheduleResult.splitSessionStats && scheduleResult.splitSessionStats.hybrid_courses_split > 0 && (
+                  <div className={styles.onlineStatsCard} style={{ marginTop: '16px', background: 'rgba(56, 142, 60, 0.05)', border: '1px solid rgba(56, 142, 60, 0.1)' }}>
+                    <h4 className={styles.onlineStatsTitle} style={{ color: '#2e7d32' }}>
+                      <FaLayerGroup size={16} /> G1/G2 Split Session Metrics
+                    </h4>
+                    <div className={styles.onlineStatsGrid}>
+                      <div className={styles.onlineStatItem}>
+                        <span className={styles.onlineStatValue}>{scheduleResult.splitSessionStats.hybrid_courses_split}</span>
+                        <span className={styles.onlineStatLabel}>Hybrid Courses Split</span>
+                      </div>
+                      <div className={styles.onlineStatItem}>
+                        <span className={styles.onlineStatValue}>{scheduleResult.splitSessionStats.split_sections_created}</span>
+                        <span className={styles.onlineStatLabel}>G1/G2 Lab Sessions Created</span>
+                      </div>
+                    </div>
+                    {config.enforceG1G2EqualHours && (
+                      <p className={styles.onlineDaysNote} style={{ color: '#166534', borderTopColor: 'rgba(56, 142, 60, 0.1)' }}>
+                        ⚖️ Hour Balancing Enforced: Scheduler penalized imbalances between G1/G2 pairs.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Unscheduled Classes Section */}
@@ -2675,7 +2937,11 @@ export default function GenerateSchedulePage() {
                         className={styles.filterSelect}
                       >
                         <option value="all">All Sections</option>
-                        {([...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.section).filter(Boolean))] as string[]).sort().map((section: string) => (
+                        {([...new Set(scheduleResult.allocations.map((a: RoomAllocation) => {
+                          const name = a.section || '';
+                          // Strip LEC/LAB but preserve G1/G2
+                          return name.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '').replace(/_/g, ' ').trim();
+                        }).filter(Boolean))] as string[]).sort().map((section: string) => (
                           <option key={section} value={section}>{section}</option>
                         ))}
                       </select>
@@ -2746,19 +3012,20 @@ export default function GenerateSchedulePage() {
                             if (selectedTimetableRoom !== 'all' && a.room !== selectedTimetableRoom) return false;
                           } else if (timetableView === 'section') {
                             if (selectedTimetableSection !== 'all') {
-                              // If specific group (G1/G2) selected, show its sessions AND the base section sessions (shared lectures)
-                              // If base section selected, show ONLY its sessions (to avoid clutter from all sub-groups)
-                              const isSubGroup = selectedTimetableSection.match(/_G[12]$/i) || selectedTimetableSection.match(/ G[12]$/i);
+                              const currentSectionName = a.section || '';
+                              // Strip LEC/LAB for matching but preserve G1/G2
+                              const currentViewingName = currentSectionName.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '').replace(/_/g, ' ').trim();
 
-                              if (isSubGroup) {
-                                // Strip the G1/G2 to find the base
-                                const baseOfSelected = selectedTimetableSection.replace(/_G[12]$/i, '').replace(/ G[12]$/i, '');
-                                if (a.section !== selectedTimetableSection && a.section !== baseOfSelected) return false;
-                              } else {
-                                // Just match exactly (or match sub-groups if they want to see combined? 
-                                // User said "not combining into 1", so BSM CS 1A should show only BSM CS 1A)
-                                if (a.section !== selectedTimetableSection) return false;
+                              if (currentViewingName === selectedTimetableSection) return true;
+
+                              // Handle shared sessions (e.g. BSM CS 1A LEC matches BSM CS 1A G1 view)
+                              const isSubGroupOfSelected = selectedTimetableSection.match(/ G[12]$/i);
+                              if (isSubGroupOfSelected) {
+                                const parentName = selectedTimetableSection.replace(/ G[12]$/i, '');
+                                if (currentViewingName === parentName) return true;
                               }
+
+                              return false;
                             }
                           } else if (timetableView === 'teacher') {
                             if (selectedTimetableTeacher !== 'all' && a.teacher_name !== selectedTimetableTeacher) return false;
@@ -4372,6 +4639,23 @@ export default function GenerateSchedulePage() {
                               </label>
                             </div>
 
+                            {config.allowG1G2SplitSessions && (
+                              <div className={styles.ruleItem}>
+                                <div className={styles.ruleInfo}>
+                                  <span className={styles.ruleTitle}>G1/G2 Hour Balancing</span>
+                                  <span className={styles.ruleDesc}>Ensure both G1 and G2 groups get equal scheduled hours</span>
+                                </div>
+                                <label className={styles.toggleSwitch}>
+                                  <input
+                                    type="checkbox"
+                                    checked={config.enforceG1G2EqualHours}
+                                    onChange={(e) => setConfig(prev => ({ ...prev, enforceG1G2EqualHours: e.target.checked }))}
+                                  />
+                                  <span className={styles.toggleSlider}></span>
+                                </label>
+                              </div>
+                            )}
+
                             <div className={styles.ruleItem}>
                               <div className={styles.ruleInfo}>
                                 <span className={styles.ruleTitle}>Avoid Conflicts (Strict)</span>
@@ -4731,8 +5015,9 @@ export default function GenerateSchedulePage() {
                 </div>
               )}
             </div>
-          )}
-        </div>
+          )
+          }
+        </div >
 
 
       </main >

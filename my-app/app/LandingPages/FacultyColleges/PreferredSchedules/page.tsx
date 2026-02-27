@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import styles from './styles.module.css'
 import { MdOutlineArrowBack, MdSave } from 'react-icons/md'
 
@@ -38,9 +39,28 @@ export default function AdminPreferredSchedules() {
     const [preferences, setPreferences] = useState<Record<string, Record<string, string>>>({})
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [authorized, setAuthorized] = useState(false)
 
     useEffect(() => {
-        fetchFaculties()
+        const checkAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session?.user) {
+                    router.push('/')
+                    return
+                }
+                if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+                    router.push('/faculty/home')
+                    return
+                }
+                setAuthorized(true)
+                fetchFaculties()
+            } catch (error) {
+                console.error('Auth check error:', error)
+                router.push('/')
+            }
+        }
+        checkAuth()
     }, [])
 
     useEffect(() => {
@@ -133,20 +153,41 @@ export default function AdminPreferredSchedules() {
         }
     }
 
+    if (!authorized) {
+        return <LoadingFallback message="Verifying admin access..." />
+    }
+
     return (
         <div className={styles.layout}>
-            <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+            <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} setSidebarOpen={setSidebarOpen} />
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
                 <div className={styles.container}>
                     <div className={styles.header}>
-                        <button className={styles.backBtn} onClick={() => router.back()}>
-                            <MdOutlineArrowBack /> Back
-                        </button>
-                        <div style={{ marginLeft: '16px' }}>
+                        <div className={styles.headerInfo}>
                             <h1 className={styles.title} id="preferred-header">Faculty Preferred Schedules</h1>
-                            <p className={styles.subtitle}>View and manage availability preferences for all faculties (Green = Preferred, Red = Not Preferred)</p>
+                            <p className={styles.subtitle}>View and manage availability preferences for all faculties</p>
+                        </div>
+                    </div>
+
+                    <div className={styles.infoBanner}>
+                        <div className={styles.infoText}>
+                            <strong>Instructions:</strong> Click on the time slots to toggle between preferences.
+                        </div>
+                        <div className={styles.legend}>
+                            <div className={styles.legendItem}>
+                                <div className={`${styles.legendBox} ${styles.preferred}`}></div>
+                                <span>Preferred</span>
+                            </div>
+                            <div className={styles.legendItem}>
+                                <div className={`${styles.legendBox} ${styles.notPreferred}`}></div>
+                                <span>Not Preferred</span>
+                            </div>
+                            <div className={styles.legendItem}>
+                                <div className={`${styles.legendBox} ${styles.neutral}`}></div>
+                                <span>Neutral</span>
+                            </div>
                         </div>
                     </div>
 

@@ -797,18 +797,18 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
   }) || []
 
   // Calculate success rate
-  const successRate = backendResult.total_sections > 0
-    ? (backendResult.scheduled_sections / backendResult.total_sections * 100)
+  const successRate = backendResult.total_classes > 0
+    ? (backendResult.scheduled_classes / backendResult.total_classes * 100)
     : 0
 
   return {
     success: backendResult.success || (successRate >= 50), // Consider success if at least 50% scheduled
     schedule_id: backendResult.schedule_id,
     saved_to_database: true,
-    message: backendResult.message || `QIA completed: ${backendResult.scheduled_sections}/${backendResult.total_sections} sections scheduled (${successRate.toFixed(1)}% success rate)`,
-    total_classes: backendResult.total_sections,
-    scheduled_classes: backendResult.scheduled_sections,
-    unscheduled_classes: backendResult.unscheduled_sections,
+    message: backendResult.message || `QIA completed: ${backendResult.scheduled_classes}/${backendResult.total_classes} sections scheduled (${successRate.toFixed(1)}% success rate)`,
+    total_classes: backendResult.total_classes,
+    scheduled_classes: backendResult.scheduled_classes,
+    unscheduled_classes: backendResult.unscheduled_classes,
     unscheduled_list: backendResult.unscheduled_list || [],
     conflicts: backendResult.conflicts || [],
     success_rate: successRate,
@@ -955,36 +955,36 @@ export async function POST(request: NextRequest) {
       duration_minutes: slot.duration_minutes
     }))
 
-        // Normalize and filter manual allocations to avoid backend crashes from stale IDs
-        const validRoomIds = new Set<number>(rooms.map((room: any) => room.id).filter((id: any) => typeof id === 'number'))
-        const normalizedManualAllocations = (body.manual_allocations || [])
-          .map((alloc: any) => {
-            const classId = Number(alloc?.class_id ?? alloc?.section_id)
-            const rawRoomId = alloc?.room_id
-            const roomId = rawRoomId === null || rawRoomId === undefined || rawRoomId === ''
-              ? null
-              : Number(rawRoomId)
-            const scheduleDay = String(alloc?.schedule_day || '').trim()
-            const scheduleTime = String(alloc?.schedule_time || '').trim()
-            const sectionHint = String(alloc?.section || '').trim()
-            const componentHint = String(alloc?.component || alloc?.section_type || '').trim()
-            const splitTypeHint = String(alloc?.split_type || alloc?.split_group || alloc?.group || '').trim()
+    // Normalize and filter manual allocations to avoid backend crashes from stale IDs
+    const validRoomIds = new Set<number>(rooms.map((room: any) => room.id).filter((id: any) => typeof id === 'number'))
+    const normalizedManualAllocations = (body.manual_allocations || [])
+      .map((alloc: any) => {
+        const classId = Number(alloc?.class_id ?? alloc?.section_id)
+        const rawRoomId = alloc?.room_id
+        const roomId = rawRoomId === null || rawRoomId === undefined || rawRoomId === ''
+          ? null
+          : Number(rawRoomId)
+        const scheduleDay = String(alloc?.schedule_day || '').trim()
+        const scheduleTime = String(alloc?.schedule_time || '').trim()
+        const sectionHint = String(alloc?.section || '').trim()
+        const componentHint = String(alloc?.component || alloc?.section_type || '').trim()
+        const splitTypeHint = String(alloc?.split_type || alloc?.split_group || alloc?.group || '').trim()
 
-            if (!Number.isFinite(classId) || classId <= 0) return null
-            if (!scheduleDay || !scheduleTime) return null
-            if (roomId !== null && roomId !== 0 && (!Number.isFinite(roomId) || !validRoomIds.has(roomId))) return null
+        if (!Number.isFinite(classId) || classId <= 0) return null
+        if (!scheduleDay || !scheduleTime) return null
+        if (roomId !== null && roomId !== 0 && (!Number.isFinite(roomId) || !validRoomIds.has(roomId))) return null
 
-            return {
-              class_id: classId,
-              room_id: roomId,
-              schedule_day: scheduleDay,
-              schedule_time: scheduleTime,
-              section: sectionHint,
-              component: componentHint,
-              split_type: splitTypeHint
-            }
-          })
-          .filter((alloc): alloc is NonNullable<typeof alloc> => alloc !== null)
+        return {
+          class_id: classId,
+          room_id: roomId,
+          schedule_day: scheduleDay,
+          schedule_time: scheduleTime,
+          section: sectionHint,
+          component: componentHint,
+          split_type: splitTypeHint
+        }
+      })
+      .filter((alloc): alloc is NonNullable<typeof alloc> => alloc !== null)
 
     console.log('🔄 Data converted for Python backend')
     console.log('   Sections:', sections.length)
@@ -1033,11 +1033,11 @@ export async function POST(request: NextRequest) {
       lunch_start_hour: lunchStartHour,  // Only used if lunch_mode is 'strict'/'flexible'
       lunch_end_hour: lunchEndHour,      // Only used if lunch_mode is 'strict'/'flexible'
       strict_lab_room_matching: body.config.strict_lab_room_matching ?? true, // Lab classes MUST be in lab rooms
-          strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? (body.config as any).strictLectureRoomMatching ?? true, // Lectures should NOT be in lab rooms
+      strict_lecture_room_matching: body.config.strict_lecture_room_matching ?? (body.config as any).strictLectureRoomMatching ?? true, // Lectures should NOT be in lab rooms
       // Split session settings - allow classes to be divided into multiple sessions
       allow_split_sessions: body.config.allow_split_sessions ?? true, // Default: enabled
       combine_split_lectures: body.config.combine_split_lectures ?? true,
-          fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
+      fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
     console.log('📡 Trying to connect to Python backend...')
@@ -1152,8 +1152,8 @@ export async function POST(request: NextRequest) {
     const backendResult = await backendResponse.json()
     console.log('✅ Backend processing successful!')
     console.log('   Schedule ID:', backendResult.schedule_id)
-    console.log('   Scheduled:', backendResult.scheduled_sections, '/', backendResult.total_sections)
-    console.log('   Unscheduled:', backendResult.unscheduled_sections)
+    console.log('   Scheduled:', backendResult.scheduled_classes, '/', backendResult.total_classes)
+    console.log('   Unscheduled:', backendResult.unscheduled_classes)
 
     // Convert backend response to frontend format
     const frontendResult = convertBackendResultToFrontend(

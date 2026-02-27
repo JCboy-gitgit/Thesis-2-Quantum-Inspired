@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar } from 'react-icons/md'
 import './styles.css'
 
@@ -134,6 +135,7 @@ export default function AdminDashboard() {
     onlineFaculty: 0
   })
   const [selectedHoliday, setSelectedHoliday] = useState<{ name: string, date: string } | null>(null)
+  const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
     // Set initial date on client side only (avoids hydration mismatch)
@@ -215,6 +217,7 @@ export default function AdminDashboard() {
         router.push('/faculty/home')
         return
       }
+      setAuthorized(true)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -430,6 +433,10 @@ export default function AdminDashboard() {
         date: new Date(date),
         name
       }))
+  }
+
+  if (!authorized) {
+    return <LoadingFallback message="Verifying admin access..." />
   }
 
   return (

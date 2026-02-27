@@ -177,6 +177,7 @@ class GenerateScheduleRequest(BaseModel):
     campus: Optional[str] = None
     department: Optional[str] = None
     prioritize_accessibility: bool = False
+    enforce_g1_g2_equal_hours: bool = True  # NEW: Ensure split groups have balanced hours
     max_iterations: int = 1000
     initial_temperature: float = 100.0
     cooling_rate: float = 0.995
@@ -190,6 +191,7 @@ class ScheduleResult(BaseModel):
     total_sections: int = 0
     scheduled_sections: int = 0
     unscheduled_sections: int = 0
+    unscheduled_list: List[dict] = []  # Detailed list of failures
     conflicts: List[ScheduleConflict] = []
     execution_time_ms: int = 0
     schedule_entries: List[ScheduleEntry] = []

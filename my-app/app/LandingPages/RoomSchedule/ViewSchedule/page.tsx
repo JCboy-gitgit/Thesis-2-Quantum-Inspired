@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import styles from './ViewSchedule.module.css'
 import {
   FaArrowLeft,
@@ -1843,6 +1844,14 @@ export default function ViewSchedulePage() {
     ]
     const index = buildings.indexOf(allocation.building) % colors.length
     return colors[index] || colors[0]
+  }
+
+  if (!authChecked) {
+    return <LoadingFallback message="Verifying admin access..." />
+  }
+
+  if (!isAuthorized) {
+    return null
   }
 
   return (

@@ -334,9 +334,10 @@ class ScheduleGenerationRequest(BaseModel):
     strict_lecture_room_matching: bool = True  # Lectures should NOT be in lab rooms
     
     # Split session settings - allow classes to be split into multiple sessions
-    # e.g., a 3hr class can become 1.5hr on Monday + 1.5hr on Thursday
-    allow_split_sessions: bool = True  # Default: enabled
-    combine_split_lectures: bool = True  # If True: split only LAB into G1/G2 while LEC stays combined
+    allow_split_sessions: bool = True
+    combine_split_lectures: bool = True
+    allow_g1_g2_split_sessions: bool = True
+    enforce_g1_g2_equal_hours: bool = True # NEW: Ensure split groups have balanced hours
     
     # Faculty Type overrides
     faculty_types: Optional[Dict[str, FacultyTypeModel]] = None
@@ -378,9 +379,10 @@ class ScheduleGenerationResponse(BaseModel):
     success: bool
     schedule_id: int
     message: str
-    total_sections: int
-    scheduled_sections: int
-    unscheduled_sections: int
+    total_classes: int
+    scheduled_classes: int
+    unscheduled_classes: int
+    unscheduled_list: List[Dict[str, Any]] = [] # Detailed list of failures
     optimization_stats: Dict[str, Any]
     conflicts: List[Dict[str, Any]]
     schedule_entries: Optional[List[Dict[str, Any]]] = None  # Include entries for frontend
@@ -506,6 +508,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             # Split session settings
             "allow_split_sessions": request.allow_split_sessions,
             "combine_split_lectures": request.combine_split_lectures,
+            "allow_g1_g2_split_sessions": request.allow_g1_g2_split_sessions,
+            "enforce_g1_g2_equal_hours": request.enforce_g1_g2_equal_hours,
             "faculty_types": request.faculty_types,
             # Soft Penalties
             "SOFT_ROOM_TYPE_MISMATCH": request.SOFT_ROOM_TYPE_MISMATCH,
@@ -593,11 +597,11 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "status": "completed" if result["success"] else "failed"
         }
         
-        generated_schedule = await create_generated_schedule(generated_schedule_data)
-        generated_schedule_id = generated_schedule.get("id")
-        print(f"✅ Generated schedule record created with ID: {generated_schedule_id}")
+        # Actually save the schedule metadata to get an ID
+        generated_schedule_obj = await create_generated_schedule(generated_schedule_data)
+        generated_schedule_id = generated_schedule_obj.get("id") if isinstance(generated_schedule_obj, dict) else generated_schedule_obj
+        print(f"📊 DEBUG: Created generated_schedule with ID: {generated_schedule_id}")
         
-        # Save room allocations with LAB & LEC combining
         if result["schedule_entries"] and generated_schedule_id:
             # DEBUG: Log the number of schedule entries received
             print(f"📊 DEBUG: Received {len(result['schedule_entries'])} schedule entries from scheduler")
@@ -648,11 +652,12 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         
         return ScheduleGenerationResponse(
             success=result["success"],
-            schedule_id=generated_schedule_id if generated_schedule_id else 0,
+            schedule_id=int(generated_schedule_id) if generated_schedule_id else 0,
             message=result["message"],
-            total_sections=result["total_sections"],
-            scheduled_sections=result["scheduled_sections"],
-            unscheduled_sections=result["unscheduled_sections"],
+            total_classes=result["total_sections"],
+            scheduled_classes=result["scheduled_sections"],
+            unscheduled_classes=result["unscheduled_sections"],
+            unscheduled_list=result.get("unscheduled_list", []),
             optimization_stats=result["optimization_stats"],
             conflicts=result["conflicts"],
             schedule_entries=result["schedule_entries"],  # Include for frontend
@@ -661,6 +666,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             physical_class_count=result.get("physical_class_count", 0),  # BulSU QSA
             split_session_stats=result.get("split_session_stats")  # Split session info
         )
+
         
     except HTTPException:
         raise

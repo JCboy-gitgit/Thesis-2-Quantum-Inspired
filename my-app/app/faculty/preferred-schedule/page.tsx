@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import FacultySidebar from '@/app/components/FacultySidebar'
+import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import styles from './styles.module.css'
 import { MdSave } from 'react-icons/md'
 
@@ -35,9 +36,12 @@ function formatTimeLabel(slot: string) {
 export default function FacultyPreferredSchedule() {
     const router = useRouter()
     const [facultyId, setFacultyId] = useState<string | null>(null)
+    const [userEmail, setUserEmail] = useState<string | null>(null)
     const [preferences, setPreferences] = useState<Record<string, Record<string, string>>>({})
     const [saving, setSaving] = useState(false)
     const [loading, setLoading] = useState(true)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [menuBarHidden, setMenuBarHidden] = useState(false)
 
     useEffect(() => {
         fetchMyProfile()
@@ -51,16 +55,25 @@ export default function FacultyPreferredSchedule() {
                 return
             }
 
+            if (!session.user.email) {
+                setLoading(false)
+                console.warn('No email found in session.')
+                return
+            }
+
+            setUserEmail(session.user.email)
+
             // Check if user is linked to a faculty_profile
             const { data: profile } = await supabase
                 .from('faculty_profiles')
                 .select('id')
                 .eq('email', session.user.email)
-                .single()
+                .maybeSingle()
 
-            if (profile) {
-                setFacultyId(profile.id)
-                fetchPreferences(profile.id)
+            if (profile && 'id' in profile) {
+                const p = profile as { id: string }
+                setFacultyId(p.id)
+                fetchPreferences(p.id)
             } else {
                 setLoading(false)
                 console.warn('No mapped faculty profile found.')
@@ -134,7 +147,7 @@ export default function FacultyPreferredSchedule() {
     if (loading) {
         return (
             <div className={styles.layout}>
-                <FacultySidebar isOpen={true} />
+                <FacultySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
                 <main className={styles.main}>
                     <div className="flex items-center justify-center h-full text-slate-500">
                         Loading...
@@ -146,57 +159,88 @@ export default function FacultyPreferredSchedule() {
 
     return (
         <div className={styles.layout}>
-            <FacultySidebar isOpen={true} />
-            <main className={styles.main}>
-                <div className={styles.header}>
-                    <div>
-                        <h1 className={styles.title}>My Preferred Schedule</h1>
-                        <p className={styles.subtitle}>Click cells to toggle: Green = Preferred, Red = Not Preferred, Blank = Neutral</p>
-                    </div>
-                    <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !facultyId}>
-                        <MdSave size={20} />
-                        {saving ? 'Saving...' : 'Save Preferences'}
-                    </button>
-                </div>
+            <FacultySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} menuBarHidden={menuBarHidden} />
+            <div className={`${styles.mainLayout} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+                <FacultyMenuBar
+                    onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                    sidebarOpen={sidebarOpen}
+                    isHidden={menuBarHidden}
+                    onToggleHidden={setMenuBarHidden}
+                    userEmail={userEmail}
+                />
+                <main className={`${styles.main} ${menuBarHidden ? styles.menuHidden : ''}`}>
+                    <div className={styles.container}>
+                        <div className={styles.header}>
+                            <div className={styles.headerInfo}>
+                                <h1 className={styles.title}>My Preferred Schedule</h1>
+                                <p className={styles.subtitle}>Manage your availability preferences</p>
+                            </div>
+                            <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !facultyId}>
+                                <MdSave size={20} />
+                                {saving ? 'Saving...' : 'Save Preferences'}
+                            </button>
+                        </div>
 
-                <div className={styles.content}>
-                    <div className={styles.gridContainer}>
-                        <table className={styles.grid}>
-                            <thead>
-                                <tr>
-                                    <th className={styles.timeHeader}>Time</th>
-                                    {DAYS.map(d => <th key={d} className={styles.dayHeader}>{d}</th>)}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {TIME_SLOTS.map((slot, idx) => (
-                                    <tr key={slot}>
-                                        <td className={styles.timeCell}>
-                                            {idx % 2 === 0 ? formatTimeLabel(slot) : ''}
-                                        </td>
-                                        {DAYS.map(day => {
-                                            const state = (preferences[day] || {})[slot] || ''
-                                            let cellClass = styles.cellBase
-                                            if (state === 'preferred') cellClass += ` ${styles.cellPreferred}`
-                                            if (state === 'not_preferred') cellClass += ` ${styles.cellNotPreferred}`
+                        <div className={styles.infoBanner}>
+                            <div className={styles.infoText}>
+                                <strong>Instructions:</strong> Click on the time slots to toggle between preferences. Green is preferred, Red is not preferred, and Blank is neutral.
+                            </div>
+                            <div className={styles.legend}>
+                                <div className={styles.legendItem}>
+                                    <div className={`${styles.legendBox} ${styles.preferred}`}></div>
+                                    <span>Preferred</span>
+                                </div>
+                                <div className={styles.legendItem}>
+                                    <div className={`${styles.legendBox} ${styles.notPreferred}`}></div>
+                                    <span>Not Preferred</span>
+                                </div>
+                                <div className={styles.legendItem}>
+                                    <div className={`${styles.legendBox} ${styles.neutral}`}></div>
+                                    <span>Neutral</span>
+                                </div>
+                            </div>
+                        </div>
 
-                                            return (
-                                                <td
-                                                    key={`${day}-${slot}`}
-                                                    className={cellClass}
-                                                    onClick={() => handleCellClick(day, slot)}
-                                                    title={`${day} @ ${formatTimeLabel(slot)} - Click to toggle preference`}
-                                                >
+                        <div className={styles.content}>
+                            <div className={styles.gridContainer}>
+                                <table className={styles.grid}>
+                                    <thead>
+                                        <tr>
+                                            <th className={styles.timeHeader}>Time</th>
+                                            {DAYS.map(d => <th key={d} className={styles.dayHeader}>{d}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {TIME_SLOTS.map((slot, idx) => (
+                                            <tr key={slot}>
+                                                <td className={styles.timeCell}>
+                                                    {idx % 2 === 0 ? formatTimeLabel(slot) : ''}
                                                 </td>
-                                            )
-                                        })}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                {DAYS.map(day => {
+                                                    const state = (preferences[day] || {})[slot] || ''
+                                                    let cellClass = styles.cellBase
+                                                    if (state === 'preferred') cellClass += ` ${styles.cellPreferred}`
+                                                    if (state === 'not_preferred') cellClass += ` ${styles.cellNotPreferred}`
+
+                                                    return (
+                                                        <td
+                                                            key={`${day}-${slot}`}
+                                                            className={cellClass}
+                                                            onClick={() => handleCellClick(day, slot)}
+                                                            title={`${day} @ ${formatTimeLabel(slot)} - Click to toggle preference`}
+                                                        >
+                                                        </td>
+                                                    )
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     )
 }

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
+import GlobalLoadingFallback from '@/app/components/LoadingFallback'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdTableChart as FileSpreadsheet, MdWarning as AlertTriangle, MdDelete as Trash2, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdAccessTime as Clock, MdLayers as Layers, MdBookmark as BookMarked, MdFilterList as Filter, MdPeople as Users, MdArrowBack as ArrowLeft, MdSearch as Search, MdLabel as Tag, MdScience as Beaker, MdFolder as Folder, MdFolderOpen as FolderOpen, MdHome as Home, MdSettings as Settings, MdPalette as Palette, MdMoreVert as MoreVertical, MdDriveFileMove as FolderInput, MdArrowForward as MoveRight, MdMonitor as Monitor, MdSlideshow as Presentation, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
@@ -144,6 +145,7 @@ function CoursesManagementContent() {
   // State
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
   const [uploadGroups, setUploadGroups] = useState<UploadGroup[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
 
@@ -373,6 +375,7 @@ function CoursesManagementContent() {
         router.push('/faculty/home')
         return
       }
+      setAuthorized(true)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -835,6 +838,9 @@ function CoursesManagementContent() {
   }
 
   // ==================== Render ====================
+  if (!authorized) {
+    return <GlobalLoadingFallback message="Verifying admin access..." />
+  }
 
   // Loading state
   if (loading && viewMode === 'selection') {

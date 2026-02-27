@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import { MdNotifications as Bell, MdDelete as Trash2, MdCheckCircle as CheckCircle2, MdWarning as AlertTriangle, MdInfo as Info, MdCampaign as Megaphone, MdError as AlertCircle } from 'react-icons/md'
 import styles from './styles.module.css'
 
@@ -28,6 +29,7 @@ export default function AdminAlertsPage() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [authorized, setAuthorized] = useState(false)
 
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
@@ -36,12 +38,22 @@ export default function AdminAlertsPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
+          router.push('/')
+          return
+        }
+        if (session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+          router.push('/faculty/home')
+          return
+        }
+        setAuthorized(true)
+        setUserId(session.user.id)
+      } catch (error) {
+        console.error('Auth error:', error)
         router.push('/')
-        return
       }
-      setUserId(session.user.id)
     }
     init()
   }, [router])
@@ -117,6 +129,10 @@ export default function AdminAlertsPage() {
     if (level === 'warning') return <AlertCircle size={16} />
     if (level === 'error') return <AlertCircle size={16} />
     return <Info size={16} />
+  }
+
+  if (!authorized) {
+    return <LoadingFallback message="Verifying admin access..." />
   }
 
   return (

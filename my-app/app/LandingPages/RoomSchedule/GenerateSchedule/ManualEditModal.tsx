@@ -196,9 +196,13 @@ export default function ManualEditModal({
         // 1. Static Room Attribute Conflicts (Check every time)
         if (room) {
             // Capacity Check
-            const isSplitDrop = newAlloc.section?.includes(' G1') || newAlloc.section?.includes(' G2') ||
-                newAlloc.section?.includes('_G1') || newAlloc.section?.includes('_G2');
-            const effectiveCount = isSplitDrop ? Math.ceil((classInfo.student_count || 0) / 2) : (classInfo.student_count || 0);
+            const isSplitDrop = newAlloc.section?.match(/\bG[12]\b/) || newAlloc.section?.match(/_G[12]/);
+            const isAlreadySplitInClass = classInfo.section?.match(/\bG[12]\b/) || classInfo.section?.match(/_G[12]/);
+
+            // Only split the count if it wasn't already split by the source and it's a split-drop session
+            const effectiveCount = (isSplitDrop && !isAlreadySplitInClass)
+                ? Math.ceil((classInfo.student_count || 0) / 2)
+                : (classInfo.student_count || 0);
 
             if (effectiveCount > room.capacity) {
                 conflicts.push(`Capacity conflict: Class size (${effectiveCount} students) exceeds Room capacity (${room.capacity})`);
@@ -980,7 +984,16 @@ export default function ManualEditModal({
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
                                                     if (viewMode === 'section') {
                                                         const activeSec = (activeItem as string);
-                                                        const getBase = (s: string) => s.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '');
+                                                        const getBase = (s: string) => s
+                                                            .replace(/_LAB$/i, '')
+                                                            .replace(/_LEC$/i, '')
+                                                            .replace(/_LECTURE$/i, '')
+                                                            .replace(/_LABORATORY$/i, '')
+                                                            .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+                                                            .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
+                                                            .replace(/ LAB$/i, '')
+                                                            .replace(/ LEC$/i, '')
+                                                            .trim();
                                                         const isMatch = a.section === activeSec || getBase(a.section) === getBase(activeSec);
                                                         return isMatch && slotInRange;
                                                     }
