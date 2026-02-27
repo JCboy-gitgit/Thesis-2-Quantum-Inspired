@@ -210,8 +210,8 @@ const matchesSectionView = (allocation: RoomAllocation, sectionViewLabel: string
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-// Fixed 30-minute time slots from 7:00 AM to 9:00 PM (28 slots)
-const FIXED_TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
+// Fixed 30-minute time slots from 7:00 AM to 9:00 PM (29 slots)
+const FIXED_TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
   const hour = Math.floor(i / 2) + 7
   const minute = (i % 2) * 30
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
@@ -1621,10 +1621,10 @@ export default function ViewSchedulePage() {
         return blocks
       }
 
-      // Helper: Generate time slots (7:00 AM to 8:00 PM)
+      // Helper: Generate time slots (7:00 AM to 9:00 PM)
       const generateTimeSlots = () => {
         const slots = []
-        for (let i = 0; i < 27; i++) {  // 27 slots = 7:00 AM to 8:00 PM (last row is 8:00 PM)
+        for (let i = 0; i < 29; i++) {  // 29 slots = 7:00 AM to 9:00 PM (last row is 9:00 PM)
           const hour = Math.floor(i / 2) + 7
           const minute = (i % 2) * 30
           slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)

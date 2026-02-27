@@ -81,7 +81,7 @@ interface DraggableTimetableProps {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const START_HOUR = 7
-const TOTAL_SLOTS = 26 // 7:00 to 20:00 (26 half-hour slots)
+const TOTAL_SLOTS = 28 // 7:00 to 21:00 (28 half-hour slots)
 const ROW_HEIGHT = 40
 
 const COURSE_COLORS = [
@@ -278,7 +278,7 @@ export default function DraggableTimetable({
                 const slotMinutes = (START_HOUR + Math.floor(slotIdx / 2)) * 60 + (slotIdx % 2) * 30
                 const endMinutes = slotMinutes + duration
 
-                if (endMinutes > 20 * 60) continue
+                if (endMinutes > 21 * 60) continue
 
                 const targetTime: TimeRange = { startMinutes: slotMinutes, endMinutes }
 

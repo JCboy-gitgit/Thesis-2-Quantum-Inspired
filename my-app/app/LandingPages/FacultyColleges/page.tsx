@@ -525,14 +525,14 @@ function FacultyCollegesContent() {
 
       // Create email -> avatar_url map
       const userAvatarMap = new Map<string, string>()
-      usersData?.forEach(u => {
-        if (u.email && u.avatar_url) {
-          userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
-        }
-      })
+        ; (usersData || []).forEach((u: any) => {
+          if (u.email && u.avatar_url) {
+            userAvatarMap.set(u.email.toLowerCase(), u.avatar_url)
+          }
+        })
 
       // Merge avatar_url as fallback for profile_image
-      const enrichedData = (data || []).map(f => ({
+      const enrichedData = (data || []).map((f: any) => ({
         ...f,
         profile_image: f.profile_image || (f.email ? userAvatarMap.get(f.email.toLowerCase()) : null) || null
       }))
@@ -964,8 +964,8 @@ function FacultyCollegesContent() {
       const { publicUrl } = await response.json()
 
       // Update faculty_profiles table
-      const { error: updateError } = await supabase
-        .from('faculty_profiles')
+      const { error: updateError } = await (supabase
+        .from('faculty_profiles') as any)
         .update({ profile_image: publicUrl })
         .eq('id', selectedFacultyProfile.id)
 
@@ -980,10 +980,10 @@ function FacultyCollegesContent() {
           .single()
 
         if (existingUser) {
-          await supabase
-            .from('users')
+          await (supabase
+            .from('users') as any)
             .update({ avatar_url: publicUrl })
-            .eq('id', existingUser.id)
+            .eq('id', (existingUser as any).id)
         }
       }
 
@@ -1037,7 +1037,7 @@ function FacultyCollegesContent() {
 
     try {
       // First update faculty_profiles
-      const { data: updatedFaculty, error: updateError } = await supabase
+      const { data: updatedFaculty, error: updateError } = await (supabase as any)
         .from('faculty_profiles')
         .update({
           faculty_id: facultyFormData.faculty_id.trim() || null,
@@ -1072,8 +1072,8 @@ function FacultyCollegesContent() {
 
         if (existingUser && !userCheckError) {
           // Update the user's profile with faculty data
-          const { error: userUpdateError } = await supabase
-            .from('users')
+          const { error: userUpdateError } = await (supabase
+            .from('users') as any)
             .update({
               full_name: facultyFormData.full_name.trim(),
               phone: facultyFormData.phone.trim() || null,
@@ -1081,7 +1081,7 @@ function FacultyCollegesContent() {
               college: facultyFormData.college.trim() || null,
               updated_at: new Date().toISOString()
             })
-            .eq('id', existingUser.id)
+            .eq('id', (existingUser as any).id)
 
           if (userUpdateError) {
             console.warn('Could not sync to user account:', userUpdateError)

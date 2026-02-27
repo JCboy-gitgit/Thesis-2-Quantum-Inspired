@@ -1122,10 +1122,10 @@ function RoomSchedulesViewContent() {
         return blocks
       }
 
-      // Generate time slots (7:00 AM to 8:00 PM)
+      // Generate time slots (7:00 AM to 9:00 PM)
       const generateTimeSlots = () => {
         const slots = []
-        for (let i = 0; i < 27; i++) {
+        for (let i = 0; i < 29; i++) {
           const hour = Math.floor(i / 2) + 7
           const minute = (i % 2) * 30
           slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)

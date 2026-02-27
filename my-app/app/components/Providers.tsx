@@ -4,6 +4,7 @@
 import { useEffect } from 'react'
 import { ThemeProvider } from '../context/ThemeContext'
 import { CollegesProvider } from '../context/CollegesContext'
+import { SchedulingProvider } from '../context/SchedulingContext'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -17,7 +18,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <CollegesProvider>
-        {children}
+        <SchedulingProvider>
+          {children}
+        </SchedulingProvider>
       </CollegesProvider>
     </ThemeProvider>
   )

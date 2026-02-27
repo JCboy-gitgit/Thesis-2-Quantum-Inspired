@@ -17,6 +17,8 @@ interface ManualEditModalProps {
     classes: any[]
     timeSettings: any
     initialAllocations: any[]
+    collegeRoomMatchingEnabled?: boolean
+    allowG1G2SplitSessions?: boolean
 }
 
 type ViewMode = 'room' | 'faculty' | 'section'
@@ -29,7 +31,9 @@ const formatTimeAMPM = (time24: string) => {
 }
 
 export default function ManualEditModal({
-    isOpen, onClose, onSave, rooms, classes, timeSettings, initialAllocations
+    isOpen, onClose, onSave, rooms, classes, timeSettings, initialAllocations,
+    collegeRoomMatchingEnabled = true,
+    allowG1G2SplitSessions = true
 }: ManualEditModalProps) {
     // 1. Core State
     const [allocations, setAllocations] = useState<any[]>(initialAllocations)
@@ -40,8 +44,9 @@ export default function ManualEditModal({
     const [draggedClassId, setDraggedClassId] = useState<number | null>(null)
     const [draggingComponent, setDraggingComponent] = useState<string | null>(null)
     const [draggedAllocId, setDraggedAllocId] = useState<any | null>(null)
-    const [resizingAllocId, setResizingAllocId] = useState<number | null>(null)
+    const [resizingAllocId, setResizingAllocId] = useState<any | null>(null)
     const [splitLabClasses, setSplitLabClasses] = useState<number[]>([])
+    const [hoveredCell, setHoveredCell] = useState<{ day: string, slotId: number } | null>(null);
 
     // Sync with props if they change
     useEffect(() => {
@@ -110,7 +115,7 @@ export default function ManualEditModal({
 
             const lecAllotted = calculateAllotted('LEC')
 
-            const isAutoSplitLab = (c.student_count || 0) > maxLabCapacity && (c.lab_hours > 0);
+            const isAutoSplitLab = allowG1G2SplitSessions && (c.student_count || 0) > maxLabCapacity && (c.lab_hours > 0);
             const isManuallySplit = splitLabClasses.includes(c.id);
             const isSplitLab = isAutoSplitLab || isManuallySplit;
 
@@ -175,11 +180,41 @@ export default function ManualEditModal({
     }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem])
 
     // 6. Conflict Detection
-    const checkConflicts = useCallback((newAlloc: any, ignoreAllocId?: any) => {
+    const checkConflicts = useCallback((newAlloc: any, ignoreSelfId?: any) => {
         const conflicts: string[] = []
-        const { class_id, schedule_day, schedule_time, room_id } = newAlloc
+        const { class_id, room_id } = newAlloc
+
+        // Handle both property names for robustness
+        const schedule_day = newAlloc.schedule_day || newAlloc.day;
+        const schedule_time = newAlloc.schedule_time;
+
         const classInfo = classes.find(c => c.id === class_id)
         if (!classInfo) return []
+
+        const room = rooms.find(r => r.id === room_id);
+
+        // 1. Static Room Attribute Conflicts (Check every time)
+        if (room) {
+            // Capacity Check
+            const isSplitDrop = newAlloc.section?.includes(' G1') || newAlloc.section?.includes(' G2') ||
+                newAlloc.section?.includes('_G1') || newAlloc.section?.includes('_G2');
+            const effectiveCount = isSplitDrop ? Math.ceil((classInfo.student_count || 0) / 2) : (classInfo.student_count || 0);
+
+            if (effectiveCount > room.capacity) {
+                conflicts.push(`Capacity conflict: Class size (${effectiveCount} students) exceeds Room capacity (${room.capacity})`);
+            }
+
+            // College-Room Matching conflict
+            if (collegeRoomMatchingEnabled) {
+                const s_col = classInfo.college?.trim().toUpperCase();
+                const r_col = room.college?.trim().toUpperCase();
+                if (s_col && r_col && r_col !== 'SHARED' && r_col !== s_col) {
+                    conflicts.push(`College conflict: Room is ${r_col}, Class is ${s_col}`);
+                }
+            }
+        }
+
+        if (!schedule_day || !schedule_time) return conflicts;
 
         const startParts = schedule_time.split(' - ')
         const p1 = (startParts[0] || '').trim().substring(0, 5)
@@ -188,49 +223,55 @@ export default function ManualEditModal({
         const endMin = timeSlots.find(s => s.end.includes(p2))?.endMinutes || 0
 
         allocations.forEach(existing => {
-            if (ignoreAllocId && (existing.id || existing.class_id) === ignoreAllocId) return
+            // Robust ignore logic: check by object identity OR unique ID OR class_id only if no ID exists
+            const existingId = existing.id || existing.class_id;
+            if (existing === newAlloc) return;
+            if (ignoreSelfId && existingId === ignoreSelfId) return;
 
-            const exParts = existing.schedule_time.split(' - ')
+            const existing_day = existing.schedule_day || existing.day;
+            const existing_time = existing.schedule_time;
+
+            if (!existing_day || !existing_time) return;
+
+            const exParts = existing_time.split(' - ')
             const ex1 = (exParts[0] || '').trim().substring(0, 5)
             const ex2 = (exParts[1] || '').trim().substring(0, 5)
             const eStart = timeSlots.find(s => s.start === ex1)?.startMinutes || 0
             const eEnd = timeSlots.find(s => s.end.includes(ex2))?.endMinutes || 0
 
-            const timeOverlap = schedule_day === existing.schedule_day &&
+            const timeOverlap = (schedule_day === existing_day) &&
                 ((startMin >= eStart && startMin < eEnd) || (endMin > eStart && endMin <= eEnd) || (startMin <= eStart && endMin >= eEnd))
 
             if (timeOverlap) {
+                const timeDesc = `${existing_day} ${existing_time}`;
                 if (room_id === existing.room_id) {
-                    conflicts.push(`Room conflict: ${existing.course_code} (${existing.section})`)
+                    conflicts.push(`Room conflict: ${existing.course_code} (${existing.section}) at ${timeDesc}`);
                 }
                 if (classInfo.teacher_name && classInfo.teacher_name === existing.teacher_name) {
-                    conflicts.push(`Prof conflict: ${classInfo.teacher_name} is in Room ${existing.room}`)
+                    conflicts.push(`Prof conflict: ${classInfo.teacher_name} is in Room ${existing.room || 'another room'} at ${timeDesc}`);
                 }
                 const getBase = (s: string) => s.replace(/ G[12]$/i, '').replace(/_G[12](_LAB)?$/i, '');
-                const baseNew = getBase(newAlloc.section);
-                const baseExisting = getBase(existing.section);
+                const baseNew = getBase(newAlloc.section || '');
+                const baseExisting = getBase(existing.section || '');
 
                 if (baseNew === baseExisting) {
-                    // Conflict if they are the exact same section name (e.g. both G1 or both full section)
                     if (newAlloc.section === existing.section) {
-                        conflicts.push(`Section conflict: ${newAlloc.section} is in Room ${existing.room}`);
+                        conflicts.push(`Section conflict: ${newAlloc.section} is busy at ${timeDesc}`);
                     }
-                    // Conflict if one is a full section and the other is a split group
-                    else if (!newAlloc.section.includes(' G1') && !newAlloc.section.includes(' G2') &&
-                        !newAlloc.section.includes('_G1') && !newAlloc.section.includes('_G2')) {
-                        conflicts.push(`Section conflict: ${newAlloc.section} (full) vs ${existing.section} in Room ${existing.room}`);
+                    else if (!newAlloc.section?.includes(' G1') && !newAlloc.section?.includes(' G2') &&
+                        !newAlloc.section?.includes('_G1') && !newAlloc.section?.includes('_G2')) {
+                        conflicts.push(`Section conflict: Full section ${newAlloc.section} vs ${existing.section} at ${timeDesc}`);
                     }
-                    else if (!existing.section.includes(' G1') && !existing.section.includes(' G2') &&
-                        !existing.section.includes('_G1') && !existing.section.includes('_G2')) {
-                        conflicts.push(`Section conflict: ${newAlloc.section} vs ${existing.section} (full) in Room ${existing.room}`);
+                    else if (!existing.section?.includes(' G1') && !existing.section?.includes(' G2') &&
+                        !existing.section?.includes('_G1') && !existing.section?.includes('_G2')) {
+                        conflicts.push(`Section conflict: ${newAlloc.section} vs Full section ${existing.section} at ${timeDesc}`);
                     }
-                    // Note: If both are split (one G1, one G2), they don't conflict.
                 }
             }
         })
 
         return conflicts
-    }, [classes, allocations, timeSlots])
+    }, [classes, allocations, timeSlots, rooms, collegeRoomMatchingEnabled])
 
     // NEW: Find the best available room based on requirements and availability
     const findOptimalRoom = useCallback((classInfo: any, component: string, day: string, startSlot: any, durationMins: number, ignoreAllocId?: any) => {
@@ -287,6 +328,15 @@ export default function ManualEditModal({
             // d) Feature Requirements
             const roomFeats = new Set(room.feature_tags || []);
             if (reqFeatures.some(f => !roomFeats.has(f))) return { room, score: -1000 };
+
+            // e) College Matching
+            if (collegeRoomMatchingEnabled) {
+                const s_col = classInfo.college?.trim().toUpperCase();
+                const r_col = room.college?.trim().toUpperCase();
+                if (s_col && r_col && r_col !== 'SHARED' && r_col !== s_col) {
+                    return { room, score: -1000 };
+                }
+            }
 
             // --- SOFT PREFERENCES ---
             if (!isLab && !roomIsLab) score += 200; // Prefer LEC in Lecture rooms
@@ -542,6 +592,101 @@ export default function ManualEditModal({
         setAllocations(prev => prev.filter(a => (a.id || a.class_id) !== allocId))
     }
 
+    const getPotentialAlloc = useCallback((day: string, slot: any) => {
+        if (!draggedClassId && !draggedAllocId) return null;
+
+        let baseClass: any;
+        let component: string = draggingComponent || 'LEC';
+        let section: string = '';
+
+        if (draggedAllocId) {
+            const existing = allocations.find(a => (a.id || a.class_id) === draggedAllocId);
+            if (!existing) return null;
+            baseClass = classes.find(c => c.id === existing.class_id);
+            component = existing.component;
+            section = existing.section;
+        } else {
+            baseClass = classes.find(c => c.id === draggedClassId);
+            if (!baseClass) return null;
+
+            // Determine section based on component
+            if (component === 'LEC') {
+                section = baseClass.section || 'SEC';
+            } else if (component === 'LAB') {
+                section = baseClass.section ? `${baseClass.section}_LAB` : 'LAB';
+            } else if (component === 'LAB G1') {
+                section = baseClass.section ? `${baseClass.section}_G1_LAB` : 'G1_LAB';
+                component = 'LAB';
+            } else if (component === 'LAB G2') {
+                section = baseClass.section ? `${baseClass.section}_G2_LAB` : 'G2_LAB';
+                component = 'LAB';
+            }
+        }
+
+        if (!baseClass) return null;
+
+        // Calculate end time based on original duration or default 1hr
+        let durationMins = 60;
+        if (draggedAllocId) {
+            const a = allocations.find(ea => (ea.id || ea.class_id) === draggedAllocId);
+            if (a) {
+                const parts = a.schedule_time.split(' - ');
+                const s = timeSlots.find(ts => ts.start === parts[0].substring(0, 5))?.startMinutes || 0;
+                const e = timeSlots.find(ts => ts.end.includes(parts[1].substring(0, 5)))?.endMinutes || 0;
+                durationMins = e - s;
+            }
+        } else {
+            durationMins = component === 'LEC' ? (baseClass.lec_hours || 1) * 60 : (baseClass.lab_hours || 1) * 60;
+        }
+
+        const endMins = slot.startMinutes + durationMins;
+        const endSlot = timeSlots.find(ts => ts.endMinutes === endMins || (ts.startMinutes < endMins && ts.endMinutes >= endMins));
+        const finalEndStr = endSlot ? endSlot.end : timeSlots[timeSlots.length - 1].end;
+
+        const newAlloc: any = {
+            ...baseClass,
+            class_id: baseClass.id,
+            schedule_day: day,
+            day: day,
+            schedule_time: `${slot.start} - ${finalEndStr}`,
+            component,
+            section
+        };
+
+        if (viewMode === 'room') {
+            newAlloc.room_id = (activeItem as any)?.id;
+            newAlloc.room = (activeItem as any)?.room;
+        } else if (viewMode === 'faculty') {
+            newAlloc.teacher_name = activeItem as string;
+            // Need a room - use first available or previous
+            newAlloc.room_id = rooms[0]?.id;
+        } else if (viewMode === 'section') {
+            newAlloc.section = activeItem as string;
+            newAlloc.room_id = rooms[0]?.id;
+        }
+
+        return newAlloc;
+    }, [draggedClassId, draggedAllocId, draggingComponent, allocations, classes, timeSlots, viewMode, activeItem, rooms]);
+
+    const getDraggedDuration = useCallback(() => {
+        if (!draggedClassId && !draggedAllocId) return 0;
+        let baseClass: any;
+        let component = draggingComponent || 'LEC';
+
+        if (draggedAllocId) {
+            const existing = allocations.find(a => (a.id || a.class_id) === draggedAllocId);
+            if (!existing) return 60;
+            const parts = existing.schedule_time.split(' - ');
+            const s = timeSlots.find(ts => ts.start === parts[0].substring(0, 5))?.startMinutes || 0;
+            const e = timeSlots.find(ts => ts.end.includes(parts[1].substring(0, 5)))?.endMinutes || 0;
+            return e - s;
+        } else {
+            baseClass = classes.find(c => c.id === draggedClassId);
+            if (!baseClass) return 60;
+            return (component === 'LEC' ? (baseClass.lec_hours || 1) : (baseClass.lab_hours || 1)) * 60;
+        }
+    }, [draggedClassId, draggedAllocId, draggingComponent, allocations, classes, timeSlots]);
+
     const handleSave = () => {
         onSave(allocations)
         onClose()
@@ -576,6 +721,18 @@ export default function ManualEditModal({
                                 onClick={() => { setViewMode('section'); setActiveItemIndex(0); }}
                             >
                                 <FaUsers /> Section
+                            </button>
+                            <div className={styles.vDivider} />
+                            <button
+                                className={styles.resetBtn}
+                                onClick={() => {
+                                    if (confirm('Are you sure you want to clear the entire current manual schedule? This will remove all placed classes from the editor.')) {
+                                        setAllocations([]);
+                                        toast.info('Timetable cleared');
+                                    }
+                                }}
+                            >
+                                <MdDelete /> Clear All
                             </button>
                         </div>
                     </div>
@@ -640,6 +797,7 @@ export default function ManualEditModal({
                                                     className={styles.compBtn}
                                                     draggable
                                                     onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LEC'); }}
+                                                    onDragEnd={() => { setDraggedClassId(null); setDraggingComponent(null); }}
                                                     title="Drag Lecture"
                                                 >
                                                     <MdLayers /> LEC
@@ -651,6 +809,7 @@ export default function ManualEditModal({
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9' }}
                                                     draggable
                                                     onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB'); }}
+                                                    onDragEnd={() => { setDraggedClassId(null); setDraggingComponent(null); }}
                                                     title="Drag Laboratory"
                                                 >
                                                     <MdSchool /> LAB
@@ -662,6 +821,7 @@ export default function ManualEditModal({
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
                                                     draggable
                                                     onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB G1'); }}
+                                                    onDragEnd={() => { setDraggedClassId(null); setDraggingComponent(null); }}
                                                     title="Drag Laboratory Group 1"
                                                 >
                                                     <MdSchool /> LAB - Section G1 ({Math.ceil((c.student_count || 0) / 2)})
@@ -673,6 +833,7 @@ export default function ManualEditModal({
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
                                                     draggable
                                                     onDragStart={() => { setDraggedClassId(c.id); setDraggingComponent('LAB G2'); }}
+                                                    onDragEnd={() => { setDraggedClassId(null); setDraggingComponent(null); }}
                                                     title="Drag Laboratory Group 2"
                                                 >
                                                     <MdSchool /> LAB - Section G2 ({Math.floor((c.student_count || 0) / 2)})
@@ -831,15 +992,62 @@ export default function ManualEditModal({
                                                 return (
                                                     <td
                                                         key={day}
-                                                        className={`${styles.slotCell} ${allocs.length > 0 ? styles.occupied : ''}`}
-                                                        onDragOver={e => e.preventDefault()}
-                                                        onDrop={() => handleDrop(day, slot)}
+                                                        className={`${styles.slotCell} ${allocs.length > 0 ? styles.occupied : ''} ${hoveredCell?.day === day && hoveredCell?.slotId === slot.id ? styles.isHovered : ''
+                                                            }`}
+                                                        onDragOver={e => {
+                                                            e.preventDefault();
+                                                            if (hoveredCell?.day !== day || hoveredCell?.slotId !== slot.id) {
+                                                                setHoveredCell({ day, slotId: slot.id });
+                                                            }
+                                                        }}
+                                                        onDragLeave={() => setHoveredCell(null)}
+                                                        onDrop={() => {
+                                                            setHoveredCell(null);
+                                                            handleDrop(day, slot);
+                                                        }}
                                                         onMouseEnter={() => {
                                                             if (resizingAllocId !== null) {
                                                                 handleResize(resizingAllocId, day, slot)
                                                             }
                                                         }}
                                                     >
+                                                        {(() => {
+                                                            if (!(draggedClassId || draggedAllocId) || !hoveredCell || hoveredCell.day !== day) return null;
+
+                                                            const hoverSlot = timeSlots.find(ts => ts.id === hoveredCell.slotId);
+                                                            if (!hoverSlot) return null;
+
+                                                            const duration = getDraggedDuration();
+                                                            const isInShadow = slot.startMinutes >= hoverSlot.startMinutes && slot.startMinutes < hoverSlot.startMinutes + duration;
+
+                                                            if (!isInShadow) return null;
+
+                                                            const isStart = slot.id === hoveredCell.slotId;
+                                                            const isEnd = slot.startMinutes + 30 >= hoverSlot.startMinutes + duration;
+                                                            const p = getPotentialAlloc(day, hoverSlot);
+                                                            const confs = p ? checkConflicts(p, draggedAllocId) : ['Invalid Slot'];
+                                                            const isValid = confs.length === 0;
+
+                                                            return (
+                                                                <div
+                                                                    className={`${styles.dropSilhouette} ${isValid ? styles.silValid : styles.silInvalid}`}
+                                                                    style={{
+                                                                        top: isStart ? '2px' : '-2px',
+                                                                        height: isStart ? 'calc(100% - 4px)' : isEnd ? 'calc(100% - 2px)' : 'calc(100% + 4px)',
+                                                                        borderTop: isStart ? undefined : 'none',
+                                                                        borderBottom: isEnd ? undefined : 'none',
+                                                                        borderRadius: isStart ? '8px 8px 0 0' : isEnd ? '0 0 8px 8px' : '0'
+                                                                    }}
+                                                                >
+                                                                    {isStart && (
+                                                                        <div className={styles.silContent}>
+                                                                            {isValid ? <MdCheckCircle /> : <MdWarning />}
+                                                                            <span>{isValid ? 'Available' : confs[0]}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                         {isStart && allocs.map(a => {
                                                             const confs = checkConflicts(a, a.class_id)
                                                             const actualId = a.id || a.class_id
@@ -849,6 +1057,7 @@ export default function ManualEditModal({
                                                                     key={actualId}
                                                                     draggable
                                                                     onDragStart={() => setDraggedAllocId(actualId)}
+                                                                    onDragEnd={() => { setDraggedAllocId(null); setHoveredCell(null); }}
                                                                     className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''} ${isLabComp ? styles.labComp : ''}`}
                                                                     style={{
                                                                         height: `calc(${((timeSlots.find(s => s.end.includes((a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)))?.endMinutes || 0) - slot.startMinutes) / 30 * 100}% - 8px)`,
@@ -858,12 +1067,28 @@ export default function ManualEditModal({
                                                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                                             <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                 {a.course_code}
-                                                                                {confs.length > 0 && <span title={confs.join('\n')} style={{ color: '#ef4444', opacity: 1, cursor: 'help', display: 'flex' }}><MdWarning size={14} /></span>}
                                                                             </strong>
                                                                             <span className={styles.compLabel}>{a.component}</span>
                                                                         </div>
                                                                     </div>
-                                                                    <span>{a.section}</span>
+                                                                    <span style={{ fontWeight: 600 }}>{a.section}</span>
+
+                                                                    {confs.length > 0 && (
+                                                                        <div
+                                                                            className={styles.conflictIndicator}
+                                                                            title={confs.join('\n')}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                toast.error("Constraint Violation", {
+                                                                                    description: confs.map((c, i) => `${i + 1}. ${c}`).join('\n'),
+                                                                                    duration: 5000
+                                                                                });
+                                                                            }}
+                                                                        >
+                                                                            <MdWarning size={24} />
+                                                                            <span>Conflict</span>
+                                                                        </div>
+                                                                    )}
                                                                     <div className={styles.allocTools}>
                                                                         <button onClick={() => adjustDuration(actualId, 30)} title="Add 30 mins"><MdAdd /></button>
                                                                         <button onClick={() => adjustDuration(actualId, -30)} title="Reduce 30 mins"><MdRemove /></button>

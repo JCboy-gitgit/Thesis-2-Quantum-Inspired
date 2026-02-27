@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import Providers from "./components/Providers";
 import { Toaster } from "./components/Toaster";
+import PersistentSchedulingStatus from "./components/PersistentSchedulingStatus";
 import "./globals.css";
 import "./styles/green-theme.css";
 
@@ -88,6 +89,7 @@ export default function RootLayout({
       >
         <Providers>
           <Toaster />
+          <PersistentSchedulingStatus />
           {children}
         </Providers>
       </body>

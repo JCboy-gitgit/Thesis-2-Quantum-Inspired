@@ -98,54 +98,6 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Listen for pushed notifications in real-time
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as Notification
-      setNotifications(prev => [detail, ...prev])
-    }
-    window.addEventListener('admin-notification-added', handler)
-    return () => window.removeEventListener('admin-notification-added', handler)
-  }, [])
-
-  // Fetch when opening
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotifications()
-      if (view === 'archive') fetchArchivedItems()
-    }
-  }, [isOpen, view])
-
-  // Load on mount + poll every 30s + Realtime
-  useEffect(() => {
-    const persisted = loadPersistedNotifications()
-    setNotifications(persisted)
-    fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
-
-    // Real-time subscription
-    const channel = supabase
-      .channel('realtime_alerts_admin')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'system_alerts'
-        },
-        (payload) => {
-          // Refresh notifications when new admin alert comes in
-          fetchNotifications()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      clearInterval(interval)
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
   const fetchArchivedItems = async () => {
     try {
       const { data, error } = await supabase
@@ -157,7 +109,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
       if (error) throw error
       setArchivedItems(data || [])
-      return (data || []).map(i => String(i.original_id))
+      return (data || []).map((i: any) => String(i.original_id))
     } catch (error) {
       console.error('Error fetching archive:', error)
       return []
@@ -167,10 +119,8 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   const fetchNotifications = useCallback(async () => {
     setLoading(true)
     try {
-      // 0. Fetch archived IDs first to filter them out
       const archivedIds = await fetchArchivedItems()
 
-      // 1. Fetch pending registrations
       const regResponse = await fetch('/api/faculty-registration?status=pending')
       const regData = await regResponse.json()
 
@@ -187,7 +137,6 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
           link: '/LandingPages/FacultyManagement/FacultyApproval'
         }))
 
-      // 2. Fetch system alerts from DB
       let alertNotifs: Notification[] = []
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -213,13 +162,11 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
           }
         }
       } catch {
-        // Alerts API may not exist — that's fine
+        // Alerts API fine
       }
 
-      // 3. Load persisted local notifications (schedule events, etc.)
       const persisted = loadPersistedNotifications().filter(n => !archivedIds.includes(n.id))
 
-      // Merge all, deduplicate by id, sort newest first
       const allMap = new Map<string, Notification>()
       for (const n of [...registrationNotifs, ...alertNotifs, ...persisted]) {
         if (!allMap.has(n.id)) allMap.set(n.id, n)
@@ -237,6 +184,51 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     }
   }, [])
 
+  // Listen for pushed notifications in real-time
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as Notification
+      setNotifications(prev => [detail, ...prev])
+    }
+    window.addEventListener('admin-notification-added', handler)
+    return () => window.removeEventListener('admin-notification-added', handler)
+  }, [])
+
+  // Fetch when opening
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications()
+      if (view === 'archive') fetchArchivedItems()
+    }
+  }, [isOpen, view, fetchNotifications])
+
+  // Load on mount + poll every 1m + Realtime
+  useEffect(() => {
+    const persisted = loadPersistedNotifications()
+    setNotifications(persisted)
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 60000)
+
+    const alertsChannel = supabase
+      .channel('realtime_alerts_admin')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'system_alerts' },
+        () => fetchNotifications()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'alert_receipts' },
+        () => fetchNotifications()
+      )
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(alertsChannel)
+    }
+  }, [fetchNotifications])
+
   const unreadCount = notifications.filter(n => !n.read).length
 
   const handleNotificationClick = async (notif: Notification) => {
@@ -250,9 +242,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          // Remove potential prefix added for local mapping
-          const alertId = notif.id.startsWith('alert_') ? notif.id.replace('alert_', '') : notif.id;
-
+          const alertId = notif.id.replace('alert_', '')
           await fetch('/api/alerts', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -262,6 +252,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               action: 'read'
             })
           })
+          fetchNotifications() // Sync back
         }
       } catch (err) {
         console.error('Failed to mark as read in DB:', err)
@@ -299,7 +290,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     const toArchive = notifications.filter(n => n.type !== 'registration')
 
     for (const notif of toArchive) {
-      await supabase.from('archived_items').insert({
+      await (supabase.from('archived_items') as any).insert({
         item_type: 'notification',
         item_name: notif.title,
         item_data: notif,
@@ -318,8 +309,9 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
       await fetch('/api/alerts', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, action: 'clear_all' })
+        body: JSON.stringify({ userId, action: 'clear_all', audience: 'admin' })
       })
+      fetchNotifications()
     }
   }
 
@@ -336,7 +328,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
 
     try {
       // Archive
-      await supabase.from('archived_items').insert({
+      await (supabase.from('archived_items') as any).insert({
         item_type: 'notification',
         item_name: notif.title,
         item_data: notif,
@@ -353,21 +345,35 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
         })
         if (!res.ok) throw new Error('Failed to delete from server')
       }
+
+      await fetchNotifications()
       toast.success('Notification archived')
     } catch (err) {
       console.error('Delete failed:', err)
-      // Rollback on failure? For now, just refresh
       fetchNotifications()
     }
   }
 
   const handleRestore = async (item: ArchivedItem) => {
     try {
-      const { id, ...notifData } = item.item_data
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+
+      const notifData = item.item_data
       // Restore logic
-      if (item.original_table === 'system_alerts') {
-        await supabase.from('system_alerts').insert(notifData)
-      } else {
+      if (item.original_table === 'system_alerts' && userId) {
+        // Just update the status back to 'read' or 'unread' in receipts
+        const alertId = String(item.original_id).replace('alert_', '')
+        await fetch('/api/alerts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            alertId,
+            action: 'read'
+          })
+        })
+      } else if (item.original_table === 'local_persistence') {
         pushAdminNotification(notifData)
       }
 

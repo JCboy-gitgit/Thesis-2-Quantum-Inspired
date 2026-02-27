@@ -125,7 +125,7 @@ interface Schedule {
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
+const TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
     const hour = Math.floor(i / 2) + 7
     const minute = (i % 2) * 30
     const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour

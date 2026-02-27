@@ -311,7 +311,7 @@ class ScheduleGenerationRequest(BaseModel):
     
     # Time configuration - USE FRONTEND'S SLOT DURATION
     start_time: str = "07:00"
-    end_time: str = "20:00"  # Default 8PM closing
+    end_time: str = "21:00"  # Default 9PM closing
     slot_duration: int = 90  # Default to 90 minutes (1.5 hours) - standard academic period
     
     # Enhanced optimization parameters

@@ -62,7 +62,7 @@ export default function AdminPreferredSchedules() {
             if (error) throw error
             setFaculties(data || [])
             if (data && data.length > 0) {
-                setSelectedFacultyId(data[0].id)
+                setSelectedFacultyId((data as any[])[0].id)
             }
         } catch (err) {
             console.error(err)

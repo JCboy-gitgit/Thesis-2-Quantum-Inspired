@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { pushAdminNotification } from '@/app/components/NotificationBell'
 import { createSystemAlert } from '@/lib/notificationUtils'
 import ManualEditModal from './ManualEditModal'
+import { useScheduling } from '@/app/context/SchedulingContext'
 
 // ==================== Types ====================
 interface CampusGroup {
@@ -144,6 +145,8 @@ interface ScheduleConfig {
   strictLabRoomMatching: boolean // NEW
   strictLectureRoomMatching: boolean // NEW
   allowSplitSessions: boolean // NEW
+  collegeRoomMatchingEnabled: boolean // NEW: Enforce college-room rule
+  allowG1G2SplitSessions: boolean // NEW: Toggle G1/G2 splitting
   // NEW: Soft Constraint Penalties (Fine-tuning)
   softRoomTypeMismatch: number
   softRoomTypeMajorMismatch: number
@@ -297,7 +300,7 @@ export default function GenerateSchedulePage() {
   const { activeColleges: bulsuColleges } = useColleges()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [scheduling, setScheduling] = useState(false)
+  const { isScheduling, timer, result: scheduleResult, startScheduling, setResult: setScheduleResult, resetScheduling } = useScheduling()
 
   // Data source states
   const [campusGroups, setCampusGroups] = useState<CampusGroup[]>([])
@@ -340,6 +343,8 @@ export default function GenerateSchedulePage() {
     strictLabRoomMatching: true,
     strictLectureRoomMatching: true,
     allowSplitSessions: true,
+    collegeRoomMatchingEnabled: true,
+    allowG1G2SplitSessions: true,
     // Soft Penalties Defaults
     softRoomTypeMismatch: 50,
     softRoomTypeMajorMismatch: 500,
@@ -369,7 +374,7 @@ export default function GenerateSchedulePage() {
   // Time Configuration
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
-    endTime: '20:00',
+    endTime: '21:00',
     slotDuration: 30, // 30 minutes for better granularity and alignment with manual editor
     includeSaturday: true,
     includeSunday: false,
@@ -384,8 +389,6 @@ export default function GenerateSchedulePage() {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
   const [showConstraintSettings, setShowConstraintSettings] = useState(false)
   const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1)
-  const [timer, setTimer] = useState(0)
-  const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [showTimetable, setShowTimetable] = useState(false)
   const [timetableView, setTimetableView] = useState<'room' | 'section' | 'teacher'>('room') // NEW: Toggle between views
@@ -467,6 +470,14 @@ export default function GenerateSchedulePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Effect to show results when they come in from context
+  useEffect(() => {
+    if (scheduleResult && !showResults) {
+      setShowResults(true)
+      setShowTimetable(true)
+    }
+  }, [scheduleResult, showResults])
+
   // Filter classes based on selected sections and excluded courses
   useEffect(() => {
     if (allLoadedClasses.length === 0) {
@@ -524,19 +535,6 @@ export default function GenerateSchedulePage() {
       router.push('/')
     }
   }
-
-  // Timer for scheduling
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    if (scheduling) {
-      interval = setInterval(() => {
-        setTimer(prev => prev + 100)
-      }, 100)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [scheduling])
 
   // Fetch all upload groups
   const fetchAllGroups = async () => {
@@ -1556,8 +1554,6 @@ export default function GenerateSchedulePage() {
   // Proceed with schedule generation after bypass confirmation
   const executeScheduleGeneration = async () => {
     setShowUnassignedWarning(false)
-    setScheduling(true)
-    setTimer(0)
     setShowResults(false)
 
     try {
@@ -1568,7 +1564,7 @@ export default function GenerateSchedulePage() {
         toast.error('No Rooms Selected', {
           description: 'Please select at least one building or room.',
         })
-        setScheduling(false)
+        resetScheduling()
         return
       }
 
@@ -1609,8 +1605,10 @@ export default function GenerateSchedulePage() {
           lunch_start_hour: config.lunchStartHour,
           lunch_end_hour: config.lunchEndHour,
           strict_lab_room_matching: config.strictLabRoomMatching,
-          strictLectureRoomMatching: config.strictLectureRoomMatching,
+          strict_lecture_room_matching: config.strictLectureRoomMatching,
           allow_split_sessions: config.allowSplitSessions,
+          college_room_matching_enabled: config.collegeRoomMatchingEnabled,
+          allow_g1_g2_split_sessions: config.allowG1G2SplitSessions,
           // Soft Penalties
           SOFT_ROOM_TYPE_MISMATCH: config.softRoomTypeMismatch,
           SOFT_ROOM_TYPE_MAJOR_MISMATCH: config.softRoomTypeMajorMismatch,
@@ -1642,11 +1640,13 @@ export default function GenerateSchedulePage() {
       console.log('[GenerateSchedule] Sending to Python backend:', JSON.stringify({
         rooms: filteredRooms.length,
         classes: classes.length,
-        teachers: teachers.length,
+        teachers: [],
         timeSlots: timeSlots.length,
         activeDays,
         onlineDays: config.onlineDays
       }, null, 2))
+
+      startScheduling(scheduleData)
 
       // Validate data before sending
       if (classes.length === 0) {
@@ -1817,8 +1817,11 @@ export default function GenerateSchedulePage() {
         severity: 'error',
         category: 'schedule_error'
       })
+      resetScheduling()
     } finally {
-      setScheduling(false)
+      // isScheduling is handled by setScheduleResult on success
+      // If we reach here after an error, we should probably reset or at least stop the spinner
+      if (!isScheduling) return // Already handled
     }
   }
 
@@ -1887,7 +1890,7 @@ export default function GenerateSchedulePage() {
       const usableWidth = pageWidth - (margin * 2)
 
       // Get unique values for export all
-      const rooms = [...new Set(scheduleResult.allocations.map(a => a.room))].filter(Boolean).sort()
+      const rooms = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.room))].filter(Boolean).sort() as string[]
       // Helper to get base section (strip LAB/LEC suffixes including comma-separated variants)
       const getBaseSection = (s: string) => {
         if (!s) return ''
@@ -1909,9 +1912,9 @@ export default function GenerateSchedulePage() {
           .trim()
       }
       // Get unique base sections (combining LAB and LEC into one)
-      const sections = [...new Set(scheduleResult.allocations.map(a => getBaseSection(a.section)))].filter(Boolean).sort()
-      const teachers = [...new Set(scheduleResult.allocations.map(a => a.teacher_name))].filter(Boolean).sort()
-      const courses = [...new Set(scheduleResult.allocations.map(a => a.course_code))].filter(Boolean).sort()
+      const sections = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => getBaseSection(a.section)))].filter(Boolean).sort() as string[]
+      const teachers = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.teacher_name))].filter(Boolean).sort() as string[]
+      const courses = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.course_code))].filter(Boolean).sort() as string[]
 
       // Generate color palette for courses
       const generateColorPalette = (allocs: RoomAllocation[]) => {
@@ -2060,10 +2063,10 @@ export default function GenerateSchedulePage() {
         return blocks
       }
 
-      // Helper: Generate time slots (7:00 AM to 8:00 PM)
+      // Helper: Generate time slots (7:00 AM to 9:00 PM)
       const generateTimeSlots = () => {
         const slots = []
-        for (let i = 0; i < 27; i++) {
+        for (let i = 0; i < 29; i++) {
           const hour = Math.floor(i / 2) + 7
           const minute = (i % 2) * 30
           slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
@@ -2285,29 +2288,46 @@ export default function GenerateSchedulePage() {
         drawTimetable(scheduleResult.allocations, 'All Classes', ++pageCount)
       } else if (exportType === 'all-rooms') {
         for (const room of rooms) {
-          const roomAllocs = scheduleResult.allocations.filter(a => a.room === room)
+          const roomAllocs = scheduleResult.allocations.filter((a: RoomAllocation) => a.room === room)
           if (roomAllocs.length > 0) {
             drawTimetable(roomAllocs, `Room: ${room}`, ++pageCount)
           }
         }
       } else if (exportType === 'all-sections') {
-        for (const section of sections) {
-          // Match allocations where base section matches (includes both LAB and LEC variants)
-          const sectionAllocs = scheduleResult.allocations.filter(a => getBaseSection(a.section) === section)
+        const uniqueSections = [...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.section))].filter(Boolean).sort() as string[]
+        for (const sectionName of uniqueSections) {
+          const isSubGroup = sectionName.match(/_G[12]$/i) || sectionName.match(/ G[12]$/i);
+          let sectionAllocs;
+
+          if (isSubGroup) {
+            // Find base section (e.g., strip G1/G2)
+            const baseOfSelected = sectionName.replace(/_G[12]$/i, '').replace(/ G[12]$/i, '');
+            // Include both the group sessions and the base section sessions (shared lectures)
+            sectionAllocs = scheduleResult.allocations.filter((a: RoomAllocation) =>
+              a.section === sectionName || a.section === baseOfSelected
+            );
+          } else {
+            // Check if this is a "leaf" base section that has sub-groups
+            // If it is, and we're showing it separately, we only show its specific sessions
+            // Note: In some systems, BSM CS 1A might only have the shared lecture, 
+            // while BSM CS 1A G1 and BSM CS 1A G2 have the labs.
+            sectionAllocs = scheduleResult.allocations.filter((a: RoomAllocation) => a.section === sectionName);
+          }
+
           if (sectionAllocs.length > 0) {
-            drawTimetable(sectionAllocs, `Section: ${section}`, ++pageCount)
+            drawTimetable(sectionAllocs, `Section: ${sectionName}`, ++pageCount)
           }
         }
       } else if (exportType === 'all-teachers') {
         for (const teacher of teachers) {
-          const teacherAllocs = scheduleResult.allocations.filter(a => a.teacher_name === teacher)
+          const teacherAllocs = scheduleResult.allocations.filter((a: RoomAllocation) => a.teacher_name === teacher)
           if (teacherAllocs.length > 0) {
             drawTimetable(teacherAllocs, `Teacher: ${teacher}`, ++pageCount)
           }
         }
       } else if (exportType === 'all-courses') {
         for (const course of courses) {
-          const courseAllocs = scheduleResult.allocations.filter(a => a.course_code === course)
+          const courseAllocs = scheduleResult.allocations.filter((a: RoomAllocation) => a.course_code === course)
           if (courseAllocs.length > 0) {
             drawTimetable(courseAllocs, `Course: ${course}`, ++pageCount)
           }
@@ -2494,7 +2514,7 @@ export default function GenerateSchedulePage() {
                   <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     {(() => {
                       const reasonCounts: Record<string, number> = {}
-                      scheduleResult.unscheduledList.forEach(item => {
+                      scheduleResult.unscheduledList.forEach((item: UnscheduledItem) => {
                         const code = item.reason_code || 'UNKNOWN'
                         reasonCounts[code] = (reasonCounts[code] || 0) + 1
                       })
@@ -2534,7 +2554,7 @@ export default function GenerateSchedulePage() {
                   </div>
 
                   <div className={styles.unscheduledList}>
-                    {scheduleResult.unscheduledList.map((item, index) => {
+                    {scheduleResult.unscheduledList.map((item: UnscheduledItem, index: number) => {
                       const reasonIcons: Record<string, string> = {
                         'INSUFFICIENT_ROOM_CAPACITY': '🏢',
                         'NO_LAB_ROOMS': '🔬',
@@ -2566,7 +2586,7 @@ export default function GenerateSchedulePage() {
                               <div style={{ fontWeight: 600, color: '#dc2626' }}>{item.reason}</div>
                               {item.reason_details && item.reason_details.length > 0 && (
                                 <ul style={{ margin: '6px 0 0 0', padding: '0 0 0 16px', fontSize: '12px', color: '#666' }}>
-                                  {item.reason_details.map((detail, i) => (
+                                  {item.reason_details.map((detail: string, i: number) => (
                                     <li key={i} style={{ marginBottom: '2px' }}>{detail}</li>
                                   ))}
                                 </ul>
@@ -2643,7 +2663,7 @@ export default function GenerateSchedulePage() {
                         className={styles.filterSelect}
                       >
                         <option value="all">All Rooms</option>
-                        {[...new Set(scheduleResult.allocations.map(a => a.room).filter(Boolean))].map(room => (
+                        {([...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.room).filter(Boolean))] as string[]).map((room: string) => (
                           <option key={room} value={room}>{room}</option>
                         ))}
                       </select>
@@ -2655,9 +2675,7 @@ export default function GenerateSchedulePage() {
                         className={styles.filterSelect}
                       >
                         <option value="all">All Sections</option>
-                        {[...new Set(scheduleResult.allocations.map(a =>
-                          a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '')
-                        ).filter(Boolean))].map(section => (
+                        {([...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.section).filter(Boolean))] as string[]).sort().map((section: string) => (
                           <option key={section} value={section}>{section}</option>
                         ))}
                       </select>
@@ -2669,7 +2687,7 @@ export default function GenerateSchedulePage() {
                         className={styles.filterSelect}
                       >
                         <option value="all">All Teachers</option>
-                        {[...new Set(scheduleResult.allocations.map(a => a.teacher_name).filter(Boolean))].map(teacher => (
+                        {([...new Set(scheduleResult.allocations.map((a: RoomAllocation) => a.teacher_name).filter(Boolean))] as string[]).map((teacher: string) => (
                           <option key={teacher} value={teacher}>{teacher}</option>
                         ))}
                       </select>
@@ -2723,12 +2741,25 @@ export default function GenerateSchedulePage() {
                         const combinedBlocks: CombinedBlock[] = [];
 
                         // Filter allocations based on view
-                        let viewFilteredAllocations = scheduleResult.allocations.filter(a => {
+                        let viewFilteredAllocations = scheduleResult.allocations.filter((a: RoomAllocation) => {
                           if (timetableView === 'room') {
                             if (selectedTimetableRoom !== 'all' && a.room !== selectedTimetableRoom) return false;
                           } else if (timetableView === 'section') {
-                            const baseSection = a.section?.replace(/_LAB$/i, '').replace(/_LEC$/i, '').replace(/_LECTURE$/i, '').replace(/_LABORATORY$/i, '').replace(/_G[12](_LAB)?$/i, '').replace(/ G[12]$/i, '').replace(/ LAB$/i, '').replace(/ LEC$/i, '');
-                            if (selectedTimetableSection !== 'all' && baseSection !== selectedTimetableSection) return false;
+                            if (selectedTimetableSection !== 'all') {
+                              // If specific group (G1/G2) selected, show its sessions AND the base section sessions (shared lectures)
+                              // If base section selected, show ONLY its sessions (to avoid clutter from all sub-groups)
+                              const isSubGroup = selectedTimetableSection.match(/_G[12]$/i) || selectedTimetableSection.match(/ G[12]$/i);
+
+                              if (isSubGroup) {
+                                // Strip the G1/G2 to find the base
+                                const baseOfSelected = selectedTimetableSection.replace(/_G[12]$/i, '').replace(/ G[12]$/i, '');
+                                if (a.section !== selectedTimetableSection && a.section !== baseOfSelected) return false;
+                              } else {
+                                // Just match exactly (or match sub-groups if they want to see combined? 
+                                // User said "not combining into 1", so BSM CS 1A should show only BSM CS 1A)
+                                if (a.section !== selectedTimetableSection) return false;
+                              }
+                            }
                           } else if (timetableView === 'teacher') {
                             if (selectedTimetableTeacher !== 'all' && a.teacher_name !== selectedTimetableTeacher) return false;
                           }
@@ -2736,8 +2767,8 @@ export default function GenerateSchedulePage() {
                         });
 
                         // Group by course+section+room+day+teacher to find consecutive slots
-                        const groupedMap = new Map<string, typeof viewFilteredAllocations>();
-                        viewFilteredAllocations.forEach(alloc => {
+                        const groupedMap = new Map<string, RoomAllocation[]>();
+                        viewFilteredAllocations.forEach((alloc: RoomAllocation) => {
                           const key = `${alloc.course_code}|${alloc.section}|${alloc.room}|${alloc.schedule_day}|${alloc.teacher_name || ''}|${alloc.is_online || false}`;
                           if (!groupedMap.has(key)) {
                             groupedMap.set(key, []);
@@ -2748,14 +2779,14 @@ export default function GenerateSchedulePage() {
                         // For each group, combine consecutive time slots
                         groupedMap.forEach((allocations, key) => {
                           // Sort by start time
-                          const sorted = allocations.sort((a, b) => {
+                          const sorted = allocations.sort((a: RoomAllocation, b: RoomAllocation) => {
                             return parseTimeToMinutes(a.schedule_time || '') - parseTimeToMinutes(b.schedule_time || '');
                           });
 
                           // Merge consecutive slots
                           let currentBlock: CombinedBlock | null = null;
 
-                          sorted.forEach(alloc => {
+                          sorted.forEach((alloc: RoomAllocation) => {
                             const timeStr = alloc.schedule_time || '';
                             // Parse schedule_time in format "H:MM AM - H:MM PM" or "HH:MM - HH:MM"
                             const timeParts = timeStr.split(/\s*-\s*/);
@@ -4313,6 +4344,36 @@ export default function GenerateSchedulePage() {
 
                             <div className={styles.ruleItem}>
                               <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>College-Room Matching</span>
+                                <span className={styles.ruleDesc}>Courses MUST be scheduled in rooms belonging to their respective college (or "Shared" rooms)</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.collegeRoomMatchingEnabled}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, collegeRoomMatchingEnabled: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
+                                <span className={styles.ruleTitle}>G1/G2 Lab Splitting</span>
+                                <span className={styles.ruleDesc}>Automatically split large laboratory sections into G1 and G2 groups</span>
+                              </div>
+                              <label className={styles.toggleSwitch}>
+                                <input
+                                  type="checkbox"
+                                  checked={config.allowG1G2SplitSessions}
+                                  onChange={(e) => setConfig(prev => ({ ...prev, allowG1G2SplitSessions: e.target.checked }))}
+                                />
+                                <span className={styles.toggleSlider}></span>
+                              </label>
+                            </div>
+
+                            <div className={styles.ruleItem}>
+                              <div className={styles.ruleInfo}>
                                 <span className={styles.ruleTitle}>Avoid Conflicts (Strict)</span>
                                 <span className={styles.ruleDesc}>Zero-tolerance for room/teacher/student overlaps</span>
                               </div>
@@ -4634,16 +4695,16 @@ export default function GenerateSchedulePage() {
                       <button
                         className={`${styles.manualEditButton}`}
                         onClick={() => setShowManualModal(true)}
-                        disabled={scheduling || !canGenerate}
+                        disabled={isScheduling || !canGenerate}
                       >
                         <MdTableChart size={20} /> Manual Edit First
                       </button>
                       <button
-                        className={`${styles.generateButton} ${scheduling ? styles.generating : ''}`}
+                        className={`${styles.generateButton} ${isScheduling ? styles.generating : ''}`}
                         onClick={handleGenerateSchedule}
-                        disabled={scheduling || !canGenerate}
+                        disabled={isScheduling || !canGenerate}
                       >
-                        {scheduling ? (
+                        {isScheduling ? (
                           <>
                             <FaSpinner className={styles.spinnerIcon} />
                             Generating Schedule... {(timer / 1000).toFixed(1)}s
@@ -4660,7 +4721,7 @@ export default function GenerateSchedulePage() {
                         Please enter a schedule name to generate
                       </p>
                     )}
-                    {canGenerate && !scheduling && (
+                    {canGenerate && !isScheduling && (
                       <p className={styles.generateInfo}>
                         <MdFlashOn size={16} />
                         Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
@@ -5017,6 +5078,8 @@ export default function GenerateSchedulePage() {
         classes={classes}
         timeSettings={timeSettings}
         initialAllocations={manualAllocations}
+        collegeRoomMatchingEnabled={config.collegeRoomMatchingEnabled}
+        allowG1G2SplitSessions={config.allowG1G2SplitSessions}
       />
     </div >
   )

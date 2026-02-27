@@ -1,0 +1,171 @@
+.container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 10000;
+    pointer-events: auto;
+    animation: slideIn 0.3s ease-out;
+}
+
+.activeStatus,
+.resultStatus {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    min-width: 280px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+:global([data-theme="dark"]) .activeStatus,
+:global([data-theme="dark"]) .resultStatus {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.activeStatus {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    color: white;
+}
+
+.resultStatus:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+.spinnerWrapper {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.spinningAtom {
+    animation: atomRotate 2s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes atomRotate {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(1.2);
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+.iconWrapper {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.successIcon {
+    color: #10b981;
+}
+
+.warningIcon {
+    color: #f59e0b;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.statusLabel {
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.timer,
+.details {
+    font-family: var(--font-fira-mono);
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    margin-left: -8px;
+}
+
+.closeButton:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #64748b;
+}
+
+:global([data-theme="dark"]) .closeButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+.dismissStatus {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: white;
+    color: #94a3b8;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.dismissStatus:hover {
+    transform: scale(1.1);
+    color: #ef4444;
+}
+
+:global([data-theme="dark"]) .dismissStatus {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+}
