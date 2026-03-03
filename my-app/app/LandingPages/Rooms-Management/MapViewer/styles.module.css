@@ -1453,6 +1453,101 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.saveStateWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.saveStateBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  color: var(--content-text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.saveStateSaved {
+  color: var(--primary);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.saveStateUnsaved {
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.saveStateSaving {
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.autoSaveToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+
+.autoSaveToggle input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--primary);
+  background: transparent;
+  display: inline-block;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.autoSaveToggle input:checked {
+  background: var(--primary);
+}
+
+.autoSaveToggle input:checked::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.autoSaveIcon {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.autoSaveIconOn {
+  color: var(--primary);
+  opacity: 1;
+}
+
+.autoSaveIconOff {
+  color: var(--primary);
+  opacity: 0.45;
+}
+
 .clearBtn,
 .saveBtn,
 .exportBtn,
@@ -4696,6 +4791,14 @@
 
   .headerRight .adminActionsChevron {
     display: none;
+  }
+
+  .saveStateBadge {
+    display: none;
+  }
+
+  .autoSaveToggle {
+    height: 22px;
   }
 }
 

@@ -183,6 +183,22 @@ export default function MapViewerPage() {
   const [menuBarHidden, setMenuBarHidden] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
+  const exportRenderMetricsRef = useRef<{
+    canvasX: number
+    canvasY: number
+    canvasW: number
+    canvasH: number
+    planW: number
+    planH: number
+    maxOffsetXPx: number
+    maxOffsetYPx: number
+  } | null>(null)
+  const exportDragRef = useRef<{
+    startClientX: number
+    startClientY: number
+    startOffsetXPx: number
+    startOffsetYPx: number
+  } | null>(null)
 
   // Responsive detection
   const [mounted, setMounted] = useState(false)
@@ -342,6 +358,19 @@ export default function MapViewerPage() {
   // Layer state
   const [showLayersPanel, setShowLayersPanel] = useState(false)
   const [layerVisibility, setLayerVisibility] = useState<Record<string, boolean>>({})
+  const clipboardElementsRef = useRef<CanvasElement[]>([])
+  const pasteOffsetRef = useRef(0)
+  const [canvasContextMenu, setCanvasContextMenu] = useState<{
+    visible: boolean
+    x: number
+    y: number
+    targetElementId: string | null
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetElementId: null,
+  })
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false)
@@ -369,6 +398,8 @@ export default function MapViewerPage() {
   // UI state
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   const getGroupMemberIds = useCallback((groupId?: string) => {
@@ -432,6 +463,7 @@ export default function MapViewerPage() {
       }
     } else if (dragItem.type === 'toolbox') {
       const item = dragItem.data
+      const isTextItem = item.type === 'text'
       const newElement: CanvasElement = {
         id: generateId(),
         type: item.type,
@@ -443,8 +475,8 @@ export default function MapViewerPage() {
         label: item.label,
         color: item.color,
         borderColor: item.color,
-        textColor: getContrastColor(item.color || '#1f2937'),
-        iconColor: getContrastColor(item.color || '#1f2937'),
+        textColor: isTextItem ? (item.color || '#1f2937') : getContrastColor(item.color || '#1f2937'),
+        iconColor: isTextItem ? (item.color || '#1f2937') : getContrastColor(item.color || '#1f2937'),
         zIndex: canvasElements.length + 1
       }
       setCanvasElements(prev => [...prev, newElement])
@@ -523,9 +555,12 @@ export default function MapViewerPage() {
   const [showAdminActionsMenu, setShowAdminActionsMenu] = useState(false)
   const [adminMenuPosition, setAdminMenuPosition] = useState({ top: 0, left: 0 })
   const [showExportPreview, setShowExportPreview] = useState(false)
+  const [isDraggingExportMap, setIsDraggingExportMap] = useState(false)
   const adminActionsRef = useRef<HTMLDivElement>(null)
   const adminActionsButtonRef = useRef<HTMLButtonElement>(null)
   const exportCanvasRef = useRef<HTMLCanvasElement>(null)
+  const exportSnapshotRef = useRef<HTMLCanvasElement | null>(null)
+  const exportSnapshotPromiseRef = useRef<Promise<HTMLCanvasElement | null> | null>(null)
   const [exportSettings, setExportSettings] = useState({
     title: '',
     subtitle: '',
@@ -544,6 +579,10 @@ export default function MapViewerPage() {
     customPaperWidth: 800,
     customPaperHeight: 600,
     mapScale: 100, // 100% of fit
+    mapOffsetX: 0,
+    mapOffsetY: 0,
+    labelsOffsetX: 0,
+    labelsOffsetY: 0,
     useWhiteBackground: true
   })
 
@@ -736,27 +775,6 @@ export default function MapViewerPage() {
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
   const handleMenuBarToggle = (isHidden: boolean) => setMenuBarHidden(isHidden)
 
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault()
-        undo()
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault()
-        redo()
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if ((selectedElements.length > 0 || selectedElement) && viewMode === 'editor') {
-          e.preventDefault()
-          deleteSelectedElements()
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, selectedElement, selectedElements, viewMode])
-
   // Spacebar panning listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -834,6 +852,19 @@ export default function MapViewerPage() {
     return () => window.removeEventListener('resize', checkDevice)
     // Removed leftPanelOpen, rightPanelOpen from dependencies to prevent closure cycle
   }, []) // Depend on nothing for the resize listener, but it will use current state via closure if we're careful.
+
+  useEffect(() => {
+    if (!mounted) return
+    const stored = window.localStorage.getItem('mapviewer_autosave_enabled')
+    if (stored !== null) {
+      setAutoSaveEnabled(stored === '1')
+    }
+  }, [mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    window.localStorage.setItem('mapviewer_autosave_enabled', autoSaveEnabled ? '1' : '0')
+  }, [autoSaveEnabled, mounted])
   // Actually, to get current panel state during transition, we might need a ref for them or use the state from the last render.
   // But wait, the transition only happens ONCE during resize. 
   // The issue was it re-running on every toggle.
@@ -1137,6 +1168,7 @@ export default function MapViewerPage() {
     }
     ignoreUnsavedRef.current = true
     setHasUnsavedChanges(false)
+    setLastSavedAt(floorPlan.updated_at ? new Date(floorPlan.updated_at) : new Date())
     setCurrentFloorPlan(floorPlan)
     setFloorPlanName(floorPlan.floor_name)
     setIsDefault(floorPlan.is_default_view)
@@ -1376,6 +1408,11 @@ export default function MapViewerPage() {
 
   // Handle canvas click (deselect)
   const handleCanvasClick = (e: React.MouseEvent) => {
+    if (interactionHandledRef.current) {
+      interactionHandledRef.current = false
+      return
+    }
+
     // Only deselect if clicking exactly on the canvas background or container
     const isBackground = e.target === canvasRef.current || e.target === canvasContainerRef.current
     if (isBackground) {
@@ -1805,6 +1842,19 @@ export default function MapViewerPage() {
       return
     }
 
+    const dragW = Math.abs(marqueeEnd.x - marqueeStart.x)
+    const dragH = Math.abs(marqueeEnd.y - marqueeStart.y)
+    const isDragBox = dragW > 2 || dragH > 2
+
+    interactionHandledRef.current = isDragBox
+
+    if (!isDragBox) {
+      setIsMarqueeSelecting(false)
+      setMarqueeStart(null)
+      setMarqueeEnd(null)
+      return
+    }
+
     // Calculate selection box bounds
     const left = Math.min(marqueeStart.x, marqueeEnd.x)
     const right = Math.max(marqueeStart.x, marqueeEnd.x)
@@ -1853,6 +1903,8 @@ export default function MapViewerPage() {
 
   // Handle canvas mouse down
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    interactionHandledRef.current = false
+
     // Middle click OR Left click with Space OR Left click in Pan mode
     if (e.button === 1 || (e.button === 0 && (isSpacePressed || selectMode === 'pan'))) {
       setIsPanning(true)
@@ -1945,6 +1997,113 @@ export default function MapViewerPage() {
     setSelectedElement(null)
   }
 
+  const getActionSelectionIds = useCallback(() => {
+    if (selectedElements.length > 0) return selectedElements
+    if (selectedElement) {
+      if (selectedElement.groupId) return getGroupMemberIds(selectedElement.groupId)
+      return [selectedElement.id]
+    }
+    return [] as string[]
+  }, [selectedElements, selectedElement, getGroupMemberIds])
+
+  const copySelectedElements = useCallback(() => {
+    if (viewMode !== 'editor') return
+    const ids = getActionSelectionIds()
+    if (ids.length === 0) return
+
+    const copied = canvasElements
+      .filter(el => ids.includes(el.id))
+      .map(el => ({
+        ...el,
+        groupId: undefined,
+        linkedRoomData: el.linkedRoomData ? { ...el.linkedRoomData } : undefined,
+      }))
+
+    clipboardElementsRef.current = copied
+    pasteOffsetRef.current = 0
+    showNotification('success', `${copied.length} element(s) copied`)
+  }, [viewMode, getActionSelectionIds, canvasElements])
+
+  const pasteClipboardElements = useCallback(() => {
+    if (viewMode !== 'editor') return
+    const clipboard = clipboardElementsRef.current
+    if (!clipboard || clipboard.length === 0) {
+      showNotification('info', 'Clipboard is empty')
+      return
+    }
+
+    pasteOffsetRef.current += 20
+    const offset = pasteOffsetRef.current
+
+    const maxZ = Math.max(...canvasElements.map(el => el.zIndex || 0), 0)
+    const newIds: string[] = []
+    const pasted = clipboard.map((el, idx) => {
+      const newId = generateId()
+      newIds.push(newId)
+      return {
+        ...el,
+        id: newId,
+        groupId: undefined,
+        x: el.x + offset,
+        y: el.y + offset,
+        zIndex: maxZ + idx + 1,
+      }
+    })
+
+    setCanvasElements(prev => [...prev, ...pasted])
+    setSelectedElements(newIds)
+    setSelectedElement(pasted.length === 1 ? pasted[0] : null)
+    showNotification('success', `${pasted.length} element(s) pasted`)
+  }, [viewMode, canvasElements])
+
+  const duplicateSelectedElements = useCallback(() => {
+    if (viewMode !== 'editor') return
+    const ids = getActionSelectionIds()
+    if (ids.length === 0) return
+
+    const source = canvasElements.filter(el => ids.includes(el.id))
+    if (source.length === 0) return
+
+    const maxZ = Math.max(...canvasElements.map(el => el.zIndex || 0), 0)
+    const offset = 20
+    const newIds: string[] = []
+    const duplicated = source.map((el, idx) => {
+      const newId = generateId()
+      newIds.push(newId)
+      return {
+        ...el,
+        id: newId,
+        groupId: undefined,
+        x: el.x + offset,
+        y: el.y + offset,
+        zIndex: maxZ + idx + 1,
+      }
+    })
+
+    setCanvasElements(prev => [...prev, ...duplicated])
+    setSelectedElements(newIds)
+    setSelectedElement(duplicated.length === 1 ? duplicated[0] : null)
+    showNotification('success', `${duplicated.length} element(s) duplicated`)
+  }, [viewMode, getActionSelectionIds, canvasElements])
+
+  const closeCanvasContextMenu = useCallback(() => {
+    setCanvasContextMenu(prev => ({ ...prev, visible: false, targetElementId: null }))
+  }, [])
+
+  const openCanvasContextMenu = useCallback((clientX: number, clientY: number, targetElementId: string | null) => {
+    const menuWidth = 200
+    const menuHeight = 240
+    const x = Math.min(clientX, window.innerWidth - menuWidth - 8)
+    const y = Math.min(clientY, window.innerHeight - menuHeight - 8)
+
+    setCanvasContextMenu({
+      visible: true,
+      x: Math.max(8, x),
+      y: Math.max(8, y),
+      targetElementId,
+    })
+  }, [])
+
   // Delete selected elements
   const deleteSelectedElements = () => {
     if (selectedElements.length > 0) {
@@ -1955,6 +2114,50 @@ export default function MapViewerPage() {
       removeElement(selectedElement.id)
     }
   }
+
+  // Keyboard shortcuts for undo/redo + clipboard actions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const isTypingTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        !!target?.closest('[contenteditable="true"]')
+
+      if (isTypingTarget) return
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        redo()
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        if (viewMode === 'editor') {
+          e.preventDefault()
+          copySelectedElements()
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+        if (viewMode === 'editor') {
+          e.preventDefault()
+          pasteClipboardElements()
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        if (viewMode === 'editor') {
+          e.preventDefault()
+          duplicateSelectedElements()
+        }
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if ((selectedElements.length > 0 || selectedElement) && viewMode === 'editor') {
+          e.preventDefault()
+          deleteSelectedElements()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [undo, redo, selectedElement, selectedElements, viewMode, copySelectedElements, pasteClipboardElements, duplicateSelectedElements])
 
   const groupSelectedElements = () => {
     if (selectedElements.length < 2) {
@@ -2166,7 +2369,15 @@ export default function MapViewerPage() {
   }
 
   // Save floor plan
-  const saveFloorPlan = async () => {
+  const saveFloorPlan = async (options?: {
+    silent?: boolean
+    refreshList?: boolean
+    closeModal?: boolean
+  }) => {
+    const silent = options?.silent === true
+    const shouldRefreshList = options?.refreshList !== false
+    const shouldCloseModal = options?.closeModal !== false
+
     // Easier naming: Default to just "Floor X" if no name is provided
     const defaultName = `Floor ${selectedFloor}`
     const finalName = floorPlanName.trim() || defaultName
@@ -2180,8 +2391,31 @@ export default function MapViewerPage() {
     try {
       setSaving(true)
 
+      const syncedElements = selectedElement
+        ? canvasElements.map(el =>
+          el.id === selectedElement.id
+            ? {
+              ...el,
+              label: editForm.label,
+              width: editForm.width,
+              height: editForm.height,
+              x: editForm.x,
+              y: editForm.y,
+              color: editForm.color,
+              textColor: editForm.textColor,
+              iconColor: editForm.iconColor,
+              rotation: editForm.rotation,
+              iconType: editForm.iconType,
+              fontSize: editForm.fontSize,
+              opacity: editForm.opacity,
+              borderWidth: editForm.borderWidth
+            }
+            : el
+        )
+        : canvasElements
+
       const canvasData = {
-        elements: canvasElements,
+        elements: syncedElements,
         canvasSize,
         zoom,
         gridSize,
@@ -2231,7 +2465,9 @@ export default function MapViewerPage() {
 
         // Update local state with fresh data from DB
         setCurrentFloorPlan(updateData[0] as FloorPlan)
-        showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
+        if (!silent) {
+          showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
+        }
       } else {
         // Create new
         const { data: sessionData } = await supabase.auth.getSession()
@@ -2258,23 +2494,88 @@ export default function MapViewerPage() {
 
         if (insertError) throw insertError
         setCurrentFloorPlan(insertData as FloorPlan)
-        showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
+        if (!silent) {
+          showNotification('success', `Floor plan ${isPublished ? 'published' : 'saved as draft'}!`)
+        }
       }
 
       setHasUnsavedChanges(false)
-      setShowSaveModal(false)
-      await fetchSavedFloorPlans(true) // Refresh the list
+      setLastSavedAt(new Date())
+      if (shouldCloseModal) {
+        setShowSaveModal(false)
+      }
+      if (shouldRefreshList) {
+        await fetchSavedFloorPlans(true) // Refresh the list
+      }
     } catch (error: any) {
       console.error('Save failure details:', error)
       const details = error?.details || error?.hint || ''
       const msg = error?.message || (typeof error === 'string' ? error : '')
       const errMsg = msg + (details ? ` (${details})` : '') || 'Unknown error - bridge to Supabase might be disconnected.'
-
-      showNotification('error', `Save failed: ${errMsg}`)
+      if (!silent) {
+        showNotification('error', `Save failed: ${errMsg}`)
+      }
     } finally {
       setSaving(false)
     }
   }
+
+  useEffect(() => {
+    if (!mounted) return
+    if (viewMode !== 'editor') return
+    if (!autoSaveEnabled) return
+    if (!hasUnsavedChanges) return
+    if (saving) return
+    if (!currentFloorPlan?.id) return
+
+    const autoSaveTimer = window.setTimeout(() => {
+      void saveFloorPlan({
+        silent: true,
+        refreshList: false,
+        closeModal: false,
+      })
+    }, 1500)
+
+    return () => window.clearTimeout(autoSaveTimer)
+  }, [
+    mounted,
+    viewMode,
+    autoSaveEnabled,
+    hasUnsavedChanges,
+    saving,
+    currentFloorPlan?.id,
+    canvasElements,
+    floorPlanName,
+    selectedBuilding,
+    selectedFloor,
+    gridSize,
+    canvasBackground,
+    canvasSize.width,
+    canvasSize.height,
+    isDefault,
+    isPublished,
+    selectedScheduleId,
+    selectedElement?.id,
+    editForm,
+  ])
+
+  const saveStateText = useMemo(() => {
+    if (viewMode !== 'editor') return ''
+    if (saving) return 'Saving...'
+    if (hasUnsavedChanges && !autoSaveEnabled) return 'Autosave off • Unsaved'
+    if (hasUnsavedChanges) return 'Unsaved changes'
+    if (!currentFloorPlan?.id) return 'New draft'
+    if (lastSavedAt) {
+      return `Saved ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    }
+    return 'Saved'
+  }, [viewMode, saving, hasUnsavedChanges, autoSaveEnabled, currentFloorPlan?.id, lastSavedAt])
+
+  const saveStateToneClass = useMemo(() => {
+    if (saving) return styles.saveStateSaving
+    if (hasUnsavedChanges) return styles.saveStateUnsaved
+    return styles.saveStateSaved
+  }, [saving, hasUnsavedChanges])
 
 
 
@@ -2292,6 +2593,7 @@ export default function MapViewerPage() {
     setSelectedElement(null)
     setFloorPlanName('')
     setCurrentFloorPlan(null)
+    setLastSavedAt(null)
     setIsDefault(false)
     setIsPublished(false)
     setShowLoadModal(false)
@@ -2304,17 +2606,19 @@ export default function MapViewerPage() {
 
   // Open export preview modal
   const openExportPreview = () => {
+    exportSnapshotRef.current = null
+    exportSnapshotPromiseRef.current = null
     setExportSettings(prev => ({
       ...prev,
-      title: prev.title || floorPlanName || `${selectedBuilding} - Floor ${selectedFloor}`,
-      subtitle: prev.subtitle || (schedules.find(s => s.id === selectedScheduleId)?.schedule_name || ''),
-      buildingLabel: prev.buildingLabel || selectedBuilding || '',
-      floorName: prev.floorName || (currentFloorPlan?.floor_name || `Floor ${selectedFloor}`),
-      floorNumber: prev.floorNumber || String(currentFloorPlan?.floor_number || selectedFloor),
+      title: floorPlanName || `${selectedBuilding} - Floor ${selectedFloor}`,
+      subtitle: schedules.find(s => s.id === selectedScheduleId)?.schedule_name || '',
+      buildingLabel: selectedBuilding || '',
+      floorName: currentFloorPlan?.floor_name || `Floor ${selectedFloor}`,
+      floorNumber: String(currentFloorPlan?.floor_number || selectedFloor),
     }))
     setShowExportPreview(true)
     // Render preview after modal opens
-    setTimeout(() => renderExportPreview(), 100)
+    setTimeout(() => void renderExportPreview(), 100)
   }
 
   const getElementAabb = (el: CanvasElement) => {
@@ -2379,12 +2683,26 @@ export default function MapViewerPage() {
     }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
   }
 
+  // Get legend items based on rooms on canvas (memoised)
+  const legendItems = useMemo(() => Array.from(new Set(
+    canvasElements
+      .filter(el => el.type === 'room' && el.linkedRoomData)
+      .map(el => normalizeRoomType(el.linkedRoomData?.room_type))
+  ))
+    .map(type => ({
+      type,
+      ...getRoomColor(type)
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  , [canvasElements])
+
   // Render export document (used by preview + PDF generation)
-  const renderExportPreview = useCallback((options?: {
+  const renderExportPreview = useCallback(async (options?: {
     canvas?: HTMLCanvasElement
     width?: number
     height?: number
     includeFrame?: boolean
+    forceSnapshot?: boolean
   }) => {
     const canvas = options?.canvas || exportCanvasRef.current
     if (!canvas) return
@@ -2448,7 +2766,7 @@ export default function MapViewerPage() {
       ctx.strokeRect(offsetX, offsetY, pageW * sf, pageH * sf)
     }
 
-    const m = pageW * 0.05 * sf // margin
+    const m = includeFrame ? pageW * 0.05 * sf : 0 // full-bleed when exporting
     const px = offsetX + m
     const py = offsetY + m
     const contentW = pageW * sf - m * 2
@@ -2498,41 +2816,50 @@ export default function MapViewerPage() {
     // ===== COMPACT HEADER (all labels in one tight block) =====
     const titleY = py + 6 * sf
     const maxTextW = contentW - 4 * sf
+    const labelsOffsetXPx = (exportSettings.labelsOffsetX / 100) * contentW
+    const labelsOffsetYPx = (exportSettings.labelsOffsetY / 100) * contentH
+    const labelsCenterX = offsetX + pageW * sf / 2 + labelsOffsetXPx
 
     // Title — primary text
     const titleFontPx = Math.max(6 * sf, (exportSettings.titleFontSize / 22) * 7.5 * sf)
-    ctx.fillStyle = '#0f172a'
-    ctx.font = `bold ${titleFontPx}px Arial`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(exportSettings.title || 'Floor Plan', offsetX + pageW * sf / 2, titleY, maxTextW)
-
     let infoY = titleY + titleFontPx + 2 * sf
 
-    // Schedule subtitle (if enabled)
-    if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
-      ctx.fillStyle = '#475569'
-      ctx.font = `${4 * sf}px Arial`
-      ctx.textAlign = 'center'
-      ctx.fillText(exportSettings.subtitle, offsetX + pageW * sf / 2, infoY, maxTextW)
-      infoY += 5 * sf
-    }
+    if (exportSettings.showScheduleInfo && exportSettings.subtitle) infoY += 5 * sf
+    const metaParts: string[] = []
+    if (exportSettings.buildingLabel) metaParts.push(`Building: ${exportSettings.buildingLabel}`)
+    if (exportSettings.floorName) metaParts.push(`Floor: ${exportSettings.floorName}`)
+    if (exportSettings.floorNumber) metaParts.push(`# ${exportSettings.floorNumber}`)
+    if (exportSettings.showDate) metaParts.push(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`)
+    if (metaParts.length) infoY += 5 * sf
 
-    // Building / Floor / Date — all on ONE compact line to save space
-    {
-      ctx.fillStyle = '#94a3b8'
-      ctx.font = `${3 * sf}px Arial`
+    const drawDocumentLabels = () => {
+      const baseTitleY = titleY + labelsOffsetYPx
+
+      ctx.fillStyle = '#0f172a'
+      ctx.font = `bold ${titleFontPx}px Arial`
       ctx.textAlign = 'center'
-      const metaParts: string[] = []
-      if (exportSettings.buildingLabel) metaParts.push(`Building: ${exportSettings.buildingLabel}`)
-      if (exportSettings.floorName) metaParts.push(`Floor: ${exportSettings.floorName}`)
-      if (exportSettings.floorNumber) metaParts.push(`# ${exportSettings.floorNumber}`)
-      if (exportSettings.showDate) metaParts.push(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`)
+      ctx.textBaseline = 'top'
+      ctx.fillText(exportSettings.title || 'Floor Plan', labelsCenterX, baseTitleY, maxTextW)
+
+      let labelsY = baseTitleY + titleFontPx + 2 * sf
+
+      if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
+        ctx.fillStyle = '#475569'
+        ctx.font = `${4 * sf}px Arial`
+        ctx.textAlign = 'center'
+        ctx.fillText(exportSettings.subtitle, labelsCenterX, labelsY, maxTextW)
+        labelsY += 5 * sf
+      }
+
       if (metaParts.length) {
-        ctx.fillText(metaParts.join('  •  '), offsetX + pageW * sf / 2, infoY, maxTextW)
-        infoY += 5 * sf
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = `${3 * sf}px Arial`
+        ctx.textAlign = 'center'
+        ctx.fillText(metaParts.join('  •  '), labelsCenterX, labelsY, maxTextW)
       }
     }
+
+    drawDocumentLabels()
 
     // ===== FLOOR PLAN AREA =====
     // Clamp planY so we always have room for the floor plan area
@@ -2545,9 +2872,11 @@ export default function MapViewerPage() {
     const planH = Math.max(minPlanH, contentH - (planY - py) - legendReserve - footerReserve)
 
     // Floor plan border
-    ctx.strokeStyle = '#e2e8f0'
-    ctx.lineWidth = 1
-    ctx.strokeRect(px, planY, planW, planH)
+    if (includeFrame) {
+      ctx.strokeStyle = '#e2e8f0'
+      ctx.lineWidth = 1
+      ctx.strokeRect(px, planY, planW, planH)
+    }
 
     // Background - use white if set
     ctx.fillStyle = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
@@ -2589,312 +2918,110 @@ export default function MapViewerPage() {
       ctx.restore()
     }
 
-    const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
-    const bounds = getExportBounds(visibleElements)
+    const sourceCanvasEl = canvasRef.current
+    const sourceW = Math.max(1, canvasSize.width)
+    const sourceH = Math.max(1, canvasSize.height)
+    const scaleEX = planW / sourceW
+    const scaleEY = planH / sourceH
+    const fitScale = Math.min(scaleEX, scaleEY) * 0.95
+    const scaleE = fitScale * (exportSettings.mapScale / 100)
+    const centeredCanvasX = px + (planW - sourceW * scaleE) / 2
+    const centeredCanvasY = planY + (planH - sourceH * scaleE) / 2
+    const maxOffsetXPx = Math.max(0, (planW - sourceW * scaleE) / 2)
+    const maxOffsetYPx = Math.max(0, (planH - sourceH * scaleE) / 2)
+    const requestedOffsetXPx = (exportSettings.mapOffsetX / 100) * planW
+    const requestedOffsetYPx = (exportSettings.mapOffsetY / 100) * planH
+    const clampedOffsetXPx = Math.max(-maxOffsetXPx, Math.min(maxOffsetXPx, requestedOffsetXPx))
+    const clampedOffsetYPx = Math.max(-maxOffsetYPx, Math.min(maxOffsetYPx, requestedOffsetYPx))
+    const canvasX = centeredCanvasX + clampedOffsetXPx
+    const canvasY = centeredCanvasY + clampedOffsetYPx
+    const canvasW = sourceW * scaleE
+    const canvasH = sourceH * scaleE
 
-    // Add small padding so elements aren't flush against the edge
-    const pad = Math.max((bounds.maxX - bounds.minX), (bounds.maxY - bounds.minY)) * 0.02
-    bounds.minX -= pad
-    bounds.minY -= pad
-    bounds.maxX += pad
-    bounds.maxY += pad
+    exportRenderMetricsRef.current = {
+      canvasX,
+      canvasY,
+      canvasW,
+      canvasH,
+      planW,
+      planH,
+      maxOffsetXPx,
+      maxOffsetYPx,
+    }
 
-    const boundsW = Math.max(1, bounds.maxX - bounds.minX)
-    const boundsH = Math.max(1, bounds.maxY - bounds.minY)
-    const scaleEX = planW / boundsW
-    const scaleEY = planH / boundsH
-    const baseScale = Math.min(scaleEX, scaleEY) * 0.95
-    const scaleE = baseScale * (exportSettings.mapScale / 100)
-    const planCenterX = px + (planW - boundsW * scaleE) / 2 - bounds.minX * scaleE
-    const planCenterY = planY + (planH - boundsH * scaleE) / 2 - bounds.minY * scaleE
+    // Draw explicit canvas area to mirror editor canvas bounds in export.
+    ctx.fillStyle = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
+    ctx.fillRect(canvasX, canvasY, canvasW, canvasH)
+    ctx.strokeStyle = '#e2e8f0'
+    ctx.lineWidth = 1
+    ctx.strokeRect(canvasX, canvasY, canvasW, canvasH)
 
-    // Helper to draw with rotation
-    const drawRotatedCanvas = (element: typeof visibleElements[0], ex: number, ey: number, ew: number, eh: number, drawFn: () => void) => {
-      if (element.rotation) {
-        ctx.save()
-        const cx = ex + ew / 2
-        const cy = ey + eh / 2
-        ctx.translate(cx, cy)
-        ctx.rotate((element.rotation * Math.PI) / 180)
-        ctx.translate(-cx, -cy)
-        drawFn()
-        ctx.restore()
-      } else {
-        drawFn()
+    if (sourceCanvasEl) {
+      const needsFreshSnapshot = options?.forceSnapshot || !exportSnapshotRef.current
+
+      if (needsFreshSnapshot) {
+        if (!exportSnapshotPromiseRef.current) {
+          exportSnapshotPromiseRef.current = (async () => {
+            try {
+              const html2canvas = (await import('html2canvas')).default
+              const snapshotScale = options?.canvas ? 4 : 2
+              const snapshot = await html2canvas(sourceCanvasEl, {
+                backgroundColor: exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff'),
+                width: sourceW,
+                height: sourceH,
+                scale: snapshotScale,
+                useCORS: true,
+                logging: false,
+                scrollX: 0,
+                scrollY: 0,
+                onclone: (doc) => {
+                  const clonedCanvas = doc.querySelector('[data-export-canvas="true"]') as HTMLElement | null
+                  if (!clonedCanvas) return
+
+                  clonedCanvas.style.transform = 'none'
+                  clonedCanvas.style.transformOrigin = 'top left'
+                  clonedCanvas.style.top = '0px'
+                  clonedCanvas.style.left = '0px'
+                  clonedCanvas.style.boxShadow = 'none'
+
+                  doc.querySelectorAll(`.${styles.resizeHandle}, .${styles.orientationBtn}`).forEach((el) => {
+                    ; (el as HTMLElement).style.display = 'none'
+                  })
+
+                  doc.querySelectorAll(`.${styles.selected}, .${styles.dragging}, .${styles.resizing}`).forEach((el) => {
+                    ; (el as HTMLElement).style.boxShadow = 'none'
+                  })
+
+                  doc.querySelectorAll(`.${styles.element_text}`).forEach((el) => {
+                    const target = el as HTMLElement
+                    target.style.border = 'none'
+                    target.style.background = 'transparent'
+                    target.style.boxShadow = 'none'
+                  })
+                }
+              })
+
+              exportSnapshotRef.current = snapshot
+              return snapshot
+            } catch (error) {
+              console.error('Export canvas snapshot failed:', error)
+              return null
+            } finally {
+              exportSnapshotPromiseRef.current = null
+            }
+          })()
+        }
+
+        await exportSnapshotPromiseRef.current
+      }
+
+      if (exportSnapshotRef.current) {
+        ctx.drawImage(exportSnapshotRef.current, canvasX, canvasY, canvasW, canvasH)
       }
     }
 
-    // Draw elements - SORT BY Z-INDEX, clipped to floor plan area
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(px, planY, planW, planH)
-    ctx.clip()
-
-    visibleElements
-      .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-      .forEach(element => {
-        const elementOpacity = element.opacity != null
-          ? (element.opacity > 1 ? Math.min(Math.max(element.opacity / 100, 0), 1) : Math.min(Math.max(element.opacity, 0), 1))
-          : 1
-        const previousAlpha = ctx.globalAlpha
-        ctx.globalAlpha = elementOpacity
-
-        const ex = planCenterX + element.x * scaleE
-        const ey = planCenterY + element.y * scaleE
-        const ew = element.width * scaleE
-        const eh = element.height * scaleE
-
-        if (element.type === 'room') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            const color = element.color || '#f1f5f9'
-            ctx.fillStyle = color
-            ctx.fillRect(ex, ey, ew, eh)
-
-            // Border
-            ctx.strokeStyle = element.borderColor || '#cbd5e1'
-            ctx.lineWidth = Math.max(0.5, (element.borderWidth ?? 1) * scaleE * 0.5)
-            ctx.strokeRect(ex, ey, ew, eh)
-
-            // Room label — clipped to room bounds, shrinks until it fits
-            if (exportSettings.showRoomLabels) {
-              const label = element.label || ''
-              const maxLabelW = ew - 4 // more margin
-
-              ctx.save()
-              ctx.beginPath()
-              ctx.rect(ex, ey, ew, eh)
-              ctx.clip()
-
-              let roomFs = Math.max(5, exportSettings.roomFontSize * scaleE * 1.1)
-              ctx.fillStyle = element.textColor || getContrastColor(color)
-              ctx.font = `bold ${roomFs}px Arial`
-              ctx.textAlign = 'center'
-              ctx.textBaseline = 'middle'
-
-              let tw = ctx.measureText(label).width
-              while (tw > maxLabelW && roomFs > 5) {
-                roomFs *= 0.85
-                ctx.font = `bold ${roomFs}px Arial`
-                tw = ctx.measureText(label).width
-              }
-
-              let displayLabel = label
-              if (tw > maxLabelW) {
-                while (displayLabel.length > 1 && ctx.measureText(displayLabel + '…').width > maxLabelW) {
-                  displayLabel = displayLabel.slice(0, -1)
-                }
-                displayLabel += '…'
-              }
-
-              const hasCapacity = !!element.linkedRoomData?.capacity
-              const labelY = hasCapacity ? ey + eh / 2 - roomFs * 0.4 : ey + eh / 2
-              ctx.fillText(displayLabel, ex + ew / 2, labelY)
-
-              if (hasCapacity) {
-                let capFs = Math.max(4, roomFs * 0.7)
-                ctx.font = `${capFs}px Arial`
-                ctx.globalAlpha = 0.85
-                const capLabel = `Cap: ${element.linkedRoomData!.capacity}`
-                while (ctx.measureText(capLabel).width > maxLabelW && capFs > 4) {
-                  capFs *= 0.85
-                  ctx.font = `${capFs}px Arial`
-                }
-                ctx.fillText(capLabel, ex + ew / 2, ey + eh / 2 + roomFs * 0.5)
-                ctx.globalAlpha = 1.0
-              }
-
-              ctx.restore()
-            }
-
-            // Availability dot
-            if (showScheduleOverlay && element.linkedRoomData) {
-              const avail = getRoomAvailability(element.linkedRoomData.room)
-              ctx.fillStyle = avail === 'available' ? '#22c55e' : (avail === 'occupied' ? '#ef4444' : '#94a3b8')
-              ctx.beginPath()
-              ctx.arc(ex + ew - 3 * scaleE, ey + 3 * scaleE, 2.5 * scaleE, 0, Math.PI * 2)
-              ctx.fill()
-            }
-          })
-        } else if (element.type === 'hallway') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.color || '#d1d5db'
-            ctx.fillRect(ex, ey, ew, eh)
-
-            ctx.strokeStyle = element.borderColor || '#9ca3af'
-            ctx.lineWidth = Math.max(0.5, 1.5 * scaleE)
-            ctx.setLineDash([5 * scaleE, 3 * scaleE])
-            ctx.strokeRect(ex, ey, ew, eh)
-            ctx.setLineDash([])
-
-            if (element.label) {
-              ctx.save()
-              ctx.fillStyle = element.textColor || '#4b5563'
-              const hfs = Math.max(4, 6 * scaleE)
-              ctx.font = `bold ${hfs}px Arial`
-              ctx.textAlign = 'center'
-              ctx.textBaseline = 'middle'
-              if (element.orientation === 'vertical') {
-                ctx.translate(ex + ew / 2, ey + eh / 2)
-                ctx.rotate(-Math.PI / 2)
-                ctx.fillText(element.label, 0, 0)
-              } else {
-                ctx.fillText(element.label, ex + ew / 2, ey + eh / 2)
-              }
-              ctx.restore()
-            }
-          })
-        } else if (element.type === 'stair') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.color || '#f59e0b'
-            ctx.fillRect(ex, ey, ew, eh)
-            // Draw stair lines
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)'
-            ctx.lineWidth = 1
-            for (let i = 1; i <= 4; i++) {
-              ctx.beginPath()
-              ctx.moveTo(ex, ey + (eh / 5) * i)
-              ctx.lineTo(ex + ew, ey + (eh / 5) * i)
-              ctx.stroke()
-            }
-            ctx.fillStyle = element.textColor || '#ffffff'
-            ctx.font = `bold ${Math.max(4, 6 * scaleE)}px Arial`
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle'
-            ctx.fillText('STAIRS', ex + ew / 2, ey + eh / 2)
-          })
-        } else if (element.type === 'door') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.color || '#10b981'
-            ctx.fillRect(ex, ey, ew, eh)
-          })
-        } else if (element.type === 'wall') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.color || '#334155'
-            ctx.fillRect(ex, ey, ew, eh)
-          })
-        } else if (element.type === 'text') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.textColor || element.color || '#1e293b'
-            ctx.font = `${(element.fontSize || 12) * scaleE}px Arial`
-            ctx.textAlign = 'left'
-            ctx.textBaseline = 'top'
-            ctx.fillText(element.label || '', ex, ey)
-          })
-        } else if (element.type === 'icon') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-          const iconType = element.iconType || ''
-          const lowLabel = (element.label || '').toLowerCase()
-          const cx = ex + ew / 2
-          const cy = ey + eh / 2
-          const radius = Math.min(ew, eh) / 2
-
-          const isRestroom = iconType === 'restroom' || iconType === 'men_room' || iconType === 'women_room' ||
-            lowLabel.includes('restroom') || lowLabel.includes('comfort') || lowLabel.includes('cr') || lowLabel.includes('wc') ||
-            lowLabel.includes('men') || lowLabel.includes('women') || lowLabel.includes('boy') || lowLabel.includes('girl')
-
-          if (isRestroom) {
-            const isMale = iconType === 'men_room' || lowLabel.includes('men') || lowLabel.includes('boy')
-            const isFemale = iconType === 'women_room' || lowLabel.includes('women') || lowLabel.includes('girl')
-
-            // Draw restroom symbol background
-            ctx.fillStyle = isMale ? '#2563eb' : isFemale ? '#db2777' : '#6366f1'
-            ctx.beginPath()
-            ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2)
-            ctx.fill()
-
-            // Draw person icon (stick figure)
-            ctx.fillStyle = element.iconColor || '#ffffff'
-            ctx.strokeStyle = element.iconColor || '#ffffff'
-            ctx.lineWidth = Math.max(0.5, radius * 0.12)
-
-            if (isFemale) {
-              // Female: dress silhouette
-              // Head
-              const headR = radius * 0.22
-              ctx.beginPath()
-              ctx.arc(cx, cy - radius * 0.48, headR, 0, Math.PI * 2)
-              ctx.fill()
-              // Dress (triangle)
-              ctx.beginPath()
-              ctx.moveTo(cx, cy - radius * 0.22)
-              ctx.lineTo(cx - radius * 0.38, cy + radius * 0.45)
-              ctx.lineTo(cx + radius * 0.38, cy + radius * 0.45)
-              ctx.closePath()
-              ctx.fill()
-            } else {
-              // Male: rectangle body with legs
-              // Head
-              const headR = radius * 0.2
-              ctx.beginPath()
-              ctx.arc(cx, cy - radius * 0.5, headR, 0, Math.PI * 2)
-              ctx.fill()
-              // Body
-              ctx.fillRect(cx - radius * 0.15, cy - radius * 0.28, radius * 0.3, radius * 0.4)
-              // Legs
-              ctx.beginPath()
-              ctx.moveTo(cx - radius * 0.05, cy + radius * 0.12)
-              ctx.lineTo(cx - radius * 0.22, cy + radius * 0.48)
-              ctx.moveTo(cx + radius * 0.05, cy + radius * 0.12)
-              ctx.lineTo(cx + radius * 0.22, cy + radius * 0.48)
-              ctx.stroke()
-            }
-
-            // Generic restroom: draw neutral person figure
-            if (!isMale && !isFemale) {
-              // Head
-              const headR2 = radius * 0.21
-              ctx.beginPath()
-              ctx.arc(cx, cy - radius * 0.49, headR2, 0, Math.PI * 2)
-              ctx.fill()
-              // Body (narrower rectangle)
-              ctx.fillRect(cx - radius * 0.12, cy - radius * 0.26, radius * 0.24, radius * 0.35)
-              // Legs
-              ctx.beginPath()
-              ctx.moveTo(cx - radius * 0.04, cy + radius * 0.09)
-              ctx.lineTo(cx - radius * 0.18, cy + radius * 0.46)
-              ctx.moveTo(cx + radius * 0.04, cy + radius * 0.09)
-              ctx.lineTo(cx + radius * 0.18, cy + radius * 0.46)
-              ctx.stroke()
-            }
-          } else {
-            // Generic icon: colored circle with initial
-            ctx.fillStyle = element.color || '#6366f1'
-            ctx.beginPath()
-            ctx.arc(cx, cy, radius * 0.8, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.fillStyle = '#ffffff'
-            ctx.font = `bold ${radius * 0.75}px Arial`
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle'
-            ctx.fillText((element.label || 'i').charAt(0).toUpperCase(), cx, cy)
-          }
-
-          if (element.label) {
-            ctx.fillStyle = element.textColor || '#475569'
-            ctx.font = `${Math.max(4, 5 * scaleE)}px Arial`
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'top'
-            ctx.fillText(element.label, cx, ey + eh + 2 * scaleE)
-          }
-          }) // end drawRotatedCanvas for icon
-        } else if (element.type === 'shape') {
-          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
-            ctx.fillStyle = element.color || '#10b981'
-            if (element.shapeType === 'circle') {
-              ctx.beginPath()
-              ctx.arc(ex + ew / 2, ey + eh / 2, Math.min(ew, eh) / 2, 0, Math.PI * 2)
-              ctx.fill()
-            } else {
-              ctx.fillRect(ex, ey, ew, eh)
-            }
-          })
-        }
-
-        ctx.globalAlpha = previousAlpha
-      })
-
-    // Restore clip after drawing elements
-    ctx.restore()
+    // Keep document labels above map layer as a movable top overlay.
+    drawDocumentLabels()
 
     // Reset text alignment
     ctx.textAlign = 'left'
@@ -2989,15 +3116,103 @@ export default function MapViewerPage() {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasElements, canvasSize, exportSettings, showScheduleOverlay, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan, layerVisibility, roomAllocations, currentTime, selectedDay])
+  }, [canvasSize, exportSettings, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan, legendItems])
 
   // Re-render preview when settings change
   useEffect(() => {
-    if (showExportPreview) {
-      const timer = setTimeout(() => renderExportPreview(), 50)
-      return () => clearTimeout(timer)
-    }
+    if (!showExportPreview) return
+    const frame = requestAnimationFrame(() => {
+      void renderExportPreview()
+    })
+    return () => cancelAnimationFrame(frame)
   }, [showExportPreview, exportSettings, renderExportPreview])
+
+  useEffect(() => {
+    if (!showExportPreview) return
+    exportSnapshotRef.current = null
+    exportSnapshotPromiseRef.current = null
+    const frame = requestAnimationFrame(() => {
+      void renderExportPreview({ forceSnapshot: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [showExportPreview, canvasElements, layerVisibility, canvasSize, canvasBackground, showGrid, showScheduleOverlay, selectedElement?.id, editForm.label, editForm.fontSize, editForm.textColor, editForm.color, renderExportPreview])
+
+  useEffect(() => {
+    if (!canvasContextMenu.visible) return
+
+    const handleClickOutside = () => closeCanvasContextMenu()
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeCanvasContextMenu()
+    }
+
+    window.addEventListener('mousedown', handleClickOutside)
+    window.addEventListener('keydown', handleEscape)
+    window.addEventListener('scroll', handleClickOutside, true)
+
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('scroll', handleClickOutside, true)
+    }
+  }, [canvasContextMenu.visible, closeCanvasContextMenu])
+
+  const handleExportPreviewMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const metrics = exportRenderMetricsRef.current
+    const canvas = exportCanvasRef.current
+    if (!metrics || !canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    const insideMap =
+      x >= metrics.canvasX &&
+      x <= metrics.canvasX + metrics.canvasW &&
+      y >= metrics.canvasY &&
+      y <= metrics.canvasY + metrics.canvasH
+
+    if (!insideMap) return
+
+    exportDragRef.current = {
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startOffsetXPx: (exportSettings.mapOffsetX / 100) * metrics.planW,
+      startOffsetYPx: (exportSettings.mapOffsetY / 100) * metrics.planH,
+    }
+    setIsDraggingExportMap(true)
+  }
+
+  useEffect(() => {
+    if (!isDraggingExportMap) return
+
+    const handleMove = (event: MouseEvent) => {
+      const metrics = exportRenderMetricsRef.current
+      const dragStart = exportDragRef.current
+      if (!metrics || !dragStart) return
+
+      const dx = event.clientX - dragStart.startClientX
+      const dy = event.clientY - dragStart.startClientY
+      const nextOffsetXPx = Math.max(-metrics.maxOffsetXPx, Math.min(metrics.maxOffsetXPx, dragStart.startOffsetXPx + dx))
+      const nextOffsetYPx = Math.max(-metrics.maxOffsetYPx, Math.min(metrics.maxOffsetYPx, dragStart.startOffsetYPx + dy))
+
+      setExportSettings(prev => ({
+        ...prev,
+        mapOffsetX: Number(((nextOffsetXPx / metrics.planW) * 100).toFixed(2)),
+        mapOffsetY: Number(((nextOffsetYPx / metrics.planH) * 100).toFixed(2)),
+      }))
+    }
+
+    const handleUp = () => {
+      exportDragRef.current = null
+      setIsDraggingExportMap(false)
+    }
+
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+    }
+  }, [isDraggingExportMap])
 
   // Export as PDF with QTime logo (enhanced)
   const exportPDF = async () => {
@@ -3018,34 +3233,20 @@ export default function MapViewerPage() {
       const pageWidthMm = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
       const pageHeightMm = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
 
-      const elementCount = canvasElements.length
-      const baseLongSidePx = elementCount > 1000
-        ? 1700
-        : elementCount > 700
-          ? 1900
-          : elementCount > 450
-            ? 2100
-            : elementCount > 250
-              ? 2300
-              : 2600
-      const mapScaleMultiplier = Math.min(1.35, Math.max(0.85, exportSettings.mapScale / 100))
-      const targetLongSidePx = Math.round(Math.min(3200, Math.max(1600, baseLongSidePx * mapScaleMultiplier)))
-      const exportWidthPx = pageWidthMm >= pageHeightMm
-        ? targetLongSidePx
-        : Math.max(1200, Math.round(targetLongSidePx * (pageWidthMm / pageHeightMm)))
-      const exportHeightPx = pageHeightMm > pageWidthMm
-        ? targetLongSidePx
-        : Math.max(1200, Math.round(targetLongSidePx * (pageHeightMm / pageWidthMm)))
+      const pageWidthPx = isLandscape ? Math.max(paper.width, paper.height) : Math.min(paper.width, paper.height)
+      const pageHeightPx = isLandscape ? Math.min(paper.width, paper.height) : Math.max(paper.width, paper.height)
+      const exportScale = 3
+      const offscreenCanvas = document.createElement('canvas')
 
-      const exportCanvas = document.createElement('canvas')
-      renderExportPreview({
-        canvas: exportCanvas,
-        width: exportWidthPx,
-        height: exportHeightPx,
-        includeFrame: false
+      await renderExportPreview({
+        canvas: offscreenCanvas,
+        width: Math.max(1200, Math.round(pageWidthPx * exportScale)),
+        height: Math.max(1200, Math.round(pageHeightPx * exportScale)),
+        includeFrame: false,
+        forceSnapshot: true,
       })
 
-      const imageData = exportCanvas.toDataURL('image/png')
+      const imageData = offscreenCanvas.toDataURL('image/png')
 
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
@@ -3056,7 +3257,8 @@ export default function MapViewerPage() {
         precision: 12
       })
 
-      pdf.addImage(imageData, 'PNG', 0, 0, pageWidthMm, pageHeightMm, undefined, 'MEDIUM')
+      const bleedMm = 0.15
+      pdf.addImage(imageData, 'PNG', -bleedMm, -bleedMm, pageWidthMm + bleedMm * 2, pageHeightMm + bleedMm * 2, undefined, 'MEDIUM')
       const fileName = `FloorPlan_${selectedBuilding.replace(/\s+/g, '_')}_F${selectedFloor}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
       setShowExportPreview(false)
@@ -3122,18 +3324,10 @@ export default function MapViewerPage() {
     room.room_code?.toLowerCase().includes(searchQuery.toLowerCase())
   ), [allRooms, searchQuery])
 
-  // Get legend items based on rooms on canvas (memoised)
-  const legendItems = useMemo(() => Array.from(new Set(
-    canvasElements
-      .filter(el => el.type === 'room' && el.linkedRoomData)
-      .map(el => normalizeRoomType(el.linkedRoomData?.room_type))
-  ))
-    .map(type => ({
-      type,
-      ...getRoomColor(type)
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-  , [canvasElements])
+  const exportLayerItems = useMemo(() => (
+    [...canvasElements]
+      .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0))
+  ), [canvasElements])
 
   // Check if room is on canvas
   const isRoomOnCanvas = (roomId: number) => {
@@ -3304,6 +3498,25 @@ export default function MapViewerPage() {
                     : <PanelLeftOpen size={18} style={{ transform: 'scaleX(-1)' }} />}
                 </button>
               </>
+            )}
+
+            {viewMode === 'editor' && (
+              <div className={styles.saveStateWrap}>
+                <span className={`${styles.saveStateBadge} ${saveStateToneClass}`} title={saveStateText}>
+                  {saveStateText}
+                </span>
+                <label className={styles.autoSaveToggle} title="Enable or disable autosave">
+                  <input
+                    type="checkbox"
+                    checked={autoSaveEnabled}
+                    onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                  />
+                  <Save
+                    size={14}
+                    className={`${styles.autoSaveIcon} ${autoSaveEnabled ? styles.autoSaveIconOn : styles.autoSaveIconOff}`}
+                  />
+                </label>
+              </div>
             )}
 
             {viewMode === 'live' && (
@@ -3827,6 +4040,11 @@ export default function MapViewerPage() {
               onMouseLeave={handleCanvasMouseUp}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onContextMenu={(e) => {
+                if (viewMode !== 'editor') return
+                e.preventDefault()
+                openCanvasContextMenu(e.clientX, e.clientY, null)
+              }}
             >
               {/* Scale wrapper — sized to the visual (scaled) canvas so scroll area matches */}
               <div
@@ -3838,6 +4056,7 @@ export default function MapViewerPage() {
               >
                 <div
                   ref={canvasRef}
+                  data-export-canvas="true"
                   className={`${styles.canvas} ${selectMode === 'multi' ? styles.multiSelectMode : ''} ${selectMode === 'pan' || isSpacePressed ? styles.panMode : ''} ${isPanning ? styles.panning : ''} ${(draggingElement || resizingElement) ? styles.isInteracting : ''}`}
                   style={{
                     width: canvasSize.width,
@@ -3894,6 +4113,15 @@ export default function MapViewerPage() {
                           onClick={(e) => handleElementClick(element, e)}
                           onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
                           onTouchStart={(e) => viewMode === 'editor' && !element.isLocked && handleTouchStart(e, element)}
+                          onContextMenu={(e) => {
+                            if (viewMode !== 'editor') return
+                            e.preventDefault()
+                            e.stopPropagation()
+                            if (selectedElement?.id !== element.id) {
+                              selectElement(element, false)
+                            }
+                            openCanvasContextMenu(e.clientX, e.clientY, element.id)
+                          }}
                         >
                           {element.type === 'room' && (
                             <>
@@ -3924,7 +4152,9 @@ export default function MapViewerPage() {
                             </>
                           )}
                           {element.type === 'text' && (
-                            <span className={styles.textLabel} style={{ fontSize: element.fontSize, color: element.textColor || element.color || '#1f2937' }}>{element.label}</span>
+                            <span className={styles.textLabel} style={{ fontSize: (selectedElement?.id === element.id ? editForm.fontSize : element.fontSize), color: (selectedElement?.id === element.id ? (editForm.textColor || editForm.color || '#1f2937') : (element.textColor || element.color || '#1f2937')) }}>
+                              {selectedElement?.id === element.id ? editForm.label : element.label}
+                            </span>
                           )}
                           {element.type === 'hallway' && (
                             <>
@@ -5363,6 +5593,33 @@ export default function MapViewerPage() {
                     )}
                   </div>
 
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Labels X: {exportSettings.labelsOffsetX.toFixed(0)}%</label>
+                      <input
+                        type="range"
+                        min="-50"
+                        max="50"
+                        step="1"
+                        value={exportSettings.labelsOffsetX}
+                        onChange={(e) => setExportSettings(p => ({ ...p, labelsOffsetX: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                    <div className={styles.exportField}>
+                      <label>Labels Y: {exportSettings.labelsOffsetY.toFixed(0)}%</label>
+                      <input
+                        type="range"
+                        min="-50"
+                        max="50"
+                        step="1"
+                        value={exportSettings.labelsOffsetY}
+                        onChange={(e) => setExportSettings(p => ({ ...p, labelsOffsetY: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                  </div>
+
                   <h4 className={styles.exportSectionTitle}>
                     <Settings size={16} /> Typography
                   </h4>
@@ -5385,13 +5642,50 @@ export default function MapViewerPage() {
                       <input
                         type="range"
                         min="50"
-                        max="200"
+                        max="150"
                         step="5"
                         value={exportSettings.mapScale}
                         onChange={(e) => setExportSettings(p => ({ ...p, mapScale: Number(e.target.value) }))}
                         className={styles.exportSlider}
                       />
                     </div>
+                  </div>
+
+                  <div className={styles.exportFieldRow}>
+                    <div className={styles.exportField}>
+                      <label>Map X Position: {exportSettings.mapOffsetX.toFixed(0)}%</label>
+                      <input
+                        type="range"
+                        min="-50"
+                        max="50"
+                        step="1"
+                        value={exportSettings.mapOffsetX}
+                        onChange={(e) => setExportSettings(p => ({ ...p, mapOffsetX: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                    <div className={styles.exportField}>
+                      <label>Map Y Position: {exportSettings.mapOffsetY.toFixed(0)}%</label>
+                      <input
+                        type="range"
+                        min="-50"
+                        max="50"
+                        step="1"
+                        value={exportSettings.mapOffsetY}
+                        onChange={(e) => setExportSettings(p => ({ ...p, mapOffsetY: Number(e.target.value) }))}
+                        className={styles.exportSlider}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.exportField}>
+                    <button
+                      className={styles.loadBtn}
+                      onClick={() => setExportSettings(p => ({ ...p, mapScale: 100, mapOffsetX: 0, mapOffsetY: 0 }))}
+                      style={{ width: '100%' }}
+                    >
+                      Reset Map Position & Size
+                    </button>
                   </div>
 
                   <h4 className={styles.exportSectionTitle}>
@@ -5454,6 +5748,31 @@ export default function MapViewerPage() {
                       <span>White Background</span>
                     </label>
                   </div>
+
+                  <h4 className={styles.exportSectionTitle}>
+                    <Layers size={16} /> Element Layers
+                  </h4>
+
+                  <div className={styles.layerList} style={{ maxHeight: 220, overflowY: 'auto' }}>
+                    {exportLayerItems.length === 0 ? (
+                      <div className={styles.emptyState}><span>No visible elements</span></div>
+                    ) : (
+                      exportLayerItems.map((el) => (
+                        <div key={el.id} className={`${styles.layerItem} ${!isLayerVisible(el.id) ? styles.hidden : ''}`}>
+                          <div className={styles.layerInfo}>
+                            <span className={styles.layerName}>{el.label || `${el.type} (${el.id.slice(0, 4)})`}</span>
+                            <span className={styles.layerType}>{el.type} • z:{el.zIndex}{!isLayerVisible(el.id) ? ' • hidden' : ''}</span>
+                          </div>
+                          <div className={styles.layerControls}>
+                            <button onClick={() => bringToFront(el.id)} title="Bring to front"><ChevronsUp size={14} /></button>
+                            <button onClick={() => moveLayerUp(el.id)} title="Move up"><MoveUp size={14} /></button>
+                            <button onClick={() => moveLayerDown(el.id)} title="Move down"><MoveDown size={14} /></button>
+                            <button onClick={() => sendToBack(el.id)} title="Send to back"><ChevronsDown size={14} /></button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.exportActions}>
@@ -5470,12 +5789,14 @@ export default function MapViewerPage() {
               {/* Right: Preview Canvas */}
               <div className={styles.exportPreviewArea}>
                 <div className={styles.exportPreviewLabel}>
-                  <Eye size={14} /> Live Preview
+                  <Eye size={14} /> Live Preview (Drag map directly to reposition)
                 </div>
                 <div className={styles.exportCanvasWrapper}>
                   <canvas
                     ref={exportCanvasRef}
                     className={styles.exportCanvas}
+                    onMouseDown={handleExportPreviewMouseDown}
+                    style={{ cursor: isDraggingExportMap ? 'grabbing' : 'grab' }}
                   />
                 </div>
               </div>
@@ -5580,6 +5901,108 @@ export default function MapViewerPage() {
           />
         )
       }
+
+      {canvasContextMenu.visible && viewMode === 'editor' && (
+        <div
+          className={styles.adminActionsMenu}
+          style={{
+            position: 'fixed',
+            top: canvasContextMenu.y,
+            left: canvasContextMenu.x,
+            zIndex: 5000,
+            minWidth: 190,
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button
+            className={styles.adminActionItem}
+            onClick={() => {
+              copySelectedElements()
+              closeCanvasContextMenu()
+            }}
+            role="menuitem"
+          >
+            <Copy size={16} />
+            <span>Copy</span>
+          </button>
+
+          <button
+            className={styles.adminActionItem}
+            onClick={() => {
+              pasteClipboardElements()
+              closeCanvasContextMenu()
+            }}
+            role="menuitem"
+          >
+            <Plus size={16} />
+            <span>Paste</span>
+          </button>
+
+          <button
+            className={styles.adminActionItem}
+            onClick={() => {
+              duplicateSelectedElements()
+              closeCanvasContextMenu()
+            }}
+            role="menuitem"
+          >
+            <Copy size={16} />
+            <span>Duplicate</span>
+          </button>
+
+          {canvasContextMenu.targetElementId && (
+            <>
+              <button
+                className={styles.adminActionItem}
+                onClick={() => {
+                  bringToFront(canvasContextMenu.targetElementId as string)
+                  closeCanvasContextMenu()
+                }}
+                role="menuitem"
+              >
+                <ChevronsUp size={16} />
+                <span>Bring To Front</span>
+              </button>
+
+              <button
+                className={styles.adminActionItem}
+                onClick={() => {
+                  sendToBack(canvasContextMenu.targetElementId as string)
+                  closeCanvasContextMenu()
+                }}
+                role="menuitem"
+              >
+                <ChevronsDown size={16} />
+                <span>Send To Back</span>
+              </button>
+
+              <button
+                className={styles.adminActionItem}
+                onClick={() => {
+                  toggleElementLock(canvasContextMenu.targetElementId as string)
+                  closeCanvasContextMenu()
+                }}
+                role="menuitem"
+              >
+                <Lock size={16} />
+                <span>Toggle Lock</span>
+              </button>
+            </>
+          )}
+
+          <button
+            className={styles.adminActionItem}
+            onClick={() => {
+              deleteSelectedElements()
+              closeCanvasContextMenu()
+            }}
+            role="menuitem"
+          >
+            <Trash2 size={16} />
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
 
       {/* Notification */}
       {

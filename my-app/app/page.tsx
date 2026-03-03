@@ -30,7 +30,7 @@ const lockSVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xml
 // Loading fallback component
 function LoadingFallback() {
   return (
-    <div className="login-page">
+    <div className="login-page login-light-theme">
       <div className="background-container">
         <div className="stars"></div>
         <div className="quantum-orb quantum-orb-1"></div>
@@ -40,6 +40,7 @@ function LoadingFallback() {
       <main className="container">
         <div className="card">
           <div className="card-header">
+            <span className="spinner"></span>
             <h1 className="title">Loading...</h1>
           </div>
         </div>

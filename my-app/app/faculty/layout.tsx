@@ -3,6 +3,7 @@
 import { useEffect, useState, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTheme } from '@/app/context/ThemeContext'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import '@/app/styles/faculty-global.css'
 
 // Aggressive CSS reset - clears ALL admin-specific styles
@@ -123,39 +124,7 @@ export default function FacultyLayout({
 
   // Loading state - use current theme from context
   if (!mounted) {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: isLightMode
-            ? '#ffffff'
-            : '#0a0e27',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            border: `3px solid ${isLightMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0, 212, 255, 0.2)'}`,
-            borderTopColor: isLightMode ? '#10b981' : '#00d4ff',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
-        <style jsx>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    )
+    return <LoadingFallback message="Loading faculty portal..." theme={theme} />
   }
 
   return <>{children}</>

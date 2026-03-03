@@ -15,26 +15,27 @@ interface LoadingFallbackProps {
 export default function LoadingFallback({
   message = 'Loading...',
   variant = 'page',
+  theme: forcedTheme,
   showSpinner = true
 }: LoadingFallbackProps) {
-  const [theme, setTheme] = useState<Theme>('green')
+  const [theme, setTheme] = useState<Theme>(forcedTheme || 'green')
   const [collegeTheme, setCollegeTheme] = useState<CollegeTheme>('default')
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('faculty-base-theme') || localStorage.getItem('admin-base-theme') || 'green'
-      setTheme(savedTheme as Theme)
+      if (!forcedTheme) {
+        const savedTheme = localStorage.getItem('faculty-base-theme') || localStorage.getItem('admin-base-theme') || 'green'
+        setTheme(savedTheme as Theme)
+      } else {
+        setTheme(forcedTheme)
+      }
 
       const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
       if (savedCollegeTheme && ['science', 'arts-letters', 'architecture'].includes(savedCollegeTheme)) {
         setCollegeTheme(savedCollegeTheme as CollegeTheme)
       }
-      setMounted(true)
     }
-  }, [])
-
-  if (!mounted) return null
+  }, [forcedTheme])
 
   const getColorScheme = () => {
     const isLight = theme === 'light'
