@@ -440,14 +440,14 @@
 
 .canvas {
   position: relative;
-  background: rgba(15, 23, 42, 0.5);
+  /* background controlled by inline style from saved backgroundColor */
   border-radius: 8px;
 }
 
 /* Canvas elements */
 .canvasElement {
   position: absolute;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 2px solid;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
@@ -470,47 +470,50 @@
 }
 
 .canvasElement.room {
-  padding: 6px;
+  padding: 8px;
 }
 
 .canvasElement.wall {
-  background: #374151 !important;
-  border-color: #1f2937 !important;
+  background: #374151;
+  border: none;
 }
 
 .canvasElement.door {
-  background: #a16207 !important;
-  border-color: #854d0e !important;
+  background: #d1fae5;
+  border-color: #10b981;
 }
 
 .canvasElement.hallway {
-  background: rgba(148, 163, 184, 0.3) !important;
-  border-color: #64748b !important;
-  border-style: dashed;
+  background: #d1d5db !important;
+  border: 2px dashed #9ca3af !important;
+}
+
+.canvasElement.hallway.vertical {
+  flex-direction: column;
 }
 
 .canvasElement.stair {
-  background: #7c3aed !important;
-  border-color: #5b21b6 !important;
+  background: #fef3c7;
+  border-color: #f59e0b;
+  gap: 4px;
 }
 
 .canvasElement.text {
   background: transparent !important;
   border: none !important;
-  color: white;
   font-weight: 500;
 }
 
 .canvasElement.icon {
-  background: rgba(99, 102, 241, 0.8) !important;
-  border-color: #4f46e5 !important;
-  color: white;
+  background: #6366f1;
+  border-color: #4f46e5;
+  border-radius: 8px;
 }
 
 .canvasElement.shape {
-  background: rgba(236, 72, 153, 0.3) !important;
-  border-color: #db2777 !important;
-  color: #ec4899;
+  background: #10b981;
+  border-color: #059669;
+  border-radius: 8px;
 }
 
 /* Icon element */
@@ -520,19 +523,24 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 100%;
-  height: 100%;
   color: inherit;
 }
 
+.iconElement span {
+  font-size: 10px;
+  color: white;
+  font-weight: 600;
+}
+
 .iconLabel {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-align: center;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: white;
 }
 
 /* Shape element */
@@ -937,9 +945,9 @@
 .roomLabel {
   font-size: 12px;
   font-weight: 600;
-  color: white;
   text-align: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  /* color set via inline style from saved data */
 }
 
 .roomDetails {
@@ -1569,7 +1577,7 @@
 }
 
 :global([data-theme="dark"]) .roomLabel {
-  color: #ffffff;
+  /* color set via inline style from saved data */
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
@@ -1826,7 +1834,7 @@
 }
 
 :global([data-theme="light"]) .roomLabel {
-  color: #1e293b;
+  /* color set via inline style from saved data */
   text-shadow: none;
 }
 
@@ -2162,7 +2170,7 @@
 
 :global([data-theme="dark"]) .roomLabel,
 :global([data-theme="green"]) .roomLabel {
-  color: #ffffff !important;
+  /* color set via inline style from saved data */
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
 }
 

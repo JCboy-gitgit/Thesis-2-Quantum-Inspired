@@ -247,7 +247,7 @@
   border: 2px solid rgba(59, 130, 246, 0.2);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transform-origin: top center;
+  transform-origin: top left;
   min-width: fit-content;
 }
 
@@ -258,18 +258,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 3px solid;
+  border: 2px solid;
   border-radius: 6px;
   cursor: pointer;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease;
   user-select: none;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .canvasElement:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   z-index: 100 !important;
-  transform: scale(1.02);
 }
 
 .canvasElement.selected {
@@ -299,6 +299,10 @@
   border: 2px dashed #9ca3af !important;
 }
 
+.element_hallway.vertical {
+  flex-direction: column;
+}
+
 .element_door {
   background: #d1fae5 !important;
   border-color: #10b981 !important;
@@ -316,21 +320,16 @@
 }
 
 .element_icon {
-  background: #6366f1 !important;
-  border-color: #4f46e5 !important;
-  border-radius: 8px !important;
+  border-radius: 8px;
 }
 
 .element_shape {
-  background: #10b981 !important;
-  border-color: #059669 !important;
-  border-radius: 8px !important;
+  border-radius: 8px;
 }
 
 .elementLabel {
   font-size: 12px;
   font-weight: 700;
-  color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   text-align: center;
   word-break: break-word;

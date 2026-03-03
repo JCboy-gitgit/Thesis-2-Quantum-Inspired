@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
   MdAccessTime, MdPeople, MdCheckCircle, MdCancel, MdBusiness,
   MdZoomIn, MdZoomOut, MdFullscreen, MdFullscreenExit, MdExpandMore, MdExpandLess, MdChevronLeft, MdChevronRight,
@@ -92,6 +92,12 @@ interface CanvasElement {
   label?: string
   color?: string
   borderColor?: string
+  textColor?: string
+  iconColor?: string
+  opacity?: number
+  borderWidth?: number
+  orientation?: 'horizontal' | 'vertical'
+  isLocked?: boolean
   linkedRoomId?: number
   linkedRoomData?: Room
   zIndex: number
@@ -121,6 +127,33 @@ interface RoomViewer2DProps {
 
 // ... (other interfaces unchanged)
 
+// Helper: convert hex/rgb/named color to r,g,b
+function hexToRgb(color: string): { r: number; g: number; b: number } {
+  if (!color) return { r: 0, g: 0, b: 0 }
+  let hex = color.replace('#', '')
+  // Handle rgb()/rgba()
+  const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+  if (rgbMatch) return { r: parseInt(rgbMatch[1]), g: parseInt(rgbMatch[2]), b: parseInt(rgbMatch[3]) }
+  // Handle shorthand hex
+  if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]
+  if (hex.length !== 6) return { r: 0, g: 0, b: 0 }
+  return { r: parseInt(hex.slice(0,2),16), g: parseInt(hex.slice(2,4),16), b: parseInt(hex.slice(4,6),16) }
+}
+
+// Helper: get readable text color based on background
+function getContrastColor(bgColor: string): string {
+  const { r, g, b } = hexToRgb(bgColor)
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+  return yiq >= 128 ? '#1e293b' : '#ffffff'
+}
+
+// Helper: normalize opacity 0-100 to 0-1
+function normalizeOpacity(value?: number): number {
+  if (value === undefined || value === null) return 1
+  if (value > 1) return value / 100
+  return value
+}
+
 export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', highlightEmpty = false }: RoomViewer2DProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -139,10 +172,16 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [zoom, setZoom] = useState(fullscreen ? 100 : 100)
   const [zoomInput, setZoomInput] = useState('100')
   const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 })
+  const [canvasBackground, setCanvasBackground] = useState('#ffffff')
   const [error, setError] = useState<string | null>(null)
   const [hasFloorPlan, setHasFloorPlan] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(fullscreen)
   const [buildingNavCollapsed, setBuildingNavCollapsed] = useState(false)
+
+  const sortedCanvasElements = useMemo(
+    () => [...canvasElements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)),
+    [canvasElements]
+  )
 
   // Check if mobile
   useEffect(() => {
@@ -361,6 +400,15 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
     if (floorPlan.canvas_data?.canvasSize) {
       setCanvasSize(floorPlan.canvas_data.canvasSize)
+    }
+
+    // Load saved background color (editor saves it in canvas_data.backgroundColor)
+    if (floorPlan.canvas_data?.backgroundColor) {
+      setCanvasBackground(floorPlan.canvas_data.backgroundColor)
+    } else if (floorPlan.background_color) {
+      setCanvasBackground(floorPlan.background_color)
+    } else {
+      setCanvasBackground('#ffffff')
     }
 
     // Fetch room allocations if linked to a schedule
@@ -669,6 +717,15 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
       {/* Canvas Area - Touch optimized */}
       <div ref={wrapperRef} className={`${styles.canvasWrapper} ${isMobile ? styles.canvasWrapperMobile : ''}`}>
+        {/* Scale wrapper — sized to the visual (scaled) canvas so scroll area matches */}
+        <div
+          style={{
+            width: canvasSize.width * (zoom / 100),
+            height: canvasSize.height * (zoom / 100),
+            position: 'relative',
+            flexShrink: 0
+          }}
+        >
         <div
           ref={canvasRef}
           className={styles.canvas}
@@ -676,12 +733,12 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             width: canvasSize.width,
             height: canvasSize.height,
             transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top left'
+            transformOrigin: 'top left',
+            background: canvasBackground
           }}
         >
           {/* Render canvas elements */}
-          {canvasElements
-            .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+          {sortedCanvasElements
             .map(element => {
               const isRoom = element.type === 'room'
               const availability = isRoom && element.linkedRoomData
@@ -692,21 +749,28 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 : null
               const isSelected = selectedElement?.id === element.id
 
+              // Compute colors exactly like the editor
+              const elementTextColor = element.textColor || getContrastColor(element.color || '#e5e7eb')
+              const elementOpacity = highlightEmpty && availability === 'occupied'
+                ? 0.25
+                : normalizeOpacity(element.opacity)
+
               return (
                 <div
                   key={element.id}
-                  className={`${styles.canvasElement} ${styles[element.type]} ${isSelected ? styles.selected : ''}`}
+                  className={`${styles.canvasElement} ${styles[element.type]} ${isSelected ? styles.selected : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
                   style={{
                     position: 'absolute',
                     left: element.x,
                     top: element.y,
                     width: element.width,
                     height: element.height,
-                    backgroundColor: element.color || '#e5e7eb',
-                    borderColor: element.borderColor || '#9ca3af',
+                    backgroundColor: element.color,
+                    borderColor: element.borderColor,
+                    borderWidth: element.borderWidth ?? 2,
                     transform: element.rotation ? `rotate(${element.rotation}deg)` : 'none',
                     zIndex: element.zIndex || 1,
-                    opacity: highlightEmpty && availability === 'occupied' ? 0.25 : 1
+                    opacity: elementOpacity
                   }}
                   onClick={() => setSelectedElement(isSelected ? null : element)}
                   title={element.label || ''}
@@ -714,8 +778,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                   {/* Room content */}
                   {isRoom && (
                     <>
-                      {/* Room label */}
-                      <div className={styles.roomLabel}>{element.label}</div>
+                      {/* Room label — use saved textColor or compute contrast */}
+                      <div className={styles.roomLabel} style={{ color: elementTextColor }}>{element.label}</div>
 
                       {/* Capacity label - Live feature from admin */}
                       {element.linkedRoomData && (
@@ -734,40 +798,54 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                     </>
                   )}
 
-                  {/* Icon element */}
+                  {/* Icon element — match editor exactly */}
                   {element.type === 'icon' && (
                     <div className={styles.iconElement}>
                       {(() => {
                         const IconComp = ICON_MAP[element.iconType || 'info'] || MdInfo
-                        return <IconComp size={Math.min(element.width, element.height) * 0.4} />
+                        return <IconComp size={Math.min(element.width, element.height) * 0.6} color={element.iconColor || '#ffffff'} />
                       })()}
                       {element.label && <span className={styles.iconLabel}>{element.label}</span>}
                     </div>
                   )}
 
-                  {/* Shape element */}
+                  {/* Shape element — pass saved color */}
                   {element.type === 'shape' && (
                     <div className={styles.shapeElement}>
                       {(() => {
                         const ShapeComp = SHAPE_MAP[element.shapeType || 'circle'] || MdRadioButtonChecked
-                        return <ShapeComp size={Math.min(element.width, element.height) * 0.7} />
+                        return <ShapeComp size={Math.min(element.width, element.height) * 0.7} color={element.color} />
                       })()}
                     </div>
                   )}
 
                   {/* Text label for non-room elements */}
                   {element.type === 'text' && (
-                    <span style={{ fontSize: element.fontSize || 14 }}>{element.label}</span>
+                    <span style={{ fontSize: element.fontSize || 14, color: element.textColor || element.color || '#1f2937' }}>{element.label}</span>
                   )}
 
-                  {/* Hallway/Door/Wall labels */}
-                  {(element.type === 'hallway' || element.type === 'door' || element.type === 'stair') && element.label && (
-                    <span className={styles.elementLabel}>{element.label}</span>
+                  {/* Stair — show Footprints icon like editor */}
+                  {element.type === 'stair' && (
+                    <>
+                      <MdDirectionsWalk size={20} color={element.iconColor || element.textColor || '#ffffff'} />
+                      {element.label && <span style={{ color: element.textColor || '#ffffff', fontSize: 10 }}>{element.label}</span>}
+                    </>
+                  )}
+
+                  {/* Hallway label */}
+                  {element.type === 'hallway' && element.label && (
+                    <span className={styles.elementLabel} style={{ color: element.textColor || '#4b5563' }}>{element.label}</span>
+                  )}
+
+                  {/* Door — show MdMeetingRoom icon like editor */}
+                  {element.type === 'door' && (
+                    <MdMeetingRoom size={16} />
                   )}
                 </div>
               )
             })}
         </div>
+        </div>{/* end scale wrapper */}
       </div>
 
       {/* Enhanced Room Details Modal */}

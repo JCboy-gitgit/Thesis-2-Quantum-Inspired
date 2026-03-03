@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Building2, Layers, Users, Clock, ZoomIn, ZoomOut, Maximize2, Calendar, Download, ChevronLeft, Info, Map, Check, Loader2, Wind, Projector, Wifi, Square, Building, Footprints, DoorOpen, ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed, Archive, Dumbbell, Music, Theater, Presentation, Server, Flame, Droplets, AlertTriangle, CircleDot, Triangle, Hexagon, Pentagon, Octagon, Star, Heart, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react'
+import { Building2, Layers, Users, Clock, ZoomIn, ZoomOut, Maximize2, Calendar, Download, ChevronLeft, Info, Map, Check, Loader2, Wind, Projector, Wifi, Square, Building, Footprints, DoorOpen, ArrowUpDown, Bath, Laptop, Beaker, Library, UtensilsCrossed, Archive, Dumbbell, Music, Theater, Presentation, Server, Flame, Droplets, AlertTriangle, CircleDot, Triangle, Hexagon, Pentagon, Octagon, Star, Heart, RotateCcw, CheckCircle, AlertCircle, Lock } from 'lucide-react'
+import { MdMan, MdWoman } from 'react-icons/md'
 import styles from './styles.module.css'
 
 // Untyped supabase helper for tables not in generated types
@@ -52,6 +53,12 @@ interface CanvasElement {
   iconType?: string
   shapeType?: string
   fontSize?: number
+  textColor?: string
+  iconColor?: string
+  opacity?: number
+  borderWidth?: number
+  orientation?: 'horizontal' | 'vertical'
+  isLocked?: boolean
 }
 
 interface FloorPlan {
@@ -109,6 +116,7 @@ export default function FloorPlanViewPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [zoom, setZoom] = useState(100)
   const [canvasSize, setCanvasSize] = useState({ width: 1600, height: 1000 })
+  const [canvasBackground, setCanvasBackground] = useState('#ffffff')
   const [showLiveStatus, setShowLiveStatus] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -159,6 +167,10 @@ export default function FloorPlanViewPage() {
       if (fp.canvas_data?.canvasSize) {
         setCanvasSize(fp.canvas_data.canvasSize)
       }
+
+      // Load saved background color
+      const bgColor = fp.canvas_data?.backgroundColor || fp.background_color || '#ffffff'
+      setCanvasBackground(bgColor)
 
       // Fetch linked schedule
       if (fp.linked_schedule_id) {
@@ -275,27 +287,48 @@ export default function FloorPlanViewPage() {
     }) || null
   }
 
+  // Normalize opacity: editor saves 0-100, we need 0-1
+  const normalizeOpacity = (value?: number) => {
+    if (value == null) return 1
+    if (value > 1) return Math.max(0, Math.min(1, value / 100))
+    return Math.max(0, Math.min(1, value))
+  }
+
+  // Get contrast color for text on colored backgrounds (matches editor)
+  const getContrastColor = (hex?: string) => {
+    if (!hex || !hex.startsWith('#')) return '#FFFFFF'
+    const value = hex.slice(1)
+    const expanded = value.length === 3 ? value.split('').map(c => c + c).join('') : value
+    const r = parseInt(expanded.slice(0, 2), 16)
+    const g = parseInt(expanded.slice(2, 4), 16)
+    const b = parseInt(expanded.slice(4, 6), 16)
+    if ([r, g, b].some(Number.isNaN)) return '#FFFFFF'
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+    return yiq >= 128 ? '#1F2937' : '#FFFFFF'
+  }
+
   // Get icon component
-  const getIconComponent = (iconName: string, size: number = 24) => {
+  const getIconComponent = (iconName: string, size: number = 24, color?: string) => {
     const iconMap: Record<string, any> = {
       exit: DoorOpen, stairs: Footprints, elevator: ArrowUpDown, restroom: Bath,
+      men_room: MdMan, women_room: MdWoman,
       computer: Laptop, lab: Beaker, library: Library, cafeteria: UtensilsCrossed,
       storage: Archive, gym: Dumbbell, music: Music, theater: Theater,
       presentation: Presentation, server: Server, wifi: Wifi, ac: Wind,
       fire: Flame, water: Droplets, info: Info, warning: AlertTriangle,
     }
     const IconComp = iconMap[iconName] || Info
-    return <IconComp size={size} />
+    return <IconComp size={size} color={color} />
   }
 
   // Get shape component
-  const getShapeComponent = (shapeName: string, size: number = 24) => {
+  const getShapeComponent = (shapeName: string, size: number = 24, color?: string) => {
     const shapeMap: Record<string, any> = {
       circle: CircleDot, triangle: Triangle, hexagon: Hexagon, pentagon: Pentagon,
       octagon: Octagon, star: Star, heart: Heart,
     }
     const ShapeComp = shapeMap[shapeName] || CircleDot
-    return <ShapeComp size={size} />
+    return <ShapeComp size={size} color={color} />
   }
 
   // Get legend items
@@ -395,7 +428,8 @@ export default function FloorPlanViewPage() {
             style={{
               width: canvasSize.width,
               height: canvasSize.height,
-              transform: `scale(${zoom / 100})`
+              transform: `scale(${zoom / 100})`,
+              background: canvasBackground
             }}
           >
             {canvasElements.map(element => {
@@ -406,7 +440,7 @@ export default function FloorPlanViewPage() {
               return (
                 <div
                   key={element.id}
-                  className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${showLiveStatus ? styles[availability] : ''} ${highlightRoom && (element.linkedRoomData?.room === highlightRoom || element.label === highlightRoom) ? styles.highlighted : ''}`}
+                  className={`${styles.canvasElement} ${styles[`element_${element.type}`]} ${isSelected ? styles.selected : ''} ${showLiveStatus ? styles[availability] : ''} ${highlightRoom && (element.linkedRoomData?.room === highlightRoom || element.label === highlightRoom) ? styles.highlighted : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
                   style={{
                     left: element.x,
                     top: element.y,
@@ -414,16 +448,21 @@ export default function FloorPlanViewPage() {
                     height: element.height,
                     backgroundColor: element.color,
                     borderColor: element.borderColor,
-                    transform: `rotate(${element.rotation}deg)`,
-                    zIndex: element.zIndex
+                    borderWidth: element.borderWidth ?? 2,
+                    opacity: normalizeOpacity(element.opacity),
+                    transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+                    zIndex: element.zIndex ?? 1
                   }}
                   onClick={() => handleElementClick(element)}
                 >
                   {element.type === 'room' && (
                     <>
-                      <span className={styles.elementLabel}>{element.label}</span>
+                      <span className={styles.elementLabel} style={{
+                        color: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                        fontSize: element.fontSize || undefined
+                      }}>{element.label}</span>
                       {element.linkedRoomData && (
-                        <span className={styles.elementCapacity}>
+                        <span className={styles.elementCapacity} style={{ color: element.textColor || getContrastColor(element.color || '#e5e7eb') }}>
                           <Users size={10} /> {element.linkedRoomData.capacity}
                         </span>
                       )}
@@ -438,26 +477,27 @@ export default function FloorPlanViewPage() {
                     </>
                   )}
                   {element.type === 'text' && (
-                    <span className={styles.textLabel} style={{ fontSize: element.fontSize }}>{element.label}</span>
+                    <span className={styles.textLabel} style={{ fontSize: element.fontSize, color: element.textColor || element.color || '#1f2937' }}>{element.label}</span>
                   )}
                   {element.type === 'hallway' && (
-                    <span className={styles.hallwayLabel}>{element.label}</span>
+                    <span className={styles.hallwayLabel} style={{ color: element.textColor || '#4b5563' }}>{element.label}</span>
                   )}
                   {element.type === 'stair' && (
                     <>
-                      <Footprints size={20} />
-                      <span>{element.label}</span>
+                      <Footprints size={20} color={element.iconColor || element.textColor || '#ffffff'} />
+                      <span style={{ color: element.textColor || '#ffffff' }}>{element.label}</span>
                     </>
                   )}
                   {element.type === 'door' && <DoorOpen size={16} />}
                   {element.type === 'icon' && (
                     <div className={styles.iconElement}>
-                      {getIconComponent(element.iconType || 'info', 28)}
+                      {getIconComponent(element.iconType || 'info', 28, element.iconColor || '#ffffff')}
+                      {element.label && <span style={{ color: 'white', fontWeight: 600, fontSize: 10 }}>{element.label}</span>}
                     </div>
                   )}
                   {element.type === 'shape' && (
                     <div className={styles.shapeElement}>
-                      {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7)}
+                      {getShapeComponent(element.shapeType || 'circle', Math.min(element.width, element.height) * 0.7, element.color)}
                     </div>
                   )}
                 </div>

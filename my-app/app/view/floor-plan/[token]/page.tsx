@@ -40,24 +40,62 @@ import {
   ArrowUpDown,
   MapPin,
   Clock,
-  User
+  User,
+  Footprints,
+  Bath,
+  Laptop,
+  Beaker,
+  Library,
+  UtensilsCrossed,
+  Archive,
+  Dumbbell,
+  Music,
+  Theater,
+  Presentation,
+  Server,
+  Wind,
+  Flame,
+  Droplets,
+  AlertTriangle
 } from 'lucide-react'
+import { MdMan, MdWoman } from 'react-icons/md'
 
-// Icon mapping
+// Icon mapping (matches editor exactly)
 const ICONS: Record<string, any> = {
+  exit: DoorOpen,
   door: DoorOpen,
-  stairs: Building,
+  stairs: Footprints,
+  elevator: ArrowUpDown,
   chair: Sofa,
   desk: Monitor,
   restroom: Users,
+  men_room: MdMan,
+  women_room: MdWoman,
   classroom: GraduationCap,
   lab: FlaskConical,
   library: BookOpen,
-  cafeteria: Coffee,
+  cafeteria: UtensilsCrossed,
+  coffee: Coffee,
   wifi: Wifi,
   printer: PrinterIcon,
   projector: Projector,
   ac: Thermometer,
+  computer: Laptop,
+  storage: Archive,
+  gym: Dumbbell,
+  music: Music,
+  theater: Theater,
+  presentation: Presentation,
+  server: Server,
+  fire: Flame,
+  water: Droplets,
+  info: Info,
+  warning: AlertTriangle,
+  bath: Bath,
+  users: Users,
+  graduation: GraduationCap,
+  sofa: Sofa,
+  monitor: Monitor,
 }
 
 interface CanvasElement {
@@ -255,11 +293,11 @@ export default function PublicFloorPlanView() {
       top: element.y,
       width: element.width,
       height: element.height,
-      transform: `rotate(${element.rotation || 0}deg)`,
-      zIndex: element.zIndex,
+      transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+      zIndex: element.zIndex ?? 1,
       opacity: normalizeOpacity(element.opacity),
       cursor: 'pointer',
-      transition: 'box-shadow 0.2s ease, transform 0.2s ease'
+      transition: 'box-shadow 0.2s ease'
     }
 
     const isSelected = selectedElement?.id === element.id
@@ -271,16 +309,16 @@ export default function PublicFloorPlanView() {
             key={element.id}
             style={{
               ...baseStyle,
-              backgroundColor: element.color || '#E5E7EB',
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#374151'}`,
-              borderRadius: '4px',
+              backgroundColor: element.color,
+              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || ''}`,
+              borderRadius: '6px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '8px',
-              boxShadow: isSelected ? '0 0 0 3px #10B981, 0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
-              transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+              overflow: 'hidden',
+              boxShadow: isSelected ? '0 0 0 3px #10B981, 0 4px 12px rgba(16, 185, 129, 0.3)' : 'none'
             }}
             onClick={() => {
               setSelectedElement(element)
@@ -291,16 +329,24 @@ export default function PublicFloorPlanView() {
           >
             <span style={{ 
               fontSize: element.fontSize || 12, 
-              fontWeight: element.fontWeight || 'bold',
-              textAlign: element.textAlign as any || 'center',
+              fontWeight: 700,
+              textAlign: 'center',
               color: element.textColor || getContrastColor(element.color),
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
             }}>
-              {element.label || 'Room'}
+              {element.label}
             </span>
             {element.linkedRoomData && (
-              <span style={{ fontSize: 10, color: element.textColor || getContrastColor(element.color), marginTop: 4, opacity: 0.8 }}>
-                Cap: {element.linkedRoomData.capacity}
+              <span style={{ 
+                fontSize: 10, 
+                color: element.textColor || getContrastColor(element.color), 
+                marginTop: 4, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px' 
+              }}>
+                <Users size={10} /> {element.linkedRoomData.capacity}
               </span>
             )}
           </div>
@@ -330,16 +376,18 @@ export default function PublicFloorPlanView() {
               justifyContent: element.textAlign || 'center',
               fontSize: element.fontSize || 14,
               fontWeight: element.fontWeight || 'normal',
-              color: element.color || '#1F2937',
+              color: element.textColor || element.color || '#1F2937',
+              backgroundColor: 'transparent',
+              border: '1px dashed #9ca3af',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
           >
-            {element.label || 'Text'}
+            {element.label}
           </div>
         )
 
-      case 'icon':
+      case 'icon': {
         const iconKey = (element as any).iconType || (element as any).icon
         const IconComponent = iconKey ? ICONS[iconKey] : DoorOpen
         return (
@@ -352,17 +400,19 @@ export default function PublicFloorPlanView() {
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: element.color || 'transparent',
-              borderRadius: '4px',
+              borderColor: element.borderColor,
+              borderRadius: '6px',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
           >
-            {IconComponent && <IconComponent size={Math.min(element.width, element.height) * 0.6} color={element.iconColor || element.borderColor || '#374151'} />}
+            {IconComponent && <IconComponent size={Math.min(element.width, element.height) * 0.6} color={element.iconColor || element.textColor || element.color || '#374151'} />}
             {element.label && (
               <span style={{ fontSize: 10, marginTop: 4, color: element.textColor || '#374151' }}>{element.label}</span>
             )}
           </div>
         )
+      }
 
       case 'shape':
         if (element.shapeType === 'circle') {
@@ -371,8 +421,8 @@ export default function PublicFloorPlanView() {
               key={element.id}
               style={{
                 ...baseStyle,
-                backgroundColor: element.color || '#E5E7EB',
-                border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#374151'}`,
+                backgroundColor: element.color,
+                border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || ''}`,
                 borderRadius: '50%',
                 boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
               }}
@@ -385,9 +435,9 @@ export default function PublicFloorPlanView() {
             key={element.id}
             style={{
               ...baseStyle,
-              backgroundColor: element.color || '#E5E7EB',
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#374151'}`,
-              borderRadius: '4px',
+              backgroundColor: element.color,
+              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || ''}`,
+              borderRadius: '6px',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
@@ -400,18 +450,19 @@ export default function PublicFloorPlanView() {
             key={element.id}
             style={{
               ...baseStyle,
-              backgroundColor: element.color || '#D1D5DB',
-              border: `2px dashed ${element.borderColor || '#9CA3AF'}`,
-              borderRadius: '2px',
+              backgroundColor: '#d1d5db',
+              border: `2px dashed #9ca3af`,
+              borderRadius: '6px',
               display: 'flex',
+              flexDirection: (element as any).orientation === 'vertical' ? 'column' : 'row',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
           >
-            <span style={{ fontSize: 11, color: element.textColor || '#6B7280', fontWeight: 500 }}>
-              {element.label || 'Hallway'}
+            <span style={{ fontSize: 11, color: element.textColor || '#4b5563', fontWeight: 600 }}>
+              {element.label}
             </span>
           </div>
         )
@@ -424,20 +475,19 @@ export default function PublicFloorPlanView() {
               ...baseStyle,
               backgroundColor: element.color || '#FEF3C7',
               border: `2px solid ${element.borderColor || '#F59E0B'}`,
-              borderRadius: '4px',
+              borderRadius: '6px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(245,158,11,0.2) 8px, rgba(245,158,11,0.2) 10px)',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
           >
-            <ArrowUpDown size={20} color={element.iconColor || element.textColor || '#F59E0B'} />
-            <span style={{ fontSize: 10, color: element.textColor || '#92400E', fontWeight: 600 }}>
-              {element.label || 'Stairs'}
+            <Footprints size={20} color={element.iconColor || element.textColor || '#ffffff'} />
+            <span style={{ fontSize: 10, color: element.textColor || '#ffffff', fontWeight: 600 }}>
+              {element.label}
             </span>
           </div>
         )
@@ -516,6 +566,26 @@ export default function PublicFloorPlanView() {
           </div>
         )
 
+      case 'door':
+        return (
+          <div
+            key={element.id}
+            style={{
+              ...baseStyle,
+              backgroundColor: element.color || '#d1fae5',
+              border: `2px solid ${element.borderColor || '#10b981'}`,
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
+            }}
+            onClick={() => setSelectedElement(element)}
+          >
+            <DoorOpen size={16} />
+          </div>
+        )
+
       default:
         return (
           <div
@@ -524,11 +594,16 @@ export default function PublicFloorPlanView() {
               ...baseStyle,
               backgroundColor: element.color || '#E5E7EB',
               border: `2px solid ${element.borderColor || '#374151'}`,
-              borderRadius: '4px',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               boxShadow: isSelected ? '0 0 0 3px #10B981' : 'none'
             }}
             onClick={() => setSelectedElement(element)}
-          />
+          >
+            {element.label && <span style={{ fontSize: 11, color: element.textColor || '#374151' }}>{element.label}</span>}
+          </div>
         )
     }
   }
@@ -717,7 +792,7 @@ export default function PublicFloorPlanView() {
             width: (floorPlan.canvas_width || 1200) * zoom,
             height: (floorPlan.canvas_height || 800) * zoom,
             transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
-            backgroundColor: floorPlan.background_color || '#FFFFFF',
+            backgroundColor: floorPlan.canvas_data?.backgroundColor || floorPlan.background_color || '#FFFFFF',
             backgroundImage: showGrid 
               ? `linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
                  linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)`
@@ -744,8 +819,8 @@ export default function PublicFloorPlanView() {
             />
           )}
           
-          {/* Render elements */}
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+          {/* Render elements — scale wrapper positions elements correctly */}
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: floorPlan.canvas_width || 1200, height: floorPlan.canvas_height || 800, position: 'absolute', top: 0, left: 0 }}>
             {floorPlan.elements?.map(renderElement)}
           </div>
         </div>

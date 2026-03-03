@@ -371,15 +371,6 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                             disableBeacon: true,
                         }
                     ]
-                } else if (pathname.includes('PreferredSchedules')) {
-                    pageSteps = [
-                        {
-                            target: '#preferred-header',
-                            placement: 'bottom',
-                            content: 'Preferred Schedules! View and manage when your faculty members are available to teach, aligning with their personal constraints.',
-                            disableBeacon: true,
-                        }
-                    ]
                 } else {
                     pageSteps = [
                         {

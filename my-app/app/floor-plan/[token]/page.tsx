@@ -3,12 +3,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import styles from './styles.module.css'
-import { Map, Building2, Layers, ZoomIn, ZoomOut, Maximize2, Lock, Eye, Calendar, Users, Info, DoorOpen, ArrowUpDown, Building, Sofa, Monitor, GraduationCap, FlaskConical, BookOpen, Coffee, Wifi, Printer, Projector, Thermometer, AlertTriangle, ExternalLink, X, Check, ChevronLeft, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react'
+import { Map, Building2, Layers, ZoomIn, ZoomOut, Maximize2, Lock, Eye, Calendar, Users, Info, DoorOpen, ArrowUpDown, Building, Sofa, Monitor, GraduationCap, FlaskConical, BookOpen, Coffee, Wifi, Printer, Projector, Thermometer, AlertTriangle, ExternalLink, X, Check, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Footprints, Bath, Laptop, Beaker, Library, UtensilsCrossed, Archive, Dumbbell, Music, Theater, Presentation, Server, Wind, Flame, Droplets } from 'lucide-react'
+import { MdMan, MdWoman } from 'react-icons/md'
 
 // Types
 interface CanvasElement {
   id: string
-  type: 'room' | 'wall' | 'door' | 'window' | 'stair' | 'text' | 'icon' | 'shape' | 'image'
+  type: 'room' | 'wall' | 'door' | 'window' | 'stair' | 'text' | 'icon' | 'shape' | 'image' | 'hallway'
   x: number
   y: number
   width: number
@@ -22,6 +23,9 @@ interface CanvasElement {
   fontWeight?: 'normal' | 'bold'
   textAlign?: 'left' | 'center' | 'right'
   icon?: string
+  iconType?: string
+  iconColor?: string
+  textColor?: string
   linkedRoomId?: number
   linkedRoomData?: any
   isLocked?: boolean
@@ -31,6 +35,7 @@ interface CanvasElement {
   opacity?: number
   borderWidth?: number
   borderStyle?: 'solid' | 'dashed' | 'dotted'
+  orientation?: 'horizontal' | 'vertical'
 }
 
 interface FloorPlan {
@@ -64,11 +69,15 @@ interface SharedFloorPlan {
   is_password_protected: boolean
 }
 
-// Icon mapping
+// Icon mapping (matches editor exactly)
 const ICONS: Record<string, any> = {
+  exit: DoorOpen,
   door: DoorOpen,
-  stairs: Building,
+  stairs: Footprints,
   elevator: ArrowUpDown,
+  restroom: Users,
+  men_room: MdMan,
+  women_room: MdWoman,
   sofa: Sofa,
   monitor: Monitor,
   users: Users,
@@ -76,12 +85,23 @@ const ICONS: Record<string, any> = {
   lab: FlaskConical,
   library: BookOpen,
   coffee: Coffee,
+  cafeteria: UtensilsCrossed,
   wifi: Wifi,
   printer: Printer,
   projector: Projector,
   ac: Thermometer,
   warning: AlertTriangle,
-  info: Info
+  info: Info,
+  computer: Laptop,
+  storage: Archive,
+  gym: Dumbbell,
+  music: Music,
+  theater: Theater,
+  presentation: Presentation,
+  server: Server,
+  fire: Flame,
+  water: Droplets,
+  bath: Bath,
 }
 
 export default function PublicFloorPlanPage() {
@@ -150,7 +170,7 @@ export default function PublicFloorPlanPage() {
       
       const plan = result.data.floor_plan
       setCanvasSize({ width: plan.canvas_width || 1200, height: plan.canvas_height || 800 })
-      setBackgroundColor(plan.background_color || '#ffffff')
+      setBackgroundColor(plan.canvas_data?.backgroundColor || plan.background_color || '#ffffff')
       setBackgroundImage(plan.background_image_url || null)
       
       // Load elements
@@ -238,7 +258,27 @@ export default function PublicFloorPlanPage() {
     setIsPanning(false)
   }
 
-  // Render element on canvas
+  // Normalize opacity: editor saves 0-100, we need 0-1
+  const normalizeOpacity = (value?: number) => {
+    if (value == null) return 1
+    if (value > 1) return Math.max(0, Math.min(1, value / 100))
+    return Math.max(0, Math.min(1, value))
+  }
+
+  // Get contrast color for text on colored backgrounds (matches editor)
+  const getContrastColor = (hex?: string) => {
+    if (!hex || !hex.startsWith('#')) return '#FFFFFF'
+    const value = hex.slice(1)
+    const expanded = value.length === 3 ? value.split('').map(c => c + c).join('') : value
+    const r = parseInt(expanded.slice(0, 2), 16)
+    const g = parseInt(expanded.slice(2, 4), 16)
+    const b = parseInt(expanded.slice(4, 6), 16)
+    if ([r, g, b].some(Number.isNaN)) return '#FFFFFF'
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+    return yiq >= 128 ? '#1F2937' : '#FFFFFF'
+  }
+
+  // Render element on canvas - matches editor rendering exactly
   const renderElement = (element: CanvasElement) => {
     if (element.isVisible === false) return null
     
@@ -249,9 +289,9 @@ export default function PublicFloorPlanPage() {
       top: element.y,
       width: element.width,
       height: element.height,
-      transform: `rotate(${element.rotation}deg)`,
-      zIndex: element.zIndex,
-      opacity: element.opacity ?? 1,
+      transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
+      zIndex: element.zIndex ?? 1,
+      opacity: normalizeOpacity(element.opacity),
       cursor: element.type === 'room' && element.linkedRoomData ? 'pointer' : 'default',
       outline: isSelected ? '3px solid #3B82F6' : 'none',
       outlineOffset: '2px'
@@ -265,14 +305,15 @@ export default function PublicFloorPlanPage() {
             className={styles.canvasElement}
             style={{
               ...style,
-              backgroundColor: element.color || '#E3F2FD',
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#1976D2'}`,
-              borderRadius: '4px',
+              backgroundColor: element.color,
+              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || ''}`,
+              borderRadius: '6px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px'
+              padding: '8px',
+              overflow: 'hidden'
             }}
             onClick={() => {
               if (element.linkedRoomData) {
@@ -283,19 +324,24 @@ export default function PublicFloorPlanPage() {
           >
             <span style={{ 
               fontSize: element.fontSize || 12, 
-              fontWeight: 'bold',
+              fontWeight: 700,
               textAlign: 'center',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: '100%',
-              color: '#333'
+              wordBreak: 'break-word',
+              color: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
             }}>
               {element.label}
             </span>
             {element.linkedRoomData && (
-              <span style={{ fontSize: 10, color: '#666' }}>
-                Cap: {element.linkedRoomData.capacity}
+              <span style={{ 
+                fontSize: 10, 
+                color: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                marginTop: '4px'
+              }}>
+                <Users size={10} /> {element.linkedRoomData.capacity}
               </span>
             )}
           </div>
@@ -308,10 +354,73 @@ export default function PublicFloorPlanPage() {
             className={styles.canvasElement}
             style={{
               ...style,
-              backgroundColor: element.color || '#424242',
+              backgroundColor: element.color || '#374151',
               border: 'none'
             }}
           />
+        )
+      
+      case 'door':
+        return (
+          <div
+            key={element.id}
+            className={styles.canvasElement}
+            style={{
+              ...style,
+              backgroundColor: element.color || '#d1fae5',
+              border: `2px solid ${element.borderColor || '#10b981'}`,
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <DoorOpen size={16} />
+          </div>
+        )
+      
+      case 'hallway':
+        return (
+          <div
+            key={element.id}
+            className={styles.canvasElement}
+            style={{
+              ...style,
+              backgroundColor: '#d1d5db',
+              border: `2px dashed #9ca3af`,
+              borderRadius: '6px',
+              display: 'flex',
+              flexDirection: element.orientation === 'vertical' ? 'column' : 'row',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 600, color: element.textColor || '#4b5563' }}>
+              {element.label}
+            </span>
+          </div>
+        )
+      
+      case 'stair':
+        return (
+          <div
+            key={element.id}
+            className={styles.canvasElement}
+            style={{
+              ...style,
+              backgroundColor: element.color || '#fef3c7',
+              border: `2px solid ${element.borderColor || '#f59e0b'}`,
+              borderRadius: '6px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px'
+            }}
+          >
+            <Footprints size={20} color={element.iconColor || element.textColor || '#ffffff'} />
+            <span style={{ color: element.textColor || '#ffffff' }}>{element.label}</span>
+          </div>
         )
       
       case 'text':
@@ -325,13 +434,14 @@ export default function PublicFloorPlanPage() {
               alignItems: 'center',
               justifyContent: element.textAlign || 'center',
               padding: '4px 8px',
-              backgroundColor: 'transparent'
+              backgroundColor: 'transparent',
+              border: '1px dashed #9ca3af'
             }}
           >
             <span style={{
               fontSize: element.fontSize || 14,
               fontWeight: element.fontWeight || 'normal',
-              color: element.color || '#333',
+              color: element.textColor || element.color || '#1f2937',
               textAlign: element.textAlign || 'center',
               width: '100%'
             }}>
@@ -348,14 +458,15 @@ export default function PublicFloorPlanPage() {
             style={{
               ...style,
               backgroundColor: element.color,
-              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || '#333'}`,
-              borderRadius: element.shapeType === 'circle' ? '50%' : '4px'
+              border: `${element.borderWidth || 2}px ${element.borderStyle || 'solid'} ${element.borderColor || ''}`,
+              borderRadius: element.shapeType === 'circle' ? '50%' : '6px'
             }}
           />
         )
       
-      case 'icon':
-        const IconComponent = ICONS[element.icon as string] || Info
+      case 'icon': {
+        const iconKey = element.iconType || element.icon || 'info'
+        const IconComp = ICONS[iconKey] || Info
         return (
           <div
             key={element.id}
@@ -363,20 +474,42 @@ export default function PublicFloorPlanPage() {
             style={{
               ...style,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'transparent'
+              backgroundColor: element.color || 'transparent',
+              borderColor: element.borderColor,
+              borderRadius: '6px'
             }}
           >
-            <IconComponent 
-              size={Math.min(element.width, element.height) * 0.8} 
-              color={element.color || '#333'} 
+            <IconComp 
+              size={Math.min(element.width, element.height) * 0.6} 
+              color={element.iconColor || element.textColor || element.color || '#374151'} 
             />
+            {element.label && <span style={{ color: element.textColor || '#374151', fontSize: 10 }}>{element.label}</span>}
           </div>
         )
+      }
       
       default:
-        return null
+        // Render unknown types as generic colored div rather than hiding
+        return (
+          <div
+            key={element.id}
+            className={styles.canvasElement}
+            style={{
+              ...style,
+              backgroundColor: element.color || '#E5E7EB',
+              border: `2px solid ${element.borderColor || '#374151'}`,
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {element.label && <span style={{ fontSize: 11, color: element.textColor || '#374151' }}>{element.label}</span>}
+          </div>
+        )
     }
   }
 
@@ -520,8 +653,8 @@ export default function PublicFloorPlanPage() {
             />
           )}
           
-          {/* Elements */}
-          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
+          {/* Elements - use scale transform only, container already sized by zoom */}
+          <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: canvasSize.width, height: canvasSize.height, position: 'relative' }}>
             {elements.map(renderElement)}
           </div>
         </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MdNotifications, MdClose, MdCheckCircle, MdWarning, MdInfo, MdArchive, MdDelete } from 'react-icons/md'
+import { MdNotifications, MdClose, MdCheckCircle, MdWarning, MdInfo, MdArchive, MdDelete, MdArrowBack, MdSearch, MdRefresh } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
+import { toast } from 'sonner'
 import styles from './NotificationPanel.module.css'
-import ArchiveModal from './ArchiveModal'
 
 interface Notification {
   id: string
@@ -17,6 +17,17 @@ interface Notification {
   } | null
 }
 
+interface ArchivedItem {
+  id: string
+  item_type: string
+  item_name: string
+  item_data: any
+  deleted_at: string
+  deleted_by: string | null
+  original_table: string
+  original_id: string | number
+}
+
 interface NotificationPanelProps {
   userRole?: 'admin' | 'faculty'
   userEmail?: string | null
@@ -28,7 +39,25 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const [view, setView] = useState<'list' | 'archive'>('list')
+  const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
+  const [archiveSearch, setArchiveSearch] = useState('')
+
+  const fetchArchivedItems = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('archived_items')
+        .select('*')
+        .eq('item_type', 'notification')
+        .order('deleted_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setArchivedItems(data || [])
+    } catch (error) {
+      console.error('Error fetching archive:', error)
+    }
+  }, [])
 
   const fetchNotifications = useCallback(async (uid: string) => {
     try {
@@ -52,10 +81,11 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
       if (session?.user) {
         setUserId(session.user.id)
         fetchNotifications(session.user.id)
+        fetchArchivedItems()
       }
     }
     init()
-  }, [fetchNotifications])
+  }, [fetchNotifications, fetchArchivedItems])
 
   // Real-time subscription
   useEffect(() => {
@@ -142,31 +172,76 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, action: 'clear_all', audience: userRole })
     })
+
+    await fetchArchivedItems()
+    toast.success('All notifications archived')
   }
 
   const deleteNotification = async (notif: Notification) => {
     if (!userId) return
 
-    // Archive
-    await supabase.from('archived_items').insert({
-      item_type: 'notification',
-      item_name: notif.title,
-      item_data: notif,
-      deleted_by: userId,
-      original_table: 'system_alerts',
-      original_id: notif.id
-    })
-
+    // Optimistic UI update
     setNotifications(prev => prev.filter(n => n.id !== notif.id))
     if (!notif.receipt || notif.receipt.status === 'unread') {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
 
-    await fetch('/api/alerts', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, action: 'clear_all', alertId: notif.id })
-    })
+    try {
+      // Archive
+      await supabase.from('archived_items').insert({
+        item_type: 'notification',
+        item_name: notif.title,
+        item_data: notif,
+        deleted_by: userId,
+        original_table: 'system_alerts',
+        original_id: notif.id
+      })
+
+      await fetch('/api/alerts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, action: 'clear_all', alertId: notif.id })
+      })
+
+      await fetchArchivedItems()
+      toast.success('Notification archived')
+    } catch (err) {
+      console.error('Delete failed:', err)
+      fetchNotifications(userId)
+    }
+  }
+
+  const handleRestore = async (item: ArchivedItem) => {
+    if (!userId) return
+    try {
+      // Re-create the alert receipt so it reappears
+      const alertId = String(item.original_id)
+      await fetch('/api/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, alertId, action: 'read' })
+      })
+
+      // Delete from archive
+      await supabase.from('archived_items').delete().eq('id', item.id)
+
+      setArchivedItems(prev => prev.filter(i => i.id !== item.id))
+      fetchNotifications(userId)
+      toast.success('Notification restored')
+    } catch (err) {
+      console.error('Restore failed:', err)
+      toast.error('Failed to restore notification')
+    }
+  }
+
+  const handlePermanentDelete = async (id: string) => {
+    try {
+      await supabase.from('archived_items').delete().eq('id', id)
+      setArchivedItems(prev => prev.filter(i => i.id !== id))
+      toast.success('Removed permanently')
+    } catch (err) {
+      toast.error('Failed to remove')
+    }
   }
 
   const markAsConfirmed = async (notificationId: string) => {
@@ -226,105 +301,157 @@ export default function NotificationPanel({ userRole = 'faculty', userEmail }: N
       {open && (
         <>
           {/* Backdrop */}
-          <div className={styles.backdrop} onClick={() => setOpen(false)} />
+          <div className={styles.backdrop} onClick={() => { setOpen(false); setView('list') }} />
 
           {/* Panel */}
           <div className={styles.panel}>
-            {/* Header */}
-            <div className={styles.header}>
-              <h3 className={styles.title}>Notifications</h3>
-              <div className={styles.headerActions}>
-                {notifications.length > 0 && (
-                  <>
-                    <button className={styles.headerActionBtn} onClick={markAllAsRead} title="Mark all as read">
-                      <MdCheckCircle size={18} />
-                    </button>
-                    <button className={styles.headerActionBtn} onClick={() => setIsArchiveOpen(true)} title="View Archive">
-                      <MdArchive size={18} />
-                    </button>
-                    <button className={`${styles.headerActionBtn} ${styles.clearAllBtn}`} onClick={clearAllNotifications} title="Clear all">
-                      <MdDelete size={18} />
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => setOpen(false)}
-                  className={styles.closeBtn}
-                  aria-label="Close"
-                >
-                  <MdClose size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Notifications List */}
-            <div className={styles.list}>
-              {notifications.length === 0 ? (
-                <div className={styles.empty}>
-                  <MdNotifications size={36} />
-                  <p>No notifications yet</p>
-                </div>
-              ) : (
-                notifications.map(notification => (
-                  <div
-                    key={notification.id}
-                    className={`${styles.item} ${!notification.receipt || notification.receipt.status === 'unread'
-                      ? styles.unread
-                      : ''
-                      }`}
-                    onClick={() => {
-                      if (!notification.receipt || notification.receipt.status === 'unread') {
-                        markAsRead(notification.id)
-                      }
-                      if (notification.category === 'schedule_request' || notification.category === 'schedule_published') {
-                        router.push('/faculty/schedules')
-                        setOpen(false)
-                      }
-                    }}
-                    style={{ cursor: (notification.category === 'schedule_request' || notification.category === 'schedule_published') ? 'pointer' : 'default' }}
-                  >
-                    <div className={styles.itemContent}>
-                      <div className={styles.itemHeader}>
-                        {severityIcon(notification.severity)}
-                        <h4 className={styles.itemTitle}>{notification.title}</h4>
-                      </div>
-                      <p className={styles.itemMessage}>{notification.message}</p>
-                      <span className={styles.itemTime}>
-                        {formatTime(notification.created_at)}
-                      </span>
-                    </div>
-
-                    <div className={styles.itemActions}>
-                      <button
-                        className={styles.itemDeleteBtn}
-                        onClick={(e) => { e.stopPropagation(); deleteNotification(notification) }}
-                        title="Delete"
-                      >
-                        <MdDelete size={14} />
-                      </button>
-                      {(!notification.receipt || notification.receipt.status === 'unread') && notification.severity !== 'info' && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); markAsConfirmed(notification.id) }}
-                          className={`${styles.actionBtn} ${styles.confirmBtn}`}
-                        >
-                          Confirm
+            {view === 'list' ? (
+              <>
+                {/* Header */}
+                <div className={styles.header}>
+                  <h3 className={styles.title}>Notifications</h3>
+                  <div className={styles.headerActions}>
+                    {notifications.length > 0 && (
+                      <>
+                        <button className={styles.headerActionBtn} onClick={markAllAsRead} title="Mark all as read">
+                          <MdCheckCircle size={18} />
                         </button>
-                      )}
-                    </div>
+                        <button className={styles.headerActionBtn} onClick={() => { setView('archive'); fetchArchivedItems() }} title="View Archive">
+                          <MdArchive size={18} />
+                        </button>
+                        <button className={`${styles.headerActionBtn} ${styles.clearAllBtn}`} onClick={clearAllNotifications} title="Clear all">
+                          <MdDelete size={18} />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => { setOpen(false); setView('list') }}
+                      className={styles.closeBtn}
+                      aria-label="Close"
+                    >
+                      <MdClose size={20} />
+                    </button>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+
+                {/* Notifications List */}
+                <div className={styles.list}>
+                  {notifications.length === 0 ? (
+                    <div className={styles.empty}>
+                      <MdNotifications size={36} />
+                      <p>No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map(notification => (
+                      <div
+                        key={notification.id}
+                        className={`${styles.item} ${!notification.receipt || notification.receipt.status === 'unread'
+                          ? styles.unread
+                          : ''
+                          }`}
+                        onClick={() => {
+                          if (!notification.receipt || notification.receipt.status === 'unread') {
+                            markAsRead(notification.id)
+                          }
+                          if (notification.category === 'schedule_request' || notification.category === 'schedule_published') {
+                            router.push('/faculty/schedules')
+                            setOpen(false)
+                          }
+                        }}
+                        style={{ cursor: (notification.category === 'schedule_request' || notification.category === 'schedule_published') ? 'pointer' : 'default' }}
+                      >
+                        <div className={styles.itemContent}>
+                          <div className={styles.itemHeader}>
+                            {severityIcon(notification.severity)}
+                            <h4 className={styles.itemTitle}>{notification.title}</h4>
+                          </div>
+                          <p className={styles.itemMessage}>{notification.message}</p>
+                          <span className={styles.itemTime}>
+                            {formatTime(notification.created_at)}
+                          </span>
+                        </div>
+
+                        <div className={styles.itemActions}>
+                          <button
+                            className={styles.itemDeleteBtn}
+                            onClick={(e) => { e.stopPropagation(); deleteNotification(notification) }}
+                            title="Delete"
+                          >
+                            <MdDelete size={14} />
+                          </button>
+                          {(!notification.receipt || notification.receipt.status === 'unread') && notification.severity !== 'info' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); markAsConfirmed(notification.id) }}
+                              className={`${styles.actionBtn} ${styles.confirmBtn}`}
+                            >
+                              Confirm
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Archive View Header */}
+                <div className={styles.header}>
+                  <div className={styles.archiveViewHeader}>
+                    <button className={styles.backBtn} onClick={() => setView('list')}>
+                      <MdArrowBack size={18} />
+                    </button>
+                    <h3 className={styles.title}>Archived</h3>
+                  </div>
+                  <div className={styles.archiveSearchMini}>
+                    <MdSearch size={14} />
+                    <input
+                      type="text"
+                      placeholder="Search archive..."
+                      value={archiveSearch}
+                      onChange={e => setArchiveSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Archive List */}
+                <div className={`${styles.list} ${styles.archiveListMini}`}>
+                  {archivedItems.length === 0 ? (
+                    <div className={styles.empty}>
+                      <MdArchive size={36} />
+                      <p>Archive is empty</p>
+                    </div>
+                  ) : (
+                    archivedItems
+                      .filter(i => i.item_name.toLowerCase().includes(archiveSearch.toLowerCase()))
+                      .map(item => (
+                        <div key={item.id} className={`${styles.item} ${styles.archivedItem}`}>
+                          <div className={styles.archiveIcon}>
+                            <MdArchive size={18} />
+                          </div>
+                          <div className={styles.itemContent}>
+                            <h4 className={styles.itemTitle}>{item.item_name}</h4>
+                            <span className={styles.itemTime}>
+                              Deleted {formatTime(item.deleted_at)}
+                            </span>
+                          </div>
+                          <div className={styles.archiveActionsMini}>
+                            <button className={styles.restoreBtnMini} onClick={() => handleRestore(item)} title="Restore">
+                              <MdRefresh size={14} />
+                            </button>
+                            <button className={styles.deleteBtnMini} onClick={() => handlePermanentDelete(item.id)} title="Delete permanently">
+                              <MdClose size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
-
-      <ArchiveModal
-        isOpen={isArchiveOpen}
-        onClose={() => setIsArchiveOpen(false)}
-        onRestore={() => userId && fetchNotifications(userId)}
-        forcedType="notification"
-      />
     </div>
   )
 }

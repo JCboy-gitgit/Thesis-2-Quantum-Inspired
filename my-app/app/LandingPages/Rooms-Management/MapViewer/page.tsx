@@ -2379,18 +2379,32 @@ export default function MapViewerPage() {
     }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
   }
 
-  // Render the export preview on a canvas
-  const renderExportPreview = useCallback(() => {
-    const canvas = exportCanvasRef.current
+  // Render export document (used by preview + PDF generation)
+  const renderExportPreview = useCallback((options?: {
+    canvas?: HTMLCanvasElement
+    width?: number
+    height?: number
+    includeFrame?: boolean
+  }) => {
+    const canvas = options?.canvas || exportCanvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Preview at a reasonable size (scaled down)
-    const previewW = 800
-    const previewH = 600
-    canvas.width = previewW
-    canvas.height = previewH
+    const previewW = options?.width || 800
+    const previewH = options?.height || 600
+    const includeFrame = options?.includeFrame !== false
+
+    const dpr = options?.canvas ? 1 : Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.floor(previewW * dpr)
+    canvas.height = Math.floor(previewH * dpr)
+    if (!options?.canvas) {
+      canvas.style.width = `${previewW}px`
+      canvas.style.height = `${previewH}px`
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
 
     const paper = exportSettings.paperSize === 'custom'
       ? { width: exportSettings.customPaperWidth, height: exportSettings.customPaperHeight }
@@ -2405,30 +2419,34 @@ export default function MapViewerPage() {
     const pageW = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
     const pageH = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
 
-    // Scale factor to fit page in preview
-    const sf = Math.min(previewW / pageW, previewH / pageH) * 0.92
+    // Scale factor to fit page in preview / export canvas
+    const sf = Math.min(previewW / pageW, previewH / pageH) * (includeFrame ? 0.92 : 1)
     const offsetX = (previewW - pageW * sf) / 2
     const offsetY = (previewH - pageH * sf) / 2
 
     // Clear
-    ctx.fillStyle = '#e2e8f0'
+    ctx.fillStyle = includeFrame ? '#e2e8f0' : '#ffffff'
     ctx.fillRect(0, 0, previewW, previewH)
 
-    // Draw page shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.15)'
-    ctx.shadowBlur = 12
-    ctx.shadowOffsetX = 4
-    ctx.shadowOffsetY = 4
+    // Draw page shadow (preview only)
+    if (includeFrame) {
+      ctx.shadowColor = 'rgba(0,0,0,0.15)'
+      ctx.shadowBlur = 12
+      ctx.shadowOffsetX = 4
+      ctx.shadowOffsetY = 4
+    }
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(offsetX, offsetY, pageW * sf, pageH * sf)
     ctx.shadowBlur = 0
     ctx.shadowOffsetX = 0
     ctx.shadowOffsetY = 0
 
-    // Page border
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(offsetX, offsetY, pageW * sf, pageH * sf)
+    // Page border (preview only)
+    if (includeFrame) {
+      ctx.strokeStyle = '#cbd5e1'
+      ctx.lineWidth = 1
+      ctx.strokeRect(offsetX, offsetY, pageW * sf, pageH * sf)
+    }
 
     const m = pageW * 0.05 * sf // margin
     const px = offsetX + m
@@ -2997,495 +3015,52 @@ export default function MapViewerPage() {
         ? widthMm > heightMm
         : exportSettings.orientation === 'landscape'
 
+      const pageWidthMm = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
+      const pageHeightMm = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
+
+      const elementCount = canvasElements.length
+      const baseLongSidePx = elementCount > 1000
+        ? 1700
+        : elementCount > 700
+          ? 1900
+          : elementCount > 450
+            ? 2100
+            : elementCount > 250
+              ? 2300
+              : 2600
+      const mapScaleMultiplier = Math.min(1.35, Math.max(0.85, exportSettings.mapScale / 100))
+      const targetLongSidePx = Math.round(Math.min(3200, Math.max(1600, baseLongSidePx * mapScaleMultiplier)))
+      const exportWidthPx = pageWidthMm >= pageHeightMm
+        ? targetLongSidePx
+        : Math.max(1200, Math.round(targetLongSidePx * (pageWidthMm / pageHeightMm)))
+      const exportHeightPx = pageHeightMm > pageWidthMm
+        ? targetLongSidePx
+        : Math.max(1200, Math.round(targetLongSidePx * (pageHeightMm / pageWidthMm)))
+
+      const exportCanvas = document.createElement('canvas')
+      renderExportPreview({
+        canvas: exportCanvas,
+        width: exportWidthPx,
+        height: exportHeightPx,
+        includeFrame: false
+      })
+
+      const imageData = exportCanvas.toDataURL('image/png')
+
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
-        format: isLandscape ? [Math.max(widthMm, heightMm), Math.min(widthMm, heightMm)] : [Math.min(widthMm, heightMm), Math.max(widthMm, heightMm)]
+        format: [pageWidthMm, pageHeightMm],
+        compress: true,
+        putOnlyUsedFonts: true,
+        precision: 12
       })
 
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      const margin = Math.min(pageWidth, pageHeight) * 0.05
-
-      // ===== WATERMARK =====
-      if (exportSettings.showWatermark) {
-        pdf.saveGraphicsState()
-        // @ts-ignore - Lower opacity watermark
-        const gState = new (pdf as any).GState({ opacity: 0.02 })
-        pdf.setGState(gState)
-
-        const wmSize = Math.min(pageWidth, pageHeight) * 0.5
-        const wmX = (pageWidth - wmSize) / 2
-        const wmY = (pageHeight - wmSize) / 2
-
-        try {
-          pdf.addImage('/app-icon.png', 'PNG', wmX, wmY, wmSize, wmSize)
-        } catch (e) {
-          pdf.setFillColor(22, 163, 74)
-          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 0.12, wmSize * 0.12, 'F')
-          pdf.setTextColor(255, 255, 255)
-          pdf.setFontSize(wmSize * 1.4)
-          pdf.setFont('helvetica', 'bold')
-          pdf.text('Q', wmX + wmSize * 0.32, wmY + wmSize * 0.65)
-        }
-
-        pdf.restoreGraphicsState()
-      }
-
-      // Top-left logo removed as per user request
-
-      // Move "Qtime Scheduler" to bottom right instead of top left
-      // We'll draw this later in the footer section
-
-      // ===== COMPACT TITLE & INFO =====
-      const titleY = margin + 10
-
-      pdf.setFontSize(exportSettings.titleFontSize || 20)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(15, 23, 42)
-      const title = exportSettings.title || floorPlanName || `${selectedBuilding}`
-      const titleW = pdf.getTextWidth(title)
-      pdf.text(title, (pageWidth - titleW) / 2, titleY)
-
-      let infoY = titleY + 6
-
-      // Schedule subtitle — shown right after title (matches preview order)
-      if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
-        pdf.setTextColor(71, 85, 105)
-        const subW = pdf.getTextWidth(exportSettings.subtitle)
-        pdf.text(exportSettings.subtitle, (pageWidth - subW) / 2, infoY)
-        infoY += 5
-      }
-
-      // Building / Floor / Date — all on ONE compact line to match preview
-      pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(148, 163, 184)
-
-      const parts: string[] = []
-      if (exportSettings.buildingLabel) parts.push(`Building: ${exportSettings.buildingLabel}`)
-      if (exportSettings.floorName) parts.push(`Floor: ${exportSettings.floorName}`)
-      if (exportSettings.floorNumber) parts.push(`# ${exportSettings.floorNumber}`)
-      if (exportSettings.showDate) parts.push(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`)
-
-      if (parts.length) {
-        const infoText = parts.join('  •  ')
-        const infoW = pdf.getTextWidth(infoText)
-        pdf.text(infoText, (pageWidth - infoW) / 2, infoY)
-        infoY += 4
-      }
-
-      // ===== FLOOR PLAN AREA =====
-      const floorPlanY = infoY + 2
-      const floorPlanWidth = pageWidth - (margin * 2)
-      const floorPlanHeight = pageHeight - floorPlanY - (exportSettings.showLegend ? 20 : 10)
-
-      // Background
-      const bgColor = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
-      const rgbBg = hexToRgb(bgColor)
-      pdf.setFillColor(rgbBg.r, rgbBg.g, rgbBg.b)
-      pdf.rect(margin, floorPlanY, floorPlanWidth, floorPlanHeight, 'F')
-
-      // ===== WATERMARK (ON TOP OF BACKGROUND) =====
-      if (exportSettings.showWatermark) {
-        pdf.saveGraphicsState()
-        // @ts-ignore
-        const gState = new (pdf as any).GState({ opacity: 0.05 })
-        pdf.setGState(gState)
-
-        const wmSize = Math.min(floorPlanWidth, floorPlanHeight) * 0.4
-        const wmX = margin + (floorPlanWidth - wmSize) / 2
-        const wmY = floorPlanY + (floorPlanHeight - wmSize) / 2
-
-        try {
-          pdf.addImage('/app-icon.png', 'PNG', wmX, wmY, wmSize, wmSize)
-        } catch (e) {
-          pdf.setFillColor(22, 163, 74)
-          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 0.1, wmSize * 0.1, 'F')
-          pdf.setTextColor(255, 255, 255)
-          pdf.setFontSize(wmSize * 1.5)
-          pdf.text('Q', wmX + wmSize * 0.25, wmY + wmSize * 0.7)
-        }
-        pdf.restoreGraphicsState()
-      }
-
-      const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
-      const bounds = getExportBounds(visibleElements)
-
-      // Add small padding so elements aren't flush against the edge
-      const padPdf = Math.max((bounds.maxX - bounds.minX), (bounds.maxY - bounds.minY)) * 0.02
-      bounds.minX -= padPdf
-      bounds.minY -= padPdf
-      bounds.maxX += padPdf
-      bounds.maxY += padPdf
-
-      const boundsW = Math.max(1, bounds.maxX - bounds.minX)
-      const boundsH = Math.max(1, bounds.maxY - bounds.minY)
-      const scaleX = floorPlanWidth / boundsW
-      const scaleY = floorPlanHeight / boundsH
-      const baseScale = Math.min(scaleX, scaleY) * 0.96
-      const scale = baseScale * (exportSettings.mapScale / 100)
-      const centerX = margin + (floorPlanWidth - boundsW * scale) / 2 - bounds.minX * scale
-      const centerY = floorPlanY + (floorPlanHeight - boundsH * scale) / 2 - bounds.minY * scale
-
-      // Draw elements
-      visibleElements
-        .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-        .forEach(element => {
-          const elementOpacity = element.opacity != null
-            ? (element.opacity > 1 ? Math.min(Math.max(element.opacity / 100, 0), 1) : Math.min(Math.max(element.opacity, 0), 1))
-            : 1
-          let opacityApplied = false
-          if (elementOpacity < 1) {
-            pdf.saveGraphicsState()
-            // @ts-ignore
-            const elState = new (pdf as any).GState({ opacity: elementOpacity })
-            pdf.setGState(elState)
-            opacityApplied = true
-          }
-
-          const x = centerX + element.x * scale
-          const y = centerY + element.y * scale
-          const w = element.width * scale
-          const h = element.height * scale
-
-          // Helper to draw rotated rect/shape
-          const drawRotated = (drawFn: () => void) => {
-            if (element.rotation) {
-              pdf.saveGraphicsState()
-              // Translate to center, rotate, then translate back
-              const cx = x + w / 2
-              const cy = y + h / 2
-              // @ts-ignore - jspdf rotation
-              pdf.setCurrentTransformationMatrix(pdf.matrixMult(
-                new (pdf as any).Matrix(1, 0, 0, 1, cx, cy),
-                pdf.matrixMult(
-                  // @ts-ignore
-                  new (pdf as any).Matrix(Math.cos(element.rotation * Math.PI / 180), Math.sin(element.rotation * Math.PI / 180), -Math.sin(element.rotation * Math.PI / 180), Math.cos(element.rotation * Math.PI / 180), 0, 0),
-                  // @ts-ignore
-                  new (pdf as any).Matrix(1, 0, 0, 1, -cx, -cy)
-                )
-              ))
-              drawFn()
-              pdf.restoreGraphicsState()
-            } else {
-              drawFn()
-            }
-          }
-
-          if (element.type === 'room') {
-            drawRotated(() => {
-              const color = element.color || '#f1f5f9'
-              const rgb = hexToRgb(color)
-              pdf.setFillColor(rgb.r, rgb.g, rgb.b)
-              pdf.rect(x, y, w, h, 'F')
-
-              const borderC = hexToRgb(element.borderColor || '#cbd5e1')
-              pdf.setDrawColor(borderC.r, borderC.g, borderC.b)
-              pdf.setLineWidth(Math.max(0.1, (element.borderWidth ?? 1) * scale * 0.3))
-              pdf.rect(x, y, w, h)
-
-              // Availability indicator
-              if (showScheduleOverlay && element.linkedRoomData) {
-                const availability = getRoomAvailability(element.linkedRoomData.room)
-                pdf.setFillColor(availability === 'available' ? 34 : 239, availability === 'available' ? 197 : 68, availability === 'available' ? 94 : 68)
-                pdf.circle(x + w - 2, y + 2, 1.5, 'F')
-              }
-
-              // Enhanced room label - shrink until it fits, never overflow
-              if (exportSettings.showRoomLabels) {
-                const contrastHex = element.textColor || getContrastColor(color)
-                const cRgb = hexToRgb(contrastHex)
-                pdf.setTextColor(cRgb.r, cRgb.g, cRgb.b)
-
-                const label = element.label || ''
-                const maxLabelW = w - 1.5
-
-                // Start at preferred size, shrink until label fits
-                let roomFs = Math.max(4, exportSettings.roomFontSize * scale * 3.2)
-                pdf.setFont('helvetica', 'bold')
-                pdf.setFontSize(roomFs)
-                let textWidth = pdf.getTextWidth(label)
-                while (textWidth > maxLabelW && roomFs > 4.5) {
-                  roomFs *= 0.85
-                  pdf.setFontSize(roomFs)
-                  textWidth = pdf.getTextWidth(label)
-                }
-
-                // If it still doesn't fit even at min size, truncate with ellipsis
-                let displayLabel = label
-                if (textWidth > maxLabelW) {
-                  displayLabel = label
-                  while (displayLabel.length > 1 && pdf.getTextWidth(displayLabel + '…') > maxLabelW) {
-                    displayLabel = displayLabel.slice(0, -1)
-                  }
-                  displayLabel += '…'
-                  textWidth = pdf.getTextWidth(displayLabel)
-                }
-
-                const labelX = x + (w - textWidth) / 2
-                const hasCapacity = !!element.linkedRoomData?.capacity
-                // Vertical centering: jsPDF default baseline is 'alphabetic'.
-                // For a single label, center it vertically by using y + h/2 + roomFs*0.3
-                const labelY = hasCapacity ? y + h / 2 - roomFs * 0.15 : y + h / 2 + roomFs * 0.3
-                pdf.text(displayLabel, labelX, labelY)
-
-                if (hasCapacity) {
-                  const capFs = Math.max(3.5, roomFs * 0.7)
-                  pdf.setFontSize(capFs)
-                  pdf.setFont('helvetica', 'normal')
-                  const capText = `Cap: ${element.linkedRoomData!.capacity}`
-                  let capW = pdf.getTextWidth(capText)
-                  let capFsAdj = capFs
-                  while (capW > maxLabelW && capFsAdj > 3) {
-                    capFsAdj *= 0.85
-                    pdf.setFontSize(capFsAdj)
-                    capW = pdf.getTextWidth(capText)
-                  }
-                  pdf.text(capText, x + (w - capW) / 2, y + h / 2 + roomFs * 0.6)
-                }
-              }
-            })
-          } else if (element.type === 'wall') {
-            drawRotated(() => {
-              const wallRgb = hexToRgb(element.color || '#374151')
-              pdf.setFillColor(wallRgb.r, wallRgb.g, wallRgb.b)
-              pdf.rect(x, y, w, h, 'F')
-            })
-          } else if (element.type === 'hallway') {
-            drawRotated(() => {
-              const hallRgb = hexToRgb(element.color || '#d1d5db')
-              pdf.setFillColor(hallRgb.r, hallRgb.g, hallRgb.b)
-              pdf.rect(x, y, w, h, 'F')
-
-              const hallBorderRgb = hexToRgb(element.borderColor || '#9ca3af')
-              pdf.setDrawColor(hallBorderRgb.r, hallBorderRgb.g, hallBorderRgb.b)
-              pdf.setLineWidth(0.4)
-              pdf.setLineDashPattern([2, 1.2], 0)
-              pdf.rect(x, y, w, h, 'S')
-
-              pdf.setLineDashPattern([], 0)
-
-              if (element.label) {
-                const hallTextRgb = hexToRgb(element.textColor || '#4b5563')
-                pdf.setTextColor(hallTextRgb.r, hallTextRgb.g, hallTextRgb.b)
-                const hfs = Math.max(4, 6 * scale)
-                pdf.setFontSize(hfs)
-                pdf.setFont('helvetica', 'bold')
-                const hw = pdf.getTextWidth(element.label)
-
-                if (element.orientation === 'vertical') {
-                  const cx = x + w / 2
-                  const cy = y + h / 2
-                  // @ts-ignore
-                  pdf.text(element.label, cx, cy, { angle: 270, align: 'center' })
-                } else {
-                  pdf.text(element.label, x + (w - hw) / 2, y + h / 2 + 1)
-                }
-              }
-            })
-          } else if (element.type === 'door') {
-            drawRotated(() => {
-              const doorRgb = hexToRgb(element.color || '#10b981')
-              pdf.setFillColor(doorRgb.r, doorRgb.g, doorRgb.b)
-              pdf.rect(x, y, w, h, 'F')
-            })
-          } else if (element.type === 'text') {
-            drawRotated(() => {
-              const rgb = hexToRgb(element.textColor || element.color || '#1e293b')
-              pdf.setTextColor(rgb.r, rgb.g, rgb.b)
-              pdf.setFontSize((element.fontSize || 12) * scale * 2.8)
-              pdf.setFont('helvetica', 'normal')
-              pdf.text(element.label || '', x, y + h * 0.75)
-            })
-          } else if (element.type === 'stair') {
-            drawRotated(() => {
-              const stairRgb = hexToRgb(element.color || '#f59e0b')
-              pdf.setFillColor(stairRgb.r, stairRgb.g, stairRgb.b)
-              pdf.rect(x, y, w, h, 'F')
-              pdf.setDrawColor(255, 255, 255)
-              pdf.setLineWidth(0.1)
-              for (let i = 1; i <= 4; i++) {
-                pdf.line(x, y + (h / 5) * i, x + w, y + (h / 5) * i)
-              }
-              const stairTextRgb = hexToRgb(element.textColor || '#ffffff')
-              pdf.setTextColor(stairTextRgb.r, stairTextRgb.g, stairTextRgb.b)
-              pdf.setFontSize(Math.max(4, 5 * scale))
-              pdf.setFont('helvetica', 'bold')
-              const sw = pdf.getTextWidth('STAIRS')
-              pdf.text('STAIRS', x + (w - sw) / 2, y + h / 2 + 1)
-            })
-          } else if (element.type === 'icon') {
-            drawRotated(() => {
-              const lowLabel = (element.label || '').toLowerCase()
-              const iconType = element.iconType || ''
-              const radius = Math.min(w, h) / 2
-              const cx = x + w / 2
-              const cy = y + h / 2
-
-              const isRestroom = iconType === 'restroom' || iconType === 'men_room' || iconType === 'women_room' ||
-                lowLabel.includes('restroom') || lowLabel.includes('comfort') || lowLabel.includes('cr') || lowLabel.includes('wc') ||
-                lowLabel.includes('men') || lowLabel.includes('women') || lowLabel.includes('boy') || lowLabel.includes('girl')
-
-              if (isRestroom) {
-                const isMale = iconType === 'men_room' || lowLabel.includes('men') || lowLabel.includes('boy')
-                const isFemale = iconType === 'women_room' || lowLabel.includes('women') || lowLabel.includes('girl')
-
-                const userColor = element.color || '#6366f1'
-                const hasCustomColor = userColor !== '#6366f1'
-
-                if (hasCustomColor) {
-                  const rgb = hexToRgb(userColor)
-                  pdf.setFillColor(rgb.r, rgb.g, rgb.b)
-                } else if (isMale) {
-                  pdf.setFillColor(37, 99, 235) // blue
-                } else if (isFemale) {
-                  pdf.setFillColor(219, 39, 119) // pink
-                } else {
-                  pdf.setFillColor(99, 102, 241) // purple fallback
-                }
-                pdf.circle(cx, cy, radius * 0.85, 'F')
-
-                // Draw figure letter inside  — M / F / R (restroom)
-                const figRgb = hexToRgb(element.iconColor || '#ffffff')
-                pdf.setTextColor(figRgb.r, figRgb.g, figRgb.b)
-                const figLabel = isMale ? 'M' : isFemale ? 'F' : 'R'
-                const figFs = Math.max(5, radius * 1.4)
-                pdf.setFontSize(figFs)
-                pdf.setFont('helvetica', 'bold')
-                const figW = pdf.getTextWidth(figLabel)
-                pdf.text(figLabel, cx - figW / 2, cy + figFs * 0.35)
-              } else {
-                const iconRgb = hexToRgb(element.color || '#6366f1')
-                pdf.setFillColor(iconRgb.r, iconRgb.g, iconRgb.b)
-                pdf.circle(cx, cy, radius * 0.8, 'F')
-                const iconFg = hexToRgb(element.iconColor || '#ffffff')
-                pdf.setTextColor(iconFg.r, iconFg.g, iconFg.b)
-                const initLabel = (element.label || 'i').charAt(0).toUpperCase()
-                const initFs = Math.max(5, radius * 1.5)
-                pdf.setFontSize(initFs)
-                pdf.setFont('helvetica', 'bold')
-                const initW = pdf.getTextWidth(initLabel)
-                pdf.text(initLabel, cx - initW / 2, cy + initFs * 0.35)
-              }
-
-              if (element.label) {
-                const labelRgb = hexToRgb(element.textColor || '#475569')
-                pdf.setTextColor(labelRgb.r, labelRgb.g, labelRgb.b)
-                pdf.setFontSize(Math.max(4, 5 * scale))
-                pdf.setFont('helvetica', 'normal')
-                const iw = pdf.getTextWidth(element.label)
-                pdf.text(element.label, cx - iw / 2, y + h + 2)
-              }
-            })
-          } else if (element.type === 'shape') {
-            drawRotated(() => {
-              const sRgb = hexToRgb(element.color || '#10b981')
-              pdf.setFillColor(sRgb.r, sRgb.g, sRgb.b)
-              if (element.shapeType === 'circle') {
-                pdf.circle(x + w / 2, y + h / 2, Math.min(w, h) / 2, 'F')
-              } else {
-                pdf.rect(x, y, w, h, 'F')
-              }
-            })
-          }
-
-          if (opacityApplied) {
-            pdf.restoreGraphicsState()
-          }
-        })
-
-      // ===== LEGEND =====
-      if (exportSettings.showLegend) {
-        const legendY = floorPlanY + floorPlanHeight + 5
-        pdf.setTextColor(30, 41, 59)
-        pdf.setFontSize(10)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Legend:', margin, legendY)
-
-        const legendItemsToRender = legendItems
-        let legendX = margin
-        let currentLegendY = legendY + 6
-
-        legendItemsToRender.forEach(item => {
-          const rgb = hexToRgb(item.bg)
-          pdf.setFillColor(rgb.r, rgb.g, rgb.b)
-          pdf.roundedRect(legendX, currentLegendY, 8, 4, 0.8, 0.8, 'F')
-
-          pdf.setFontSize(8)
-          pdf.setFont('helvetica', 'normal')
-          pdf.setTextColor(71, 85, 105)
-          pdf.text(item.label, legendX + 10, currentLegendY + 3.2)
-
-          legendX += 45
-          if (legendX > pageWidth - margin - 45) {
-            legendX = margin
-            currentLegendY += 7
-          }
-        })
-
-        if (showScheduleOverlay) {
-          currentLegendY += 9
-          pdf.setFontSize(9)
-          pdf.setFont('helvetica', 'bold')
-          pdf.setTextColor(30, 41, 59)
-          pdf.text('Room Status:', margin, currentLegendY)
-
-          pdf.setFillColor(34, 197, 94)
-          pdf.circle(margin + 34, currentLegendY - 1.2, 2.5, 'F')
-          pdf.setFont('helvetica', 'normal')
-          pdf.setTextColor(71, 85, 105)
-          pdf.text('Available', margin + 38, currentLegendY)
-
-          pdf.setFillColor(239, 68, 68)
-          pdf.circle(margin + 68, currentLegendY - 1.2, 2.5, 'F')
-          pdf.text('Occupied', margin + 72, currentLegendY)
-        }
-      }
-
-      // ===== FOOTER & BRANDING =====
-      pdf.setFontSize(7)
-      pdf.setTextColor(148, 163, 184)
-      pdf.setFont('helvetica', 'normal')
-      const footerText = 'Campus Map System  •  University Floor Plan Management'
-      const footerW = pdf.getTextWidth(footerText)
-      pdf.text(footerText, (pageWidth - footerW) / 2, pageHeight - margin * 0.4)
-
-      // Qtime Scheduler Branding - Improved placement (Logo to the left of text)
-      const brandY = pageHeight - margin * 0.4
-      pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'bold')
-      const brandingText = 'Qtime Scheduler'
-      const brandingW = pdf.getTextWidth(brandingText)
-      const qBoxSize = 5
-      const totalWidth = qBoxSize + 2 + brandingW
-      const startX = pageWidth - margin - totalWidth
-
-      const qBoxX = startX
-      const qBoxY = brandY - 4
-
-      try {
-        pdf.addImage('/app-icon.png', 'PNG', qBoxX, qBoxY, qBoxSize, qBoxSize)
-      } catch (e) {
-        pdf.setFillColor(22, 163, 74)
-        pdf.roundedRect(qBoxX, qBoxY, qBoxSize, qBoxSize, 1, 1, 'F')
-        pdf.setTextColor(255, 255, 255)
-        pdf.setFontSize(7)
-        pdf.text('Q', qBoxX + 1.2, qBoxY + 3.8)
-      }
-
-      pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(30, 41, 59)
-      pdf.text(brandingText, qBoxX + qBoxSize + 2, brandY)
-
-      // Save
+      pdf.addImage(imageData, 'PNG', 0, 0, pageWidthMm, pageHeightMm, undefined, 'MEDIUM')
       const fileName = `FloorPlan_${selectedBuilding.replace(/\s+/g, '_')}_F${selectedFloor}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
       setShowExportPreview(false)
-      showNotification('success', 'PDF exported successfully!')
+      showNotification('success', 'PDF exported successfully (high quality)!')
     } catch (error) {
       console.error('Error exporting PDF:', error)
       showNotification('error', 'Failed to export PDF')

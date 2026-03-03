@@ -29,7 +29,6 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
     { icon: MdMap, label: 'Campus Map', path: '/faculty/campus-map' },
     { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
     { icon: MdCalendarToday, label: 'Room Schedules', path: '/faculty/schedules' },
-    { icon: MdCalendarToday, label: 'Preferred Schedule', path: '/faculty/preferred-schedule' },
     { icon: MdLiveTv, label: 'Live Timetable', path: '/faculty/live-timetable' },
   ]
 
