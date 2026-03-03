@@ -7,7 +7,7 @@ import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import LoadingFallback from '@/app/components/LoadingFallback'
-import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar } from 'react-icons/md'
+import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar, MdClose, MdShield, MdAdminPanelSettings, MdTimeline, MdPersonSearch } from 'react-icons/md'
 import './styles.css'
 
 // Philippine Holidays 2024-2026
@@ -88,6 +88,45 @@ interface OnlineFaculty {
   college?: string
   last_login: string
   avatar_url?: string
+  is_online?: boolean
+  last_heartbeat?: string
+  created_at?: string
+}
+
+interface FacultyActivityPayload {
+  user: {
+    id: string
+    full_name: string
+    email: string
+    role?: string
+    department?: string
+    college?: string
+    avatar_url?: string
+    is_online?: boolean
+    last_login?: string
+    last_heartbeat?: string
+    created_at?: string
+    updated_at?: string
+  }
+  activity_counts?: {
+    profile_change_requests_total?: number | null
+    profile_change_requests_pending?: number | null
+    profile_change_requests_approved?: number | null
+    profile_change_requests_rejected?: number | null
+    schedule_requests_total?: number | null
+    faculty_absences_total?: number | null
+    faculty_preferences_total?: number | null
+  }
+  latest_activity?: {
+    profile_change_request?: any
+    schedule_request?: any
+    faculty_absence?: any
+    faculty_preference_update?: any
+  }
+  admin_intel?: {
+    session_token_active?: boolean
+    session_token_preview?: string | null
+  }
 }
 
 interface ScheduleInfo {
@@ -136,6 +175,14 @@ export default function AdminDashboard() {
   })
   const [selectedHoliday, setSelectedHoliday] = useState<{ name: string, date: string } | null>(null)
   const [authorized, setAuthorized] = useState(false)
+  const [showFacultyActivityModal, setShowFacultyActivityModal] = useState(false)
+  const [facultyActivityList, setFacultyActivityList] = useState<OnlineFaculty[]>([])
+  const [selectedFacultyId, setSelectedFacultyId] = useState<string | null>(null)
+  const [facultyActivityLoading, setFacultyActivityLoading] = useState(false)
+  const [facultyActivityError, setFacultyActivityError] = useState<string | null>(null)
+  const [facultyActivityDetails, setFacultyActivityDetails] = useState<Record<string, FacultyActivityPayload>>({})
+  const [showAdminIntel, setShowAdminIntel] = useState(false)
+  const [intelTapCount, setIntelTapCount] = useState(0)
 
   useEffect(() => {
     // Set initial date on client side only (avoids hydration mismatch)
@@ -405,6 +452,142 @@ export default function AdminDashboard() {
     return date.toLocaleDateString()
   }
 
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return 'No data'
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return 'No data'
+    return date.toLocaleString()
+  }
+
+  const getOfflineDays = (dateStr?: string | null) => {
+    if (!dateStr) return 'Unknown'
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return 'Unknown'
+    const diffMs = Date.now() - date.getTime()
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    return days <= 0 ? '0 days' : `${days} day${days > 1 ? 's' : ''}`
+  }
+
+  const getFacultyLastSeen = (faculty: OnlineFaculty) => faculty.last_heartbeat || faculty.last_login
+
+  const buildTimeline = (payload?: FacultyActivityPayload) => {
+    if (!payload) return [] as Array<{ label: string; date?: string; detail?: string }>
+
+    const timeline: Array<{ label: string; date?: string; detail?: string }> = [
+      {
+        label: payload.user.is_online ? 'Faculty is currently online' : 'Faculty is currently offline',
+        date: payload.user.last_heartbeat || payload.user.last_login,
+        detail: payload.user.is_online ? 'Active heartbeat detected' : 'No recent heartbeat detected'
+      },
+      {
+        label: 'Last Login',
+        date: payload.user.last_login,
+      },
+      {
+        label: 'Last Heartbeat',
+        date: payload.user.last_heartbeat,
+      },
+      {
+        label: 'Latest Profile Change Request',
+        date: payload.latest_activity?.profile_change_request?.updated_at || payload.latest_activity?.profile_change_request?.created_at,
+        detail: payload.latest_activity?.profile_change_request?.status ? `Status: ${payload.latest_activity?.profile_change_request?.status}` : undefined
+      },
+      {
+        label: 'Latest Schedule Request',
+        date: payload.latest_activity?.schedule_request?.updated_at || payload.latest_activity?.schedule_request?.created_at,
+        detail: payload.latest_activity?.schedule_request?.status ? `Status: ${payload.latest_activity?.schedule_request?.status}` : undefined
+      },
+      {
+        label: 'Latest Absence Filing',
+        date: payload.latest_activity?.faculty_absence?.created_at,
+        detail: payload.latest_activity?.faculty_absence?.reason || undefined
+      },
+      {
+        label: 'Latest Preference Update',
+        date: payload.latest_activity?.faculty_preference_update?.updated_at || payload.latest_activity?.faculty_preference_update?.created_at,
+      }
+    ]
+
+    return timeline.filter(item => item.date)
+  }
+
+  const fetchFacultyActivityDetails = async (facultyId: string) => {
+    setFacultyActivityLoading(true)
+    setFacultyActivityError(null)
+    try {
+      if (facultyActivityDetails[facultyId]) {
+        setFacultyActivityLoading(false)
+        return
+      }
+
+      const response = await fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_faculty_activity', user_id: facultyId })
+      })
+
+      const data = await response.json()
+      if (!data?.success || !data?.faculty_activity) {
+        throw new Error(data?.error || 'Failed to load faculty activity')
+      }
+
+      setFacultyActivityDetails(prev => ({ ...prev, [facultyId]: data.faculty_activity as FacultyActivityPayload }))
+    } catch (error: any) {
+      console.error('Faculty activity fetch error:', error)
+      setFacultyActivityError(error?.message || 'Failed to load faculty activity details')
+    } finally {
+      setFacultyActivityLoading(false)
+    }
+  }
+
+  const openFacultyActivityModal = async (facultyId?: string) => {
+    setShowFacultyActivityModal(true)
+    setShowAdminIntel(false)
+    setIntelTapCount(0)
+    setFacultyActivityError(null)
+
+    try {
+      const { data: listData, error } = await supabase
+        .from('users')
+        .select('id, full_name, email, department, college, last_login, last_heartbeat, is_online, avatar_url, created_at')
+        .eq('role', 'faculty')
+        .order('last_heartbeat', { ascending: false, nullsFirst: false })
+        .order('last_login', { ascending: false, nullsFirst: false })
+        .limit(120)
+
+      if (error) throw error
+
+      const list = (listData || []) as OnlineFaculty[]
+      setFacultyActivityList(list)
+
+      const targetId = facultyId || list[0]?.id || null
+      setSelectedFacultyId(targetId)
+      if (targetId) {
+        fetchFacultyActivityDetails(targetId)
+      }
+    } catch (error) {
+      console.error('Failed to open faculty activity modal:', error)
+      setFacultyActivityError('Failed to load faculty list')
+    }
+  }
+
+  useEffect(() => {
+    if (!showFacultyActivityModal) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowFacultyActivityModal(false)
+        return
+      }
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'a') {
+        setShowAdminIntel(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showFacultyActivityModal])
+
+  const selectedFacultyDetails = selectedFacultyId ? facultyActivityDetails[selectedFacultyId] : null
+
   // Quick navigation items - using nature-inspired theme colors
   const quickNavItems = [
     { icon: MdMeetingRoom, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: '#2EAF7D', desc: 'Manage rooms & buildings' },
@@ -526,7 +709,7 @@ export default function AdminDashboard() {
                       <span className="stat-label">Active Schedules</span>
                     </div>
                   </div>
-                  <div className="stat-card online">
+                  <div className="stat-card online" onClick={() => openFacultyActivityModal()}>
                     <div className="stat-icon online-indicator">
                       <MdShowChart size={28} />
                     </div>
@@ -562,7 +745,7 @@ export default function AdminDashboard() {
                       ) : (
                         <div className="online-list">
                           {onlineFaculty.map((faculty) => (
-                            <div key={faculty.id} className="online-item">
+                            <div key={faculty.id} className="online-item" onClick={() => openFacultyActivityModal(faculty.id)}>
                               <div className="faculty-avatar">
                                 {faculty.avatar_url ? (
                                   <img src={faculty.avatar_url} alt={faculty.full_name} />
@@ -793,6 +976,186 @@ export default function AdminDashboard() {
               style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
               onClick={() => setSelectedHoliday(null)}
             />
+          )}
+
+          {showFacultyActivityModal && (
+            <div className="faculty-activity-modal-overlay" onClick={() => setShowFacultyActivityModal(false)}>
+              <div className="faculty-activity-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="faculty-activity-header" onClick={() => {
+                  const next = intelTapCount + 1
+                  setIntelTapCount(next)
+                  if (next >= 5) {
+                    setShowAdminIntel(true)
+                  }
+                }}>
+                  <h3>
+                    <MdPersonSearch size={20} />
+                    Faculty Activity Center
+                  </h3>
+                  <button className="faculty-activity-close" onClick={() => setShowFacultyActivityModal(false)}>
+                    <MdClose size={20} />
+                  </button>
+                </div>
+
+                <div className="faculty-activity-body">
+                  <aside className="faculty-activity-list">
+                    <div className="faculty-activity-list-title">
+                      <MdPeople size={16} /> Faculty Status
+                    </div>
+                    {facultyActivityList.length === 0 ? (
+                      <div className="faculty-activity-empty">No faculty records loaded.</div>
+                    ) : (
+                      facultyActivityList.map((faculty) => {
+                        const isOnlineNow = !!faculty.is_online && !!faculty.last_heartbeat && (Date.now() - new Date(faculty.last_heartbeat).getTime()) <= 5 * 60 * 1000
+                        return (
+                          <button
+                            key={faculty.id}
+                            className={`faculty-activity-list-item ${selectedFacultyId === faculty.id ? 'active' : ''}`}
+                            onClick={() => {
+                              setSelectedFacultyId(faculty.id)
+                              fetchFacultyActivityDetails(faculty.id)
+                            }}
+                          >
+                            <div className="faculty-activity-list-main">
+                              <span className="faculty-activity-name">{faculty.full_name || 'Faculty Member'}</span>
+                              <span className={`faculty-activity-status ${isOnlineNow ? 'online' : 'offline'}`}>
+                                {isOnlineNow ? 'Online' : 'Offline'}
+                              </span>
+                            </div>
+                            <div className="faculty-activity-meta">
+                              <span>{faculty.department || faculty.college || 'No department'}</span>
+                              <span>Offline: {getOfflineDays(getFacultyLastSeen(faculty))}</span>
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </aside>
+
+                  <section className="faculty-activity-details">
+                    {facultyActivityError && <div className="faculty-activity-error">{facultyActivityError}</div>}
+                    {facultyActivityLoading && <div className="faculty-activity-loading">Loading activity details...</div>}
+
+                    {!facultyActivityLoading && selectedFacultyDetails && (
+                      <>
+                        <div className="faculty-activity-profile">
+                          <div className="faculty-activity-avatar">
+                            {selectedFacultyDetails.user.avatar_url ? (
+                              <img src={selectedFacultyDetails.user.avatar_url} alt={selectedFacultyDetails.user.full_name} />
+                            ) : (
+                              <span>{selectedFacultyDetails.user.full_name?.charAt(0) || 'F'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <h4>{selectedFacultyDetails.user.full_name || 'Faculty Member'}</h4>
+                            <p>{selectedFacultyDetails.user.email}</p>
+                            <p>{selectedFacultyDetails.user.department || selectedFacultyDetails.user.college || 'No department assigned'}</p>
+                          </div>
+                        </div>
+
+                        <div className="faculty-activity-metrics">
+                          <div className="activity-metric-card">
+                            <span className="metric-label">Current Status</span>
+                            <span className={`metric-value ${selectedFacultyDetails.user.is_online ? 'online' : 'offline'}`}>
+                              {selectedFacultyDetails.user.is_online ? 'Online' : 'Offline'}
+                            </span>
+                          </div>
+                          <div className="activity-metric-card">
+                            <span className="metric-label">Last Heartbeat</span>
+                            <span className="metric-value">{formatDateTime(selectedFacultyDetails.user.last_heartbeat)}</span>
+                          </div>
+                          <div className="activity-metric-card">
+                            <span className="metric-label">Last Login</span>
+                            <span className="metric-value">{formatDateTime(selectedFacultyDetails.user.last_login)}</span>
+                          </div>
+                          <div className="activity-metric-card">
+                            <span className="metric-label">Offline Days</span>
+                            <span className="metric-value">{getOfflineDays(selectedFacultyDetails.user.last_heartbeat || selectedFacultyDetails.user.last_login)}</span>
+                          </div>
+                        </div>
+
+                        <div className="faculty-activity-metrics">
+                          <div className="activity-metric-card compact">
+                            <span className="metric-label">Profile Change Requests</span>
+                            <span className="metric-value">{selectedFacultyDetails.activity_counts?.profile_change_requests_total ?? 'N/A'}</span>
+                          </div>
+                          <div className="activity-metric-card compact">
+                            <span className="metric-label">Schedule Requests</span>
+                            <span className="metric-value">{selectedFacultyDetails.activity_counts?.schedule_requests_total ?? 'N/A'}</span>
+                          </div>
+                          <div className="activity-metric-card compact">
+                            <span className="metric-label">Absence Filings</span>
+                            <span className="metric-value">{selectedFacultyDetails.activity_counts?.faculty_absences_total ?? 'N/A'}</span>
+                          </div>
+                          <div className="activity-metric-card compact">
+                            <span className="metric-label">Preference Updates</span>
+                            <span className="metric-value">{selectedFacultyDetails.activity_counts?.faculty_preferences_total ?? 'N/A'}</span>
+                          </div>
+                        </div>
+
+                        <div className="faculty-activity-timeline">
+                          <div className="timeline-title">
+                            <MdTimeline size={16} /> Activity Timeline
+                          </div>
+                          {buildTimeline(selectedFacultyDetails).length === 0 ? (
+                            <div className="faculty-activity-empty">No timeline activity found.</div>
+                          ) : (
+                            buildTimeline(selectedFacultyDetails).map((item, index) => (
+                              <div key={`${item.label}-${index}`} className="timeline-item">
+                                <div>
+                                  <strong>{item.label}</strong>
+                                  {item.detail && <p>{item.detail}</p>}
+                                </div>
+                                <span>{formatDateTime(item.date)}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {showAdminIntel && (
+                          <div className="faculty-admin-intel">
+                            <div className="timeline-title">
+                              <MdAdminPanelSettings size={16} /> Admin Intel (Power Mode)
+                            </div>
+                            <div className="intel-grid">
+                              <div className="intel-item">
+                                <span>Session Token Active</span>
+                                <strong>{selectedFacultyDetails.admin_intel?.session_token_active ? 'Yes' : 'No'}</strong>
+                              </div>
+                              <div className="intel-item">
+                                <span>Session Token Preview</span>
+                                <strong>{selectedFacultyDetails.admin_intel?.session_token_preview || 'Not available'}</strong>
+                              </div>
+                              <div className="intel-item">
+                                <span>Account Created</span>
+                                <strong>{formatDateTime(selectedFacultyDetails.user.created_at)}</strong>
+                              </div>
+                              <div className="intel-item">
+                                <span>Account Last Updated</span>
+                                <strong>{formatDateTime(selectedFacultyDetails.user.updated_at)}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {!facultyActivityLoading && !selectedFacultyDetails && (
+                      <div className="faculty-activity-empty">Select a faculty member to view details.</div>
+                    )}
+                  </section>
+                </div>
+
+                <div className="faculty-activity-footer">
+                  <button
+                    className="faculty-admin-mode-toggle"
+                    onClick={() => setShowAdminIntel(prev => !prev)}
+                  >
+                    <MdShield size={16} /> {showAdminIntel ? 'Hide Admin Intel' : 'Admin Intel'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </main>

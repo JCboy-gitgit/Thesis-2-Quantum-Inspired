@@ -174,6 +174,25 @@ export async function GET(request: NextRequest) {
     const usersMap = new Map(usersData?.map(u => [u.email, u]) || [])
     const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || [])
 
+    // Optional: fetch teaching load assignments to surface faculty assignment updates in admin UI
+    let assignedLoadCountMap = new Map<string, number>()
+    try {
+      const { data: teachingLoadsData } = await supabaseAdmin
+        .from('teaching_loads')
+        .select('faculty_id')
+
+      if (teachingLoadsData && Array.isArray(teachingLoadsData)) {
+        assignedLoadCountMap = teachingLoadsData.reduce((acc, load: any) => {
+          const facultyId = load?.faculty_id
+          if (!facultyId) return acc
+          acc.set(facultyId, (acc.get(facultyId) || 0) + 1)
+          return acc
+        }, new Map<string, number>())
+      }
+    } catch (teachingLoadError) {
+      console.warn('Unable to fetch teaching load counts for faculty registrations:', teachingLoadError)
+    }
+
     const registrations = authUsers.users
       .filter(user => user.email !== ADMIN_EMAIL)
       .map(user => {
@@ -208,12 +227,14 @@ export async function GET(request: NextRequest) {
           id: user.id,
           email: user.email,
           full_name: userRecord?.full_name || user.user_metadata?.full_name || 'Not provided',
+          avatar_url: userRecord?.avatar_url || user.user_metadata?.avatar_url || null,
           created_at: user.created_at,
           email_confirmed_at: user.email_confirmed_at,
           status: userStatus,
           role: userRecord?.role || 'faculty',
-          department: user.user_metadata?.department || null,
-          is_active: userRecord?.is_active ?? false
+          department: userRecord?.department || user.user_metadata?.department || null,
+          is_active: userRecord?.is_active ?? false,
+          assigned_load_count: assignedLoadCountMap.get(user.id) || 0
         }
       })
       .filter(user => {

@@ -38,6 +38,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [isMenuBarHiddenGlobal, setIsMenuBarHiddenGlobal] = useState(false)
   // Track open state for each submenu by index
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({})
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
@@ -66,6 +67,31 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
     })
     // eslint-disable-next-line
   }, [pathname])
+
+  useEffect(() => {
+    const syncMenuBarState = () => {
+      if (typeof document === 'undefined') return
+      setIsMenuBarHiddenGlobal(document.documentElement.getAttribute('data-menubar-hidden') === 'true')
+    }
+
+    const handleMenuBarVisibilityChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ hidden?: boolean }>
+      if (typeof customEvent.detail?.hidden === 'boolean') {
+        setIsMenuBarHiddenGlobal(customEvent.detail.hidden)
+        return
+      }
+      syncMenuBarState()
+    }
+
+    syncMenuBarState()
+    window.addEventListener('menubar-visibility-change', handleMenuBarVisibilityChange)
+    return () => {
+      window.removeEventListener('menubar-visibility-change', handleMenuBarVisibilityChange)
+    }
+  }, [])
+
+  const isMenuBarHidden = menuBarHidden || isMenuBarHiddenGlobal
+  const effectiveSidebarOpen = isMenuBarHidden ? false : isOpen
 
   const menuItems = [
     { icon: MdHome, label: 'Home', path: '/LandingPages/Home' },
@@ -177,10 +203,10 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
   return (
     <>
       <div
-        className={`sidebar-overlay ${isOpen ? 'active' : ''}`}
+        className={`sidebar-overlay ${effectiveSidebarOpen ? 'active' : ''}`}
         onClick={onClose}
       />
-      <aside className={`sidebar ${isOpen ? 'open' : 'closed'} ${menuBarHidden ? 'menuHidden' : ''}`}>
+      <aside className={`sidebar ${effectiveSidebarOpen ? 'open' : 'closed'} ${isMenuBarHidden ? 'menuHidden' : ''}`}>
         <nav className="sidebar-nav">
           {menuItems.map((item, index) => (
             <div key={index}>

@@ -178,6 +178,144 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, online_faculty: onlineFaculty || [] })
       }
 
+      case 'get_faculty_activity': {
+        if (!user_id) {
+          return NextResponse.json({ success: false, error: 'Missing user_id' }, { status: 400 })
+        }
+
+        const { data: facultyUser, error: userError } = await supabaseAdmin
+          .from('users')
+          .select('id, full_name, email, role, department, department_id, college, avatar_url, is_online, last_login, last_heartbeat, created_at, updated_at, session_token')
+          .eq('id', user_id)
+          .single()
+
+        if (userError || !facultyUser) {
+          return NextResponse.json({ success: false, error: 'Faculty user not found' }, { status: 404 })
+        }
+
+        const safeCountByColumn = async (table: string, column: string, value: string) => {
+          try {
+            const { count, error } = await supabaseAdmin
+              .from(table as any)
+              .select('id', { count: 'exact', head: true })
+              .eq(column as any, value)
+
+            if (error) return null
+            return count || 0
+          } catch {
+            return null
+          }
+        }
+
+        const safeCountByColumnAndStatus = async (
+          table: string,
+          column: string,
+          value: string,
+          statusColumn: string,
+          statusValue: string
+        ) => {
+          try {
+            const { count, error } = await supabaseAdmin
+              .from(table as any)
+              .select('id', { count: 'exact', head: true })
+              .eq(column as any, value)
+              .eq(statusColumn as any, statusValue)
+
+            if (error) return null
+            return count || 0
+          } catch {
+            return null
+          }
+        }
+
+        const safeLatest = async (
+          table: string,
+          selectColumns: string,
+          filterColumn: string,
+          filterValue: string,
+          orderColumn: string = 'created_at'
+        ) => {
+          try {
+            const { data, error } = await supabaseAdmin
+              .from(table as any)
+              .select(selectColumns as any)
+              .eq(filterColumn as any, filterValue)
+              .order(orderColumn as any, { ascending: false })
+              .limit(1)
+
+            if (error) return null
+            return data?.[0] || null
+          } catch {
+            return null
+          }
+        }
+
+        const [
+          profileRequestsTotal,
+          profileRequestsPending,
+          profileRequestsApproved,
+          profileRequestsRejected,
+          scheduleRequestsTotal,
+          facultyAbsencesTotal,
+          facultyPreferencesTotal,
+          latestProfileRequest,
+          latestScheduleRequest,
+          latestAbsence,
+          latestPreference
+        ] = await Promise.all([
+          safeCountByColumn('profile_change_requests', 'user_id', user_id),
+          safeCountByColumnAndStatus('profile_change_requests', 'user_id', user_id, 'status', 'pending'),
+          safeCountByColumnAndStatus('profile_change_requests', 'user_id', user_id, 'status', 'approved'),
+          safeCountByColumnAndStatus('profile_change_requests', 'user_id', user_id, 'status', 'rejected'),
+          safeCountByColumn('schedule_requests', 'requested_by', user_id),
+          safeCountByColumn('faculty_absences', 'faculty_id', user_id),
+          safeCountByColumn('faculty_preferences', 'faculty_id', user_id),
+          safeLatest('profile_change_requests', 'id, status, created_at, updated_at', 'user_id', user_id, 'updated_at'),
+          safeLatest('schedule_requests', 'id, status, created_at, updated_at, request_reason', 'requested_by', user_id, 'updated_at'),
+          safeLatest('faculty_absences', 'id, date, reason, created_at', 'faculty_id', user_id, 'created_at'),
+          safeLatest('faculty_preferences', 'faculty_id, updated_at, created_at', 'faculty_id', user_id, 'updated_at')
+        ])
+
+        return NextResponse.json({
+          success: true,
+          faculty_activity: {
+            user: {
+              id: facultyUser.id,
+              full_name: facultyUser.full_name,
+              email: facultyUser.email,
+              role: facultyUser.role,
+              department: facultyUser.department || facultyUser.department_id,
+              college: facultyUser.college,
+              avatar_url: facultyUser.avatar_url,
+              is_online: facultyUser.is_online,
+              last_login: facultyUser.last_login,
+              last_heartbeat: facultyUser.last_heartbeat,
+              created_at: facultyUser.created_at,
+              updated_at: facultyUser.updated_at,
+            },
+            activity_counts: {
+              profile_change_requests_total: profileRequestsTotal,
+              profile_change_requests_pending: profileRequestsPending,
+              profile_change_requests_approved: profileRequestsApproved,
+              profile_change_requests_rejected: profileRequestsRejected,
+              schedule_requests_total: scheduleRequestsTotal,
+              faculty_absences_total: facultyAbsencesTotal,
+              faculty_preferences_total: facultyPreferencesTotal,
+            },
+            latest_activity: {
+              profile_change_request: latestProfileRequest,
+              schedule_request: latestScheduleRequest,
+              faculty_absence: latestAbsence,
+              faculty_preference_update: latestPreference,
+            },
+            admin_intel: {
+              session_token_active: !!facultyUser.session_token,
+              session_token_preview: facultyUser.session_token ? `${String(facultyUser.session_token).slice(0, 8)}...` : null,
+            }
+          }
+        })
+      }
+
       default:
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 })
     }

@@ -60,6 +60,7 @@ interface RoomAllocation {
 interface CanvasElement {
   id: string
   type: 'room' | 'wall' | 'door' | 'text' | 'icon' | 'hallway' | 'stair' | 'shape'
+  groupId?: string
   x: number
   y: number
   width: number
@@ -74,6 +75,8 @@ interface CanvasElement {
   iconType?: string
   shapeType?: string
   fontSize?: number
+  textColor?: string
+  iconColor?: string
   isLocked?: boolean
   orientation?: 'horizontal' | 'vertical'  // For hallways
   opacity?: number  // 0-100 for transparency
@@ -368,6 +371,11 @@ export default function MapViewerPage() {
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
+  const getGroupMemberIds = useCallback((groupId?: string) => {
+    if (!groupId) return []
+    return canvasElements.filter(el => el.groupId === groupId).map(el => el.id)
+  }, [canvasElements])
+
   const autoHideMobileToolbox = useCallback(() => {
     if (!isMobile) return
     setActiveMobilePanel('none')
@@ -413,6 +421,8 @@ export default function MapViewerPage() {
           label: room.room,
           color: colors.bg,
           borderColor: colors.border,
+          textColor: getContrastColor(colors.bg),
+          iconColor: getContrastColor(colors.bg),
           linkedRoomId: room.id,
           linkedRoomData: room,
           zIndex: canvasElements.length + 1
@@ -433,6 +443,8 @@ export default function MapViewerPage() {
         label: item.label,
         color: item.color,
         borderColor: item.color,
+        textColor: getContrastColor(item.color || '#1f2937'),
+        iconColor: getContrastColor(item.color || '#1f2937'),
         zIndex: canvasElements.length + 1
       }
       setCanvasElements(prev => [...prev, newElement])
@@ -449,6 +461,8 @@ export default function MapViewerPage() {
         rotation: 0,
         label: iconOption.label,
         color: '#6366f1',
+        textColor: '#374151',
+        iconColor: '#ffffff',
         iconType: iconOption.name,
         zIndex: canvasElements.length + 1
       }
@@ -466,6 +480,8 @@ export default function MapViewerPage() {
         rotation: 0,
         label: shapeOption.label,
         color: '#10b981',
+        textColor: getContrastColor('#10b981'),
+        iconColor: getContrastColor('#10b981'),
         shapeType: shapeOption.name,
         zIndex: canvasElements.length + 1
       }
@@ -569,9 +585,18 @@ export default function MapViewerPage() {
   const [history, setHistory] = useState<CanvasElement[][]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const isUndoRedoRef = useRef(false)
+  const historyInitializedRef = useRef(false)
 
   // Record state to history whenever canvasElements changes (but not from undo/redo itself)
   useEffect(() => {
+    if (!historyInitializedRef.current) {
+      historyInitializedRef.current = true
+      setHistory([canvasElements])
+      setHistoryIndex(0)
+      ignoreUnsavedRef.current = false
+      return
+    }
+
     if (isUndoRedoRef.current) {
       isUndoRedoRef.current = false
       return
@@ -624,6 +649,8 @@ export default function MapViewerPage() {
     x: 0,
     y: 0,
     color: '',
+    textColor: '#1f2937',
+    iconColor: '#1f2937',
     rotation: 0,
     iconType: '',
     fontSize: 14,
@@ -656,15 +683,15 @@ export default function MapViewerPage() {
         e.preventDefault()
         redo()
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedElement && viewMode === 'editor') {
+        if ((selectedElements.length > 0 || selectedElement) && viewMode === 'editor') {
           e.preventDefault()
-          removeElement(selectedElement.id)
+          deleteSelectedElements()
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, selectedElement, viewMode])
+  }, [undo, redo, selectedElement, selectedElements, viewMode])
 
   // Spacebar panning listener
   useEffect(() => {
@@ -959,8 +986,8 @@ export default function MapViewerPage() {
 
       setFloors(roomFloors.sort((a, b) => a - b))
 
-      // If no floor selected and we have floors, select the first one
-      if (!selectedFloor && roomFloors.length > 0) {
+      // If current floor is invalid for this building, select the first available floor
+      if (roomFloors.length > 0 && (!selectedFloor || !roomFloors.includes(selectedFloor))) {
         setSelectedFloor(roomFloors[0])
       }
 
@@ -990,14 +1017,32 @@ export default function MapViewerPage() {
 
       if (skipAutoLoad) return
 
-      // Find matching floor plan for current building/floor
-      const match = floorPlanData.find(fp => {
-        const isSameBuilding = fp.canvas_data?.building === selectedBuilding ||
-          fp.floor_name?.toLowerCase().includes(selectedBuilding.toLowerCase());
-        return isSameBuilding && fp.floor_number === selectedFloor;
+      const buildingPlans = floorPlanData.filter(fp => {
+        const floorName = (fp.floor_name || '').toLowerCase()
+        const isSameBuildingByCanvas = (fp.canvas_data?.building || '').toLowerCase() === selectedBuilding.toLowerCase()
+        const isSameBuildingByName = floorName.includes(selectedBuilding.toLowerCase())
+        return isSameBuildingByCanvas || isSameBuildingByName
       })
+
+      if (buildingPlans.length === 0) {
+        return
+      }
+
+      // Find matching floor plan for current building/floor
+      const match = buildingPlans.find(fp => fp.floor_number === selectedFloor)
+
       if (match) {
-        loadFloorPlan(match)
+        loadFloorPlan(match, { skipUnsavedConfirm: true, showToast: false })
+        return
+      }
+
+      // Fallback: load latest plan for building and sync selected floor
+      const fallback = buildingPlans[0]
+      if (fallback) {
+        if (selectedFloor !== fallback.floor_number) {
+          setSelectedFloor(fallback.floor_number)
+        }
+        loadFloorPlan(fallback, { skipUnsavedConfirm: true, showToast: false })
       }
     } catch (error) {
       console.error('Error fetching floor plans:', error)
@@ -1005,8 +1050,11 @@ export default function MapViewerPage() {
   }
 
   // Load a floor plan
-  const loadFloorPlan = (floorPlan: FloorPlan) => {
-    if (hasUnsavedChanges) {
+  const loadFloorPlan = (
+    floorPlan: FloorPlan,
+    options?: { skipUnsavedConfirm?: boolean; showToast?: boolean }
+  ) => {
+    if (!options?.skipUnsavedConfirm && hasUnsavedChanges) {
       if (!window.confirm("You have unsaved changes that will be lost. Do you want to continue?")) {
         return
       }
@@ -1031,6 +1079,8 @@ export default function MapViewerPage() {
         borderWidth: el.borderWidth != null ? Number(el.borderWidth) : 2,
       }))
       setCanvasElements(normalizedElements)
+    } else {
+      setCanvasElements([])
     }
     if (floorPlan.canvas_data?.canvasSize) {
       const size = floorPlan.canvas_data.canvasSize
@@ -1049,7 +1099,9 @@ export default function MapViewerPage() {
     if (floorPlan.linked_schedule_id) {
       setSelectedScheduleId(floorPlan.linked_schedule_id)
     }
-    showNotification('success', `Loaded: ${floorPlan.floor_name}`)
+    if (options?.showToast !== false) {
+      showNotification('success', `Loaded: ${floorPlan.floor_name}`)
+    }
   }
 
   // Delete floor plan
@@ -1076,8 +1128,18 @@ export default function MapViewerPage() {
   }
 
   // Get room color based on type
+  const normalizeRoomType = (roomType?: string) => {
+    if (!roomType) return 'default'
+    const normalized = roomType
+      .toLowerCase()
+      .trim()
+      .replace(/[\s-]+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+    return normalized || 'default'
+  }
+
   const getRoomColor = (roomType?: string) => {
-    const type = roomType?.toLowerCase().replace(/\s+/g, '_') || 'default'
+    const type = normalizeRoomType(roomType)
     return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
   }
 
@@ -1177,12 +1239,15 @@ export default function MapViewerPage() {
 
   // Handle element selection focus
   const selectElement = useCallback((element: CanvasElement, multiSelect: boolean = false) => {
+    const groupedSelection = element.groupId ? getGroupMemberIds(element.groupId) : [element.id]
+
     if (multiSelect) {
       setSelectedElements(prev => {
-        if (prev.includes(element.id)) {
-          return prev.filter(id => id !== element.id)
+        const allSelected = groupedSelection.every(id => prev.includes(id))
+        if (allSelected) {
+          return prev.filter(id => !groupedSelection.includes(id))
         } else {
-          return [...prev, element.id]
+          return Array.from(new Set([...prev, ...groupedSelection]))
         }
       })
       if (selectedElement?.id === element.id) {
@@ -1192,7 +1257,7 @@ export default function MapViewerPage() {
       }
     } else {
       setSelectedElement(element)
-      setSelectedElements([element.id])
+      setSelectedElements(groupedSelection)
     }
 
     // Always update edit form when focusing an element
@@ -1204,13 +1269,15 @@ export default function MapViewerPage() {
       x: element.x,
       y: element.y,
       color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
+      textColor: element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
+      iconColor: element.iconColor || element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
       rotation: element.rotation,
       iconType: element.iconType || '',
       fontSize: element.fontSize || 14,
       opacity: element.opacity ?? 100,
       borderWidth: element.borderWidth ?? 2
     })
-  }, [selectedElement])
+  }, [selectedElement, getGroupMemberIds])
 
   // Handle element selection
   const handleElementClick = (element: CanvasElement, e: React.MouseEvent) => {
@@ -1239,6 +1306,8 @@ export default function MapViewerPage() {
         x: editForm.x,
         y: editForm.y,
         color: editForm.color,
+        textColor: editForm.textColor,
+        iconColor: editForm.iconColor,
         rotation: editForm.rotation,
         iconType: editForm.iconType,
         fontSize: editForm.fontSize,
@@ -1370,6 +1439,8 @@ export default function MapViewerPage() {
         x: element.x,
         y: element.y,
         color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
+        textColor: element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
+        iconColor: element.iconColor || element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
         rotation: element.rotation,
         iconType: element.iconType || '',
         fontSize: element.fontSize || 14,
@@ -1394,7 +1465,10 @@ export default function MapViewerPage() {
     setDragOffset(offset)
 
     // Capture initial positions of ALL selected elements for stable relative movement
-    const selections = selectedElements.includes(element.id) ? selectedElements : [element.id]
+    const groupedSelection = element.groupId ? getGroupMemberIds(element.groupId) : [element.id]
+    const selections = selectedElements.includes(element.id)
+      ? Array.from(new Set([...selectedElements, ...groupedSelection]))
+      : groupedSelection
     const initialPos: Record<string, { x: number; y: number }> = {}
     canvasElements.forEach(el => {
       if (selections.includes(el.id)) {
@@ -1577,7 +1651,10 @@ export default function MapViewerPage() {
     setDragOffset(offset)
 
     // Capture initial positions of ALL selected elements for stable relative movement
-    const selections = selectedElements.includes(element.id) ? selectedElements : [element.id]
+    const groupedSelection = element.groupId ? getGroupMemberIds(element.groupId) : [element.id]
+    const selections = selectedElements.includes(element.id)
+      ? Array.from(new Set([...selectedElements, ...groupedSelection]))
+      : groupedSelection
     const initialPos: Record<string, { x: number; y: number }> = {}
     canvasElements.forEach(el => {
       if (selections.includes(el.id)) {
@@ -1688,11 +1765,19 @@ export default function MapViewerPage() {
       return el.x < right && elRight > left && el.y < bottom && elBottom > top
     }).map(el => el.id)
 
-    setSelectedElements(selected)
-    if (selected.length === 1) {
-      const el = canvasElements.find(e => e.id === selected[0])
+    const expandedSelection = Array.from(new Set(selected.flatMap(id => {
+      const found = canvasElements.find(el => el.id === id)
+      if (found?.groupId) {
+        return getGroupMemberIds(found.groupId)
+      }
+      return [id]
+    })))
+
+    setSelectedElements(expandedSelection)
+    if (expandedSelection.length === 1) {
+      const el = canvasElements.find(e => e.id === expandedSelection[0])
       if (el) setSelectedElement(el)
-    } else if (selected.length > 1) {
+    } else if (expandedSelection.length > 1) {
       setSelectedElement(null) // Clear single selection when multiple selected
     }
 
@@ -1814,6 +1899,44 @@ export default function MapViewerPage() {
     } else if (selectedElement) {
       removeElement(selectedElement.id)
     }
+  }
+
+  const groupSelectedElements = () => {
+    if (selectedElements.length < 2) {
+      showNotification('info', 'Select at least 2 elements to group')
+      return
+    }
+
+    const newGroupId = `group_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    setCanvasElements(prev => prev.map(el =>
+      selectedElements.includes(el.id) ? { ...el, groupId: newGroupId } : el
+    ))
+    showNotification('success', `${selectedElements.length} element(s) grouped`)
+  }
+
+  const ungroupSelectedElements = () => {
+    if (selectedElements.length === 0) return
+
+    const selectedGroupIds = new Set(
+      canvasElements
+        .filter(el => selectedElements.includes(el.id) && el.groupId)
+        .map(el => el.groupId as string)
+    )
+
+    if (selectedGroupIds.size === 0) {
+      showNotification('info', 'No grouped elements selected')
+      return
+    }
+
+    const ungroupedIds = canvasElements
+      .filter(el => el.groupId && selectedGroupIds.has(el.groupId))
+      .map(el => el.id)
+
+    setCanvasElements(prev => prev.map(el =>
+      el.groupId && selectedGroupIds.has(el.groupId) ? { ...el, groupId: undefined } : el
+    ))
+    setSelectedElements(ungroupedIds)
+    showNotification('success', 'Group removed')
   }
 
 
@@ -2332,14 +2455,24 @@ export default function MapViewerPage() {
       ctx.restore()
     }
 
-    // Scale elements to fit — base scale uses planW/planH directly
-    const scaleEX = planW / canvasSize.width
-    const scaleEY = planH / canvasSize.height
-    // Use 0.95 to leave a small padding inside the plan area
+    const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
+    const bounds = visibleElements.length > 0
+      ? visibleElements.reduce((acc, el) => ({
+        minX: Math.min(acc.minX, el.x),
+        minY: Math.min(acc.minY, el.y),
+        maxX: Math.max(acc.maxX, el.x + el.width),
+        maxY: Math.max(acc.maxY, el.y + el.height),
+      }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
+      : { minX: 0, minY: 0, maxX: canvasSize.width, maxY: canvasSize.height }
+
+    const boundsW = Math.max(1, bounds.maxX - bounds.minX)
+    const boundsH = Math.max(1, bounds.maxY - bounds.minY)
+    const scaleEX = planW / boundsW
+    const scaleEY = planH / boundsH
     const baseScale = Math.min(scaleEX, scaleEY) * 0.95
     const scaleE = baseScale * (exportSettings.mapScale / 100)
-    const planCenterX = px + (planW - canvasSize.width * scaleE) / 2
-    const planCenterY = planY + (planH - canvasSize.height * scaleE) / 2
+    const planCenterX = px + (planW - boundsW * scaleE) / 2 - bounds.minX * scaleE
+    const planCenterY = planY + (planH - boundsH * scaleE) / 2 - bounds.minY * scaleE
 
     // Draw elements - SORT BY Z-INDEX, clipped to floor plan area
     ctx.save()
@@ -2347,10 +2480,15 @@ export default function MapViewerPage() {
     ctx.rect(px, planY, planW, planH)
     ctx.clip()
 
-    canvasElements
-      .filter(el => isLayerVisible(el.id))
+    visibleElements
       .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
       .forEach(element => {
+        const elementOpacity = element.opacity != null
+          ? (element.opacity > 1 ? Math.min(Math.max(element.opacity / 100, 0), 1) : Math.min(Math.max(element.opacity, 0), 1))
+          : 1
+        const previousAlpha = ctx.globalAlpha
+        ctx.globalAlpha = elementOpacity
+
         const ex = planCenterX + element.x * scaleE
         const ey = planCenterY + element.y * scaleE
         const ew = element.width * scaleE
@@ -2377,7 +2515,7 @@ export default function MapViewerPage() {
             ctx.clip()
 
             let roomFs = Math.max(5, exportSettings.roomFontSize * scaleE * 1.1)
-            ctx.fillStyle = getContrastColor(color)
+            ctx.fillStyle = element.textColor || getContrastColor(color)
             ctx.font = `bold ${roomFs}px Arial`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
@@ -2425,30 +2563,18 @@ export default function MapViewerPage() {
             ctx.fill()
           }
         } else if (element.type === 'hallway') {
-          ctx.fillStyle = '#d1d5db'
+          ctx.fillStyle = element.color || '#d1d5db'
           ctx.fillRect(ex, ey, ew, eh)
 
-          // Adjacency: smaller tolerance for snapped elements
-          const snapTol2 = 2
-          const adj = {
-            n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < snapTol2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
-            s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < snapTol2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
-            w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < snapTol2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
-            e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < snapTol2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
-          }
-
-          ctx.strokeStyle = '#9ca3af'
+          ctx.strokeStyle = element.borderColor || '#9ca3af'
           ctx.lineWidth = Math.max(0.5, 1.5 * scaleE)
           ctx.setLineDash([5 * scaleE, 3 * scaleE])
-          if (!adj.n) { ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + ew, ey); ctx.stroke(); }
-          if (!adj.s) { ctx.beginPath(); ctx.moveTo(ex, ey + eh); ctx.lineTo(ex + ew, ey + eh); ctx.stroke(); }
-          if (!adj.w) { ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex, ey + eh); ctx.stroke(); }
-          if (!adj.e) { ctx.beginPath(); ctx.moveTo(ex + ew, ey); ctx.lineTo(ex + ew, ey + eh); ctx.stroke(); }
+          ctx.strokeRect(ex, ey, ew, eh)
           ctx.setLineDash([])
 
           if (element.label) {
             ctx.save()
-            ctx.fillStyle = '#4b5563'
+            ctx.fillStyle = element.textColor || '#4b5563'
             const hfs = Math.max(4, 6 * scaleE)
             ctx.font = `bold ${hfs}px Arial`
             ctx.textAlign = 'center'
@@ -2463,7 +2589,7 @@ export default function MapViewerPage() {
             ctx.restore()
           }
         } else if (element.type === 'stair') {
-          ctx.fillStyle = '#f59e0b'
+          ctx.fillStyle = element.color || '#f59e0b'
           ctx.fillRect(ex, ey, ew, eh)
           // Draw stair lines
           ctx.strokeStyle = 'rgba(255,255,255,0.4)'
@@ -2474,19 +2600,19 @@ export default function MapViewerPage() {
             ctx.lineTo(ex + ew, ey + (eh / 5) * i)
             ctx.stroke()
           }
-          ctx.fillStyle = '#ffffff'
+          ctx.fillStyle = element.textColor || '#ffffff'
           ctx.font = `bold ${Math.max(4, 6 * scaleE)}px Arial`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           ctx.fillText('STAIRS', ex + ew / 2, ey + eh / 2)
         } else if (element.type === 'door') {
-          ctx.fillStyle = '#10b981'
+          ctx.fillStyle = element.color || '#10b981'
           ctx.fillRect(ex, ey, ew, eh)
         } else if (element.type === 'wall') {
-          ctx.fillStyle = '#334155'
+          ctx.fillStyle = element.color || '#334155'
           ctx.fillRect(ex, ey, ew, eh)
         } else if (element.type === 'text') {
-          ctx.fillStyle = element.color || '#1e293b'
+          ctx.fillStyle = element.textColor || element.color || '#1e293b'
           ctx.font = `${(element.fontSize || 12) * scaleE}px Arial`
           ctx.textAlign = 'left'
           ctx.textBaseline = 'top'
@@ -2513,8 +2639,8 @@ export default function MapViewerPage() {
             ctx.fill()
 
             // Draw person icon (stick figure)
-            ctx.fillStyle = '#ffffff'
-            ctx.strokeStyle = '#ffffff'
+            ctx.fillStyle = element.iconColor || '#ffffff'
+            ctx.strokeStyle = element.iconColor || '#ffffff'
             ctx.lineWidth = Math.max(0.5, radius * 0.12)
 
             if (isFemale) {
@@ -2580,7 +2706,7 @@ export default function MapViewerPage() {
           }
 
           if (element.label) {
-            ctx.fillStyle = '#475569'
+            ctx.fillStyle = element.textColor || '#475569'
             ctx.font = `${Math.max(4, 5 * scaleE)}px Arial`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'top'
@@ -2596,6 +2722,8 @@ export default function MapViewerPage() {
             ctx.fillRect(ex, ey, ew, eh)
           }
         }
+
+        ctx.globalAlpha = previousAlpha
       })
 
     // Restore clip after drawing elements
@@ -2612,9 +2740,9 @@ export default function MapViewerPage() {
       ctx.font = `bold ${3.5 * sf}px Arial`
       ctx.fillText('Legend:', px, legendY2)
 
-      const legendItems = getLegendItems()
+      const legendItemsToRender = legendItems
       let lx = px + 18 * sf
-      legendItems.forEach(item => {
+      legendItemsToRender.forEach(item => {
         ctx.fillStyle = item.bg
         ctx.fillRect(lx, legendY2 - 3 * sf, 5 * sf, 3 * sf)
         ctx.fillStyle = '#64748b'
@@ -2835,19 +2963,41 @@ export default function MapViewerPage() {
         pdf.restoreGraphicsState()
       }
 
-      // Scale
-      const scaleX = floorPlanWidth / canvasSize.width
-      const scaleY = floorPlanHeight / canvasSize.height
+      const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
+      const bounds = visibleElements.length > 0
+        ? visibleElements.reduce((acc, el) => ({
+          minX: Math.min(acc.minX, el.x),
+          minY: Math.min(acc.minY, el.y),
+          maxX: Math.max(acc.maxX, el.x + el.width),
+          maxY: Math.max(acc.maxY, el.y + el.height),
+        }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
+        : { minX: 0, minY: 0, maxX: canvasSize.width, maxY: canvasSize.height }
+
+      const boundsW = Math.max(1, bounds.maxX - bounds.minX)
+      const boundsH = Math.max(1, bounds.maxY - bounds.minY)
+      const scaleX = floorPlanWidth / boundsW
+      const scaleY = floorPlanHeight / boundsH
       const baseScale = Math.min(scaleX, scaleY) * 0.96
       const scale = baseScale * (exportSettings.mapScale / 100)
-      const centerX = margin + (floorPlanWidth - canvasSize.width * scale) / 2
-      const centerY = floorPlanY + (floorPlanHeight - canvasSize.height * scale) / 2
+      const centerX = margin + (floorPlanWidth - boundsW * scale) / 2 - bounds.minX * scale
+      const centerY = floorPlanY + (floorPlanHeight - boundsH * scale) / 2 - bounds.minY * scale
 
       // Draw elements
-      canvasElements
-        .filter(el => isLayerVisible(el.id))
+      visibleElements
         .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
         .forEach(element => {
+          const elementOpacity = element.opacity != null
+            ? (element.opacity > 1 ? Math.min(Math.max(element.opacity / 100, 0), 1) : Math.min(Math.max(element.opacity, 0), 1))
+            : 1
+          let opacityApplied = false
+          if (elementOpacity < 1) {
+            pdf.saveGraphicsState()
+            // @ts-ignore
+            const elState = new (pdf as any).GState({ opacity: elementOpacity })
+            pdf.setGState(elState)
+            opacityApplied = true
+          }
+
           const x = centerX + element.x * scale
           const y = centerY + element.y * scale
           const w = element.width * scale
@@ -2898,7 +3048,7 @@ export default function MapViewerPage() {
 
               // Enhanced room label - shrink until it fits, never overflow
               if (exportSettings.showRoomLabels) {
-                const contrastHex = getContrastColor(color)
+                const contrastHex = element.textColor || getContrastColor(color)
                 const cRgb = hexToRgb(contrastHex)
                 pdf.setTextColor(cRgb.r, cRgb.g, cRgb.b)
 
@@ -2952,36 +3102,27 @@ export default function MapViewerPage() {
             })
           } else if (element.type === 'wall') {
             drawRotated(() => {
-              pdf.setFillColor(55, 65, 81)
+              const wallRgb = hexToRgb(element.color || '#374151')
+              pdf.setFillColor(wallRgb.r, wallRgb.g, wallRgb.b)
               pdf.rect(x, y, w, h, 'F')
             })
           } else if (element.type === 'hallway') {
             drawRotated(() => {
-              pdf.setFillColor(209, 213, 219)
+              const hallRgb = hexToRgb(element.color || '#d1d5db')
+              pdf.setFillColor(hallRgb.r, hallRgb.g, hallRgb.b)
               pdf.rect(x, y, w, h, 'F')
 
-              // Adjacency: smaller tolerance (2px)
-              const snapTol = 2
-              const adj = {
-                n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < snapTol && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
-                s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < snapTol && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width) - 1),
-                w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < snapTol && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
-                e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < snapTol && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height) - 1),
-              }
-
-              pdf.setDrawColor(156, 163, 175)
+              const hallBorderRgb = hexToRgb(element.borderColor || '#9ca3af')
+              pdf.setDrawColor(hallBorderRgb.r, hallBorderRgb.g, hallBorderRgb.b)
               pdf.setLineWidth(0.4)
               pdf.setLineDashPattern([2, 1.2], 0)
-
-              if (!adj.n) pdf.line(x, y, x + w, y)
-              if (!adj.s) pdf.line(x, y + h, x + w, y + h)
-              if (!adj.w) pdf.line(x, y, x, y + h)
-              if (!adj.e) pdf.line(x + w, y, x + w, y + h)
+              pdf.rect(x, y, w, h, 'S')
 
               pdf.setLineDashPattern([], 0)
 
               if (element.label) {
-                pdf.setTextColor(75, 85, 99)
+                const hallTextRgb = hexToRgb(element.textColor || '#4b5563')
+                pdf.setTextColor(hallTextRgb.r, hallTextRgb.g, hallTextRgb.b)
                 const hfs = Math.max(4, 6 * scale)
                 pdf.setFontSize(hfs)
                 pdf.setFont('helvetica', 'bold')
@@ -2999,12 +3140,13 @@ export default function MapViewerPage() {
             })
           } else if (element.type === 'door') {
             drawRotated(() => {
-              pdf.setFillColor(16, 185, 129)
+              const doorRgb = hexToRgb(element.color || '#10b981')
+              pdf.setFillColor(doorRgb.r, doorRgb.g, doorRgb.b)
               pdf.rect(x, y, w, h, 'F')
             })
           } else if (element.type === 'text') {
             drawRotated(() => {
-              const rgb = hexToRgb(element.color || '#1e293b')
+              const rgb = hexToRgb(element.textColor || element.color || '#1e293b')
               pdf.setTextColor(rgb.r, rgb.g, rgb.b)
               pdf.setFontSize((element.fontSize || 12) * scale * 2.8)
               pdf.setFont('helvetica', 'normal')
@@ -3012,14 +3154,16 @@ export default function MapViewerPage() {
             })
           } else if (element.type === 'stair') {
             drawRotated(() => {
-              pdf.setFillColor(245, 158, 11)
+              const stairRgb = hexToRgb(element.color || '#f59e0b')
+              pdf.setFillColor(stairRgb.r, stairRgb.g, stairRgb.b)
               pdf.rect(x, y, w, h, 'F')
               pdf.setDrawColor(255, 255, 255)
               pdf.setLineWidth(0.1)
               for (let i = 1; i <= 4; i++) {
                 pdf.line(x, y + (h / 5) * i, x + w, y + (h / 5) * i)
               }
-              pdf.setTextColor(255, 255, 255)
+              const stairTextRgb = hexToRgb(element.textColor || '#ffffff')
+              pdf.setTextColor(stairTextRgb.r, stairTextRgb.g, stairTextRgb.b)
               pdf.setFontSize(Math.max(4, 5 * scale))
               pdf.setFont('helvetica', 'bold')
               const sw = pdf.getTextWidth('STAIRS')
@@ -3057,7 +3201,8 @@ export default function MapViewerPage() {
                 pdf.circle(cx, cy, radius * 0.85, 'F')
 
                 // Draw figure letter inside  — M / F / R (restroom)
-                pdf.setTextColor(255, 255, 255)
+                const figRgb = hexToRgb(element.iconColor || '#ffffff')
+                pdf.setTextColor(figRgb.r, figRgb.g, figRgb.b)
                 const figLabel = isMale ? 'M' : isFemale ? 'F' : 'R'
                 const figFs = Math.max(5, radius * 1.4)
                 pdf.setFontSize(figFs)
@@ -3068,7 +3213,8 @@ export default function MapViewerPage() {
                 const iconRgb = hexToRgb(element.color || '#6366f1')
                 pdf.setFillColor(iconRgb.r, iconRgb.g, iconRgb.b)
                 pdf.circle(cx, cy, radius * 0.8, 'F')
-                pdf.setTextColor(255, 255, 255)
+                const iconFg = hexToRgb(element.iconColor || '#ffffff')
+                pdf.setTextColor(iconFg.r, iconFg.g, iconFg.b)
                 const initLabel = (element.label || 'i').charAt(0).toUpperCase()
                 const initFs = Math.max(5, radius * 1.5)
                 pdf.setFontSize(initFs)
@@ -3078,7 +3224,8 @@ export default function MapViewerPage() {
               }
 
               if (element.label) {
-                pdf.setTextColor(71, 85, 105)
+                const labelRgb = hexToRgb(element.textColor || '#475569')
+                pdf.setTextColor(labelRgb.r, labelRgb.g, labelRgb.b)
                 pdf.setFontSize(Math.max(4, 5 * scale))
                 pdf.setFont('helvetica', 'normal')
                 const iw = pdf.getTextWidth(element.label)
@@ -3096,6 +3243,10 @@ export default function MapViewerPage() {
               }
             })
           }
+
+          if (opacityApplied) {
+            pdf.restoreGraphicsState()
+          }
         })
 
       // ===== LEGEND =====
@@ -3106,11 +3257,11 @@ export default function MapViewerPage() {
         pdf.setFont('helvetica', 'bold')
         pdf.text('Legend:', margin, legendY)
 
-        const legendItems = getLegendItems()
+        const legendItemsToRender = legendItems
         let legendX = margin
         let currentLegendY = legendY + 6
 
-        legendItems.forEach(item => {
+        legendItemsToRender.forEach(item => {
           const rgb = hexToRgb(item.bg)
           pdf.setFillColor(rgb.r, rgb.g, rgb.b)
           pdf.roundedRect(legendX, currentLegendY, 8, 4, 0.8, 0.8, 'F')
@@ -3234,15 +3385,16 @@ export default function MapViewerPage() {
   )
 
   // Get legend items based on rooms on canvas
-  const getLegendItems = () => {
-    const types = new Set(canvasElements
+  const legendItems = Array.from(new Set(
+    canvasElements
       .filter(el => el.type === 'room' && el.linkedRoomData)
-      .map(el => el.linkedRoomData?.room_type || 'default'))
-    return Array.from(types).map(type => ({
+      .map(el => normalizeRoomType(el.linkedRoomData?.room_type))
+  ))
+    .map(type => ({
       type,
       ...getRoomColor(type)
     }))
-  }
+    .sort((a, b) => a.label.localeCompare(b.label))
 
   // Check if room is on canvas
   const isRoomOnCanvas = (roomId: number) => {
@@ -3451,16 +3603,16 @@ export default function MapViewerPage() {
             {viewMode === 'editor' && (
               <button className={styles.saveBtn} onClick={() => setShowSaveModal(true)} disabled={saving} id="map-save-btn">
                 {saving ? <RotateCcw size={18} className={styles.spinning} /> : <Save size={18} />}
-                Save
+                <span className={styles.actionLabel}>Save</span>
               </button>
             )}
             <button className={styles.exportBtn} onClick={openExportPreview}>
               <Download size={18} />
-              Export PDF
+              <span className={styles.actionLabel}>Export PDF</span>
             </button>
             <button className={styles.shareBtn} onClick={generateShareLink} id="map-share-btn">
               <Share2 size={18} />
-              Share
+              <span className={styles.actionLabel}>Share</span>
             </button>
           </div>
         </div>
@@ -3930,14 +4082,6 @@ export default function MapViewerPage() {
                       const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
                       const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
 
-                      // Calculate hallway adjacencies for "connecting" effect
-                      const neighbors = element.type === 'hallway' ? {
-                        n: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.y - (o.y + o.height)) < 2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width)),
-                        s: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.y + element.height) - o.y) < 2 && Math.max(element.x, o.x) < Math.min(element.x + element.width, o.x + o.width)),
-                        w: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs(element.x - (o.x + o.width)) < 2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height)),
-                        e: canvasElements.some(o => o.id !== element.id && o.type === 'hallway' && isLayerVisible(o.id) && Math.abs((element.x + element.width) - o.x) < 2 && Math.max(element.y, o.y) < Math.min(element.y + element.height, o.y + o.height)),
-                      } : null
-
                       return (
                         <div
                           key={element.id}
@@ -3952,15 +4096,7 @@ export default function MapViewerPage() {
                             borderWidth: element.borderWidth ?? 2,
                             opacity: (element.opacity ?? 100) / 100,
                             transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
-                            zIndex: element.zIndex ?? 1,
-                            // Hide borders for connected hallways
-                            ...(neighbors ? {
-                              borderTop: neighbors.n ? 'none' : undefined,
-                              borderBottom: neighbors.s ? 'none' : undefined,
-                              borderLeft: neighbors.w ? 'none' : undefined,
-                              borderRight: neighbors.e ? 'none' : undefined,
-                              borderRadius: 0 // Remove rounding when connected
-                            } : {})
+                            zIndex: element.zIndex ?? 1
                           }}
                           onClick={(e) => handleElementClick(element, e)}
                           onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
@@ -3968,9 +4104,17 @@ export default function MapViewerPage() {
                         >
                           {element.type === 'room' && (
                             <>
-                              <span className={styles.elementLabel}>{element.label}</span>
+                              <span
+                                className={styles.elementLabel}
+                                style={{
+                                  color: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                                  fontSize: element.fontSize || undefined
+                                }}
+                              >
+                                {element.label}
+                              </span>
                               {element.linkedRoomData && (
-                                <span className={styles.elementCapacity}>
+                                <span className={styles.elementCapacity} style={{ color: element.textColor || getContrastColor(element.color || '#e5e7eb') }}>
                                   <Users size={10} /> {element.linkedRoomData.capacity}
                                 </span>
                               )}
@@ -3987,11 +4131,11 @@ export default function MapViewerPage() {
                             </>
                           )}
                           {element.type === 'text' && (
-                            <span className={styles.textLabel} style={{ fontSize: element.fontSize }}>{element.label}</span>
+                            <span className={styles.textLabel} style={{ fontSize: element.fontSize, color: element.textColor || element.color || '#1f2937' }}>{element.label}</span>
                           )}
                           {element.type === 'hallway' && (
                             <>
-                              <span className={styles.hallwayLabel}>{element.label}</span>
+                              <span className={styles.hallwayLabel} style={{ color: element.textColor || '#4b5563' }}>{element.label}</span>
                               {viewMode === 'editor' && (
                                 <button
                                   className={styles.orientationBtn}
@@ -4008,8 +4152,8 @@ export default function MapViewerPage() {
                           )}
                           {element.type === 'stair' && (
                             <>
-                              <Footprints size={20} />
-                              <span>{element.label}</span>
+                              <Footprints size={20} color={element.iconColor || element.textColor || '#ffffff'} />
+                              <span style={{ color: element.textColor || '#ffffff' }}>{element.label}</span>
                             </>
                           )}
                           {element.type === 'door' && (
@@ -4017,8 +4161,8 @@ export default function MapViewerPage() {
                           )}
                           {element.type === 'icon' && (
                             <div className={styles.iconElement}>
-                              {getIconComponent(element.iconType || 'info', 28, element.color)}
-                              {element.label && <span>{element.label}</span>}
+                              {getIconComponent(element.iconType || 'info', 28, element.iconColor || element.textColor || element.color)}
+                              {element.label && <span style={{ color: element.textColor || '#374151' }}>{element.label}</span>}
                             </div>
                           )}
                           {element.type === 'shape' && (
@@ -4176,6 +4320,24 @@ export default function MapViewerPage() {
                     {selectedElements.length > 0 && (
                       <span className={styles.selectedCount}>{selectedElements.length} selected</span>
                     )}
+                    {selectedElements.length >= 2 && (
+                      <button
+                        className={styles.selectModeBtn}
+                        onClick={groupSelectedElements}
+                        title="Group selected elements"
+                      >
+                        Group
+                      </button>
+                    )}
+                    {selectedElements.length > 0 && canvasElements.some(el => selectedElements.includes(el.id) && !!el.groupId) && (
+                      <button
+                        className={styles.selectModeBtn}
+                        onClick={ungroupSelectedElements}
+                        title="Ungroup selected elements"
+                      >
+                        Ungroup
+                      </button>
+                    )}
                     {(selectedElements.length > 0 || selectedElement) && (
                       <button
                         className={styles.deleteSelectedBtn}
@@ -4271,6 +4433,10 @@ export default function MapViewerPage() {
                                 <span>Changes apply live</span>
                               </div>
 
+                              <p className={styles.propertyHelp}>
+                                Size controls resize the selected object on the floor map. Text size only changes the label text.
+                              </p>
+
                               <div className={styles.propertyGroup}>
                                 <label>Label Name</label>
                                 <input
@@ -4289,10 +4455,11 @@ export default function MapViewerPage() {
                               </div>
 
                               {/* Size controls */}
-                              <div className={styles.propertyGroupLabel}>Size</div>
+                              <div className={styles.propertyGroupLabel}>Transform</div>
+                              <div className={styles.propertyGroupLabelMinor}>Element Size</div>
                               <div className={styles.propertyRow}>
                                 <div className={styles.propertyGroup}>
-                                  <label>Width</label>
+                                  <label>Element Width</label>
                                   <div className={styles.sizeInput}>
                                     <input
                                       type="number"
@@ -4304,7 +4471,7 @@ export default function MapViewerPage() {
                                   </div>
                                 </div>
                                 <div className={styles.propertyGroup}>
-                                  <label>Height</label>
+                                  <label>Element Height</label>
                                   <div className={styles.sizeInput}>
                                     <input
                                       type="number"
@@ -4318,7 +4485,7 @@ export default function MapViewerPage() {
                               </div>
 
                               {/* Position controls */}
-                              <div className={styles.propertyGroupLabel}>Position</div>
+                              <div className={styles.propertyGroupLabelMinor}>Canvas Position</div>
                               <div className={styles.propertyRow}>
                                 <div className={styles.propertyGroup}>
                                   <label>X</label>
@@ -4361,6 +4528,40 @@ export default function MapViewerPage() {
                                 </div>
                               </div>
 
+                              {(selectedElement.type === 'room' || selectedElement.type === 'text' || selectedElement.type === 'hallway' || selectedElement.type === 'stair' || selectedElement.type === 'icon') && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Text Color</label>
+                                  <div className={styles.colorPicker}>
+                                    <div
+                                      className={styles.colorPreview}
+                                      style={{ backgroundColor: editForm.textColor }}
+                                    />
+                                    <input
+                                      type="color"
+                                      value={editForm.textColor}
+                                      onChange={(e) => setEditForm(p => ({ ...p, textColor: e.target.value }))}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {(selectedElement.type === 'room' || selectedElement.type === 'icon' || selectedElement.type === 'stair') && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Icon Color</label>
+                                  <div className={styles.colorPicker}>
+                                    <div
+                                      className={styles.colorPreview}
+                                      style={{ backgroundColor: editForm.iconColor }}
+                                    />
+                                    <input
+                                      type="color"
+                                      value={editForm.iconColor}
+                                      onChange={(e) => setEditForm(p => ({ ...p, iconColor: e.target.value }))}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
                               <div className={styles.propertyGroup}>
                                 <label>Rotation</label>
                                 <div className={styles.rotationInput}>
@@ -4376,6 +4577,7 @@ export default function MapViewerPage() {
                               </div>
 
                               {/* Opacity/Transparency Control */}
+                              <div className={styles.propertyGroupLabel}>Appearance</div>
                               <div className={styles.propertyGroup}>
                                 <label>Opacity</label>
                                 <div className={styles.rotationInput}>
@@ -4408,8 +4610,10 @@ export default function MapViewerPage() {
 
                               {/* Font Size Control for text and labels */}
                               {(selectedElement.type === 'text' || selectedElement.type === 'room') && (
+                                <>
+                                <div className={styles.propertyGroupLabel}>Typography</div>
                                 <div className={styles.propertyGroup}>
-                                  <label>Font Size</label>
+                                  <label>Label Text Size</label>
                                   <div className={styles.sizeInput}>
                                     <input
                                       type="number"
@@ -4422,6 +4626,7 @@ export default function MapViewerPage() {
                                     <span>px</span>
                                   </div>
                                 </div>
+                                </>
                               )}
 
                               {selectedElement.type === 'icon' && (
@@ -4596,7 +4801,7 @@ export default function MapViewerPage() {
                           Colors based on room types on canvas.
                         </p>
                         <div className={styles.legendItems}>
-                          {getLegendItems().length > 0 ? getLegendItems().map(item => (
+                          {legendItems.length > 0 ? legendItems.map(item => (
                             <div key={item.type} className={styles.legendItem}>
                               <div
                                 className={styles.legendColor}
@@ -4766,6 +4971,8 @@ export default function MapViewerPage() {
                                     x: element.x,
                                     y: element.y,
                                     color: element.color || '',
+                                    textColor: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                                    iconColor: element.iconColor || element.textColor || getContrastColor(element.color || '#e5e7eb'),
                                     rotation: element.rotation,
                                     iconType: element.iconType || '',
                                     fontSize: element.fontSize || 14,

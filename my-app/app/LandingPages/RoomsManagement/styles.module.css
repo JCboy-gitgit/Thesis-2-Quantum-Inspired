@@ -892,7 +892,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1200;
   padding: 20px;
 }
 
@@ -902,7 +902,9 @@
   width: 100%;
   max-width: 640px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -912,6 +914,9 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--card-border);
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .modalHeader h3 {
@@ -940,6 +945,7 @@
 
 .modalBody {
   padding: 24px;
+  overflow-y: auto;
 }
 
 .warningText {
@@ -1075,6 +1081,25 @@
 .btnSave:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btnSaveSecondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnSaveSecondary:hover {
+  background: var(--primary-alpha);
 }
 
 .btnDelete {
@@ -1467,7 +1492,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1250;
   padding: 20px;
 }
 

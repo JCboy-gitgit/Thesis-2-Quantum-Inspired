@@ -72,6 +72,8 @@ interface CanvasElement {
   label?: string
   color?: string
   borderColor?: string
+  textColor?: string
+  iconColor?: string
   fontSize?: number
   fontWeight?: string
   textAlign?: string
@@ -132,6 +134,24 @@ export default function PublicFloorPlanView() {
   
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const normalizeOpacity = (value?: number) => {
+    if (value == null) return 1
+    if (value > 1) return Math.max(0, Math.min(1, value / 100))
+    return Math.max(0, Math.min(1, value))
+  }
+
+  const getContrastColor = (hex?: string) => {
+    if (!hex || !hex.startsWith('#')) return '#1F2937'
+    const value = hex.slice(1)
+    const expanded = value.length === 3 ? value.split('').map(c => c + c).join('') : value
+    const r = parseInt(expanded.slice(0, 2), 16)
+    const g = parseInt(expanded.slice(2, 4), 16)
+    const b = parseInt(expanded.slice(4, 6), 16)
+    if ([r, g, b].some(Number.isNaN)) return '#1F2937'
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+    return yiq >= 128 ? '#1F2937' : '#FFFFFF'
+  }
 
   useEffect(() => {
     if (token) {
@@ -237,7 +257,7 @@ export default function PublicFloorPlanView() {
       height: element.height,
       transform: `rotate(${element.rotation || 0}deg)`,
       zIndex: element.zIndex,
-      opacity: element.opacity ?? 1,
+      opacity: normalizeOpacity(element.opacity),
       cursor: 'pointer',
       transition: 'box-shadow 0.2s ease, transform 0.2s ease'
     }
@@ -273,13 +293,13 @@ export default function PublicFloorPlanView() {
               fontSize: element.fontSize || 12, 
               fontWeight: element.fontWeight || 'bold',
               textAlign: element.textAlign as any || 'center',
-              color: '#1F2937',
+              color: element.textColor || getContrastColor(element.color),
               wordBreak: 'break-word'
             }}>
               {element.label || 'Room'}
             </span>
             {element.linkedRoomData && (
-              <span style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>
+              <span style={{ fontSize: 10, color: element.textColor || getContrastColor(element.color), marginTop: 4, opacity: 0.8 }}>
                 Cap: {element.linkedRoomData.capacity}
               </span>
             )}
@@ -320,7 +340,8 @@ export default function PublicFloorPlanView() {
         )
 
       case 'icon':
-        const IconComponent = element.icon ? ICONS[element.icon] : DoorOpen
+        const iconKey = (element as any).iconType || (element as any).icon
+        const IconComponent = iconKey ? ICONS[iconKey] : DoorOpen
         return (
           <div
             key={element.id}
@@ -336,9 +357,9 @@ export default function PublicFloorPlanView() {
             }}
             onClick={() => setSelectedElement(element)}
           >
-            {IconComponent && <IconComponent size={Math.min(element.width, element.height) * 0.6} color={element.borderColor || '#374151'} />}
+            {IconComponent && <IconComponent size={Math.min(element.width, element.height) * 0.6} color={element.iconColor || element.borderColor || '#374151'} />}
             {element.label && (
-              <span style={{ fontSize: 10, marginTop: 4, color: '#374151' }}>{element.label}</span>
+              <span style={{ fontSize: 10, marginTop: 4, color: element.textColor || '#374151' }}>{element.label}</span>
             )}
           </div>
         )
@@ -389,7 +410,7 @@ export default function PublicFloorPlanView() {
             }}
             onClick={() => setSelectedElement(element)}
           >
-            <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 500 }}>
+            <span style={{ fontSize: 11, color: element.textColor || '#6B7280', fontWeight: 500 }}>
               {element.label || 'Hallway'}
             </span>
           </div>
@@ -414,8 +435,8 @@ export default function PublicFloorPlanView() {
             }}
             onClick={() => setSelectedElement(element)}
           >
-            <ArrowUpDown size={20} color="#F59E0B" />
-            <span style={{ fontSize: 10, color: '#92400E', fontWeight: 600 }}>
+            <ArrowUpDown size={20} color={element.iconColor || element.textColor || '#F59E0B'} />
+            <span style={{ fontSize: 10, color: element.textColor || '#92400E', fontWeight: 600 }}>
               {element.label || 'Stairs'}
             </span>
           </div>

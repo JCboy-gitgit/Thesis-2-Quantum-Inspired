@@ -8,6 +8,7 @@ import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import { useColleges } from '@/app/context/CollegesContext'
 import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdPalette, MdLabel, MdDescription } from 'react-icons/md'
+import { SiGoogleclassroom } from 'react-icons/si'
 import styles from './styles.module.css'
 
 // ==================== INTERFACES ====================
@@ -144,6 +145,7 @@ export default function RoomsManagementPage() {
   const [campusFiles, setCampusFiles] = useState<CampusFile[]>([])
   const [selectedFile, setSelectedFile] = useState<CampusFile | null>(null)
   const [allRooms, setAllRooms] = useState<CampusRoom[]>([])
+  const [systemRoomOptions, setSystemRoomOptions] = useState<Array<Pick<CampusRoom, 'campus' | 'building' | 'room' | 'room_code'>>>([])
   const [selectedCampusName, setSelectedCampusName] = useState<string | null>(null)
   const [selectedBuildingName, setSelectedBuildingName] = useState<string | null>(null)
 
@@ -200,6 +202,7 @@ export default function RoomsManagementPage() {
   useEffect(() => {
     checkAuth()
     fetchCampusFiles()
+    fetchSystemRoomOptions()
   }, [])
 
   // ==================== REAL-TIME SUBSCRIPTION ====================
@@ -314,6 +317,20 @@ export default function RoomsManagementPage() {
       console.error('Error fetching rooms:', error)
     } finally {
       setLoadingData(false)
+    }
+  }
+
+  const fetchSystemRoomOptions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campuses')
+        .select('campus, building, room, room_code')
+        .limit(5000)
+
+      if (error) throw error
+      setSystemRoomOptions((data || []) as Array<Pick<CampusRoom, 'campus' | 'building' | 'room' | 'room_code'>>)
+    } catch (error) {
+      console.error('Error fetching room suggestions:', error)
     }
   }
 
@@ -483,6 +500,59 @@ export default function RoomsManagementPage() {
   const uniqueRoomTypes = useMemo(() => ROOM_TYPE_OPTIONS, [])
   const uniqueColleges = useMemo(() => [...new Set(allRooms.map(r => r.college).filter(c => c))].sort(), [allRooms])
 
+  const normalizedFormCampus = formData.campus.trim().toLowerCase()
+  const normalizedFormBuilding = formData.building.trim().toLowerCase()
+
+  const suggestionSource = useMemo(
+    () => (systemRoomOptions.length > 0 ? systemRoomOptions : allRooms),
+    [systemRoomOptions, allRooms]
+  )
+
+  const suggestedCampuses = useMemo(() => {
+    return Array.from(
+      new Set(suggestionSource.map(item => item.campus?.trim()).filter((value): value is string => Boolean(value)))
+    ).sort((a, b) => a.localeCompare(b))
+  }, [suggestionSource])
+
+  const suggestedBuildings = useMemo(() => {
+    return Array.from(
+      new Set(
+        suggestionSource
+          .filter(item => {
+            if (!normalizedFormCampus) return true
+            return (item.campus || '').trim().toLowerCase() === normalizedFormCampus
+          })
+          .map(item => item.building?.trim())
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort((a, b) => a.localeCompare(b))
+  }, [suggestionSource, normalizedFormCampus])
+
+  const suggestedRoomNames = useMemo(() => {
+    return Array.from(
+      new Set(
+        suggestionSource
+          .filter(item => {
+            const campusMatches = !normalizedFormCampus || (item.campus || '').trim().toLowerCase() === normalizedFormCampus
+            const buildingMatches = !normalizedFormBuilding || (item.building || '').trim().toLowerCase() === normalizedFormBuilding
+            return campusMatches && buildingMatches
+          })
+          .map(item => item.room?.trim())
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort((a, b) => a.localeCompare(b))
+  }, [suggestionSource, normalizedFormCampus, normalizedFormBuilding])
+
+  const suggestedRoomCodes = useMemo(() => {
+    return Array.from(
+      new Set(
+        suggestionSource
+          .map(item => item.room_code?.trim())
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort((a, b) => a.localeCompare(b))
+  }, [suggestionSource])
+
   // Filtered rooms for search view
   const filteredRooms = useMemo(() => {
     return allRooms.filter(room => {
@@ -550,7 +620,7 @@ export default function RoomsManagementPage() {
 
   // ==================== CRUD OPERATIONS ====================
 
-  const handleAddRoom = async () => {
+  const handleAddRoom = async (openTagsAfterCreate: boolean = false) => {
     if (!selectedFile) return
     if (!formData.campus || !formData.building || !formData.room || formData.capacity <= 0) {
       alert('Please fill in all required fields')
@@ -558,7 +628,7 @@ export default function RoomsManagementPage() {
     }
 
     try {
-      const { error } = await (supabase
+      const { data, error } = await (supabase
         .from('campuses') as any)
         .insert({
           upload_group_id: selectedFile.upload_group_id,
@@ -580,13 +650,39 @@ export default function RoomsManagementPage() {
           file_name: 'Manual Entry',
           college: formData.college || null
         })
+        .select('*')
+        .single()
 
       if (error) throw error
 
-      setSuccessMessage('Room added successfully!')
-      resetForm()
+      if (openTagsAfterCreate && data?.id) {
+        const createdRoom = data as CampusRoom
+        setEditingRoom(createdRoom)
+        setFormData({
+          campus: createdRoom.campus || '',
+          building: createdRoom.building || '',
+          room: createdRoom.room || '',
+          room_code: createdRoom.room_code || '',
+          capacity: createdRoom.capacity || 30,
+          floor_number: createdRoom.floor_number || 1,
+          room_type: normalizeRoomType(createdRoom.room_type),
+          specific_classification: createdRoom.specific_classification || '',
+          has_ac: createdRoom.has_ac || false,
+          has_whiteboard: createdRoom.has_whiteboard ?? true,
+          has_tv: createdRoom.has_tv || false,
+          status: createdRoom.status || 'usable',
+          notes: createdRoom.notes || '',
+          college: createdRoom.college || ''
+        })
+        setSuccessMessage('Room added. You can now add Equipment & Feature Tags.')
+      } else {
+        setSuccessMessage('Room added successfully!')
+        resetForm()
+      }
+
       await fetchRoomsForFile(selectedFile.upload_group_id)
       await fetchCampusFiles()
+      await fetchSystemRoomOptions()
       router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
@@ -784,12 +880,14 @@ export default function RoomsManagementPage() {
     })
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null
+    const shouldOpenTagsAfterCreate = submitter?.value === 'save-and-tags'
     if (editingRoom) {
       handleUpdateRoom()
     } else {
-      handleAddRoom()
+      handleAddRoom(shouldOpenTagsAfterCreate)
     }
   }
 
@@ -878,21 +976,21 @@ export default function RoomsManagementPage() {
           {selectedFile && !loadingData && (
             <div className={styles.statsGrid} id="rooms-stats">
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><MdAccountBalance size={24} /></div>
+                <div className={styles.statIcon}><MdLocationOn size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Campuses</p>
                   <h3 className={styles.statValue}>{stats.totalCampuses}</h3>
                 </div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><MdHotel size={24} /></div>
+                <div className={styles.statIcon}><MdDomain size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Buildings</p>
                   <h3 className={styles.statValue}>{stats.totalBuildings}</h3>
                 </div>
               </div>
               <div className={styles.statCard}>
-                <div className={styles.statIcon}><MdMeetingRoom size={24} /></div>
+                <div className={styles.statIcon}><SiGoogleclassroom size={24} /></div>
                 <div className={styles.statContent}>
                   <p className={styles.statLabel}>Total Rooms</p>
                   <h3 className={styles.statValue}>{stats.totalRooms}</h3>
@@ -1100,11 +1198,11 @@ export default function RoomsManagementPage() {
 
                     <div className={styles.campusCardContent}>
                       <div className={styles.campusIcon}>
-                        <MdAccountBalance size={24} />
+                        <MdLocationOn size={24} />
                       </div>
                       <div className={styles.campusInfo}>
                         <h4>{campusName}</h4>
-                        <p><MdHotel size={14} /> {buildings} buildings</p>
+                        <p><MdDomain size={14} /> {buildings} buildings</p>
                         <p><MdMeetingRoom size={14} /> {rooms.length} rooms</p>
                         <p className={styles.campusMeta}><MdPeople size={12} /> {totalCapacity} total capacity</p>
                       </div>
@@ -1156,7 +1254,7 @@ export default function RoomsManagementPage() {
 
                     <div className={styles.buildingCardContent}>
                       <div className={styles.buildingIcon}>
-                        <MdHotel size={24} />
+                        <MdDomain size={24} />
                       </div>
                       <div className={styles.buildingInfo}>
                         <h4>{buildingName}</h4>
@@ -1330,15 +1428,21 @@ export default function RoomsManagementPage() {
             <form onSubmit={handleFormSubmit} className={styles.modalBody}>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label>Campus/College *</label>
+                  <label>Campus *</label>
                   <input
                     type="text"
                     value={formData.campus}
                     onChange={e => setFormData(prev => ({ ...prev, campus: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., College of Science"
+                    placeholder="e.g., Main Campus"
+                    list="campus-suggestions"
                   />
+                  <datalist id="campus-suggestions">
+                    {suggestedCampuses.map(campus => (
+                      <option key={campus} value={campus} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className={styles.formGroup}>
                   <label>Building *</label>
@@ -1348,8 +1452,14 @@ export default function RoomsManagementPage() {
                     onChange={e => setFormData(prev => ({ ...prev, building: e.target.value }))}
                     required
                     className={styles.formInput}
-                    placeholder="e.g., Science Building"
+                    placeholder="e.g., Federizo Hall"
+                    list="building-suggestions"
                   />
+                  <datalist id="building-suggestions">
+                    {suggestedBuildings.map(building => (
+                      <option key={building} value={building} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
@@ -1363,7 +1473,13 @@ export default function RoomsManagementPage() {
                     required
                     className={styles.formInput}
                     placeholder="e.g., Room 101"
+                    list="room-name-suggestions"
                   />
+                  <datalist id="room-name-suggestions">
+                    {suggestedRoomNames.map(roomName => (
+                      <option key={roomName} value={roomName} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className={styles.formGroup}>
                   <label>Room Code (Optional)</label>
@@ -1373,7 +1489,13 @@ export default function RoomsManagementPage() {
                     onChange={e => setFormData(prev => ({ ...prev, room_code: e.target.value }))}
                     className={styles.formInput}
                     placeholder="e.g., CS-101"
+                    list="room-code-suggestions"
                   />
+                  <datalist id="room-code-suggestions">
+                    {suggestedRoomCodes.map(roomCode => (
+                      <option key={roomCode} value={roomCode} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
@@ -1539,6 +1661,11 @@ export default function RoomsManagementPage() {
 
               <div className={styles.modalFooter}>
                 <button type="button" className={styles.btnCancel} onClick={() => resetForm()}>Cancel</button>
+                {!editingRoom && (
+                  <button type="submit" value="save-and-tags" className={styles.btnSaveSecondary}>
+                    <MdLabel size={16} /> Save & Add Tags
+                  </button>
+                )}
                 <button type="submit" className={styles.btnSave}>
                   <MdSave size={16} /> {editingRoom ? 'Update Room' : 'Add Room'}
                 </button>

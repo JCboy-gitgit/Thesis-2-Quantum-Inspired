@@ -34,6 +34,8 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isInstallable, setIsInstallable] = useState(false)
   const [tutorialRunning, setTutorialRunning] = useState(false)
+  const [showMenuBarShowBtn, setShowMenuBarShowBtn] = useState(false)
+  const [highlightShowMenuBarBtn, setHighlightShowMenuBarBtn] = useState(false)
 
   const ADMIN_EMAIL = 'admin123@ms.bulsu.edu.ph'
 
@@ -90,6 +92,30 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
       clearInterval(interval)
     }
   }, [isAdmin])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    document.documentElement.setAttribute('data-menubar-hidden', isMenuBarHidden ? 'true' : 'false')
+    window.dispatchEvent(new CustomEvent('menubar-visibility-change', { detail: { hidden: isMenuBarHidden } }))
+  }, [isMenuBarHidden])
+
+  useEffect(() => {
+    if (!isMenuBarHidden) {
+      setShowMenuBarShowBtn(false)
+      setHighlightShowMenuBarBtn(false)
+      return
+    }
+    setShowMenuBarShowBtn(true)
+    setHighlightShowMenuBarBtn(true)
+    const highlightTimer = window.setTimeout(() => {
+      setHighlightShowMenuBarBtn(false)
+    }, 6500)
+
+    return () => {
+      window.clearTimeout(highlightTimer)
+    }
+  }, [isMenuBarHidden])
 
   // PWA Install prompt listener
   useEffect(() => {
@@ -284,24 +310,31 @@ export default function MenuBar({ onToggleSidebar, showSidebarToggle = false, sh
         </div>
 
         {/* Toggle Arrow Button - inside header */}
-        <button
-          className="menu-bar-toggle-btn"
-          onClick={toggleMenuBar}
-          title={isMenuBarHidden ? 'Show Menu Bar' : 'Hide Menu Bar'}
-        >
-          <ChevronUp size={18} />
-        </button>
+        {!isMenuBarHidden && (
+          <button
+            className="menu-bar-toggle-btn"
+            onClick={toggleMenuBar}
+            title="Hide Menu Bar"
+          >
+            <ChevronUp size={18} />
+          </button>
+        )}
       </header>
 
-      {/* Floating toggle button when menu is hidden */}
+      {/* Reveal zone and floating toggle when menu is hidden */}
       {isMenuBarHidden && (
-        <button
-          className="menu-bar-show-btn"
-          onClick={toggleMenuBar}
-          title="Show Menu Bar"
-        >
-          <ChevronDown size={18} />
-        </button>
+        <>
+          <div className={`menu-bar-show-container ${showMenuBarShowBtn ? 'visible' : ''} ${highlightShowMenuBarBtn ? 'notice' : ''}`}>
+            <button
+              className="menu-bar-show-btn"
+              onClick={toggleMenuBar}
+              title="Show Menu Bar"
+              aria-label="Show menu bar"
+            >
+              <ChevronDown size={18} />
+            </button>
+          </div>
+        </>
       )}
 
       <SettingsModal

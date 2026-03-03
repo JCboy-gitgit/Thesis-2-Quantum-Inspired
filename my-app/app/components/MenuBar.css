@@ -32,6 +32,7 @@
 /* Hidden State */
 .menu-bar.menu-bar-hidden {
   transform: translateY(-100%);
+  pointer-events: none;
 }
 
 /* Toggle Button inside Menu Bar */
@@ -65,33 +66,56 @@
 
 /* Floating Show Button when hidden */
 .menu-bar-show-btn {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 32px;
+  width: 44px;
+  height: 28px;
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   border-top: none;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 10px 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary);
   transition: all 0.3s ease;
-  z-index: 1001;
+  z-index: 1003;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  animation: pulse-btn 2s ease-in-out infinite;
 }
 
 .menu-bar-show-btn:hover {
   background: var(--primary);
   border-color: var(--primary);
   color: white;
-  box-shadow: 0 0 30px var(--glow-color);
-  height: 40px;
+  box-shadow: 0 0 20px var(--glow-color);
+}
+
+.menu-bar-reveal-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border: none;
+  background: transparent;
+  z-index: 1002;
+  cursor: default;
+}
+
+.menu-bar-show-container {
+  position: fixed;
+  top: 0;
+  left: 18px;
+  z-index: 1003;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.menu-bar-show-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 @keyframes pulse-btn {
@@ -383,9 +407,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   opacity: 0.08;
-  background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(60px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
   animation: pulse-glow 6s ease-in-out infinite;
   z-index: 0;
   pointer-events: none;

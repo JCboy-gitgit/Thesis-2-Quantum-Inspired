@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
@@ -13,12 +13,14 @@ interface FacultyRegistration {
   id: string
   email: string
   full_name: string
+  avatar_url?: string | null
   created_at: string
   email_confirmed_at: string | null
   status: 'pending' | 'approved' | 'rejected' | 'unconfirmed'
   role: string
   department: string | null
   is_active: boolean
+  assigned_load_count?: number
 }
 
 export default function FacultyApprovalPage() {
@@ -32,11 +34,11 @@ export default function FacultyApprovalPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [editingUser, setEditingUser] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ full_name: '', department: '' })
+  const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     checkAuth()
-    fetchRegistrations()
-  }, [filter])
+  }, [])
 
   const checkAuth = async () => {
     try {
@@ -58,7 +60,7 @@ export default function FacultyApprovalPage() {
     }
   }
 
-  const fetchRegistrations = async () => {
+  const fetchRegistrations = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetchNoCache(`/api/faculty-registration?status=${filter}`)
@@ -80,7 +82,41 @@ export default function FacultyApprovalPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
+
+  useEffect(() => {
+    fetchRegistrations()
+  }, [fetchRegistrations])
+
+  useEffect(() => {
+    const scheduleRealtimeRefresh = () => {
+      if (realtimeRefreshTimeoutRef.current) {
+        clearTimeout(realtimeRefreshTimeoutRef.current)
+      }
+      realtimeRefreshTimeoutRef.current = setTimeout(() => {
+        fetchRegistrations()
+      }, 350)
+    }
+
+    const channel = supabase
+      .channel('faculty-approval-live-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, scheduleRealtimeRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_profiles' }, scheduleRealtimeRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teaching_loads' }, scheduleRealtimeRefresh)
+      .subscribe()
+
+    const fallbackInterval = setInterval(() => {
+      fetchRegistrations()
+    }, 45000)
+
+    return () => {
+      if (realtimeRefreshTimeoutRef.current) {
+        clearTimeout(realtimeRefreshTimeoutRef.current)
+      }
+      clearInterval(fallbackInterval)
+      supabase.removeChannel(channel)
+    }
+  }, [fetchRegistrations])
 
   const handleApproval = async (userId: string, action: 'approve' | 'reject') => {
     const user = registrations.find(r => r.id === userId)
@@ -292,7 +328,11 @@ export default function FacultyApprovalPage() {
               <div key={reg.id} className={styles.card}>
                 <div className={styles.cardHeader}>
                   <div className={styles.userAvatar}>
-                    <User size={24} />
+                    {reg.avatar_url ? (
+                      <img src={reg.avatar_url} alt={reg.full_name || reg.email} className={styles.userAvatarImage} />
+                    ) : (
+                      <User size={24} />
+                    )}
                   </div>
                   {getStatusBadge(reg.status)}
                 </div>
@@ -335,6 +375,10 @@ export default function FacultyApprovalPage() {
                           <span>{reg.department}</span>
                         </div>
                       )}
+                      <div className={styles.infoRow}>
+                        <MdTableChart size={16} />
+                        <span>Assigned loads: {reg.assigned_load_count || 0}</span>
+                      </div>
                       <div className={styles.infoRow}>
                         <Calendar size={16} />
                         <span>Registered: {formatDate(reg.created_at)}</span>
