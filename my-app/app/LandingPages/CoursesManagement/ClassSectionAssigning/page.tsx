@@ -191,7 +191,6 @@ function ClassSectionAssigningContent() {
         .order('year_batch', { ascending: false })
 
       if (batchesError) {
-        console.log('year_batches table may not exist, using empty array:', batchesError)
         setYearBatches([])
       } else {
         setYearBatches(batchesData || [])
@@ -208,7 +207,6 @@ function ClassSectionAssigningContent() {
         .order('section_name', { ascending: true })
 
       if (sectionsError) {
-        console.log('sections table may not exist, using empty array:', sectionsError)
         setSections([])
       } else {
         setSections(sectionsData || [])
@@ -225,7 +223,6 @@ function ClassSectionAssigningContent() {
         .select('*')
 
       if (assignmentsError) {
-        console.log('section_course_assignments table may not exist:', assignmentsError)
         setAssignments([])
       } else {
         setAssignments(assignmentsData || [])
@@ -513,14 +510,11 @@ function ClassSectionAssigningContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Deleting year batch ID:', id)
       const { data, error } = await (supabase as any)
         .from('year_batches')
         .delete()
         .eq('id', id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) {
         console.error('Supabase delete error:', error)
         throw new Error(error.message || 'Failed to delete year batch')
@@ -654,7 +648,6 @@ function ClassSectionAssigningContent() {
               setNotification({ type: 'success', message: 'Section created successfully!' })
             }
           } catch (autoAssignError) {
-            console.log('Auto-assign failed:', autoAssignError)
             setNotification({ type: 'success', message: 'Section created successfully!' })
           }
         } else {
@@ -694,14 +687,11 @@ function ClassSectionAssigningContent() {
   const handleDeleteSection = async (id: number) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Deleting section ID:', id)
       const { data, error } = await (supabase as any)
         .from('sections')
         .delete()
         .eq('id', id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')

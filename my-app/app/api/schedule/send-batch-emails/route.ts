@@ -63,13 +63,9 @@ async function fetchAllRows(table: string, filters: Record<string, any> = {}, or
   let page = 0
   let hasMore = true
 
-  console.log(`🔄 Starting pagination for table: ${table}, filters:`, filters)
-
   while (hasMore) {
     const from = page * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
-
-    console.log(`   📄 Fetching page ${page + 1}: rows ${from}-${to}`)
 
     let query = supabase
       .from(table)
@@ -89,23 +85,19 @@ async function fetchAllRows(table: string, filters: Record<string, any> = {}, or
     }
     
     if (!data || data.length === 0) {
-      console.log(`   ✅ No more data on page ${page + 1}`)
       hasMore = false
       break
     }
 
-    console.log(`   ✅ Fetched ${data.length} rows on page ${page + 1}`)
     allData = [...allData, ...data]
     
     if (data.length < PAGE_SIZE) {
-      console.log(`   ✅ Last page reached (${data.length} < ${PAGE_SIZE})`)
       hasMore = false
     }
     
     page++
   }
 
-  console.log(`✅ Total rows fetched from ${table}: ${allData.length}`)
   return allData
 }
 
@@ -147,12 +139,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`\n${'='.repeat(100)}`)
-    console.log(`📧 SENDING BATCH EMAILS FOR SCHEDULE ${schedule_id}`)
-    console.log(`${'='.repeat(100)}`)
-
     // Fetch schedule summary
-    console.log('📅 Fetching schedule summary...')
     const { data: summary, error: summaryError } = await supabase
       .from('schedule_summary')
       .select('*')
@@ -172,18 +159,12 @@ export async function POST(request: NextRequest) {
     const eventName = (summary as any).event_name || 'Your Event'
     const eventType = (summary as any).event_type || 'Event'
 
-    console.log(`✅ Event: ${eventName} (${eventType})`)
-    console.log(`📅 Date Range: ${scheduleDate} to ${endDate}`)
-
     // Fetch ALL batches
-    console.log('\n📥 Fetching ALL batches...')
     const batches = await fetchAllRows(
       'schedule_batches',
       { schedule_summary_id: schedule_id },
       'batch_name'
     )
-    console.log(`✅ Fetched ${batches.length} batches`)
-
     if (batches.length === 0) {
       return NextResponse.json(
         { error: 'No batches found for this schedule' },
@@ -192,7 +173,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch ALL assignments
-    console.log('📥 Fetching ALL assignments...')
     let assigns: any[] = []
     try {
       assigns = await fetchAllRows(
@@ -200,10 +180,8 @@ export async function POST(request: NextRequest) {
         { schedule_summary_id: schedule_id },
         'schedule_batch_id'
       )
-      console.log(`✅ Fetched ${assigns.length} assignments`)
     } catch (e: any) {
-      console.warn('⚠️  schedule_assignments not available, using participant_ids from batches')
-      console.warn('Error:', e.message)
+      // Fall back to participant_ids from batches
     }
 
     // Collect participant IDs
@@ -222,8 +200,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log(`👥 Total unique participants: ${pids.size}`)
-
     if (pids.size === 0) {
       return NextResponse.json(
         { error: 'No participants found in schedule' },
@@ -232,14 +208,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch ALL participants in chunks
-    console.log('📥 Fetching ALL participant details...')
     const participants: any[] = []
     const pidArray = Array.from(pids)
     const CHUNK_SIZE = 1000
 
     for (let i = 0; i < pidArray.length; i += CHUNK_SIZE) {
       const chunk = pidArray.slice(i, i + CHUNK_SIZE)
-      console.log(`   Fetching chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(pidArray.length / CHUNK_SIZE)} (${chunk.length} IDs)`)
       
       const { data, error } = await supabase
         .from('participants')
@@ -253,11 +227,8 @@ export async function POST(request: NextRequest) {
       
       if (data) {
         participants.push(...data)
-        console.log(`   ✅ Fetched ${data.length} participants`)
       }
     }
-
-    console.log(`✅ Total participants fetched: ${participants.length}`)
 
     if (participants.length === 0) {
       return NextResponse.json(
@@ -273,10 +244,7 @@ export async function POST(request: NextRequest) {
     const emailQueue: Array<{ data: any; participant: any }> = []
     const dateRangeFormatted = formatDateRange(scheduleDate, endDate)
 
-    console.log(`\n📨 Preparing email queue for ${participants.length} participants...`)
-
     if (assigns.length > 0) {
-      console.log('Using schedule_assignments table...')
       for (const a of assigns) {
         const p = pmap.get(a.participant_id)
         const b = bmap.get(a.schedule_batch_id)
@@ -449,8 +417,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`📧 Email queue prepared: ${emailQueue.length} emails`)
-
     if (emailQueue.length === 0) {
       return NextResponse.json(
         { error: 'No valid emails to send' },
@@ -465,19 +431,12 @@ export async function POST(request: NextRequest) {
     const DELAY_BETWEEN_EMAILS = 200 // ✅ 200ms delay between each email
     const DELAY_BETWEEN_BATCHES = 5000 // ✅ 5 second delay between batches
 
-    console.log(`\n📤 Sending ${emailQueue.length} emails with rate limiting...`)
-    console.log(`   📦 Batch size: ${BATCH_SIZE}`)
-    console.log(`   ⏱️  Delay between emails: ${DELAY_BETWEEN_EMAILS}ms`)
-    console.log(`   ⏱️  Delay between batches: ${DELAY_BETWEEN_BATCHES}ms`)
-
     for (let i = 0; i < emailQueue.length; i += BATCH_SIZE) {
       const batch = emailQueue.slice(i, i + BATCH_SIZE)
       const batchNum = Math.floor(i / BATCH_SIZE) + 1
       const totalBatches = Math.ceil(emailQueue.length / BATCH_SIZE)
       
-      console.log(`\n   📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} emails)...`)
-      
-      // ✅ Send emails sequentially with delay (not parallel)
+      // Send emails sequentially with delay (not parallel)
       for (const item of batch) {
         try {
           await sendEmailWithRetry(item.data, 3) // 3 retries
@@ -493,22 +452,11 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      console.log(`   ✅ Batch ${batchNum} completed`)
-      
-      // ✅ Delay between batches
+      // Delay between batches
       if (i + BATCH_SIZE < emailQueue.length) {
-        console.log(`   ⏳ Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`)
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES))
       }
     }
-
-    console.log(`\n${'='.repeat(100)}`)
-    console.log(`📊 EMAIL SENDING SUMMARY`)
-    console.log(`${'='.repeat(100)}`)
-    console.log(`✅ Successful: ${successList.length}`)
-    console.log(`❌ Failed: ${failedList.length}`)
-    console.log(`📧 Total: ${emailQueue.length}`)
-    console.log(`${'='.repeat(100)}\n`)
 
     return NextResponse.json({
       success: true,
@@ -521,8 +469,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Batch email error:', error)
-    console.error('Stack trace:', error.stack)
+    console.error('Batch email error:', error.message)
     return NextResponse.json(
       { error: error.message || 'Failed to send batch emails' },
       { status: 500 }

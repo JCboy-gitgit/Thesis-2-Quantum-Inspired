@@ -1378,14 +1378,18 @@
   min-height: 60px;
   flex-shrink: 0;
   z-index: 10;
+  overflow: visible;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
+  flex-wrap: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .buildingSelector {
@@ -1442,8 +1446,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
+  flex-wrap: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .clearBtn,
@@ -1465,6 +1472,67 @@
 .actionLabel {
   display: inline;
   white-space: nowrap;
+}
+
+.adminActionsWrap {
+  position: relative;
+}
+
+.adminActionsBtn {
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
+.adminActionsChevron {
+  transition: transform 0.2s ease;
+}
+
+.adminActionsChevron.open {
+  transform: rotate(180deg);
+}
+
+.adminActionsMenu {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 190px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  z-index: 1200;
+}
+
+.adminActionItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--content-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.adminActionItem:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--primary);
+}
+
+.adminActionItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .clearBtn {
@@ -1940,11 +2008,6 @@
   border: none;
 }
 
-.element_hallway {
-  background: #d1d5db;
-  border: 2px dashed #9ca3af;
-}
-
 .element_door {
   background: #d1fae5;
   border-color: #10b981;
@@ -2123,12 +2186,6 @@
   font-size: 14px;
   font-weight: 500;
   color: #1f2937;
-}
-
-.hallwayLabel {
-  font-size: 11px;
-  color: #6b7280;
-  font-weight: 500;
 }
 
 /* ==================== Drag Ghost ==================== */
@@ -4613,7 +4670,8 @@
 
   .headerRight .saveBtn,
   .headerRight .exportBtn,
-  .headerRight .shareBtn {
+  .headerRight .shareBtn,
+  .headerRight .adminActionsBtn {
     padding: 8px 12px;
     font-size: 12px;
   }
@@ -4624,11 +4682,20 @@
 
   .headerRight .saveBtn,
   .headerRight .exportBtn,
-  .headerRight .shareBtn {
+  .headerRight .shareBtn,
+  .headerRight .adminActionsBtn {
     width: 38px;
     height: 38px;
     padding: 0;
     justify-content: center;
+  }
+
+  .headerRight .adminActionsBtn {
+    min-width: 38px;
+  }
+
+  .headerRight .adminActionsChevron {
+    display: none;
   }
 }
 
@@ -4779,7 +4846,8 @@
   .clearBtn,
   .saveBtn,
   .exportBtn,
-  .shareBtn {
+  .shareBtn,
+  .adminActionsBtn {
     padding: 8px;
     font-size: 0;
   }
@@ -4787,9 +4855,15 @@
   .clearBtn svg,
   .saveBtn svg,
   .exportBtn svg,
-  .shareBtn svg {
+  .shareBtn svg,
+  .adminActionsBtn svg {
     width: 16px;
     height: 16px;
+  }
+
+  .adminActionsMenu {
+    right: 0;
+    min-width: 170px;
   }
 
   .actionLabel {

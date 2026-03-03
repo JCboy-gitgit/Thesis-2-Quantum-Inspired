@@ -212,8 +212,8 @@ export default function MapViewerPage() {
   const [resizeHandle, setResizeHandle] = useState<string | null>(null)
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, elementX: 0, elementY: 0 })
 
-  // Mode state: 'editor' for editing, 'floorplan' for view-only, 'live' for real-time availability
-  const [viewMode, setViewMode] = useState<'editor' | 'floorplan' | 'live'>('editor')
+  // Mode state: 'editor' for editing, 'live' for real-time availability
+  const [viewMode, setViewMode] = useState<'editor' | 'live'>('editor')
   const [showScheduleOverlay, setShowScheduleOverlay] = useState(false)
 
   // Toolbox sections
@@ -514,12 +514,17 @@ export default function MapViewerPage() {
       window.removeEventListener('pointerup', handlePointerUp)
     }
   }, [pointerDragActive, updateDragGhostFromPointer, placeDraggedItem])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showAdminActionsMenu, setShowAdminActionsMenu] = useState(false)
+  const [adminMenuPosition, setAdminMenuPosition] = useState({ top: 0, left: 0 })
   const [showExportPreview, setShowExportPreview] = useState(false)
+  const adminActionsRef = useRef<HTMLDivElement>(null)
+  const adminActionsButtonRef = useRef<HTMLButtonElement>(null)
   const exportCanvasRef = useRef<HTMLCanvasElement>(null)
   const [exportSettings, setExportSettings] = useState({
     title: '',
@@ -541,6 +546,60 @@ export default function MapViewerPage() {
     mapScale: 100, // 100% of fit
     useWhiteBackground: true
   })
+
+  useEffect(() => {
+    if (!showAdminActionsMenu) return
+
+    const updateMenuPosition = () => {
+      const buttonRect = adminActionsButtonRef.current?.getBoundingClientRect()
+      if (!buttonRect) return
+
+      const menuWidth = window.innerWidth <= 768 ? 170 : 190
+      const estimatedMenuHeight = 164
+      const gap = 8
+
+      const left = Math.min(
+        Math.max(gap, buttonRect.right - menuWidth),
+        window.innerWidth - menuWidth - gap
+      )
+
+      const showAbove = buttonRect.bottom + estimatedMenuHeight + gap > window.innerHeight
+      const top = showAbove
+        ? Math.max(gap, buttonRect.top - estimatedMenuHeight - gap)
+        : buttonRect.bottom + gap
+
+      setAdminMenuPosition({ top, left })
+    }
+
+    updateMenuPosition()
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (adminActionsRef.current && !adminActionsRef.current.contains(event.target as Node)) {
+        setShowAdminActionsMenu(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowAdminActionsMenu(false)
+      }
+    }
+
+    const handleWindowChange = () => updateMenuPosition()
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+    window.addEventListener('resize', handleWindowChange)
+    window.addEventListener('scroll', handleWindowChange, true)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('resize', handleWindowChange)
+      window.removeEventListener('scroll', handleWindowChange, true)
+    }
+  }, [showAdminActionsMenu])
+
   const [activeRightTab, setActiveRightTab] = useState<'properties' | 'layers'>('properties')
 
   // Auth state to prevent rendering before auth check completes
@@ -604,11 +663,15 @@ export default function MapViewerPage() {
     setHistory(prev => {
       const newHistory = prev.slice(0, historyIndex + 1)
       newHistory.push(canvasElements)
-      // Keep last 50 states
+      // Keep last 50 states — if we overflow, trim from the front
       if (newHistory.length > 50) newHistory.shift()
       return newHistory
     })
-    setHistoryIndex(prev => Math.min(prev + 1, 49))
+    setHistoryIndex(prev => {
+      const next = prev + 1
+      // If history was trimmed, the index stays at 49, not 50
+      return Math.min(next, 49)
+    })
 
     if (!isUndoRedoRef.current && !ignoreUnsavedRef.current) {
       setHasUnsavedChanges(true)
@@ -667,6 +730,7 @@ export default function MapViewerPage() {
       // Reset to white if coming from dark mode
       setCanvasBackground('#ffffff')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalTheme])
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
@@ -712,10 +776,12 @@ export default function MapViewerPage() {
     }
   }, [])
 
-  // Show notification
+  // Show notification (clears previous timer so rapid notifications don't vanish too early)
+  const notificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current)
     setNotification({ type, message })
-    setTimeout(() => setNotification(null), 3000)
+    notificationTimerRef.current = setTimeout(() => setNotification(null), 3000)
   }
 
   // Track whether panels were open before mobile collapse
@@ -807,6 +873,23 @@ export default function MapViewerPage() {
     return () => { clearTimeout(timer) }
   }, []) // Empty dependency array to run only once on mount
 
+  // Ctrl+Scroll wheel zoom on canvas container
+  useEffect(() => {
+    const container = canvasContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? -10 : 10
+        setZoom(z => Math.min(500, Math.max(25, z + delta)))
+      }
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [])
+
   // Auth check - sequential initialization
   useEffect(() => {
     let isMounted = true
@@ -866,8 +949,6 @@ export default function MapViewerPage() {
         .map((d: { building: string }) => d.building)
         .filter(Boolean)
       )] as string[]
-
-      console.log('Fetched buildings:', uniqueBuildings)
       setBuildings(uniqueBuildings)
 
       // Note: Using building name as identifier since 'buildings' table is not present in SQL schema
@@ -947,8 +1028,6 @@ export default function MapViewerPage() {
 
     try {
       setLoading(true)
-      console.log('Fetching rooms for building:', selectedBuilding, 'floor:', selectedFloor)
-
       // First get all rooms for this building
       let query = supabase
         .from('campuses')
@@ -968,8 +1047,6 @@ export default function MapViewerPage() {
         showNotification('error', 'Failed to load rooms')
         return
       }
-
-      console.log('Fetched rooms:', data?.length || 0)
       setAllRooms(data || [])
 
       // Get unique floors for this building
@@ -1008,7 +1085,6 @@ export default function MapViewerPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.log('Floor plans table might not exist yet')
         return
       }
 
@@ -1135,12 +1211,52 @@ export default function MapViewerPage() {
       .trim()
       .replace(/[\s-]+/g, '_')
       .replace(/[^a-z0-9_]/g, '')
-    return normalized || 'default'
+    if (!normalized) return 'default'
+    return ROOM_TYPE_COLORS[normalized] ? normalized : 'default'
   }
 
   const getRoomColor = (roomType?: string) => {
     const type = normalizeRoomType(roomType)
     return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
+  }
+
+  // Shared helper: check if an allocation is active at the given day & time
+  const isAllocActiveNow = (alloc: RoomAllocation, roomName: string, day: string, minuteOfDay: number): boolean => {
+    if (alloc.room !== roomName) return false
+
+    const allocDay = alloc.schedule_day?.toLowerCase()
+    if (!allocDay?.includes(day)) return false
+
+    // Parse time range (e.g. "8:00 AM - 9:30 AM" or "14:00 - 15:30")
+    const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
+    if (!timeParts) return false
+
+    let startHour = parseInt(timeParts[1])
+    const startMin = parseInt(timeParts[2])
+    const startPeriod = timeParts[3]?.toUpperCase()
+    let endHour = parseInt(timeParts[4])
+    const endMin = parseInt(timeParts[5])
+    const endPeriod = timeParts[6]?.toUpperCase()
+
+    // Convert to 24-hour
+    if (startPeriod === 'PM' && startHour !== 12) startHour += 12
+    if (startPeriod === 'AM' && startHour === 12) startHour = 0
+    if (endPeriod === 'PM' && endHour !== 12) endHour += 12
+    if (endPeriod === 'AM' && endHour === 12) endHour = 0
+
+    const startMins = startHour * 60 + startMin
+    const endMins = endHour * 60 + endMin
+
+    return minuteOfDay >= startMins && minuteOfDay < endMins
+  }
+
+  // Resolve day/time context for schedule checks
+  const getScheduleContext = () => {
+    const now = currentTime || new Date()
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const day = selectedDay || dayNames[now.getDay()]
+    const minuteOfDay = now.getHours() * 60 + now.getMinutes()
+    return { day, minuteOfDay }
   }
 
   // Get room availability status
@@ -1149,43 +1265,8 @@ export default function MapViewerPage() {
       return 'unknown'
     }
 
-    const now = currentTime || new Date()
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const currentDay = selectedDay || dayNames[now.getDay()]
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
-
-    // Check if room has any allocation at current time
-    const isOccupied = roomAllocations.some(alloc => {
-      if (alloc.room !== roomName) return false
-
-      const allocDay = alloc.schedule_day?.toLowerCase()
-      if (!allocDay?.includes(currentDay)) return false
-
-      // Parse time range
-      const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-      if (!timeParts) return false
-
-      let startHour = parseInt(timeParts[1])
-      const startMin = parseInt(timeParts[2])
-      const startPeriod = timeParts[3]?.toUpperCase()
-      let endHour = parseInt(timeParts[4])
-      const endMin = parseInt(timeParts[5])
-      const endPeriod = timeParts[6]?.toUpperCase()
-
-      // Convert to 24-hour
-      if (startPeriod === 'PM' && startHour !== 12) startHour += 12
-      if (startPeriod === 'AM' && startHour === 12) startHour = 0
-      if (endPeriod === 'PM' && endHour !== 12) endHour += 12
-      if (endPeriod === 'AM' && endHour === 12) endHour = 0
-
-      const startMins = startHour * 60 + startMin
-      const endMins = endHour * 60 + endMin
-      const currentMins = currentHour * 60 + currentMinute
-
-      return currentMins >= startMins && currentMins < endMins
-    })
-
+    const { day, minuteOfDay } = getScheduleContext()
+    const isOccupied = roomAllocations.some(alloc => isAllocActiveNow(alloc, roomName, day, minuteOfDay))
     return isOccupied ? 'occupied' : 'available'
   }
 
@@ -1193,39 +1274,8 @@ export default function MapViewerPage() {
   const getCurrentClass = (roomName: string): RoomAllocation | null => {
     if (!selectedScheduleId || roomAllocations.length === 0) return null
 
-    const now = currentTime || new Date()
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const currentDay = selectedDay || dayNames[now.getDay()]
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
-
-    return roomAllocations.find(alloc => {
-      if (alloc.room !== roomName) return false
-
-      const allocDay = alloc.schedule_day?.toLowerCase()
-      if (!allocDay?.includes(currentDay)) return false
-
-      const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-      if (!timeParts) return false
-
-      let startHour = parseInt(timeParts[1])
-      const startMin = parseInt(timeParts[2])
-      const startPeriod = timeParts[3]?.toUpperCase()
-      let endHour = parseInt(timeParts[4])
-      const endMin = parseInt(timeParts[5])
-      const endPeriod = timeParts[6]?.toUpperCase()
-
-      if (startPeriod === 'PM' && startHour !== 12) startHour += 12
-      if (startPeriod === 'AM' && startHour === 12) startHour = 0
-      if (endPeriod === 'PM' && endHour !== 12) endHour += 12
-      if (endPeriod === 'AM' && endHour === 12) endHour = 0
-
-      const startMins = startHour * 60 + startMin
-      const endMins = endHour * 60 + endMin
-      const currentMins = currentHour * 60 + currentMinute
-
-      return currentMins >= startMins && currentMins < endMins
-    }) || null
+    const { day, minuteOfDay } = getScheduleContext()
+    return roomAllocations.find(alloc => isAllocActiveNow(alloc, roomName, day, minuteOfDay)) || null
   }
 
   // Snap position to grid
@@ -1234,8 +1284,13 @@ export default function MapViewerPage() {
     return Math.round(value / gridSize) * gridSize
   }
 
-  // Generate unique ID
-  const generateId = () => `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  // Generate unique ID (crypto.randomUUID where available, fallback for older browsers)
+  const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return `element_${crypto.randomUUID()}`
+    }
+    return `element_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
 
   // Handle element selection focus
   const selectElement = useCallback((element: CanvasElement, multiSelect: boolean = false) => {
@@ -2151,7 +2206,6 @@ export default function MapViewerPage() {
 
       if (currentFloorPlan?.id) {
         // Update existing
-        console.log('Updating floor plan ID:', currentFloorPlan.id)
         const { data: updateData, error: updateError } = await db
           .from('floor_plans')
           .update({
@@ -2261,6 +2315,68 @@ export default function MapViewerPage() {
     setShowExportPreview(true)
     // Render preview after modal opens
     setTimeout(() => renderExportPreview(), 100)
+  }
+
+  const getElementAabb = (el: CanvasElement) => {
+    const rotation = ((el.rotation || 0) % 360 + 360) % 360
+    const x1 = el.x
+    const y1 = el.y
+    const x2 = el.x + el.width
+    const y2 = el.y + el.height
+
+    if (!rotation) {
+      return { minX: x1, minY: y1, maxX: x2, maxY: y2 }
+    }
+
+    const cx = el.x + el.width / 2
+    const cy = el.y + el.height / 2
+    const rad = rotation * Math.PI / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+
+    const corners = [
+      { x: x1, y: y1 },
+      { x: x2, y: y1 },
+      { x: x2, y: y2 },
+      { x: x1, y: y2 }
+    ].map((corner) => {
+      const dx = corner.x - cx
+      const dy = corner.y - cy
+      return {
+        x: cx + (dx * cos - dy * sin),
+        y: cy + (dx * sin + dy * cos)
+      }
+    })
+
+    return {
+      minX: Math.min(...corners.map(c => c.x)),
+      minY: Math.min(...corners.map(c => c.y)),
+      maxX: Math.max(...corners.map(c => c.x)),
+      maxY: Math.max(...corners.map(c => c.y))
+    }
+  }
+
+  const getExportBounds = (elements: CanvasElement[]) => {
+    const inCanvasBounds = elements
+      .map(getElementAabb)
+      .map((b) => ({
+        minX: Math.max(0, b.minX),
+        minY: Math.max(0, b.minY),
+        maxX: Math.min(canvasSize.width, b.maxX),
+        maxY: Math.min(canvasSize.height, b.maxY)
+      }))
+      .filter((b) => b.maxX > b.minX && b.maxY > b.minY)
+
+    if (!inCanvasBounds.length) {
+      return { minX: 0, minY: 0, maxX: canvasSize.width, maxY: canvasSize.height }
+    }
+
+    return inCanvasBounds.reduce((acc, b) => ({
+      minX: Math.min(acc.minX, b.minX),
+      minY: Math.min(acc.minY, b.minY),
+      maxX: Math.max(acc.maxX, b.maxX),
+      maxY: Math.max(acc.maxY, b.maxY),
+    }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
   }
 
   // Render the export preview on a canvas
@@ -2456,14 +2572,14 @@ export default function MapViewerPage() {
     }
 
     const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
-    const bounds = visibleElements.length > 0
-      ? visibleElements.reduce((acc, el) => ({
-        minX: Math.min(acc.minX, el.x),
-        minY: Math.min(acc.minY, el.y),
-        maxX: Math.max(acc.maxX, el.x + el.width),
-        maxY: Math.max(acc.maxY, el.y + el.height),
-      }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
-      : { minX: 0, minY: 0, maxX: canvasSize.width, maxY: canvasSize.height }
+    const bounds = getExportBounds(visibleElements)
+
+    // Add small padding so elements aren't flush against the edge
+    const pad = Math.max((bounds.maxX - bounds.minX), (bounds.maxY - bounds.minY)) * 0.02
+    bounds.minX -= pad
+    bounds.minY -= pad
+    bounds.maxX += pad
+    bounds.maxY += pad
 
     const boundsW = Math.max(1, bounds.maxX - bounds.minX)
     const boundsH = Math.max(1, bounds.maxY - bounds.minY)
@@ -2473,6 +2589,22 @@ export default function MapViewerPage() {
     const scaleE = baseScale * (exportSettings.mapScale / 100)
     const planCenterX = px + (planW - boundsW * scaleE) / 2 - bounds.minX * scaleE
     const planCenterY = planY + (planH - boundsH * scaleE) / 2 - bounds.minY * scaleE
+
+    // Helper to draw with rotation
+    const drawRotatedCanvas = (element: typeof visibleElements[0], ex: number, ey: number, ew: number, eh: number, drawFn: () => void) => {
+      if (element.rotation) {
+        ctx.save()
+        const cx = ex + ew / 2
+        const cy = ey + eh / 2
+        ctx.translate(cx, cy)
+        ctx.rotate((element.rotation * Math.PI) / 180)
+        ctx.translate(-cx, -cy)
+        drawFn()
+        ctx.restore()
+      } else {
+        drawFn()
+      }
+    }
 
     // Draw elements - SORT BY Z-INDEX, clipped to floor plan area
     ctx.save()
@@ -2495,129 +2627,143 @@ export default function MapViewerPage() {
         const eh = element.height * scaleE
 
         if (element.type === 'room') {
-          const color = element.color || '#f1f5f9'
-          ctx.fillStyle = color
-          ctx.fillRect(ex, ey, ew, eh)
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            const color = element.color || '#f1f5f9'
+            ctx.fillStyle = color
+            ctx.fillRect(ex, ey, ew, eh)
 
-          // Border
-          ctx.strokeStyle = element.borderColor || '#cbd5e1'
-          ctx.lineWidth = Math.max(0.5, (element.borderWidth ?? 1) * scaleE * 0.5)
-          ctx.strokeRect(ex, ey, ew, eh)
+            // Border
+            ctx.strokeStyle = element.borderColor || '#cbd5e1'
+            ctx.lineWidth = Math.max(0.5, (element.borderWidth ?? 1) * scaleE * 0.5)
+            ctx.strokeRect(ex, ey, ew, eh)
 
-          // Room label — clipped to room bounds, shrinks until it fits
-          if (exportSettings.showRoomLabels) {
-            const label = element.label || ''
-            const maxLabelW = ew - 4 // more margin
+            // Room label — clipped to room bounds, shrinks until it fits
+            if (exportSettings.showRoomLabels) {
+              const label = element.label || ''
+              const maxLabelW = ew - 4 // more margin
 
-            ctx.save()
-            ctx.beginPath()
-            ctx.rect(ex, ey, ew, eh)
-            ctx.clip()
+              ctx.save()
+              ctx.beginPath()
+              ctx.rect(ex, ey, ew, eh)
+              ctx.clip()
 
-            let roomFs = Math.max(5, exportSettings.roomFontSize * scaleE * 1.1)
-            ctx.fillStyle = element.textColor || getContrastColor(color)
-            ctx.font = `bold ${roomFs}px Arial`
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle'
-
-            let tw = ctx.measureText(label).width
-            while (tw > maxLabelW && roomFs > 5) {
-              roomFs *= 0.85
+              let roomFs = Math.max(5, exportSettings.roomFontSize * scaleE * 1.1)
+              ctx.fillStyle = element.textColor || getContrastColor(color)
               ctx.font = `bold ${roomFs}px Arial`
-              tw = ctx.measureText(label).width
-            }
+              ctx.textAlign = 'center'
+              ctx.textBaseline = 'middle'
 
-            let displayLabel = label
-            if (tw > maxLabelW) {
-              while (displayLabel.length > 1 && ctx.measureText(displayLabel + '…').width > maxLabelW) {
-                displayLabel = displayLabel.slice(0, -1)
+              let tw = ctx.measureText(label).width
+              while (tw > maxLabelW && roomFs > 5) {
+                roomFs *= 0.85
+                ctx.font = `bold ${roomFs}px Arial`
+                tw = ctx.measureText(label).width
               }
-              displayLabel += '…'
-            }
 
-            const hasCapacity = !!element.linkedRoomData?.capacity
-            const labelY = hasCapacity ? ey + eh / 2 - roomFs * 0.4 : ey + eh / 2
-            ctx.fillText(displayLabel, ex + ew / 2, labelY)
-
-            if (hasCapacity) {
-              const capFs = Math.max(4, roomFs * 0.7)
-              ctx.font = `${capFs}px Arial`
-              ctx.globalAlpha = 0.85
-              let capLabel = `Cap: ${element.linkedRoomData!.capacity}`
-              while (ctx.measureText(capLabel).width > maxLabelW && capFs > 4) {
-                capLabel = capLabel.slice(0, -1)
+              let displayLabel = label
+              if (tw > maxLabelW) {
+                while (displayLabel.length > 1 && ctx.measureText(displayLabel + '…').width > maxLabelW) {
+                  displayLabel = displayLabel.slice(0, -1)
+                }
+                displayLabel += '…'
               }
-              ctx.fillText(capLabel, ex + ew / 2, ey + eh / 2 + roomFs * 0.5)
-              ctx.globalAlpha = 1.0
+
+              const hasCapacity = !!element.linkedRoomData?.capacity
+              const labelY = hasCapacity ? ey + eh / 2 - roomFs * 0.4 : ey + eh / 2
+              ctx.fillText(displayLabel, ex + ew / 2, labelY)
+
+              if (hasCapacity) {
+                let capFs = Math.max(4, roomFs * 0.7)
+                ctx.font = `${capFs}px Arial`
+                ctx.globalAlpha = 0.85
+                const capLabel = `Cap: ${element.linkedRoomData!.capacity}`
+                while (ctx.measureText(capLabel).width > maxLabelW && capFs > 4) {
+                  capFs *= 0.85
+                  ctx.font = `${capFs}px Arial`
+                }
+                ctx.fillText(capLabel, ex + ew / 2, ey + eh / 2 + roomFs * 0.5)
+                ctx.globalAlpha = 1.0
+              }
+
+              ctx.restore()
             }
 
-            ctx.restore()
-          }
-
-          // Availability dot
-          if (showScheduleOverlay && element.linkedRoomData) {
-            const avail = getRoomAvailability(element.linkedRoomData.room)
-            ctx.fillStyle = avail === 'available' ? '#22c55e' : (avail === 'occupied' ? '#ef4444' : '#94a3b8')
-            ctx.beginPath()
-            ctx.arc(ex + ew - 3 * scaleE, ey + 3 * scaleE, 2.5 * scaleE, 0, Math.PI * 2)
-            ctx.fill()
-          }
+            // Availability dot
+            if (showScheduleOverlay && element.linkedRoomData) {
+              const avail = getRoomAvailability(element.linkedRoomData.room)
+              ctx.fillStyle = avail === 'available' ? '#22c55e' : (avail === 'occupied' ? '#ef4444' : '#94a3b8')
+              ctx.beginPath()
+              ctx.arc(ex + ew - 3 * scaleE, ey + 3 * scaleE, 2.5 * scaleE, 0, Math.PI * 2)
+              ctx.fill()
+            }
+          })
         } else if (element.type === 'hallway') {
-          ctx.fillStyle = element.color || '#d1d5db'
-          ctx.fillRect(ex, ey, ew, eh)
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.color || '#d1d5db'
+            ctx.fillRect(ex, ey, ew, eh)
 
-          ctx.strokeStyle = element.borderColor || '#9ca3af'
-          ctx.lineWidth = Math.max(0.5, 1.5 * scaleE)
-          ctx.setLineDash([5 * scaleE, 3 * scaleE])
-          ctx.strokeRect(ex, ey, ew, eh)
-          ctx.setLineDash([])
+            ctx.strokeStyle = element.borderColor || '#9ca3af'
+            ctx.lineWidth = Math.max(0.5, 1.5 * scaleE)
+            ctx.setLineDash([5 * scaleE, 3 * scaleE])
+            ctx.strokeRect(ex, ey, ew, eh)
+            ctx.setLineDash([])
 
-          if (element.label) {
-            ctx.save()
-            ctx.fillStyle = element.textColor || '#4b5563'
-            const hfs = Math.max(4, 6 * scaleE)
-            ctx.font = `bold ${hfs}px Arial`
+            if (element.label) {
+              ctx.save()
+              ctx.fillStyle = element.textColor || '#4b5563'
+              const hfs = Math.max(4, 6 * scaleE)
+              ctx.font = `bold ${hfs}px Arial`
+              ctx.textAlign = 'center'
+              ctx.textBaseline = 'middle'
+              if (element.orientation === 'vertical') {
+                ctx.translate(ex + ew / 2, ey + eh / 2)
+                ctx.rotate(-Math.PI / 2)
+                ctx.fillText(element.label, 0, 0)
+              } else {
+                ctx.fillText(element.label, ex + ew / 2, ey + eh / 2)
+              }
+              ctx.restore()
+            }
+          })
+        } else if (element.type === 'stair') {
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.color || '#f59e0b'
+            ctx.fillRect(ex, ey, ew, eh)
+            // Draw stair lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+            ctx.lineWidth = 1
+            for (let i = 1; i <= 4; i++) {
+              ctx.beginPath()
+              ctx.moveTo(ex, ey + (eh / 5) * i)
+              ctx.lineTo(ex + ew, ey + (eh / 5) * i)
+              ctx.stroke()
+            }
+            ctx.fillStyle = element.textColor || '#ffffff'
+            ctx.font = `bold ${Math.max(4, 6 * scaleE)}px Arial`
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
-            if (element.orientation === 'vertical') {
-              ctx.translate(ex + ew / 2, ey + eh / 2)
-              ctx.rotate(-Math.PI / 2)
-              ctx.fillText(element.label, 0, 0)
-            } else {
-              ctx.fillText(element.label, ex + ew / 2, ey + eh / 2)
-            }
-            ctx.restore()
-          }
-        } else if (element.type === 'stair') {
-          ctx.fillStyle = element.color || '#f59e0b'
-          ctx.fillRect(ex, ey, ew, eh)
-          // Draw stair lines
-          ctx.strokeStyle = 'rgba(255,255,255,0.4)'
-          ctx.lineWidth = 1
-          for (let i = 1; i <= 4; i++) {
-            ctx.beginPath()
-            ctx.moveTo(ex, ey + (eh / 5) * i)
-            ctx.lineTo(ex + ew, ey + (eh / 5) * i)
-            ctx.stroke()
-          }
-          ctx.fillStyle = element.textColor || '#ffffff'
-          ctx.font = `bold ${Math.max(4, 6 * scaleE)}px Arial`
-          ctx.textAlign = 'center'
-          ctx.textBaseline = 'middle'
-          ctx.fillText('STAIRS', ex + ew / 2, ey + eh / 2)
+            ctx.fillText('STAIRS', ex + ew / 2, ey + eh / 2)
+          })
         } else if (element.type === 'door') {
-          ctx.fillStyle = element.color || '#10b981'
-          ctx.fillRect(ex, ey, ew, eh)
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.color || '#10b981'
+            ctx.fillRect(ex, ey, ew, eh)
+          })
         } else if (element.type === 'wall') {
-          ctx.fillStyle = element.color || '#334155'
-          ctx.fillRect(ex, ey, ew, eh)
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.color || '#334155'
+            ctx.fillRect(ex, ey, ew, eh)
+          })
         } else if (element.type === 'text') {
-          ctx.fillStyle = element.textColor || element.color || '#1e293b'
-          ctx.font = `${(element.fontSize || 12) * scaleE}px Arial`
-          ctx.textAlign = 'left'
-          ctx.textBaseline = 'top'
-          ctx.fillText(element.label || '', ex, ey)
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.textColor || element.color || '#1e293b'
+            ctx.font = `${(element.fontSize || 12) * scaleE}px Arial`
+            ctx.textAlign = 'left'
+            ctx.textBaseline = 'top'
+            ctx.fillText(element.label || '', ex, ey)
+          })
         } else if (element.type === 'icon') {
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
           const iconType = element.iconType || ''
           const lowLabel = (element.label || '').toLowerCase()
           const cx = ex + ew / 2
@@ -2712,15 +2858,18 @@ export default function MapViewerPage() {
             ctx.textBaseline = 'top'
             ctx.fillText(element.label, cx, ey + eh + 2 * scaleE)
           }
+          }) // end drawRotatedCanvas for icon
         } else if (element.type === 'shape') {
-          ctx.fillStyle = element.color || '#10b981'
-          if (element.shapeType === 'circle') {
-            ctx.beginPath()
-            ctx.arc(ex + ew / 2, ey + eh / 2, Math.min(ew, eh) / 2, 0, Math.PI * 2)
-            ctx.fill()
-          } else {
-            ctx.fillRect(ex, ey, ew, eh)
-          }
+          drawRotatedCanvas(element, ex, ey, ew, eh, () => {
+            ctx.fillStyle = element.color || '#10b981'
+            if (element.shapeType === 'circle') {
+              ctx.beginPath()
+              ctx.arc(ex + ew / 2, ey + eh / 2, Math.min(ew, eh) / 2, 0, Math.PI * 2)
+              ctx.fill()
+            } else {
+              ctx.fillRect(ex, ey, ew, eh)
+            }
+          })
         }
 
         ctx.globalAlpha = previousAlpha
@@ -2821,7 +2970,8 @@ export default function MapViewerPage() {
 
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
-  }, [canvasElements, canvasSize, exportSettings, showScheduleOverlay, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasElements, canvasSize, exportSettings, showScheduleOverlay, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan, layerVisibility, roomAllocations, currentTime, selectedDay])
 
   // Re-render preview when settings change
   useEffect(() => {
@@ -2872,11 +3022,11 @@ export default function MapViewerPage() {
           pdf.addImage('/app-icon.png', 'PNG', wmX, wmY, wmSize, wmSize)
         } catch (e) {
           pdf.setFillColor(22, 163, 74)
-          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 1.5, wmSize * 1.5, 'F')
+          pdf.roundedRect(wmX, wmY, wmSize, wmSize, wmSize * 0.12, wmSize * 0.12, 'F')
           pdf.setTextColor(255, 255, 255)
-          pdf.setFontSize(wmSize * 2.2)
+          pdf.setFontSize(wmSize * 1.4)
           pdf.setFont('helvetica', 'bold')
-          pdf.text('Q', wmX + wmSize * 0.26, wmY + wmSize * 0.75)
+          pdf.text('Q', wmX + wmSize * 0.32, wmY + wmSize * 0.65)
         }
 
         pdf.restoreGraphicsState()
@@ -2888,44 +3038,42 @@ export default function MapViewerPage() {
       // We'll draw this later in the footer section
 
       // ===== COMPACT TITLE & INFO =====
-      const titleX = margin
-      const titleY = margin + 16 // Adjusted to account for removed logo space
+      const titleY = margin + 10
 
       pdf.setFontSize(exportSettings.titleFontSize || 20)
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(15, 23, 42)
       const title = exportSettings.title || floorPlanName || `${selectedBuilding}`
       const titleW = pdf.getTextWidth(title)
-      pdf.text(title, (pageWidth - titleW) / 2, margin + 10) // Move title higher
+      pdf.text(title, (pageWidth - titleW) / 2, titleY)
 
-      // Smaller info row to save space
       let infoY = titleY + 6
-      pdf.setFontSize(9)
+
+      // Schedule subtitle — shown right after title (matches preview order)
+      if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
+        pdf.setFontSize(9)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(71, 85, 105)
+        const subW = pdf.getTextWidth(exportSettings.subtitle)
+        pdf.text(exportSettings.subtitle, (pageWidth - subW) / 2, infoY)
+        infoY += 5
+      }
+
+      // Building / Floor / Date — all on ONE compact line to match preview
+      pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(100, 116, 139)
+      pdf.setTextColor(148, 163, 184)
 
       const parts: string[] = []
       if (exportSettings.buildingLabel) parts.push(`Building: ${exportSettings.buildingLabel}`)
       if (exportSettings.floorName) parts.push(`Floor: ${exportSettings.floorName}`)
-      if (exportSettings.floorNumber) parts.push(`Floor #: ${exportSettings.floorNumber}`)
+      if (exportSettings.floorNumber) parts.push(`# ${exportSettings.floorNumber}`)
+      if (exportSettings.showDate) parts.push(`Generated: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`)
 
-      const infoText = parts.join('  |  ')
-      const infoW = pdf.getTextWidth(infoText)
-      pdf.text(infoText, (pageWidth - infoW) / 2, infoY)
-      infoY += 4
-
-      if (exportSettings.showScheduleInfo && exportSettings.subtitle) {
-        pdf.setFontSize(8)
-        const subW = pdf.getTextWidth(exportSettings.subtitle)
-        pdf.text(exportSettings.subtitle, (pageWidth - subW) / 2, infoY)
-        infoY += 4
-      }
-
-      if (exportSettings.showDate) {
-        pdf.setFontSize(8)
-        const dateText = `Exported: ${new Date().toLocaleDateString()}`
-        const dateW = pdf.getTextWidth(dateText)
-        pdf.text(dateText, (pageWidth - dateW) / 2, infoY)
+      if (parts.length) {
+        const infoText = parts.join('  •  ')
+        const infoW = pdf.getTextWidth(infoText)
+        pdf.text(infoText, (pageWidth - infoW) / 2, infoY)
         infoY += 4
       }
 
@@ -2964,14 +3112,14 @@ export default function MapViewerPage() {
       }
 
       const visibleElements = canvasElements.filter(el => isLayerVisible(el.id))
-      const bounds = visibleElements.length > 0
-        ? visibleElements.reduce((acc, el) => ({
-          minX: Math.min(acc.minX, el.x),
-          minY: Math.min(acc.minY, el.y),
-          maxX: Math.max(acc.maxX, el.x + el.width),
-          maxY: Math.max(acc.maxY, el.y + el.height),
-        }), { minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY, maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY })
-        : { minX: 0, minY: 0, maxX: canvasSize.width, maxY: canvasSize.height }
+      const bounds = getExportBounds(visibleElements)
+
+      // Add small padding so elements aren't flush against the edge
+      const padPdf = Math.max((bounds.maxX - bounds.minX), (bounds.maxY - bounds.minY)) * 0.02
+      bounds.minX -= padPdf
+      bounds.minY -= padPdf
+      bounds.maxX += padPdf
+      bounds.maxY += padPdf
 
       const boundsW = Math.max(1, bounds.maxX - bounds.minX)
       const boundsH = Math.max(1, bounds.maxY - bounds.minY)
@@ -3344,19 +3492,34 @@ export default function MapViewerPage() {
     }
   }
 
-  // Helper: hex to rgb
-  const hexToRgb = (hex: string) => {
-    let r = 0, g = 0, b = 0
-    if (hex.length === 4) {
-      r = parseInt(hex[1] + hex[1], 16)
-      g = parseInt(hex[2] + hex[2], 16)
-      b = parseInt(hex[3] + hex[3], 16)
-    } else if (hex.length === 7) {
-      r = parseInt(hex.substring(1, 3), 16)
-      g = parseInt(hex.substring(3, 5), 16)
-      b = parseInt(hex.substring(5, 7), 16)
+  // Helper: hex to rgb — handles #RGB, #RRGGBB, rgb(), named colors, and fallbacks
+  const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+    if (!hex || typeof hex !== 'string') return { r: 0, g: 0, b: 0 }
+
+    // Handle rgb()/rgba() strings
+    const rgbMatch = hex.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+    if (rgbMatch) {
+      return { r: parseInt(rgbMatch[1]), g: parseInt(rgbMatch[2]), b: parseInt(rgbMatch[3]) }
     }
-    return { r, g, b }
+
+    // Strip # prefix
+    let h = hex.startsWith('#') ? hex.slice(1) : hex
+
+    // Expand shorthand #RGB → RRGGBB
+    if (h.length === 3) {
+      h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]
+    }
+
+    if (h.length === 6 && /^[0-9a-fA-F]{6}$/.test(h)) {
+      return {
+        r: parseInt(h.substring(0, 2), 16),
+        g: parseInt(h.substring(2, 4), 16),
+        b: parseInt(h.substring(4, 6), 16)
+      }
+    }
+
+    // Fallback for named colors or unknown formats
+    return { r: 0, g: 0, b: 0 }
   }
 
   const getContrastColor = (hex: string) => {
@@ -3377,15 +3540,15 @@ export default function MapViewerPage() {
     setShowShareModal(true)
   }
 
-  // Filter rooms in toolbox
-  const filteredRooms = allRooms.filter(room =>
+  // Filter rooms in toolbox (memoised so we don't re-filter on every render)
+  const filteredRooms = useMemo(() => allRooms.filter(room =>
     !searchQuery ||
     room.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     room.room_code?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  ), [allRooms, searchQuery])
 
-  // Get legend items based on rooms on canvas
-  const legendItems = Array.from(new Set(
+  // Get legend items based on rooms on canvas (memoised)
+  const legendItems = useMemo(() => Array.from(new Set(
     canvasElements
       .filter(el => el.type === 'room' && el.linkedRoomData)
       .map(el => normalizeRoomType(el.linkedRoomData?.room_type))
@@ -3395,6 +3558,7 @@ export default function MapViewerPage() {
       ...getRoomColor(type)
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
+  , [canvasElements])
 
   // Check if room is on canvas
   const isRoomOnCanvas = (roomId: number) => {
@@ -3514,7 +3678,7 @@ export default function MapViewerPage() {
               </select>
             </div>
 
-            {/* Mode Toggle - Three Modes */}
+            {/* Mode Toggle */}
             <div className={styles.modeToggle}>
               <button
                 className={`${styles.modeBtn} ${viewMode === 'editor' ? styles.active : ''}`}
@@ -3523,14 +3687,6 @@ export default function MapViewerPage() {
               >
                 <Edit size={16} />
                 Editor
-              </button>
-              <button
-                className={`${styles.modeBtn} ${viewMode === 'floorplan' ? styles.active : ''}`}
-                onClick={() => setViewMode('floorplan')}
-                title="Floor Plan Mode - View only"
-              >
-                <Map size={16} />
-                Floor Plan
               </button>
               <button
                 className={`${styles.modeBtn} ${viewMode === 'live' ? styles.active : ''}`}
@@ -3554,7 +3710,28 @@ export default function MapViewerPage() {
           </div>
 
           <div className={styles.headerRight}>
-            {(viewMode === 'live' || viewMode === 'floorplan') && (
+            {!isMobile && (
+              <>
+                <button
+                  className={styles.loadBtn}
+                  onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+                  title={leftPanelOpen ? 'Hide Toolbox Sidebar' : 'Show Toolbox Sidebar'}
+                >
+                  {leftPanelOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+                </button>
+                <button
+                  className={styles.loadBtn}
+                  onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                  title={rightPanelOpen ? 'Hide Properties/Layers Sidebar' : 'Show Properties/Layers Sidebar'}
+                >
+                  {rightPanelOpen
+                    ? <PanelLeftClose size={18} style={{ transform: 'scaleX(-1)' }} />
+                    : <PanelLeftOpen size={18} style={{ transform: 'scaleX(-1)' }} />}
+                </button>
+              </>
+            )}
+
+            {viewMode === 'live' && (
               <div className={styles.scheduleSelector}>
                 <Calendar size={16} />
                 <select
@@ -3600,20 +3777,61 @@ export default function MapViewerPage() {
             >
               <FolderOpen size={18} />
             </button>
-            {viewMode === 'editor' && (
-              <button className={styles.saveBtn} onClick={() => setShowSaveModal(true)} disabled={saving} id="map-save-btn">
-                {saving ? <RotateCcw size={18} className={styles.spinning} /> : <Save size={18} />}
-                <span className={styles.actionLabel}>Save</span>
+            <div className={styles.adminActionsWrap} ref={adminActionsRef}>
+              <button
+                className={`${styles.saveBtn} ${styles.adminActionsBtn}`}
+                ref={adminActionsButtonRef}
+                onClick={() => setShowAdminActionsMenu(prev => !prev)}
+                aria-expanded={showAdminActionsMenu}
+                aria-haspopup="menu"
+                title="Admin Actions"
+              >
+                <Share2 size={18} />
               </button>
-            )}
-            <button className={styles.exportBtn} onClick={openExportPreview}>
-              <Download size={18} />
-              <span className={styles.actionLabel}>Export PDF</span>
-            </button>
-            <button className={styles.shareBtn} onClick={generateShareLink} id="map-share-btn">
-              <Share2 size={18} />
-              <span className={styles.actionLabel}>Share</span>
-            </button>
+
+              {showAdminActionsMenu && (
+                <div className={styles.adminActionsMenu} role="menu" style={{ top: adminMenuPosition.top, left: adminMenuPosition.left }}>
+                  <button
+                    id="map-save-btn"
+                    className={styles.adminActionItem}
+                    onClick={() => {
+                      setShowAdminActionsMenu(false)
+                      setShowSaveModal(true)
+                    }}
+                    disabled={viewMode !== 'editor' || saving}
+                    role="menuitem"
+                  >
+                    {saving ? <RotateCcw size={16} className={styles.spinning} /> : <Save size={16} />}
+                    <span>Save</span>
+                  </button>
+
+                  <button
+                    className={styles.adminActionItem}
+                    onClick={() => {
+                      setShowAdminActionsMenu(false)
+                      openExportPreview()
+                    }}
+                    role="menuitem"
+                  >
+                    <Download size={16} />
+                    <span>Export PDF</span>
+                  </button>
+
+                  <button
+                    id="map-share-btn"
+                    className={styles.adminActionItem}
+                    onClick={() => {
+                      setShowAdminActionsMenu(false)
+                      generateShareLink()
+                    }}
+                    role="menuitem"
+                  >
+                    <Share2 size={16} />
+                    <span>Share</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -4785,7 +5003,7 @@ export default function MapViewerPage() {
                       {/* Legend */}
                       <div className={styles.legend}>
                         <h4>LEGEND</h4>
-                        {showScheduleOverlay && (viewMode === 'live' || viewMode === 'floorplan') && (
+                        {showScheduleOverlay && viewMode === 'live' && (
                           <div className={styles.availabilityLegend}>
                             <div className={styles.legendItem}>
                               <div className={`${styles.availabilityDotLegend} ${styles.available}`} />

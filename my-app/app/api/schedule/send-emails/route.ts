@@ -25,18 +25,11 @@ const supabase = new Proxy({} as ReturnType<typeof createClient>, {
 })
 
 export async function POST(req: NextRequest) {
-  console.log('\n' + '='.repeat(80))
-  console.log('📧 POST /api/schedule/send-emails')
-  console.log('='.repeat(80))
-
   try {
     const body = await req.json()
     const { schedule_summary_id } = body
 
-    console.log(`Schedule ID: ${schedule_summary_id}`)
-
     if (!schedule_summary_id) {
-      console.warn('❌ Missing schedule_summary_id')
       return NextResponse.json(
         { error: 'schedule_summary_id required' },
         { status: 400 }
@@ -44,7 +37,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch batches
-    console.log('\n📊 Fetching schedule_batches from Supabase...')
     const { data: batches, error: batchError } = await supabase
       .from('schedule_batches')
       .select('*')
@@ -59,21 +51,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (!batches?.length) {
-      console.warn('❌ No batches found')
       return NextResponse.json(
         { error: 'No batches found for this schedule' },
         { status: 404 }
       )
     }
 
-    console.log(`✅ Found ${batches.length} batches`)
-
     // Collect participant IDs
     const participantIds = batches.flatMap(b => b.participant_ids || [])
-    console.log(`\n👥 Collecting ${participantIds.length} participant IDs from batches...`)
 
     if (!participantIds.length) {
-      console.warn('❌ No participant IDs found')
       return NextResponse.json(
         { error: 'No participants found in batches' },
         { status: 404 }
@@ -81,7 +68,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch participants
-    console.log('\n👤 Fetching participant details from Supabase...')
     const { data: participants, error: partError } = await supabase
       .from('participants')
       .select('id, name, email, participant_number, is_pwd')
@@ -96,17 +82,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (!participants?.length) {
-      console.warn('❌ No participants found')
       return NextResponse.json(
         { error: 'No participants found' },
         { status: 404 }
       )
     }
 
-    console.log(`✅ Found ${participants.length} participants`)
-
     // Build email recipients
-    console.log('\n📧 Building email recipient list...')
     const emailRecipients = participants
       .filter(p => p.email && p.email.trim())
       .map(p => {
@@ -126,7 +108,6 @@ export async function POST(req: NextRequest) {
 
 
     if (!emailRecipients.length) {
-      console.warn('❌ No valid email addresses')
       return NextResponse.json(
         { error: 'No valid email addresses found' },
         { status: 400 }
@@ -144,9 +125,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log(`\n✅ SUCCESS: ${result.message}`)
-    console.log('='.repeat(80) + '\n')
-
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -154,8 +132,7 @@ export async function POST(req: NextRequest) {
       failed: result.failed,
     })
   } catch (error: any) {
-    console.error('❌ CRITICAL ERROR:', error)
-    console.log('='.repeat(80) + '\n')
+    console.error('Email send error:', error?.message)
     return NextResponse.json(
       { error: error?.message || 'Internal server error' },
       { status: 500 }

@@ -85,8 +85,6 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
   const handleRestore = async (item: ArchivedItem) => {
     setActionLoading(true)
     try {
-      console.log('Restoring item:', item.item_type, item.item_name, item.item_data)
-
       // Handle different item types for restoration
       if (item.item_type === 'csv_file') {
         // For CSV files (campuses/class_schedules), restore all records

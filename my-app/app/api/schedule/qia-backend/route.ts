@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import type { Database } from '@/lib/database.types'
 
 // Backend URLs - Use environment variable first, then Render, then localhost for development
@@ -11,20 +9,6 @@ const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
 
 // Determine if we're in production (Vercel)
 const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
-const shouldSaveDebugPayload = process.env.QIA_DEBUG_SAVE_PAYLOAD === 'true'
-
-async function saveBackendPayloadDebug(payload: unknown) {
-  if (!shouldSaveDebugPayload) return
-
-  const debugPayloadPath = path.join(process.cwd(), 'backend', 'last_payload.json')
-
-  try {
-    await writeFile(debugPayloadPath, JSON.stringify(payload, null, 2), 'utf8')
-    console.log('📝 Debug payload saved to:', debugPayloadPath)
-  } catch (error: any) {
-    console.warn('⚠️ Debug payload save skipped:', error?.message || error)
-  }
-}
 
 // Cache-busting wrapper to prevent Next.js from caching Supabase requests
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
@@ -222,7 +206,6 @@ function convertClassesToSections(classes: ClassData[], courseRequirements: Map<
  * Convert frontend rooms to backend format
  */
 function convertRoomsToBackend(rooms: RoomData[], roomFeatures: Map<number, string[]>): any[] {
-  console.log('🔄 Converting rooms - first room sample:', JSON.stringify(rooms[0] || {}, null, 2))
   return rooms.map(room => ({
     id: room.id,
     room_code: `${room.building}-${room.room}`,
@@ -694,7 +677,6 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
 
         if (!allocError) {
           savedToDatabase = true
-          console.log(`✅ Saved ${roomAllocations.length} allocations to database`)
         } else {
           console.error('Error saving allocations:', allocError)
         }
@@ -833,16 +815,6 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🚀 [QIA Backend Bridge] Request received')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📋 Schedule Name:', body.schedule_name)
-    console.log('🏢 Rooms:', body.rooms?.length)
-    console.log('📚 Classes:', body.classes?.length)
-    console.log('👨‍🏫 Teachers:', body.teachers?.length)
-    console.log('⏰ Time Slots:', body.time_slots?.length)
-    console.log('📅 Active Days:', body.active_days?.join(', '))
-    console.log('🎛️ Config:', JSON.stringify(body.config, null, 2))
 
     // Validate request
     if (!body.schedule_name || !body.rooms || !body.classes) {
@@ -869,8 +841,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ==================== Fetch Feature Tags from Database ====================
-    console.log('🏷️ Fetching room features and course requirements...')
+    // Fetch Feature Tags from Database
 
     // Fetch room features (room_id -> list of feature tag names)
     const roomIds = body.rooms.map(r => r.id)
@@ -897,10 +868,9 @@ export async function POST(request: NextRequest) {
             roomFeatures.get(roomId)!.push(tagName)
           }
         })
-        console.log(`   ✅ Found features for ${roomFeatures.size} rooms`)
       }
     } catch (e) {
-      console.warn('   ⚠️ Could not fetch room features (table may not exist yet)')
+      // Room features table may not exist yet
     }
 
     // Fetch course requirements (course_id -> categorized required feature tag names)
@@ -937,10 +907,9 @@ export async function POST(request: NextRequest) {
             }
           }
         })
-        console.log(`   ✅ Found requirements for ${courseRequirements.size} courses`)
       }
     } catch (e) {
-      console.warn('   ⚠️ Could not fetch course requirements')
+      // Course requirements table may not exist yet
     }
     // ===========================================================================
 
@@ -985,12 +954,6 @@ export async function POST(request: NextRequest) {
         }
       })
       .filter((alloc): alloc is NonNullable<typeof alloc> => alloc !== null)
-
-    console.log('🔄 Data converted for Python backend')
-    console.log('   Sections:', sections.length)
-    console.log('   Rooms:', rooms.length)
-    console.log('   Time Slots:', timeSlots.length)
-    console.log('   First room converted:', JSON.stringify(rooms[0], null, 2))
 
     // Prepare payload for Python backend
     // Parse lunch times from "HH:MM" format to hours
@@ -1040,18 +1003,6 @@ export async function POST(request: NextRequest) {
       fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
-    console.log('📡 Trying to connect to Python backend...')
-    console.log('🌐 Online Days:', body.online_days?.join(', ') || 'None')
-    console.log('🍽️ Lunch Mode:', backendPayload.lunch_mode)
-    if (backendPayload.lunch_mode !== 'auto') {
-      console.log('🍽️ Lunch Time:', `${backendPayload.lunch_start_hour}:00 - ${backendPayload.lunch_end_hour}:00`)
-    } else {
-      console.log('🍽️ Auto: 1hr mandatory break after 6hrs consecutive')
-    }
-    console.log('🔬 Strict Lab Matching:', backendPayload.strict_lab_room_matching)
-    console.log('✂️ Allow Split Sessions:', backendPayload.allow_split_sessions)
-    console.log('🌍 Environment:', isProduction ? 'Production' : 'Development')
-
     // In production (Vercel): Try Render first, then env URL
     // In development: Try local first, then Render
     const backendUrls = isProduction
@@ -1075,12 +1026,8 @@ export async function POST(request: NextRequest) {
     let usedBackendUrl = ''
     let lastError: any = null
 
-    await saveBackendPayloadDebug(backendPayload)
-
     for (const backend of uniqueBackendUrls) {
       try {
-        console.log(`🔄 Attempting ${backend.type} backend: ${backend.url}`)
-
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
           headers: {
@@ -1092,7 +1039,6 @@ export async function POST(request: NextRequest) {
         })
 
         usedBackendUrl = backend.url
-        console.log(`✅ Connected to ${backend.type} backend successfully`)
         break // Success, exit the loop
 
       } catch (fetchError: any) {
@@ -1120,13 +1066,9 @@ export async function POST(request: NextRequest) {
 
     if (!backendResponse) {
       // Fallback: Generate schedule locally using simple round-robin
-      console.log('⚠️ No backend available, using fallback local scheduler')
       const fallbackResult = await generateFallbackSchedule(body, sections, rooms, timeSlots)
       return NextResponse.json(fallbackResult)
     }
-
-    console.log('📨 Backend response status:', backendResponse.status)
-    console.log('🎯 Using backend:', usedBackendUrl)
 
     if (!backendResponse.ok) {
       const errorText = await backendResponse.text()
@@ -1150,10 +1092,6 @@ export async function POST(request: NextRequest) {
     }
 
     const backendResult = await backendResponse.json()
-    console.log('✅ Backend processing successful!')
-    console.log('   Schedule ID:', backendResult.schedule_id)
-    console.log('   Scheduled:', backendResult.scheduled_classes, '/', backendResult.total_classes)
-    console.log('   Unscheduled:', backendResult.unscheduled_classes)
 
     // Convert backend response to frontend format
     const frontendResult = convertBackendResultToFrontend(
@@ -1162,15 +1100,10 @@ export async function POST(request: NextRequest) {
       body.rooms
     )
 
-    console.log('🎉 Request completed successfully')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
     return NextResponse.json(frontendResult)
 
   } catch (error: any) {
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.error('❌ [QIA Backend Bridge] Fatal error:', error)
-    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('[QIA Backend Bridge] Fatal error:', error)
 
     return NextResponse.json(
       {

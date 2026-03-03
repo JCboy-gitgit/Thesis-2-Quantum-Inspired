@@ -403,9 +403,6 @@ export default function UploadCSVPage(): JSX.Element {
           file_name: roomFile.name
         }
       }).filter(room => room.room && room.building) // Filter out completely empty rows
-
-      console.log('Inserting room data:', roomData.length, 'rows')
-
       const { data: insertedData, error: insertError } = await supabase
         .from('campuses' as any)
         .insert(roomData as any)
@@ -419,9 +416,6 @@ export default function UploadCSVPage(): JSX.Element {
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-
-      console.log('Room insert result:', insertedData.length, 'rows inserted')
-
       setRoomMessage(
         `Rooms uploaded successfully!\n` +
         `School: ${roomSchoolName}\n` +
@@ -620,9 +614,6 @@ export default function UploadCSVPage(): JSX.Element {
           }
         })
       }
-
-      console.log('Inserting class schedule data:', classData.length, 'rows')
-
       const { data: insertedData, error: insertError } = await supabase
         .from('class_schedules')
         .insert(classData as any)
@@ -636,9 +627,6 @@ export default function UploadCSVPage(): JSX.Element {
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-
-      console.log('Class schedule insert result:', insertedData.length, 'rows inserted')
-
       setClassMessage(
         `✅ Degree Program Courses uploaded successfully!\n` +
         `College & Program: ${degreeProgramName}\n` +
@@ -731,9 +719,6 @@ export default function UploadCSVPage(): JSX.Element {
           updated_at: new Date().toISOString()
         }
       })
-
-      console.log('Inserting faculty profiles data:', facultyData.length, 'rows with upload_group_id:', nextGroupId)
-
       // Insert into faculty_profiles table (each upload is a separate group)
       const { data: insertedData, error: insertError } = await supabase
         .from('faculty_profiles')
@@ -748,9 +733,6 @@ export default function UploadCSVPage(): JSX.Element {
       if (!insertedData || insertedData.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
-
-      console.log('Faculty profiles insert result:', insertedData.length, 'rows inserted')
-
       // Count by type
       const typeCounts = facultyData.reduce((acc: any, f) => {
         acc[f.role] = (acc[f.role] || 0) + 1

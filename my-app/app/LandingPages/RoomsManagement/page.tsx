@@ -213,7 +213,6 @@ export default function RoomsManagementPage() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'campuses' },
         (payload) => {
-          console.log('[Realtime] campuses change:', payload.eventType)
           // Refetch data on any change
           fetchCampusFiles()
           if (selectedFile) {
@@ -222,7 +221,6 @@ export default function RoomsManagementPage() {
         }
       )
       .subscribe((status) => {
-        console.log('[Realtime] campuses subscription:', status)
       })
 
     return () => {
@@ -804,14 +802,11 @@ export default function RoomsManagementPage() {
         })
 
       // Delete all rooms in this file
-      console.log('Deleting file with upload_group_id:', fileToDelete.upload_group_id)
       const { data, error } = await supabase
         .from('campuses')
         .delete()
         .eq('upload_group_id', fileToDelete.upload_group_id)
         .select()
-
-      console.log('Delete file result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')

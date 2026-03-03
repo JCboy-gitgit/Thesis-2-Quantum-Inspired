@@ -94,8 +94,6 @@ export default function FacultyAssignmentModal({
       const allFacultyData = data.faculty || []
       const eligibleIds: string[] = data.eligibleIds || []
 
-      console.log(`[FacultyModal] ✅ Loaded ${allFacultyData.length} faculty profiles via API`)
-
       // Count current scheduled classes per faculty (by name since room_allocations has no teacher_id)
       const loadCounts = new Map<string, number>()
       allAllocations.forEach(a => {

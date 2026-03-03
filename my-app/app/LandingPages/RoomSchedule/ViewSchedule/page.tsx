@@ -625,8 +625,7 @@ export default function ViewSchedulePage() {
         console.error('Error fetching generated_schedules:', scheduleError)
         setSchedules([])
       } else {
-        // No schedules found in generated_schedules
-        console.log('No schedules found in generated_schedules table')
+        // No schedules found
         setSchedules([])
       }
     } catch (error) {
@@ -723,14 +722,6 @@ export default function ViewSchedulePage() {
             }
           }
         }
-
-        // Debug: Log all allocations
-        console.log('=== ViewSchedule Data Debug ===');
-        console.log('Total allocations fetched:', enrichedAllocations.length);
-        console.log('Sample allocation:', enrichedAllocations[0]);
-        enrichedAllocations.forEach((a: any, i: number) => {
-          console.log(`Alloc ${i + 1}: ${a.course_code} | ${a.section} | ${a.room} | ${a.schedule_day} | ${a.schedule_time}`);
-        });
 
         // Extract unique buildings, rooms, sections and teachers
         const uniqueBuildings: string[] = [...new Set(enrichedAllocations.map((a: any) => a.building).filter((b: any): b is string => !!b))]
@@ -1770,9 +1761,6 @@ export default function ViewSchedulePage() {
 
   // Handler for faculty assignment
   const handleFacultyAssign = (allocation: RoomAllocation) => {
-    console.log('?? Faculty Assign button clicked!', allocation)
-    console.log('?? Approved Faculty count:', approvedFaculty.length)
-    console.log('?? Is schedule locked?', selectedSchedule?.is_locked)
     setSelectedAllocation(allocation)
     setShowFacultyAssignModal(true)
   }

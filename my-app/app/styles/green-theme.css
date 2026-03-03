@@ -812,26 +812,12 @@
     border-left-color: #02353C !important;
 }
 
-/* View Schedule option hover */
-[data-theme="green"] .viewScheduleOption:hover {
-    background: rgba(2, 53, 60, 0.1) !important;
-    color: #02353C !important;
-}
+/* View Schedule option hover - removed dead selector */
 
 /* Capacity Badge - make visible on green background */
 [data-theme="green"] .capacityBadge {
     background: rgba(2, 53, 60, 0.12) !important;
     color: #02353C !important;
-}
-
-/* Add Room Button and Save buttons - ensure they stand out */
-[data-theme="green"] .saveBtnSmall {
-    background: linear-gradient(135deg, #02353C 0%, #044a54 100%) !important;
-    box-shadow: 0 2px 8px rgba(2, 53, 60, 0.3) !important;
-}
-
-[data-theme="green"] .saveBtnSmall:hover {
-    box-shadow: 0 4px 12px rgba(2, 53, 60, 0.4) !important;
 }
 
 /* Room Icon in room cards */

@@ -215,8 +215,6 @@ export default function ScheduleDetailsModal({ scheduleId, isOpen, onClose }: Sc
   const fetchScheduleDetails = async () => {
     setLoading(true)
     try {
-      console.log(`📥 Fetching schedule details for ID: ${scheduleId}`)
-
       // Fetch schedule summary
       const { data: summaryData, error: summaryError } = await supabase
         .from('schedule_summary')
@@ -249,9 +247,7 @@ export default function ScheduleDetailsModal({ scheduleId, isOpen, onClose }: Sc
         schedule_summary_id: scheduleId
       }, 'batch_number')
 
-      console.log(`✅ Fetched ${batches.length} batches`)
-
-      // ✅ CORRECT: Calculate time slot statistics from actual batch data
+      // Calculate time slot statistics from actual batch data
       const timeSlotMap = new Map<string, TimeSlotInfo>()
       
       batches.forEach((batch: any) => {
@@ -277,11 +273,6 @@ export default function ScheduleDetailsModal({ scheduleId, isOpen, onClose }: Sc
       const sortedTimeSlots = Array.from(timeSlotMap.values()).sort((a, b) => 
         a.startTime.localeCompare(b.startTime)
       )
-
-      console.log(`📊 Found ${sortedTimeSlots.length} unique time slots:`)
-      sortedTimeSlots.forEach((slot, idx) => {
-        console.log(`   Slot ${idx + 1}: ${slot.timeRange} - ${slot.participantCount} participants in ${slot.batchCount} batches`)
-      })
 
       // Fetch assignments
       const assignments = await fetchAllRows('schedule_assignments', {
@@ -413,10 +404,8 @@ export default function ScheduleDetailsModal({ scheduleId, isOpen, onClose }: Sc
         firstFloorRooms: allRooms.filter((r: Room) => r.is_first_floor).length,
         totalDays: uniqueDates.size,
         slotsPerDay: Math.round(uniqueSlots.size / uniqueDates.size),
-        timeSlots: sortedTimeSlots  // ✅ Use actual time slots from batches
+        timeSlots: sortedTimeSlots
       })
-
-      console.log('✅ Schedule details loaded successfully')
 
     } catch (error) {
       console.error('❌ Error fetching schedule details:', error)
@@ -544,8 +533,6 @@ export default function ScheduleDetailsModal({ scheduleId, isOpen, onClose }: Sc
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
-      console.log('✅ CSV exported successfully')
     } catch (error) {
       console.error('❌ Error exporting CSV:', error)
       alert('Failed to export CSV. Please try again.')

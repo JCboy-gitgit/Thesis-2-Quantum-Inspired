@@ -341,7 +341,6 @@ export default function AdminDashboard() {
           }
           onlineFacultyData = []
         } else {
-          console.log('Online faculty fallback data:', fallbackData?.length, 'faculty found')
           onlineFacultyData = fallbackData || []
         }
       }

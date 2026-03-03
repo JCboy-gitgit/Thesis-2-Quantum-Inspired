@@ -329,9 +329,6 @@ function calculateSwapCost(allocation: any, oldRoom: RoomData, newRoom: RoomData
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
-    console.log('[QIA Schedule] Request received:', body.schedule_name)
-    console.log('[QIA Schedule] Rooms:', body.rooms?.length, 'Classes:', body.classes?.length)
-
     // Validate request
     if (!body.schedule_name || !body.rooms || !body.classes) {
       return NextResponse.json(
@@ -361,10 +358,6 @@ export async function POST(request: NextRequest) {
       body.teachers || [],
       body.config
     )
-
-    console.log('[QIA Schedule] Optimization complete:', result.stats)
-    console.log('[QIA Schedule] Allocations generated:', result.allocations.length)
-
     // Try to save to database
     let scheduleId: number | null = null
     let savedToDatabase = false
@@ -377,7 +370,6 @@ export async function POST(request: NextRequest) {
         .limit(1)
 
       if (checkError) {
-        console.log('[QIA Schedule] generated_schedules table may not exist:', checkError.message)
       } else {
         // Insert generated schedule record
         const { data: scheduleData, error: scheduleError } = await supabase
@@ -402,8 +394,6 @@ export async function POST(request: NextRequest) {
         } else if (scheduleData) {
           scheduleId = scheduleData.id
           savedToDatabase = true
-          console.log('[QIA Schedule] Schedule saved with ID:', scheduleId)
-
           // Insert room allocations
           if (result.allocations.length > 0) {
             const allocationsToInsert = result.allocations.map(a => ({
@@ -431,7 +421,6 @@ export async function POST(request: NextRequest) {
             if (allocError) {
               console.error('[QIA Schedule] Error saving allocations:', allocError)
             } else {
-              console.log('[QIA Schedule] Allocations saved:', allocationsToInsert.length)
             }
           }
         }

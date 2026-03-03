@@ -78,9 +78,7 @@ export async function GET(request: NextRequest) {
 
       if (matchingLoads.length > 0) {
         eligibleIds = [...new Set(matchingLoads.map((tl: any) => tl.faculty_id))]
-        console.log(`[faculty-list] Found ${eligibleIds.length} eligible faculty for "${courseCode}" via teaching_loads`)
       } else {
-        console.log(`[faculty-list] No teaching_loads match course "${courseCode}"`)
       }
 
       // Fallback: try class_id directly
@@ -88,7 +86,6 @@ export async function GET(request: NextRequest) {
         const directLoads = (teachingLoadsData || []).filter((tl: any) => tl.course_id === parseInt(classId))
         if (directLoads.length > 0) {
           eligibleIds = [...new Set(directLoads.map((tl: any) => tl.faculty_id))]
-          console.log(`[faculty-list] Found ${eligibleIds.length} faculty via class_id fallback`)
         }
       }
     }
@@ -125,9 +122,6 @@ export async function GET(request: NextRequest) {
       teachingLoadCount: facultyLoadMap.get(f.id)?.length || 0,
       teachingLoads: facultyLoadMap.get(f.id) || []
     }))
-
-    console.log(`[faculty-list] Loaded ${faculty.length} faculty profiles, ${eligibleIds.length} eligible for "${courseCode}"`)
-
     return NextResponse.json({
       success: true,
       faculty,

@@ -429,13 +429,10 @@ function FacultyListsContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Inserting faculty:', newFaculty)
       const { data, error } = await (supabase as any)
         .from('faculty_profiles')
         .insert([newFaculty])
         .select()
-
-      console.log('Insert result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -471,7 +468,6 @@ function FacultyListsContent() {
     setSaving(true)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Updating faculty ID:', selectedFaculty.id)
       const { data, error } = await (supabase as any)
         .from('faculty_profiles')
         .update({
@@ -489,8 +485,6 @@ function FacultyListsContent() {
         })
         .eq('id', selectedFaculty.id)
         .select()
-
-      console.log('Update result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -541,14 +535,11 @@ function FacultyListsContent() {
       }
 
       // Delete from faculty_profiles
-      console.log('Deleting faculty ID:', selectedFaculty.id)
       const { data, error } = await supabase
         .from('faculty_profiles')
         .delete()
         .eq('id', selectedFaculty.id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')

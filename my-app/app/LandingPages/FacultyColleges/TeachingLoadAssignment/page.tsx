@@ -269,7 +269,6 @@ function TeachingLoadAssignmentContent() {
       })
 
       const deduplicatedCourses = Array.from(uniqueCourses.values())
-      console.log('Fetched courses:', deduplicatedCourses.length, 'unique courses from', coursesData?.length || 0, 'total records')
       setCourses(deduplicatedCourses)
 
       // Fetch sections
@@ -280,7 +279,6 @@ function TeachingLoadAssignmentContent() {
         .order('section_name', { ascending: true })
 
       if (sectionsError) {
-        console.log('sections table may not exist:', sectionsError)
         setSections([])
       } else {
         setSections(sectionsData || [])
@@ -293,7 +291,6 @@ function TeachingLoadAssignmentContent() {
         .select('*')
 
       if (assignmentsError) {
-        console.log('section_course_assignments table may not exist:', assignmentsError)
         setSectionCourseAssignments([])
       } else {
         setSectionCourseAssignments(assignmentsData || [])
@@ -336,7 +333,6 @@ function TeachingLoadAssignmentContent() {
         .order('created_at', { ascending: false })
 
       if (loadsError) {
-        console.log('teaching_loads table may not exist:', loadsError)
         setTeachingLoads([])
         return
       }

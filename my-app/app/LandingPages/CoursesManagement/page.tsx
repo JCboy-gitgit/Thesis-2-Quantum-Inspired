@@ -325,14 +325,11 @@ function CoursesManagementContent() {
     try {
       // Update all courses in the upload group to the new college
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Moving courses in group:', movingGroupId, 'to college:', targetCollege)
       const { data, error } = await (supabase as any)
         .from('class_schedules')
         .update({ college: targetCollege })
         .eq('upload_group_id', movingGroupId)
         .select()
-
-      console.log('Move result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Move failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -679,13 +676,10 @@ function CoursesManagementContent() {
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        console.log('Creating course:', newData)
         const { data, error } = await (supabase as any)
           .from('class_schedules')
           .insert([newData])
           .select()
-
-        console.log('Insert result:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
           throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -698,14 +692,11 @@ function CoursesManagementContent() {
       } else {
         // Update existing course
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        console.log('Updating course ID:', editingId)
         const { data, error } = await (supabase as any)
           .from('class_schedules')
           .update({ ...formData, total_hours: total_hours })
           .eq('id', editingId)
           .select()
-
-        console.log('Update result:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
           throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -755,14 +746,11 @@ function CoursesManagementContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Deleting course ID:', id)
       const { data, error } = await (supabase as any)
         .from('class_schedules')
         .delete()
         .eq('id', id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -814,14 +802,11 @@ function CoursesManagementContent() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('Deleting upload group ID:', groupId)
       const { data, error } = await (supabase as any)
         .from('class_schedules')
         .delete()
         .eq('upload_group_id', groupId)
         .select()
-
-      console.log('Delete group result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         console.warn('No rows deleted - group may have been empty or RLS blocked the operation')

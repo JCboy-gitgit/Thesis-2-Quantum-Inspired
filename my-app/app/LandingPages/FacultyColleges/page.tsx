@@ -602,7 +602,6 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
-      console.log('Adding college:', collegeFormData)
       const { data, error } = await db
         .from('departments')
         .insert([{
@@ -617,8 +616,6 @@ function FacultyCollegesContent() {
           is_active: true
         }])
         .select()
-
-      console.log('Insert result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -645,7 +642,6 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
-      console.log('Updating college ID:', selectedCollege.id)
       const { data, error } = await db
         .from('departments')
         .update({
@@ -662,8 +658,6 @@ function FacultyCollegesContent() {
         })
         .eq('id', selectedCollege.id)
         .select()
-
-      console.log('Update result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -702,15 +696,11 @@ function FacultyCollegesContent() {
       } catch (archiveError) {
         console.warn('Could not archive college:', archiveError)
       }
-
-      console.log('Deleting college ID:', selectedCollege.id)
       const { data, error } = await db
         .from('departments')
         .delete()
         .eq('id', selectedCollege.id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -790,15 +780,11 @@ function FacultyCollegesContent() {
       } catch (archiveError) {
         console.warn('Could not archive file:', archiveError)
       }
-
-      console.log('Deleting file with upload_group_id:', selectedFile.upload_group_id)
       const { data, error } = await db
         .from('faculty_profiles')
         .delete()
         .eq('upload_group_id', selectedFile.upload_group_id)
         .select()
-
-      console.log('Delete file result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -826,14 +812,11 @@ function FacultyCollegesContent() {
     setMovingFile(true)
     try {
       // Update all faculty profiles in this file group to the new college
-      console.log('Moving file to college:', selectedMoveCollege)
       const { data, error } = await db
         .from('faculty_profiles')
         .update({ college: selectedMoveCollege })
         .eq('upload_group_id', movingFileGroup.upload_group_id)
         .select()
-
-      console.log('Move file result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Move failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -1033,8 +1016,6 @@ function FacultyCollegesContent() {
     }
 
     setSaving(true)
-    console.log('Updating faculty:', selectedFacultyProfile.id, facultyFormData)
-
     try {
       // First update faculty_profiles
       const { data: updatedFaculty, error: updateError } = await (supabase as any)
@@ -1059,9 +1040,6 @@ function FacultyCollegesContent() {
         console.error('Faculty update error:', updateError)
         throw new Error(`Database error: ${updateError.message}`)
       }
-
-      console.log('Faculty updated successfully:', updatedFaculty)
-
       // If email is provided, sync this data to the users table (for approved faculty)
       if (facultyFormData.email.trim()) {
         const { data: existingUser, error: userCheckError } = await supabase
@@ -1086,7 +1064,6 @@ function FacultyCollegesContent() {
           if (userUpdateError) {
             console.warn('Could not sync to user account:', userUpdateError)
           } else {
-            console.log('Synced faculty profile data to user account')
           }
         }
       }
@@ -1116,14 +1093,11 @@ function FacultyCollegesContent() {
     if (!selectedFacultyProfile) return
     setDeleting(true)
     try {
-      console.log('Deleting faculty ID:', selectedFacultyProfile.id)
       const { data, error } = await db
         .from('faculty_profiles')
         .delete()
         .eq('id', selectedFacultyProfile.id)
         .select()
-
-      console.log('Delete faculty result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -1211,8 +1185,6 @@ function FacultyCollegesContent() {
               updated_at: new Date().toISOString()
             })
             .eq('id', existingUser.id)
-
-          console.log('Synced new faculty profile data to user account')
         }
       }
 

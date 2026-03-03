@@ -124,8 +124,6 @@ export default function FacultyApprovalPage() {
 
     setActionLoading(userId)
     try {
-      console.log(`Processing ${action} for user:`, userId, user.email)
-
       const response = await fetch('/api/faculty-registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,8 +136,6 @@ export default function FacultyApprovalPage() {
       })
 
       const data = await response.json()
-      console.log('Approval response:', data)
-
       if (!response.ok || data.error) {
         throw new Error(data.error || data.details || `Failed to ${action} user`)
       }

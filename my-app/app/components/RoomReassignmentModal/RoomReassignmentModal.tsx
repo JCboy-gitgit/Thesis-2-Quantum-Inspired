@@ -120,7 +120,6 @@ export default function RoomReassignmentModal({
       if (!data.success) throw new Error(data.error || 'Failed to load rooms')
 
       const rooms = data.rooms || []
-      console.log(`[RoomModal] ✅ Loaded ${rooms.length} rooms via API`)
       setAllRooms(rooms)
 
       // Convert roomFeatures from object to Map
@@ -130,7 +129,6 @@ export default function RoomReassignmentModal({
           featureMap.set(Number(roomId), features)
         })
       }
-      console.log(`[RoomModal] ✅ ${featureMap.size} rooms have equipment data`)
       setRoomFeatures(featureMap)
 
       // Set course requirements

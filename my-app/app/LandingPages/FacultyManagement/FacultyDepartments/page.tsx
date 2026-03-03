@@ -229,7 +229,6 @@ export default function FacultyDepartmentsPage() {
       }
 
       if (modalMode === 'create') {
-        console.log('Creating department:', formData)
         const { data, error } = await (supabase
           .from('departments') as any)
           .insert([{
@@ -238,15 +237,12 @@ export default function FacultyDepartmentsPage() {
             updated_at: new Date().toISOString()
           }])
           .select()
-
-        console.log('Insert result:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
           throw new Error('Insert failed - database did not confirm the change. Check RLS policies in Supabase.')
         }
         setFormSuccess('Department created successfully!')
       } else {
-        console.log('Updating department ID:', editingId)
         const { data, error } = await (supabase
           .from('departments') as any)
           .update({
@@ -255,8 +251,6 @@ export default function FacultyDepartmentsPage() {
           })
           .eq('id', editingId)
           .select()
-
-        console.log('Update result:', { data, error })
         if (error) throw error
         if (!data || data.length === 0) {
           throw new Error('Update failed - database did not confirm the change. Check RLS policies in Supabase.')
@@ -298,14 +292,11 @@ export default function FacultyDepartmentsPage() {
       }
 
       // Then delete the department
-      console.log('Deleting department ID:', deleteConfirm.id)
       const { data, error } = await supabase
         .from('departments')
         .delete()
         .eq('id', deleteConfirm.id)
         .select()
-
-      console.log('Delete result:', { data, error })
       if (error) throw error
       if (!data || data.length === 0) {
         throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
