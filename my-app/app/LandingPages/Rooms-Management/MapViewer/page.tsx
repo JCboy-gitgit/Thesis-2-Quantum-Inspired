@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
+import LoadingFallback from '@/app/components/LoadingFallback'
 import { useTheme } from '@/app/context/ThemeContext'
 
 import styles from './styles.module.css'
@@ -3380,30 +3381,19 @@ export default function MapViewerPage() {
   }
 
   if (!mounted) {
-    return (
-      <div className={styles.layout} data-theme={globalTheme || 'green'}>
-        <div className={styles.authLoadingOverlay}>
-          <div className={styles.authLoadingContent}>
-            <RotateCcw size={48} className={styles.spinnerIcon} />
-            <h2>Loading...</h2>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingFallback message="Loading Map Viewer..." theme={globalTheme || 'green'} />
+  }
+
+  if (!authChecked) {
+    return <LoadingFallback message="Loading Map Viewer..." theme={globalTheme || 'green'} />
+  }
+
+  if (!isAuthorized) {
+    return <LoadingFallback message="Redirecting..." theme={globalTheme || 'green'} />
   }
 
   return (
     <div className={styles.layout} data-theme={globalTheme || 'green'}>
-      {/* Full page loading overlay during auth check */}
-      {(!authChecked || !isAuthorized) && (
-        <div className={styles.authLoadingOverlay}>
-          <div className={styles.authLoadingContent}>
-            <RotateCcw size={48} className={styles.spinnerIcon} />
-            <h2>{!authChecked ? 'Verifying access...' : 'Redirecting...'}</h2>
-          </div>
-        </div>
-      )}
-
       <MenuBar onToggleSidebar={toggleSidebar} showSidebarToggle={true} onMenuBarToggle={handleMenuBarToggle} />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

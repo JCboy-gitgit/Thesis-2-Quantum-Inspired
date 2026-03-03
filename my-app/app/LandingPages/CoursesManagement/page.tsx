@@ -824,7 +824,7 @@ function CoursesManagementContent() {
 
   // ==================== Render ====================
   if (!authorized) {
-    return <GlobalLoadingFallback message="Verifying admin access..." />
+    return <GlobalLoadingFallback message="Loading admin portal..." />
   }
 
   // Loading state

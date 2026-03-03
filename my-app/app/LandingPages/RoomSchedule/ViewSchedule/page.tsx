@@ -1835,7 +1835,7 @@ export default function ViewSchedulePage() {
   }
 
   if (!authChecked) {
-    return <LoadingFallback message="Verifying admin access..." />
+    return <LoadingFallback message="Loading admin portal..." />
   }
 
   if (!isAuthorized) {
@@ -1926,7 +1926,7 @@ export default function ViewSchedulePage() {
           {(!authChecked || loading) && (
             <div className={styles.loadingState}>
               <div className={styles.spinner}></div>
-              <p>{!authChecked ? 'Verifying access...' : 'Loading schedule history...'}</p>
+              <p>Loading schedule history...</p>
             </div>
           )}
 

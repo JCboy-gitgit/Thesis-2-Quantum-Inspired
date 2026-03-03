@@ -132,7 +132,7 @@ export default function AdminAlertsPage() {
   }
 
   if (!authorized) {
-    return <LoadingFallback message="Verifying admin access..." />
+    return <LoadingFallback message="Loading admin portal..." />
   }
 
   return (
