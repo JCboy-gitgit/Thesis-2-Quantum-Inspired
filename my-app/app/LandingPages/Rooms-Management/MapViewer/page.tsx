@@ -56,6 +56,7 @@ interface RoomAllocation {
   schedule_day: string
   schedule_time: string
   teacher_name?: string
+  faculty_name?: string
 }
 
 interface CanvasElement {
@@ -81,6 +82,7 @@ interface CanvasElement {
   isLocked?: boolean
   orientation?: 'horizontal' | 'vertical'  // For hallways
   opacity?: number  // 0-100 for transparency
+  textBackgroundOpacity?: number  // 0-100 for text label background only
   borderWidth?: number
 }
 
@@ -383,6 +385,7 @@ export default function MapViewerPage() {
   const [initialDragPositions, setInitialDragPositions] = useState<Record<string, { x: number; y: number }>>({})
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const ignoreUnsavedRef = useRef(false)
+  const changeVersionRef = useRef(0)
 
   // Interaction Ref to avoid stale state in high-frequency events (panning, dragging, resizing)
   const interactionRef = useRef({
@@ -476,8 +479,9 @@ export default function MapViewerPage() {
         label: item.label,
         color: item.color,
         borderColor: item.color,
-        textColor: isTextItem ? (item.color || '#1f2937') : getContrastColor(item.color || '#1f2937'),
-        iconColor: isTextItem ? (item.color || '#1f2937') : getContrastColor(item.color || '#1f2937'),
+        textColor: isTextItem ? '#1f2937' : getContrastColor(item.color || '#1f2937'),
+        iconColor: isTextItem ? '#1f2937' : getContrastColor(item.color || '#1f2937'),
+        textBackgroundOpacity: isTextItem ? 0 : undefined,
         zIndex: canvasElements.length + 1
       }
       setCanvasElements(prev => [...prev, newElement])
@@ -553,6 +557,7 @@ export default function MapViewerPage() {
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [liveRoomModalRoom, setLiveRoomModalRoom] = useState<Room | null>(null)
   const [showAdminActionsMenu, setShowAdminActionsMenu] = useState(false)
   const [adminMenuPosition, setAdminMenuPosition] = useState({ top: 0, left: 0 })
   const [showExportPreview, setShowExportPreview] = useState(false)
@@ -584,7 +589,7 @@ export default function MapViewerPage() {
     mapOffsetY: 0,
     labelsOffsetX: 0,
     labelsOffsetY: 0,
-    useWhiteBackground: true
+    useWhiteBackground: false
   })
 
   useEffect(() => {
@@ -714,6 +719,7 @@ export default function MapViewerPage() {
     })
 
     if (!isUndoRedoRef.current && !ignoreUnsavedRef.current) {
+      changeVersionRef.current += 1
       setHasUnsavedChanges(true)
     }
     ignoreUnsavedRef.current = false
@@ -758,6 +764,7 @@ export default function MapViewerPage() {
     iconType: '',
     fontSize: 14,
     opacity: 100,
+    textBackgroundOpacity: 0,
     borderWidth: 2
   })
 
@@ -881,6 +888,12 @@ export default function MapViewerPage() {
       return () => clearInterval(interval)
     }
   }, [viewMode])
+
+  useEffect(() => {
+    if (viewMode !== 'live') {
+      setLiveRoomModalRoom(null)
+    }
+  }, [viewMode, currentFloorPlan?.id])
 
   // Auto-fit zoom: calculate best zoom to fit canvas in viewport on mount/resize
   useEffect(() => {
@@ -1185,7 +1198,15 @@ export default function MapViewerPage() {
         rotation: Number(el.rotation) || 0,
         zIndex: Number(el.zIndex) || 1,
         opacity: el.opacity != null ? Number(el.opacity) : 100,
+        textBackgroundOpacity: el.textBackgroundOpacity != null
+          ? Number(el.textBackgroundOpacity)
+          : (el.text_background_opacity != null ? Number(el.text_background_opacity) : undefined),
         borderWidth: el.borderWidth != null ? Number(el.borderWidth) : 2,
+        color: el.color || el.fillColor || el.fill_color,
+        borderColor: el.borderColor || el.border_color,
+        textColor: el.textColor || el.text_color || el.fontColor || el.font_color,
+        iconColor: el.iconColor || el.icon_color,
+        fontSize: el.fontSize != null ? Number(el.fontSize) : (el.font_size != null ? Number(el.font_size) : undefined),
       }))
       setCanvasElements(normalizedElements)
     } else {
@@ -1348,6 +1369,10 @@ export default function MapViewerPage() {
       setSelectedElements(groupedSelection)
     }
 
+    const fallbackColor = getRoomColor(element.linkedRoomData?.room_type).bg
+    const resolvedTextColor = resolveElementTextColor(element, fallbackColor)
+    const textBackgroundOpacity = element.textBackgroundOpacity ?? (element.type === 'text' && !isTransparentColor(element.color) ? 35 : 0)
+
     // Always update edit form when focusing an element
     setEditForm({
       label: element.label || '',
@@ -1356,13 +1381,14 @@ export default function MapViewerPage() {
       height: element.height,
       x: element.x,
       y: element.y,
-      color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
-      textColor: element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
-      iconColor: element.iconColor || element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
+      color: element.color || fallbackColor,
+      textColor: element.textColor || resolvedTextColor,
+      iconColor: element.iconColor || element.textColor || resolvedTextColor,
       rotation: element.rotation,
       iconType: element.iconType || '',
       fontSize: element.fontSize || 14,
       opacity: element.opacity ?? 100,
+      textBackgroundOpacity,
       borderWidth: element.borderWidth ?? 2
     })
   }, [selectedElement, getGroupMemberIds])
@@ -1400,6 +1426,7 @@ export default function MapViewerPage() {
         iconType: editForm.iconType,
         fontSize: editForm.fontSize,
         opacity: editForm.opacity,
+        textBackgroundOpacity: editForm.textBackgroundOpacity,
         borderWidth: editForm.borderWidth
       })
     }, 50)
@@ -1524,6 +1551,10 @@ export default function MapViewerPage() {
     } else if (selectedElement?.id !== element.id && !(e.ctrlKey || e.metaKey || e.shiftKey || selectMode === 'multi')) {
       // If part of multi-selection but not primary, make it primary on drag start
       setSelectedElement(element)
+      const fallbackColor = getRoomColor(element.linkedRoomData?.room_type).bg
+      const resolvedTextColor = resolveElementTextColor(element, fallbackColor)
+      const textBackgroundOpacity = element.textBackgroundOpacity ?? (element.type === 'text' && !isTransparentColor(element.color) ? 35 : 0)
+
       setEditForm({
         label: element.label || '',
         type: element.type,
@@ -1531,13 +1562,14 @@ export default function MapViewerPage() {
         height: element.height,
         x: element.x,
         y: element.y,
-        color: element.color || getRoomColor(element.linkedRoomData?.room_type).bg,
-        textColor: element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
-        iconColor: element.iconColor || element.textColor || getContrastColor(element.color || getRoomColor(element.linkedRoomData?.room_type).bg),
+        color: element.color || fallbackColor,
+        textColor: element.textColor || resolvedTextColor,
+        iconColor: element.iconColor || element.textColor || resolvedTextColor,
         rotation: element.rotation,
         iconType: element.iconType || '',
         fontSize: element.fontSize || 14,
         opacity: element.opacity ?? 100,
+        textBackgroundOpacity,
         borderWidth: element.borderWidth ?? 2
       })
     }
@@ -2389,6 +2421,8 @@ export default function MapViewerPage() {
       setFloorPlanName(finalName)
     }
 
+    const saveStartedAtVersion = changeVersionRef.current
+
     try {
       setSaving(true)
 
@@ -2409,6 +2443,7 @@ export default function MapViewerPage() {
               iconType: editForm.iconType,
               fontSize: editForm.fontSize,
               opacity: editForm.opacity,
+              textBackgroundOpacity: editForm.textBackgroundOpacity,
               borderWidth: editForm.borderWidth
             }
             : el
@@ -2500,7 +2535,11 @@ export default function MapViewerPage() {
         }
       }
 
-      setHasUnsavedChanges(false)
+      if (changeVersionRef.current === saveStartedAtVersion) {
+        setHasUnsavedChanges(false)
+      } else {
+        setHasUnsavedChanges(true)
+      }
       setLastSavedAt(new Date())
       if (shouldCloseModal) {
         setShowSaveModal(false)
@@ -2527,7 +2566,6 @@ export default function MapViewerPage() {
     if (!autoSaveEnabled) return
     if (!hasUnsavedChanges) return
     if (saving) return
-    if (!currentFloorPlan?.id) return
 
     const autoSaveTimer = window.setTimeout(() => {
       void saveFloorPlan({
@@ -2544,7 +2582,6 @@ export default function MapViewerPage() {
     autoSaveEnabled,
     hasUnsavedChanges,
     saving,
-    currentFloorPlan?.id,
     canvasElements,
     floorPlanName,
     selectedBuilding,
@@ -2559,6 +2596,41 @@ export default function MapViewerPage() {
     selectedElement?.id,
     editForm,
   ])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const flushSave = () => {
+      if (!autoSaveEnabled) return
+      if (!hasUnsavedChanges) return
+      if (saving) return
+      if (viewMode !== 'editor') return
+
+      void saveFloorPlan({
+        silent: true,
+        refreshList: false,
+        closeModal: false,
+      })
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushSave()
+      }
+    }
+
+    const handlePageHide = () => {
+      flushSave()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePageHide)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
+    }
+  }, [mounted, autoSaveEnabled, hasUnsavedChanges, saving, viewMode, saveFloorPlan])
 
   const saveStateText = useMemo(() => {
     if (viewMode !== 'editor') return ''
@@ -2951,8 +3023,14 @@ export default function MapViewerPage() {
     }
 
     // Draw explicit canvas area to mirror editor canvas bounds in export.
-    ctx.fillStyle = exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff')
-    ctx.fillRect(canvasX, canvasY, canvasW, canvasH)
+    const exportCanvasIsTransparent = isTransparentColor(canvasBackground)
+    if (exportSettings.useWhiteBackground) {
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(canvasX, canvasY, canvasW, canvasH)
+    } else if (!exportCanvasIsTransparent) {
+      ctx.fillStyle = canvasBackground || '#ffffff'
+      ctx.fillRect(canvasX, canvasY, canvasW, canvasH)
+    }
     ctx.strokeStyle = '#e2e8f0'
     ctx.lineWidth = 1
     ctx.strokeRect(canvasX, canvasY, canvasW, canvasH)
@@ -2967,7 +3045,9 @@ export default function MapViewerPage() {
               const html2canvas = (await import('html2canvas')).default
               const snapshotScale = options?.canvas ? 4 : 2
               const snapshot = await html2canvas(sourceCanvasEl, {
-                backgroundColor: exportSettings.useWhiteBackground ? '#ffffff' : (canvasBackground || '#ffffff'),
+                backgroundColor: exportSettings.useWhiteBackground
+                  ? '#ffffff'
+                  : (isTransparentColor(canvasBackground) ? null : (canvasBackground || '#ffffff')),
                 width: sourceW,
                 height: sourceH,
                 scale: snapshotScale,
@@ -2992,13 +3072,6 @@ export default function MapViewerPage() {
                   doc.querySelectorAll(`.${styles.selected}, .${styles.dragging}, .${styles.resizing}`).forEach((el) => {
                     ; (el as HTMLElement).style.boxShadow = 'none'
                   })
-
-                  doc.querySelectorAll(`.${styles.element_text}`).forEach((el) => {
-                    const target = el as HTMLElement
-                    target.style.border = 'none'
-                    target.style.background = 'transparent'
-                    target.style.boxShadow = 'none'
-                  })
                 }
               })
 
@@ -3020,6 +3093,63 @@ export default function MapViewerPage() {
         ctx.drawImage(exportSnapshotRef.current, canvasX, canvasY, canvasW, canvasH)
       }
     }
+
+    // Reinforce labels in export preview/PDF so text and hallway callouts remain readable.
+    const visibleExportElements = [...canvasElements]
+      .filter((el) => isLayerVisible(el.id))
+      .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+
+    visibleExportElements.forEach((element) => {
+      const label = element.label?.trim()
+      if (!label) return
+      if (element.type !== 'text') return
+
+      const elementX = canvasX + element.x * scaleE
+      const elementY = canvasY + element.y * scaleE
+      const elementW = Math.max(1, element.width * scaleE)
+      const elementH = Math.max(1, element.height * scaleE)
+      const rotation = (element.rotation || 0) * Math.PI / 180
+      const textColor = resolveElementTextColor(element)
+
+      ctx.save()
+      ctx.translate(elementX + elementW / 2, elementY + elementH / 2)
+      if (rotation) {
+        ctx.rotate(rotation)
+      }
+
+      if (element.type === 'text') {
+        const textBgOpacity = element.textBackgroundOpacity ?? (!isTransparentColor(element.color) ? 35 : 0)
+        const hasTextBg = textBgOpacity > 0 && !isTransparentColor(element.color)
+        const boxPadding = Math.max(2, 4 * scaleE)
+        const boxW = elementW
+        const boxH = Math.max(elementH, 16 * scaleE)
+
+        if (hasTextBg) {
+          ctx.fillStyle = applyAlphaToColor(element.color || '#ffffff', textBgOpacity / 100)
+          ctx.strokeStyle = element.borderColor && !isTransparentColor(element.borderColor)
+            ? element.borderColor
+            : '#94a3b8'
+          ctx.lineWidth = Math.max(0.75, 1 * scaleE)
+          ctx.beginPath()
+          if (ctx.roundRect) {
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, Math.max(2, 3 * scaleE))
+          } else {
+            ctx.rect(-boxW / 2, -boxH / 2, boxW, boxH)
+          }
+          ctx.fill()
+          ctx.stroke()
+        }
+
+        ctx.fillStyle = textColor
+        ctx.font = `${Math.max(8, (element.fontSize || 14) * scaleE)}px Arial`
+        ctx.textAlign = element.textAlign || 'center'
+        ctx.textBaseline = 'middle'
+        const textX = element.textAlign === 'left' ? (-boxW / 2 + boxPadding) : element.textAlign === 'right' ? (boxW / 2 - boxPadding) : 0
+        ctx.fillText(label, textX, 0, boxW - boxPadding * 2)
+      }
+
+      ctx.restore()
+    })
 
     // Keep document labels above map layer as a movable top overlay.
     drawDocumentLabels()
@@ -3304,6 +3434,58 @@ export default function MapViewerPage() {
     const { r, g, b } = hexToRgb(hex)
     const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
     return (yiq >= 128) ? '#1e293b' : '#ffffff'
+  }
+
+  const isTransparentColor = (value?: string) => {
+    if (!value) return true
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, '')
+    return (
+      normalized === 'transparent' ||
+      normalized === '#0000' ||
+      normalized === '#00000000' ||
+      normalized === 'rgba(0,0,0,0)' ||
+      normalized === 'hsla(0,0%,0%,0)'
+    )
+  }
+
+  const resolveElementTextColor = (element: CanvasElement, fallbackBackground: string = '#e5e7eb') => {
+    const explicitTextColor = element.textColor
+    if (explicitTextColor && !isTransparentColor(explicitTextColor)) {
+      return explicitTextColor
+    }
+
+    if (element.type === 'text') {
+      const textBgOpacity = element.textBackgroundOpacity ?? (!isTransparentColor(element.color) ? 35 : 0)
+      if (textBgOpacity > 0 && element.color && !isTransparentColor(element.color)) {
+        return getContrastColor(element.color)
+      }
+      return '#1f2937'
+    }
+
+    const bg = !isTransparentColor(element.color) ? element.color : fallbackBackground
+    return getContrastColor(bg)
+  }
+
+  const resolveLayerSwatchColor = (element: CanvasElement) => {
+    if (element.type === 'text') {
+      return resolveElementTextColor(element, '#ffffff')
+    }
+
+    if (element.color && !isTransparentColor(element.color)) {
+      return element.color
+    }
+
+    if (element.borderColor && !isTransparentColor(element.borderColor)) {
+      return element.borderColor
+    }
+
+    return resolveElementTextColor(element)
+  }
+
+  const applyAlphaToColor = (hex: string, alpha: number): string => {
+    const { r, g, b } = hexToRgb(hex)
+    const a = Math.max(0, Math.min(1, alpha))
+    return `rgba(${r}, ${g}, ${b}, ${a})`
   }
 
   // Generate shareable link
@@ -4083,6 +4265,19 @@ export default function MapViewerPage() {
                       const isResizing = resizingElement === element.id
                       const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
                       const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
+                      const isActiveTextSelection = element.type === 'text' && viewMode === 'editor' && selectedElement?.id === element.id
+                      const textPreviewColor = isActiveTextSelection ? editForm.color : element.color
+                      const textPreviewBgOpacity = isActiveTextSelection
+                        ? editForm.textBackgroundOpacity
+                        : (element.textBackgroundOpacity ?? (!isTransparentColor(element.color) ? 35 : 0))
+                      const textHasBackground = element.type === 'text' && textPreviewBgOpacity > 0 && !isTransparentColor(textPreviewColor)
+                      const resolvedTextColor = isActiveTextSelection
+                        ? ((editForm.textColor && !isTransparentColor(editForm.textColor))
+                          ? editForm.textColor
+                          : (textHasBackground
+                            ? getContrastColor(textPreviewColor || '#e5e7eb')
+                            : '#1f2937'))
+                        : resolveElementTextColor(element)
 
                       return (
                         <div
@@ -4093,14 +4288,28 @@ export default function MapViewerPage() {
                             top: element.y,
                             width: element.width,
                             height: element.height,
-                            backgroundColor: element.color,
-                            borderColor: element.borderColor,
-                            borderWidth: element.borderWidth ?? 2,
+                            backgroundColor: element.type === 'text'
+                              ? (textHasBackground
+                                ? applyAlphaToColor(textPreviewColor || '#ffffff', textPreviewBgOpacity / 100)
+                                : 'transparent')
+                              : element.color,
+                            borderColor: element.type === 'text'
+                              ? (textHasBackground ? (element.borderColor || '#94a3b8') : 'transparent')
+                              : element.borderColor,
+                            borderWidth: element.type === 'text'
+                              ? (textHasBackground ? (element.borderWidth ?? 1) : 0)
+                              : (element.borderWidth ?? 2),
+                            borderRadius: element.type === 'text' ? (textHasBackground ? 6 : 0) : undefined,
                             opacity: (element.opacity ?? 100) / 100,
                             transform: element.rotation ? `rotate(${element.rotation}deg)` : undefined,
                             zIndex: element.zIndex ?? 1
                           }}
-                          onClick={(e) => handleElementClick(element, e)}
+                          onClick={(e) => {
+                            handleElementClick(element, e)
+                            if (viewMode === 'live' && element.type === 'room' && element.linkedRoomData) {
+                              setLiveRoomModalRoom(element.linkedRoomData)
+                            }
+                          }}
                           onMouseDown={(e) => viewMode === 'editor' && !element.isLocked && handleElementDragStart(e, element)}
                           onTouchStart={(e) => viewMode === 'editor' && !element.isLocked && handleTouchStart(e, element)}
                           onContextMenu={(e) => {
@@ -4118,14 +4327,14 @@ export default function MapViewerPage() {
                               <span
                                 className={styles.elementLabel}
                                 style={{
-                                  color: element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                                  color: resolvedTextColor,
                                   fontSize: element.fontSize || undefined
                                 }}
                               >
                                 {element.label}
                               </span>
                               {element.linkedRoomData && (
-                                <span className={styles.elementCapacity} style={{ color: element.textColor || getContrastColor(element.color || '#e5e7eb') }}>
+                                <span className={styles.elementCapacity} style={{ color: resolvedTextColor }}>
                                   <Users size={10} /> {element.linkedRoomData.capacity}
                                 </span>
                               )}
@@ -4142,13 +4351,16 @@ export default function MapViewerPage() {
                             </>
                           )}
                           {element.type === 'text' && (
-                            <span className={styles.textLabel} style={{ fontSize: (selectedElement?.id === element.id ? editForm.fontSize : element.fontSize), color: (selectedElement?.id === element.id ? (editForm.textColor || editForm.color || '#1f2937') : (element.textColor || element.color || '#1f2937')) }}>
+                            <span className={styles.textLabel} style={{
+                              fontSize: (selectedElement?.id === element.id ? editForm.fontSize : element.fontSize),
+                              color: resolvedTextColor
+                            }}>
                               {selectedElement?.id === element.id ? editForm.label : element.label}
                             </span>
                           )}
                           {element.type === 'hallway' && (
                             <>
-                              <span className={styles.hallwayLabel} style={{ color: element.textColor || '#4b5563' }}>{element.label}</span>
+                              <span className={styles.hallwayLabel} style={{ color: resolvedTextColor }}>{element.label}</span>
                               {viewMode === 'editor' && (
                                 <button
                                   className={styles.orientationBtn}
@@ -4165,8 +4377,8 @@ export default function MapViewerPage() {
                           )}
                           {element.type === 'stair' && (
                             <>
-                              <Footprints size={20} color={element.iconColor || element.textColor || '#ffffff'} />
-                              <span style={{ color: element.textColor || '#ffffff' }}>{element.label}</span>
+                              <Footprints size={20} color={element.iconColor || resolvedTextColor} />
+                              <span style={{ color: resolvedTextColor }}>{element.label}</span>
                             </>
                           )}
                           {element.type === 'door' && (
@@ -4175,7 +4387,7 @@ export default function MapViewerPage() {
                           {element.type === 'icon' && (
                             <div className={styles.iconElement}>
                               {getIconComponent(element.iconType || 'info', 28, element.iconColor || element.textColor || element.color)}
-                              {element.label && <span style={{ color: element.textColor || '#374151' }}>{element.label}</span>}
+                              {element.label && <span style={{ color: resolvedTextColor }}>{element.label}</span>}
                             </div>
                           )}
                           {element.type === 'shape' && (
@@ -4540,6 +4752,30 @@ export default function MapViewerPage() {
                                   />
                                 </div>
                               </div>
+
+                              {selectedElement.type === 'text' && (
+                                <div className={styles.propertyGroup}>
+                                  <label>Text Background Opacity</label>
+                                  <div className={styles.rotationInput}>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={editForm.textBackgroundOpacity}
+                                      onChange={(e) => setEditForm(p => ({ ...p, textBackgroundOpacity: Number(e.target.value) }))}
+                                    />
+                                    <span>{editForm.textBackgroundOpacity}%</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className={styles.loadBtn}
+                                    style={{ width: '100%', marginTop: 8 }}
+                                    onClick={() => setEditForm(p => ({ ...p, textBackgroundOpacity: 0 }))}
+                                  >
+                                    Plain Text (No Background)
+                                  </button>
+                                </div>
+                              )}
 
                               {(selectedElement.type === 'room' || selectedElement.type === 'text' || selectedElement.type === 'hallway' || selectedElement.type === 'stair' || selectedElement.type === 'icon') && (
                                 <div className={styles.propertyGroup}>
@@ -4971,6 +5207,10 @@ export default function MapViewerPage() {
                           [...canvasElements]
                             .sort((a, b) => b.zIndex - a.zIndex)
                             .map((element, index) => (
+                              (() => {
+                                const layerTextColor = resolveElementTextColor(element)
+                                const layerSwatchColor = resolveLayerSwatchColor(element)
+                                return (
                               <div
                                 key={element.id}
                                 className={`${styles.layerItem} ${selectedElement?.id === element.id ? styles.selected : ''} ${!isLayerVisible(element.id) ? styles.hidden : ''}`}
@@ -4984,8 +5224,8 @@ export default function MapViewerPage() {
                                     x: element.x,
                                     y: element.y,
                                     color: element.color || '',
-                                    textColor: element.textColor || getContrastColor(element.color || '#e5e7eb'),
-                                    iconColor: element.iconColor || element.textColor || getContrastColor(element.color || '#e5e7eb'),
+                                    textColor: layerTextColor,
+                                    iconColor: element.iconColor || layerTextColor,
                                     rotation: element.rotation,
                                     iconType: element.iconType || '',
                                     fontSize: element.fontSize || 14,
@@ -5000,9 +5240,9 @@ export default function MapViewerPage() {
                                 <div className={styles.layerInfo}>
                                   <div
                                     className={styles.layerColorDot}
-                                    style={{ backgroundColor: element.color || '#3b82f6' }}
+                                    style={{ backgroundColor: layerSwatchColor || '#3b82f6' }}
                                   />
-                                  <span className={styles.layerName}>
+                                  <span className={styles.layerName} style={element.type === 'text' ? { color: layerTextColor } : undefined}>
                                     {element.label || element.type}
                                   </span>
                                   <span className={styles.layerType}>
@@ -5042,6 +5282,8 @@ export default function MapViewerPage() {
                                   </button>
                                 </div>
                               </div>
+                                )
+                              })()
                             ))
                         )}
                       </div>
@@ -5994,6 +6236,16 @@ export default function MapViewerPage() {
         </div>
       )}
 
+      {viewMode === 'live' && liveRoomModalRoom && (
+        <AdminLiveRoomModal
+          room={liveRoomModalRoom}
+          availability={getRoomAvailability(liveRoomModalRoom.room)}
+          currentClass={getCurrentClass(liveRoomModalRoom.room)}
+          roomAllocations={roomAllocations}
+          onClose={() => setLiveRoomModalRoom(null)}
+        />
+      )}
+
       {/* Notification */}
       {
         notification && (
@@ -6005,6 +6257,208 @@ export default function MapViewerPage() {
           </div>
         )
       }
+    </div>
+  )
+}
+
+interface AdminLiveRoomModalProps {
+  room: Room
+  availability: 'available' | 'occupied' | 'unknown'
+  currentClass: RoomAllocation | null
+  roomAllocations: RoomAllocation[]
+  onClose: () => void
+}
+
+function AdminLiveRoomModal({
+  room,
+  availability,
+  currentClass,
+  roomAllocations,
+  onClose
+}: AdminLiveRoomModalProps) {
+  const [activeTab, setActiveTab] = useState<'details' | 'schedule' | 'images'>('details')
+  const [roomImages, setRoomImages] = useState<any[]>([])
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0)
+  const [loadingImages, setLoadingImages] = useState(true)
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+
+  useEffect(() => {
+    const fetchRoomImages = async () => {
+      try {
+        setLoadingImages(true)
+        const { data, error } = await db
+          .from('room_images')
+          .select('*')
+          .eq('room_id', room.id)
+          .order('uploaded_at', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching room images:', error)
+        } else {
+          setRoomImages(data || [])
+          setSelectedImageIdx(0)
+        }
+      } catch (error) {
+        console.error('Error fetching room images:', error)
+      } finally {
+        setLoadingImages(false)
+      }
+    }
+
+    fetchRoomImages()
+  }, [room.id])
+
+  const roomSchedules = roomAllocations.filter((allocation) => allocation.room === room.room)
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.liveRoomModal} onClick={(event) => event.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div>
+            <h2>{room.room}</h2>
+            <p className={styles.liveRoomSubtitle}>{room.building}</p>
+          </div>
+          <button onClick={onClose} aria-label="Close room details">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className={`${styles.liveRoomStatusBadge} ${styles[availability]}`}>
+          {availability === 'available' ? (
+            <><CheckCircle size={15} /> Available Now</>
+          ) : availability === 'occupied' ? (
+            <><AlertTriangle size={15} /> In Use</>
+          ) : (
+            <><Clock size={15} /> Status Unknown</>
+          )}
+        </div>
+
+        <div className={styles.liveRoomTabs}>
+          <button
+            className={`${styles.liveRoomTabBtn} ${activeTab === 'details' ? styles.liveRoomTabActive : ''}`}
+            onClick={() => setActiveTab('details')}
+          >
+            <Info size={15} /> Details
+          </button>
+          <button
+            className={`${styles.liveRoomTabBtn} ${activeTab === 'schedule' ? styles.liveRoomTabActive : ''}`}
+            onClick={() => setActiveTab('schedule')}
+          >
+            <Calendar size={15} /> Schedule ({roomSchedules.length})
+          </button>
+          <button
+            className={`${styles.liveRoomTabBtn} ${activeTab === 'images' ? styles.liveRoomTabActive : ''}`}
+            onClick={() => setActiveTab('images')}
+          >
+            <Eye size={15} /> Photos ({roomImages.length})
+          </button>
+        </div>
+
+        <div className={styles.liveRoomBody}>
+          {activeTab === 'details' && (
+            <div className={styles.liveRoomDetailsGrid}>
+              <div className={styles.liveRoomDetailItem}><Building2 size={14} /><span>{room.building}</span></div>
+              <div className={styles.liveRoomDetailItem}><Square size={14} /><span>{room.room_type || 'General'}</span></div>
+              <div className={styles.liveRoomDetailItem}><Users size={14} /><span>Capacity: {room.capacity || 'Unknown'}</span></div>
+              <div className={styles.liveRoomDetailItem}><Layers size={14} /><span>Floor: {room.floor_number || 'N/A'}</span></div>
+
+              {currentClass && (
+                <div className={styles.liveRoomCurrentClass}>
+                  <h4>Currently in Use</h4>
+                  <p><strong>Course:</strong> {currentClass.course_code}</p>
+                  <p><strong>Section:</strong> {currentClass.section}</p>
+                  <p><strong>Time:</strong> {currentClass.schedule_time}</p>
+                  {(currentClass.teacher_name || currentClass.faculty_name) && (
+                    <p><strong>Teacher:</strong> {currentClass.teacher_name || currentClass.faculty_name}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'schedule' && (
+            roomSchedules.length === 0 ? (
+              <div className={styles.emptyState}>
+                <Calendar size={28} />
+                <p>No scheduled classes</p>
+              </div>
+            ) : (
+              <div className={styles.liveRoomScheduleList}>
+                {roomSchedules.map((allocation, index) => (
+                  <div key={`${allocation.id ?? index}-${allocation.course_code}-${allocation.schedule_time}`} className={styles.liveRoomScheduleItem}>
+                    <div className={styles.liveRoomScheduleTime}>
+                      <Clock size={13} /> {allocation.schedule_time}
+                    </div>
+                    <div className={styles.liveRoomScheduleDetails}>
+                      <div className={styles.liveRoomScheduleCourse}>{allocation.course_code}</div>
+                      <div>{allocation.section}</div>
+                      <div>{allocation.schedule_day}</div>
+                      {(allocation.teacher_name || allocation.faculty_name) && (
+                        <div>{allocation.teacher_name || allocation.faculty_name}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {activeTab === 'images' && (
+            loadingImages ? (
+              <div className={styles.emptyState}>
+                <RefreshCw size={28} className={styles.spinning} />
+                <p>Loading images...</p>
+              </div>
+            ) : roomImages.length === 0 ? (
+              <div className={styles.emptyState}>
+                <ImageIcon size={28} />
+                <p>No photos available yet</p>
+              </div>
+            ) : (
+              <div className={styles.liveRoomImagesWrap}>
+                <div className={styles.liveRoomImageViewer}>
+                  <img
+                    src={roomImages[selectedImageIdx]?.image_url}
+                    alt={`Room ${room.room}`}
+                    className={styles.liveRoomMainImage}
+                    onError={(event) => {
+                      (event.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23e5e7eb" width="300" height="200"/%3E%3Ctext x="50%25" y="50%25" font-size="16" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E'
+                    }}
+                  />
+                  {roomImages[selectedImageIdx]?.caption && (
+                    <p className={styles.liveRoomImageCaption}>{roomImages[selectedImageIdx].caption}</p>
+                  )}
+                </div>
+
+                {roomImages.length > 1 && (
+                  <div className={styles.liveRoomImageNav}>
+                    <button
+                      className={styles.liveRoomImageNavBtn}
+                      onClick={() => setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)}
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span>{selectedImageIdx + 1} / {roomImages.length}</span>
+                    <button
+                      className={styles.liveRoomImageNavBtn}
+                      onClick={() => setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   )
 }

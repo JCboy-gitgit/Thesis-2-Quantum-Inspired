@@ -3956,6 +3956,208 @@
   border-top: 2px solid var(--border-color);
 }
 
+.liveRoomModal {
+  width: min(920px, 96vw);
+  max-height: 90vh;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.liveRoomSubtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-medium);
+}
+
+.liveRoomStatusBadge {
+  margin: 14px 24px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveRoomTabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 24px 0;
+  flex-wrap: wrap;
+}
+
+.liveRoomTabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  color: var(--content-text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.liveRoomTabBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.liveRoomTabActive {
+  border-color: var(--primary);
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
+.liveRoomBody {
+  padding: 16px 24px 24px;
+  overflow: auto;
+}
+
+.liveRoomDetailsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.liveRoomDetailItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--content-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.liveRoomCurrentClass {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.liveRoomCurrentClass h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--content-text);
+}
+
+.liveRoomCurrentClass p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--content-text);
+}
+
+.liveRoomScheduleList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liveRoomScheduleItem {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-white);
+  overflow: hidden;
+}
+
+.liveRoomScheduleTime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-alpha);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.liveRoomScheduleDetails {
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--content-text);
+}
+
+.liveRoomScheduleCourse {
+  font-weight: 700;
+}
+
+.liveRoomImagesWrap {
+  display: grid;
+  gap: 12px;
+}
+
+.liveRoomImageViewer {
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.liveRoomMainImage {
+  width: 100%;
+  height: min(52vh, 380px);
+  object-fit: cover;
+  display: block;
+  background: var(--bg-gray-100);
+}
+
+.liveRoomImageCaption {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-medium);
+}
+
+.liveRoomImageNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.liveRoomImageNavBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  color: var(--content-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.liveRoomImageNavBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  .liveRoomDetailsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cancelBtn,
 .saveModalBtn {
   display: flex;

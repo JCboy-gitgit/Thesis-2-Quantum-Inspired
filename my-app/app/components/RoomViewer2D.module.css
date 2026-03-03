@@ -55,13 +55,29 @@
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1000;
+  height: 100dvh;
+  z-index: 110000;
   border-radius: 0;
   margin: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.container:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  border-radius: 0;
+  margin: 0;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--card-bg, rgba(15, 23, 42, 0.95));
+}
+
+.container:fullscreen::backdrop {
+  background: #020617;
 }
 
 .header {
@@ -430,6 +446,11 @@
   cursor: grabbing;
 }
 
+.canvasScaleWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .container.fullscreen .canvasWrapper {
   min-height: unset;
   height: 100%;
@@ -442,6 +463,7 @@
   position: relative;
   /* background controlled by inline style from saved backgroundColor */
   border-radius: 8px;
+  overflow: hidden;
 }
 
 /* Canvas elements */
@@ -484,8 +506,8 @@
 }
 
 .canvasElement.hallway {
-  background: #d1d5db !important;
-  border: 2px dashed #9ca3af !important;
+  background: #d1d5db;
+  border: 2px dashed #9ca3af;
 }
 
 .canvasElement.hallway.vertical {
@@ -499,8 +521,8 @@
 }
 
 .canvasElement.text {
-  background: transparent !important;
-  border: none !important;
+  background: transparent;
+  border: none;
   font-weight: 500;
 }
 
@@ -1563,16 +1585,14 @@
 }
 
 :global([data-theme="dark"]) .canvasElement.hallway {
-  background: rgba(100, 116, 139, 0.4) !important;
-  border-color: rgba(148, 163, 184, 0.5) !important;
+  /* hallway colors come from saved element style */
 }
 
 :global([data-theme="dark"]) .canvasElement.text {
-  color: #f1f5f9;
+  /* text color comes from saved element style */
 }
 
 :global([data-theme="dark"]) .elementLabel {
-  color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
@@ -2153,18 +2173,16 @@
 
 :global([data-theme="dark"]) .canvasElement.hallway,
 :global([data-theme="green"]) .canvasElement.hallway {
-  background: rgba(55, 65, 81, 0.5) !important;
-  border-color: #4b5563 !important;
+  /* hallway colors come from saved element style */
 }
 
 :global([data-theme="dark"]) .canvasElement.text,
 :global([data-theme="green"]) .canvasElement.text {
-  color: #ffffff !important;
+  /* text color comes from saved element style */
 }
 
 :global([data-theme="dark"]) .elementLabel,
 :global([data-theme="green"]) .elementLabel {
-  color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
 }
 
@@ -2507,6 +2525,50 @@
   min-height: 200px;
 }
 
+.scheduleActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.timetableBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--college-primary, #00d4ff);
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.15));
+  color: var(--college-primary, #00d4ff);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timetableBtn:hover {
+  background: var(--college-primary, #00d4ff);
+  color: #ffffff;
+}
+
+.scheduleSectionBlock {
+  margin-bottom: 16px;
+}
+
+.scheduleSectionTitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--college-primary, #00d4ff);
+}
+
+.scheduleEmptyText {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .scheduleList {
   display: flex;
   flex-direction: column;
@@ -2561,6 +2623,117 @@
   font-size: 12px;
   color: var(--college-primary, #00d4ff);
   margin-top: 4px;
+}
+
+.timetableOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 120000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.timetableModal {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--card-bg, rgba(15, 23, 42, 0.98));
+  display: flex;
+  flex-direction: column;
+}
+
+.timetableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timetableTitle {
+  margin: 0;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.timetableSubtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.timetableGridWrap {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.timetableGrid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 980px;
+}
+
+.timetableGrid th,
+.timetableGrid td {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  vertical-align: top;
+}
+
+.timetableGrid th {
+  position: sticky;
+  top: 0;
+  background: rgba(15, 23, 42, 0.96);
+  color: #ffffff;
+  font-size: 12px;
+  padding: 10px 8px;
+  z-index: 2;
+}
+
+.timetableGrid td {
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  min-height: 56px;
+  height: 56px;
+}
+
+.timetableTimeCell {
+  width: 95px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--college-primary, #00d4ff);
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.timetableSlotContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timetableEntry {
+  border-radius: 6px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 212, 255, 0.16);
+  padding: 4px 6px;
+}
+
+.timetableCourse {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.timetableMeta {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.2;
 }
 
 /* Images Tab */
@@ -2727,6 +2900,57 @@
   color: #64748b;
 }
 
+:global([data-theme="light"]) .scheduleEmptyText {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .timetableModal {
+  background: rgba(255, 255, 255, 0.99);
+}
+
+:global([data-theme="light"]) .timetableHeader {
+  border-bottom-color: rgba(15, 23, 42, 0.14);
+}
+
+:global([data-theme="light"]) .timetableTitle {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .timetableSubtitle {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .timetableGrid th,
+:global([data-theme="light"]) .timetableGrid td {
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+:global([data-theme="light"]) .timetableGrid th {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .timetableGrid td {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+:global([data-theme="light"]) .timetableTimeCell {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+:global([data-theme="light"]) .timetableEntry {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+}
+
+:global([data-theme="light"]) .timetableCourse {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .timetableMeta {
+  color: #334155;
+}
+
 :global([data-theme="light"]) .detailValue {
   color: #0f172a;
 }
@@ -2796,5 +3020,26 @@
 
   .imageThumbnails {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .scheduleActions {
+    justify-content: stretch;
+  }
+
+  .timetableBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .timetableHeader {
+    padding: 14px;
+  }
+
+  .timetableTitle {
+    font-size: 17px;
+  }
+
+  .timetableSubtitle {
+    font-size: 12px;
   }
 }

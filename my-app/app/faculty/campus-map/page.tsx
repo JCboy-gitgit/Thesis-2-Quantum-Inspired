@@ -58,6 +58,7 @@ export default function FacultyCampusMapPage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
+  const [isCampusMapFullscreen, setIsCampusMapFullscreen] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
   const [emptyRoomMode, setEmptyRoomMode] = useState(false)
 
@@ -154,24 +155,26 @@ export default function FacultyCampusMapPage() {
     >
       {/* Sidebar */}
       <FacultySidebar
-        isOpen={sidebarOpen}
+        isOpen={isCampusMapFullscreen ? false : sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        menuBarHidden={isMenuBarHidden}
+        menuBarHidden={isMenuBarHidden || isCampusMapFullscreen}
       />
 
       {/* Main content area */}
       <div
         className={s.content}
-        style={{ marginLeft: isDesktop && sidebarOpen ? 250 : 0 }}
+        style={{ marginLeft: isCampusMapFullscreen ? 0 : (isDesktop && sidebarOpen ? 250 : 0) }}
       >
         {/* Menu bar */}
-        <FacultyMenuBar
-          onToggleSidebar={() => setSidebarOpen(o => !o)}
-          sidebarOpen={sidebarOpen}
-          isHidden={isMenuBarHidden}
-          onToggleHidden={setIsMenuBarHidden}
-          userEmail={user?.email}
-        />
+        {!isCampusMapFullscreen && (
+          <FacultyMenuBar
+            onToggleSidebar={() => setSidebarOpen(o => !o)}
+            sidebarOpen={sidebarOpen}
+            isHidden={isMenuBarHidden}
+            onToggleHidden={setIsMenuBarHidden}
+            userEmail={user?.email}
+          />
+        )}
 
         <main className={s.main}>
           {/* ─── Hero Banner ─── */}
@@ -305,7 +308,19 @@ export default function FacultyCampusMapPage() {
           {/* ─── Floor Plan Viewer ─── */}
           <div className={s.viewerCard}>
             <div className={s.viewerInner} style={{ height: 'calc(100vh - 360px)', minHeight: 430 }}>
-              <RoomViewer2D collegeTheme={collegeTheme} highlightEmpty={emptyRoomMode} />
+              <RoomViewer2D
+                collegeTheme={collegeTheme}
+                highlightEmpty={emptyRoomMode}
+                onToggleFullscreen={(nextIsFullscreen) => {
+                  setIsCampusMapFullscreen(nextIsFullscreen)
+                  if (nextIsFullscreen) {
+                    setSidebarOpen(false)
+                    setIsMenuBarHidden(true)
+                  } else {
+                    setIsMenuBarHidden(false)
+                  }
+                }}
+              />
             </div>
           </div>
         </main>
