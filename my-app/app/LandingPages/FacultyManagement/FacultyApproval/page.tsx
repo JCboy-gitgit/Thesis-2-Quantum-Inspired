@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { MdVerifiedUser as UserCheck, MdPersonOff as UserX, MdAccessTime as Clock, MdMail as Mail, MdCalendarToday as Calendar, MdCheckCircle as CheckCircle2, MdCancel as XCircle, MdError as AlertCircle, MdSearch as Search, MdFilterList as Filter, MdRefresh as RefreshCw, MdDelete as Trash2, MdPerson as User, MdDomain as Building2, MdLoop as Loader2, MdReplay as RotateCcw } from 'react-icons/md'
+import { MdVerifiedUser as UserCheck, MdPersonOff as UserX, MdAccessTime as Clock, MdMail as Mail, MdCalendarToday as Calendar, MdCheckCircle as CheckCircle2, MdCancel as XCircle, MdError as AlertCircle, MdSearch as Search, MdFilterList as Filter, MdRefresh as RefreshCw, MdDelete as Trash2, MdPerson as User, MdDomain as Building2, MdLoop as Loader2, MdReplay as RotateCcw, MdTableChart } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface FacultyRegistration {
@@ -64,7 +64,11 @@ export default function FacultyApprovalPage() {
     setLoading(true)
     try {
       const response = await fetchNoCache(`/api/faculty-registration?status=${filter}`)
-      const data = await response.json()
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to fetch registrations (${response.status})`)
+      }
 
       if (data.error) {
         throw new Error(data.error)
@@ -73,7 +77,11 @@ export default function FacultyApprovalPage() {
       // Hide the dummy system account from the approval list
       const cleanRegistrations = (data.registrations || []).filter(
         (reg: FacultyRegistration) => reg.email !== 'system_event_placeholder@qtime.local'
-      )
+      ).map((reg: FacultyRegistration) => ({
+        ...reg,
+        email: reg.email || 'No email provided',
+        full_name: reg.full_name || 'Not provided'
+      }))
 
       setRegistrations(cleanRegistrations)
     } catch (error: any) {
@@ -194,8 +202,8 @@ export default function FacultyApprovalPage() {
   }
 
   const filteredRegistrations = registrations.filter(reg =>
-    reg.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    reg.full_name.toLowerCase().includes(searchQuery.toLowerCase())
+    (reg.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (reg.full_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const pendingCount = registrations.filter(r => r.status === 'pending' || r.status === 'unconfirmed').length

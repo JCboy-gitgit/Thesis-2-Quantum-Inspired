@@ -133,17 +133,64 @@ export async function GET(request: NextRequest) {
 
     if (authError) {
       console.error('Auth error:', authError)
-      // Fallback: try to get from users table
-      let query = supabaseAdmin.from('users').select('*')
+      // Fallback: derive status from users.is_active + user_profiles.position
+      const { data: fallbackUsers, error: usersFallbackError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-      if (status !== 'all') {
-        query = query.eq('status', status)
+      if (usersFallbackError) throw usersFallbackError
+
+      const fallbackUserIds = (fallbackUsers || [])
+        .map((user: any) => user?.id)
+        .filter(Boolean)
+
+      let fallbackProfilesMap = new Map<string, any>()
+      if (fallbackUserIds.length > 0) {
+        const { data: fallbackProfiles, error: profilesFallbackError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('user_id, position')
+          .in('user_id', fallbackUserIds)
+
+        if (profilesFallbackError) {
+          console.error('Fallback profile fetch error:', profilesFallbackError)
+        } else {
+          fallbackProfilesMap = new Map((fallbackProfiles || []).map((p: any) => [p.user_id, p]))
+        }
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false })
+      const fallbackRegistrations = (fallbackUsers || [])
+        .map((user: any) => {
+          const profile = fallbackProfilesMap.get(user.id)
 
-      if (error) throw error
-      return NextResponse.json({ registrations: data || [] })
+          let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed' = 'pending'
+          if (profile?.position === 'REJECTED') {
+            userStatus = 'rejected'
+          } else if (user?.is_active === true || profile?.position === 'APPROVED') {
+            userStatus = 'approved'
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name || 'Not provided',
+            avatar_url: user.avatar_url || null,
+            created_at: user.created_at,
+            email_confirmed_at: null,
+            status: userStatus,
+            role: user.role || 'faculty',
+            department: user.department || null,
+            is_active: user?.is_active ?? false,
+            assigned_load_count: 0
+          }
+        })
+        .filter((user: any) => {
+          if (status === 'all') return true
+          if (status === 'pending') return user.status === 'pending' || user.status === 'unconfirmed'
+          return user.status === status
+        })
+
+      return NextResponse.json({ registrations: fallbackRegistrations })
     }
 
     // Filter by email confirmation status and role
