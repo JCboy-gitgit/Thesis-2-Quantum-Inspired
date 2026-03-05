@@ -159,9 +159,47 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      let fallbackAssignedLoadCountMap = new Map<string, number>()
+      try {
+        const { data: fallbackTeachingLoads } = await supabaseAdmin
+          .from('teaching_loads')
+          .select('faculty_id')
+
+        if (fallbackTeachingLoads && Array.isArray(fallbackTeachingLoads)) {
+          fallbackAssignedLoadCountMap = fallbackTeachingLoads.reduce((acc, load: any) => {
+            const facultyId = load?.faculty_id
+            if (!facultyId) return acc
+            acc.set(facultyId, (acc.get(facultyId) || 0) + 1)
+            return acc
+          }, new Map<string, number>())
+        }
+      } catch (fallbackTeachingLoadError) {
+        console.warn('Fallback teaching load count error:', fallbackTeachingLoadError)
+      }
+
+      const { data: fallbackFacultyProfiles } = await supabaseAdmin
+        .from('faculty_profiles')
+        .select('id, user_id, email')
+
+      const fallbackFacultyProfileIdByUserId = new Map<string, string>()
+      const fallbackFacultyProfileIdByEmail = new Map<string, string>()
+
+      ;(fallbackFacultyProfiles || []).forEach((profile: any) => {
+        if (profile?.user_id && profile?.id) {
+          fallbackFacultyProfileIdByUserId.set(profile.user_id, profile.id)
+        }
+        if (profile?.email && profile?.id) {
+          fallbackFacultyProfileIdByEmail.set(String(profile.email).toLowerCase(), profile.id)
+        }
+      })
+
       const fallbackRegistrations = (fallbackUsers || [])
         .map((user: any) => {
           const profile = fallbackProfilesMap.get(user.id)
+          const emailKey = String(user?.email || '').toLowerCase()
+          const facultyProfileId =
+            fallbackFacultyProfileIdByUserId.get(user.id) ||
+            fallbackFacultyProfileIdByEmail.get(emailKey)
 
           let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed' = 'pending'
           if (profile?.position === 'REJECTED') {
@@ -181,7 +219,7 @@ export async function GET(request: NextRequest) {
             role: user.role || 'faculty',
             department: user.department || null,
             is_active: user?.is_active ?? false,
-            assigned_load_count: 0
+            assigned_load_count: facultyProfileId ? (fallbackAssignedLoadCountMap.get(facultyProfileId) || 0) : 0
           }
         })
         .filter((user: any) => {
@@ -240,11 +278,35 @@ export async function GET(request: NextRequest) {
       console.warn('Unable to fetch teaching load counts for faculty registrations:', teachingLoadError)
     }
 
+    const { data: facultyProfilesData, error: facultyProfilesError } = await supabaseAdmin
+      .from('faculty_profiles')
+      .select('id, user_id, email')
+
+    if (facultyProfilesError) {
+      console.error('Error fetching faculty profiles for load mapping:', facultyProfilesError)
+    }
+
+    const facultyProfileIdByUserId = new Map<string, string>()
+    const facultyProfileIdByEmail = new Map<string, string>()
+
+    ;(facultyProfilesData || []).forEach((profile: any) => {
+      if (profile?.user_id && profile?.id) {
+        facultyProfileIdByUserId.set(profile.user_id, profile.id)
+      }
+      if (profile?.email && profile?.id) {
+        facultyProfileIdByEmail.set(String(profile.email).toLowerCase(), profile.id)
+      }
+    })
+
     const registrations = authUsers.users
       .filter(user => user.email !== ADMIN_EMAIL)
       .map(user => {
         const userRecord = usersMap.get(user.email || '')
         const userProfile = userRecord ? profilesMap.get(userRecord.id) : null
+        const emailKey = String(user.email || '').toLowerCase()
+        const facultyProfileId =
+          facultyProfileIdByUserId.get(user.id) ||
+          facultyProfileIdByEmail.get(emailKey)
 
         // Determine status from database - FIXED LOGIC
         let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed'
@@ -281,7 +343,7 @@ export async function GET(request: NextRequest) {
           role: userRecord?.role || 'faculty',
           department: userRecord?.department || user.user_metadata?.department || null,
           is_active: userRecord?.is_active ?? false,
-          assigned_load_count: assignedLoadCountMap.get(user.id) || 0
+          assigned_load_count: facultyProfileId ? (assignedLoadCountMap.get(facultyProfileId) || 0) : 0
         }
       })
       .filter(user => {
