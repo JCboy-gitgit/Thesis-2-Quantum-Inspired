@@ -4,6 +4,7 @@ import type { Database } from '@/lib/database.types'
 
 // Backend URLs - Use environment variable first, then Render, then localhost for development
 const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
+const LAPTOP_BACKEND_URL = process.env.LAPTOP_BACKEND_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
 const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
 const LOCAL_BACKEND_FALLBACKS = [
@@ -24,9 +25,14 @@ const dedupeBackendCandidates = (candidates: BackendCandidate[]) =>
   )
 
 const buildBackendCandidates = (localTimeout: number, remoteTimeout: number): BackendCandidate[] => {
+  const laptopCandidate = LAPTOP_BACKEND_URL
+    ? [{ url: LAPTOP_BACKEND_URL, type: 'Laptop Public', timeout: remoteTimeout }]
+    : []
+
   if (isVercelRuntime) {
     return dedupeBackendCandidates([
       { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: remoteTimeout },
+      ...laptopCandidate,
       { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
     ])
   }
@@ -39,6 +45,7 @@ const buildBackendCandidates = (localTimeout: number, remoteTimeout: number): Ba
 
   return dedupeBackendCandidates([
     ...localCandidates,
+    ...laptopCandidate,
     { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Remote (ENV/Render)', timeout: remoteTimeout },
     { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
   ])
@@ -1229,6 +1236,7 @@ export async function POST(request: NextRequest) {
               error: `Cannot connect to any Python backend. Tried: ${uniqueBackendUrls.map(b => b.url).join(', ')}`,
               details: 'Ensure at least one backend server is running. Using fallback scheduler...',
               local_backend: LOCAL_BACKEND_URL,
+              laptop_backend: LAPTOP_BACKEND_URL || null,
               render_backend: RENDER_BACKEND_URL
             },
             { status: 503 }
