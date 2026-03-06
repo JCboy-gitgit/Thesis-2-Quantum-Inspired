@@ -179,15 +179,11 @@ export async function GET(request: NextRequest) {
 
       const { data: fallbackFacultyProfiles } = await supabaseAdmin
         .from('faculty_profiles')
-        .select('id, user_id, email')
+        .select('id, email')
 
-      const fallbackFacultyProfileIdByUserId = new Map<string, string>()
       const fallbackFacultyProfileIdByEmail = new Map<string, string>()
 
       ;(fallbackFacultyProfiles || []).forEach((profile: any) => {
-        if (profile?.user_id && profile?.id) {
-          fallbackFacultyProfileIdByUserId.set(profile.user_id, profile.id)
-        }
         if (profile?.email && profile?.id) {
           fallbackFacultyProfileIdByEmail.set(String(profile.email).toLowerCase(), profile.id)
         }
@@ -197,9 +193,7 @@ export async function GET(request: NextRequest) {
         .map((user: any) => {
           const profile = fallbackProfilesMap.get(user.id)
           const emailKey = String(user?.email || '').toLowerCase()
-          const facultyProfileId =
-            fallbackFacultyProfileIdByUserId.get(user.id) ||
-            fallbackFacultyProfileIdByEmail.get(emailKey)
+          const facultyProfileId = fallbackFacultyProfileIdByEmail.get(emailKey)
 
           let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed' = 'pending'
           if (profile?.position === 'REJECTED') {
@@ -280,19 +274,15 @@ export async function GET(request: NextRequest) {
 
     const { data: facultyProfilesData, error: facultyProfilesError } = await supabaseAdmin
       .from('faculty_profiles')
-      .select('id, user_id, email')
+      .select('id, email')
 
     if (facultyProfilesError) {
       console.error('Error fetching faculty profiles for load mapping:', facultyProfilesError)
     }
 
-    const facultyProfileIdByUserId = new Map<string, string>()
     const facultyProfileIdByEmail = new Map<string, string>()
 
     ;(facultyProfilesData || []).forEach((profile: any) => {
-      if (profile?.user_id && profile?.id) {
-        facultyProfileIdByUserId.set(profile.user_id, profile.id)
-      }
       if (profile?.email && profile?.id) {
         facultyProfileIdByEmail.set(String(profile.email).toLowerCase(), profile.id)
       }
@@ -304,9 +294,7 @@ export async function GET(request: NextRequest) {
         const userRecord = usersMap.get(user.email || '')
         const userProfile = userRecord ? profilesMap.get(userRecord.id) : null
         const emailKey = String(user.email || '').toLowerCase()
-        const facultyProfileId =
-          facultyProfileIdByUserId.get(user.id) ||
-          facultyProfileIdByEmail.get(emailKey)
+        const facultyProfileId = facultyProfileIdByEmail.get(emailKey)
 
         // Determine status from database - FIXED LOGIC
         let userStatus: 'pending' | 'approved' | 'rejected' | 'unconfirmed'

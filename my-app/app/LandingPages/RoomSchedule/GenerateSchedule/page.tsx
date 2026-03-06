@@ -272,6 +272,20 @@ interface ScheduleResult {
     hybrid_courses_split: number
     split_sections_created: number
   }
+  executionSource?: 'python-backend' | 'fallback-local' | string
+  backendReachable?: boolean
+  backendReplied?: boolean
+  backendUrl?: string | null
+  backendStatus?: number
+}
+
+interface BackendProbeState {
+  checking: boolean
+  reachable: boolean | null
+  message: string
+  backendUrl?: string | null
+  backendStatus?: number
+  checkedAt?: string
 }
 
 // Days for timetable
@@ -469,6 +483,48 @@ export default function GenerateSchedulePage() {
   const [showAllRooms, setShowAllRooms] = useState(false)
   const [showAllClasses, setShowAllClasses] = useState(false)
   const [previewSearchQuery, setPreviewSearchQuery] = useState('')
+  const [backendProbe, setBackendProbe] = useState<BackendProbeState>({
+    checking: false,
+    reachable: null,
+    message: 'Backend status not checked yet.'
+  })
+
+  const probeBackendConnection = async () => {
+    setBackendProbe(prev => ({ ...prev, checking: true, message: 'Checking Python backend...' }))
+    try {
+      const response = await fetch('/api/schedule/qia-backend', {
+        method: 'GET',
+        cache: 'no-store'
+      })
+      const probe = await response.json()
+
+      if (response.ok && probe?.backend_reachable) {
+        setBackendProbe({
+          checking: false,
+          reachable: true,
+          message: 'Connected. Python backend is reachable and ready to schedule.',
+          backendUrl: probe.backend_url || null,
+          backendStatus: probe.backend_status,
+          checkedAt: probe.checked_at,
+        })
+        return
+      }
+
+      setBackendProbe({
+        checking: false,
+        reachable: false,
+        message: probe?.error || 'Python backend is not reachable right now.',
+        backendUrl: null,
+        checkedAt: probe?.checked_at,
+      })
+    } catch (error: any) {
+      setBackendProbe({
+        checking: false,
+        reachable: false,
+        message: error?.message || 'Failed to check backend connection.',
+      })
+    }
+  }
 
   // Helper function to send browser notification
   const sendBrowserNotification = (title: string, body: string, icon: 'success' | 'error' = 'success') => {
@@ -552,6 +608,7 @@ export default function GenerateSchedulePage() {
   useEffect(() => {
     checkAuth()
     fetchAllGroups()
+    probeBackendConnection()
 
     // Request notification permission on mount
     if ('Notification' in window && Notification.permission === 'default') {
@@ -1997,6 +2054,7 @@ export default function GenerateSchedulePage() {
         // First get the response as text, then try to parse as JSON
         const responseText = await response.text()
         let errorMsg = 'Failed to generate schedule'
+        let backendStatus: number | undefined = response.status
 
         try {
           const errorData = JSON.parse(responseText)
@@ -2010,6 +2068,7 @@ export default function GenerateSchedulePage() {
           } else if (errorData.message) {
             errorMsg = errorData.message
           }
+          backendStatus = Number(errorData.backend_status || response.status)
         } catch (parseError) {
           // Response is not JSON (likely HTML error page from backend)
           console.error('Backend returned non-JSON response:', responseText.substring(0, 200))
@@ -2021,6 +2080,14 @@ export default function GenerateSchedulePage() {
             errorMsg = `Server error (${response.status}): The backend returned an invalid response. Please try again.`
           }
         }
+
+        setBackendProbe({
+          checking: false,
+          reachable: false,
+          message: `Backend request failed: ${errorMsg}`,
+          backendStatus,
+        })
+
         throw new Error(errorMsg)
       }
 
@@ -2035,6 +2102,19 @@ export default function GenerateSchedulePage() {
       }
 
       console.log('[GenerateSchedule] API Response:', JSON.stringify(result, null, 2))
+
+      const executionSource = result.execution_source || 'python-backend'
+      const backendReachable = result.backend_reachable !== false
+      setBackendProbe({
+        checking: false,
+        reachable: backendReachable,
+        message: executionSource === 'python-backend'
+          ? 'Python backend replied and handled scheduling.'
+          : 'Python backend unavailable. Fallback scheduler handled this run.',
+        backendUrl: result.backend_url || null,
+        backendStatus: Number(result.backend_status || 200),
+        checkedAt: new Date().toISOString(),
+      })
 
       setScheduleResult({
         success: result.success,
@@ -2061,7 +2141,12 @@ export default function GenerateSchedulePage() {
         onlineDays: result.online_days || [],
         onlineClassCount: result.online_class_count || 0,
         physicalClassCount: result.physical_class_count || 0,
-        splitSessionStats: result.split_session_stats
+        splitSessionStats: result.split_session_stats,
+        executionSource: result.execution_source,
+        backendReachable: result.backend_reachable,
+        backendReplied: result.backend_replied,
+        backendUrl: result.backend_url,
+        backendStatus: result.backend_status,
       })
       setShowResults(true)
       setShowTimetable(true)
@@ -2731,6 +2816,41 @@ export default function GenerateSchedulePage() {
                 <p className={styles.scheduleSubtitle} id="gen-steps-indicator">
                   Advanced QIA Algorithm for Optimal Class-Room-Teacher Scheduling
                 </p>
+                <div className={styles.backendStatusRow}>
+                  <div
+                    className={`${styles.backendStatusBadge} ${
+                      backendProbe.checking
+                        ? styles.backendStatusChecking
+                        : backendProbe.reachable === true
+                          ? styles.backendStatusOnline
+                          : backendProbe.reachable === false
+                            ? styles.backendStatusOffline
+                            : ''
+                    }`}
+                  >
+                    {backendProbe.checking ? (
+                      <FaSpinner className={styles.backendStatusSpinner} />
+                    ) : backendProbe.reachable ? (
+                      <FaCheckCircle />
+                    ) : (
+                      <FaExclamationTriangle />
+                    )}
+                    <span>{backendProbe.message}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.backendCheckButton}
+                    onClick={probeBackendConnection}
+                    disabled={backendProbe.checking || isScheduling}
+                  >
+                    {backendProbe.checking ? 'Checking...' : 'Check Backend'}
+                  </button>
+                </div>
+                {backendProbe.backendUrl && (
+                  <p className={styles.backendStatusMeta}>
+                    Active backend: {backendProbe.backendUrl}
+                  </p>
+                )}
               </div>
             </div>
           </header>
@@ -2754,6 +2874,14 @@ export default function GenerateSchedulePage() {
                 <div className={styles.resultContent}>
                   <h2>{scheduleResult.success ? 'Schedule Generated Successfully!' : 'Schedule Generated with Issues'}</h2>
                   <p>{scheduleResult.message}</p>
+                  <p className={styles.resultBackendInfo}>
+                    {scheduleResult.executionSource === 'python-backend'
+                      ? 'Backend confirmation: Python backend replied and processed this schedule.'
+                      : scheduleResult.executionSource === 'fallback-local'
+                        ? 'Backend confirmation: Python backend did not reply. Fallback scheduler was used.'
+                        : 'Backend confirmation: execution source not reported.'}
+                    {scheduleResult.backendUrl ? ` (${scheduleResult.backendUrl})` : ''}
+                  </p>
                 </div>
               </div>
 

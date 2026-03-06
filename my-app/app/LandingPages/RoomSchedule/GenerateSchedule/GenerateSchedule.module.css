@@ -690,6 +690,77 @@
   font-weight: 500;
 }
 
+.backendStatusRow {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.backendStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-gray-50);
+  color: var(--content-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.backendStatusOnline {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--success-green);
+}
+
+.backendStatusOffline {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--warning-orange);
+}
+
+.backendStatusChecking {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--primary);
+}
+
+.backendStatusSpinner {
+  animation: spin 1s linear infinite;
+}
+
+.backendCheckButton {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--content-text-secondary);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backendCheckButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.backendCheckButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.backendStatusMeta {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: var(--content-text-secondary);
+}
+
 /* ==================== Loading Container ==================== */
 .loadingContainer {
   background: var(--card-bg);
@@ -2204,6 +2275,13 @@
   color: var(--content-text-secondary);
   margin: 0;
   font-weight: 500;
+}
+
+.resultBackendInfo {
+  margin-top: 8px !important;
+  font-size: 12px !important;
+  color: var(--content-text-secondary);
+  font-weight: 600 !important;
 }
 
 /* ==================== Stats Grid ==================== */

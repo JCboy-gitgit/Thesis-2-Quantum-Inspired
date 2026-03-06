@@ -6,9 +6,63 @@ import type { Database } from '@/lib/database.types'
 const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
 const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
+const LOCAL_BACKEND_FALLBACKS = [
+  LOCAL_BACKEND_URL,
+  'http://localhost:8000',
+  'http://127.0.0.1:8010',
+  'http://localhost:8010',
+]
 
-// Determine if we're in production (Vercel)
-const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
+// Detect actual Vercel runtime. Using NODE_ENV alone can incorrectly classify local runs.
+const isVercelRuntime = Boolean(process.env.VERCEL)
+
+type BackendCandidate = { url: string; type: string; timeout: number }
+
+const dedupeBackendCandidates = (candidates: BackendCandidate[]) =>
+  candidates.filter((backend, index, arr) =>
+    arr.findIndex(b => b.url === backend.url) === index
+  )
+
+const buildBackendCandidates = (localTimeout: number, remoteTimeout: number): BackendCandidate[] => {
+  if (isVercelRuntime) {
+    return dedupeBackendCandidates([
+      { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: remoteTimeout },
+      { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
+    ])
+  }
+
+  const localCandidates = LOCAL_BACKEND_FALLBACKS.map((url) => ({
+    url,
+    type: 'Local',
+    timeout: localTimeout,
+  }))
+
+  return dedupeBackendCandidates([
+    ...localCandidates,
+    { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Remote (ENV/Render)', timeout: remoteTimeout },
+    { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
+  ])
+}
+
+const getReachableBackend = async (candidates: BackendCandidate[], probeTimeout = 4000) => {
+  for (const candidate of candidates) {
+    try {
+      const response = await fetch(`${candidate.url}/`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: AbortSignal.timeout(probeTimeout),
+      })
+
+      if (response.ok) {
+        return candidate
+      }
+    } catch {
+      // Ignore and continue probing the next backend candidate.
+    }
+  }
+
+  return null
+}
 
 // Cache-busting wrapper to prevent Next.js from caching Supabase requests
 const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
@@ -884,6 +938,62 @@ function reconcileScheduleMetrics(result: any): any {
   }
 }
 
+export async function GET() {
+  const uniqueBackendUrls = buildBackendCandidates(8000, 12000)
+
+  const checkedAt = new Date().toISOString()
+  const probeErrors: Array<{ url: string; type: string; error: string }> = []
+  const probePaths = ['/', '/health']
+
+  for (const backend of uniqueBackendUrls) {
+    let lastProbeError = 'Connection failed'
+
+    for (const probePath of probePaths) {
+      try {
+        const probeResponse = await fetch(`${backend.url}${probePath}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(backend.timeout)
+        })
+
+        if (probeResponse.ok) {
+          return NextResponse.json({
+            success: true,
+            backend_reachable: true,
+            backend_url: backend.url,
+            backend_type: backend.type,
+            backend_status: probeResponse.status,
+            checked_at: checkedAt,
+            probe_path: probePath,
+          })
+        }
+
+        lastProbeError = `HTTP ${probeResponse.status} on ${probePath}`
+      } catch (error: any) {
+        lastProbeError = `${error?.message || 'Connection failed'} on ${probePath}`
+      }
+    }
+
+    probeErrors.push({
+      url: backend.url,
+      type: backend.type,
+      error: lastProbeError
+    })
+  }
+
+  return NextResponse.json(
+    {
+      success: false,
+      backend_reachable: false,
+      error: 'Python backend is not reachable from the Next.js bridge.',
+      checked_at: checkedAt,
+      attempts: probeErrors
+    },
+    { status: 503 }
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
@@ -1076,30 +1186,20 @@ export async function POST(request: NextRequest) {
       fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
-    // In production (Vercel): Try Render first, then env URL
-    // In development: Try local first, then Render
-    const backendUrls = isProduction
+    const uniqueBackendUrls = buildBackendCandidates(180000, 300000)
+    const reachableBackend = await getReachableBackend(uniqueBackendUrls)
+    const orderedBackendUrls = reachableBackend
       ? [
-        // Production: Render first (most reliable for production)
-        { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: 300000 },
-        { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: 300000 }
+        reachableBackend,
+        ...uniqueBackendUrls.filter((backend) => backend.url !== reachableBackend.url)
       ]
-      : [
-        // Development: Local first, then Render
-        { url: LOCAL_BACKEND_URL, type: 'Local', timeout: 180000 },
-        { url: RENDER_BACKEND_URL, type: 'Render', timeout: 300000 }
-      ]
-
-    // Remove duplicate URLs
-    const uniqueBackendUrls = backendUrls.filter((backend, index, arr) =>
-      arr.findIndex(b => b.url === backend.url) === index
-    )
+      : uniqueBackendUrls
 
     let backendResponse
     let usedBackendUrl = ''
     let lastError: any = null
 
-    for (const backend of uniqueBackendUrls) {
+    for (const backend of orderedBackendUrls) {
       try {
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
@@ -1140,7 +1240,13 @@ export async function POST(request: NextRequest) {
     if (!backendResponse) {
       // Fallback: Generate schedule locally using simple round-robin
       const fallbackResult = await generateFallbackSchedule(body, sections, rooms, timeSlots)
-      return NextResponse.json(fallbackResult)
+      return NextResponse.json({
+        ...fallbackResult,
+        execution_source: 'fallback-local',
+        backend_reachable: false,
+        backend_replied: false,
+        backend_url: null,
+      })
     }
 
     if (!backendResponse.ok) {
@@ -1174,16 +1280,24 @@ export async function POST(request: NextRequest) {
     )
 
     const reconciledResult = reconcileScheduleMetrics(frontendResult)
+    const reconciledResultWithExecution = {
+      ...reconciledResult,
+      execution_source: 'python-backend',
+      backend_reachable: true,
+      backend_replied: true,
+      backend_url: usedBackendUrl,
+      backend_status: backendResponse.status,
+    }
 
-    const scheduleId = Number(reconciledResult.schedule_id)
+    const scheduleId = Number(reconciledResultWithExecution.schedule_id)
     if (Number.isFinite(scheduleId) && scheduleId > 0) {
-      const status = reconciledResult.unscheduled_classes === 0 ? 'completed' : 'partial'
+      const status = reconciledResultWithExecution.unscheduled_classes === 0 ? 'completed' : 'partial'
       const { error: syncError } = await (supabase as any)
         .from('generated_schedules')
         .update({
-          total_classes: reconciledResult.total_classes,
-          scheduled_classes: reconciledResult.scheduled_classes,
-          unscheduled_classes: reconciledResult.unscheduled_classes,
+          total_classes: reconciledResultWithExecution.total_classes,
+          scheduled_classes: reconciledResultWithExecution.scheduled_classes,
+          unscheduled_classes: reconciledResultWithExecution.unscheduled_classes,
           status,
         })
         .eq('id', scheduleId)
@@ -1193,7 +1307,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(reconciledResult)
+    return NextResponse.json(reconciledResultWithExecution)
 
   } catch (error: any) {
     console.error('[QIA Backend Bridge] Fatal error:', error)
