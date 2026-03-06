@@ -18,37 +18,70 @@ const LOCAL_BACKEND_FALLBACKS = [
 const isVercelRuntime = Boolean(process.env.VERCEL)
 
 type BackendCandidate = { url: string; type: string; timeout: number }
+type BackendPreference = 'auto' | 'local' | 'laptop' | 'render'
 
 const dedupeBackendCandidates = (candidates: BackendCandidate[]) =>
   candidates.filter((backend, index, arr) =>
     arr.findIndex(b => b.url === backend.url) === index
   )
 
-const buildBackendCandidates = (localTimeout: number, remoteTimeout: number): BackendCandidate[] => {
-  const laptopCandidate = LAPTOP_BACKEND_URL
-    ? [{ url: LAPTOP_BACKEND_URL, type: 'Laptop Public', timeout: remoteTimeout }]
-    : []
-
-  if (isVercelRuntime) {
-    return dedupeBackendCandidates([
-      { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: remoteTimeout },
-      ...laptopCandidate,
-      { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
-    ])
+const normalizeBackendPreference = (input?: string | null): BackendPreference => {
+  const normalized = String(input || 'auto').trim().toLowerCase()
+  if (normalized === 'local' || normalized === 'laptop' || normalized === 'render') {
+    return normalized
   }
+  return 'auto'
+}
 
+const buildPreferredBackendCandidates = (
+  preference: BackendPreference,
+  localTimeout: number,
+  remoteTimeout: number
+): BackendCandidate[] => {
   const localCandidates = LOCAL_BACKEND_FALLBACKS.map((url) => ({
     url,
     type: 'Local',
     timeout: localTimeout,
   }))
 
-  return dedupeBackendCandidates([
-    ...localCandidates,
-    ...laptopCandidate,
-    { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Remote (ENV/Render)', timeout: remoteTimeout },
+  const laptopCandidates = LAPTOP_BACKEND_URL
+    ? [{ url: LAPTOP_BACKEND_URL, type: 'Laptop Public', timeout: remoteTimeout }]
+    : []
+
+  const renderCandidates = dedupeBackendCandidates([
+    { url: ENV_BACKEND_URL || RENDER_BACKEND_URL, type: 'Primary (ENV/Render)', timeout: remoteTimeout },
     { url: RENDER_BACKEND_URL, type: 'Render Fallback', timeout: remoteTimeout },
   ])
+
+  if (preference === 'local') {
+    return localCandidates
+  }
+
+  if (preference === 'laptop') {
+    return laptopCandidates
+  }
+
+  if (preference === 'render') {
+    return renderCandidates
+  }
+
+  // Auto mode preserves existing behavior by runtime.
+  if (isVercelRuntime) {
+    return dedupeBackendCandidates([
+      ...laptopCandidates,
+      ...renderCandidates,
+    ])
+  }
+
+  return dedupeBackendCandidates([
+    ...localCandidates,
+    ...laptopCandidates,
+    ...renderCandidates,
+  ])
+}
+
+const buildBackendCandidates = (localTimeout: number, remoteTimeout: number): BackendCandidate[] => {
+  return buildPreferredBackendCandidates('auto', localTimeout, remoteTimeout)
 }
 
 const getReachableBackend = async (candidates: BackendCandidate[], probeTimeout = 4000) => {
@@ -161,6 +194,7 @@ interface RequestBody {
   teachers: TeacherData[]
   time_slots: TimeSlot[]
   active_days: string[]
+  backend_preference?: BackendPreference
   online_days?: string[] // NEW: Days where all classes are online
   time_settings: {
     startTime: string
@@ -945,11 +979,24 @@ function reconcileScheduleMetrics(result: any): any {
   }
 }
 
-export async function GET() {
-  const uniqueBackendUrls = buildBackendCandidates(8000, 12000)
+export async function GET(request: NextRequest) {
+  const backendPreference = normalizeBackendPreference(request.nextUrl.searchParams.get('backendPreference'))
+  const uniqueBackendUrls = buildPreferredBackendCandidates(backendPreference, 8000, 12000)
+
+  if (uniqueBackendUrls.length === 0) {
+    return NextResponse.json(
+      {
+        success: false,
+        backend_reachable: false,
+        error: `No backend candidates configured for preference '${backendPreference}'.`,
+        checked_at: new Date().toISOString(),
+      },
+      { status: 400 }
+    )
+  }
 
   const checkedAt = new Date().toISOString()
-  const probeErrors: Array<{ url: string; type: string; error: string }> = []
+  const probeErrors: Array<{ url: string; type: string; error: string; probe_latency_ms?: number }> = []
   const probePaths = ['/', '/health']
 
   for (const backend of uniqueBackendUrls) {
@@ -957,12 +1004,14 @@ export async function GET() {
 
     for (const probePath of probePaths) {
       try {
+        const probeStartedAt = Date.now()
         const probeResponse = await fetch(`${backend.url}${probePath}`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
           cache: 'no-store',
           signal: AbortSignal.timeout(backend.timeout)
         })
+        const probeLatencyMs = Date.now() - probeStartedAt
 
         if (probeResponse.ok) {
           return NextResponse.json({
@@ -971,22 +1020,32 @@ export async function GET() {
             backend_url: backend.url,
             backend_type: backend.type,
             backend_status: probeResponse.status,
+            backend_preference: backendPreference,
+            probe_latency_ms: probeLatencyMs,
             checked_at: checkedAt,
             probe_path: probePath,
           })
         }
 
         lastProbeError = `HTTP ${probeResponse.status} on ${probePath}`
+        probeErrors.push({
+          url: backend.url,
+          type: backend.type,
+          error: lastProbeError,
+          probe_latency_ms: probeLatencyMs
+        })
       } catch (error: any) {
         lastProbeError = `${error?.message || 'Connection failed'} on ${probePath}`
       }
     }
 
-    probeErrors.push({
-      url: backend.url,
-      type: backend.type,
-      error: lastProbeError
-    })
+    if (!probeErrors.some((entry) => entry.url === backend.url && entry.error === lastProbeError)) {
+      probeErrors.push({
+        url: backend.url,
+        type: backend.type,
+        error: lastProbeError
+      })
+    }
   }
 
   return NextResponse.json(
@@ -994,6 +1053,7 @@ export async function GET() {
       success: false,
       backend_reachable: false,
       error: 'Python backend is not reachable from the Next.js bridge.',
+      backend_preference: backendPreference,
       checked_at: checkedAt,
       attempts: probeErrors
     },
@@ -1004,6 +1064,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
+    const backendPreference = normalizeBackendPreference(body.backend_preference)
 
     // Validate request
     if (!body.schedule_name || !body.rooms || !body.classes) {
@@ -1193,7 +1254,19 @@ export async function POST(request: NextRequest) {
       fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
-    const uniqueBackendUrls = buildBackendCandidates(180000, 300000)
+    const uniqueBackendUrls = buildPreferredBackendCandidates(backendPreference, 180000, 300000)
+
+    if (uniqueBackendUrls.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No backend candidates configured for preference '${backendPreference}'.`,
+          backend_preference: backendPreference,
+        },
+        { status: 400 }
+      )
+    }
+
     const reachableBackend = await getReachableBackend(uniqueBackendUrls)
     const orderedBackendUrls = reachableBackend
       ? [
@@ -1205,9 +1278,11 @@ export async function POST(request: NextRequest) {
     let backendResponse
     let usedBackendUrl = ''
     let lastError: any = null
+    let backendResponseMs: number | null = null
 
     for (const backend of orderedBackendUrls) {
       try {
+        const backendRequestStartedAt = Date.now()
         backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
           headers: {
@@ -1217,6 +1292,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(backendPayload),
           signal: AbortSignal.timeout(backend.timeout)
         })
+        backendResponseMs = Date.now() - backendRequestStartedAt
 
         usedBackendUrl = backend.url
         break // Success, exit the loop
@@ -1235,6 +1311,7 @@ export async function POST(request: NextRequest) {
               success: false,
               error: `Cannot connect to any Python backend. Tried: ${uniqueBackendUrls.map(b => b.url).join(', ')}`,
               details: 'Ensure at least one backend server is running. Using fallback scheduler...',
+              backend_preference: backendPreference,
               local_backend: LOCAL_BACKEND_URL,
               laptop_backend: LAPTOP_BACKEND_URL || null,
               render_backend: RENDER_BACKEND_URL
@@ -1251,6 +1328,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ...fallbackResult,
         execution_source: 'fallback-local',
+        backend_preference: backendPreference,
         backend_reachable: false,
         backend_replied: false,
         backend_url: null,
@@ -1272,7 +1350,9 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: errorData.detail || errorData.error || 'Backend processing failed',
-          backend_status: backendResponse.status
+          backend_preference: backendPreference,
+          backend_status: backendResponse.status,
+          backend_response_ms: backendResponseMs,
         },
         { status: backendResponse.status }
       )
@@ -1291,10 +1371,12 @@ export async function POST(request: NextRequest) {
     const reconciledResultWithExecution = {
       ...reconciledResult,
       execution_source: 'python-backend',
+      backend_preference: backendPreference,
       backend_reachable: true,
       backend_replied: true,
       backend_url: usedBackendUrl,
       backend_status: backendResponse.status,
+      backend_response_ms: backendResponseMs,
     }
 
     const scheduleId = Number(reconciledResultWithExecution.schedule_id)

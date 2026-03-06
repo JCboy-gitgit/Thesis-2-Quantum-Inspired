@@ -277,6 +277,7 @@ interface ScheduleResult {
   backendReplied?: boolean
   backendUrl?: string | null
   backendStatus?: number
+  backendResponseMs?: number
 }
 
 interface BackendProbeState {
@@ -285,7 +286,17 @@ interface BackendProbeState {
   message: string
   backendUrl?: string | null
   backendStatus?: number
+  probeLatencyMs?: number
   checkedAt?: string
+}
+
+type BackendPreference = 'auto' | 'local' | 'laptop' | 'render'
+
+const BACKEND_PREFERENCE_LABELS: Record<BackendPreference, string> = {
+  auto: 'Auto',
+  local: 'Localhost',
+  laptop: 'Laptop Public',
+  render: 'Render',
 }
 
 // Days for timetable
@@ -488,11 +499,18 @@ export default function GenerateSchedulePage() {
     reachable: null,
     message: 'Backend status not checked yet.'
   })
+  const [backendPreference, setBackendPreference] = useState<BackendPreference>('auto')
 
   const probeBackendConnection = async () => {
-    setBackendProbe(prev => ({ ...prev, checking: true, message: 'Checking Python backend...' }))
+    const selectedBackendLabel = BACKEND_PREFERENCE_LABELS[backendPreference]
+    setBackendProbe(prev => ({
+      ...prev,
+      checking: true,
+      message: `Checking Python backend (${selectedBackendLabel})...`
+    }))
+
     try {
-      const response = await fetch('/api/schedule/qia-backend', {
+      const response = await fetch(`/api/schedule/qia-backend?backendPreference=${encodeURIComponent(backendPreference)}`, {
         method: 'GET',
         cache: 'no-store'
       })
@@ -502,9 +520,10 @@ export default function GenerateSchedulePage() {
         setBackendProbe({
           checking: false,
           reachable: true,
-          message: 'Connected. Python backend is reachable and ready to schedule.',
+          message: `Connected. ${selectedBackendLabel} backend is reachable and ready to schedule.`,
           backendUrl: probe.backend_url || null,
           backendStatus: probe.backend_status,
+          probeLatencyMs: Number(probe.probe_latency_ms || 0) || undefined,
           checkedAt: probe.checked_at,
         })
         return
@@ -513,8 +532,9 @@ export default function GenerateSchedulePage() {
       setBackendProbe({
         checking: false,
         reachable: false,
-        message: probe?.error || 'Python backend is not reachable right now.',
+          message: probe?.error || `${selectedBackendLabel} backend is not reachable right now.`,
         backendUrl: null,
+        probeLatencyMs: Number(probe?.probe_latency_ms || 0) || undefined,
         checkedAt: probe?.checked_at,
       })
     } catch (error: any) {
@@ -2021,6 +2041,7 @@ export default function GenerateSchedulePage() {
           SOFT_VSL_SHIFT_MISMATCH: config.softVslShiftMismatch,
           SOFT_PART_TIME_SATURDAY: config.softPartTimeSaturday,
         },
+        backend_preference: backendPreference,
         manual_allocations: manualAllocations // NEW: Manual edits to prioritize
       }
 
@@ -2055,6 +2076,7 @@ export default function GenerateSchedulePage() {
         const responseText = await response.text()
         let errorMsg = 'Failed to generate schedule'
         let backendStatus: number | undefined = response.status
+        let backendResponseMs: number | undefined
 
         try {
           const errorData = JSON.parse(responseText)
@@ -2069,6 +2091,7 @@ export default function GenerateSchedulePage() {
             errorMsg = errorData.message
           }
           backendStatus = Number(errorData.backend_status || response.status)
+          backendResponseMs = Number(errorData.backend_response_ms || 0) || undefined
         } catch (parseError) {
           // Response is not JSON (likely HTML error page from backend)
           console.error('Backend returned non-JSON response:', responseText.substring(0, 200))
@@ -2086,6 +2109,7 @@ export default function GenerateSchedulePage() {
           reachable: false,
           message: `Backend request failed: ${errorMsg}`,
           backendStatus,
+          probeLatencyMs: backendResponseMs,
         })
 
         throw new Error(errorMsg)
@@ -2113,6 +2137,7 @@ export default function GenerateSchedulePage() {
           : 'Python backend unavailable. Fallback scheduler handled this run.',
         backendUrl: result.backend_url || null,
         backendStatus: Number(result.backend_status || 200),
+        probeLatencyMs: Number(result.backend_response_ms || 0) || undefined,
         checkedAt: new Date().toISOString(),
       })
 
@@ -2147,6 +2172,7 @@ export default function GenerateSchedulePage() {
         backendReplied: result.backend_replied,
         backendUrl: result.backend_url,
         backendStatus: result.backend_status,
+        backendResponseMs: Number(result.backend_response_ms || 0) || undefined,
       })
       setShowResults(true)
       setShowTimetable(true)
@@ -2845,10 +2871,28 @@ export default function GenerateSchedulePage() {
                   >
                     {backendProbe.checking ? 'Checking...' : 'Check Backend'}
                   </button>
+                  <div className={styles.backendPreferenceControl}>
+                    <label htmlFor="backendPreference" className={styles.backendPreferenceLabel}>Backend</label>
+                    <select
+                      id="backendPreference"
+                      className={styles.backendPreferenceSelect}
+                      value={backendPreference}
+                      onChange={(event) => setBackendPreference(event.target.value as BackendPreference)}
+                      disabled={backendProbe.checking || isScheduling}
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="laptop">Laptop Public</option>
+                      <option value="render">Render</option>
+                      <option value="local">Localhost</option>
+                    </select>
+                  </div>
                 </div>
                 {backendProbe.backendUrl && (
                   <p className={styles.backendStatusMeta}>
-                    Active backend: {backendProbe.backendUrl}
+                    Active backend: {backendProbe.backendUrl} ({BACKEND_PREFERENCE_LABELS[backendPreference]})
+                    {backendProbe.probeLatencyMs ? (
+                      <span className={styles.backendLatencyMeta}> | Latency: {backendProbe.probeLatencyMs} ms</span>
+                    ) : null}
                   </p>
                 )}
               </div>
@@ -2881,6 +2925,7 @@ export default function GenerateSchedulePage() {
                         ? 'Backend confirmation: Python backend did not reply. Fallback scheduler was used.'
                         : 'Backend confirmation: execution source not reported.'}
                     {scheduleResult.backendUrl ? ` (${scheduleResult.backendUrl})` : ''}
+                    {scheduleResult.backendResponseMs ? ` | Backend response: ${scheduleResult.backendResponseMs} ms` : ''}
                   </p>
                 </div>
               </div>
