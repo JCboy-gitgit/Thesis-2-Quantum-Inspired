@@ -411,6 +411,7 @@ export default function GenerateSchedulePage() {
   const [selectedTimetableTeacher, setSelectedTimetableTeacher] = useState<string>('all') // NEW: Filter by specific teacher
   const [manualAllocations, setManualAllocations] = useState<RoomAllocation[]>([]) // NEW: Manual edits
   const [showManualModal, setShowManualModal] = useState(false) // NEW: Modal toggle
+  const [showGenerateReview, setShowGenerateReview] = useState(false) // NEW: Pre-generate confirmation modal
 
   // Expanded sections
   const [expandedCampus, setExpandedCampus] = useState(false)
@@ -1741,10 +1742,23 @@ export default function GenerateSchedulePage() {
   const selectedBatchInfoList = yearBatches.filter(b => selectedYearBatches.includes(b.id))
   const selectedBatchInfo = selectedBatchInfoList.length > 0 ? selectedBatchInfoList[0] : undefined
   const selectedTeacherInfo = undefined
+  const selectedCampusFileNames = selectedCampusInfoList
+    .map(group => group.file_name)
+    .filter((name): name is string => Boolean(name && name.trim()))
 
   // Calculate stats
   const totalRoomCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
   const totalClasses = classes.length
+  const filteredRoomsPreview = getFilteredRooms()
+  const uniqueSectionsCount = new Set(classes.map(c => c.section).filter(Boolean)).size
+  const scheduledColleges = [...new Set(classes.map(c => c.college).filter(Boolean))].sort()
+  const scheduledCollegesLabel = scheduledColleges.length > 0
+    ? scheduledColleges.join(', ')
+    : (selectedCollege === 'all' ? 'All Colleges (No explicit college tags in class data)' : selectedCollege)
+  const assignedTeacherCount = new Set(classes.map(c => c.teacher_name).filter(Boolean)).size
+  const activeDaysPreview = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  if (timeSettings.includeSaturday) activeDaysPreview.push('Saturday')
+  if (timeSettings.includeSunday) activeDaysPreview.push('Sunday')
   const uniqueDays = [...new Set(classes.map(c => c.schedule_day).filter(Boolean))]
   const uniqueTimeSlots = [...new Set(classes.map(c => c.schedule_time).filter(Boolean))]
 
@@ -1764,6 +1778,22 @@ export default function GenerateSchedulePage() {
     }
 
     await executeScheduleGeneration()
+  }
+
+  const openGenerateReviewModal = () => {
+    if (!canGenerate) {
+      toast.warning('Incomplete Selection', {
+        description: 'Please complete all required selections before generating.',
+      })
+      return
+    }
+
+    setShowGenerateReview(true)
+  }
+
+  const confirmAndGenerateSchedule = async () => {
+    setShowGenerateReview(false)
+    await handleGenerateSchedule()
   }
 
   // Proceed with schedule generation after bypass confirmation
@@ -4985,7 +5015,7 @@ export default function GenerateSchedulePage() {
                       </button>
                       <button
                         className={`${styles.generateButton} ${isScheduling ? styles.generating : ''}`}
-                        onClick={handleGenerateSchedule}
+                        onClick={openGenerateReviewModal}
                         disabled={isScheduling || !canGenerate}
                       >
                         {isScheduling ? (
@@ -5191,6 +5221,100 @@ export default function GenerateSchedulePage() {
                     className={styles.proceedBtn}
                   >
                     <FaPlay /> Proceed with Scheduling
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Review Before Generate Modal */}
+      {
+        showGenerateReview && (
+          <div className={styles.modalOverlay} onClick={() => setShowGenerateReview(false)}>
+            <div className={styles.generateReviewModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.reviewModalHeader}>
+                <h3 className={styles.reviewModalTitle}>
+                  <FaFileAlt /> Review Before Scheduling
+                </h3>
+                <button className={styles.closeModalButton} onClick={() => setShowGenerateReview(false)}>
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className={styles.reviewModalBody}>
+                <p className={styles.reviewLeadText}>
+                  Confirm these details before starting the schedule generation for <strong>{config.scheduleName}</strong>.
+                </p>
+
+                <div className={styles.reviewSummaryGrid}>
+                  <div className={styles.reviewSummaryItem}>
+                    <span className={styles.reviewSummaryLabel}>Rooms to Use</span>
+                    <span className={styles.reviewSummaryValue}>{filteredRoomsPreview.length}</span>
+                  </div>
+                  <div className={styles.reviewSummaryItem}>
+                    <span className={styles.reviewSummaryLabel}>Classes to Schedule</span>
+                    <span className={styles.reviewSummaryValue}>{classes.length}</span>
+                  </div>
+                  <div className={styles.reviewSummaryItem}>
+                    <span className={styles.reviewSummaryLabel}>Sections</span>
+                    <span className={styles.reviewSummaryValue}>{uniqueSectionsCount}</span>
+                  </div>
+                  <div className={styles.reviewSummaryItem}>
+                    <span className={styles.reviewSummaryLabel}>Manual Priorities</span>
+                    <span className={styles.reviewSummaryValue}>{manualAllocations.length}</span>
+                  </div>
+                </div>
+
+                <div className={styles.reviewSectionCard}>
+                  <h4 className={styles.reviewSectionTitle}>Selected Source Files</h4>
+                  {selectedCampusFileNames.length > 0 ? (
+                    <ul className={styles.reviewList}>
+                      {selectedCampusFileNames.map((fileName) => (
+                        <li key={fileName}>{fileName}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.reviewMutedText}>No campus file names detected from selected room uploads.</p>
+                  )}
+                </div>
+
+                <div className={styles.reviewSectionCard}>
+                  <h4 className={styles.reviewSectionTitle}>Scheduling Scope</h4>
+                  <div className={styles.reviewScopeGrid}>
+                    <p><strong>Colleges Scheduled:</strong> {scheduledCollegesLabel}</p>
+                    <p><strong>Year Batches:</strong> {selectedBatchInfoList.length}</p>
+                    <p><strong>Teachers Assigned:</strong> {assignedTeacherCount}</p>
+                    <p><strong>Iterations:</strong> {config.maxIterations.toLocaleString()}</p>
+                    <p><strong>Online Days:</strong> {config.onlineDays.length > 0 ? config.onlineDays.join(', ') : 'None'}</p>
+                    <p><strong>Active Days:</strong> {activeDaysPreview.join(', ')}</p>
+                  </div>
+                </div>
+
+                {(unassignedCourses.length > 0 || selectedRooms.length > 0 || selectedBuildings.length > 0) && (
+                  <div className={styles.reviewWarningBox}>
+                    {unassignedCourses.length > 0 && (
+                      <p>
+                        <FaExclamationTriangle /> {unassignedCourses.length} class(es) have no assigned professor. A second confirmation will appear.
+                      </p>
+                    )}
+                    {(selectedRooms.length > 0 || selectedBuildings.length > 0) && (
+                      <p>
+                        <FaFilter /> Room scope is limited by your current building/room filter ({filteredRoomsPreview.length} rooms included).
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.reviewModalFooter}>
+                <div className={styles.modalActions}>
+                  <button onClick={() => setShowGenerateReview(false)} className={styles.cancelBtn}>
+                    Cancel
+                  </button>
+                  <button onClick={confirmAndGenerateSchedule} className={styles.proceedBtn}>
+                    <FaPlay /> Yes, Generate Schedule
                   </button>
                 </div>
               </div>

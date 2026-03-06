@@ -41,7 +41,12 @@ import {
     MdRestartAlt
 } from 'react-icons/md'
 import '@/app/styles/faculty-global.css'
-import styles from './FacultyLiveTimetable.module.css'
+import facultyStyles from './FacultyLiveTimetable.module.css'
+import landingStyles from '@/app/LandingPages/LiveTimetable/LiveTimetable.module.css'
+
+// Fallback to the landing page stylesheet for selectors not yet present
+// in the faculty-specific module (prevents unstyled sections).
+const styles = { ...landingStyles, ...facultyStyles }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RoomAllocation {
@@ -125,6 +130,16 @@ function normalizeDay(day: string): string {
     return dayMap[day.toUpperCase()] || day
 }
 
+function splitTimeRange(timeStr: string): [string, string] {
+    if (!timeStr) return ['', '']
+    const normalized = timeStr
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\s+to\s+/gi, '-')
+    const parts = normalized.split('-').map(s => s.trim()).filter(Boolean)
+    if (parts.length < 2) return ['', '']
+    return [parts[0], parts[1]]
+}
+
 function normalizeSection(section: string): string {
     if (!section) return section
     return section.replace(/_(Lab|Lec)$/i, '').trim()
@@ -132,20 +147,57 @@ function normalizeSection(section: string): string {
 
 function expandDays(dayStr: string): string[] {
     if (!dayStr) return []
-    const day = dayStr.trim().toUpperCase()
-    if (day.includes('/')) return day.split('/').map(d => normalizeDay(d.trim()))
-    if (day === 'TTH' || day === 'T/TH') return ['Tuesday', 'Thursday']
-    if (day === 'MWF') return ['Monday', 'Wednesday', 'Friday']
-    if (day === 'MW') return ['Monday', 'Wednesday']
-    if (day === 'TF') return ['Tuesday', 'Friday']
-    if (day === 'MTWTHF') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    if (day === 'MTWTHFS') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    return [normalizeDay(day)]
+
+    const compact = dayStr.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
+    const tokenMap: Record<string, string> = {
+        MONDAY: 'Monday', MON: 'Monday', M: 'Monday',
+        TUESDAY: 'Tuesday', TUE: 'Tuesday', TU: 'Tuesday', T: 'Tuesday',
+        WEDNESDAY: 'Wednesday', WED: 'Wednesday', W: 'Wednesday',
+        THURSDAY: 'Thursday', THU: 'Thursday', TH: 'Thursday', R: 'Thursday',
+        FRIDAY: 'Friday', FRI: 'Friday', F: 'Friday',
+        SATURDAY: 'Saturday', SAT: 'Saturday', SA: 'Saturday', S: 'Saturday',
+        SUNDAY: 'Sunday', SUN: 'Sunday', SU: 'Sunday', U: 'Sunday'
+    }
+
+    const comboMap: Record<string, string[]> = {
+        TTH: ['Tuesday', 'Thursday'],
+        MWF: ['Monday', 'Wednesday', 'Friday'],
+        MW: ['Monday', 'Wednesday'],
+        TF: ['Tuesday', 'Friday'],
+        MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    }
+
+    if (compact.includes('/') || compact.includes(',')) {
+        return compact
+            .split(/[\/,]+/)
+            .map(token => tokenMap[token] || normalizeDay(token))
+            .filter(Boolean)
+    }
+
+    if (comboMap[compact]) return comboMap[compact]
+
+    const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
+    const expanded: string[] = []
+    let i = 0
+
+    while (i < compact.length) {
+        const token = orderedTokens.find(t => compact.startsWith(t, i))
+        if (!token) {
+            i += 1
+            continue
+        }
+        const mapped = tokenMap[token]
+        if (mapped) expanded.push(mapped)
+        i += token.length
+    }
+
+    return expanded.length > 0 ? Array.from(new Set(expanded)) : [normalizeDay(compact)]
 }
 
 function parseTimeToMinutes(t: string): number {
     if (!t) return 0
-    const m = t.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    const m = t.trim().match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i)
     if (!m) return 0
     let h = parseInt(m[1]), min = parseInt(m[2])
     const ap = m[3]?.toUpperCase()
@@ -176,10 +228,10 @@ function addDays(d: Date, n: number): Date {
 function isClassOngoing(timeStr: string): boolean {
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    const parts = timeStr.split('-').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const start = parseTimeToMinutes(parts[0])
-    const end = parseTimeToMinutes(parts[1])
+    const [startRaw, endRaw] = splitTimeRange(timeStr)
+    if (!startRaw || !endRaw) return false
+    const start = parseTimeToMinutes(startRaw)
+    const end = parseTimeToMinutes(endRaw)
     return nowMin >= start && nowMin < end
 }
 
@@ -206,9 +258,9 @@ function isClassDone(timeStr: string, dayName: string, todayDayName: string): bo
     if (dayIdx > todayIdx) return false
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    const parts = timeStr.split('-').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const end = parseTimeToMinutes(parts[1])
+    const [, endRaw] = splitTimeRange(timeStr)
+    if (!endRaw) return false
+    const end = parseTimeToMinutes(endRaw)
     return nowMin >= end
 }
 
@@ -489,10 +541,10 @@ export default function FacultyLiveTimetablePage() {
                 const days = expandDays(a.schedule_day || '')
                 if (!days.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) return
                 // Check time overlap
-                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
-                if (parts.length !== 2) return
-                const aStart = parseTimeToMinutes(parts[0])
-                const aEnd = parseTimeToMinutes(parts[1])
+                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                if (!startRaw || !endRaw) return
+                const aStart = parseTimeToMinutes(startRaw)
+                const aEnd = parseTimeToMinutes(endRaw)
                 if (startMin < aEnd && endMin > aStart) {
                     occupied.add(`${(a.building || '').toLowerCase()}||${(a.room || '').toLowerCase()}`)
                 }
@@ -521,9 +573,9 @@ export default function FacultyLiveTimetablePage() {
         const slotMin = slotMinutes % 60
         const h12 = slotHour > 12 ? slotHour - 12 : slotHour === 0 ? 12 : slotHour
         const ampm = slotHour >= 12 ? 'PM' : 'AM'
-        const origParts = (alloc.schedule_time || '').split('-').map((s: string) => s.trim())
+        const origParts = splitTimeRange(alloc.schedule_time || '')
         let durationMin = 90
-        if (origParts.length === 2) {
+        if (origParts[0] && origParts[1]) {
             durationMin = Math.max(30, parseTimeToMinutes(origParts[1]) - parseTimeToMinutes(origParts[0]))
         }
         const startSlotStr = `${h12}:${slotMin.toString().padStart(2, '0')} ${ampm}`
@@ -564,7 +616,8 @@ export default function FacultyLiveTimetablePage() {
             .map(m => {
                 const original = allAllocations.find(a => a.id === m.allocation_id)
                 if (!original) return null
-                const date = new Date(m.requested_date)
+                const [year, month, day] = (m.requested_date || '').split('-')
+                const date = new Date(Number(year), Number(month) - 1, Number(day))
                 const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
                 return {
                     ...original,
@@ -648,7 +701,7 @@ export default function FacultyLiveTimetablePage() {
                 const days = expandDays(a.schedule_day || '')
                 return days.some(d => d.toLowerCase() === day.toLowerCase())
             })
-            .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
+            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
     }
 
     // Get allocations for List (My classes only)
@@ -665,7 +718,7 @@ export default function FacultyLiveTimetablePage() {
                 const myName = (user.full_name || '').toLowerCase().trim()
                 return name === myName || name.includes(myName) || myName.includes(name)
             })
-            .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
+            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
     }
 
     const isEffectiveAbsent = (allocId: number, date: string) => {
@@ -892,7 +945,19 @@ export default function FacultyLiveTimetablePage() {
                                                             <MdChevronLeft />
                                                         </button>
                                                         <div className={styles.groupPageLabel}>
-                                                            <strong>{groupValues[groupPage]}</strong>
+                                                            <select
+                                                                className={styles.groupValueInlineSelect}
+                                                                value={groupPage}
+                                                                onChange={(e) => setGroupPage(Number(e.target.value))}
+                                                                aria-label={`Select ${groupBy} group`}
+                                                                title={`Select ${groupBy}`}
+                                                            >
+                                                                {groupValues.map((groupValue, index) => (
+                                                                    <option key={`${groupValue}-${index}`} value={index}>
+                                                                        {groupValue}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
                                                             <span className={styles.groupPageCount}>{groupPage + 1} / {groupValues.length}</span>
                                                         </div>
                                                         <button
@@ -1091,10 +1156,17 @@ export default function FacultyLiveTimetablePage() {
                                                             {FACULTY_TIME_SLOTS.map((slot, slotIdx) => {
                                                                 const isHour = slotIdx % 2 === 0
                                                                 const slotMinutes = (Math.floor(slotIdx / 2) + 7) * 60 + (slotIdx % 2) * 30
+                                                                const nowMins = currentTime.getHours() * 60 + currentTime.getMinutes()
+                                                                const isNowSlot = isCurrentWeek && nowMins >= slotMinutes && nowMins < slotMinutes + 30
                                                                 return (
-                                                                    <tr key={slot} className={isHour ? styles.gridHourRow : styles.gridHalfRow}>
-                                                                        <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark}`}>
+                                                                    <tr key={slot} className={`${isHour ? styles.gridHourRow : styles.gridHalfRow} ${isNowSlot ? styles.gridNowRow : ''}`}>
+                                                                        <td className={`${styles.gridTimeCell} ${isHour ? styles.gridHourMark : styles.gridHalfMark} ${isNowSlot ? styles.gridNowTimeCell : ''}`}>
                                                                             {isHour ? slot : ''}
+                                                                            {isNowSlot && (
+                                                                                <div className={styles.gridNowIndicatorWrapper}>
+                                                                                    <span className={styles.gridNowIndicatorLabel}>NOW</span>
+                                                                                </div>
+                                                                            )}
                                                                         </td>
                                                                         {GRID_DAYS.map(day => {
                                                                             const dayDate = getDayDate(day)
@@ -1102,29 +1174,38 @@ export default function FacultyLiveTimetablePage() {
                                                                             const dayAllocs = getFilteredGridAllocations(day)
 
                                                                             const startingHere = dayAllocs.filter(a => {
-                                                                                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
-                                                                                if (parts.length !== 2) return false
-                                                                                const startMin = parseTimeToMinutes(parts[0])
+                                                                                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                                                                                if (!startRaw || !endRaw) return false
+                                                                                const startMin = parseTimeToMinutes(startRaw)
                                                                                 return startMin >= slotMinutes && startMin < slotMinutes + 30
                                                                             })
                                                                             const coveredByEarlier = dayAllocs.some(a => {
-                                                                                const parts = (a.schedule_time || '').split('-').map((s: string) => s.trim())
-                                                                                if (parts.length !== 2) return false
-                                                                                const startMin = parseTimeToMinutes(parts[0])
-                                                                                const endMin = parseTimeToMinutes(parts[1])
+                                                                                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                                                                                if (!startRaw || !endRaw) return false
+                                                                                const startMin = parseTimeToMinutes(startRaw)
+                                                                                const endMin = parseTimeToMinutes(endRaw)
                                                                                 return startMin < slotMinutes && endMin > slotMinutes
                                                                             })
-                                                                            if (coveredByEarlier && startingHere.length === 0) return null
+                                                                            if (coveredByEarlier && startingHere.length === 0) {
+                                                                                return (
+                                                                                    <td
+                                                                                        key={`${day}-${slot}`}
+                                                                                        className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}
+                                                                                    >
+                                                                                        <div className={styles.gridCellContent} />
+                                                                                    </td>
+                                                                                )
+                                                                            }
                                                                             return (
                                                                                 <td
                                                                                     key={`${day}-${slot}`}
-                                                                                    className={styles.gridDataCell}
+                                                                                    className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}
                                                                                 >
                                                                                     <div className={styles.gridCellContent}>
                                                                                         {startingHere.map(alloc => {
-                                                                                            const parts = (alloc.schedule_time || '').split('-').map((s: string) => s.trim())
-                                                                                            const startMin = parseTimeToMinutes(parts[0] || '')
-                                                                                            const endMin = parseTimeToMinutes(parts[1] || '')
+                                                                                            const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
+                                                                                            const startMin = parseTimeToMinutes(startRaw)
+                                                                                            const endMin = parseTimeToMinutes(endRaw)
                                                                                             const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
                                                                                             const compactHeight = durationSlots * 32 - 2
                                                                                             const absent = isEffectiveAbsent(alloc.id, dayDate)

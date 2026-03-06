@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTheme } from '@/app/context/ThemeContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -48,6 +48,7 @@ import ScheduleRequestsModal from '@/app/components/ScheduleRequestsModal/Schedu
 import AllocationTable from '@/app/components/AllocationTable/AllocationTable'
 import RoomReassignmentModal from '@/app/components/RoomReassignmentModal/RoomReassignmentModal'
 import FacultyAssignmentModal from '@/app/components/FacultyAssignmentModal/FacultyAssignmentModal'
+import ManualEditModal from '@/app/LandingPages/RoomSchedule/GenerateSchedule/ManualEditModal'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -115,6 +116,21 @@ interface RoomAllocation {
   lec_hours?: number
   lab_hours?: number
   college?: string // NEW: Section's college
+}
+
+interface ManualClassItem {
+  id: number
+  course_code: string
+  course_name: string
+  section: string
+  teacher_name?: string
+  teacher_id?: string
+  lec_hours?: number
+  lab_hours?: number
+  student_count?: number
+  department?: string
+  year_level?: number
+  college?: string
 }
 
 interface TimetableCell {
@@ -248,6 +264,19 @@ const allocationCoversSlot = (allocation: RoomAllocation, slotTime: string): boo
   return slotMinutes >= startMinutes && slotMinutes < endMinutes
 }
 
+const detectAllocationComponent = (allocation: RoomAllocation, roomType?: string): string => {
+  const sec = (allocation.section || '').toUpperCase()
+  const course = (allocation.course_name || '').toUpperCase()
+  const code = (allocation.course_code || '').toUpperCase()
+  const room = (roomType || '').toUpperCase()
+
+  if (sec.includes('G1')) return 'LAB G1'
+  if (sec.includes('G2')) return 'LAB G2'
+
+  const looksLab = sec.includes('LAB') || course.includes('LAB') || course.includes('LABORATORY') || code.includes('LAB') || room.includes('LAB')
+  return looksLab ? 'LAB' : 'LEC'
+}
+
 export default function ViewSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -332,6 +361,12 @@ export default function ViewSchedulePage() {
   const [assigningSchedule, setAssigningSchedule] = useState(false)
   const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false)
+
+  // Manual unscheduled placement state
+  const [showManualEditModal, setShowManualEditModal] = useState(false)
+  const [manualEditClasses, setManualEditClasses] = useState<ManualClassItem[]>([])
+  const [manualEditRooms, setManualEditRooms] = useState<any[]>([])
+  const [loadingManualEditData, setLoadingManualEditData] = useState(false)
 
   // Schedule lock state
   const [isTogglingLock, setIsTogglingLock] = useState(false)
@@ -780,9 +815,140 @@ export default function ViewSchedulePage() {
     }
   }
 
+  const fetchManualEditResources = async (schedule: Schedule) => {
+    setLoadingManualEditData(true)
+    try {
+      const [{ data: classData }, { data: roomData }, { data: teachingLoadsData }] = await Promise.all([
+        db
+          .from('class_schedules')
+          .select('id, course_code, course_name, section, year_level, department, college, lec_hr, lab_hr, lec_hours, lab_hours, student_count')
+          .eq('upload_group_id', schedule.class_group_id),
+        db
+          .from('campuses')
+          .select('*')
+          .eq('upload_group_id', schedule.campus_group_id),
+        db
+          .from('teaching_loads')
+          .select('course_id, section, faculty_user_id, faculty_profiles!inner(full_name), class_schedules!inner(course_code)')
+      ])
+
+      const teacherMap = new Map<string, { teacher_name: string; teacher_id?: string }>()
+      ;(teachingLoadsData || []).forEach((tl: any) => {
+        const code = (tl.class_schedules?.course_code || '').toLowerCase()
+        const section = (tl.section || '').toLowerCase()
+        if (!code) return
+        teacherMap.set(`${code}|${section}`, {
+          teacher_name: tl.faculty_profiles?.full_name || '',
+          teacher_id: tl.faculty_user_id || undefined
+        })
+      })
+
+      const classes: ManualClassItem[] = (classData || []).map((cls: any) => {
+        const key = `${(cls.course_code || '').toLowerCase()}|${(cls.section || '').toLowerCase()}`
+        const teacher = teacherMap.get(key)
+        return {
+          id: cls.id,
+          course_code: cls.course_code || '',
+          course_name: cls.course_name || '',
+          section: cls.section || '',
+          year_level: cls.year_level || 1,
+          department: cls.department || '',
+          college: cls.college || undefined,
+          teacher_name: teacher?.teacher_name || '',
+          teacher_id: teacher?.teacher_id,
+          lec_hours: cls.lec_hours ?? cls.lec_hr ?? 0,
+          lab_hours: cls.lab_hours ?? cls.lab_hr ?? 0,
+          student_count: cls.student_count ?? 0,
+        }
+      })
+
+      const rooms = (roomData || []).map((room: any) => ({
+        ...room,
+        floor_level: room.floor_level ?? room.floor_number ?? undefined,
+      }))
+
+      setManualEditClasses(classes)
+      setManualEditRooms(rooms)
+    } catch (error) {
+      console.error('Error loading manual edit resources:', error)
+      alert('Failed to load unscheduled classes for manual placement.')
+    } finally {
+      setLoadingManualEditData(false)
+    }
+  }
+
+  const handleOpenManualEdit = async () => {
+    if (!selectedSchedule) return
+    if (manualEditClasses.length === 0 || manualEditRooms.length === 0) {
+      await fetchManualEditResources(selectedSchedule)
+    }
+    setShowManualEditModal(true)
+  }
+
+  const handleManualEditSave = async (editedAllocations: any[]) => {
+    if (!selectedSchedule) return
+
+    try {
+      const classById = new Map(manualEditClasses.map(c => [c.id, c]))
+      const roomById = new Map((manualEditRooms || []).map((r: any) => [r.id, r]))
+      const classByKey = new Map(manualEditClasses.map(c => [`${(c.course_code || '').toLowerCase()}|${(c.section || '').toLowerCase()}`, c]))
+
+      const rowsToInsert = editedAllocations
+        .filter((alloc: any) => alloc?.schedule_day && alloc?.schedule_time)
+        .map((alloc: any) => {
+          const classMeta = classById.get(alloc.class_id) || classByKey.get(`${(alloc.course_code || '').toLowerCase()}|${(alloc.section || '').toLowerCase()}`)
+          const roomMeta = roomById.get(alloc.room_id) || manualEditRooms.find((r: any) => r.room === alloc.room && r.building === alloc.building)
+
+          return {
+            schedule_id: selectedSchedule.id,
+            class_id: classMeta?.id || alloc.class_id || null,
+            room_id: roomMeta?.id || alloc.room_id || null,
+            course_code: alloc.course_code || classMeta?.course_code || '',
+            course_name: alloc.course_name || classMeta?.course_name || '',
+            section: alloc.section || classMeta?.section || '',
+            year_level: classMeta?.year_level || alloc.year_level || null,
+            schedule_day: alloc.schedule_day,
+            schedule_time: alloc.schedule_time,
+            campus: roomMeta?.campus || alloc.campus || '',
+            building: roomMeta?.building || alloc.building || '',
+            room: roomMeta?.room || alloc.room || '',
+            capacity: roomMeta?.capacity || alloc.capacity || 0,
+            teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
+            teacher_id: classMeta?.teacher_id || alloc.teacher_id || null,
+            department: classMeta?.department || alloc.department || '',
+            lec_hours: classMeta?.lec_hours ?? alloc.lec_hours ?? 0,
+            lab_hours: classMeta?.lab_hours ?? alloc.lab_hours ?? 0,
+            college: classMeta?.college || alloc.college || null,
+          }
+        })
+
+      const { error: deleteError } = await db
+        .from('room_allocations')
+        .delete()
+        .eq('schedule_id', selectedSchedule.id)
+
+      if (deleteError) throw deleteError
+
+      if (rowsToInsert.length > 0) {
+        const { error: insertError } = await db
+          .from('room_allocations')
+          .insert(rowsToInsert)
+        if (insertError) throw insertError
+      }
+
+      setShowManualEditModal(false)
+      await fetchUnifiedSchedule()
+      alert('Manual schedule changes saved successfully.')
+    } catch (error: any) {
+      console.error('Error saving manual schedule:', error)
+      alert(`Failed to save manual changes: ${error.message || 'Unknown error'}`)
+    }
+  }
+
   useEffect(() => {
     if (selectedSchedule) {
       fetchUnifiedSchedule()
+      fetchManualEditResources(selectedSchedule)
     }
   }, [selectedSchedule])
 
@@ -1042,6 +1208,26 @@ export default function ViewSchedulePage() {
 
     return `${hour}:${minute} ${period}`
   }
+  const manualInitialAllocations = useMemo(() => {
+    const classById = new Map(manualEditClasses.map(c => [c.id, c]))
+    const classByKey = new Map(manualEditClasses.map(c => [`${(c.course_code || '').toLowerCase()}|${(c.section || '').toLowerCase()}`, c]))
+
+    return allocations.map((alloc: any) => {
+      const roomMeta = manualEditRooms.find((r: any) => r.id === alloc.room_id || (r.room === alloc.room && r.building === alloc.building))
+      const classMeta = classById.get(alloc.class_id) || classByKey.get(`${(alloc.course_code || '').toLowerCase()}|${(alloc.section || '').toLowerCase()}`)
+
+      return {
+        ...alloc,
+        class_id: classMeta?.id || alloc.class_id,
+        room_id: roomMeta?.id || alloc.room_id,
+        component: detectAllocationComponent(alloc, roomMeta?.room_type),
+        teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
+        lec_hours: classMeta?.lec_hours ?? alloc.lec_hours ?? 0,
+        lab_hours: classMeta?.lab_hours ?? alloc.lab_hours ?? 0,
+        college: classMeta?.college ?? alloc.college,
+      }
+    })
+  }, [allocations, manualEditClasses, manualEditRooms])
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to archive this schedule? You can restore it from the Archive later.')) {
@@ -2529,6 +2715,19 @@ export default function ViewSchedulePage() {
                             {selectedSchedule?.schedule_name} | {selectedSchedule?.school_name} | Total: {allocations.length} allocations
                           </p>
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <button
+                            className={styles.actionButton}
+                            onClick={handleOpenManualEdit}
+                            disabled={!selectedSchedule || loadingManualEditData}
+                            title="Open manual editor to drag and place unscheduled classes"
+                          >
+                            <MdGridView size={14} />
+                            {loadingManualEditData
+                              ? 'Loading Editor...'
+                              : `Manual Place (${selectedSchedule?.unscheduled_classes || 0} unscheduled)`}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className={styles.timetableContainer}>
@@ -2673,6 +2872,20 @@ export default function ViewSchedulePage() {
               // Refresh allocations
               fetchUnifiedSchedule()
             }}
+          />
+        )}
+
+        {selectedSchedule && showManualEditModal && (
+          <ManualEditModal
+            isOpen={showManualEditModal}
+            onClose={() => setShowManualEditModal(false)}
+            onSave={handleManualEditSave}
+            rooms={manualEditRooms}
+            classes={manualEditClasses}
+            timeSettings={{ startTime: '07:00', endTime: '21:00' }}
+            initialAllocations={manualInitialAllocations}
+            collegeRoomMatchingEnabled
+            allowG1G2SplitSessions
           />
         )}
 

@@ -3824,6 +3824,159 @@
   background: var(--bg-gray-50);
 }
 
+/* ==================== Generate Review Modal ==================== */
+.generateReviewModal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 920px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.reviewModalHeader {
+  padding: 22px 28px;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, var(--primary-alpha) 0%, transparent 100%);
+}
+
+.reviewModalTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--content-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.reviewModalTitle svg {
+  color: var(--primary);
+}
+
+.reviewModalBody {
+  padding: 22px 28px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reviewLeadText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--content-text-secondary);
+  line-height: 1.5;
+}
+
+.reviewSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reviewSummaryItem {
+  background: var(--bg-gray-50);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reviewSummaryLabel {
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+.reviewSummaryValue {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--content-text);
+  font-weight: 800;
+}
+
+.reviewSectionCard {
+  background: var(--bg-gray-50);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.reviewSectionTitle {
+  margin: 0 0 10px 0;
+  font-size: 15px;
+  color: var(--content-text);
+  font-weight: 700;
+}
+
+.reviewList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--content-text-secondary);
+  font-size: 13px;
+}
+
+.reviewMutedText {
+  margin: 0;
+  color: var(--text-medium);
+  font-size: 13px;
+}
+
+.reviewScopeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.reviewScopeGrid p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--content-text-secondary);
+}
+
+.reviewWarningBox {
+  border-radius: 10px;
+  border: 1px solid rgba(245, 124, 0, 0.35);
+  background: var(--warning-bg);
+  padding: 12px 14px;
+}
+
+.reviewWarningBox p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--warning-orange);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reviewWarningBox p + p {
+  margin-top: 8px;
+}
+
+.reviewModalFooter {
+  padding: 14px 28px;
+  border-top: 2px solid var(--border-color);
+  background: var(--bg-gray-50);
+}
+
 /* ==================== View All Modal Styles ==================== */
 .viewAllModal {
   background: var(--card-bg);

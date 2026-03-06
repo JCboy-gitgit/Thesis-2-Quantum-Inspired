@@ -53,6 +53,10 @@
     margin: 0;
 }
 
+.titleText {
+    display: inline;
+}
+
 .headerLeft h2 svg {
     color: #10b981;
 }
@@ -66,6 +70,10 @@
 }
 
 .viewSelector button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 8px 18px;
     border-radius: 8px;
     border: none;
@@ -75,6 +83,11 @@
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 14px;
+}
+
+.tabLabel {
+    display: inline;
+    line-height: 1;
 }
 
 .viewSelector button.active {
@@ -92,6 +105,10 @@
 }
 
 .resetBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 8px 18px;
     border-radius: 8px;
     border: 1px solid transparent;
@@ -399,6 +416,10 @@
 
 .currentItem svg {
     color: #10b981;
+}
+
+.currentMeta {
+    display: inline-flex;
 }
 
 .timetableScrollContainer {
@@ -733,6 +754,14 @@
     font-size: 20px;
 }
 
+.saveBtnTextFull {
+    display: inline;
+}
+
+.saveBtnTextShort {
+    display: none;
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {
@@ -1056,23 +1085,47 @@
     }
 
     .modalHeader {
-        padding: 16px;
+        padding: 10px 12px;
     }
 
     .headerLeft {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+        flex: 1;
+        min-width: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .headerLeft h2 {
+        font-size: 18px;
+        gap: 8px;
+        flex-shrink: 0;
     }
 
     .viewSelector {
-        width: 100%;
-        overflow-x: auto;
+        flex: 1;
+        min-width: 0;
+        padding: 3px;
+        gap: 2px;
     }
 
     .viewSelector button {
-        white-space: nowrap;
-        flex: 1;
+        flex: 0 0 auto;
+        min-width: 40px;
+        padding: 8px 10px;
+    }
+
+    .tabLabel {
+        display: none;
+    }
+
+    .vDivider {
+        margin: auto 2px;
+    }
+
+    .resetBtn {
+        min-width: 40px;
+        padding: 8px 10px;
     }
 
     .manualEditBody {
@@ -1081,42 +1134,104 @@
 
     .coursesPanel {
         width: 100%;
-        height: 35vh;
+        height: 28vh;
+        min-height: 200px;
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
     }
 
     .timetablePanel {
-        height: 65vh;
+        height: 72vh;
     }
 
     .panelHeader {
-        padding: 12px 16px;
+        padding: 10px 12px;
+    }
+
+    .panelHeader h3 {
+        margin-bottom: 10px;
+    }
+
+    .searchBox {
+        padding: 8px 10px;
+    }
+
+    .filterRow {
+        margin-top: 8px;
     }
 
     .classList {
         flex-direction: row;
         overflow-x: auto;
-        padding-bottom: 8px;
+        gap: 8px;
+        padding: 8px 10px 10px;
     }
 
     .classCard {
-        min-width: 250px;
+        min-width: 210px;
         flex-shrink: 0;
+        padding: 12px;
     }
 
     .timetablePanel .panelHeader {
-        padding: 12px 16px;
+        padding: 8px 12px;
     }
 
     .itemNavigator {
         width: 100%;
         justify-content: space-between;
+        gap: 8px;
+    }
+
+    .itemNavigator button {
+        width: 38px;
+        height: 38px;
     }
 
     .currentItem {
-        font-size: 16px;
-        padding: 0 8px;
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+        font-size: 15px;
+        padding: 0 4px;
+        gap: 8px;
+    }
+
+    .currentMeta {
+        display: none;
+    }
+
+    .currentItem select {
+        max-width: 100%;
+        text-overflow: ellipsis;
+    }
+
+    .timetableScrollContainer {
+        padding: 8px;
+    }
+
+    .manualTimetable th {
+        font-size: 11px;
+        padding: 10px 8px;
+    }
+
+    .timeLabel {
+        width: 84px;
+        font-size: 10px;
+        padding-right: 8px;
+    }
+
+    .slotCell {
+        height: 52px;
+    }
+
+    .placedClass {
+        padding: 6px;
+        font-size: 10px;
+    }
+
+    .placedClass strong {
+        font-size: 11px;
     }
 
     .allocTools {
@@ -1139,23 +1254,67 @@
     }
 
     .modalFooter {
-        padding: 16px;
-        flex-direction: column;
-        gap: 16px;
+        padding: 10px 12px;
+        flex-direction: row;
+        gap: 10px;
     }
 
     .footerActions {
-        width: 100%;
-        justify-content: space-between;
+        margin-left: auto;
+        gap: 8px;
     }
 
     .saveBtn {
-        flex: 1;
+        padding: 10px 14px;
+        font-size: 14px;
         justify-content: center;
     }
 
     .cancelBtn {
-        flex: 1;
+        padding: 10px 14px;
+        font-size: 14px;
         justify-content: center;
+    }
+
+    .footerStats {
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .footerStats strong {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 520px) {
+    .titleText {
+        display: none;
+    }
+
+    .viewSelector button,
+    .resetBtn {
+        min-width: 36px;
+        padding: 8px;
+    }
+
+    .coursesPanel {
+        height: 24vh;
+        min-height: 170px;
+    }
+
+    .timetablePanel {
+        height: 76vh;
+    }
+
+    .saveBtnTextFull {
+        display: none;
+    }
+
+    .saveBtnTextShort {
+        display: inline;
+    }
+
+    .footerStats {
+        display: none;
     }
 }

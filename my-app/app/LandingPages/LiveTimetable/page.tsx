@@ -133,9 +133,19 @@ const TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
     return `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`
 })
 
+function splitTimeRange(timeStr: string): [string, string] {
+    if (!timeStr) return ['', '']
+    const normalized = timeStr
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\s+to\s+/gi, '-')
+    const parts = normalized.split('-').map(s => s.trim()).filter(Boolean)
+    if (parts.length < 2) return ['', '']
+    return [parts[0], parts[1]]
+}
+
 function parseTimeToMinutes(t: string): number {
     if (!t) return 0
-    const m = t.match(/(\d+):(\d+)\s*(AM|PM)?/i)
+    const m = t.trim().match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i)
     if (!m) return 0
     let h = parseInt(m[1]), min = parseInt(m[2])
     const ap = m[3]?.toUpperCase()
@@ -166,10 +176,10 @@ function addDays(d: Date, n: number): Date {
 function isClassOngoing(timeStr: string): boolean {
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    const parts = timeStr.split('-').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const start = parseTimeToMinutes(parts[0])
-    const end = parseTimeToMinutes(parts[1])
+    const [startRaw, endRaw] = splitTimeRange(timeStr)
+    if (!startRaw || !endRaw) return false
+    const start = parseTimeToMinutes(startRaw)
+    const end = parseTimeToMinutes(endRaw)
     return nowMin >= start && nowMin < end
 }
 
@@ -202,15 +212,52 @@ function normalizeSection(section: string): string {
 
 function expandDays(dayStr: string): string[] {
     if (!dayStr) return []
-    const day = dayStr.trim().toUpperCase()
-    if (day.includes('/')) return day.split('/').map(d => normalizeDay(d.trim()))
-    if (day === 'TTH' || day === 'TH' || day === 'T/TH') return ['Tuesday', 'Thursday']
-    if (day === 'MWF') return ['Monday', 'Wednesday', 'Friday']
-    if (day === 'MW') return ['Monday', 'Wednesday']
-    if (day === 'TF') return ['Tuesday', 'Friday']
-    if (day === 'MTWTHF') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    if (day === 'MTWTHFS') return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    return [normalizeDay(day)]
+
+    const compact = dayStr.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
+    const tokenMap: Record<string, string> = {
+        MONDAY: 'Monday', MON: 'Monday', M: 'Monday',
+        TUESDAY: 'Tuesday', TUE: 'Tuesday', TU: 'Tuesday', T: 'Tuesday',
+        WEDNESDAY: 'Wednesday', WED: 'Wednesday', W: 'Wednesday',
+        THURSDAY: 'Thursday', THU: 'Thursday', TH: 'Thursday', R: 'Thursday',
+        FRIDAY: 'Friday', FRI: 'Friday', F: 'Friday',
+        SATURDAY: 'Saturday', SAT: 'Saturday', SA: 'Saturday', S: 'Saturday',
+        SUNDAY: 'Sunday', SUN: 'Sunday', SU: 'Sunday', U: 'Sunday'
+    }
+
+    const comboMap: Record<string, string[]> = {
+        TTH: ['Tuesday', 'Thursday'],
+        MWF: ['Monday', 'Wednesday', 'Friday'],
+        MW: ['Monday', 'Wednesday'],
+        TF: ['Tuesday', 'Friday'],
+        MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    }
+
+    if (compact.includes('/') || compact.includes(',')) {
+        return compact
+            .split(/[\/,]+/)
+            .map(token => tokenMap[token] || normalizeDay(token))
+            .filter(Boolean)
+    }
+
+    if (comboMap[compact]) return comboMap[compact]
+
+    const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
+    const expanded: string[] = []
+    let i = 0
+
+    while (i < compact.length) {
+        const token = orderedTokens.find(t => compact.startsWith(t, i))
+        if (!token) {
+            i += 1
+            continue
+        }
+        const mapped = tokenMap[token]
+        if (mapped) expanded.push(mapped)
+        i += token.length
+    }
+
+    return expanded.length > 0 ? Array.from(new Set(expanded)) : [normalizeDay(compact)]
 }
 
 function isClassDone(timeStr: string, dayName: string, todayDayName: string): boolean {
@@ -222,9 +269,9 @@ function isClassDone(timeStr: string, dayName: string, todayDayName: string): bo
     // Same day - check if class has ended
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    const parts = timeStr.split('-').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const end = parseTimeToMinutes(parts[1])
+    const [, endRaw] = splitTimeRange(timeStr)
+    if (!endRaw) return false
+    const end = parseTimeToMinutes(endRaw)
     return nowMin >= end
 }
 
@@ -237,9 +284,9 @@ function isClassUpcoming(timeStr: string, dayName: string, todayDayName: string)
     // Same day - check if class hasn't started
     const now = new Date()
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    const parts = timeStr.split('-').map(s => s.trim())
-    if (parts.length !== 2) return false
-    const start = parseTimeToMinutes(parts[0])
+    const [startRaw, endRaw] = splitTimeRange(timeStr)
+    if (!startRaw || !endRaw) return false
+    const start = parseTimeToMinutes(startRaw)
     return nowMin < start
 }
 
@@ -497,10 +544,10 @@ export default function AdminLiveTimetablePage() {
                 if (creatingEvent.timeRangeStart && creatingEvent.timeRangeEnd && creatingEvent.timeRangeStart !== 'all' && creatingEvent.timeRangeEnd !== 'all') {
                     const evtStart = parseTimeToMinutes(creatingEvent.timeRangeStart)
                     const evtEnd = parseTimeToMinutes(creatingEvent.timeRangeEnd)
-                    const aParts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
-                    if (aParts.length === 2) {
-                        const aStart = parseTimeToMinutes(aParts[0])
-                        const aEnd = parseTimeToMinutes(aParts[1])
+                    const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                    if (startRaw && endRaw) {
+                        const aStart = parseTimeToMinutes(startRaw)
+                        const aEnd = parseTimeToMinutes(endRaw)
                         if (evtStart > 0 && evtEnd > 0 && aStart > 0 && aEnd > 0) {
                             return evtStart < aEnd && evtEnd > aStart
                         }
@@ -570,8 +617,8 @@ export default function AdminLiveTimetablePage() {
     const hasDragConflict = (targetDay: string, targetSlotMinutes: number, draggingAllocId: number): boolean => {
         const draggingAlloc = allocations.find(a => a.id === draggingAllocId)
         if (!draggingAlloc) return false
-        const parts = draggingAlloc.schedule_time?.split('-').map((s: string) => s.trim()) || []
-        const duration = parts.length === 2 ? parseTimeToMinutes(parts[1]) - parseTimeToMinutes(parts[0]) : 60
+        const [dragStartRaw, dragEndRaw] = splitTimeRange(draggingAlloc.schedule_time || '')
+        const duration = dragStartRaw && dragEndRaw ? parseTimeToMinutes(dragEndRaw) - parseTimeToMinutes(dragStartRaw) : 60
         const newStart = targetSlotMinutes
         const newEnd = targetSlotMinutes + duration
 
@@ -579,10 +626,10 @@ export default function AdminLiveTimetablePage() {
             if (a.id === draggingAllocId) return false
             const aDays = expandDays(a.schedule_day || '')
             if (!aDays.some(d => d.toLowerCase() === targetDay.toLowerCase())) return false
-            const aParts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
-            if (aParts.length !== 2) return false
-            const aStart = parseTimeToMinutes(aParts[0])
-            const aEnd = parseTimeToMinutes(aParts[1])
+            const [aStartRaw, aEndRaw] = splitTimeRange(a.schedule_time || '')
+            if (!aStartRaw || !aEndRaw) return false
+            const aStart = parseTimeToMinutes(aStartRaw)
+            const aEnd = parseTimeToMinutes(aEndRaw)
             // Time overlap check
             const timesOverlap = newStart < aEnd && newEnd > aStart
             if (!timesOverlap) return false
@@ -612,9 +659,9 @@ export default function AdminLiveTimetablePage() {
         const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
         const ampm = hour >= 12 ? 'PM' : 'AM'
         const startTime = `${h12}:${min.toString().padStart(2, '0')} ${ampm}`
-        const parts = alloc.schedule_time?.split('-').map((s: string) => s.trim()) || []
+        const parts = splitTimeRange(alloc.schedule_time || '')
         let duration = 60
-        if (parts.length === 2) duration = parseTimeToMinutes(parts[1]) - parseTimeToMinutes(parts[0])
+        if (parts[0] && parts[1]) duration = parseTimeToMinutes(parts[1]) - parseTimeToMinutes(parts[0])
         const endMin = slotMinutes + duration
         const endH = Math.floor(endMin / 60)
         const endM = endMin % 60
@@ -749,7 +796,7 @@ export default function AdminLiveTimetablePage() {
                 const days = expandDays(a.schedule_day || '')
                 return days.some(d => d.toLowerCase() === day.toLowerCase())
             })
-            .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
+            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
     }
 
     // Get the date string for a given day of the current week
@@ -883,7 +930,7 @@ export default function AdminLiveTimetablePage() {
                 const days = expandDays(a.schedule_day || '')
                 return days.some(d => d.toLowerCase() === day.toLowerCase())
             })
-            .sort((a, b) => parseTimeToMinutes(a.schedule_time?.split('-')[0] || '') - parseTimeToMinutes(b.schedule_time?.split('-')[0] || ''))
+            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
     }
 
     const todayDayName = getTodayDayName()
@@ -1131,7 +1178,19 @@ export default function AdminLiveTimetablePage() {
                                                             <MdChevronLeft />
                                                         </button>
                                                         <span className={styles.groupPageLabel}>
-                                                            <strong>{pagedGroupValue}</strong>
+                                                            <select
+                                                                className={styles.groupValueInlineSelect}
+                                                                value={groupPage}
+                                                                onChange={(e) => setGroupPage(Number(e.target.value))}
+                                                                aria-label={`Select ${groupBy} group`}
+                                                                title={`Select ${groupBy}`}
+                                                            >
+                                                                {groupValues.map((groupValue, index) => (
+                                                                    <option key={`${groupValue}-${index}`} value={index}>
+                                                                        {groupValue}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
                                                             <span className={styles.groupPageCount}>{groupPage + 1} / {groupValues.length}</span>
                                                         </span>
                                                         <button
@@ -1226,29 +1285,45 @@ export default function AdminLiveTimetablePage() {
 
                                                                             // Find allocations that START in this slot
                                                                             const startingHere = dayAllocs.filter(a => {
-                                                                                const parts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
-                                                                                if (parts.length !== 2) return false
-                                                                                const startMin = parseTimeToMinutes(parts[0])
+                                                                                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                                                                                if (!startRaw || !endRaw) return false
+                                                                                const startMin = parseTimeToMinutes(startRaw)
                                                                                 return startMin >= slotMinutes && startMin < slotMinutes + 30
                                                                             })
 
                                                                             // Check if this cell is covered by a block that started earlier
                                                                             const coveredByEarlier = dayAllocs.some(a => {
-                                                                                const parts = a.schedule_time?.split('-').map((s: string) => s.trim()) || []
-                                                                                if (parts.length !== 2) return false
-                                                                                const startMin = parseTimeToMinutes(parts[0])
-                                                                                const endMin = parseTimeToMinutes(parts[1])
+                                                                                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
+                                                                                if (!startRaw || !endRaw) return false
+                                                                                const startMin = parseTimeToMinutes(startRaw)
+                                                                                const endMin = parseTimeToMinutes(endRaw)
                                                                                 return startMin < slotMinutes && endMin > slotMinutes
                                                                             })
 
                                                                             if (coveredByEarlier && startingHere.length === 0) {
-                                                                                return null
+                                                                                return (
+                                                                                    <td
+                                                                                        key={`${day}-${slot}`}
+                                                                                        className={`${styles.gridDataCell} ${isToday ? styles.gridDataCellToday : ''} ${isNowSlot ? styles.gridNowDataCell : ''} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
+                                                                                        onDragOver={handleDragOver}
+                                                                                        onDragEnter={() => {
+                                                                                            setDragOverCell(`${day}-${slotMinutes}`)
+                                                                                            if (draggedAllocId !== null) {
+                                                                                                setDragConflict(hasDragConflict(day, slotMinutes, draggedAllocId))
+                                                                                            }
+                                                                                        }}
+                                                                                        onDragLeave={() => { setDragOverCell(null); setDragConflict(false) }}
+                                                                                        onDrop={(e) => handleDrop(e, day, slotMinutes)}
+                                                                                    >
+                                                                                        <div className={styles.gridCellContent} />
+                                                                                    </td>
+                                                                                )
                                                                             }
 
                                                                             return (
                                                                                 <td
                                                                                     key={`${day}-${slot}`}
-                                                                                    className={`${styles.gridDataCell} ${isToday ? styles.gridDataCellToday : ''} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
+                                                                                    className={`${styles.gridDataCell} ${isToday ? styles.gridDataCellToday : ''} ${isNowSlot ? styles.gridNowDataCell : ''} ${dragOverCell === `${day}-${slotMinutes}` ? (dragConflict ? styles.gridDataCellConflict : styles.gridDataCellDragOver) : ''}`}
                                                                                     onDragOver={handleDragOver}
                                                                                     onDragEnter={() => {
                                                                                         setDragOverCell(`${day}-${slotMinutes}`)
@@ -1261,9 +1336,9 @@ export default function AdminLiveTimetablePage() {
                                                                                 >
                                                                                     <div className={styles.gridCellContent}>
                                                                                         {startingHere.map(alloc => {
-                                                                                            const parts = alloc.schedule_time?.split('-').map((s: string) => s.trim()) || []
-                                                                                            const startMin = parseTimeToMinutes(parts[0] || '')
-                                                                                            const endMin = parseTimeToMinutes(parts[1] || '')
+                                                                                            const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
+                                                                                            const startMin = parseTimeToMinutes(startRaw)
+                                                                                            const endMin = parseTimeToMinutes(endRaw)
                                                                                             const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
                                                                                             const absenceRecord = absences.find(ab => ab.allocation_id === alloc.id && ab.absence_date === dayDate && ab.status !== 'disputed')
                                                                                             const absent = !!absenceRecord

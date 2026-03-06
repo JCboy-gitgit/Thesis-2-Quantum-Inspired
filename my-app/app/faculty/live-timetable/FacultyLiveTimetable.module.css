@@ -1290,6 +1290,98 @@
     opacity: 0.85;
 }
 
+.groupSelect,
+.groupValueSelect {
+    color: var(--flt-text);
+    background-color: var(--flt-input-bg);
+    border-color: var(--flt-border-strong);
+}
+
+.groupSelect option,
+.groupValueSelect option {
+    background: var(--flt-surface);
+    color: var(--flt-text);
+}
+
+.groupValueInlineSelect {
+    width: 100%;
+    max-width: 100%;
+    padding: 2px 26px 2px 8px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--flt-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+}
+
+.groupValueInlineSelect:focus {
+    outline: none;
+    border-color: var(--flt-primary);
+    background-color: rgba(var(--flt-primary-rgb), 0.08);
+}
+
+.groupValueInlineSelect option {
+    background: var(--flt-surface);
+    color: var(--flt-text);
+}
+
+.page[data-theme="dark"] .groupSelect,
+.page[data-theme="dark"] .groupValueSelect {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.18);
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.page[data-theme="dark"] .groupSelect option,
+.page[data-theme="dark"] .groupValueSelect option,
+.page[data-theme="dark"] .groupValueInlineSelect option {
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.page[data-theme="dark"] .groupValueInlineSelect {
+    color: #e2e8f0;
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+
+.page[data-theme="green"] .groupSelect,
+.page[data-theme="green"] .groupValueSelect {
+    background-color: rgba(255, 255, 255, 0.92);
+    color: #14532d;
+    border-color: rgba(46, 175, 125, 0.35);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23166534' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.page[data-theme="green"] .groupSelect option,
+.page[data-theme="green"] .groupValueSelect option,
+.page[data-theme="green"] .groupValueInlineSelect option {
+    background: #f0fdf4;
+    color: #14532d;
+}
+
+.page[data-theme="green"] .groupValueInlineSelect {
+    color: #14532d;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%23166534' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+}
+
 /* ═══════════════════════════════════════════════════════════════
    GRID TABLE
    ═══════════════════════════════════════════════════════════════ */
@@ -1423,6 +1515,57 @@
 .gridHalfMark {
     color: var(--flt-text-muted);
     opacity: 0.55;
+}
+
+.gridNowRow td {
+    background: rgba(var(--flt-primary-rgb), 0.04) !important;
+}
+
+.gridNowTimeCell {
+    color: var(--flt-primary) !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+    background: rgba(var(--flt-primary-rgb), 0.08) !important;
+    border-right: 2px solid var(--flt-primary) !important;
+    position: relative;
+    z-index: 1;
+}
+
+.gridNowDataCell {
+    position: relative;
+}
+
+.gridNowDataCell::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--flt-primary);
+    box-shadow: 0 0 8px rgba(var(--flt-primary-rgb), 0.35);
+    z-index: 45;
+    pointer-events: none;
+}
+
+.gridNowIndicatorWrapper {
+    position: absolute;
+    top: -10px;
+    right: 4px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+}
+
+.gridNowIndicatorLabel {
+    background: var(--flt-primary);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(var(--flt-primary-rgb), 0.3);
 }
 
 /* Data cells */

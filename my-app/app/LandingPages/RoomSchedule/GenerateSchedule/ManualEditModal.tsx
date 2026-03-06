@@ -30,6 +30,40 @@ const formatTimeAMPM = (time24: string) => {
     return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`
 }
 
+const UNKNOWN_COLLEGE = 'Unassigned College'
+
+const normalizeCollegeLabel = (value?: string) => {
+    const trimmed = (value || '').trim()
+    return trimmed.length > 0 ? trimmed : UNKNOWN_COLLEGE
+}
+
+const parseCollegeLabels = (value?: string) => {
+    const normalized = normalizeCollegeLabel(value)
+    if (normalized === UNKNOWN_COLLEGE) return [UNKNOWN_COLLEGE]
+
+    const separated = normalized
+        .split(/\s*(?:\/|&|\||;|,)\s*/)
+        .map(part => part.trim())
+        .filter(Boolean)
+
+    if (separated.length > 1) {
+        return Array.from(new Set(separated.map(part => normalizeCollegeLabel(part))))
+    }
+
+    // Handle short abbreviation pattern like "CS and CAL" without breaking full college names.
+    const andParts = normalized
+        .split(/\s+and\s+/i)
+        .map(part => part.trim())
+        .filter(Boolean)
+
+    const looksLikeAbbrList = andParts.length > 1 && andParts.every(part => /^[A-Z][A-Z0-9-]{1,10}$/.test(part))
+    if (looksLikeAbbrList) {
+        return Array.from(new Set(andParts.map(part => normalizeCollegeLabel(part))))
+    }
+
+    return [normalized]
+}
+
 export default function ManualEditModal({
     isOpen, onClose, onSave, rooms, classes, timeSettings, initialAllocations,
     collegeRoomMatchingEnabled = true,
@@ -159,6 +193,37 @@ export default function ManualEditModal({
         return Array.from(unique).sort((a, b) => a.localeCompare(b));
     }, [classesWithStats])
 
+    const facultyCollegeMap = useMemo(() => {
+        const map = new Map<string, Set<string>>()
+        classes.forEach(c => {
+            const facultyName = c.teacher_name || 'TBD'
+            const colleges = parseCollegeLabels(c.college)
+            if (!map.has(facultyName)) map.set(facultyName, new Set<string>())
+            colleges.forEach(college => map.get(facultyName)?.add(college))
+        })
+        return map
+    }, [classes])
+
+    const sectionCollegeMap = useMemo(() => {
+        const map = new Map<string, Set<string>>()
+        const addSectionCollege = (section: string, college: string) => {
+            if (!map.has(section)) map.set(section, new Set<string>())
+            map.get(section)?.add(college)
+        }
+
+        classesWithStats.forEach(c => {
+            const colleges = parseCollegeLabels(c.college)
+            colleges.forEach(college => addSectionCollege(c.section, college))
+            if (c.isSplitLab) {
+                colleges.forEach(college => {
+                    addSectionCollege(`${c.section} G1`, college)
+                    addSectionCollege(`${c.section} G2`, college)
+                })
+            }
+        })
+        return map
+    }, [classesWithStats])
+
     const navigationItems = useMemo(() => {
         if (viewMode === 'room') return rooms
         if (viewMode === 'faculty') return faculties
@@ -167,6 +232,58 @@ export default function ManualEditModal({
     }, [viewMode, rooms, faculties, sections])
 
     const activeItem = navigationItems[activeItemIndex]
+
+    const groupedNavigationOptions = useMemo(() => {
+        type GroupedOption = { index: number, label: string }
+        const grouped = new Map<string, GroupedOption[]>()
+
+        const addToGroup = (college: string, option: GroupedOption) => {
+            if (!grouped.has(college)) grouped.set(college, [])
+            grouped.get(college)?.push(option)
+        }
+
+        if (viewMode === 'room') {
+            navigationItems.forEach((item: any, idx: number) => {
+                const colleges = parseCollegeLabels(item.college)
+                colleges.forEach(college => {
+                    addToGroup(college, { index: idx, label: `${item.building} - ${item.room}` })
+                })
+            })
+        } else if (viewMode === 'faculty') {
+            navigationItems.forEach((item: any, idx: number) => {
+                const colleges = Array.from(facultyCollegeMap.get(item as string) || [])
+                const targetColleges = colleges.length > 0 ? colleges : [UNKNOWN_COLLEGE]
+                targetColleges.forEach(college => {
+                    addToGroup(college, { index: idx, label: item as string })
+                })
+            })
+        } else if (viewMode === 'section') {
+            navigationItems.forEach((item: any, idx: number) => {
+                const colleges = Array.from(sectionCollegeMap.get(item as string) || [])
+                const targetColleges = colleges.length > 0 ? colleges : [UNKNOWN_COLLEGE]
+                targetColleges.forEach(college => {
+                    addToGroup(college, { index: idx, label: item as string })
+                })
+            })
+        }
+
+        const sortCollege = (a: string, b: string) => {
+            const rank = (name: string) => {
+                if (name === UNKNOWN_COLLEGE) return 1
+                return 0
+            }
+            const rankDiff = rank(a) - rank(b)
+            if (rankDiff !== 0) return rankDiff
+            return a.localeCompare(b)
+        }
+
+        return Array.from(grouped.entries())
+            .sort(([a], [b]) => sortCollege(a, b))
+            .map(([college, options]) => ({
+                college,
+                options: options.sort((a, b) => a.label.localeCompare(b.label))
+            }))
+    }, [viewMode, navigationItems, facultyCollegeMap, sectionCollegeMap])
 
     // 5. Equipment Filter Logic
     const filteredClasses = useMemo(() => {
@@ -265,7 +382,10 @@ export default function ManualEditModal({
                 if (classInfo.teacher_name && classInfo.teacher_name === existing.teacher_name) {
                     conflicts.push(`Prof conflict: ${classInfo.teacher_name} is in Room ${existing.room || 'another room'} at ${timeDesc}`);
                 }
-                const getBase = (s: string) => s.replace(/ G[12]$/i, '').replace(/_G[12](_LAB)?$/i, '');
+                const getBase = (s: unknown) => {
+                    const value = typeof s === 'string' ? s : '';
+                    return value.replace(/ G[12]$/i, '').replace(/_G[12](_LAB)?$/i, '');
+                };
                 const baseNew = getBase(newAlloc.section || '');
                 const baseExisting = getBase(existing.section || '');
 
@@ -716,30 +836,37 @@ export default function ManualEditModal({
                     <div className={styles.headerLeft}>
                         <h2>
                             <MdTableChart />
-                            Manual Schedule Editor
+                            <span className={styles.titleText}>Manual Schedule Editor</span>
                         </h2>
                         <div className={styles.viewSelector}>
                             <button
                                 className={viewMode === 'room' ? styles.active : ''}
                                 onClick={() => { setViewMode('room'); setActiveItemIndex(0); }}
+                                title="Rooms"
                             >
-                                <MdMeetingRoom /> Rooms
+                                <MdMeetingRoom />
+                                <span className={styles.tabLabel}>Rooms</span>
                             </button>
                             <button
                                 className={viewMode === 'faculty' ? styles.active : ''}
                                 onClick={() => { setViewMode('faculty'); setActiveItemIndex(0); }}
+                                title="Faculty"
                             >
-                                <FaChalkboardTeacher /> Faculty
+                                <FaChalkboardTeacher />
+                                <span className={styles.tabLabel}>Faculty</span>
                             </button>
                             <button
                                 className={viewMode === 'section' ? styles.active : ''}
                                 onClick={() => { setViewMode('section'); setActiveItemIndex(0); }}
+                                title="Section"
                             >
-                                <FaUsers /> Section
+                                <FaUsers />
+                                <span className={styles.tabLabel}>Section</span>
                             </button>
                             <div className={styles.vDivider} />
                             <button
                                 className={styles.resetBtn}
+                                title="Clear all allocations"
                                 onClick={() => {
                                     if (confirm('Are you sure you want to clear the entire current manual schedule? This will remove all placed classes from the editor.')) {
                                         setAllocations([]);
@@ -747,7 +874,8 @@ export default function ManualEditModal({
                                     }
                                 }}
                             >
-                                <MdDelete /> Clear All
+                                <MdDelete />
+                                <span className={styles.tabLabel}>Clear All</span>
                             </button>
                         </div>
                     </div>
@@ -910,25 +1038,29 @@ export default function ManualEditModal({
                                                     onChange={(e) => setActiveItemIndex(Number(e.target.value))}
                                                     style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
                                                 >
-                                                    {navigationItems.map((item: any, idx) => (
-                                                        <option key={idx} value={idx}>{item.building} - {item.room}</option>
+                                                    {groupedNavigationOptions.map(group => (
+                                                        <optgroup key={group.college} label={group.college}>
+                                                            {group.options.map(option => (
+                                                                <option key={`${group.college}-${option.index}`} value={option.index}>{option.label}</option>
+                                                            ))}
+                                                        </optgroup>
                                                     ))}
                                                 </select>
-                                                <small style={{ marginLeft: '10px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
+                                                <small className={styles.currentMeta} style={{ marginLeft: '10px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
                                                     {(activeItem as any)?.capacity} seats
                                                 </small>
                                                 {(activeItem as any)?.floor_level && (
-                                                    <small style={{ marginLeft: '6px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
+                                                    <small className={styles.currentMeta} style={{ marginLeft: '6px', opacity: 0.6, fontSize: '0.6em', background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: '4px' }}>
                                                         Floor {(activeItem as any)?.floor_level}
                                                     </small>
                                                 )}
                                                 {(activeItem as any)?.college && (
-                                                    <small style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                                    <small className={styles.currentMeta} style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
                                                         {(activeItem as any)?.college}
                                                     </small>
                                                 )}
                                                 {(activeItem as any)?.feature_tags?.length > 0 && (
-                                                    <small style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                                    <small className={styles.currentMeta} style={{ marginLeft: '6px', opacity: 0.9, fontSize: '0.6em', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
                                                         {(activeItem as any)?.feature_tags.join(', ')}
                                                     </small>
                                                 )}
@@ -943,8 +1075,12 @@ export default function ManualEditModal({
                                                 onChange={(e) => setActiveItemIndex(Number(e.target.value))}
                                                 style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
                                             >
-                                                {navigationItems.map((item: any, idx) => (
-                                                    <option key={idx} value={idx}>{item}</option>
+                                                {groupedNavigationOptions.map(group => (
+                                                    <optgroup key={group.college} label={group.college}>
+                                                        {group.options.map(option => (
+                                                            <option key={`${group.college}-${option.index}`} value={option.index}>{option.label}</option>
+                                                        ))}
+                                                    </optgroup>
                                                 ))}
                                             </select>
                                         </>
@@ -957,8 +1093,12 @@ export default function ManualEditModal({
                                                 onChange={(e) => setActiveItemIndex(Number(e.target.value))}
                                                 style={{ appearance: 'none', border: 'none', background: 'transparent', outline: 'none', cursor: 'pointer', textAlign: 'center', fontSize: '1rem', fontWeight: 600, color: 'inherit' }}
                                             >
-                                                {navigationItems.map((item: any, idx) => (
-                                                    <option key={idx} value={idx}>{item}</option>
+                                                {groupedNavigationOptions.map(group => (
+                                                    <optgroup key={group.college} label={group.college}>
+                                                        {group.options.map(option => (
+                                                            <option key={`${group.college}-${option.index}`} value={option.index}>{option.label}</option>
+                                                        ))}
+                                                    </optgroup>
                                                 ))}
                                             </select>
                                         </>
@@ -995,7 +1135,9 @@ export default function ManualEditModal({
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
                                                     if (viewMode === 'section') {
                                                         const activeSec = (activeItem as string);
-                                                        const getBase = (s: string) => s
+                                                        const getBase = (s: unknown) => {
+                                                            const value = typeof s === 'string' ? s : '';
+                                                            return value
                                                             .replace(/_LAB$/i, '')
                                                             .replace(/_LEC$/i, '')
                                                             .replace(/_LECTURE$/i, '')
@@ -1005,6 +1147,7 @@ export default function ManualEditModal({
                                                             .replace(/ LAB$/i, '')
                                                             .replace(/ LEC$/i, '')
                                                             .trim();
+                                                        };
                                                         const isMatch = a.section === activeSec || getBase(a.section) === getBase(activeSec);
                                                         return isMatch && slotInRange;
                                                     }
@@ -1154,7 +1297,9 @@ export default function ManualEditModal({
                     <div className={styles.footerActions}>
                         <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
                         <button className={styles.saveBtn} onClick={handleSave}>
-                            <MdSave /> Save & Applied Changes
+                            <MdSave />
+                            <span className={styles.saveBtnTextFull}>Save & Applied Changes</span>
+                            <span className={styles.saveBtnTextShort}>Save</span>
                         </button>
                     </div>
                 </div>
