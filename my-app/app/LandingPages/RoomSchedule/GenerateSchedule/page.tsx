@@ -277,6 +277,29 @@ interface ScheduleResult {
 // Days for timetable
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+function formatSectionDisplayLabel(rawSection: string): string {
+  const section = (rawSection || '').trim()
+  if (!section) return ''
+
+  const normalized = section
+    .replace(/_LABORATORY$/i, '')
+    .replace(/_LECTURE$/i, '')
+    .replace(/_LAB$/i, '')
+    .replace(/_LEC$/i, '')
+    .replace(/\s+LAB$/i, '')
+    .replace(/\s+LEC$/i, '')
+    .trim()
+
+  const gMatch = normalized.match(/^(.*?)(?:[_\s-]+)(G[12])$/i)
+  if (!gMatch) {
+    return normalized.replace(/_/g, ' ')
+  }
+
+  const base = gMatch[1].replace(/_/g, ' ').trim()
+  const group = gMatch[2].toUpperCase()
+  return `${base}-${group}`
+}
+
 // Utility function to generate time slots from settings
 function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
   const slots: TimeSlot[] = []
@@ -782,11 +805,32 @@ export default function GenerateSchedulePage() {
       const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
         if (!config.allowG1G2SplitSessions) return classList
 
-        const labRooms = rooms.filter(r => r.room_type?.toLowerCase().includes('lab'))
-        const maxLabCap = labRooms.length > 0 ? Math.max(...labRooms.map(r => r.capacity || 0)) : 30
+        const extractCollegeKey = (value?: string) => {
+          const raw = (value || '').trim().toUpperCase()
+          if (!raw) return ''
+          const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+          return abbr || raw
+        }
 
         const result: ClassSchedule[] = []
         classList.forEach(c => {
+          const cCollege = extractCollegeKey(c.college || '')
+          const compatibleLabRooms = rooms.filter(r => {
+            const rType = (r.room_type || '').toLowerCase()
+            const isLabRoom = rType.includes('lab') || rType.includes('computer')
+            if (!isLabRoom) return false
+
+            if (!config.collegeRoomMatchingEnabled) return true
+            const rCollegeRaw = (r.college || '').trim()
+            if (!rCollegeRaw) return true
+            const rCollegeKey = extractCollegeKey(rCollegeRaw)
+            return rCollegeKey === 'SHARED' || !cCollege || rCollegeKey === cCollege
+          })
+
+          const maxLabCap = compatibleLabRooms.length > 0
+            ? Math.max(...compatibleLabRooms.map(r => r.capacity || 0))
+            : 30
+
           const needsSplit = (c.lab_hours > 0) && (c.student_count > maxLabCap)
 
           if (needsSplit) {
@@ -1220,22 +1264,42 @@ export default function GenerateSchedulePage() {
         const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
           if (!config.allowG1G2SplitSessions) return classList
 
+          const extractCollegeKey = (value?: string) => {
+            const raw = (value || '').trim().toUpperCase()
+            if (!raw) return ''
+            const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+            return abbr || raw
+          }
+
           const result: ClassSchedule[] = []
           classList.forEach(c => {
             // Determine appropriate max capacity for this specific class type
             const isLabComponent = c.lab_hours > 0 || c.component === 'LAB'
             const targetRoomType = isLabComponent ? 'lab' : 'lecture'
 
+            const requiredFeatures = new Set<string>(
+              isLabComponent
+                ? ((c.required_lab_features && c.required_lab_features.length > 0)
+                  ? c.required_lab_features
+                  : (c.required_features || []))
+                : ((c.required_lec_features && c.required_lec_features.length > 0)
+                  ? c.required_lec_features
+                  : (c.required_features || []))
+            )
+            const cCollege = extractCollegeKey(c.college || '')
+
             // Find rooms compatible with this class's college and required type
             const compatibleRooms = rooms.filter(r => {
               const rType = (r.room_type || '').toLowerCase()
-              const rCollege = (r.college || '').toUpperCase()
-              const cCollege = (c.college || '').toUpperCase()
+              const rCollege = extractCollegeKey(r.college || '')
 
               const typeMatch = rType.includes(targetRoomType) || (targetRoomType === 'lab' && rType.includes('computer'))
-              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || rCollege === cCollege
+              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || !cCollege || rCollege === cCollege
 
-              return typeMatch && collegeMatch
+              const roomFeatures = new Set<string>((r.feature_tags || []) as string[])
+              const featureMatch = requiredFeatures.size === 0 || Array.from(requiredFeatures).every(f => roomFeatures.has(f))
+
+              return typeMatch && collegeMatch && featureMatch
             })
 
             // Determine threshold: use actual max compatible room capacity, but capped at reasonable defaults 
@@ -1457,22 +1521,42 @@ export default function GenerateSchedulePage() {
         const splitClasses = (classList: ClassSchedule[]): ClassSchedule[] => {
           if (!config.allowG1G2SplitSessions) return classList
 
+          const extractCollegeKey = (value?: string) => {
+            const raw = (value || '').trim().toUpperCase()
+            if (!raw) return ''
+            const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+            return abbr || raw
+          }
+
           const result: ClassSchedule[] = []
           classList.forEach(c => {
             // Determine appropriate max capacity for this specific class type
             const isLabComponent = c.lab_hours > 0 || c.component === 'LAB'
             const targetRoomType = isLabComponent ? 'lab' : 'lecture'
 
+            const requiredFeatures = new Set<string>(
+              isLabComponent
+                ? ((c.required_lab_features && c.required_lab_features.length > 0)
+                  ? c.required_lab_features
+                  : (c.required_features || []))
+                : ((c.required_lec_features && c.required_lec_features.length > 0)
+                  ? c.required_lec_features
+                  : (c.required_features || []))
+            )
+            const cCollege = extractCollegeKey(c.college || '')
+
             // Find rooms compatible with this class's college and required type
             const compatibleRooms = rooms.filter(r => {
               const rType = (r.room_type || '').toLowerCase()
-              const rCollege = (r.college || '').toUpperCase()
-              const cCollege = (c.college || '').toUpperCase()
+              const rCollege = extractCollegeKey(r.college || '')
 
               const typeMatch = rType.includes(targetRoomType) || (targetRoomType === 'lab' && rType.includes('computer'))
-              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || rCollege === cCollege
+              const collegeMatch = !config.collegeRoomMatchingEnabled || !rCollege || rCollege === 'SHARED' || !cCollege || rCollege === cCollege
 
-              return typeMatch && collegeMatch
+              const roomFeatures = new Set<string>((r.feature_tags || []) as string[])
+              const featureMatch = requiredFeatures.size === 0 || Array.from(requiredFeatures).every(f => roomFeatures.has(f))
+
+              return typeMatch && collegeMatch && featureMatch
             })
 
             // Determine threshold: use actual max compatible room capacity, but capped at reasonable defaults 
@@ -1984,10 +2068,10 @@ export default function GenerateSchedulePage() {
 
       // Show success notification with details
       const scheduledCount = result.scheduled_classes || 0
-      const conflictCount = result.conflicts?.length || 0
       const unscheduledCount = result.unscheduled_classes || 0
+      const hardConflictCount = Number(result.optimization_stats?.conflict_count || 0)
 
-      if (result.success && conflictCount === 0 && unscheduledCount === 0) {
+      if (result.success && hardConflictCount === 0 && unscheduledCount === 0) {
         // Perfect schedule - no conflicts
         toast.success('Schedule Generated Successfully!', {
           description: `${scheduledCount} classes scheduled with zero conflicts.`,
@@ -2008,26 +2092,26 @@ export default function GenerateSchedulePage() {
           category: 'schedule_generation',
           metadata: { scheduleName: config.scheduleName, scheduledCount }
         })
-      } else if (conflictCount > 0 || unscheduledCount > 0) {
+      } else if (hardConflictCount > 0 || unscheduledCount > 0) {
         // Schedule has conflicts or unscheduled classes
         toast.warning('Schedule Generated with Issues', {
-          description: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts detected.`,
+          description: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${hardConflictCount} hard conflicts detected.`,
           duration: 10000,
         })
         sendBrowserNotification(
           'Schedule Has Conflicts',
-          `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts. Review needed.`,
+          `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${hardConflictCount} hard conflicts. Review needed.`,
           'error'
         )
 
         // Persist to database
         createSystemAlert({
           title: 'Schedule Generated with Issues',
-          message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${conflictCount} conflicts for ${config.scheduleName}. Review needed.`,
+          message: `${scheduledCount} scheduled, ${unscheduledCount} unscheduled, ${hardConflictCount} hard conflicts for ${config.scheduleName}. Review needed.`,
           audience: 'admin',
           severity: 'warning',
           category: 'schedule_generation',
-          metadata: { scheduleName: config.scheduleName, scheduledCount, conflictCount, unscheduledCount }
+          metadata: { scheduleName: config.scheduleName, scheduledCount, hardConflictCount, unscheduledCount }
         })
       } else {
         toast.success('Schedule Generated', {
@@ -2679,21 +2763,21 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statIcon}><FaLayerGroup /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.totalClasses}</span>
-                    <span className={styles.statLabel}>Total Classes</span>
+                    <span className={styles.statLabel}>Total Allocations</span>
                   </div>
                 </div>
                 <div className={styles.statCard}>
                   <div className={styles.statIcon}><FaCheckCircle /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.scheduledClasses}</span>
-                    <span className={styles.statLabel}>Scheduled</span>
+                    <span className={styles.statLabel}>Scheduled Allocations</span>
                   </div>
                 </div>
                 <div className={styles.statCard}>
                   <div className={styles.statIcon}><FaExclamationTriangle /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.unscheduledClasses}</span>
-                    <span className={styles.statLabel}>Unscheduled</span>
+                    <span className={styles.statLabel}>Unscheduled Allocations</span>
                   </div>
                 </div>
                 <div className={styles.statCard}>
@@ -2863,7 +2947,7 @@ export default function GenerateSchedulePage() {
                         <div key={index} className={styles.unscheduledItem}>
                           <div className={styles.unscheduledHeader}>
                             <span className={styles.unscheduledCourse}>
-                              {item.course_code} - {item.section_code}
+                              {item.course_code} - {formatSectionDisplayLabel(item.section_code)}
                             </span>
                             <span className={styles.unscheduledSlots}>
                               {item.assigned_slots}/{item.needed_slots} slots

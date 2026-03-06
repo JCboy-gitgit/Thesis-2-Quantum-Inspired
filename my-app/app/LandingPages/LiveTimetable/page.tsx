@@ -124,6 +124,8 @@ interface Schedule {
     is_current: boolean
 }
 
+type SectionGroup = 'G1' | 'G2'
+
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
     const hour = Math.floor(i / 2) + 7
@@ -200,14 +202,95 @@ function normalizeDay(day: string): string {
     return dayMap[day.toUpperCase()] || day
 }
 
-function normalizeSection(section: string): string {
-    if (!section) return section
-    // Strip _Lab, _Lec, _G1, _G2 suffixes (case-insensitive)
+function normalizeSectionBase(section: string): string {
+    if (!section) return ''
     return section
-        .replace(/_(Lab|Lec)$/i, '')
+        .replace(/_LAB$/i, '')
+        .replace(/_LEC$/i, '')
+        .replace(/_LECTURE$/i, '')
+        .replace(/_LABORATORY$/i, '')
         .replace(/_G[12](_LAB)?$/i, '')
         .replace(/ G[12]$/i, '')
+        .replace(/, LAB$/i, '')
+        .replace(/, LEC$/i, '')
+        .replace(/, LECTURE$/i, '')
+        .replace(/, LABORATORY$/i, '')
+        .replace(/ LAB$/i, '')
+        .replace(/ LEC$/i, '')
+        .replace(/-LAB$/i, '')
+        .replace(/-LEC$/i, '')
         .trim()
+}
+
+function extractSectionGroup(section: string): SectionGroup | null {
+    if (!section) return null
+    const normalized = section.replace(/[-_]/g, ' ')
+    const match = normalized.match(/\b(G1|G2)\b/i)
+    if (!match) return null
+    const group = match[1].toUpperCase()
+    return group === 'G1' || group === 'G2' ? group : null
+}
+
+function parseSectionGroupLabel(label: string): { base: string, group: SectionGroup | null } {
+    const trimmed = (label || '').trim()
+    const match = trimmed.match(/^(.*?)(?:\s*-\s*|\s+)(G1|G2)$/i)
+    if (!match) {
+        return { base: normalizeSectionBase(trimmed), group: null }
+    }
+    return {
+        base: normalizeSectionBase(match[1].trim()),
+        group: match[2].toUpperCase() as SectionGroup
+    }
+}
+
+function buildSectionGroupLabels(allocations: RoomAllocation[]): string[] {
+    const baseGroups = new Map<string, Set<SectionGroup>>()
+
+    allocations.forEach((allocation) => {
+        const base = normalizeSectionBase(allocation.section || '')
+        if (!base) return
+        const group = extractSectionGroup(allocation.section || '')
+        if (!group) return
+        if (!baseGroups.has(base)) baseGroups.set(base, new Set())
+        baseGroups.get(base)!.add(group)
+    })
+
+    const labels = new Set<string>()
+    allocations.forEach((allocation) => {
+        const base = normalizeSectionBase(allocation.section || '')
+        if (!base) return
+        const group = extractSectionGroup(allocation.section || '')
+        const knownGroups = baseGroups.get(base)
+
+        if (group) {
+            labels.add(`${base}-${group}`)
+        } else if (knownGroups && knownGroups.size > 0) {
+            knownGroups.forEach(g => labels.add(`${base}-${g}`))
+        } else {
+            labels.add(base)
+        }
+    })
+
+    return Array.from(labels).sort((a, b) => a.localeCompare(b))
+}
+
+function matchesSectionGroupLabel(allocation: RoomAllocation, selectedLabel: string): boolean {
+    const allocationBase = normalizeSectionBase(allocation.section || '')
+    const allocationGroup = extractSectionGroup(allocation.section || '')
+    const { base: selectedBase, group: selectedGroup } = parseSectionGroupLabel(selectedLabel)
+
+    if (!allocationBase || allocationBase !== selectedBase) return false
+    if (!selectedGroup) return true
+
+    // Shared lecture rows (no explicit group) should appear in both G1 and G2 views.
+    return allocationGroup === selectedGroup || allocationGroup === null
+}
+
+function formatSectionDisplay(section: string): string {
+    const base = normalizeSectionBase(section || '')
+    const group = extractSectionGroup(section || '')
+    if (!base) return section || ''
+    return group ? `${base}-${group}` : base
 }
 
 function expandDays(dayStr: string): string[] {
@@ -861,10 +944,12 @@ export default function AdminLiveTimetablePage() {
 
     const getGroupValuesForType = (type: GroupByType): string[] => {
         const set = new Set<string>()
+        if (type === 'section') {
+            return buildSectionGroupLabels(effectiveAllocations)
+        }
         effectiveAllocations.forEach(a => {
             if (type === 'room') set.add(`${a.building} – ${a.room}`)
             else if (type === 'faculty') set.add(a.teacher_name || 'Unassigned')
-            else if (type === 'section') set.add(normalizeSection(a.section) || 'Unknown')
             else if (type === 'college') set.add(a.college || 'N/A')
         })
         return Array.from(set).sort((a, b) => a.localeCompare(b))
@@ -892,7 +977,10 @@ export default function AdminLiveTimetablePage() {
         effectiveAllocations.forEach(a => {
             rooms.add(`${a.building} – ${a.room}`)
             if (a.teacher_name) faculties.add(a.teacher_name)
-            if (a.section) sections.add(normalizeSection(a.section))
+            if (a.section) {
+                const base = normalizeSectionBase(a.section)
+                if (base) sections.add(base)
+            }
             if (a.college) colleges.add(a.college)
         })
 
@@ -912,7 +1000,7 @@ export default function AdminLiveTimetablePage() {
         return effectiveAllocations.filter(a => {
             if (groupBy === 'room') return `${a.building} – ${a.room}` === activeGroup
             if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === activeGroup
-            if (groupBy === 'section') return (normalizeSection(a.section) || 'Unknown') === activeGroup
+            if (groupBy === 'section') return matchesSectionGroupLabel(a, activeGroup)
             if (groupBy === 'college') return (a.college || 'N/A') === activeGroup
             return true
         })
@@ -1358,7 +1446,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                     onDragEnd={() => { if (!isSpecialEvent) { setDraggedAllocId(null); setDragOverCell(null) } }}
                                                                                                     className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${(alloc as any)._isMakeup ? styles.gridBlockMakeup : ''} ${isSpecialEvent ? styles.gridBlockAbsent : ''} ${draggedAllocId === alloc.id ? styles.gridBlockDragging : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
-                                                                                                    title={`${alloc.course_code} ${isSpecialEvent ? alloc.course_name : '· ' + normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name && !isSpecialEvent ? '\n' + alloc.teacher_name : ''}${absent ? (isEventExcused ? '\n⚠ EXCUSED' : '\n⚠ ABSENT') : ''}${ongoing && !isSpecialEvent ? '\n● ONGOING' : ''}${done && !isSpecialEvent ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isSpecialEvent ? '\n\n(Click to Cancel)' : ''}`}
+                                                                                                    title={`${alloc.course_code} ${isSpecialEvent ? alloc.course_name : '· ' + formatSectionDisplay(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name && !isSpecialEvent ? '\n' + alloc.teacher_name : ''}${absent ? (isEventExcused ? '\n⚠ EXCUSED' : '\n⚠ ABSENT') : ''}${ongoing && !isSpecialEvent ? '\n● ONGOING' : ''}${done && !isSpecialEvent ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isSpecialEvent ? '\n\n(Click to Cancel)' : ''}`}
                                                                                                     onClick={() => {
                                                                                                         if (isSpecialEvent) {
                                                                                                             handleDeleteSpecialEvent(Math.abs(alloc.id) - 100000)
@@ -1385,7 +1473,7 @@ export default function AdminLiveTimetablePage() {
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
                                                                                                         <>
-                                                                                                            <span className={styles.gridBlockSection}>{isSpecialEvent ? alloc.course_name : normalizeSection(alloc.section)}</span>
+                                                                                                            <span className={styles.gridBlockSection}>{isSpecialEvent ? alloc.course_name : formatSectionDisplay(alloc.section)}</span>
                                                                                                             <span className={styles.gridBlockRoom}>{alloc.room}</span>
                                                                                                         </>
                                                                                                     )}
@@ -1526,7 +1614,7 @@ export default function AdminLiveTimetablePage() {
                                                                                 </button>
                                                                             )}
                                                                         </span>
-                                                                        <span><MdGroup /> {normalizeSection(alloc.section)}</span>
+                                                                        <span><MdGroup /> {formatSectionDisplay(alloc.section)}</span>
                                                                         {alloc.teacher_name && <span><MdPerson /> {alloc.teacher_name}</span>}
                                                                     </div>
                                                                     {overrideNote && (
@@ -1610,7 +1698,7 @@ export default function AdminLiveTimetablePage() {
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
                                                                     <>
-                                                                        <span><MdMenuBook /> {alloc.course_code} – {normalizeSection(alloc.section)}</span>
+                                                                        <span><MdMenuBook /> {alloc.course_code} – {formatSectionDisplay(alloc.section)}</span>
                                                                         <span><MdMeetingRoom /> {alloc.building} {alloc.room}</span>
                                                                         <span><MdAccessTime /> {alloc.schedule_time}</span>
                                                                     </>
@@ -1677,7 +1765,7 @@ export default function AdminLiveTimetablePage() {
                                                             <div className={styles.requestDetails}>
                                                                 {alloc && (
                                                                     <>
-                                                                        <span><MdMenuBook /> {alloc.course_code} – {normalizeSection(alloc.section)}</span>
+                                                                        <span><MdMenuBook /> {alloc.course_code} – {formatSectionDisplay(alloc.section)}</span>
                                                                     </>
                                                                 )}
                                                                 <span><MdCalendarToday /> Requested: {req.requested_date}</span>
@@ -1730,7 +1818,7 @@ export default function AdminLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestFaculty}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
+                                                                <span>{alloc.course_code} – {formatSectionDisplay(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>
@@ -2032,7 +2120,7 @@ export default function AdminLiveTimetablePage() {
                                             {makeupAlloc && (
                                                 <>
                                                     <p><strong>Course:</strong> {makeupAlloc.course_code} – {makeupAlloc.course_name}</p>
-                                                    <p><strong>Section:</strong> {normalizeSection(makeupAlloc.section)}</p>
+                                                    <p><strong>Section:</strong> {formatSectionDisplay(makeupAlloc.section)}</p>
                                                     <p><strong>Original Schedule:</strong> {makeupAlloc.schedule_day} · {makeupAlloc.schedule_time}</p>
                                                 </>
                                             )}

@@ -567,7 +567,10 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             result["schedule_entries"] = result.get("allocations", [])
             online_count = result.get("online_class_count", 0)
             physical_count = result.get("physical_class_count", 0)
-            result["message"] = f"Enhanced scheduler completed. Scheduled {result['scheduled_sections']}/{result['total_sections']} sections with 30-minute time slots. ({online_count} online, {physical_count} physical)"
+            result["message"] = (
+                f"Enhanced scheduler completed. Scheduled {result['scheduled_sections']}/{result['total_sections']} "
+                f"sections with {request.slot_duration}-minute time slots. ({online_count} online, {physical_count} physical)"
+            )
             result["conflicts"] = []  # Enhanced scheduler handles conflicts internally
         else:
             # Fallback to original scheduler
@@ -594,7 +597,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "scheduled_classes": result["scheduled_sections"],
             "unscheduled_classes": result["unscheduled_sections"],
             "optimization_stats": result["optimization_stats"],
-            "status": "completed" if result["success"] else "failed"
+            "status": "completed" if result["unscheduled_sections"] == 0 else "partial"
         }
         
         # Actually save the schedule metadata to get an ID

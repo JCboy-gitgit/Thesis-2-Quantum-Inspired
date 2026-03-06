@@ -156,6 +156,9 @@ const normalizeSectionBase = (section: string): string => {
     .replace(/ LEC$/i, '')
     .replace(/-LAB$/i, '')
     .replace(/-LEC$/i, '')
+    .replace(/\s*-\s*G[12]$/i, '')
+    .replace(/-G[12]$/i, '')
+    .replace(/\s*-\s*$/, '')
     .trim()
 }
 
@@ -170,7 +173,7 @@ const extractSectionGroup = (section: string): SectionGroup | null => {
 
 const parseSectionViewLabel = (label: string): { base: string, group: SectionGroup | null } => {
   const trimmed = (label || '').trim()
-  const match = trimmed.match(/^(.*)\s+(G1|G2)$/i)
+  const match = trimmed.match(/^(.*?)(?:\s*-\s*|\s+)(G1|G2)$/i)
   if (!match) {
     return { base: normalizeSectionBase(trimmed), group: null }
   }
@@ -200,9 +203,9 @@ const buildSectionViewOptions = (allocations: RoomAllocation[]): string[] => {
     const knownGroups = baseGroups.get(base)
 
     if (group) {
-      labels.add(`${base} ${group}`)
+      labels.add(`${base}-${group}`)
     } else if (knownGroups && knownGroups.size > 0) {
-      knownGroups.forEach(g => labels.add(`${base} ${g}`))
+      knownGroups.forEach(g => labels.add(`${base}-${g}`))
     } else {
       labels.add(base)
     }
@@ -277,6 +280,32 @@ const detectAllocationComponent = (allocation: RoomAllocation, roomType?: string
   return looksLab ? 'LAB' : 'LEC'
 }
 
+const buildManualClassKey = (courseCode?: string, section?: string): string => {
+  const normalizedCode = String(courseCode || '').trim().toLowerCase()
+  const normalizedSection = normalizeSectionBase(String(section || '').toLowerCase())
+  return `${normalizedCode}|${normalizedSection}`
+}
+
+const buildManualClassLookup = (classes: ManualClassItem[]) => {
+  const byId = new Map<number, ManualClassItem>()
+  const byKey = new Map<string, ManualClassItem>()
+
+  classes.forEach(cls => {
+    byId.set(cls.id, cls)
+    byKey.set(buildManualClassKey(cls.course_code, cls.section), cls)
+  })
+
+  return {
+    byId,
+    byKey,
+    resolve(alloc: any): ManualClassItem | undefined {
+      const fromId = byId.get(Number(alloc?.class_id))
+      if (fromId) return fromId
+      return byKey.get(buildManualClassKey(alloc?.course_code, alloc?.section))
+    }
+  }
+}
+
 export default function ViewSchedulePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -287,6 +316,7 @@ export default function ViewSchedulePage() {
   const [filteredSchedules, setFilteredSchedules] = useState<Schedule[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null)
   const [allocations, setAllocations] = useState<RoomAllocation[]>([])
+  const [allocationsSourceScheduleId, setAllocationsSourceScheduleId] = useState<number | null>(null)
   const [displayAllocations, setDisplayAllocations] = useState<RoomAllocation[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingDetails, setLoadingDetails] = useState(false)
@@ -367,6 +397,7 @@ export default function ViewSchedulePage() {
   const [manualEditClasses, setManualEditClasses] = useState<ManualClassItem[]>([])
   const [manualEditRooms, setManualEditRooms] = useState<any[]>([])
   const [loadingManualEditData, setLoadingManualEditData] = useState(false)
+  const [manualEditSourceScheduleId, setManualEditSourceScheduleId] = useState<number | null>(null)
 
   // Schedule lock state
   const [isTogglingLock, setIsTogglingLock] = useState(false)
@@ -675,6 +706,23 @@ export default function ViewSchedulePage() {
 
     setLoadingDetails(true)
     try {
+      const isCollegeUnset = (value: unknown) => {
+        const normalized = String(value || '').trim().toUpperCase()
+        return (
+          !normalized ||
+          normalized === 'UNASSIGNED COLLEGE' ||
+          normalized === 'UNASSIGNED' ||
+          normalized === 'N/A' ||
+          normalized === 'NA' ||
+          normalized === 'NONE' ||
+          normalized === 'NULL'
+        )
+      }
+
+      const toClassKey = (courseCode: unknown, section: unknown) => {
+        return buildManualClassKey(String(courseCode || ''), String(section || ''))
+      }
+
       // Fetch allocations
       const { data: allocationData, error: allocationError } = await db
         .from('room_allocations')
@@ -706,7 +754,7 @@ export default function ViewSchedulePage() {
             teachingLoadsData.forEach((tl: any) => {
               const courseCode = tl.class_schedules?.course_code || ''
               const section = tl.section || ''
-              const key = `${courseCode.toLowerCase()}|${section.toLowerCase()}`
+              const key = buildManualClassKey(courseCode, section)
               const facultyName = tl.faculty_profiles?.full_name || ''
               if (facultyName && courseCode) {
                 teacherMap.set(key, facultyName)
@@ -716,7 +764,7 @@ export default function ViewSchedulePage() {
             // Enrich allocations with teacher names
             enrichedAllocations = allocationData.map((a: any) => {
               if (!a.teacher_name && a.course_code) {
-                const teacherKey = `${(a.course_code || '').toLowerCase()}|${(a.section || '').toLowerCase()}`
+                const teacherKey = buildManualClassKey(a.course_code || '', a.section || '')
                 const teacherName = teacherMap.get(teacherKey) || ''
                 return { ...a, teacher_name: teacherName }
               }
@@ -726,35 +774,70 @@ export default function ViewSchedulePage() {
         }
 
         setAllocations(enrichedAllocations)
+        setAllocationsSourceScheduleId(selectedSchedule.id)
 
-        // Enrich with college data if missing (needed for mismatch warning)
-        const hasMissingCollege = enrichedAllocations.some((a: any) => !a.college)
+        // Enrich with latest class college data (including rows currently marked as "Unassigned College").
+        const hasUnresolvedCollege = enrichedAllocations.some((a: any) => isCollegeUnset(a.college))
 
-        if (hasMissingCollege) {
-          const sectionIds = enrichedAllocations.map((a: any) => a.class_id).filter((id: any) => !!id)
+        if (hasUnresolvedCollege) {
+          let classSchedulesData: any[] = []
 
-          if (sectionIds.length > 0) {
-            const { data: sectionsData } = await db
-              .from('sections')
-              .select('id, college')
-              .in('id', sectionIds)
+          if (selectedSchedule?.class_group_id) {
+            const { data } = await db
+              .from('class_schedules')
+              .select('id, course_code, section, college')
+              .eq('upload_group_id', selectedSchedule.class_group_id)
+            classSchedulesData = data || []
+          }
 
-            if (sectionsData && sectionsData.length > 0) {
-              const collegeMap = new Map<number, string>()
-              sectionsData.forEach((s: any) => {
-                if (s.college) collegeMap.set(s.id, s.college)
-              })
+          // Fallback for mis-linked group IDs: lookup by course codes seen in this schedule.
+          if (!classSchedulesData.length) {
+            const unresolvedCodes = Array.from(new Set(
+              enrichedAllocations
+                .filter((a: any) => isCollegeUnset(a.college))
+                .map((a: any) => String(a.course_code || '').trim())
+                .filter(Boolean)
+            ))
 
-              enrichedAllocations = enrichedAllocations.map((a: any) => {
-                if (!a.college && a.class_id) {
-                  const col = collegeMap.get(a.class_id)
-                  if (col) return { ...a, college: col }
-                }
-                return a
-              })
-              // Update state again with college data
-              setAllocations(enrichedAllocations)
+            if (unresolvedCodes.length > 0) {
+              const { data } = await db
+                .from('class_schedules')
+                .select('id, course_code, section, college')
+                .in('course_code', unresolvedCodes)
+              classSchedulesData = data || []
             }
+          }
+
+          if (classSchedulesData && classSchedulesData.length > 0) {
+            const byId = new Map<number, string>()
+            const byKey = new Map<string, string>()
+
+            classSchedulesData.forEach((row: any) => {
+              const college = String(row.college || '').trim()
+              if (!college || isCollegeUnset(college)) return
+
+              if (row.id) byId.set(Number(row.id), college)
+
+              const key = toClassKey(row.course_code, row.section)
+              if (key !== '|') byKey.set(key, college)
+            })
+
+            enrichedAllocations = enrichedAllocations.map((a: any) => {
+              if (!isCollegeUnset(a.college)) return a
+
+              const fromId = a.class_id ? byId.get(Number(a.class_id)) : undefined
+              if (fromId) return { ...a, college: fromId }
+
+              const key = toClassKey(a.course_code, a.section)
+              const fromKey = byKey.get(key)
+              if (fromKey) return { ...a, college: fromKey }
+
+              return a
+            })
+
+            // Update state again with enriched college data
+            setAllocations(enrichedAllocations)
+            setAllocationsSourceScheduleId(selectedSchedule.id)
           }
         }
 
@@ -818,6 +901,23 @@ export default function ViewSchedulePage() {
   const fetchManualEditResources = async (schedule: Schedule) => {
     setLoadingManualEditData(true)
     try {
+      const isCollegeUnset = (value: unknown) => {
+        const normalized = String(value || '').trim().toUpperCase()
+        return (
+          !normalized ||
+          normalized === 'UNASSIGNED COLLEGE' ||
+          normalized === 'UNASSIGNED' ||
+          normalized === 'N/A' ||
+          normalized === 'NA' ||
+          normalized === 'NONE' ||
+          normalized === 'NULL'
+        )
+      }
+
+      const toClassKey = (courseCode: unknown, section: unknown) => {
+        return buildManualClassKey(String(courseCode || ''), String(section || ''))
+      }
+
       const [{ data: classData }, { data: roomData }, { data: teachingLoadsData }] = await Promise.all([
         db
           .from('class_schedules')
@@ -844,7 +944,7 @@ export default function ViewSchedulePage() {
       })
 
       const classes: ManualClassItem[] = (classData || []).map((cls: any) => {
-        const key = `${(cls.course_code || '').toLowerCase()}|${(cls.section || '').toLowerCase()}`
+        const key = buildManualClassKey(cls.course_code || '', cls.section || '')
         const teacher = teacherMap.get(key)
         return {
           id: cls.id,
@@ -867,8 +967,140 @@ export default function ViewSchedulePage() {
         floor_level: room.floor_level ?? room.floor_number ?? undefined,
       }))
 
-      setManualEditClasses(classes)
-      setManualEditRooms(rooms)
+      // Fallback: when class_group_id/campus_group_id resources are unavailable,
+      // derive manual-editor resources from current allocations so the full table still loads.
+      const fallbackClassesMap = new Map<string, ManualClassItem>()
+      ;(allocations || []).forEach((alloc: any) => {
+        const key = buildManualClassKey(String(alloc.course_code || ''), String(alloc.section || ''))
+        if (!key || fallbackClassesMap.has(key)) return
+
+        const allocLec = Number(alloc.lec_hours ?? 0)
+        const allocLab = Number(alloc.lab_hours ?? 0)
+        const inferredLab = String(alloc.component || '').toUpperCase().includes('LAB')
+
+        fallbackClassesMap.set(key, {
+          id: Number(alloc.class_id || Date.now() + fallbackClassesMap.size + 1),
+          course_code: alloc.course_code || '',
+          course_name: alloc.course_name || '',
+          section: alloc.section || '',
+          year_level: Number(alloc.year_level || 1),
+          department: alloc.department || '',
+          college: alloc.college || undefined,
+          teacher_name: alloc.teacher_name || '',
+          teacher_id: alloc.teacher_id || undefined,
+          lec_hours: allocLec > 0 ? allocLec : (inferredLab ? 0 : 1.5),
+          lab_hours: allocLab > 0 ? allocLab : (inferredLab ? 1.5 : 0),
+          student_count: Number(alloc.student_count || 0),
+        })
+      })
+
+      const fallbackRoomsMap = new Map<string, any>()
+      ;(allocations || []).forEach((alloc: any, idx: number) => {
+        const roomName = String(alloc.room || '').trim()
+        const buildingName = String(alloc.building || '').trim()
+        const key = `${buildingName.toLowerCase()}|${roomName.toLowerCase()}`
+        if (!roomName || fallbackRoomsMap.has(key)) return
+
+        fallbackRoomsMap.set(key, {
+          id: Number(alloc.room_id || (100000 + idx)),
+          room: roomName,
+          building: buildingName,
+          campus: alloc.campus || '',
+          capacity: Number(alloc.capacity || 0),
+          room_type: alloc.component && String(alloc.component).toUpperCase().includes('LAB') ? 'Lab' : 'Lecture',
+          floor_level: alloc.floor_level ?? undefined,
+          college: alloc.college || undefined,
+          feature_tags: [],
+        })
+      })
+
+      let resolvedClasses = classes.length > 0 ? classes : Array.from(fallbackClassesMap.values())
+      const resolvedRooms = rooms.length > 0 ? rooms : Array.from(fallbackRoomsMap.values())
+
+      // Backfill unresolved class colleges using class_schedules by course_code+section,
+      // even when upload_group mapping is off.
+      const unresolvedCodes = Array.from(new Set(
+        resolvedClasses
+          .filter((c: any) => isCollegeUnset(c.college))
+          .map((c: any) => String(c.course_code || '').trim())
+          .filter(Boolean)
+      ))
+
+      if (unresolvedCodes.length > 0) {
+        const { data: lookupRows } = await db
+          .from('class_schedules')
+          .select('course_code, section, college')
+          .in('course_code', unresolvedCodes)
+
+        if (lookupRows && lookupRows.length > 0) {
+          const collegeByKey = new Map<string, string>()
+          lookupRows.forEach((row: any) => {
+            const college = String(row.college || '').trim()
+            if (!college || isCollegeUnset(college)) return
+            const key = toClassKey(row.course_code, row.section)
+            if (key !== '|') collegeByKey.set(key, college)
+          })
+
+          resolvedClasses = resolvedClasses.map((c: any) => {
+            if (!isCollegeUnset(c.college)) return c
+            const mapped = collegeByKey.get(toClassKey(c.course_code, c.section))
+            return mapped ? { ...c, college: mapped } : c
+          })
+        }
+      }
+
+      // Keep summary counts aligned with allocation blocks, not unique class count.
+      const currentTotal = Number(schedule.total_classes || 0)
+      const derivedScheduledClasses = (allocations || []).length
+      let derivedTotalClasses = Math.max(currentTotal, derivedScheduledClasses)
+      let derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
+
+      const currentScheduled = Number(schedule.scheduled_classes || 0)
+      const currentUnscheduled = Number(schedule.unscheduled_classes || 0)
+      const hasSummaryMismatch =
+        currentTotal !== derivedTotalClasses ||
+        currentScheduled !== derivedScheduledClasses ||
+        currentUnscheduled !== derivedUnscheduledClasses
+
+      if (hasSummaryMismatch) {
+        setSchedules(prev => prev.map(item =>
+          item.id === schedule.id
+            ? {
+                ...item,
+                total_classes: derivedTotalClasses,
+                scheduled_classes: derivedScheduledClasses,
+                unscheduled_classes: derivedUnscheduledClasses,
+              }
+            : item
+        ))
+
+        setSelectedSchedule(prev => {
+          if (!prev || prev.id !== schedule.id) return prev
+          return {
+            ...prev,
+            total_classes: derivedTotalClasses,
+            scheduled_classes: derivedScheduledClasses,
+            unscheduled_classes: derivedUnscheduledClasses,
+          }
+        })
+
+        const { error: summarySyncError } = await db
+          .from('generated_schedules')
+          .update({
+            total_classes: derivedTotalClasses,
+            scheduled_classes: derivedScheduledClasses,
+            unscheduled_classes: derivedUnscheduledClasses,
+          })
+          .eq('id', schedule.id)
+
+        if (summarySyncError) {
+          console.warn('Failed to sync generated_schedules summary counts:', summarySyncError)
+        }
+      }
+
+      setManualEditClasses(resolvedClasses)
+      setManualEditRooms(resolvedRooms)
+      setManualEditSourceScheduleId(schedule.id)
     } catch (error) {
       console.error('Error loading manual edit resources:', error)
       alert('Failed to load unscheduled classes for manual placement.')
@@ -879,9 +1111,14 @@ export default function ViewSchedulePage() {
 
   const handleOpenManualEdit = async () => {
     if (!selectedSchedule) return
-    if (manualEditClasses.length === 0 || manualEditRooms.length === 0) {
-      await fetchManualEditResources(selectedSchedule)
+
+    if (allocationsSourceScheduleId !== selectedSchedule.id || allocations.length === 0) {
+      await fetchUnifiedSchedule()
     }
+
+    // Always reload resources so latest course college edits are reflected in manual editor.
+    await fetchManualEditResources(selectedSchedule)
+
     setShowManualEditModal(true)
   }
 
@@ -889,14 +1126,26 @@ export default function ViewSchedulePage() {
     if (!selectedSchedule) return
 
     try {
-      const classById = new Map(manualEditClasses.map(c => [c.id, c]))
+      const isCollegeUnset = (value: unknown) => {
+        const normalized = String(value || '').trim().toUpperCase()
+        return (
+          !normalized ||
+          normalized === 'UNASSIGNED COLLEGE' ||
+          normalized === 'UNASSIGNED' ||
+          normalized === 'N/A' ||
+          normalized === 'NA' ||
+          normalized === 'NONE' ||
+          normalized === 'NULL'
+        )
+      }
+
+      const classLookup = buildManualClassLookup(manualEditClasses)
       const roomById = new Map((manualEditRooms || []).map((r: any) => [r.id, r]))
-      const classByKey = new Map(manualEditClasses.map(c => [`${(c.course_code || '').toLowerCase()}|${(c.section || '').toLowerCase()}`, c]))
 
       const rowsToInsert = editedAllocations
         .filter((alloc: any) => alloc?.schedule_day && alloc?.schedule_time)
         .map((alloc: any) => {
-          const classMeta = classById.get(alloc.class_id) || classByKey.get(`${(alloc.course_code || '').toLowerCase()}|${(alloc.section || '').toLowerCase()}`)
+          const classMeta = classLookup.resolve(alloc)
           const roomMeta = roomById.get(alloc.room_id) || manualEditRooms.find((r: any) => r.room === alloc.room && r.building === alloc.building)
 
           return {
@@ -914,11 +1163,13 @@ export default function ViewSchedulePage() {
             room: roomMeta?.room || alloc.room || '',
             capacity: roomMeta?.capacity || alloc.capacity || 0,
             teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
-            teacher_id: classMeta?.teacher_id || alloc.teacher_id || null,
             department: classMeta?.department || alloc.department || '',
             lec_hours: classMeta?.lec_hours ?? alloc.lec_hours ?? 0,
             lab_hours: classMeta?.lab_hours ?? alloc.lab_hours ?? 0,
-            college: classMeta?.college || alloc.college || null,
+            college: !isCollegeUnset(alloc.college)
+              ? alloc.college
+              : (!isCollegeUnset(classMeta?.college) ? classMeta?.college : null),
+            component: alloc.component || detectAllocationComponent(alloc, roomMeta?.room_type),
           }
         })
 
@@ -933,8 +1184,57 @@ export default function ViewSchedulePage() {
         const { error: insertError } = await db
           .from('room_allocations')
           .insert(rowsToInsert)
-        if (insertError) throw insertError
+
+        if (insertError) {
+          const message = String(insertError?.message || '')
+          const missingComponentColumn = /column\s+"?component"?\s+of relation\s+"?room_allocations"?/i.test(message)
+
+          if (!missingComponentColumn) {
+            throw insertError
+          }
+
+          const rowsWithoutComponent = rowsToInsert.map(({ component, ...rest }: any) => rest)
+          const { error: fallbackInsertError } = await db
+            .from('room_allocations')
+            .insert(rowsWithoutComponent)
+
+          if (fallbackInsertError) throw fallbackInsertError
+        }
       }
+
+      const scheduledClasses = rowsToInsert.length
+      const currentTotal = Number(selectedSchedule.total_classes || 0)
+      const totalClasses = Math.max(currentTotal, scheduledClasses)
+      const unscheduledClasses = Math.max(0, totalClasses - scheduledClasses)
+
+      const { error: summaryUpdateError } = await db
+        .from('generated_schedules')
+        .update({
+          total_classes: totalClasses,
+          scheduled_classes: scheduledClasses,
+          unscheduled_classes: unscheduledClasses,
+        })
+        .eq('id', selectedSchedule.id)
+
+      if (summaryUpdateError) {
+        console.warn('Failed to update generated_schedules summary counts after manual save:', summaryUpdateError)
+      }
+
+      setSchedules(prev => prev.map(schedule =>
+        schedule.id === selectedSchedule.id
+          ? { ...schedule, total_classes: totalClasses, scheduled_classes: scheduledClasses, unscheduled_classes: unscheduledClasses }
+          : schedule
+      ))
+
+      setSelectedSchedule(prev => {
+        if (!prev || prev.id !== selectedSchedule.id) return prev
+        return {
+          ...prev,
+          total_classes: totalClasses,
+          scheduled_classes: scheduledClasses,
+          unscheduled_classes: unscheduledClasses
+        }
+      })
 
       setShowManualEditModal(false)
       await fetchUnifiedSchedule()
@@ -955,6 +1255,7 @@ export default function ViewSchedulePage() {
   const handleSelectSchedule = async (schedule: Schedule) => {
     window.scrollTo(0, 0)
     setSelectedSchedule(schedule)
+    setAllocationsSourceScheduleId(null)
     setViewMode('timetable')
     // Fetch approved faculty for assignment modal
     fetchApprovedFaculty()
@@ -1030,6 +1331,7 @@ export default function ViewSchedulePage() {
         })
 
         setAllocations(mockAllocations)
+        setAllocationsSourceScheduleId(schedule.id)
 
         const uniqueBuildings = [...new Set(mockAllocations.map(a => a.building).filter((b): b is string => !!b))]
         const uniqueRooms = [...new Set(mockAllocations.map(a => a.room).filter((r): r is string => !!r))]
@@ -1209,12 +1511,24 @@ export default function ViewSchedulePage() {
     return `${hour}:${minute} ${period}`
   }
   const manualInitialAllocations = useMemo(() => {
-    const classById = new Map(manualEditClasses.map(c => [c.id, c]))
-    const classByKey = new Map(manualEditClasses.map(c => [`${(c.course_code || '').toLowerCase()}|${(c.section || '').toLowerCase()}`, c]))
+    const isCollegeUnset = (value: unknown) => {
+      const normalized = String(value || '').trim().toUpperCase()
+      return (
+        !normalized ||
+        normalized === 'UNASSIGNED COLLEGE' ||
+        normalized === 'UNASSIGNED' ||
+        normalized === 'N/A' ||
+        normalized === 'NA' ||
+        normalized === 'NONE' ||
+        normalized === 'NULL'
+      )
+    }
+
+    const classLookup = buildManualClassLookup(manualEditClasses)
 
     return allocations.map((alloc: any) => {
       const roomMeta = manualEditRooms.find((r: any) => r.id === alloc.room_id || (r.room === alloc.room && r.building === alloc.building))
-      const classMeta = classById.get(alloc.class_id) || classByKey.get(`${(alloc.course_code || '').toLowerCase()}|${(alloc.section || '').toLowerCase()}`)
+      const classMeta = classLookup.resolve(alloc)
 
       return {
         ...alloc,
@@ -1224,10 +1538,16 @@ export default function ViewSchedulePage() {
         teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
         lec_hours: classMeta?.lec_hours ?? alloc.lec_hours ?? 0,
         lab_hours: classMeta?.lab_hours ?? alloc.lab_hours ?? 0,
-        college: classMeta?.college ?? alloc.college,
+        college: !isCollegeUnset(alloc.college)
+          ? alloc.college
+          : (!isCollegeUnset(classMeta?.college) ? classMeta?.college : alloc.college),
       }
     })
   }, [allocations, manualEditClasses, manualEditRooms])
+
+  const summaryMetricsLoading = Boolean(
+    selectedSchedule && (loadingDetails || allocationsSourceScheduleId !== selectedSchedule.id)
+  )
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to archive this schedule? You can restore it from the Archive later.')) {
@@ -1385,9 +1705,9 @@ export default function ViewSchedulePage() {
       csvRows.push(`College,${selectedSchedule.college}`)
       csvRows.push(`Semester,${selectedSchedule.semester}`)
       csvRows.push(`Academic Year,${selectedSchedule.academic_year}`)
-      csvRows.push(`Total Classes,${selectedSchedule.total_classes}`)
-      csvRows.push(`Scheduled,${selectedSchedule.scheduled_classes}`)
-      csvRows.push(`Unscheduled,${selectedSchedule.unscheduled_classes}`)
+      csvRows.push(`Total Allocations,${selectedSchedule.total_classes}`)
+      csvRows.push(`Scheduled Allocations,${selectedSchedule.scheduled_classes}`)
+      csvRows.push(`Unscheduled Allocations,${selectedSchedule.unscheduled_classes}`)
       csvRows.push('')
 
       // Data header
@@ -2166,7 +2486,7 @@ export default function ViewSchedulePage() {
                   >
                     <option value="date">Date Created</option>
                     <option value="name">Name</option>
-                    <option value="classes">Total Classes</option>
+                    <option value="classes">Total Allocations</option>
                   </select>
                   <button
                     className={styles.sortOrderButton}
@@ -2325,16 +2645,22 @@ export default function ViewSchedulePage() {
                 </div>
                 <div className={styles.scheduleStats}>
                   <div className={styles.statItem}>
-                    <span className={styles.statNumber}>{selectedSchedule.total_classes}</span>
-                    <span className={styles.statText}>Total Classes</span>
+                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : ''}`}>
+                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.total_classes}
+                    </span>
+                    <span className={styles.statText}>Total Allocations</span>
                   </div>
                   <div className={styles.statItem}>
-                    <span className={`${styles.statNumber} ${styles.success}`}>{selectedSchedule.scheduled_classes}</span>
-                    <span className={styles.statText}>Scheduled</span>
+                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : styles.success}`}>
+                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.scheduled_classes}
+                    </span>
+                    <span className={styles.statText}>Scheduled Allocations</span>
                   </div>
                   <div className={styles.statItem}>
-                    <span className={`${styles.statNumber} ${styles.warning}`}>{selectedSchedule.unscheduled_classes}</span>
-                    <span className={styles.statText}>Unscheduled</span>
+                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : styles.warning}`}>
+                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.unscheduled_classes}
+                    </span>
+                    <span className={styles.statText}>Unscheduled Allocations</span>
                   </div>
                   <button
                     className={styles.assignFacultyBtn}
@@ -2738,11 +3064,16 @@ export default function ViewSchedulePage() {
                         isLocked={selectedSchedule?.is_locked}
                         onDirectEdit={async (result: DragDropResult) => {
                           if (result.hasConflict) {
+                            const reasonLines = (result.conflictReasons && result.conflictReasons.length > 0)
+                              ? result.conflictReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n')
+                              : '1. Overlapping room, professor, or section schedule detected.'
+
                             const proceed = confirm(
                               `Warning: This time slot has a conflict!\n\n` +
                               `${result.courseCode} (${result.section})\n` +
                               `Moving from ${result.fromDay} ${result.fromTime}\n` +
                               `to ${result.toDay} ${result.toTime}\n\n` +
+                              `Why conflict:\n${reasonLines}\n\n` +
                               `Are you sure you want to place it here anyway?`
                             )
                             if (!proceed) return

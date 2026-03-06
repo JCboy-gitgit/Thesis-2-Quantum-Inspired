@@ -812,6 +812,78 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
   }
 }
 
+function reconcileScheduleMetrics(result: any): any {
+  const allocations = Array.isArray(result.allocations) ? result.allocations : []
+  const rawUnscheduled = Array.isArray(result.unscheduled_list) ? result.unscheduled_list : []
+
+  const normalizedUnscheduled: any[] = []
+  const seenUnscheduled = new Set<string>()
+  rawUnscheduled.forEach((item: any) => {
+    const key = `${String(item?.id ?? item?.section_id ?? '')}|${String(item?.course_code || '').trim().toLowerCase()}|${String(item?.section_code || item?.section || '').trim().toLowerCase()}`
+    if (seenUnscheduled.has(key)) return
+    seenUnscheduled.add(key)
+
+    normalizedUnscheduled.push({
+      ...item,
+      reason: item?.reason || 'No final room/time allocation exists for this class.',
+      reason_code: item?.reason_code || 'UNSCHEDULED',
+    })
+  })
+
+  const backendTotal = Number(result?.total_classes || 0)
+  const backendScheduled = Number(result?.scheduled_classes || 0)
+  const backendUnscheduled = Number(result?.unscheduled_classes || 0)
+
+  // Metrics are allocation-block based (not unique class based).
+  // Scheduled blocks are concrete room/time allocations in the final timetable.
+  const scheduledAllocations = allocations.length
+
+  // For unscheduled blocks, prefer explicit slot deficits from backend reasons.
+  const inferredUnscheduledAllocations = normalizedUnscheduled.reduce((sum: number, item: any) => {
+    const needed = Number(item?.needed_slots)
+    const assigned = Number(item?.assigned_slots)
+    if (Number.isFinite(needed) && needed > 0) {
+      const missing = Math.max(0, needed - (Number.isFinite(assigned) ? assigned : 0))
+      return sum + missing
+    }
+    return sum + 1
+  }, 0)
+
+  let unscheduledClasses = Math.max(
+    backendUnscheduled > 0 ? backendUnscheduled : 0,
+    inferredUnscheduledAllocations
+  )
+
+  // If backend has no unscheduled payload, keep a conservative fallback.
+  if (normalizedUnscheduled.length === 0 && backendUnscheduled === 0) {
+    unscheduledClasses = 0
+  }
+
+  let scheduledClasses = Math.max(backendScheduled > 0 ? backendScheduled : 0, scheduledAllocations)
+
+  let totalClasses = backendTotal > 0 ? backendTotal : (scheduledClasses + unscheduledClasses)
+  if (scheduledClasses + unscheduledClasses > totalClasses) {
+    totalClasses = scheduledClasses + unscheduledClasses
+  }
+
+  const hardConflictCount = Number(result?.optimization_stats?.conflict_count || 0)
+  const successRate = totalClasses > 0 ? (scheduledClasses / totalClasses) * 100 : 0
+
+  return {
+    ...result,
+    total_classes: totalClasses,
+    scheduled_classes: scheduledClasses,
+    unscheduled_classes: unscheduledClasses,
+    unscheduled_list: normalizedUnscheduled,
+    conflicts: normalizedUnscheduled.map((item: any) => ({
+      conflict_type: item.reason_code || 'UNSCHEDULED',
+      description: `${item.course_code} (${item.section_code || item.section || ''}): ${item.reason || 'Unscheduled'}`,
+    })),
+    success_rate: successRate,
+    success: unscheduledClasses === 0 && hardConflictCount === 0,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: RequestBody = await request.json()
@@ -928,7 +1000,8 @@ export async function POST(request: NextRequest) {
     const validRoomIds = new Set<number>(rooms.map((room: any) => room.id).filter((id: any) => typeof id === 'number'))
     const normalizedManualAllocations = (body.manual_allocations || [])
       .map((alloc: any) => {
-        const classId = Number(alloc?.class_id ?? alloc?.section_id)
+        const parsedClassId = Number(alloc?.class_id ?? alloc?.section_id)
+        const classId = Number.isFinite(parsedClassId) && parsedClassId > 0 ? parsedClassId : null
         const rawRoomId = alloc?.room_id
         const roomId = rawRoomId === null || rawRoomId === undefined || rawRoomId === ''
           ? null
@@ -939,8 +1012,8 @@ export async function POST(request: NextRequest) {
         const componentHint = String(alloc?.component || alloc?.section_type || '').trim()
         const splitTypeHint = String(alloc?.split_type || alloc?.split_group || alloc?.group || '').trim()
 
-        if (!Number.isFinite(classId) || classId <= 0) return null
         if (!scheduleDay || !scheduleTime) return null
+        if (!classId && !sectionHint) return null
         if (roomId !== null && roomId !== 0 && (!Number.isFinite(roomId) || !validRoomIds.has(roomId))) return null
 
         return {
@@ -1100,7 +1173,27 @@ export async function POST(request: NextRequest) {
       body.rooms
     )
 
-    return NextResponse.json(frontendResult)
+    const reconciledResult = reconcileScheduleMetrics(frontendResult)
+
+    const scheduleId = Number(reconciledResult.schedule_id)
+    if (Number.isFinite(scheduleId) && scheduleId > 0) {
+      const status = reconciledResult.unscheduled_classes === 0 ? 'completed' : 'partial'
+      const { error: syncError } = await (supabase as any)
+        .from('generated_schedules')
+        .update({
+          total_classes: reconciledResult.total_classes,
+          scheduled_classes: reconciledResult.scheduled_classes,
+          unscheduled_classes: reconciledResult.unscheduled_classes,
+          status,
+        })
+        .eq('id', scheduleId)
+
+      if (syncError) {
+        console.warn('Failed to sync generated_schedules summary counts:', syncError)
+      }
+    }
+
+    return NextResponse.json(reconciledResult)
 
   } catch (error: any) {
     console.error('[QIA Backend Bridge] Fatal error:', error)

@@ -788,15 +788,17 @@ class EnhancedQuantumScheduler:
                 original_map[orig_id].append(s)
         
         for alloc in fixed_allocations:
-            section_id = alloc.get('class_id')
+            section_id_raw = alloc.get('class_id')
             room_id = alloc.get('room_id')
             day = (alloc.get('schedule_day', '') or '').lower()
             time_range = alloc.get('schedule_time', '')
+            section_code_hint = str(alloc.get('section', '') or '').strip().upper()
 
+            section_id = None
             try:
-                section_id = int(section_id)
+                section_id = int(section_id_raw)
             except (TypeError, ValueError):
-                continue
+                section_id = None
 
             if room_id in ('', 'null', 'None'):
                 room_id = None
@@ -806,22 +808,21 @@ class EnhancedQuantumScheduler:
                 except (TypeError, ValueError):
                     continue
             
-            if not all([section_id, day, time_range]):
+            if not day or not time_range or (section_id is None and not section_code_hint):
                 continue
 
             if room_id not in (None, 0) and room_id not in self.rooms:
                 print(f"   ⚠️ Skipping manual allocation with unknown room_id={room_id} for section {section_id}")
                 continue
 
-            section_code_hint = str(alloc.get('section', '') or '').strip().upper()
             component_hint = str(alloc.get('component', '') or '').strip().lower()
             split_hint = str(alloc.get('split_type', '') or '').strip().upper()
                 
             # 1. Find the target section(s)
             target_sections = []
-            if section_id in self.sections:
+            if section_id is not None and section_id in self.sections:
                 target_sections = [self.sections[section_id]]
-            elif section_id in original_map:
+            elif section_id is not None and section_id in original_map:
                 target_sections = original_map[section_id]
 
             if not target_sections and section_code_hint:
@@ -839,7 +840,7 @@ class EnhancedQuantumScheduler:
                         target_sections.append(s)
             
             if not target_sections:
-                print(f"   ⚠️ Could not find section {section_id} for manual allocation")
+                print(f"   ⚠️ Could not find section for manual allocation (class_id={section_id_raw}, section='{section_code_hint}')")
                 continue
             
             # 2. Find the starting slot index
@@ -937,8 +938,16 @@ class EnhancedQuantumScheduler:
                     slot_count = end_slot.id - start_slot.id + 1
                     actual_duration = (end_slot.start_minutes + end_slot.duration_minutes) - start_slot.start_minutes
                 else:
-                    slot_count = self._get_required_slot_count(section)
-                    actual_duration = slot_count * self.slot_duration_minutes
+                    # Keep exact user-entered duration even when it doesn't land on a slot boundary
+                    # (e.g., 07:00-09:00 with 90-minute slots).
+                    end_minutes = parse_time_to_minutes(end_time_str)
+                    start_minutes = start_slot.start_minutes
+                    if end_minutes > start_minutes:
+                        actual_duration = end_minutes - start_minutes
+                        slot_count = max(1, math.ceil(actual_duration / self.slot_duration_minutes))
+                    else:
+                        slot_count = self._get_required_slot_count(section)
+                        actual_duration = slot_count * self.slot_duration_minutes
             except Exception:
                 slot_count = self._get_required_slot_count(section)
                 actual_duration = slot_count * self.slot_duration_minutes
@@ -1010,12 +1019,15 @@ class EnhancedQuantumScheduler:
         if not lab_rooms:
              return sections
         
-        def get_max_lab_capacity(section_col: str) -> int:
+        def get_max_lab_capacity(section_col: str, required_features: Optional[Set[str]] = None) -> int:
             s_col = str(section_col).strip().upper() if section_col else ''
+            required = required_features or set()
             compatible_labs = []
             for r in lab_rooms:
                 r_col = str(r.college).strip().upper() if r.college else ''
                 if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    continue
+                if required and not required.issubset(r.feature_tags or set()):
                     continue
                 compatible_labs.append(r.capacity)
             return max(compatible_labs) if compatible_labs else 30
@@ -1037,7 +1049,7 @@ class EnhancedQuantumScheduler:
                 has_lec = not section.requires_lab
                 has_lab = section.requires_lab
 
-            section_lab_capacity_threshold = get_max_lab_capacity(section.college)
+            section_lab_capacity_threshold = get_max_lab_capacity(section.college, section.required_features)
             needs_split = has_lab and section.student_count > section_lab_capacity_threshold
             
             if needs_split and self.constraints.combine_split_lectures:
@@ -1129,6 +1141,22 @@ class EnhancedQuantumScheduler:
         5. NEW: College constraint - rooms must match section college or be "Shared"
         """
         compatible = {}
+
+        def normalize_college(value: Optional[str]) -> str:
+            raw = str(value or '').strip().upper()
+            if not raw:
+                return ''
+            match = re.search(r'\(([^)]+)\)\s*$', raw)
+            return match.group(1).strip().upper() if match else raw
+
+        def college_matches(section_college: Optional[str], room_college: Optional[str]) -> bool:
+            if not self.constraints.college_room_matching_enabled:
+                return True
+            s_col = normalize_college(section_college)
+            r_col = normalize_college(room_college)
+            if not s_col or not r_col:
+                return True
+            return r_col == 'SHARED' or r_col == s_col
         
         for section in self.sections.values():
             compatible_rooms = []
@@ -1157,13 +1185,7 @@ class EnhancedQuantumScheduler:
                 room_college = room.college  # Get room's college
                 
                 # NEW COLLEGE CONSTRAINT: Room must belong to section's college OR be "Shared"
-                # Skip rooms that belong to a different college (unless no college specified)
-                
-                # Normalize strings for comparison
-                r_col = str(room_college).strip().upper() if room_college else ''
-                s_col = str(section_college).strip().upper() if section_college else ''
-                
-                if self.constraints.college_room_matching_enabled and s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                if not college_matches(section_college, room_college):
                     continue  # Skip rooms belonging to other colleges
                 
                 # Primary Rule: Room must fit all students
@@ -1192,9 +1214,7 @@ class EnhancedQuantumScheduler:
                 for room in self.rooms.values():
                     room_features = room.feature_tags or set()
                     # College constraint still applies
-                    r_col = str(room.college).strip().upper() if room.college else ''
-                    s_col = str(section_college).strip().upper() if section_college else ''
-                    if self.constraints.college_room_matching_enabled and s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    if not college_matches(section_college, room.college):
                         continue
                     # Still check feature requirements
                     if required_features and not required_features.issubset(room_features):
@@ -1211,9 +1231,7 @@ class EnhancedQuantumScheduler:
                     is_lab_room = 'lab' in room_type_lower or 'computer' in room_type_lower
                     room_features = room.feature_tags or set()
                     # College constraint still applies
-                    r_col = str(room.college).strip().upper() if room.college else ''
-                    s_col = str(section_college).strip().upper() if section_college else ''
-                    if self.constraints.college_room_matching_enabled and s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    if not college_matches(section_college, room.college):
                         continue
                     # Still check feature requirements
                     if required_features and not required_features.issubset(room_features):
@@ -1228,9 +1246,7 @@ class EnhancedQuantumScheduler:
                 relaxed_capacity = int(section.student_count * 0.8)
                 for room in self.rooms.values():
                     # College constraint still applies
-                    r_col = str(room.college).strip().upper() if room.college else ''
-                    s_col = str(section_college).strip().upper() if section_college else ''
-                    if self.constraints.college_room_matching_enabled and s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    if not college_matches(section_college, room.college):
                         continue
                     if room.capacity >= relaxed_capacity:
                         compatible_rooms.append(room.id)
@@ -1241,9 +1257,7 @@ class EnhancedQuantumScheduler:
                     room_type_lower = room.room_type.lower() if room.room_type else ''
                     is_lab_room = 'lab' in room_type_lower or 'computer' in room_type_lower
                     # College constraint still applies - only use same college or shared rooms
-                    r_col = str(room.college).strip().upper() if room.college else ''
-                    s_col = str(section_college).strip().upper() if section_college else ''
-                    if self.constraints.college_room_matching_enabled and s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                    if not college_matches(section_college, room.college):
                         continue
                     if not is_lab_room:
                         compatible_rooms.append(room.id)
@@ -1496,12 +1510,34 @@ class EnhancedQuantumScheduler:
     @staticmethod
     def _get_base_section_code_static(section_code: str) -> str:
         """Static version for use in constructor before self is fully initialized"""
-        # Strip both component and group suffixes to find the cohort
-        base = section_code.upper()
-        for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY', '_G1', '_G2', '_G1_LAB', '_G2_LAB']:
-            if base.endswith(suffix):
-                base = base[:-len(suffix)]
-        return base.strip()
+        return EnhancedQuantumScheduler._normalize_section_identity(section_code, keep_group=False)
+
+    @staticmethod
+    def _normalize_section_identity(section_code: str, keep_group: bool) -> str:
+        """
+        Canonicalize section labels so conflict checks work across formats:
+        "BSM CS 1A - G1", "BSM_CS_1A_G1", "BSM CS 1A G1_LAB", etc.
+        """
+        raw = str(section_code or '').upper().strip()
+        if not raw:
+            return ''
+
+        # Normalize separators to tokens for stable comparisons.
+        tokens = re.sub(r'[^A-Z0-9]+', ' ', raw).strip().split()
+        if not tokens:
+            return ''
+
+        component_tokens = {'LEC', 'LECTURE', 'LAB', 'LABORATORY'}
+
+        # Drop trailing component markers first (e.g., ... G1 LAB, ..._LEC).
+        while tokens and tokens[-1] in component_tokens:
+            tokens.pop()
+
+        # Base section drops trailing split-group marker; cohort keeps it.
+        if not keep_group and tokens and tokens[-1] in {'G1', 'G2'}:
+            tokens.pop()
+
+        return ' '.join(tokens).strip()
     
     def _get_base_section_code(self, section_code: str) -> str:
         """
@@ -1509,22 +1545,11 @@ class EnhancedQuantumScheduler:
         e.g., "BSM CS 2B - G2_LEC" -> "BSM CS 2B - G2"
               "BSM CS 2B_G1" -> "BSM CS 2B"
         """
-        base = section_code.upper()
-        # Order matters: strip longer suffixes first or multi-pass
-        for _ in range(2): # Handle things like _G1_LAB
-            for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY', '_G1_LAB', '_G2_LAB', '_G1', '_G2']:
-                if base.endswith(suffix):
-                    base = base[:-len(suffix)].strip()
-        return base.strip()
+        return self._normalize_section_identity(section_code, keep_group=False)
     
     def _get_cohort_code(self, section_code: str) -> str:
         """Strip only component suffixes, keep group suffixes like _G1."""
-        base = section_code.upper()
-        for _ in range(2):
-            for suffix in ['_LEC', '_LAB', '_LECTURE', '_LABORATORY']:
-                if base.endswith(suffix):
-                    base = base[:-len(suffix)].strip()
-        return base
+        return self._normalize_section_identity(section_code, keep_group=True)
 
     def _check_student_group_conflict(
         self,
@@ -2049,8 +2074,12 @@ class EnhancedQuantumScheduler:
                 
                 s_col = str(section.college).strip().upper() if section.college else ''
                 r_col = str(room.college).strip().upper() if room.college else ''
+                s_abbr_match = re.search(r'\(([^)]+)\)\s*$', s_col)
+                r_abbr_match = re.search(r'\(([^)]+)\)\s*$', r_col)
+                s_norm = s_abbr_match.group(1).strip().upper() if s_abbr_match else s_col
+                r_norm = r_abbr_match.group(1).strip().upper() if r_abbr_match else r_col
                 
-                if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
+                if s_norm and r_norm and r_norm != 'SHARED' and r_norm != s_norm:
                     cost += HARD_CONSTRAINT_PENALTY
                     conflict_detected = True
         
@@ -2064,19 +2093,27 @@ class EnhancedQuantumScheduler:
             if slot.is_online or room_id is None:
                 continue
             
-            # SOFT: Manual Reservation (Pinned) Violation
-            # If a section has pinned_assignments but THIS assignment doesn't match any of them
+            # HARD: Manual Reservation (Pinned) Violation
+            # If a section has pinned_assignments but THIS occupied slot doesn't match any reserved block
             if section.is_pinned and section.pinned_assignments:
                 matches_any = False
                 for p in section.pinned_assignments:
-                    if (p['day'] == day and 
-                        p['start_slot_id'] == slot_id and 
-                        p['room_id'] == room_id):
+                    p_start = p.get('start_slot_id')
+                    p_count = max(1, int(p.get('slot_count', 1) or 1))
+                    p_end = p_start + p_count - 1 if p_start is not None else None
+                    if (
+                        p_start is not None and
+                        p_end is not None and
+                        p.get('day') == day and
+                        p.get('room_id') == room_id and
+                        p_start <= slot_id <= p_end
+                    ):
                         matches_any = True
                         break
                 
                 if not matches_any:
-                    cost += self.constraints.SOFT_FIXED_ALLOCATION_VIOLATION
+                    cost += HARD_CONSTRAINT_PENALTY
+                    conflict_detected = True
             
             # Check room equipment
             if section.required_features:
@@ -3157,8 +3194,8 @@ class EnhancedQuantumScheduler:
         seen = set()
         for section_id, section_assignments in self.section_assignments.items():
             section = self.sections.get(section_id)
-            # Treat pinned sections as soft constraints (allow moving them with low probability)
-            if section and getattr(section, 'is_pinned', False) and random.random() > 0.10:
+            # Pinned sections are immutable reservations.
+            if section and getattr(section, 'is_pinned', False):
                 continue
             
             for room_id, day, start_slot, slot_count in section_assignments:
@@ -4132,8 +4169,15 @@ def run_enhanced_scheduler(
         required_features_set = generic_reqs
         
         # Helpers to decide if we should split a section into G1/G2 based on room-specific capacities
+        def _normalize_college_key(value: str) -> str:
+            raw = str(value or '').strip().upper()
+            if not raw:
+                return ''
+            match = re.search(r'\(([^)]+)\)\s*$', raw)
+            return match.group(1).strip().upper() if match else raw
+
         def get_max_compatible_cap(room_type_req, features_req, col):
-            s_col = str(col).strip().upper() if col else ''
+            s_col = _normalize_college_key(col)
             compatible = []
             req_type_lower = room_type_req.lower()
             
@@ -4146,7 +4190,7 @@ def run_enhanced_scheduler(
                          continue
                 
                 # 2. College check
-                r_col = str(r.get('college', '')).strip().upper()
+                r_col = _normalize_college_key(r.get('college', ''))
                 if s_col and r_col and r_col != 'SHARED' and r_col != s_col:
                     continue
                 
@@ -4534,15 +4578,49 @@ def run_enhanced_scheduler(
         cooling_rate=cool_rate
     )
     
-    # Pass 2: High-Intensity Retry (if items remain unscheduled)
+    # Pass 2: Adaptive Retries (if items remain unscheduled)
     if stats.unscheduled_count > 0:
-        print(f"⚠️ PASS 1 left {stats.unscheduled_count} items unscheduled. Retrying with higher intensity...")
-        # Deep optimization: More iterations, slower cooling
-        allocations, stats = scheduler.optimize(
-            max_iterations=max_its * 2,
-            initial_temperature=init_temp * 1.2,
-            cooling_rate=0.9985
-        )
+        total_sections = max(len(sections), 1)
+        max_adaptive_retries = max(1, int(config.get('adaptive_retry_passes', 2)))
+
+        for retry_index in range(max_adaptive_retries):
+            if stats.unscheduled_count <= 0:
+                break
+
+            before_unscheduled = stats.unscheduled_count
+            unscheduled_ratio = before_unscheduled / total_sections
+            adaptive_retry_iterations = max(
+                1200,
+                min(
+                    int(max_its * 1.1),
+                    int(max_its * (0.30 + unscheduled_ratio))
+                )
+            )
+
+            print(
+                f"⚠️ PASS 2.{retry_index + 1}: {before_unscheduled} unscheduled remain. "
+                f"Retrying with adaptive intensity ({adaptive_retry_iterations} iterations)..."
+            )
+
+            allocations_retry, stats_retry = scheduler.optimize(
+                max_iterations=adaptive_retry_iterations,
+                initial_temperature=init_temp * 1.08,
+                cooling_rate=min(0.9985, cool_rate + 0.0004)
+            )
+
+            if stats_retry.unscheduled_count < before_unscheduled:
+                allocations, stats = allocations_retry, stats_retry
+                print(
+                    f"✅ PASS 2.{retry_index + 1} improved unscheduled items: "
+                    f"{before_unscheduled} -> {stats.unscheduled_count}"
+                )
+                continue
+
+            print(
+                f"⏭️ PASS 2.{retry_index + 1} produced no improvement "
+                f"({stats_retry.unscheduled_count} unscheduled). Stopping adaptive retries."
+            )
+            break
         
     # Pass 3: Emergency Recovery (if items STILL remain unscheduled)
     if stats.unscheduled_count > 0:
@@ -4658,8 +4736,11 @@ def run_enhanced_scheduler(
         print(f"🔀 Hybrid courses split: {hybrid_courses_count} courses → {split_sections_count} sections")
     print("=" * 60)
     
+    is_conflict_free = int(getattr(stats, 'conflict_count', 0) or 0) == 0
+    is_fully_scheduled = stats.unscheduled_count == 0
+
     return {
-        'success': stats.scheduled_count > 0 and success_rate >= 50,  # Success if at least 50% scheduled
+        'success': bool(is_conflict_free and is_fully_scheduled),
         'allocations': allocations,
         'total_sections': len(sections),
         'scheduled_sections': stats.scheduled_count,

@@ -65,6 +65,12 @@ export interface DragDropResult {
     section: string
     teacherName: string
     hasConflict: boolean
+    conflictReasons?: string[]
+}
+
+interface CellHighlight {
+    status: 'available' | 'conflict'
+    conflictReasons: string[]
 }
 
 interface DraggableTimetableProps {
@@ -113,6 +119,18 @@ function normalizeDay(day: string): string {
     return dayMap[day.toUpperCase()] || day
 }
 
+function buildConflictReasons(conflicts: {
+    roomConflict: boolean
+    teacherConflict: boolean
+    sectionConflict: boolean
+}): string[] {
+    const reasons: string[] = []
+    if (conflicts.roomConflict) reasons.push('Room conflict: Another class is already using this room at this time.')
+    if (conflicts.teacherConflict) reasons.push('Professor conflict: The instructor already has another class at this time.')
+    if (conflicts.sectionConflict) reasons.push('Section conflict: This section already has another class at this time.')
+    return reasons
+}
+
 // ======================== Component ========================
 
 export default function DraggableTimetable({
@@ -125,7 +143,7 @@ export default function DraggableTimetable({
     onDirectEdit,
 }: DraggableTimetableProps) {
     const [draggedBlock, setDraggedBlock] = useState<CombinedBlock | null>(null)
-    const [highlightedCells, setHighlightedCells] = useState<Map<string, 'available' | 'conflict'>>(new Map())
+    const [highlightedCells, setHighlightedCells] = useState<Map<string, CellHighlight>>(new Map())
     const tableRef = useRef<HTMLTableElement>(null)
 
     // Touch drag state
@@ -271,7 +289,7 @@ export default function DraggableTimetable({
     // Compute highlights for a given block
     const computeHighlights = useCallback((block: CombinedBlock) => {
         const duration = block.endMinutes - block.startMinutes
-        const highlights = new Map<string, 'available' | 'conflict'>()
+        const highlights = new Map<string, CellHighlight>()
 
         DAYS.forEach(day => {
             for (let slotIdx = 0; slotIdx < TOTAL_SLOTS; slotIdx++) {
@@ -292,7 +310,10 @@ export default function DraggableTimetable({
                 )
 
                 const cellKey = `${day}-${slotIdx}`
-                highlights.set(cellKey, conflictsExcluding.hasConflict ? 'conflict' : 'available')
+                highlights.set(cellKey, {
+                    status: conflictsExcluding.hasConflict ? 'conflict' : 'available',
+                    conflictReasons: conflictsExcluding.hasConflict ? buildConflictReasons(conflictsExcluding) : []
+                })
             }
         })
 
@@ -335,7 +356,8 @@ export default function DraggableTimetable({
             courseCode: draggedBlock.course_code,
             section: draggedBlock.section,
             teacherName: draggedBlock.teacher_name,
-            hasConflict: cellStatus === 'conflict',
+            hasConflict: cellStatus?.status === 'conflict',
+            conflictReasons: cellStatus?.conflictReasons || [],
         }
 
         if (mode === 'admin-edit' && onDirectEdit) {
@@ -434,7 +456,7 @@ export default function DraggableTimetable({
             // Check validity using FRESH state
             const cellStatus = highlightedCells.get(`${day}-${slotIdx}`)
 
-            if (cellStatus === 'available') {
+            if (cellStatus?.status === 'available') {
                 // Perform the drop logic directly using fresh state
                 const block = ts.block
                 const slotMinutes = (START_HOUR + Math.floor(slotIdx / 2)) * 60 + (slotIdx % 2) * 30
@@ -456,6 +478,7 @@ export default function DraggableTimetable({
                     section: block.section,
                     teacherName: block.teacher_name,
                     hasConflict: false,
+                    conflictReasons: [],
                 }
 
                 if (mode === 'admin-edit' && onDirectEdit) {
@@ -600,9 +623,13 @@ export default function DraggableTimetable({
                                     const cellHighlight = draggedBlock ? highlightedCells.get(cellKey) : null
 
                                     let cellClassName = styles.dataCell
-                                    if (cellHighlight === 'available') cellClassName += ` ${styles.cellAvailable}`
-                                    else if (cellHighlight === 'conflict') cellClassName += ` ${styles.cellConflict}`
+                                    if (cellHighlight?.status === 'available') cellClassName += ` ${styles.cellAvailable}`
+                                    else if (cellHighlight?.status === 'conflict') cellClassName += ` ${styles.cellConflict}`
                                     if (canDrag && draggedBlock) cellClassName += ` ${styles.droppableZone}`
+
+                                    const conflictTitle = draggedBlock && cellHighlight?.status === 'conflict'
+                                        ? `Conflict detected:\n${cellHighlight.conflictReasons.join('\n')}`
+                                        : undefined
 
                                     return (
                                         <td
@@ -614,6 +641,7 @@ export default function DraggableTimetable({
                                                 height: `${ROW_HEIGHT}px`,
                                                 background: isCoveredByBlock ? 'transparent' : undefined,
                                             }}
+                                            title={conflictTitle}
                                             onDragOver={(e) => {
                                                 if (canDrag && draggedBlock) {
                                                     e.preventDefault()
@@ -621,7 +649,7 @@ export default function DraggableTimetable({
                                             }}
                                             onDrop={(e) => {
                                                 e.preventDefault()
-                                                if (canDrag && draggedBlock && cellHighlight === 'available') {
+                                                if (canDrag && draggedBlock && cellHighlight?.status === 'available') {
                                                     handleDrop(day, slotIdx)
                                                 }
                                             }}

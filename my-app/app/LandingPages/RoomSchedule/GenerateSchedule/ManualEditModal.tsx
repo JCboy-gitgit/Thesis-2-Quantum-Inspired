@@ -80,12 +80,30 @@ export default function ManualEditModal({
     const [draggedAllocId, setDraggedAllocId] = useState<any | null>(null)
     const [resizingAllocId, setResizingAllocId] = useState<any | null>(null)
     const [splitLabClasses, setSplitLabClasses] = useState<number[]>([])
+    const [selectedTeacherByClass, setSelectedTeacherByClass] = useState<Record<number, string>>({})
+    const [selectedCollegeByClass, setSelectedCollegeByClass] = useState<Record<number, string>>({})
     const [hoveredCell, setHoveredCell] = useState<{ day: string, slotId: number } | null>(null);
 
     // Sync with props if they change
     useEffect(() => {
         setAllocations(initialAllocations)
     }, [initialAllocations])
+
+    useEffect(() => {
+        const next: Record<number, string> = {}
+        classes.forEach(c => {
+            next[c.id] = c.teacher_name || 'TBD'
+        })
+        setSelectedTeacherByClass(next)
+    }, [classes, isOpen])
+
+    useEffect(() => {
+        const next: Record<number, string> = {}
+        classes.forEach(c => {
+            next[c.id] = normalizeCollegeLabel(c.college)
+        })
+        setSelectedCollegeByClass(next)
+    }, [classes, isOpen])
 
     // Global event listeners for resizing
     useEffect(() => {
@@ -129,27 +147,313 @@ export default function ManualEditModal({
         return slots
     }, [timeSettings])
 
+    const parseClockToMinutes = (clock: string): number | null => {
+        const match = (clock || '').trim().match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i)
+        if (!match) return null
+
+        let hour = parseInt(match[1], 10)
+        const minute = parseInt(match[2], 10)
+        const ampm = (match[3] || '').toUpperCase()
+
+        if (ampm) {
+            if (ampm === 'PM' && hour !== 12) hour += 12
+            if (ampm === 'AM' && hour === 12) hour = 0
+        }
+
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null
+        return (hour * 60) + minute
+    }
+
+    const getRangeMinutes = (scheduleTime: string): { start: number, end: number } | null => {
+        const normalized = (scheduleTime || '').replace(/\s+to\s+/gi, ' - ')
+        const parts = normalized.includes(' - ')
+            ? normalized.split(' - ')
+            : normalized.split('-')
+
+        if (parts.length < 2) return null
+
+        const start = parseClockToMinutes(parts[0])
+        const end = parseClockToMinutes(parts[1])
+        if (start === null || end === null || end <= start) return null
+
+        return { start, end }
+    }
+
+    const getAllocationRange = (allocation: any): { start: number, end: number } | null => {
+        return getRangeMinutes(String(allocation?.schedule_time || ''))
+    }
+
+    const normalizeDayLabel = (day: string) => String(day || '').trim().toLowerCase()
+
+    const findSlotByStartMinutes = (startMinutes: number) => {
+        return timeSlots.find(s => s.startMinutes === startMinutes)
+    }
+
+    const findSlotByEndMinutes = (endMinutes: number) => {
+        return timeSlots.find(s => s.endMinutes === endMinutes)
+    }
+
+    const getSectionGroup = (section: string): 'G1' | 'G2' | null => {
+        const match = (section || '').replace(/_/g, ' ').match(/\b(G1|G2)\b/i)
+        if (!match) return null
+        const group = match[1].toUpperCase()
+        return group === 'G1' || group === 'G2' ? group : null
+    }
+
+    const getSectionBase = (section: string) => {
+        return (section || '')
+            .replace(/_LAB$/i, '')
+            .replace(/_LEC$/i, '')
+            .replace(/_LECTURE$/i, '')
+            .replace(/_LABORATORY$/i, '')
+            .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+            .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
+            .replace(/ LAB$/i, '')
+            .replace(/ LEC$/i, '')
+            .trim()
+    }
+
+    const getAllocationComponent = (alloc: any): 'LEC' | 'LAB' => {
+        const raw = String(alloc?.component || '').toUpperCase()
+        if (raw.includes('LAB')) return 'LAB'
+        if (raw.includes('LEC')) return 'LEC'
+
+        const section = String(alloc?.section || '')
+        if (/(?:^|[_\s-])LAB(?:$|[_\s-])/i.test(section)) return 'LAB'
+        return 'LEC'
+    }
+
+    const getAllocationHours = (alloc: any): number => {
+        const range = getRangeMinutes(String(alloc?.schedule_time || ''))
+        if (!range) return 0
+        return (range.end - range.start) / 60
+    }
+
+    const getAllocatedHoursForComponent = (
+        allocList: any[],
+        classId: number,
+        component: 'LEC' | 'LAB',
+        group: 'G1' | 'G2' | null = null,
+        ignoreAllocId?: any
+    ): number => {
+        return allocList
+            .filter(a => {
+                if (a.class_id !== classId) return false
+                if (ignoreAllocId && ((a.id || a.class_id) === ignoreAllocId)) return false
+                if (getAllocationComponent(a) !== component) return false
+
+                if (component === 'LAB') {
+                    const allocGroup = getSectionGroup(String(a.section || ''))
+                    if (group) return allocGroup === group
+                    return allocGroup === null
+                }
+
+                return true
+            })
+            .reduce((total, a) => total + getAllocationHours(a), 0)
+    }
+
+    const extractCollegeKey = (value?: string) => {
+        const raw = (value || '').trim().toUpperCase()
+        if (!raw || raw === UNKNOWN_COLLEGE.toUpperCase()) return ''
+        const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+        return abbr || raw
+    }
+
+    const getCollegeKeys = (value?: string) => {
+        return Array.from(new Set(parseCollegeLabels(value).map(part => extractCollegeKey(part)).filter(Boolean)))
+    }
+
+    const canAssignComponentToRoom = (
+        classInfo: any,
+        room: any,
+        component: 'LEC' | 'LAB',
+        students: number
+    ) => {
+        if (!room) return false
+
+        const roomType = String(room.room_type || '').toLowerCase()
+        const roomIsLab = roomType.includes('lab') || roomType.includes('computer')
+
+        if (component === 'LAB' && !roomIsLab) return false
+        if ((room.capacity || 0) < students) return false
+
+        const LEC_FEATURES_ALLOWLIST = ['TV_Display', 'Projector', 'Whiteboard', 'Sound_System', 'Air_Conditioning', 'Accessibility', 'Podium', 'Smart_TV']
+        const requiredFeatures = component === 'LAB'
+            ? ((classInfo.required_lab_features?.length > 0)
+                ? classInfo.required_lab_features
+                : (classInfo.required_features || []))
+            : ((classInfo.required_lec_features?.length > 0)
+                ? classInfo.required_lec_features
+                : (classInfo.required_features || []).filter((f: string) => LEC_FEATURES_ALLOWLIST.includes(f)))
+
+        const roomFeatures = new Set<string>((room.feature_tags || []) as string[])
+        if ((requiredFeatures || []).some((f: string) => !roomFeatures.has(f))) return false
+
+        if (collegeRoomMatchingEnabled) {
+            const classCollegeKeys = getCollegeKeys(getEffectiveCollege(classInfo))
+            const roomCollegeKey = extractCollegeKey((room.college || '').trim())
+            if (classCollegeKeys.length > 0 && roomCollegeKey && roomCollegeKey !== 'SHARED') {
+                if (!classCollegeKeys.includes(roomCollegeKey)) return false
+            }
+        }
+
+        return true
+    }
+
+    const getTeacherWeeklyLimit = (entry: any): number | null => {
+        const candidates = [
+            entry?.faculty_max_hours_per_week,
+            entry?.teacher_max_hours_per_week,
+            entry?.max_teacher_hours_per_week,
+            entry?.max_hours_per_week,
+            entry?.weekly_max_hours,
+            entry?.faculty_profiles?.max_hours_per_week
+        ]
+
+        for (const value of candidates) {
+            const n = Number(value)
+            if (Number.isFinite(n) && n > 0) return n
+        }
+
+        return null
+    }
+
+    const teacherWeeklyLimitByName = useMemo(() => {
+        const map = new Map<string, number>()
+        classes.forEach(c => {
+            const name = String(c.teacher_name || '').trim()
+            if (!name) return
+            const limit = getTeacherWeeklyLimit(c)
+            if (limit !== null) {
+                const existing = map.get(name)
+                map.set(name, existing ? Math.max(existing, limit) : limit)
+            }
+        })
+        return map
+    }, [classes])
+
+    const teacherOptionsByClassId = useMemo(() => {
+        const map = new Map<number, string[]>()
+        classes.forEach(c => {
+            const options = new Set<string>()
+            classes.forEach(other => {
+                const sameCourse =
+                    (String(other.course_code || '').trim() !== '' && String(c.course_code || '').trim() !== '' && other.course_code === c.course_code) ||
+                    (String(other.course_code || '').trim() === '' && String(c.course_code || '').trim() === '' && other.course_name === c.course_name)
+                if (sameCourse) {
+                    const t = String(other.teacher_name || '').trim()
+                    if (t) options.add(t)
+                }
+            })
+
+            if (options.size === 0) options.add(c.teacher_name || 'TBD')
+            map.set(c.id, Array.from(options).sort((a, b) => a.localeCompare(b)))
+        })
+        return map
+    }, [classes])
+
+    const classAllocatedHoursById = useMemo(() => {
+        const map = new Map<number, number>()
+        allocations.forEach(a => {
+            const cid = Number(a.class_id)
+            const hours = getAllocationHours(a)
+            map.set(cid, (map.get(cid) || 0) + hours)
+        })
+        return map
+    }, [allocations])
+
+    const teacherAllocatedHoursExcludingClass = useCallback((teacherName: string, classId: number) => {
+        return allocations
+            .filter(a => String(a.teacher_name || '').trim() === teacherName && a.class_id !== classId)
+            .reduce((sum, a) => sum + getAllocationHours(a), 0)
+    }, [allocations])
+
+    const getEffectiveTeacherName = useCallback((classInfo: any): string => {
+        return selectedTeacherByClass[classInfo.id] || classInfo.teacher_name || 'TBD'
+    }, [selectedTeacherByClass])
+
+    const getEffectiveCollege = useCallback((classInfo: any): string => {
+        return selectedCollegeByClass[classInfo.id] || normalizeCollegeLabel(classInfo.college)
+    }, [selectedCollegeByClass])
+
+    const handleTeacherSelection = (classId: number, teacherName: string) => {
+        setSelectedTeacherByClass(prev => ({ ...prev, [classId]: teacherName }))
+        setAllocations(prev => prev.map(a => a.class_id === classId ? { ...a, teacher_name: teacherName } : a))
+    }
+
+    const handleCollegeSelection = (classId: number, collegeLabel: string) => {
+        const normalizedCollege = normalizeCollegeLabel(collegeLabel)
+        setSelectedCollegeByClass(prev => ({ ...prev, [classId]: normalizedCollege }))
+        setAllocations(prev => prev.map(a => a.class_id === classId ? { ...a, college: normalizedCollege } : a))
+    }
+
+    const availableCollegeOptions = useMemo(() => {
+        const options = new Set<string>([UNKNOWN_COLLEGE])
+        rooms.forEach(room => parseCollegeLabels(room.college).forEach(label => options.add(label)))
+        classes.forEach(cls => parseCollegeLabels(cls.college).forEach(label => options.add(label)))
+
+        return Array.from(options).sort((a, b) => {
+            if (a === UNKNOWN_COLLEGE) return 1
+            if (b === UNKNOWN_COLLEGE) return -1
+            return a.localeCompare(b)
+        })
+    }, [rooms, classes])
+
     // 4. Classes with Remaining Hours (Split by Lec/Lab)
     const classesWithStats = useMemo(() => {
-        const labRooms = rooms.filter(r => r.room_type?.toLowerCase().includes('lab'));
-        const maxLabCapacity = labRooms.length > 0 ? Math.max(...labRooms.map(r => r.capacity || 0)) : 30;
+        const getMaxCompatibleLabCapacity = (c: any) => {
+            const classCollegeKeys = getCollegeKeys(getEffectiveCollege(c));
+            const requiredFeatures = new Set<string>(
+                (c.required_lab_features && c.required_lab_features.length > 0)
+                    ? c.required_lab_features
+                    : (c.required_features || [])
+            );
+
+            const compatibleLabs = rooms.filter(r => {
+                const rType = (r.room_type || '').toLowerCase();
+                const isLab = rType.includes('lab') || rType.includes('computer');
+                if (!isLab) return false;
+
+                if (collegeRoomMatchingEnabled) {
+                    const rCollegeRaw = (r.college || '').trim();
+                    if (rCollegeRaw) {
+                        const rCollege = extractCollegeKey(rCollegeRaw);
+                        if (rCollege !== 'SHARED' && classCollegeKeys.length > 0 && !classCollegeKeys.includes(rCollege)) {
+                            return false;
+                        }
+                    }
+                }
+
+                const roomFeatures = new Set<string>((r.feature_tags || []) as string[]);
+                if (requiredFeatures.size > 0 && !Array.from(requiredFeatures).every(f => roomFeatures.has(f))) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            return compatibleLabs.length > 0
+                ? Math.max(...compatibleLabs.map(r => r.capacity || 0))
+                : 30;
+        };
 
         return classes.map(c => {
             const calculateAllotted = (compStr: string, suffix?: string) => {
                 return allocations
-                    .filter(a => a.class_id === c.id && a.component === compStr && (!suffix || a.section.trim().endsWith(suffix)))
-                    .reduce((acc, a) => {
-                        const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5);
-                        const endParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5);
-                        const startMins = timeSlots.find(s => s.start === startParts)?.startMinutes || 0
-                        const endMins = timeSlots.find(s => s.end.includes(endParts))?.endMinutes || 0
-                        return acc + (endMins - startMins) / 60
-                    }, 0)
+                    .filter(a => {
+                        if (a.class_id !== c.id) return false
+                        if (getAllocationComponent(a) !== compStr) return false
+                        if (!suffix) return true
+                        return getSectionGroup(String(a.section || '')) === suffix
+                    })
+                    .reduce((acc, a) => acc + getAllocationHours(a), 0)
             }
 
             const lecAllotted = calculateAllotted('LEC')
 
-            const isAutoSplitLab = allowG1G2SplitSessions && (c.student_count || 0) > maxLabCapacity && (c.lab_hours > 0);
+            const maxCompatibleLabCapacity = getMaxCompatibleLabCapacity(c);
+            const isAutoSplitLab = allowG1G2SplitSessions && (c.student_count || 0) > maxCompatibleLabCapacity && (c.lab_hours > 0);
             const isManuallySplit = splitLabClasses.includes(c.id);
             const isSplitLab = isAutoSplitLab || isManuallySplit;
 
@@ -174,7 +478,7 @@ export default function ManualEditModal({
                 totalHours: (c.lec_hours || 0) + (c.lab_hours || 0)
             }
         })
-    }, [classes, allocations, timeSlots, rooms, splitLabClasses])
+    }, [classes, allocations, timeSlots, rooms, splitLabClasses, collegeRoomMatchingEnabled, getCollegeKeys, getEffectiveCollege, extractCollegeKey])
 
     const faculties = useMemo(() => {
         const unique = [...new Set(classes.map(c => c.teacher_name || 'TBD'))].sort()
@@ -197,12 +501,12 @@ export default function ManualEditModal({
         const map = new Map<string, Set<string>>()
         classes.forEach(c => {
             const facultyName = c.teacher_name || 'TBD'
-            const colleges = parseCollegeLabels(c.college)
+            const colleges = parseCollegeLabels(getEffectiveCollege(c))
             if (!map.has(facultyName)) map.set(facultyName, new Set<string>())
             colleges.forEach(college => map.get(facultyName)?.add(college))
         })
         return map
-    }, [classes])
+    }, [classes, getEffectiveCollege])
 
     const sectionCollegeMap = useMemo(() => {
         const map = new Map<string, Set<string>>()
@@ -212,7 +516,7 @@ export default function ManualEditModal({
         }
 
         classesWithStats.forEach(c => {
-            const colleges = parseCollegeLabels(c.college)
+            const colleges = parseCollegeLabels(getEffectiveCollege(c))
             colleges.forEach(college => addSectionCollege(c.section, college))
             if (c.isSplitLab) {
                 colleges.forEach(college => {
@@ -222,7 +526,7 @@ export default function ManualEditModal({
             }
         })
         return map
-    }, [classesWithStats])
+    }, [classesWithStats, getEffectiveCollege])
 
     const navigationItems = useMemo(() => {
         if (viewMode === 'room') return rooms
@@ -291,10 +595,57 @@ export default function ManualEditModal({
             const matchesSearch = c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.section.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchesSection = filterSection === 'all' || c.section === filterSection || `${c.section} G1` === filterSection || `${c.section} G2` === filterSection;
-            return matchesSearch && matchesSection && (c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0)
+            const matchesSection = viewMode !== 'section' || filterSection === 'all' || c.section === filterSection || `${c.section} G1` === filterSection || `${c.section} G2` === filterSection;
+
+            const hasRemaining = c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0
+            if (!(matchesSearch && matchesSection && hasRemaining)) return false
+
+            if (viewMode === 'faculty') {
+                return getEffectiveTeacherName(c) === (activeItem as string)
+            }
+
+            if (viewMode === 'section') {
+                const activeSec = String(activeItem || '')
+                const activeBase = getSectionBase(activeSec)
+                const activeGroup = getSectionGroup(activeSec)
+                const classBase = getSectionBase(String(c.section || ''))
+
+                if (classBase !== activeBase) return false
+
+                if (activeGroup) {
+                    const hasRelevantLab = c.isSplitLab
+                        ? (activeGroup === 'G1' ? c.labG1Remaining > 0 : c.labG2Remaining > 0)
+                        : false
+                    return c.lecRemaining > 0 || hasRelevantLab
+                }
+
+                return true
+            }
+
+            if (viewMode === 'room') {
+                const room = activeItem as any
+                if (!room) return false
+
+                const canLEC = c.lecRemaining > 0 && canAssignComponentToRoom(c, room, 'LEC', c.student_count || 0)
+                const canLAB = (!c.isSplitLab)
+                    ? (c.labRemaining > 0 && canAssignComponentToRoom(c, room, 'LAB', c.student_count || 0))
+                    : (
+                        (c.labG1Remaining > 0 && canAssignComponentToRoom(c, room, 'LAB', Math.ceil((c.student_count || 0) / 2))) ||
+                        (c.labG2Remaining > 0 && canAssignComponentToRoom(c, room, 'LAB', Math.floor((c.student_count || 0) / 2)))
+                    )
+
+                return canLEC || canLAB
+            }
+
+            return true
         })
-    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem])
+    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem, canAssignComponentToRoom, getEffectiveTeacherName])
+
+    const remainingClassCount = useMemo(() => {
+        return classesWithStats.filter(c =>
+            c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0
+        ).length
+    }, [classesWithStats])
 
     // 6. Conflict Detection
     const checkConflicts = useCallback((newAlloc: any, ignoreSelfId?: any) => {
@@ -307,6 +658,8 @@ export default function ManualEditModal({
 
         const classInfo = classes.find(c => c.id === class_id)
         if (!classInfo) return []
+        const effectiveTeacherName = String(newAlloc.teacher_name || classInfo.teacher_name || '').trim()
+        const effectiveClassCollege = normalizeCollegeLabel(newAlloc.college || getEffectiveCollege(classInfo))
 
         const room = rooms.find(r => r.id === room_id);
 
@@ -327,7 +680,7 @@ export default function ManualEditModal({
 
             // College-Room Matching conflict
             if (collegeRoomMatchingEnabled) {
-                const s_col = classInfo.college?.trim().toUpperCase();
+                const s_col = effectiveClassCollege?.trim().toUpperCase();
                 const r_col = room.college?.trim().toUpperCase();
                 if (s_col && r_col && r_col !== 'SHARED') {
                     // Extract abbreviation from parentheses, e.g. "COLLEGE OF SCIENCE (CS)" → "CS"
@@ -339,7 +692,8 @@ export default function ManualEditModal({
                     const r_abbr = extractAbbr(r_col);
                     // Match if either the full strings match OR their abbreviations match
                     const isMatch = r_col === s_col || r_abbr === s_abbr || r_col === s_abbr || r_abbr === s_col;
-                    if (!isMatch) {
+                    const isUnassignedClassCollege = s_col === UNKNOWN_COLLEGE.toUpperCase();
+                    if (!isMatch && !isUnassignedClassCollege) {
                         conflicts.push(`College conflict: Room is ${r_col}, Class is ${s_col}`);
                     }
                 }
@@ -348,11 +702,10 @@ export default function ManualEditModal({
 
         if (!schedule_day || !schedule_time) return conflicts;
 
-        const startParts = schedule_time.split(' - ')
-        const p1 = (startParts[0] || '').trim().substring(0, 5)
-        const p2 = (startParts[1] || '').trim().substring(0, 5)
-        const startMin = timeSlots.find(s => s.start === p1)?.startMinutes || 0
-        const endMin = timeSlots.find(s => s.end.includes(p2))?.endMinutes || 0
+        const newRange = getRangeMinutes(schedule_time)
+        if (!newRange) return conflicts
+        const startMin = newRange.start
+        const endMin = newRange.end
 
         allocations.forEach(existing => {
             // Robust ignore logic: check by object identity OR unique ID OR class_id only if no ID exists
@@ -365,13 +718,12 @@ export default function ManualEditModal({
 
             if (!existing_day || !existing_time) return;
 
-            const exParts = existing_time.split(' - ')
-            const ex1 = (exParts[0] || '').trim().substring(0, 5)
-            const ex2 = (exParts[1] || '').trim().substring(0, 5)
-            const eStart = timeSlots.find(s => s.start === ex1)?.startMinutes || 0
-            const eEnd = timeSlots.find(s => s.end.includes(ex2))?.endMinutes || 0
+            const existingRange = getRangeMinutes(existing_time)
+            if (!existingRange) return
+            const eStart = existingRange.start
+            const eEnd = existingRange.end
 
-            const timeOverlap = (schedule_day === existing_day) &&
+            const timeOverlap = (normalizeDayLabel(schedule_day) === normalizeDayLabel(existing_day)) &&
                 ((startMin >= eStart && startMin < eEnd) || (endMin > eStart && endMin <= eEnd) || (startMin <= eStart && endMin >= eEnd))
 
             if (timeOverlap) {
@@ -379,8 +731,8 @@ export default function ManualEditModal({
                 if (room_id === existing.room_id) {
                     conflicts.push(`Room conflict: ${existing.course_code} (${existing.section}) at ${timeDesc}`);
                 }
-                if (classInfo.teacher_name && classInfo.teacher_name === existing.teacher_name) {
-                    conflicts.push(`Prof conflict: ${classInfo.teacher_name} is in Room ${existing.room || 'another room'} at ${timeDesc}`);
+                if (effectiveTeacherName && effectiveTeacherName === existing.teacher_name) {
+                    conflicts.push(`Prof conflict: ${effectiveTeacherName} is in Room ${existing.room || 'another room'} at ${timeDesc}`);
                 }
                 const getBase = (s: unknown) => {
                     const value = typeof s === 'string' ? s : '';
@@ -406,7 +758,7 @@ export default function ManualEditModal({
         })
 
         return conflicts
-    }, [classes, allocations, timeSlots, rooms, collegeRoomMatchingEnabled])
+    }, [classes, allocations, timeSlots, rooms, collegeRoomMatchingEnabled, getEffectiveCollege])
 
     // NEW: Find the best available room based on requirements and availability
     const findOptimalRoom = useCallback((classInfo: any, component: string, day: string, startSlot: any, durationMins: number, ignoreAllocId?: any) => {
@@ -437,7 +789,7 @@ export default function ManualEditModal({
         const candidates = rooms.map(room => {
             let score = 0;
             const rType = room.room_type?.toLowerCase() || '';
-            const roomIsLab = rType.includes('lab');
+            const roomIsLab = rType.includes('lab') || rType.includes('computer');
 
             // --- HARD CONSTRAINTS ---
             // a) Room Type Compatibility
@@ -449,12 +801,12 @@ export default function ManualEditModal({
             // c) Availability Check
             const isBusy = allocations.some(a => {
                 if (ignoreAllocId && (a.id || a.class_id) === ignoreAllocId) return false;
-                if (a.room_id !== room.id || a.schedule_day !== day) return false;
+                if (a.room_id !== room.id || normalizeDayLabel(a.schedule_day) !== normalizeDayLabel(day)) return false;
 
-                const aStartParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5);
-                const aEndParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5);
-                const aStartMins = timeSlots.find(s => s.start === aStartParts)?.startMinutes || 0;
-                const aEndMins = timeSlots.find(s => s.end === aEndParts)?.endMinutes || 0;
+                const existingRange = getRangeMinutes(a.schedule_time);
+                if (!existingRange) return false;
+                const aStartMins = existingRange.start;
+                const aEndMins = existingRange.end;
 
                 return (startMins < aEndMins && endMins > aStartMins);
             });
@@ -466,10 +818,15 @@ export default function ManualEditModal({
 
             // e) College Matching
             if (collegeRoomMatchingEnabled) {
-                const s_col = classInfo.college?.trim().toUpperCase();
-                const r_col = room.college?.trim().toUpperCase();
-                if (s_col && r_col && r_col !== 'SHARED' && r_col !== s_col) {
-                    return { room, score: -1000 };
+                const classCollegeKeys = getCollegeKeys(getEffectiveCollege(classInfo));
+                const roomCollegeRaw = (room.college || '').trim();
+                const roomCollegeKey = extractCollegeKey(roomCollegeRaw);
+
+                if (classCollegeKeys.length > 0 && roomCollegeKey && roomCollegeKey !== 'SHARED') {
+                    const isCollegeMatch = classCollegeKeys.includes(roomCollegeKey);
+                    if (!isCollegeMatch) {
+                        return { room, score: -1000 };
+                    }
                 }
             }
 
@@ -489,7 +846,7 @@ export default function ManualEditModal({
             .sort((a, b) => b.score - a.score);
 
         return sorted.length > 0 ? sorted[0].room : null;
-    }, [rooms, allocations, timeSlots])
+    }, [rooms, allocations, timeSlots, collegeRoomMatchingEnabled, getCollegeKeys, extractCollegeKey, getEffectiveCollege])
 
     // 7. Actions
     const handleNavigation = (direction: 'next' | 'prev') => {
@@ -509,10 +866,13 @@ export default function ManualEditModal({
                 return;
             }
 
-            const startParts = (existingAlloc.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
-            const endParts = (existingAlloc.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
-            const oldStart = timeSlots.find(s => s.start === startParts)?.startMinutes || 0
-            const oldEnd = timeSlots.find(s => s.end.includes(endParts) || s.end === endParts)?.endMinutes || 0
+            const existingRange = getAllocationRange(existingAlloc)
+            if (!existingRange) {
+                setDraggedAllocId(null)
+                return
+            }
+            const oldStart = existingRange.start
+            const oldEnd = existingRange.end
             const durationMins = oldEnd - oldStart;
 
             const endSlotIdx = timeSlots.indexOf(slot) + Math.ceil(durationMins / 30) - 1
@@ -561,6 +921,7 @@ export default function ManualEditModal({
         if (!draggedClassId) return
         const classInfo = classesWithStats.find(c => c.id === draggedClassId)
         if (!classInfo) return
+        const selectedTeacherName = getEffectiveTeacherName(classInfo)
 
         const targetComponent = component || draggingComponent || (classInfo.lecRemaining > 0 ? 'LEC' : 'LAB')
 
@@ -639,7 +1000,8 @@ export default function ManualEditModal({
             campus: roomInfo.campus,
             building: roomInfo.building,
             room: roomInfo.room,
-            teacher_name: classInfo.teacher_name || 'TBD',
+            teacher_name: selectedTeacherName || 'TBD',
+            college: getEffectiveCollege(classInfo),
             component: saveComponent,
             status: 'scheduled'
         }
@@ -652,6 +1014,20 @@ export default function ManualEditModal({
             return;
         }
 
+        const componentType: 'LEC' | 'LAB' = saveComponent.includes('LAB') ? 'LAB' : 'LEC'
+        const targetGroup = componentType === 'LAB' ? getSectionGroup(targetSection) : null
+        const allowedHours = componentType === 'LAB'
+            ? (classInfo.lab_hours || 0)
+            : (classInfo.lec_hours || 0)
+        const projectedHours = getAllocatedHoursForComponent(allocations, classInfo.id, componentType, targetGroup) + getAllocationHours(newAlloc)
+
+        if (allowedHours > 0 && projectedHours > allowedHours + 1e-6) {
+            toast.error(`Weekly ${componentType} hours exceeded: ${projectedHours.toFixed(1)}h/${allowedHours}h`)
+            setDraggedClassId(null)
+            setDraggingComponent(null)
+            return
+        }
+
         setAllocations(prev => [...prev, newAlloc])
         setDraggedClassId(null)
         setDraggingComponent(null)
@@ -660,13 +1036,28 @@ export default function ManualEditModal({
 
     const handleResize = (allocId: any, day: string, newEndSlot: any) => {
         setAllocations(prev => prev.map(a => {
-            if ((a.id || a.class_id) !== allocId || a.schedule_day !== day) return a
+            if ((a.id || a.class_id) !== allocId || normalizeDayLabel(a.schedule_day) !== normalizeDayLabel(day)) return a
 
-            const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
-            const startSlot = timeSlots.find(s => s.start === startParts)
+            const allocRange = getAllocationRange(a)
+            if (!allocRange) return a
+            const startSlot = findSlotByStartMinutes(allocRange.start)
             if (!startSlot) return a
 
             if (newEndSlot.endMinutes <= startSlot.startMinutes) return a
+
+            const classObj = classes.find(c => c.id === a.class_id)
+            if (classObj) {
+                const componentType = getAllocationComponent(a)
+                const group = componentType === 'LAB' ? getSectionGroup(String(a.section || '')) : null
+                const allowedHours = componentType === 'LAB' ? (classObj.lab_hours || 0) : (classObj.lec_hours || 0)
+                const resizedHours = (newEndSlot.endMinutes - startSlot.startMinutes) / 60
+                const usedOtherHours = getAllocatedHoursForComponent(prev, a.class_id, componentType, group, allocId)
+
+                if (allowedHours > 0 && usedOtherHours + resizedHours > allowedHours + 1e-6) {
+                    toast.warning(`Weekly ${componentType} limit reached (${allowedHours}h).`)
+                    return a
+                }
+            }
 
             const updatedAlloc = { ...a, schedule_time: `${startSlot.start} - ${newEndSlot.end}` }
             const conflicts = checkConflicts(updatedAlloc, allocId)
@@ -683,11 +1074,10 @@ export default function ManualEditModal({
         setAllocations(prev => prev.map(a => {
             if ((a.id || a.class_id) !== allocId) return a
 
-            const startParts = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
-            const endParts = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
-
-            const startSlot = timeSlots.find(s => s.start === startParts)
-            const endSlot = timeSlots.find(s => s.end.includes(endParts) || s.end === endParts)
+            const allocRange = getAllocationRange(a)
+            if (!allocRange) return a
+            const startSlot = findSlotByStartMinutes(allocRange.start)
+            const endSlot = findSlotByEndMinutes(allocRange.end)
 
             if (!startSlot || !endSlot) return a
 
@@ -701,9 +1091,14 @@ export default function ManualEditModal({
             if (amountMins > 0) {
                 const classObj = classes.find(c => c.id === a.class_id);
                 if (classObj) {
-                    const maxMins = a.component.includes('LAB') ? (classObj.lab_hours || 0) * 60 : (classObj.lec_hours || 0) * 60;
-                    if ((newEndMins - startSlot.startMinutes) > maxMins && maxMins > 0) {
-                        toast.warning(`Maximum hours (${maxMins / 60}h) reached for component.`);
+                    const componentType = getAllocationComponent(a)
+                    const group = componentType === 'LAB' ? getSectionGroup(String(a.section || '')) : null
+                    const allowedHours = componentType === 'LAB' ? (classObj.lab_hours || 0) : (classObj.lec_hours || 0)
+                    const newDurationHours = (newEndMins - startSlot.startMinutes) / 60
+                    const usedOtherHours = getAllocatedHoursForComponent(prev, a.class_id, componentType, group, allocId)
+
+                    if (allowedHours > 0 && usedOtherHours + newDurationHours > allowedHours + 1e-6) {
+                        toast.warning(`Weekly ${componentType} limit reached (${allowedHours}h).`)
                         return a;
                     }
                 }
@@ -765,10 +1160,8 @@ export default function ManualEditModal({
         if (draggedAllocId) {
             const a = allocations.find(ea => (ea.id || ea.class_id) === draggedAllocId);
             if (a) {
-                const parts = a.schedule_time.split(' - ');
-                const s = timeSlots.find(ts => ts.start === parts[0].substring(0, 5))?.startMinutes || 0;
-                const e = timeSlots.find(ts => ts.end.includes(parts[1].substring(0, 5)))?.endMinutes || 0;
-                durationMins = e - s;
+                const range = getAllocationRange(a)
+                if (range) durationMins = range.end - range.start
             }
         } else {
             durationMins = component === 'LEC' ? (baseClass.lec_hours || 1) * 60 : (baseClass.lab_hours || 1) * 60;
@@ -811,10 +1204,9 @@ export default function ManualEditModal({
         if (draggedAllocId) {
             const existing = allocations.find(a => (a.id || a.class_id) === draggedAllocId);
             if (!existing) return 60;
-            const parts = existing.schedule_time.split(' - ');
-            const s = timeSlots.find(ts => ts.start === parts[0].substring(0, 5))?.startMinutes || 0;
-            const e = timeSlots.find(ts => ts.end.includes(parts[1].substring(0, 5)))?.endMinutes || 0;
-            return e - s;
+            const range = getAllocationRange(existing)
+            if (!range) return 60
+            return range.end - range.start;
         } else {
             baseClass = classes.find(c => c.id === draggedClassId);
             if (!baseClass) return 60;
@@ -912,9 +1304,54 @@ export default function ManualEditModal({
                                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
                                     <MdSearch size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
                                     <p style={{ fontSize: '14px', fontWeight: 500 }}>No courses found</p>
+                                    {viewMode === 'room' && remainingClassCount > 0 && (
+                                        <>
+                                            <p style={{ marginTop: '8px', fontSize: '12px' }}>
+                                                {remainingClassCount} class(es) still have remaining hours, but none match this room.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                style={{
+                                                    marginTop: '10px',
+                                                    border: '1px solid #bae6fd',
+                                                    background: '#f0f9ff',
+                                                    color: '#0369a1',
+                                                    borderRadius: '8px',
+                                                    padding: '6px 10px',
+                                                    fontSize: '12px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 600,
+                                                }}
+                                                onClick={() => {
+                                                    setViewMode('section')
+                                                    setActiveItemIndex(0)
+                                                }}
+                                            >
+                                                Switch to Section View
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
-                                filteredClasses.map(c => (
+                                filteredClasses.map(c => {
+                                    const activeSec = viewMode === 'section' ? String(activeItem || '') : ''
+                                    const activeGroup = viewMode === 'section' ? getSectionGroup(activeSec) : null
+                                    const selectedTeacherName = getEffectiveTeacherName(c)
+                                    const selectedCollegeName = getEffectiveCollege(c)
+                                    const classRemainingPotentialHours =
+                                        (c.lecRemaining || 0) +
+                                        (c.labRemaining || 0) +
+                                        (c.labG1Remaining || 0) +
+                                        (c.labG2Remaining || 0)
+                                    const currentClassAllocatedHours = classAllocatedHoursById.get(c.id) || 0
+                                    const teacherOptions = teacherOptionsByClassId.get(c.id) || [selectedTeacherName]
+
+                                    const showLecButton = c.lecRemaining > 0
+                                    const showLabButton = (!c.isSplitLab) && c.labRemaining > 0 && !activeGroup
+                                    const showLabG1Button = c.isSplitLab && c.labG1Remaining > 0 && (!activeGroup || activeGroup === 'G1')
+                                    const showLabG2Button = c.isSplitLab && c.labG2Remaining > 0 && (!activeGroup || activeGroup === 'G2')
+
+                                    return (
                                     <div
                                         key={c.id}
                                         className={styles.classCard}
@@ -930,12 +1367,58 @@ export default function ManualEditModal({
                                         </div>
                                         <p>{c.course_name}</p>
                                         <div className={styles.classDetails}>
-                                            <span><MdPerson /> {c.teacher_name || 'TBD'}</span>
+                                            <span>
+                                                <MdPerson />
+                                                <select
+                                                    className={styles.teacherInlineSelect}
+                                                    value={selectedTeacherName}
+                                                    onChange={(e) => {
+                                                        const nextTeacher = e.target.value
+                                                        const maxLimit = teacherWeeklyLimitByName.get(nextTeacher)
+                                                        const projectedLoad = teacherAllocatedHoursExcludingClass(nextTeacher, c.id) + currentClassAllocatedHours + classRemainingPotentialHours
+                                                        if (maxLimit && projectedLoad > maxLimit + 1e-6) {
+                                                            toast.error(`Teacher load exceeded: ${nextTeacher} (${projectedLoad.toFixed(1)}h/${maxLimit}h)`) 
+                                                            return
+                                                        }
+                                                        handleTeacherSelection(c.id, nextTeacher)
+                                                    }}
+                                                    title="Select faculty for this subject"
+                                                >
+                                                    {teacherOptions.map((teacher) => {
+                                                        const maxLimit = teacherWeeklyLimitByName.get(teacher)
+                                                        const projectedLoad = teacherAllocatedHoursExcludingClass(teacher, c.id) + currentClassAllocatedHours + classRemainingPotentialHours
+                                                        const isOver = !!maxLimit && projectedLoad > maxLimit + 1e-6
+                                                        const label = maxLimit
+                                                            ? `${teacher} (${projectedLoad.toFixed(1)}h/${maxLimit}h)`
+                                                            : `${teacher} (${projectedLoad.toFixed(1)}h)`
+                                                        return (
+                                                            <option key={teacher} value={teacher} disabled={isOver}>
+                                                                {label}
+                                                            </option>
+                                                        )
+                                                    })}
+                                                </select>
+                                            </span>
+                                            <span>
+                                                <MdSchool />
+                                                <select
+                                                    className={styles.teacherInlineSelect}
+                                                    value={selectedCollegeName}
+                                                    onChange={(e) => handleCollegeSelection(c.id, e.target.value)}
+                                                    title="Select college for this class"
+                                                >
+                                                    {availableCollegeOptions.map((collegeOption) => (
+                                                        <option key={collegeOption} value={collegeOption}>
+                                                            {collegeOption}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </span>
                                             <span><MdGroups /> {c.section}</span>
                                         </div>
 
                                         <div className={styles.componentButtons}>
-                                            {c.lecRemaining > 0 && (
+                                            {showLecButton && (
                                                 <div
                                                     className={styles.compBtn}
                                                     draggable
@@ -946,7 +1429,7 @@ export default function ManualEditModal({
                                                     <MdLayers /> LEC
                                                 </div>
                                             )}
-                                            {(!c.isSplitLab) && c.labRemaining > 0 && (
+                                            {showLabButton && (
                                                 <div
                                                     className={styles.compBtn}
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9' }}
@@ -958,7 +1441,7 @@ export default function ManualEditModal({
                                                     <MdSchool /> LAB
                                                 </div>
                                             )}
-                                            {c.isSplitLab && c.labG1Remaining > 0 && (
+                                            {showLabG1Button && (
                                                 <div
                                                     className={styles.compBtn}
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
@@ -970,7 +1453,7 @@ export default function ManualEditModal({
                                                     <MdSchool /> LAB - Section G1 ({Math.ceil((c.student_count || 0) / 2)})
                                                 </div>
                                             )}
-                                            {c.isSplitLab && c.labG2Remaining > 0 && (
+                                            {showLabG2Button && (
                                                 <div
                                                     className={styles.compBtn}
                                                     style={{ borderColor: '#0ea5e9', color: '#0ea5e9', fontSize: '0.8em' }}
@@ -982,7 +1465,7 @@ export default function ManualEditModal({
                                                     <MdSchool /> LAB - Section G2 ({Math.floor((c.student_count || 0) / 2)})
                                                 </div>
                                             )}
-                                            {(c.lab_hours > 0) && (
+                                            {(c.lab_hours > 0) && viewMode !== 'section' && (
                                                 <button
                                                     onClick={() => setSplitLabClasses(prev => prev.includes(c.id) ? prev.filter(id => id !== c.id) : [...prev, c.id])}
                                                     className={styles.compBtn}
@@ -1017,7 +1500,8 @@ export default function ManualEditModal({
                                             </div>
                                         )}
                                     </div>
-                                ))
+                                    )
+                                })
                             )}
                         </div>
                     </div>
@@ -1124,37 +1608,40 @@ export default function ManualEditModal({
                                             <td className={styles.timeLabel}>{slot.label}</td>
                                             {days.map(day => {
                                                 const allocs = allocations.filter(a => {
-                                                    const matchesDay = a.schedule_day === day
+                                                    const matchesDay = normalizeDayLabel(a.schedule_day) === normalizeDayLabel(day)
                                                     if (!matchesDay) return false
 
-                                                    const sTime = (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5)
-                                                    const eTime = (a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)
-                                                    const slotInRange = slot.start >= sTime && slot.start < eTime
+                                                    const range = getAllocationRange(a)
+                                                    if (!range) return false
+                                                    const slotInRange = slot.startMinutes >= range.start && slot.startMinutes < range.end
 
                                                     if (viewMode === 'room') return a.room_id === (activeItem as any)?.id && slotInRange
                                                     if (viewMode === 'faculty') return a.teacher_name === (activeItem as string) && slotInRange
                                                     if (viewMode === 'section') {
-                                                        const activeSec = (activeItem as string);
-                                                        const getBase = (s: unknown) => {
-                                                            const value = typeof s === 'string' ? s : '';
-                                                            return value
-                                                            .replace(/_LAB$/i, '')
-                                                            .replace(/_LEC$/i, '')
-                                                            .replace(/_LECTURE$/i, '')
-                                                            .replace(/_LABORATORY$/i, '')
-                                                            .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
-                                                            .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
-                                                            .replace(/ LAB$/i, '')
-                                                            .replace(/ LEC$/i, '')
-                                                            .trim();
-                                                        };
-                                                        const isMatch = a.section === activeSec || getBase(a.section) === getBase(activeSec);
-                                                        return isMatch && slotInRange;
+                                                        const activeSec = String(activeItem || '')
+                                                        const activeBase = getSectionBase(activeSec)
+                                                        const activeGroup = getSectionGroup(activeSec)
+                                                        const allocBase = getSectionBase(String(a.section || ''))
+                                                        const allocGroup = getSectionGroup(String(a.section || ''))
+
+                                                        if (allocBase !== activeBase) return false
+
+                                                        // In G1/G2 view, show only that subgroup plus shared/base lectures.
+                                                        if (activeGroup) {
+                                                            const isSharedLecture = getAllocationComponent(a) === 'LEC' && !allocGroup
+                                                            const isSameGroup = allocGroup === activeGroup
+                                                            return slotInRange && (isSameGroup || isSharedLecture)
+                                                        }
+
+                                                        return slotInRange
                                                     }
                                                     return false
                                                 })
 
-                                                const isStart = allocs.some(a => (a.schedule_time.split(' - ')[0] || '').trim().substring(0, 5) === slot.start)
+                                                const isStart = allocs.some(a => {
+                                                    const range = getAllocationRange(a)
+                                                    return !!range && range.start === slot.startMinutes
+                                                })
 
                                                 return (
                                                     <td
@@ -1227,7 +1714,7 @@ export default function ManualEditModal({
                                                                     onDragEnd={() => { setDraggedAllocId(null); setHoveredCell(null); }}
                                                                     className={`${styles.placedClass} ${confs.length > 0 ? styles.hasConflict : ''} ${isLabComp ? styles.labComp : ''}`}
                                                                     style={{
-                                                                        height: `calc(${((timeSlots.find(s => s.end.includes((a.schedule_time.split(' - ')[1] || '').trim().substring(0, 5)))?.endMinutes || 0) - slot.startMinutes) / 30 * 100}% - 8px)`,
+                                                                        height: `calc(${(((getAllocationRange(a)?.end || slot.startMinutes) - slot.startMinutes) / 30) * 100}% - 8px)`,
                                                                         zIndex: 10
                                                                     }}>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -1239,6 +1726,9 @@ export default function ManualEditModal({
                                                                         </div>
                                                                     </div>
                                                                     <span style={{ fontWeight: 600 }}>{a.section}</span>
+                                                                    <span className={styles.allocMetaLine}><MdMeetingRoom /> {a.room || 'TBA Room'}</span>
+                                                                    <span className={styles.allocMetaLine}><MdPerson /> {a.teacher_name || 'TBD Faculty'}</span>
+                                                                    <span className={styles.allocMetaLine}><MdAccessTime /> {a.schedule_time || 'Time N/A'}</span>
 
                                                                     {confs.length > 0 && (
                                                                         <div

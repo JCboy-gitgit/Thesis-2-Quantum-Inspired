@@ -948,6 +948,13 @@
   line-height: 1;
 }
 
+.statNumberLoading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--content-text-secondary);
+  line-height: 1.2;
+}
+
 .statNumber.success {
   color: var(--success-green);
 }

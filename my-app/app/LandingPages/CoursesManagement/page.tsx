@@ -5,6 +5,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import GlobalLoadingFallback from '@/app/components/LoadingFallback'
+import { useColleges } from '@/app/context/CollegesContext'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdTableChart as FileSpreadsheet, MdWarning as AlertTriangle, MdDelete as Trash2, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdAccessTime as Clock, MdLayers as Layers, MdBookmark as BookMarked, MdFilterList as Filter, MdPeople as Users, MdArrowBack as ArrowLeft, MdSearch as Search, MdLabel as Tag, MdScience as Beaker, MdFolder as Folder, MdFolderOpen as FolderOpen, MdHome as Home, MdSettings as Settings, MdPalette as Palette, MdMoreVert as MoreVertical, MdDriveFileMove as FolderInput, MdArrowForward as MoveRight, MdMonitor as Monitor, MdSlideshow as Presentation, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
@@ -142,6 +143,7 @@ async function fetchAllRows<T = Record<string, unknown>>(
 // ==================== Main Component ====================
 function CoursesManagementContent() {
   const router = useRouter()
+  const { activeColleges } = useColleges()
   // State
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -196,6 +198,25 @@ function CoursesManagementContent() {
   // Options
   const semesters = ['First Semester', 'Second Semester', 'Summer']
   const yearLevels = [1, 2, 3, 4]
+
+  const configuredCollegeOptions = activeColleges
+    .map((college) => {
+      const name = (college.name || '').trim()
+      const code = (college.code || '').trim()
+      if (!name) return ''
+      return code ? `${name} (${code})` : name
+    })
+    .filter(Boolean)
+
+  // Keep the currently edited value visible if it is not part of active college settings.
+  const collegeOptions = Array.from(
+    new Set(
+      [
+        ...configuredCollegeOptions,
+        (formData.college || '').trim()
+      ].filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b))
 
   // Effects
   useEffect(() => {
@@ -305,7 +326,11 @@ function CoursesManagementContent() {
 
   // Get all unique colleges for move modal
   const getAllColleges = () => {
-    return Array.from(new Set(uploadGroups.map(g => g.college || 'Uncategorized'))).sort()
+    const colleges = new Set(configuredCollegeOptions)
+    if (movingFromCollege && movingFromCollege.trim()) {
+      colleges.add(movingFromCollege)
+    }
+    return Array.from(colleges).sort((a, b) => a.localeCompare(b))
   }
 
   // Open move modal
@@ -661,16 +686,27 @@ function CoursesManagementContent() {
       return
     }
 
+    const selectedGroup = uploadGroups.find(g => g.upload_group_id === selectedGroupId)
+    const normalizedCollege = (formData.college || '').trim() || (selectedGroup?.college || '').trim()
+    if (!normalizedCollege) {
+      alert('Please assign a College for this course.')
+      return
+    }
+
     setSaving(true)
     try {
       // Total hours = lec_hours + lab_hours
       const total_hours = formData.lec_hours + formData.lab_hours
+      const payload = {
+        ...formData,
+        college: normalizedCollege
+      }
 
       if (modalMode === 'create') {
         // Create new course
         const newData = {
           upload_group_id: selectedGroupId,
-          ...formData,
+          ...payload,
           total_hours: total_hours,
           file_name: 'Manual Entry'
         }
@@ -694,7 +730,7 @@ function CoursesManagementContent() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
           .from('class_schedules')
-          .update({ ...formData, total_hours: total_hours })
+          .update({ ...payload, total_hours: total_hours })
           .eq('id', editingId)
           .select()
         if (error) throw error
@@ -704,7 +740,7 @@ function CoursesManagementContent() {
 
         // Update local state
         setCourses(prev =>
-          prev.map(c => c.id === editingId ? { ...c, ...formData, total_hours: total_hours } : c)
+          prev.map(c => c.id === editingId ? { ...c, ...payload, total_hours: total_hours } : c)
         )
       }
 
@@ -1873,6 +1909,15 @@ function CoursesManagementContent() {
                                               <Clock size={12} />
                                               <span>Lab: {course.lab_hours || 0} hrs</span>
                                             </div>
+                                            <div style={{
+                                              gridColumn: '1 / -1',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '6px'
+                                            }}>
+                                              <GraduationCap size={12} />
+                                              <span>College: {course.college || 'Unassigned'}</span>
+                                            </div>
                                             {course.prerequisite && course.prerequisite !== 'None' && (
                                               <div style={{
                                                 gridColumn: '1 / -1',
@@ -2364,6 +2409,36 @@ function CoursesManagementContent() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* College Row */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '13px', color: 'var(--label-color)' }}>
+                  <Home size={14} style={{ marginRight: '6px' }} />
+                  College
+                </label>
+                <select
+                  value={formData.college}
+                  onChange={(e) => handleInputChange('college', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    border: '2px solid var(--input-border)',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    color: 'var(--input-text)',
+                    background: 'var(--input-bg)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="">Select college...</option>
+                  {collegeOptions.map(college => (
+                    <option key={college} value={college}>{college}</option>
+                  ))}
+                </select>
+                <p style={{ marginTop: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Set this to avoid "Class is UNASSIGNED COLLEGE" conflicts during scheduling.
+                </p>
               </div>
 
               {/* Department & Prerequisite Row */}
