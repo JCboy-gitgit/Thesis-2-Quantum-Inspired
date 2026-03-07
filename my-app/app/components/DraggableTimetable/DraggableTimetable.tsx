@@ -363,8 +363,8 @@ export default function DraggableTimetable({
             courseCode: draggedBlock.course_code,
             section: draggedBlock.section,
             teacherName: draggedBlock.teacher_name,
-            hasConflict: cellStatus?.status === 'conflict',
-            conflictReasons: cellStatus?.conflictReasons || [],
+            hasConflict: !cellStatus || cellStatus.status === 'conflict',
+            conflictReasons: cellStatus?.conflictReasons || (!cellStatus ? ['Invalid or unavailable drop slot.'] : []),
         }
 
         if (mode === 'admin-edit' && onDirectEdit) {
@@ -463,36 +463,34 @@ export default function DraggableTimetable({
             // Check validity using FRESH state
             const cellStatus = highlightedCells.get(`${day}-${slotIdx}`)
 
-            if (cellStatus?.status === 'available') {
-                // Perform the drop logic directly using fresh state
-                const block = ts.block
-                const slotMinutes = (START_HOUR + Math.floor(slotIdx / 2)) * 60 + (slotIdx % 2) * 30
-                const duration = block.endMinutes - block.startMinutes
-                const fromTime = buildTimeRange(block.startMinutes, block.endMinutes)
-                const newEndMinutes = slotMinutes + duration
-                const toTime = buildTimeRange(slotMinutes, newEndMinutes)
+            // Perform the drop logic directly using fresh state
+            const block = ts.block
+            const slotMinutes = (START_HOUR + Math.floor(slotIdx / 2)) * 60 + (slotIdx % 2) * 30
+            const duration = block.endMinutes - block.startMinutes
+            const fromTime = buildTimeRange(block.startMinutes, block.endMinutes)
+            const newEndMinutes = slotMinutes + duration
+            const toTime = buildTimeRange(slotMinutes, newEndMinutes)
 
-                const result: DragDropResult = {
-                    allocationIds: block.allocationIds,
-                    originalAllocations: block.originalAllocations,
-                    fromDay: block.day,
-                    fromTime,
-                    toDay: day.toLowerCase(),
-                    toTime,
-                    toRoom: block.room,
-                    toBuilding: block.building,
-                    courseCode: block.course_code,
-                    section: block.section,
-                    teacherName: block.teacher_name,
-                    hasConflict: false,
-                    conflictReasons: [],
-                }
+            const result: DragDropResult = {
+                allocationIds: block.allocationIds,
+                originalAllocations: block.originalAllocations,
+                fromDay: block.day,
+                fromTime,
+                toDay: day.toLowerCase(),
+                toTime,
+                toRoom: block.room,
+                toBuilding: block.building,
+                courseCode: block.course_code,
+                section: block.section,
+                teacherName: block.teacher_name,
+                hasConflict: !cellStatus || cellStatus.status === 'conflict',
+                conflictReasons: cellStatus?.conflictReasons || (!cellStatus ? ['Invalid or unavailable drop slot.'] : []),
+            }
 
-                if (mode === 'admin-edit' && onDirectEdit) {
-                    onDirectEdit(result)
-                } else if (mode === 'faculty-request' && onDrop) {
-                    onDrop(result)
-                }
+            if (mode === 'admin-edit' && onDirectEdit) {
+                onDirectEdit(result)
+            } else if (mode === 'faculty-request' && onDrop) {
+                onDrop(result)
             }
         }
 
@@ -667,7 +665,7 @@ export default function DraggableTimetable({
                                             }}
                                             onDrop={(e) => {
                                                 e.preventDefault()
-                                                if (canDrag && draggedBlock && cellHighlight?.status === 'available') {
+                                                if (canDrag && draggedBlock) {
                                                     handleDrop(day, slotIdx)
                                                 }
                                             }}

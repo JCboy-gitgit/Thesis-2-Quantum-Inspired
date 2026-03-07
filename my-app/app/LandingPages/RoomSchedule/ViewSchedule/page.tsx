@@ -49,6 +49,7 @@ import AllocationTable from '@/app/components/AllocationTable/AllocationTable'
 import RoomReassignmentModal from '@/app/components/RoomReassignmentModal/RoomReassignmentModal'
 import FacultyAssignmentModal from '@/app/components/FacultyAssignmentModal/FacultyAssignmentModal'
 import ManualEditModal from '@/app/LandingPages/RoomSchedule/GenerateSchedule/ManualEditModal'
+import { toast } from 'sonner'
 
 // Untyped supabase helper for tables not in generated types
 const db = supabase as any
@@ -1997,10 +1998,11 @@ export default function ViewSchedulePage() {
         format: [215.9, 279.4] // Short bond paper: 8.5" x 11" in mm (portrait)
       })
 
-      // Load logo image
-      const loadImage = (src: string): Promise<string> => {
+      // Load image and optionally apply alpha for watermark rendering.
+      const loadImage = (src: string, alpha = 1): Promise<string> => {
         return new Promise((resolve, reject) => {
           const img = new Image()
+          img.crossOrigin = 'anonymous'
           img.src = src
           img.onload = () => {
             const canvas = document.createElement('canvas')
@@ -2011,6 +2013,10 @@ export default function ViewSchedulePage() {
               reject(new Error('Could not get canvas context'))
               return
             }
+            if (alpha < 1) {
+              ctx.clearRect(0, 0, canvas.width, canvas.height)
+              ctx.globalAlpha = alpha
+            }
             ctx.drawImage(img, 0, 0)
             resolve(canvas.toDataURL('image/png'))
           }
@@ -2019,8 +2025,10 @@ export default function ViewSchedulePage() {
       }
 
       let logoData: string | null = null
+      let watermarkLogoData: string | null = null
       try {
         logoData = await loadImage('/app-icon.png')
+        watermarkLogoData = await loadImage('/app-icon.png', 0.08)
       } catch (e) {
         console.error('Failed to load logo', e)
       }
@@ -2067,30 +2075,75 @@ export default function ViewSchedulePage() {
         return colorMap
       }
 
+      const drawLandmarkBackground = (pdfDoc: InstanceType<typeof jsPDF>) => {
+        const baseY = pageHeight - 34
+        const centerX = pageWidth / 2
+
+        // Soft skyline/landmark silhouette near the bottom of the page.
+        pdfDoc.setDrawColor(232, 236, 242)
+        pdfDoc.setFillColor(246, 249, 252)
+        pdfDoc.setLineWidth(0.2)
+
+        pdfDoc.rect(centerX - 62, baseY - 10, 124, 10, 'F')
+        pdfDoc.rect(centerX - 46, baseY - 20, 16, 20, 'F')
+        pdfDoc.rect(centerX - 24, baseY - 28, 20, 28, 'F')
+        pdfDoc.rect(centerX + 2, baseY - 20, 16, 20, 'F')
+        pdfDoc.rect(centerX + 24, baseY - 24, 18, 24, 'F')
+        pdfDoc.rect(centerX - 5, baseY - 35, 10, 35, 'F')
+
+        // Facade details.
+        pdfDoc.setDrawColor(224, 229, 236)
+        pdfDoc.line(centerX - 62, baseY, centerX + 62, baseY)
+        pdfDoc.line(centerX - 30, baseY - 10, centerX + 30, baseY - 10)
+        pdfDoc.line(centerX - 24, baseY - 20, centerX - 4, baseY - 20)
+        pdfDoc.line(centerX + 2, baseY - 20, centerX + 18, baseY - 20)
+      }
+
+      const drawLogoWatermark = (pdfDoc: InstanceType<typeof jsPDF>) => {
+        if (!watermarkLogoData) return
+
+        const stampSize = 34
+        const startX = margin + 8
+        const endX = pageWidth - margin - stampSize
+        const startY = margin + 36
+        const endY = pageHeight - margin - stampSize - 8
+        const stepX = 62
+        const stepY = 66
+
+        for (let y = startY; y <= endY; y += stepY) {
+          for (let x = startX; x <= endX; x += stepX) {
+            pdfDoc.addImage(watermarkLogoData, 'PNG', x, y, stampSize, stampSize)
+          }
+        }
+      }
+
       // Helper: Draw timetable for specific view (works with any PDF instance)
       const drawTimetableOnPdf = (pdfDoc: InstanceType<typeof jsPDF>, allocData: RoomAllocation[], title: string, colorMap: Map<string, { r: number, g: number, b: number }>) => {
-        // Logo
-        const logoSize = 12
-        const logoX = margin
+        drawLogoWatermark(pdfDoc)
+        drawLandmarkBackground(pdfDoc)
+
+        // Centered logo block
+        const logoSize = 13
         const logoY = margin
+        const centerX = pageWidth / 2
+        const logoX = centerX - (logoSize / 2)
+        const logoText = 'Qtime Scheduler'
 
         if (logoData) {
           pdfDoc.addImage(logoData, 'PNG', logoX, logoY, logoSize, logoSize)
         }
 
-        // Qtime Scheduler Text
-        const logoText = 'Qtime Scheduler'
-        const logoTextSize = 14
-        pdfDoc.setFontSize(logoTextSize)
+        pdfDoc.setFontSize(12)
         pdfDoc.setFont('helvetica', 'bold')
         pdfDoc.setTextColor(0, 0, 0)
-        pdfDoc.text(logoText, logoX + logoSize + 4, logoY + 5)
+        const logoTextWidth = pdfDoc.getTextWidth(logoText)
+        pdfDoc.text(logoText, centerX - (logoTextWidth / 2), logoY + logoSize + 4.6)
 
         // Title - centered (below logo)
         pdfDoc.setFontSize(14)
         pdfDoc.setFont('helvetica', 'bold')
         const titleWidth = pdfDoc.getTextWidth(title)
-        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 20)
+        pdfDoc.text(title, (pageWidth - titleWidth) / 2, margin + 23)
 
         // Subtitle - centered
         pdfDoc.setFontSize(10)
@@ -2109,7 +2162,7 @@ export default function ViewSchedulePage() {
         }
 
         const subtitleWidth = pdfDoc.getTextWidth(subtitleText)
-        pdfDoc.text(subtitleText, (pageWidth - subtitleWidth) / 2, margin + 25)
+        pdfDoc.text(subtitleText, (pageWidth - subtitleWidth) / 2, margin + 28)
 
         // Get color map for this allocation if not provided
         const localColorMap = colorMap.size > 0 ? colorMap : generateColorPalette(allocData)
@@ -2118,7 +2171,7 @@ export default function ViewSchedulePage() {
         const blocks = processAllocationsToBlocks(allocData)
 
         // Table dimensions - portrait (adjusted for logo space)
-        const startY = margin + 30
+        const startY = margin + 33
         const timeColWidth = 18
         const dayColWidth = (usableWidth - timeColWidth) / 6 // 6 days for portrait (Mon-Sat)
         const rowHeight = 8
@@ -3309,16 +3362,16 @@ export default function ViewSchedulePage() {
                               ? result.conflictReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n')
                               : '1. Overlapping room, professor, or section schedule detected.'
 
-                            const proceed = confirm(
-                              `Warning: This time slot has a conflict!\n\n` +
-                              `${result.courseCode} (${result.section})\n` +
-                              `Moving from ${result.fromDay} ${result.fromTime}\n` +
-                              `to ${result.toDay} ${result.toTime}\n\n` +
-                              `Why conflict:\n${reasonLines}\n\n` +
-                              `Are you sure you want to place it here anyway?`
-                            )
-                            if (!proceed) return
+                            toast.error('Constraint Violation', {
+                              description: `${result.courseCode} (${result.section})\n${result.toDay} ${result.toTime}\n\n${reasonLines}`,
+                              duration: 7000,
+                            })
+                            return
                           }
+
+                          const sameDay = String(result.fromDay || '').trim().toLowerCase() === String(result.toDay || '').trim().toLowerCase()
+                          const sameTime = String(result.fromTime || '').trim() === String(result.toTime || '').trim()
+                          if (sameDay && sameTime) return
 
                           try {
                             // Update each allocation in the block
@@ -3343,10 +3396,12 @@ export default function ViewSchedulePage() {
                               .order('schedule_day', { ascending: true })
                               .order('schedule_time', { ascending: true })
                             if (refreshed) setAllocations(refreshed)
-                            alert('Schedule updated successfully!')
+                            toast.success('Schedule updated successfully!')
                           } catch (error: any) {
                             console.error('Error updating allocation:', error)
-                            alert('Failed to update schedule: ' + (error.message || 'Unknown error'))
+                            toast.error('Failed to update schedule', {
+                              description: error.message || 'Unknown error',
+                            })
                           }
                         }}
                       />
