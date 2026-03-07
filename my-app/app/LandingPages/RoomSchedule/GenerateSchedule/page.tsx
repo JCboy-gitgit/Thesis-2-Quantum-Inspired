@@ -305,6 +305,111 @@ const CAMPUS_CLOSING_MINUTES = 20 * 60
 // Days for timetable
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+interface TeachingLoadCandidate {
+  faculty_name: string
+  section: string
+  faculty_college?: string | null
+}
+
+type CapacityEstimateLevel = 'good' | 'warning' | 'impossible'
+
+interface CollegeCapacityEstimate {
+  collegeKey: string
+  collegeLabel: string
+  sectionCount: number
+  students: number
+  dedicatedSeats: number
+  sharedSeats: number
+  availableSeats: number
+  seatCoverage: number
+  level: CapacityEstimateLevel
+}
+
+function normalizeCollegeKey(value?: string | null): string {
+  const raw = String(value || '').trim().toUpperCase()
+  if (!raw) return ''
+  const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+  return abbr || raw
+}
+
+function isFacultyCollegeCompatible(sectionCollege?: string | null, facultyCollege?: string | null): boolean {
+  const sCol = normalizeCollegeKey(sectionCollege)
+  const fCol = normalizeCollegeKey(facultyCollege)
+  if (!sCol || !fCol) return true
+  return fCol === 'SHARED' || fCol === sCol
+}
+
+function isMeaningfulFacultyName(name?: string | null): boolean {
+  const normalized = String(name || '').trim().toUpperCase()
+  if (!normalized) return false
+  return !new Set(['TBD', 'TBA', 'N/A', 'NA', 'NONE', 'NULL', 'UNASSIGNED', 'UNKNOWN']).has(normalized)
+}
+
+function getCapacityEstimateLevel(seats: number, students: number): CapacityEstimateLevel {
+  if (students <= 0) return 'good'
+  const coverage = seats / students
+  if (coverage >= 1) return 'good'
+  if (coverage >= 0.75) return 'warning'
+  return 'impossible'
+}
+
+function buildTeachingLoadsCandidatesMap(teachingLoads: any[]): Map<string, TeachingLoadCandidate[]> {
+  const map = new Map<string, TeachingLoadCandidate[]>()
+
+  const pushCandidate = (key: string, candidate: TeachingLoadCandidate) => {
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(candidate)
+  }
+
+  teachingLoads.forEach((load: any) => {
+    const section = String(load?.section || '').trim()
+    const candidate: TeachingLoadCandidate = {
+      faculty_name: String(load?.faculty_profiles?.full_name || load?.faculty_profiles?.name || load?.faculty_profiles?.email || '').trim(),
+      section,
+      faculty_college: load?.faculty_profiles?.college || null,
+    }
+
+    const specificKey = `${load?.course_id}-${section}`
+    const genericKey = `${load?.course_id}-`
+    pushCandidate(specificKey, candidate)
+    if (section) pushCandidate(genericKey, candidate)
+  })
+
+  return map
+}
+
+function resolveTeachingLoadCandidate(
+  map: Map<string, TeachingLoadCandidate[]>,
+  courseId: number,
+  sectionName: string,
+  sectionCollege?: string | null
+): TeachingLoadCandidate | undefined {
+  const specificKey = `${courseId}-${String(sectionName || '').trim()}`
+  const genericKey = `${courseId}-`
+  const specific = map.get(specificKey) || []
+  const generic = map.get(genericKey) || []
+  const candidates = [...specific, ...generic]
+
+  if (candidates.length === 0) return undefined
+
+  const ranked = [...candidates].sort((a, b) => {
+    const score = (candidate: TeachingLoadCandidate) => {
+      let total = 0
+      if (isMeaningfulFacultyName(candidate.faculty_name)) total += 4
+      if (isFacultyCollegeCompatible(sectionCollege, candidate.faculty_college)) total += 2
+      if (String(candidate.section || '').trim() === String(sectionName || '').trim()) total += 1
+      return total
+    }
+    return score(b) - score(a)
+  })
+
+  const best = ranked[0]
+  if (!best) return undefined
+  if (!isMeaningfulFacultyName(best.faculty_name)) return undefined
+  if (!isFacultyCollegeCompatible(sectionCollege, best.faculty_college)) return undefined
+  return best
+}
+
 function formatSectionDisplayLabel(rawSection: string): string {
   const section = (rawSection || '').trim()
   if (!section) return ''
@@ -944,29 +1049,7 @@ export default function GenerateSchedulePage() {
         .select('*, faculty_profiles(*)')
         .in('course_id', filteredCourses.map((c: any) => c.id))
 
-      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
-      const normalizeCollege = (value?: string | null) => {
-        const raw = String(value || '').trim().toUpperCase()
-        if (!raw) return ''
-        const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
-        return abbr || raw
-      }
-      const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
-        const sCol = normalizeCollege(sectionCollege)
-        const fCol = normalizeCollege(facultyCollege)
-        if (!sCol || !fCol) return true
-        return fCol === 'SHARED' || fCol === sCol
-      }
-      if (!teachingLoadsError && teachingLoads) {
-        teachingLoads.forEach((load: any) => {
-          const key = `${load.course_id}-${load.section || ''}`
-          teachingLoadsMap.set(key, {
-            faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
-            section: load.section || '',
-            faculty_college: load.faculty_profiles?.college || null
-          })
-        })
-      }
+      const teachingLoadsMap = buildTeachingLoadsCandidatesMap((!teachingLoadsError && teachingLoads) ? teachingLoads : [])
 
       // Build class schedules from sections and their assigned courses
       const classSchedules: ClassSchedule[] = []
@@ -1028,12 +1111,12 @@ export default function GenerateSchedulePage() {
 
         const currentSectionClasses: ClassSchedule[] = []
         for (const course of sectionCourses) {
-          const teacherKey = `${course.id}-${section.section_name}`
-          const teacherKeyNoSection = `${course.id}-`
-          const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
-          const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
-            ? teacherCandidate
-            : undefined
+          const assignedTeacher = resolveTeachingLoadCandidate(
+            teachingLoadsMap,
+            Number(course.id),
+            section.section_name || '',
+            section.college || course.college
+          )
 
           if (!assignedTeacher) {
             unassigned.push({
@@ -1156,29 +1239,7 @@ export default function GenerateSchedulePage() {
         .select('*, faculty_profiles(*)')
         .in('course_id', filteredCourses.map((c: any) => c.id))
 
-      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
-      const normalizeCollege = (value?: string | null) => {
-        const raw = String(value || '').trim().toUpperCase()
-        if (!raw) return ''
-        const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
-        return abbr || raw
-      }
-      const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
-        const sCol = normalizeCollege(sectionCollege)
-        const fCol = normalizeCollege(facultyCollege)
-        if (!sCol || !fCol) return true
-        return fCol === 'SHARED' || fCol === sCol
-      }
-      if (teachingLoads) {
-        teachingLoads.forEach((load: any) => {
-          const key = `${load.course_id}-${load.section || ''}`
-          teachingLoadsMap.set(key, {
-            faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || 'Unknown',
-            section: load.section || '',
-            faculty_college: load.faculty_profiles?.college || null
-          })
-        })
-      }
+      const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
 
       // Build class schedules
       const classSchedules: ClassSchedule[] = []
@@ -1192,12 +1253,12 @@ export default function GenerateSchedulePage() {
         )
 
         for (const course of sectionCourses) {
-          const teacherKey = `${course.id}-${section.section_name}`
-          const teacherKeyNoSection = `${course.id}-`
-          const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
-          const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
-            ? teacherCandidate
-            : undefined
+          const assignedTeacher = resolveTeachingLoadCandidate(
+            teachingLoadsMap,
+            Number(course.id),
+            section.section_name || '',
+            section.college || course.college
+          )
 
           if (!assignedTeacher) {
             unassigned.push({
@@ -1420,29 +1481,7 @@ export default function GenerateSchedulePage() {
           .from('teaching_loads') as any)
           .select('*, faculty_profiles(*)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
-        const normalizeCollege = (value?: string | null) => {
-          const raw = String(value || '').trim().toUpperCase()
-          if (!raw) return ''
-          const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
-          return abbr || raw
-        }
-        const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
-          const sCol = normalizeCollege(sectionCollege)
-          const fCol = normalizeCollege(facultyCollege)
-          if (!sCol || !fCol) return true
-          return fCol === 'SHARED' || fCol === sCol
-        }
-        if (teachingLoads) {
-          teachingLoads.forEach((load: any) => {
-            const key = `${load.course_id}-${load.section || ''}`
-            teachingLoadsMap.set(key, {
-              faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
-              section: load.section || '',
-              faculty_college: load.faculty_profiles?.college || null
-            })
-          })
-        }
+        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
 
         // Fetch course requirements
         const { data: reqData } = await supabase
@@ -1573,12 +1612,12 @@ export default function GenerateSchedulePage() {
           const currentSectionClasses: ClassSchedule[] = []
           for (const course of sectionCourses) {
             const courseId = course.id
-            const teacherKey = `${course.id}-${section.section_name}`
-            const teacherKeyNoSection = `${course.id}-`
-            const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
-            const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
-              ? teacherCandidate
-              : undefined
+            const assignedTeacher = resolveTeachingLoadCandidate(
+              teachingLoadsMap,
+              Number(course.id),
+              section.section_name || '',
+              section.college || course.college
+            )
             if (!assignedTeacher) {
               allUnassigned.push({
                 course_code: course.course_code || '',
@@ -1692,29 +1731,7 @@ export default function GenerateSchedulePage() {
           .from('teaching_loads') as any)
           .select('*, faculty_profiles(*)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
-        const normalizeCollege = (value?: string | null) => {
-          const raw = String(value || '').trim().toUpperCase()
-          if (!raw) return ''
-          const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
-          return abbr || raw
-        }
-        const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
-          const sCol = normalizeCollege(sectionCollege)
-          const fCol = normalizeCollege(facultyCollege)
-          if (!sCol || !fCol) return true
-          return fCol === 'SHARED' || fCol === sCol
-        }
-        if (teachingLoads) {
-          teachingLoads.forEach((load: any) => {
-            const key = `${load.course_id}-${load.section || ''}`
-            teachingLoadsMap.set(key, {
-              faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || 'Unknown',
-              section: load.section || '',
-              faculty_college: load.faculty_profiles?.college || null
-            })
-          })
-        }
+        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
 
         // Fetch course requirements
         const { data: reqData } = await supabase
@@ -1845,12 +1862,12 @@ export default function GenerateSchedulePage() {
           const currentSectionClasses: ClassSchedule[] = []
           for (const course of sectionCourses) {
             const courseId = course.id
-            const teacherKey = `${course.id}-${section.section_name}`
-            const teacherKeyNoSection = `${course.id}-`
-            const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
-            const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
-              ? teacherCandidate
-              : undefined
+            const assignedTeacher = resolveTeachingLoadCandidate(
+              teachingLoadsMap,
+              Number(course.id),
+              section.section_name || '',
+              section.college || course.college
+            )
             if (!assignedTeacher) {
               allUnassigned.push({
                 course_code: course.course_code || '',
@@ -2055,9 +2072,103 @@ export default function GenerateSchedulePage() {
     .filter((name): name is string => Boolean(name && name.trim()))
 
   // Calculate stats
-  const totalRoomCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
-  const totalClasses = classes.length
   const filteredRoomsPreview = getFilteredRooms()
+  const totalRoomCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
+  const totalFilteredRoomCapacity = filteredRoomsPreview.reduce((sum, r) => sum + (r.capacity || 0), 0)
+  const totalClasses = classes.length
+  const selectedSectionsForEstimate = useMemo(() => {
+    if (selectedYearBatches.length === 0) return [] as Section[]
+
+    let scopedSections = sections.filter(s => selectedYearBatches.includes(s.year_batch_id))
+
+    if (selectedCollege !== 'all') {
+      scopedSections = scopedSections.filter(s => (s.college || '') === selectedCollege || !s.college)
+    }
+
+    if (selectedSectionIds.length > 0) {
+      scopedSections = scopedSections.filter(s => selectedSectionIds.includes(s.id))
+    }
+
+    return scopedSections
+  }, [sections, selectedYearBatches, selectedCollege, selectedSectionIds])
+
+  const collegeCapacityEstimates = useMemo(() => {
+    const normalizeCapacityCollegeKey = (value?: string | null) => {
+      const normalized = normalizeCollegeKey(value)
+      if (!normalized) return 'UNASSIGNED'
+      return normalized
+    }
+
+    const sectionStats = new Map<string, { label: string; sections: number; students: number }>()
+    selectedSectionsForEstimate.forEach(section => {
+      const key = normalizeCapacityCollegeKey(section.college)
+      const current = sectionStats.get(key) || {
+        label: (section.college || '').trim() || (key === 'UNASSIGNED' ? 'Unassigned College' : key),
+        sections: 0,
+        students: 0,
+      }
+      current.sections += 1
+      current.students += Number(section.student_count || 0)
+      if (!current.label || current.label === key) {
+        current.label = (section.college || '').trim() || current.label
+      }
+      sectionStats.set(key, current)
+    })
+
+    const dedicatedSeatsByCollege = new Map<string, number>()
+    let sharedSeatsPool = 0
+
+    filteredRoomsPreview.forEach(room => {
+      const seats = Number(room.capacity || 0)
+      const roomCollegeKey = normalizeCapacityCollegeKey(room.college)
+      const isSharedRoom = roomCollegeKey === 'SHARED' || roomCollegeKey === 'UNASSIGNED'
+      if (isSharedRoom) {
+        sharedSeatsPool += seats
+      } else {
+        dedicatedSeatsByCollege.set(
+          roomCollegeKey,
+          (dedicatedSeatsByCollege.get(roomCollegeKey) || 0) + seats
+        )
+      }
+    })
+
+    const estimates: CollegeCapacityEstimate[] = Array.from(sectionStats.entries()).map(([collegeKey, stat]) => {
+      const dedicatedSeats = dedicatedSeatsByCollege.get(collegeKey) || 0
+      const availableSeats = dedicatedSeats + sharedSeatsPool
+      const seatCoverage = stat.students > 0 ? (availableSeats / stat.students) * 100 : 100
+      const level = getCapacityEstimateLevel(availableSeats, stat.students)
+
+      return {
+        collegeKey,
+        collegeLabel: stat.label,
+        sectionCount: stat.sections,
+        students: stat.students,
+        dedicatedSeats,
+        sharedSeats: sharedSeatsPool,
+        availableSeats,
+        seatCoverage,
+        level,
+      }
+    })
+
+    const severityRank: Record<CapacityEstimateLevel, number> = {
+      impossible: 0,
+      warning: 1,
+      good: 2,
+    }
+
+    return estimates.sort((a, b) => {
+      if (severityRank[a.level] !== severityRank[b.level]) return severityRank[a.level] - severityRank[b.level]
+      return a.collegeLabel.localeCompare(b.collegeLabel)
+    })
+  }, [selectedSectionsForEstimate, filteredRoomsPreview])
+
+  const totalEstimatedStudents = selectedSectionsForEstimate.reduce(
+    (sum, section) => sum + Number(section.student_count || 0),
+    0
+  )
+
+  const overallCapacityLevel = getCapacityEstimateLevel(totalFilteredRoomCapacity, totalEstimatedStudents)
   const uniqueSectionsCount = new Set(classes.map(c => c.section).filter(Boolean)).size
   const scheduledColleges = [...new Set(classes.map(c => c.college).filter(Boolean))].sort()
   const scheduledCollegesLabel = scheduledColleges.length > 0
@@ -4614,12 +4725,59 @@ export default function GenerateSchedulePage() {
                         <MdCheckCircle size={18} />
                         <span>Class schedule data loaded ({classes.length} classes)</span>
                       </div>
-                      <div className={`${styles.compatibilityItem} ${totalRoomCapacity >= classes.length * 30 ? styles.success : styles.warning}`}>
-                        {totalRoomCapacity >= classes.length * 30 ? <MdCheckCircle size={18} /> : <MdError size={18} />}
+                      <div
+                        className={`${styles.compatibilityItem} ${
+                          overallCapacityLevel === 'good'
+                            ? styles.success
+                            : overallCapacityLevel === 'warning'
+                              ? styles.warning
+                              : styles.danger
+                        }`}
+                      >
+                        {overallCapacityLevel === 'good' ? (
+                          <MdCheckCircle size={18} />
+                        ) : overallCapacityLevel === 'warning' ? (
+                          <MdWarning size={18} />
+                        ) : (
+                          <MdError size={18} />
+                        )}
                         <span>
-                          Capacity check: {totalRoomCapacity} seats for ~{classes.length * 30} estimated students
+                          Overall seat check (rough): {totalFilteredRoomCapacity} seats for {totalEstimatedStudents} students
+                          {selectedRooms.length > 0 || selectedBuildings.length > 0
+                            ? ` (${filteredRoomsPreview.length} filtered rooms)`
+                            : ` (${rooms.length} loaded rooms)`}
                         </span>
                       </div>
+                      <div className={`${styles.compatibilityItem} ${styles.success}`}>
+                        <MdCheckCircle size={18} />
+                        <span>
+                          Source: section student counts from Class Section Assigning + room capacities from Rooms Management
+                        </span>
+                      </div>
+                      {collegeCapacityEstimates.length > 0 && collegeCapacityEstimates.map(estimate => {
+                        const itemClass =
+                          estimate.level === 'good'
+                            ? styles.success
+                            : estimate.level === 'warning'
+                              ? styles.warning
+                              : styles.danger
+
+                        return (
+                          <div key={`college-estimate-${estimate.collegeKey}`} className={`${styles.compatibilityItem} ${itemClass}`}>
+                            {estimate.level === 'good' ? (
+                              <MdCheckCircle size={18} />
+                            ) : estimate.level === 'warning' ? (
+                              <MdWarning size={18} />
+                            ) : (
+                              <MdError size={18} />
+                            )}
+                            <span>
+                              {estimate.collegeLabel}: {estimate.availableSeats} seats ({estimate.dedicatedSeats} dedicated + {estimate.sharedSeats} shared)
+                              {' '}for {estimate.students} students across {estimate.sectionCount} sections ({estimate.seatCoverage.toFixed(0)}% coverage)
+                            </span>
+                          </div>
+                        )
+                      })}
                       {teachers.length > 0 && (
                         <div className={`${styles.compatibilityItem} ${styles.success}`}>
                           <MdCheckCircle size={18} />

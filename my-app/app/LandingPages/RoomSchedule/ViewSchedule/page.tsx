@@ -125,6 +125,7 @@ interface ManualClassItem {
   section: string
   teacher_name?: string
   teacher_id?: string
+  teacher_options?: string[]
   lec_hours?: number
   lab_hours?: number
   student_count?: number
@@ -717,8 +718,10 @@ export default function ViewSchedulePage() {
     }
   }
 
-  const fetchUnifiedSchedule = async () => {
-    if (!selectedSchedule) return
+  const fetchUnifiedSchedule = async (): Promise<RoomAllocation[]> => {
+    if (!selectedSchedule) return []
+
+    let latestAllocations: RoomAllocation[] = []
 
     setLoadingDetails(true)
     try {
@@ -790,6 +793,7 @@ export default function ViewSchedulePage() {
         }
 
         setAllocations(enrichedAllocations)
+        latestAllocations = enrichedAllocations as RoomAllocation[]
         setAllocationsSourceScheduleId(selectedSchedule.id)
 
         // Enrich with latest class college data (including rows currently marked as "Unassigned College").
@@ -893,6 +897,7 @@ export default function ViewSchedulePage() {
 
           // Update state again with enriched college data
           setAllocations(enrichedAllocations)
+          latestAllocations = enrichedAllocations as RoomAllocation[]
           setAllocationsSourceScheduleId(selectedSchedule.id)
         }
 
@@ -949,8 +954,11 @@ export default function ViewSchedulePage() {
       // Fetch pending requests count
       fetchPendingRequestsCount()
 
+      return latestAllocations
+
     } catch (error) {
       console.error('Error fetching schedule details:', error)
+      return []
     } finally {
       setLoadingDetails(false)
     }
@@ -969,7 +977,7 @@ export default function ViewSchedulePage() {
     }
   }
 
-  const fetchManualEditResources = async (schedule: Schedule) => {
+  const fetchManualEditResources = async (schedule: Schedule, allocationSnapshot?: RoomAllocation[]) => {
     setLoadingManualEditData(true)
     try {
       const isCollegeUnset = (value: unknown) => {
@@ -989,6 +997,22 @@ export default function ViewSchedulePage() {
         return buildManualClassKey(String(courseCode || ''), String(section || ''))
       }
 
+      let scheduleAllocations: RoomAllocation[] =
+        (allocationSnapshot && allocationSnapshot.length > 0)
+          ? allocationSnapshot
+          : (allocationsSourceScheduleId === schedule.id ? allocations : [])
+
+      if (scheduleAllocations.length === 0) {
+        const { data: allocationRows, error: allocationRowsError } = await db
+          .from('room_allocations')
+          .select('*')
+          .eq('schedule_id', schedule.id)
+
+        if (!allocationRowsError && Array.isArray(allocationRows)) {
+          scheduleAllocations = allocationRows as RoomAllocation[]
+        }
+      }
+
       const [{ data: classData }, { data: roomData }, { data: teachingLoadsData }] = await Promise.all([
         db
           .from('class_schedules')
@@ -1000,23 +1024,73 @@ export default function ViewSchedulePage() {
           .eq('upload_group_id', schedule.campus_group_id),
         db
           .from('teaching_loads')
-          .select('course_id, section, faculty_user_id, faculty_profiles!inner(full_name), class_schedules!inner(course_code)')
+          .select('course_id, section, faculty_user_id, faculty_profiles!inner(full_name)')
       ])
 
+      const courseCodeById = new Map<number, string>()
+      ;(classData || []).forEach((row: any) => {
+        const id = Number(row?.id)
+        const code = String(row?.course_code || '').trim().toLowerCase()
+        if (id > 0 && code) courseCodeById.set(id, code)
+      })
+      ;(scheduleAllocations || []).forEach((row: any) => {
+        const id = Number(row?.class_id)
+        const code = String(row?.course_code || '').trim().toLowerCase()
+        if (id > 0 && code && !courseCodeById.has(id)) courseCodeById.set(id, code)
+      })
+
       const teacherMap = new Map<string, { teacher_name: string; teacher_id?: string }>()
+      const teacherOptionsByKey = new Map<string, Set<string>>()
+      const isMeaningfulTeacherName = (name?: string) => {
+        const normalized = String(name || '').trim().toUpperCase()
+        if (!normalized) return false
+        return !new Set(['TBD', 'TBA', 'N/A', 'NA', 'NONE', 'NULL', 'UNASSIGNED', 'UNKNOWN']).has(normalized)
+      }
+
+      const addTeacherOption = (key: string, teacherName: string) => {
+        if (!key || key === '|') return
+        if (!teacherOptionsByKey.has(key)) teacherOptionsByKey.set(key, new Set<string>())
+        teacherOptionsByKey.get(key)!.add(teacherName)
+      }
+
       ;(teachingLoadsData || []).forEach((tl: any) => {
-        const code = (tl.class_schedules?.course_code || '').toLowerCase()
+        const code = String(courseCodeById.get(Number(tl.course_id)) || '').toLowerCase()
         const section = (tl.section || '').toLowerCase()
         if (!code) return
-        teacherMap.set(`${code}|${section}`, {
-          teacher_name: tl.faculty_profiles?.full_name || '',
-          teacher_id: tl.faculty_user_id || undefined
-        })
+
+        const teacherName = String(tl.faculty_profiles?.full_name || '').trim()
+        if (!isMeaningfulTeacherName(teacherName)) return
+
+        const exactKey = `${code}|${section}`
+        const genericKey = `${code}|`
+
+        addTeacherOption(exactKey, teacherName)
+        addTeacherOption(genericKey, teacherName)
+
+        if (!teacherMap.has(exactKey)) {
+          teacherMap.set(exactKey, {
+            teacher_name: teacherName,
+            teacher_id: tl.faculty_user_id || undefined
+          })
+        }
+
+        if (!teacherMap.has(genericKey)) {
+          teacherMap.set(genericKey, {
+            teacher_name: teacherName,
+            teacher_id: tl.faculty_user_id || undefined
+          })
+        }
       })
 
       const mapClassRow = (cls: any): ManualClassItem => {
         const key = buildManualClassKey(cls.course_code || '', cls.section || '')
-        const teacher = teacherMap.get(key)
+        const courseCode = String(cls.course_code || '').toLowerCase()
+        const teacher = teacherMap.get(key) || teacherMap.get(`${courseCode}|`)
+        const optionsSet = new Set<string>([
+          ...(teacherOptionsByKey.get(key) || []),
+          ...(teacherOptionsByKey.get(`${courseCode}|`) || []),
+        ])
+
         return {
           id: cls.id,
           course_code: cls.course_code || '',
@@ -1027,6 +1101,7 @@ export default function ViewSchedulePage() {
           college: cls.college || undefined,
           teacher_name: teacher?.teacher_name || '',
           teacher_id: teacher?.teacher_id,
+          teacher_options: Array.from(optionsSet).sort((a, b) => a.localeCompare(b)),
           lec_hours: cls.lec_hours ?? cls.lec_hr ?? 0,
           lab_hours: cls.lab_hours ?? cls.lab_hr ?? 0,
           student_count: cls.student_count ?? 0,
@@ -1038,9 +1113,9 @@ export default function ViewSchedulePage() {
       // Fallback: when class_group_id is a year_batch_id instead of upload_group_id,
       // discover the correct upload_group_id from allocation class_ids so we get ALL
       // classes (including unscheduled) rather than only the ones with room_allocations.
-      if (classes.length === 0 && (allocations || []).length > 0) {
+      if (classes.length === 0 && (scheduleAllocations || []).length > 0) {
         const allocClassIds = [...new Set(
-          (allocations || []).map((a: any) => Number(a.class_id)).filter((id: number) => id > 0)
+          (scheduleAllocations || []).map((a: any) => Number(a.class_id)).filter((id: number) => id > 0)
         )]
 
         if (allocClassIds.length > 0) {
@@ -1072,7 +1147,7 @@ export default function ViewSchedulePage() {
       // Fallback: when class_group_id/campus_group_id resources are unavailable,
       // derive manual-editor resources from current allocations so the full table still loads.
       const fallbackClassesMap = new Map<string, ManualClassItem>()
-      ;(allocations || []).forEach((alloc: any) => {
+      ;(scheduleAllocations || []).forEach((alloc: any) => {
         const key = buildManualClassKey(String(alloc.course_code || ''), String(alloc.section || ''))
         if (!key || fallbackClassesMap.has(key)) return
 
@@ -1097,7 +1172,7 @@ export default function ViewSchedulePage() {
       })
 
       const fallbackRoomsMap = new Map<string, any>()
-      ;(allocations || []).forEach((alloc: any, idx: number) => {
+      ;(scheduleAllocations || []).forEach((alloc: any, idx: number) => {
         const roomName = String(alloc.room || '').trim()
         const buildingName = String(alloc.building || '').trim()
         const key = `${buildingName.toLowerCase()}|${roomName.toLowerCase()}`
@@ -1121,7 +1196,7 @@ export default function ViewSchedulePage() {
 
       // Source-truth unscheduled list: class_schedules entries not present in current room_allocations.
       const allocatedClassKeys = new Set(
-        (allocations || [])
+        (scheduleAllocations || [])
           .map((a: any) => buildManualClassKey(String(a.course_code || ''), String(a.section || '')))
           .filter((key: string) => key !== '|')
       )
@@ -1204,7 +1279,7 @@ export default function ViewSchedulePage() {
 
       // Keep summary counts aligned with allocation blocks, not unique class count.
       const currentTotal = Number(schedule.total_classes || 0)
-      const derivedScheduledClasses = (allocations || []).length
+      const derivedScheduledClasses = (scheduleAllocations || []).length
       let derivedTotalClasses = Math.max(currentTotal, derivedScheduledClasses)
       let derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
 
@@ -1267,12 +1342,13 @@ export default function ViewSchedulePage() {
   const handleOpenManualEdit = async () => {
     if (!selectedSchedule) return
 
+    let latestAllocations: RoomAllocation[] = allocations
     if (allocationsSourceScheduleId !== selectedSchedule.id || allocations.length === 0) {
-      await fetchUnifiedSchedule()
+      latestAllocations = await fetchUnifiedSchedule()
     }
 
     // Always reload resources so latest course college edits are reflected in manual editor.
-    await fetchManualEditResources(selectedSchedule)
+    await fetchManualEditResources(selectedSchedule, latestAllocations)
 
     setShowManualEditModal(true)
   }
@@ -1403,8 +1479,19 @@ export default function ViewSchedulePage() {
   useEffect(() => {
     if (!selectedSchedule) return
 
-    fetchUnifiedSchedule()
-    fetchManualEditResources(selectedSchedule)
+    let isActive = true
+
+    const loadScheduleData = async () => {
+      const latestAllocations = await fetchUnifiedSchedule()
+      if (!isActive) return
+      await fetchManualEditResources(selectedSchedule, latestAllocations)
+    }
+
+    loadScheduleData()
+
+    return () => {
+      isActive = false
+    }
   }, [selectedSchedule?.id])
 
   const handleSelectSchedule = async (schedule: Schedule) => {

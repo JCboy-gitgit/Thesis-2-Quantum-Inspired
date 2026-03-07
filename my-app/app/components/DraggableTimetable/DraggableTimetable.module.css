@@ -443,3 +443,12 @@
         height: 100%;
     }
 }
+
+.cellStatusBadge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    z-index: 25;
+    pointer-events: none;
+}

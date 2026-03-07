@@ -5,13 +5,13 @@ import { MdAccessTime, MdLock } from 'react-icons/md'
 import styles from './DraggableTimetable.module.css'
 import {
     parseTimeToMinutes,
-    parseScheduleTime,
-    minutesToTimeString,
     buildTimeRange,
     checkAllConflicts,
+    buildConflictReasonMessages,
     type AllocationSlot,
     type TimeRange,
 } from '@/lib/conflictChecker'
+import ConflictStatusBadge from '@/app/components/ConflictStatusBadge/ConflictStatusBadge'
 
 // ======================== Types ========================
 
@@ -32,6 +32,9 @@ export interface TimetableAllocation {
     building: string
     room: string
     capacity?: number
+    student_count?: number
+    college?: string
+    room_college?: string
     teacher_name?: string
     department?: string
     lec_hours?: number
@@ -45,6 +48,10 @@ interface CombinedBlock {
     room: string
     building: string
     teacher_name: string
+    student_count: number
+    capacity: number
+    college: string
+    room_college: string
     day: string
     startMinutes: number
     endMinutes: number
@@ -119,18 +126,6 @@ function normalizeDay(day: string): string {
     return dayMap[day.toUpperCase()] || day
 }
 
-function buildConflictReasons(conflicts: {
-    roomConflict: boolean
-    teacherConflict: boolean
-    sectionConflict: boolean
-}): string[] {
-    const reasons: string[] = []
-    if (conflicts.roomConflict) reasons.push('Room conflict: Another class is already using this room at this time.')
-    if (conflicts.teacherConflict) reasons.push('Professor conflict: The instructor already has another class at this time.')
-    if (conflicts.sectionConflict) reasons.push('Section conflict: This section already has another class at this time.')
-    return reasons
-}
-
 // ======================== Component ========================
 
 export default function DraggableTimetable({
@@ -144,6 +139,7 @@ export default function DraggableTimetable({
 }: DraggableTimetableProps) {
     const [draggedBlock, setDraggedBlock] = useState<CombinedBlock | null>(null)
     const [highlightedCells, setHighlightedCells] = useState<Map<string, CellHighlight>>(new Map())
+    const [hoveredDropCell, setHoveredDropCell] = useState<string | null>(null)
     const tableRef = useRef<HTMLTableElement>(null)
 
     // Touch drag state
@@ -230,6 +226,10 @@ export default function DraggableTimetable({
                         room: alloc.room || '',
                         building: alloc.building || '',
                         teacher_name: alloc.teacher_name || '',
+                        student_count: alloc.student_count || 0,
+                        capacity: alloc.capacity || 0,
+                        college: alloc.college || '',
+                        room_college: alloc.room_college || '',
                         day: (alloc.schedule_day || '').toLowerCase(),
                         startMinutes: startMins,
                         endMinutes: endMins,
@@ -272,6 +272,8 @@ export default function DraggableTimetable({
             schedule_day: a.schedule_day,
             schedule_time: a.schedule_time,
             course_code: a.course_code,
+            college: a.college,
+            room_college: a.room_college,
         }))
     }, [allAllocations])
 
@@ -307,12 +309,15 @@ export default function DraggableTimetable({
                     targetTime,
                     block.teacher_name,
                     block.section,
+                    block.college,
                 )
 
                 const cellKey = `${day}-${slotIdx}`
                 highlights.set(cellKey, {
                     status: conflictsExcluding.hasConflict ? 'conflict' : 'available',
-                    conflictReasons: conflictsExcluding.hasConflict ? buildConflictReasons(conflictsExcluding) : []
+                    conflictReasons: conflictsExcluding.hasConflict
+                        ? buildConflictReasonMessages(conflictsExcluding, { section: block.section })
+                        : []
                 })
             }
         })
@@ -324,11 +329,13 @@ export default function DraggableTimetable({
     const handleDragStart = useCallback((block: CombinedBlock) => {
         setDraggedBlock(block)
         setHighlightedCells(computeHighlights(block))
+        setHoveredDropCell(null)
     }, [computeHighlights])
 
     const handleDragEnd = useCallback(() => {
         setDraggedBlock(null)
         setHighlightedCells(new Map())
+        setHoveredDropCell(null)
     }, [])
 
     const handleDrop = useCallback((day: string, slotIdx: number) => {
@@ -631,6 +638,11 @@ export default function DraggableTimetable({
                                         ? `Conflict detected:\n${cellHighlight.conflictReasons.join('\n')}`
                                         : undefined
 
+                                    const shouldShowStatusBadge =
+                                        !!draggedBlock &&
+                                        hoveredDropCell === cellKey &&
+                                        !!cellHighlight
+
                                     return (
                                         <td
                                             key={`${day}-${slotIdx}`}
@@ -647,6 +659,12 @@ export default function DraggableTimetable({
                                                     e.preventDefault()
                                                 }
                                             }}
+                                            onMouseEnter={() => {
+                                                if (draggedBlock) setHoveredDropCell(cellKey)
+                                            }}
+                                            onMouseLeave={() => {
+                                                if (hoveredDropCell === cellKey) setHoveredDropCell(null)
+                                            }}
                                             onDrop={(e) => {
                                                 e.preventDefault()
                                                 if (canDrag && draggedBlock && cellHighlight?.status === 'available') {
@@ -654,6 +672,15 @@ export default function DraggableTimetable({
                                                 }
                                             }}
                                         >
+                                            {shouldShowStatusBadge && (
+                                                <div className={styles.cellStatusBadge}>
+                                                    <ConflictStatusBadge
+                                                        status={cellHighlight.status}
+                                                        reasons={cellHighlight.conflictReasons}
+                                                        compact
+                                                    />
+                                                </div>
+                                            )}
                                             {blocksStartingHere.map((block, idx) => {
                                                 const durationMinutes = block.endMinutes - block.startMinutes
                                                 const durationSlots = Math.ceil(durationMinutes / 30)

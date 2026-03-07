@@ -435,6 +435,10 @@
     color: #10b981;
 }
 
+.navigatorSelect {
+    max-width: 100%;
+}
+
 .currentMeta {
     display: inline-flex;
 }
@@ -581,8 +585,17 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
 }
 
+.hasWarning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
 .hasConflict:hover {
     box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+.hasWarning:hover {
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4) !important;
 }
 
 .conflictIndicator {
@@ -612,6 +625,16 @@
 .conflictIndicator svg {
     color: #fecaca;
     filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));
+}
+
+.warningIndicator {
+    background: rgba(120, 53, 15, 0.55);
+    border-color: rgba(251, 191, 36, 0.55);
+}
+
+.warningIndicator svg {
+    color: #fde68a;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7));
 }
 
 @keyframes pulseConflict {
@@ -954,6 +977,7 @@
 }
 
 :global([data-theme="dark"]) select {
+    color-scheme: dark;
     color: #f8fafc;
     background: #1e293b;
     border-color: #334155;
@@ -962,6 +986,17 @@
 :global([data-theme="dark"]) select option {
     background: #0f172a;
     color: #f8fafc;
+}
+
+:global([data-theme="dark"]) select optgroup {
+    background: #0b1220;
+    color: #93c5fd;
+    font-weight: 700;
+}
+
+:global([data-theme="dark"]) select option:disabled {
+    background: #0f172a;
+    color: #7c8aa5;
 }
 
 :global([data-theme="dark"]) .panelHeader h3 {
@@ -1002,6 +1037,7 @@
 }
 
 :global([data-theme="dark"]) select {
+    color-scheme: dark;
     color: #f8fafc;
     background: #1e293b;
 }
@@ -1009,6 +1045,17 @@
 :global([data-theme="dark"]) select option {
     background: #1e293b;
     color: #f8fafc;
+}
+
+:global([data-theme="dark"]) select optgroup {
+    background: #0b1220;
+    color: #93c5fd;
+    font-weight: 700;
+}
+
+:global([data-theme="dark"]) select option:disabled {
+    background: #1e293b;
+    color: #7c8aa5;
 }
 
 :global([data-theme="dark"]) .currentItem small {

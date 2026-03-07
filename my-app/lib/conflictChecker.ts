@@ -18,6 +18,17 @@ export interface AllocationSlot {
     schedule_day: string
     schedule_time: string // "HH:MM-HH:MM" or "H:MM AM - H:MM PM"
     course_code: string
+    capacity?: number
+    student_count?: number
+    college?: string
+    room_college?: string
+}
+
+export interface ConflictCheckResult {
+    hasConflict: boolean
+    roomConflicts: AllocationSlot[]
+    teacherConflicts: AllocationSlot[]
+    sectionConflicts: AllocationSlot[]
 }
 
 /**
@@ -98,8 +109,8 @@ export function checkRoomConflict(
     targetDay: string,
     targetTime: TimeRange,
     excludeAllocationId?: number
-): boolean {
-    return allAllocations.some(alloc => {
+): AllocationSlot[] {
+    return allAllocations.filter(alloc => {
         if (excludeAllocationId && alloc.id === excludeAllocationId) return false
         if (alloc.room !== targetRoom) return false
         if (!isDayMatch(alloc.schedule_day, targetDay)) return false
@@ -120,11 +131,14 @@ export function checkTeacherConflict(
     targetDay: string,
     targetTime: TimeRange,
     excludeAllocationId?: number
-): boolean {
-    if (!teacherName) return false
-    return allAllocations.some(alloc => {
+): AllocationSlot[] {
+    if (!isMeaningfulTeacherName(teacherName)) return []
+    const normalizedTeacher = normalizeTeacherName(teacherName)
+
+    return allAllocations.filter(alloc => {
         if (excludeAllocationId && alloc.id === excludeAllocationId) return false
-        if (alloc.teacher_name !== teacherName) return false
+        if (!isMeaningfulTeacherName(alloc.teacher_name)) return false
+        if (normalizeTeacherName(alloc.teacher_name) !== normalizedTeacher) return false
         if (!isDayMatch(alloc.schedule_day, targetDay)) return false
 
         const allocTime = parseScheduleTime(alloc.schedule_time)
@@ -142,15 +156,40 @@ export function checkSectionConflict(
     section: string,
     targetDay: string,
     targetTime: TimeRange,
+    college?: string,
     excludeAllocationId?: number
-): boolean {
-    if (!section) return false
-    // Strip LAB/LEC suffixes for matching
-    const baseSection = stripSectionSuffix(section)
-    return allAllocations.some(alloc => {
+): AllocationSlot[] {
+    if (!section) return []
+
+    const normalizeCollege = (col?: string) => {
+        const val = (col || '').trim().toUpperCase();
+        if (!val || val === 'UNASSIGNED COLLEGE' || val === 'N/A' || val === 'NONE' || val === 'NULL') return null;
+        return val;
+    };
+    
+    const targetCollege = normalizeCollege(college);
+
+    const targetBase = normalizeSectionBase(section)
+    const targetGroup = extractSectionGroup(section)
+
+    return allAllocations.filter(alloc => {
         if (excludeAllocationId && alloc.id === excludeAllocationId) return false
-        const allocBase = stripSectionSuffix(alloc.section)
-        if (allocBase !== baseSection) return false
+
+        const allocBase = normalizeSectionBase(alloc.section || '')
+        if (allocBase !== targetBase) return false
+
+        const allocGroup = extractSectionGroup(alloc.section || '')
+
+        const allocCollege = normalizeCollege(alloc.college);
+        if (targetCollege && allocCollege && targetCollege !== allocCollege) {
+            return false;
+        }
+
+        // G1 and G2 can run simultaneously, but each split conflicts with the full/shared section.
+        if (targetGroup && allocGroup && targetGroup !== allocGroup) {
+                return false
+        }
+
         if (!isDayMatch(alloc.schedule_day, targetDay)) return false
 
         const allocTime = parseScheduleTime(alloc.schedule_time)
@@ -170,17 +209,55 @@ export function checkAllConflicts(
     targetTime: TimeRange,
     teacherName: string,
     section: string,
+    college?: string,
     excludeAllocationId?: number
-): { hasConflict: boolean; roomConflict: boolean; teacherConflict: boolean; sectionConflict: boolean } {
-    const roomConflict = checkRoomConflict(allAllocations, targetRoom, targetDay, targetTime, excludeAllocationId)
-    const teacherConflict = checkTeacherConflict(allAllocations, teacherName, targetDay, targetTime, excludeAllocationId)
-    const sectionConflict = checkSectionConflict(allAllocations, section, targetDay, targetTime, excludeAllocationId)
+): ConflictCheckResult {
+    const roomConflicts = checkRoomConflict(allAllocations, targetRoom, targetDay, targetTime, excludeAllocationId)
+    const teacherConflicts = checkTeacherConflict(allAllocations, teacherName, targetDay, targetTime, excludeAllocationId)
+    const sectionConflicts = checkSectionConflict(allAllocations, section, targetDay, targetTime, college, excludeAllocationId)
+
     return {
-        hasConflict: roomConflict || teacherConflict || sectionConflict,
-        roomConflict,
-        teacherConflict,
-        sectionConflict
+        hasConflict: roomConflicts.length > 0 || teacherConflicts.length > 0 || sectionConflicts.length > 0,
+        roomConflicts,
+        teacherConflicts,
+        sectionConflicts
     }
+}
+
+/**
+ * Build user-facing reason strings from conflict buckets.
+ */
+export function buildConflictReasonMessages(
+    conflicts: ConflictCheckResult,
+    target?: { section?: string }
+): string[] {
+    const reasons: string[] = []
+
+    if (conflicts.roomConflicts.length > 0) {
+        conflicts.roomConflicts.forEach(c => {
+            reasons.push(`Room conflict: ${c.course_code} (${c.section}) at ${c.schedule_day} ${c.schedule_time}`)
+        })
+    }
+
+    if (conflicts.teacherConflicts.length > 0) {
+        conflicts.teacherConflicts.forEach(c => {
+            reasons.push(`Prof conflict: ${c.teacher_name} is in Room ${c.room || 'another room'} at ${c.schedule_day} ${c.schedule_time}`)
+        })
+    }
+
+    if (conflicts.sectionConflicts.length > 0) {
+        conflicts.sectionConflicts.forEach(c => {
+            const timeDesc = `${c.schedule_day} ${c.schedule_time}`
+            const currentSection = target?.section || 'Section'
+            if ((c.section || '') === currentSection) {
+                reasons.push(`Section conflict: ${currentSection} is busy at ${timeDesc}`)
+            } else {
+                reasons.push(`Section conflict: ${currentSection} vs ${c.section} at ${timeDesc}`)
+            }
+        })
+    }
+
+    return Array.from(new Set(reasons))
 }
 
 /**
@@ -194,9 +271,10 @@ export function getSlotAvailability(
     targetDuration: number, // in minutes
     teacherName: string,
     section: string,
+    college?: string,
     excludeAllocationId?: number
-): Map<number, { available: boolean; roomConflict: boolean; teacherConflict: boolean; sectionConflict: boolean }> {
-    const result = new Map<number, { available: boolean; roomConflict: boolean; teacherConflict: boolean; sectionConflict: boolean }>()
+): Map<number, { available: boolean; roomConflicts: AllocationSlot[]; teacherConflicts: AllocationSlot[]; sectionConflicts: AllocationSlot[] }> {
+    const result = new Map<number, { available: boolean; roomConflicts: AllocationSlot[]; teacherConflicts: AllocationSlot[]; sectionConflicts: AllocationSlot[] }>()
 
     // Check every 30 minute slot from 7:00 to 20:00
     for (let minutes = 7 * 60; minutes <= 20 * 60; minutes += 30) {
@@ -206,7 +284,7 @@ export function getSlotAvailability(
         }
         const conflicts = checkAllConflicts(
             allAllocations, targetRoom, targetDay, targetTime,
-            teacherName, section, excludeAllocationId
+            teacherName, section, college, excludeAllocationId
         )
         result.set(minutes, {
             available: !conflicts.hasConflict,
@@ -257,6 +335,56 @@ function normalizeDay(day: string): string {
         'SU': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
     }
     return dayMap[day.toUpperCase()] || day
+}
+
+function normalizeSectionBase(section: string): string {
+    if (!section) return ''
+    return section
+        .replace(/_LAB$/i, '')
+        .replace(/_LEC$/i, '')
+        .replace(/_LECTURE$/i, '')
+        .replace(/_LABORATORY$/i, '')
+        .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+        .replace(/\s+G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
+        .replace(/-G[12](?:-(?:LAB|LEC|LECTURE|LABORATORY))?$/i, '')
+        .replace(/,\s*LAB$/i, '')
+        .replace(/,\s*LEC$/i, '')
+        .replace(/\s+LAB$/i, '')
+        .replace(/\s+LEC$/i, '')
+        .trim()
+}
+
+function extractSectionGroup(section: string): 'G1' | 'G2' | null {
+    if (!section) return null
+    const normalized = section.replace(/[-_]/g, ' ')
+    const match = normalized.match(/\b(G1|G2)\b/i)
+    if (!match) return null
+    const group = match[1].toUpperCase()
+    return group === 'G1' || group === 'G2' ? group : null
+}
+
+function normalizeTeacherName(name: string): string {
+    return (name || '').trim().replace(/\s+/g, ' ').toUpperCase()
+}
+
+function isMeaningfulTeacherName(name: string): boolean {
+    const normalized = normalizeTeacherName(name)
+    if (!normalized) return false
+
+    const placeholders = new Set([
+        'TBD',
+        'TBA',
+        'N/A',
+        'NA',
+        'NONE',
+        'UNASSIGNED',
+        'TO BE ASSIGNED',
+        'NOT ASSIGNED',
+        'NO FACULTY',
+        'NO TEACHER',
+    ])
+
+    return !placeholders.has(normalized)
 }
 
 // Helper: Strip LAB/LEC suffix from section

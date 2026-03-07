@@ -2119,6 +2119,11 @@
   color: var(--warning-orange);
 }
 
+.compatibilityItem.danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: var(--danger-red);
+}
+
 /* ==================== Config Section ==================== */
 .configSection {
   display: flex;
