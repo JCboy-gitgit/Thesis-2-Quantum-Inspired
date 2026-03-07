@@ -171,6 +171,21 @@ curl -X POST http://localhost:8000/api/schedules/generate \
 pytest tests/
 ```
 
+### Benchmarking Scheduler Profiles
+
+Use the benchmark runner to compare two `max_iterations` profiles on your own payload.
+
+```bash
+python benchmark_scheduler.py \
+  --payload <path-to-your-payload.json> \
+  --baseline-iterations 1500 \
+  --optimized-iterations 6000 \
+  --trials 2 \
+  --output benchmarks/last_report.json
+```
+
+The report includes wall-clock time, scheduled/unscheduled counts, conflict count, and final cost deltas.
+
 ### API Documentation
 Once the server is running, visit:
 - Swagger UI: http://localhost:8000/docs

@@ -278,6 +278,12 @@ interface ScheduleResult {
   backendUrl?: string | null
   backendStatus?: number
   backendResponseMs?: number
+  iterationClamp?: {
+    requested: number
+    applied: number
+    cap: number
+    wasClamped: boolean
+  }
 }
 
 interface BackendProbeState {
@@ -2431,6 +2437,14 @@ export default function GenerateSchedulePage() {
         backendUrl: result.backend_url,
         backendStatus: result.backend_status,
         backendResponseMs: Number(result.backend_response_ms || 0) || undefined,
+        iterationClamp: result.iteration_clamp
+          ? {
+              requested: Number(result.iteration_clamp.requested || 0),
+              applied: Number(result.iteration_clamp.applied || 0),
+              cap: Number(result.iteration_clamp.cap || 0),
+              wasClamped: Boolean(result.iteration_clamp.was_clamped),
+            }
+          : undefined,
       })
       setShowResults(true)
       setShowTimetable(true)
@@ -3184,7 +3198,15 @@ export default function GenerateSchedulePage() {
                         : 'Backend confirmation: execution source not reported.'}
                     {scheduleResult.backendUrl ? ` (${scheduleResult.backendUrl})` : ''}
                     {scheduleResult.backendResponseMs ? ` | Backend response: ${scheduleResult.backendResponseMs} ms` : ''}
+                    {scheduleResult.iterationClamp
+                      ? ` | Iterations requested/applied: ${scheduleResult.iterationClamp.requested.toLocaleString()}/${scheduleResult.iterationClamp.applied.toLocaleString()}`
+                      : ''}
                   </p>
+                  {scheduleResult.iterationClamp?.wasClamped && (
+                    <p className={styles.resultClampInfo}>
+                      Iteration cap applied at {scheduleResult.iterationClamp.cap.toLocaleString()} for this run.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -3229,6 +3251,11 @@ export default function GenerateSchedulePage() {
                   <div className={styles.optimizationStat}>
                     <span className={styles.optimizationLabel}>Iterations</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.iterations.toLocaleString()}</span>
+                    {scheduleResult.iterationClamp && (
+                      <span className={styles.optimizationMeta}>
+                        req: {scheduleResult.iterationClamp.requested.toLocaleString()} | applied: {scheduleResult.iterationClamp.applied.toLocaleString()}
+                      </span>
+                    )}
                   </div>
                   <div className={styles.optimizationStat}>
                     <span className={styles.optimizationLabel}>Initial Cost</span>

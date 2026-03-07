@@ -7,7 +7,8 @@
     "build": "next build",
     "build:test": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backend:benchmark": "..\\.venv\\Scripts\\python.exe backend\\benchmark_scheduler.py"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

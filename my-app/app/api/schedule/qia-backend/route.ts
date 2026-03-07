@@ -221,6 +221,9 @@ interface RequestBody {
     // Split session settings
     allow_split_sessions?: boolean // Allow splitting classes into multiple sessions (e.g., 3hr class -> 1.5hr Mon + 1.5hr Thu)
     combine_split_lectures?: boolean // If true: LAB splits to G1/G2, LEC stays combined
+    college_room_matching_enabled?: boolean
+    allow_g1_g2_split_sessions?: boolean
+    enforce_g1_g2_equal_hours?: boolean
   }
   manual_allocations?: Array<{
     class_id?: number | string
@@ -1222,6 +1225,27 @@ export async function POST(request: NextRequest) {
     const campusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
     const classGroupId = body.class_group_id || body.year_batch_id || 1
 
+    // Runtime safety: cap large iteration requests using a problem-size-aware upper bound.
+    const adaptiveIterationCap = Math.max(1500, Math.min(12000, sections.length * 45 + rooms.length * 20))
+    const requestedIterations = Number(body.config.max_iterations)
+    const normalizedRequestedIterations = Number.isFinite(requestedIterations)
+      ? Math.max(500, requestedIterations)
+      : adaptiveIterationCap
+    const maxIterations = Math.min(normalizedRequestedIterations, adaptiveIterationCap)
+    const iterationClamp = {
+      requested: normalizedRequestedIterations,
+      applied: maxIterations,
+      cap: adaptiveIterationCap,
+      was_clamped: normalizedRequestedIterations > adaptiveIterationCap,
+    }
+
+    if (normalizedRequestedIterations > adaptiveIterationCap) {
+      console.log(
+        `⚙️ Clamped max_iterations from ${normalizedRequestedIterations} to ${maxIterations} ` +
+        `(adaptive cap for ${sections.length} sections / ${rooms.length} rooms)`
+      )
+    }
+
     const backendPayload = {
       schedule_name: body.schedule_name,
       semester: body.semester,
@@ -1231,11 +1255,14 @@ export async function POST(request: NextRequest) {
       section_ids: null, // Schedule all sections
       room_ids: null, // Use all rooms
       time_slots: timeSlots,
+      start_time: body.time_settings?.startTime || '07:00',
+      end_time: body.time_settings?.endTime || '20:00',
+      slot_duration: body.time_settings?.slotDuration || 90,
       active_days: body.active_days,
       online_days: body.online_days || [], // NEW: Pass online days to backend
       sections_data: sections,
       rooms_data: rooms,
-      max_iterations: body.config.max_iterations,
+      max_iterations: maxIterations,
       initial_temperature: body.config.initial_temperature,
       cooling_rate: body.config.cooling_rate,
       quantum_tunneling_probability: body.config.quantum_tunneling_probability,
@@ -1251,6 +1278,9 @@ export async function POST(request: NextRequest) {
       // Split session settings - allow classes to be divided into multiple sessions
       allow_split_sessions: body.config.allow_split_sessions ?? true, // Default: enabled
       combine_split_lectures: body.config.combine_split_lectures ?? true,
+      college_room_matching_enabled: body.config.college_room_matching_enabled ?? true,
+      allow_g1_g2_split_sessions: body.config.allow_g1_g2_split_sessions ?? true,
+      enforce_g1_g2_equal_hours: body.config.enforce_g1_g2_equal_hours ?? true,
       fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
@@ -1327,6 +1357,7 @@ export async function POST(request: NextRequest) {
       const fallbackResult = await generateFallbackSchedule(body, sections, rooms, timeSlots)
       return NextResponse.json({
         ...fallbackResult,
+        iteration_clamp: iterationClamp,
         execution_source: 'fallback-local',
         backend_preference: backendPreference,
         backend_reachable: false,
@@ -1350,6 +1381,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: errorData.detail || errorData.error || 'Backend processing failed',
+          iteration_clamp: iterationClamp,
           backend_preference: backendPreference,
           backend_status: backendResponse.status,
           backend_response_ms: backendResponseMs,
@@ -1370,6 +1402,7 @@ export async function POST(request: NextRequest) {
     const reconciledResult = reconcileScheduleMetrics(frontendResult)
     const reconciledResultWithExecution = {
       ...reconciledResult,
+      iteration_clamp: iterationClamp,
       execution_source: 'python-backend',
       backend_preference: backendPreference,
       backend_reachable: true,

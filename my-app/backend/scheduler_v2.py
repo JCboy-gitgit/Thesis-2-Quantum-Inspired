@@ -1551,6 +1551,22 @@ class EnhancedQuantumScheduler:
         """Strip only component suffixes, keep group suffixes like _G1."""
         return self._normalize_section_identity(section_code, keep_group=True)
 
+    def _section_codes_overlap(self, section_code_a: str, section_code_b: str) -> bool:
+        """
+        Frontend-parity section overlap logic.
+        Conflict when cohorts are equal OR one label is a parent of the other.
+        """
+        a_cohort = self._get_cohort_code(section_code_a)
+        a_base = self._get_base_section_code(section_code_a)
+        b_cohort = self._get_cohort_code(section_code_b)
+        b_base = self._get_base_section_code(section_code_b)
+
+        return (
+            (a_cohort == b_cohort) or
+            (a_cohort == b_base) or
+            (a_base == b_cohort)
+        )
+
     def _check_student_group_conflict(
         self,
         section_id: int,
@@ -1564,9 +1580,6 @@ class EnhancedQuantumScheduler:
         Hierarchy Aware: BSMCS 1A_G1 and BSMCS 1A_G2 are separate cohorts, 
         but both are children of BSMCS 1A.
         """
-        my_cohort = self._get_cohort_code(section_code)
-        my_base = self._get_base_section_code(section_code)
-        
         new_end = start_slot_id + slot_count
         
         for other_sid, other_assignments in self.section_assignments.items():
@@ -1578,15 +1591,7 @@ class EnhancedQuantumScheduler:
                 continue
                 
             other_code = other_section.section_code
-            other_cohort = self._get_cohort_code(other_code)
-            other_base = self._get_base_section_code(other_code)
-            
-            # Conflict if:
-            # 1. Exact same cohort (e.g. both are G1)
-            # 2. Hierarchy overlap (e.g. one is parent BSCS 1A and other is child BSCS 1A_G1)
-            has_overlap = (my_cohort == other_cohort) or \
-                          (my_cohort == other_base) or \
-                          (my_base == other_cohort)
+            has_overlap = self._section_codes_overlap(section_code, other_code)
             
             if has_overlap:
                 for _, sched_day, sched_start, sched_count in other_assignments:
@@ -2006,26 +2011,35 @@ class EnhancedQuantumScheduler:
                 section_id, day, slot_id = key
                 self.conflict_heatmap[(day, slot_id)] += len(rooms)
         
-        # HARD: Student Group Double-Booking (CRITICAL NEW CHECK)
-        # Same student group (e.g., "BSM CS 2B - G2") cannot have multiple courses at same time
-        # This is different from section_slots which only tracks same section_id
-        student_group_slots: Dict[Tuple[str, str, int], List[int]] = defaultdict(list)  # (base_section, day, slot) -> [section_ids]
+        # HARD: Student Group Double-Booking (frontend-parity hierarchy rules)
+        # G1/G2 siblings can overlap; parent-vs-child and same cohort cannot overlap.
+        student_group_slots: Dict[Tuple[str, int], Set[int]] = defaultdict(set)  # (day, slot) -> {section_ids}
         for key, slot in self.schedule.items():
             _, day, slot_id = key
-            section = self.sections.get(slot.section_id)
-            if section:
-                base_section = self._get_base_section_code(section.section_code)
-                for offset in range(slot.slot_count):
-                    student_group_slots[(base_section, day, slot_id + offset)].append(slot.section_id)
-        
-        for key, section_ids in student_group_slots.items():
-            unique_ids = set(section_ids)
-            if len(unique_ids) > 1:
-                # Multiple DIFFERENT courses for same student group at same time!
-                cost += HARD_CONSTRAINT_PENALTY * (len(unique_ids) - 1)
+            for offset in range(slot.slot_count):
+                student_group_slots[(day, slot_id + offset)].add(slot.section_id)
+
+        for (day, slot_id), section_ids in student_group_slots.items():
+            ids = list(section_ids)
+            overlap_conflicts = 0
+
+            for i in range(len(ids)):
+                section_a = self.sections.get(ids[i])
+                if not section_a:
+                    continue
+
+                for j in range(i + 1, len(ids)):
+                    section_b = self.sections.get(ids[j])
+                    if not section_b:
+                        continue
+
+                    if self._section_codes_overlap(section_a.section_code, section_b.section_code):
+                        overlap_conflicts += 1
+
+            if overlap_conflicts > 0:
+                cost += HARD_CONSTRAINT_PENALTY * overlap_conflicts
                 conflict_detected = True
-                base_section, day, slot_id = key
-                self.conflict_heatmap[(day, slot_id)] += len(unique_ids)
+                self.conflict_heatmap[(day, slot_id)] += overlap_conflicts
         
         # Penalty for unscheduled sections (use dynamic slot count)
         for section_id, section in self.sections.items():
@@ -2121,30 +2135,6 @@ class EnhancedQuantumScheduler:
                     cost += HARD_EQUIPMENT_MISMATCH_PENALTY
                     conflict_detected = True
                     
-        # HARD: Student Group Conflict (Same section cannot be in 2 places at once)
-        # Identify overlaps by tracking consumed slots per student group
-        student_group_slots = defaultdict(list)
-        for key, slot in self.schedule.items():
-            # Key is (room_id, day, slot_index). 
-            # If student has class in Room A at Slot 1, and Room B at Slot 1 -> Conflict.
-            section = self.sections.get(slot.section_id)
-            if section:
-                # Use base section code to catch split groups (e.g. G1/G2 usually distinct, but Base is cohort)
-                # If G1 and G2 are distinct subgroups, they CAN overlap?
-                # Usually "BSCS 1A" means the whole block.
-                # If "BSCS 1A G1" and "BSCS 1A G2", they might happen simultaneously?
-                # If is_split_group is True, maybe treat as distinct?
-                # For now, simplistic approach: Link by section_code.
-                group = section.section_code
-                day = key[1]
-                slot_index = key[2]
-                student_group_slots[(group, day)].append(slot_index)
-        
-        for (group, day), slots in student_group_slots.items():
-            if len(slots) != len(set(slots)):
-                cost += HARD_CONSTRAINT_PENALTY
-                conflict_detected = True
-
         # HARD: Teacher Conflict (Same teacher cannot be in 2 places at once)
         # Note: teacher_slot_times is computed later for soft constraints, but we need it here for HARD checks.
         # Let's verify overlaps using the same logic as students.
@@ -3747,6 +3737,18 @@ class EnhancedQuantumScheduler:
         
         # USER REQUEST: Resolve overlapping teacher schedules to TBD
         self._resolve_teacher_conflicts_to_tbd()
+
+        # Final hard-conflict audit for trustworthy API metrics.
+        conflict_summary = self._summarize_hard_conflicts()
+        self.stats.conflict_count = conflict_summary['total_conflicts']
+        if self.stats.conflict_count > 0:
+            print(
+                f"⚠️ Remaining hard conflicts: {self.stats.conflict_count} "
+                f"(teacher={conflict_summary['teacher_conflicts']}, "
+                f"student_group={conflict_summary['student_group_conflicts']})"
+            )
+        else:
+            print("✅ Final hard-conflict audit: no remaining teacher/student-group conflicts")
         
         self.stats.time_elapsed_ms = int((time.time() - start_time) * 1000)
         
@@ -3832,6 +3834,49 @@ class EnhancedQuantumScheduler:
                     
         if conflict_count > 0:
             print(f"✅ Auto-resolved {conflict_count} teacher conflicts to 'TBD'")
+
+    def _summarize_hard_conflicts(self) -> Dict[str, int]:
+        """Count remaining teacher/student hard conflicts in the finalized schedule."""
+        teacher_slots: Dict[Tuple[int, str, int], Set[int]] = defaultdict(set)
+        student_slots: Dict[Tuple[str, int], Set[int]] = defaultdict(set)
+
+        for key, slot in self.schedule.items():
+            _, day, slot_id = key
+
+            # Teacher conflicts: only count concrete teacher assignments (non-TBD)
+            if slot.teacher_id and slot.teacher_id != 0 and slot.teacher_id != "0":
+                teacher_slots[(slot.teacher_id, day, slot_id)].add(slot.section_id)
+
+            # Student conflicts: all scheduled classes occupying this slot
+            student_slots[(day, slot_id)].add(slot.section_id)
+
+        teacher_conflicts = 0
+        for section_ids in teacher_slots.values():
+            if len(section_ids) > 1:
+                teacher_conflicts += (len(section_ids) - 1)
+
+        student_group_conflicts = 0
+        for section_ids in student_slots.values():
+            ids = list(section_ids)
+            for i in range(len(ids)):
+                section_a = self.sections.get(ids[i])
+                if not section_a:
+                    continue
+
+                for j in range(i + 1, len(ids)):
+                    section_b = self.sections.get(ids[j])
+                    if not section_b:
+                        continue
+
+                    if self._section_codes_overlap(section_a.section_code, section_b.section_code):
+                        student_group_conflicts += 1
+
+        total_conflicts = teacher_conflicts + student_group_conflicts
+        return {
+            'teacher_conflicts': teacher_conflicts,
+            'student_group_conflicts': student_group_conflicts,
+            'total_conflicts': total_conflicts
+        }
 
     def _build_result(self) -> List[Dict[str, Any]]:
         """Build the final schedule result with BulSU QSA format"""
