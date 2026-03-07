@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { parseScheduleTime, timeRangesOverlap } from '@/lib/conflictChecker'
 
 // Force dynamic - disable caching to always get fresh data
 export const dynamic = 'force-dynamic'
@@ -259,16 +260,26 @@ export async function PATCH(request: NextRequest) {
 
             const roomId = allocation.room_id
 
-            // 2. Check for conflicts in the target slot (Exact match on day + time + room)
-            // Note: This checks for exact string match on time range (e.g., "07:30 - 09:00")
-            const { data: conflicts } = await supabaseAdmin
+            // 2. Check for conflicts in the target slot (overlap-aware on day + room)
+            const { data: sameRoomDayAllocations } = await supabaseAdmin
                 .from('room_allocations')
-                .select('id, course_code, section')
+                .select('id, course_code, section, schedule_time')
                 .eq('schedule_id', schedule_id)
                 .eq('room_id', roomId)
                 .eq('schedule_day', new_day)
-                .eq('schedule_time', new_time)
                 .neq('id', allocation_id) // Exclude self
+
+            const targetRange = parseScheduleTime(String(new_time || ''))
+            const conflicts = (sameRoomDayAllocations || []).filter((entry: any) => {
+                if (!targetRange) {
+                    // Fallback if target cannot be parsed: preserve prior exact-match behavior.
+                    return String(entry.schedule_time || '').trim() === String(new_time || '').trim()
+                }
+
+                const existingRange = parseScheduleTime(String(entry.schedule_time || ''))
+                if (!existingRange) return false
+                return timeRangesOverlap(existingRange, targetRange)
+            })
 
             if (conflicts && conflicts.length > 0) {
                 const conflictDetails = conflicts.map((c: any) => `${c.course_code} (${c.section})`).join(', ')

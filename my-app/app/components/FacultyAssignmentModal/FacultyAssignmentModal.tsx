@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { MdClose as X, MdCheck as Check, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdLoop as Loader2, MdReplay as RotateCcw, MdSearch as Search, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdMenuBook as BookOpen, MdAccessTime as Clock, MdPeople as Users, MdSchool as GraduationCap } from 'react-icons/md'
 import styles from './FacultyAssignmentModal.module.css'
+import { parseScheduleTime, timeRangesOverlap } from '@/lib/conflictChecker'
 
 interface Faculty {
   id: string
@@ -49,6 +50,17 @@ interface FacultyAssignmentModalProps {
   onClose: () => void
   allAllocations: RoomAllocation[]
   eligibleFacultyIds?: Set<string>
+}
+
+const normalizeTeacherName = (name?: string) => String(name || '').trim().replace(/\s+/g, ' ').toUpperCase()
+
+const normalizeDayLabel = (day?: string) => String(day || '').trim().toLowerCase()
+
+const hasTimeOverlap = (left?: string, right?: string) => {
+  const leftRange = parseScheduleTime(String(left || ''))
+  const rightRange = parseScheduleTime(String(right || ''))
+  if (leftRange && rightRange) return timeRangesOverlap(leftRange, rightRange)
+  return String(left || '').trim() === String(right || '').trim()
 }
 
 export default function FacultyAssignmentModal({
@@ -146,11 +158,16 @@ export default function FacultyAssignmentModal({
 
   useEffect(() => {
     if (!selectedFaculty || !allocation) { setHasConflict(false); setConflictDetails(''); return }
-    const conflict = allAllocations.find(a =>
-      a.id !== allocation.id &&
-      (a.teacher_name && a.teacher_name === selectedFaculty.full_name) &&
-      a.schedule_day === allocation.schedule_day && a.schedule_time === allocation.schedule_time
-    )
+    const selectedTeacher = normalizeTeacherName(selectedFaculty.full_name)
+    const targetDay = normalizeDayLabel(allocation.schedule_day)
+
+    const conflict = allAllocations.find(a => {
+      if (a.id === allocation.id) return false
+      if (normalizeTeacherName(a.teacher_name) !== selectedTeacher) return false
+      if (normalizeDayLabel(a.schedule_day) !== targetDay) return false
+      return hasTimeOverlap(a.schedule_time, allocation.schedule_time)
+    })
+
     if (conflict) {
       setHasConflict(true)
       setConflictDetails(`${selectedFaculty.full_name} is already teaching ${conflict.course_code} (${conflict.section}) at ${allocation.schedule_time} on ${allocation.schedule_day}`)
@@ -245,11 +262,12 @@ export default function FacultyAssignmentModal({
                   const isEligible = faculty.isEligible || eligibleFaculty.some(ef => ef.id === faculty.id)
                   const isExpanded = expandedFaculty === faculty.id
                   const daySchedule = isExpanded ? getFacultyDaySchedule(faculty.full_name) : []
-                  const facultyConflict = allAllocations.find(a =>
-                    a.id !== allocation.id &&
-                    (a.teacher_name && a.teacher_name === faculty.full_name) &&
-                    a.schedule_day === allocation.schedule_day && a.schedule_time === allocation.schedule_time
-                  )
+                  const facultyConflict = allAllocations.find(a => {
+                    if (a.id === allocation.id) return false
+                    if (normalizeTeacherName(a.teacher_name) !== normalizeTeacherName(faculty.full_name)) return false
+                    if (normalizeDayLabel(a.schedule_day) !== normalizeDayLabel(allocation.schedule_day)) return false
+                    return hasTimeOverlap(a.schedule_time, allocation.schedule_time)
+                  })
 
                   return (
                     <div key={faculty.id} className={styles.facultyItemWrapper}>

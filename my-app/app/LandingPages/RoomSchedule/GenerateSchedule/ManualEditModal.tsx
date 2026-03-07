@@ -962,21 +962,32 @@ export default function ManualEditModal({
             return Number.isFinite(num) ? num : undefined
         }
 
-        const allocationSlots: AllocationSlot[] = allocations.map(existing => ({
-            id: normalizeId(existing.id ?? existing.class_id) || 0,
-            schedule_id: Number(existing.schedule_id || 0),
-            room: String(existing.room || ''),
-            building: String(existing.building || ''),
-            section: String(existing.section || ''),
-            teacher_name: String(existing.teacher_name || ''),
-            schedule_day: String(existing.schedule_day || existing.day || ''),
-            schedule_time: String(existing.schedule_time || ''),
-            course_code: String(existing.course_code || ''),
-            capacity: Number(existing.capacity || 0),
-            student_count: Number(existing.student_count || 0),
-            college: String(existing.college || ''),
-            room_college: String(existing.room_college || ''),
-        }))
+        // Filter self by raw identifier first so string/UUID ids never self-conflict.
+        const ignoreIdRaw = ignoreSelfId === undefined || ignoreSelfId === null
+            ? null
+            : String(ignoreSelfId)
+
+        const allocationSlots: AllocationSlot[] = allocations
+            .filter(existing => {
+                if (ignoreIdRaw === null) return true
+                const existingRaw = existing.id ?? existing.class_id
+                return String(existingRaw) !== ignoreIdRaw
+            })
+            .map(existing => ({
+                id: normalizeId(existing.id ?? existing.class_id) || 0,
+                schedule_id: Number(existing.schedule_id || 0),
+                room: String(existing.room || ''),
+                building: String(existing.building || ''),
+                section: String(existing.section || ''),
+                teacher_name: String(existing.teacher_name || ''),
+                schedule_day: String(existing.schedule_day || existing.day || ''),
+                schedule_time: String(existing.schedule_time || ''),
+                course_code: String(existing.course_code || ''),
+                capacity: Number(existing.capacity || 0),
+                student_count: Number(existing.student_count || 0),
+                college: String(existing.college || ''),
+                room_college: String(existing.room_college || ''),
+            }))
 
         const targetRoomName = String(room?.room || newAlloc.room || '')
         const conflictBuckets = checkAllConflicts(
@@ -1430,20 +1441,35 @@ export default function ManualEditModal({
             section
         };
 
+        const selectedTeacher = viewMode === 'faculty'
+            ? String(activeItem || '').trim()
+            : String(newAlloc.teacher_name || baseClass.teacher_name || '').trim()
+
+        let previewRoom: any = null
         if (viewMode === 'room') {
-            newAlloc.room_id = (activeItem as any)?.id;
-            newAlloc.room = (activeItem as any)?.room;
+            previewRoom = activeItem as any
+        } else {
+            previewRoom = findOptimalRoom(baseClass, component, day, slot, durationMins, draggedAllocId)
+        }
+
+        if (!previewRoom) return null
+
+        newAlloc.room_id = previewRoom.id
+        newAlloc.room = previewRoom.room
+        newAlloc.campus = previewRoom.campus
+        newAlloc.building = previewRoom.building
+        newAlloc.teacher_name = selectedTeacher
+
+        if (viewMode === 'room') {
+            // Keep section/faculty from dragged class/allocation context in room view.
         } else if (viewMode === 'faculty') {
             newAlloc.teacher_name = activeItem as string;
-            // Need a room - use first available or previous
-            newAlloc.room_id = rooms[0]?.id;
         } else if (viewMode === 'section') {
             newAlloc.section = activeItem as string;
-            newAlloc.room_id = rooms[0]?.id;
         }
 
         return newAlloc;
-    }, [draggedClassId, draggedAllocId, draggingComponent, allocations, classes, timeSlots, viewMode, activeItem, rooms]);
+    }, [draggedClassId, draggedAllocId, draggingComponent, allocations, classes, timeSlots, viewMode, activeItem, findOptimalRoom]);
 
     const getDraggedDuration = useCallback(() => {
         if (!draggedClassId && !draggedAllocId) return 0;

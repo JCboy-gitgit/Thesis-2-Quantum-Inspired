@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { MdClose as X, MdCheck as Check, MdError as AlertCircle, MdLoop as Loader2, MdWarning as AlertTriangle, MdSearch as Search, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowUp as ChevronUp, MdFlashOn as Zap, MdShield as Shield, MdStar as Star, MdLocationOn as MapPin, MdMonitor as Monitor, MdReplay as RotateCcw, MdCheckCircle as CheckCircle } from 'react-icons/md'
 import styles from './RoomReassignmentModal.module.css'
+import { parseScheduleTime, timeRangesOverlap } from '@/lib/conflictChecker'
 
 interface Room {
   id: number
@@ -67,6 +68,15 @@ interface RoomReassignmentModalProps {
   allAllocations: RoomAllocation[]
   courseRequirements?: CourseRequirement[]
   roomEquipment?: Map<number, RoomEquipment[]>
+}
+
+const normalizeDayLabel = (day?: string) => String(day || '').trim().toLowerCase()
+
+const hasTimeOverlap = (left?: string, right?: string) => {
+  const leftRange = parseScheduleTime(String(left || ''))
+  const rightRange = parseScheduleTime(String(right || ''))
+  if (leftRange && rightRange) return timeRangesOverlap(leftRange, rightRange)
+  return String(left || '').trim() === String(right || '').trim()
 }
 
 export default function RoomReassignmentModal({
@@ -158,10 +168,14 @@ export default function RoomReassignmentModal({
 
   useEffect(() => {
     if (!selectedRoom || !allocation) { setHasConflict(false); setConflictDetails(''); return }
-    const conflict = allAllocations.find(a =>
-      a.id !== allocation.id && a.room === selectedRoom.room && a.building === selectedRoom.building &&
-      a.schedule_day === allocation.schedule_day && a.schedule_time === allocation.schedule_time
-    )
+    const targetDay = normalizeDayLabel(allocation.schedule_day)
+    const conflict = allAllocations.find(a => {
+      if (a.id === allocation.id) return false
+      if (a.room !== selectedRoom.room || a.building !== selectedRoom.building) return false
+      if (normalizeDayLabel(a.schedule_day) !== targetDay) return false
+      return hasTimeOverlap(a.schedule_time, allocation.schedule_time)
+    })
+
     if (conflict) {
       setHasConflict(true)
       setConflictDetails(`${conflict.course_code} (${conflict.section}) is already in ${selectedRoom.room} at ${allocation.schedule_time} on ${allocation.schedule_day}`)
@@ -216,10 +230,14 @@ export default function RoomReassignmentModal({
     const conflicts = new Map<number, RoomAllocation | null>()
     allRooms.forEach(room => {
       if (!allocation) { conflicts.set(room.id, null); return }
-      const c = allAllocations.find(a =>
-        a.id !== allocation.id && a.room === room.room && a.building === room.building &&
-        a.schedule_day === allocation.schedule_day && a.schedule_time === allocation.schedule_time
-      )
+      const targetDay = normalizeDayLabel(allocation.schedule_day)
+      const c = allAllocations.find(a => {
+        if (a.id === allocation.id) return false
+        if (a.room !== room.room || a.building !== room.building) return false
+        if (normalizeDayLabel(a.schedule_day) !== targetDay) return false
+        return hasTimeOverlap(a.schedule_time, allocation.schedule_time)
+      })
+
       conflicts.set(room.id, c || null)
     })
     return conflicts
