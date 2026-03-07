@@ -141,6 +141,34 @@ interface TimetableCell {
 
 type SectionGroup = 'G1' | 'G2'
 
+const normalizeCollegeValue = (value: unknown): string => String(value || '').trim().toUpperCase()
+
+const isCollegeUnsetValue = (value: unknown): boolean => {
+  const normalized = normalizeCollegeValue(value)
+  return (
+    !normalized ||
+    normalized === 'UNASSIGNED COLLEGE' ||
+    normalized === 'UNASSIGNED' ||
+    normalized === 'N/A' ||
+    normalized === 'NA' ||
+    normalized === 'NONE' ||
+    normalized === 'NULL'
+  )
+}
+
+const isSharedCollegeValue = (value: unknown): boolean => normalizeCollegeValue(value) === 'SHARED'
+
+const areCollegesCompatible = (classCollege: unknown, targetCollege: unknown): boolean => {
+  const normalizedClassCollege = normalizeCollegeValue(classCollege)
+  const normalizedTargetCollege = normalizeCollegeValue(targetCollege)
+
+  if (!normalizedClassCollege || !normalizedTargetCollege) return true
+  if (isCollegeUnsetValue(normalizedClassCollege) || isCollegeUnsetValue(normalizedTargetCollege)) return true
+  if (isSharedCollegeValue(normalizedClassCollege) || isSharedCollegeValue(normalizedTargetCollege)) return true
+
+  return normalizedClassCollege === normalizedTargetCollege
+}
+
 const normalizeSectionBase = (section: string): string => {
   if (!section) return ''
   return section
@@ -356,6 +384,7 @@ export default function ViewSchedulePage() {
   const [filterRoom, setFilterRoom] = useState<string>('all')
   const [filterDay, setFilterDay] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   // Timetable data
   const [timeSlots, setTimeSlots] = useState<string[]>([])
@@ -414,6 +443,15 @@ export default function ViewSchedulePage() {
   // Auth state to prevent rendering before auth check completes
   const [authChecked, setAuthChecked] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
+
+  const activeAdvancedFilterCount = useMemo(() => {
+    let count = 0
+    if (filterCollege !== 'all') count += 1
+    if (filterBuilding !== 'all') count += 1
+    if (filterRoom !== 'all') count += 1
+    if (filterDay !== 'all') count += 1
+    return count
+  }, [filterCollege, filterBuilding, filterRoom, filterDay])
 
   useEffect(() => {
     let isMounted = true
@@ -2535,6 +2573,20 @@ export default function ViewSchedulePage() {
     if (!selectedAllocation || !selectedSchedule) return
 
     try {
+      const { data: roomData, error: roomLookupError } = await db
+        .from('campuses')
+        .select('college, room, building')
+        .eq('id', newRoomId)
+        .single()
+
+      if (roomLookupError) throw roomLookupError
+
+      if (!areCollegesCompatible(selectedAllocation.college, roomData?.college)) {
+        const classCollege = selectedAllocation.college || 'Unassigned College'
+        const roomCollege = roomData?.college || 'Unassigned College'
+        throw new Error(`College mismatch: class college (${classCollege}) must match room college (${roomCollege}).`)
+      }
+
       const { error } = await db
         .from('room_allocations')
         .update({
@@ -2567,6 +2619,20 @@ export default function ViewSchedulePage() {
     if (!selectedAllocation || !selectedSchedule) return
 
     try {
+      const { data: facultyData, error: facultyLookupError } = await db
+        .from('faculty_profiles')
+        .select('college, full_name')
+        .eq('id', facultyId)
+        .single()
+
+      if (facultyLookupError) throw facultyLookupError
+
+      if (!areCollegesCompatible(selectedAllocation.college, facultyData?.college)) {
+        const classCollege = selectedAllocation.college || 'Unassigned College'
+        const facultyCollege = facultyData?.college || 'Unassigned College'
+        throw new Error(`College mismatch: class college (${classCollege}) must match faculty college (${facultyCollege}).`)
+      }
+
       const { error } = await db
         .from('room_allocations')
         .update({
@@ -2654,7 +2720,7 @@ export default function ViewSchedulePage() {
       <main className={`${styles.qtimeMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
         <div className={styles.qtimeContainer}>
           {/* Header */}
-          <div className={styles.pageHeader}>
+          <div className={styles.pageHeader} id="view-page-header">
             <button
               className={styles.backButton}
               onClick={handleBackNavigation}
@@ -2667,6 +2733,7 @@ export default function ViewSchedulePage() {
             {selectedSchedule && (
               <div className={styles.headerActions}>
                 <button
+                  id="view-review-requests-btn"
                   className={styles.actionButton}
                   onClick={() => { window.scrollTo(0, 0); setIsRequestsModalOpen(true); }}
                   title="Review Schedule Change Requests"
@@ -2674,12 +2741,12 @@ export default function ViewSchedulePage() {
                   <MdMessage size={18} />
                   Review Requests
                 </button>
-                <div className={styles.exportDropdown}>
-                  <button className={styles.actionButton} onClick={() => setShowExportMenu(!showExportMenu)}>
+                <div className={styles.exportDropdown} id="view-export-controls">
+                  <button id="view-export-pdf-btn" className={styles.actionButton} onClick={() => setShowExportMenu(!showExportMenu)}>
                     <MdDownload size={18} /> Export PDF <MdKeyboardArrowDown size={14} />
                   </button>
                   {showExportMenu && (
-                    <div className={styles.exportMenu}>
+                    <div className={styles.exportMenu} id="view-export-menu">
                       <button onClick={() => { handleExportPDF('current'); setShowExportMenu(false); }}>
                         <MdVisibility size={14} /> Current View
                       </button>
@@ -2698,7 +2765,7 @@ export default function ViewSchedulePage() {
                     </div>
                   )}
                 </div>
-                <button className={styles.actionButton} onClick={handleExport}>
+                <button id="view-export-csv-btn" className={styles.actionButton} onClick={handleExport}>
                   <MdDownload size={18} /> Export CSV
                 </button>
               </div>
@@ -2752,7 +2819,7 @@ export default function ViewSchedulePage() {
           {authChecked && isAuthorized && !loading && !selectedSchedule && schedules.length > 0 && (
             <>
               {/* History Controls */}
-              <div className={styles.historyControls}>
+              <div className={styles.historyControls} id="view-history-controls">
                 <div className={styles.historySearchGroup}>
                   <MdSearch size={18} className={styles.searchIcon} />
                   <input
@@ -2804,8 +2871,8 @@ export default function ViewSchedulePage() {
                   <p>Try adjusting your search criteria.</p>
                 </div>
               ) : (
-                <div className={styles.schedulesGrid}>
-                  {filteredSchedules.map((schedule) => (
+                <div className={styles.schedulesGrid} id="view-schedule-card-grid">
+                  {filteredSchedules.map((schedule, index) => (
                     <div key={schedule.id} className={styles.scheduleCard}>
                       <button
                         className={styles.deleteIconButton}
@@ -2902,6 +2969,7 @@ export default function ViewSchedulePage() {
 
                       <div className={styles.scheduleActions}>
                         <button
+                          id={index === 0 ? 'view-open-first-schedule-btn' : undefined}
                           className={styles.viewButton}
                           onClick={() => handleSelectSchedule(schedule)}
                         >
@@ -2927,9 +2995,9 @@ export default function ViewSchedulePage() {
 
           {/* Timetable View */}
           {selectedSchedule && (
-            <div className={styles.timetableSection}>
+            <div className={styles.timetableSection} id="view-schedule-workspace">
               {/* Schedule Info Header */}
-              <div className={styles.scheduleInfoHeader}>
+              <div className={styles.scheduleInfoHeader} id="view-schedule-header">
                 <div className={styles.scheduleInfoMain}>
                   <h2>{selectedSchedule.schedule_name}</h2>
                   <p>{selectedSchedule.school_name} • {selectedSchedule.college}</p>
@@ -2957,6 +3025,7 @@ export default function ViewSchedulePage() {
                     <span className={styles.statText}>Unscheduled Allocations</span>
                   </div>
                   <button
+                    id="view-assign-to-faculty-btn"
                     className={styles.assignFacultyBtn}
                     onClick={handleOpenFacultyAssignModal}
                     title="Assign this schedule as default for faculty members"
@@ -2966,6 +3035,7 @@ export default function ViewSchedulePage() {
 
 
                   <button
+                    id="view-schedule-lock-btn"
                     className={`${styles.lockScheduleBtn} ${selectedSchedule.is_locked ? styles.locked : ''}`}
                     onClick={async () => {
                       if (!selectedSchedule) return
@@ -3010,40 +3080,46 @@ export default function ViewSchedulePage() {
               </div>
 
               {/* View Mode Selector */}
-              <div className={styles.viewModeSection}>
+              <div className={styles.viewModeSection} id="view-mode-section">
                 <div className={styles.viewModeLabel}>View Timetable By:</div>
-                <div className={styles.viewModeButtons}>
+                <div className={styles.viewModeButtons} id="view-mode-buttons">
                   <button
+                    id="view-mode-all-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'all' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('all'); setSelectedRoom('all'); setSelectedSection('all'); setSelectedTeacher('all'); setSelectedCourse('all'); setSelectedCollege('all'); }}
                   >
                     <MdGridView size={16} /> All
                   </button>
                   <button
+                    id="view-mode-room-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'room' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('room'); }}
                   >
                     <MdMeetingRoom size={16} /> By Room
                   </button>
                   <button
+                    id="view-mode-section-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'section' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('section'); }}
                   >
                     <MdGroup size={16} /> By Section
                   </button>
                   <button
+                    id="view-mode-teacher-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'teacher' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('teacher'); }}
                   >
                     <FaChalkboardTeacher /> By Teacher
                   </button>
                   <button
+                    id="view-mode-course-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'course' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('course'); }}
                   >
                     <MdMenuBook size={16} /> By Course
                   </button>
                   <button
+                    id="view-mode-college-btn"
                     className={`${styles.viewModeButton} ${timetableViewMode === 'college' ? styles.active : ''}`}
                     onClick={() => { window.scrollTo(0, 0); setTimetableViewMode('college'); }}
                   >
@@ -3225,77 +3301,118 @@ export default function ViewSchedulePage() {
               </div>
 
               {/* Filters */}
-              <div className={styles.filtersBar}>
-                <div className={styles.filterGroup}>
-                  <label>College</label>
-                  <select
-                    value={filterCollege}
-                    onChange={(e) => setFilterCollege(e.target.value)}
-                    className={styles.filterSelect}
+              <div className={styles.filtersBar} id="view-filters-bar">
+                <div className={styles.filtersTopRow}>
+                  <div className={styles.searchGroup} id="view-search-filter-group">
+                    <MdSearch size={18} className={styles.searchIcon} />
+                    <input
+                      type="text"
+                      placeholder="Search course, section, room..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={styles.searchInput}
+                    />
+                    {searchQuery && (
+                      <button
+                        className={styles.clearSearch}
+                        onClick={() => setSearchQuery('')}
+                      >
+                        <MdClose size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    id="view-more-options-btn"
+                    type="button"
+                    className={styles.moreOptionsButton}
+                    onClick={() => setShowAdvancedFilters(prev => !prev)}
+                    aria-expanded={showAdvancedFilters}
+                    aria-controls="advanced-schedule-filters"
                   >
-                    <option value="all">All Colleges</option>
-                    {colleges.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    <span className={styles.moreOptionsLeft}>
+                      <FaFilter size={14} />
+                      {showAdvancedFilters ? 'Hide Options' : 'More Options'}
+                    </span>
+                    <span className={styles.moreOptionsRight}>
+                      {activeAdvancedFilterCount > 0 && (
+                        <span className={styles.activeFilterBadge}>{activeAdvancedFilterCount}</span>
+                      )}
+                      {showAdvancedFilters ? <MdKeyboardArrowDown size={18} /> : <MdKeyboardArrowRight size={18} />}
+                    </span>
+                  </button>
                 </div>
-                <div className={styles.filterGroup}>
-                  <label>Building</label>
-                  <select
-                    value={filterBuilding}
-                    onChange={(e) => setFilterBuilding(e.target.value)}
-                    className={styles.filterSelect}
-                  >
-                    <option value="all">All Buildings</option>
-                    {buildings.map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.filterGroup}>
-                  <label>Room</label>
-                  <select
-                    value={filterRoom}
-                    onChange={(e) => setFilterRoom(e.target.value)}
-                    className={styles.filterSelect}
-                  >
-                    <option value="all">All Rooms{filterBuilding !== 'all' ? ` in ${filterBuilding}` : ''}</option>
-                    {filteredRooms.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.filterGroup}>
-                  <label>Day</label>
-                  <select
-                    value={filterDay}
-                    onChange={(e) => setFilterDay(e.target.value)}
-                    className={styles.filterSelect}
-                  >
-                    <option value="all">All Days</option>
-                    {DAYS.map(d => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.searchGroup}>
-                  <MdSearch size={18} className={styles.searchIcon} />
-                  <input
-                    type="text"
-                    placeholder="Search course, section, room..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className={styles.searchInput}
-                  />
-                  {searchQuery && (
+
+                {showAdvancedFilters && (
+                  <div id="advanced-schedule-filters" className={styles.advancedFiltersGrid}>
+                    <div className={styles.filterGroup}>
+                      <label>College</label>
+                      <select
+                        value={filterCollege}
+                        onChange={(e) => setFilterCollege(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Colleges</option>
+                        {colleges.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.filterGroup}>
+                      <label>Building</label>
+                      <select
+                        value={filterBuilding}
+                        onChange={(e) => setFilterBuilding(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Buildings</option>
+                        {buildings.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.filterGroup}>
+                      <label>Room</label>
+                      <select
+                        value={filterRoom}
+                        onChange={(e) => setFilterRoom(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Rooms{filterBuilding !== 'all' ? ` in ${filterBuilding}` : ''}</option>
+                        {filteredRooms.map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.filterGroup}>
+                      <label>Day</label>
+                      <select
+                        value={filterDay}
+                        onChange={(e) => setFilterDay(e.target.value)}
+                        className={styles.filterSelect}
+                      >
+                        <option value="all">All Days</option>
+                        {DAYS.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <button
-                      className={styles.clearSearch}
-                      onClick={() => setSearchQuery('')}
+                      type="button"
+                      className={styles.resetFiltersButton}
+                      onClick={() => {
+                        setFilterCollege('all')
+                        setFilterBuilding('all')
+                        setFilterRoom('all')
+                        setFilterDay('all')
+                      }}
                     >
-                      <MdClose size={16} />
+                      <MdRefresh size={14} />
+                      Reset Advanced Filters
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Loading Details */}
@@ -3313,9 +3430,9 @@ export default function ViewSchedulePage() {
               ) : (
                 <>
                   {/* Timetable View */}
-                  <div className={styles.timetableWrapper} ref={timetableRef}>
+                  <div className={styles.timetableWrapper} ref={timetableRef} id="view-timetable-wrapper">
                     {/* Timetable Title with Navigation */}
-                    <div className={styles.timetableTitle}>
+                    <div className={styles.timetableTitle} id="view-timetable-title">
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div>
                           <h3>
@@ -3337,6 +3454,7 @@ export default function ViewSchedulePage() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <button
+                            id="view-manual-place-btn"
                             className={styles.actionButton}
                             onClick={handleOpenManualEdit}
                             disabled={!selectedSchedule || loadingManualEditData}
@@ -3350,7 +3468,7 @@ export default function ViewSchedulePage() {
                         </div>
                       </div>
                     </div>
-                    <div className={styles.timetableContainer}>
+                    <div className={styles.timetableContainer} id="view-draggable-timetable">
                       <DraggableTimetable
                         allocations={displayAllocations}
                         allAllocations={allocations}
@@ -3519,8 +3637,8 @@ export default function ViewSchedulePage() {
 
         {/* Batch Faculty Assignment Modal */}
         {showBatchFacultyModal && selectedSchedule && (
-          <div className={styles.batchModalOverlay} onClick={() => setShowBatchFacultyModal(false)}>
-            <div className={styles.batchModalContent} onClick={e => e.stopPropagation()}>
+          <div id="view-batch-faculty-modal-overlay" className={styles.batchModalOverlay} onClick={() => setShowBatchFacultyModal(false)}>
+            <div id="view-batch-faculty-modal" className={styles.batchModalContent} onClick={e => e.stopPropagation()}>
               <div className={styles.batchModalHeader}>
                 <div>
                   <h2>Assign Schedule to Faculty</h2>
@@ -3528,7 +3646,7 @@ export default function ViewSchedulePage() {
                     Set &ldquo;{selectedSchedule.schedule_name}&rdquo; as the default schedule for selected faculty members
                   </p>
                 </div>
-                <button className={styles.batchModalClose} onClick={() => setShowBatchFacultyModal(false)}>
+                <button id="view-batch-faculty-modal-close-btn" className={styles.batchModalClose} onClick={() => setShowBatchFacultyModal(false)}>
                   <MdClose size={20} />
                 </button>
               </div>

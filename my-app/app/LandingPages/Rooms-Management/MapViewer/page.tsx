@@ -553,15 +553,20 @@ export default function MapViewerPage() {
   }, [pointerDragActive, updateDragGhostFromPointer, placeDraggedItem])
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [roomFilterMode, setRoomFilterMode] = useState<'all' | 'placed' | 'unplaced'>('all')
   const [showIconPicker, setShowIconPicker] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [showLoadModal, setShowLoadModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false)
+  const [isFocusMode, setIsFocusMode] = useState(false)
   const [liveRoomModalRoom, setLiveRoomModalRoom] = useState<Room | null>(null)
   const [showAdminActionsMenu, setShowAdminActionsMenu] = useState(false)
   const [adminMenuPosition, setAdminMenuPosition] = useState({ top: 0, left: 0 })
   const [showExportPreview, setShowExportPreview] = useState(false)
   const [isDraggingExportMap, setIsDraggingExportMap] = useState(false)
+  const roomSearchInputRef = useRef<HTMLInputElement>(null)
+  const focusPanelStateRef = useRef({ left: true, right: true })
   const adminActionsRef = useRef<HTMLDivElement>(null)
   const adminActionsButtonRef = useRef<HTMLButtonElement>(null)
   const exportCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -810,6 +815,26 @@ export default function MapViewerPage() {
     notificationTimerRef.current = setTimeout(() => setNotification(null), 3000)
   }
 
+  const toggleFocusMode = useCallback(() => {
+    if (isMobile) return
+
+    setIsFocusMode(prev => {
+      if (prev) {
+        setLeftPanelOpen(focusPanelStateRef.current.left)
+        setRightPanelOpen(focusPanelStateRef.current.right)
+        return false
+      }
+
+      focusPanelStateRef.current = {
+        left: leftPanelOpenRef.current,
+        right: rightPanelOpenRef.current
+      }
+      setLeftPanelOpen(false)
+      setRightPanelOpen(false)
+      return true
+    })
+  }, [isMobile])
+
   // Track whether panels were open before mobile collapse
   const panelsBeforeMobileRef = useRef({ left: true, right: true })
 
@@ -895,28 +920,42 @@ export default function MapViewerPage() {
     }
   }, [viewMode, currentFloorPlan?.id])
 
+  useEffect(() => {
+    if (isMobile && isFocusMode) {
+      setIsFocusMode(false)
+    }
+  }, [isMobile, isFocusMode])
+
+  const fitCanvasToViewport = useCallback(() => {
+    const container = canvasContainerRef.current
+    if (!container) return
+
+    const padding = 80
+    const availW = container.clientWidth - padding
+    const availH = container.clientHeight - padding
+    if (availW <= 0 || availH <= 0) return
+
+    const scaleX = (availW / canvasSize.width) * 100
+    const scaleY = (availH / canvasSize.height) * 100
+    const best = Math.min(scaleX, scaleY, 100)
+    setZoom(Math.max(25, Math.round(best / 25) * 25))
+  }, [canvasSize.height, canvasSize.width])
+
   // Auto-fit zoom: calculate best zoom to fit canvas in viewport on mount/resize
   useEffect(() => {
     const container = canvasContainerRef.current
     if (!container) return
-    const fitZoom = () => {
-      const padding = 80 // 40px on each side
-      const availW = container.clientWidth - padding
-      const availH = container.clientHeight - padding
-      if (availW <= 0 || availH <= 0) return
-      const scaleX = (availW / canvasSize.width) * 100
-      const scaleY = (availH / canvasSize.height) * 100
-      const best = Math.min(scaleX, scaleY, 100) // never exceed 100%
-      // Only set zoom initially if it hasn't been set by user
-      if (zoom === 75) {
-        setZoom(Math.max(25, Math.round(best / 25) * 25))
-      }
-    }
+
     // Run once after a short delay so the container has its real size
-    const timer = setTimeout(fitZoom, 200)
+    const timer = setTimeout(() => {
+      if (zoom === 75) {
+        fitCanvasToViewport()
+      }
+    }, 200)
+
     // Only run on mount, don't observe resize to avoid resetting user zoom
     return () => { clearTimeout(timer) }
-  }, []) // Empty dependency array to run only once on mount
+  }, [fitCanvasToViewport, zoom])
 
   // Ctrl+Scroll wheel zoom on canvas container
   useEffect(() => {
@@ -2166,6 +2205,9 @@ export default function MapViewerPage() {
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault()
         redo()
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault()
+        fitCanvasToViewport()
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
         if (viewMode === 'editor') {
           e.preventDefault()
@@ -2186,11 +2228,24 @@ export default function MapViewerPage() {
           e.preventDefault()
           deleteSelectedElements()
         }
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (viewMode === 'editor') {
+          e.preventDefault()
+          toggleFocusMode()
+        }
+      } else if (e.key === '/' && viewMode === 'editor') {
+        e.preventDefault()
+        setLeftPanelOpen(true)
+        setSectionsOpen(prev => ({ ...prev, roomsZones: true }))
+        setTimeout(() => roomSearchInputRef.current?.focus(), 0)
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcutsModal(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undo, redo, selectedElement, selectedElements, viewMode, copySelectedElements, pasteClipboardElements, duplicateSelectedElements])
+  }, [undo, redo, fitCanvasToViewport, selectedElement, selectedElements, viewMode, copySelectedElements, pasteClipboardElements, duplicateSelectedElements, toggleFocusMode])
 
   const groupSelectedElements = () => {
     if (selectedElements.length < 2) {
@@ -3500,12 +3555,35 @@ export default function MapViewerPage() {
     setShowShareModal(true)
   }
 
+  const placedRoomIds = useMemo(() => {
+    return new Set(
+      canvasElements
+        .filter(el => typeof el.linkedRoomId === 'number')
+        .map(el => el.linkedRoomId as number)
+    )
+  }, [canvasElements])
+
+  const roomStats = useMemo(() => {
+    const total = allRooms.length
+    const placed = allRooms.reduce((count, room) => count + (placedRoomIds.has(room.id) ? 1 : 0), 0)
+    const unplaced = Math.max(0, total - placed)
+    return { total, placed, unplaced }
+  }, [allRooms, placedRoomIds])
+
   // Filter rooms in toolbox (memoised so we don't re-filter on every render)
-  const filteredRooms = useMemo(() => allRooms.filter(room =>
-    !searchQuery ||
-    room.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.room_code?.toLowerCase().includes(searchQuery.toLowerCase())
-  ), [allRooms, searchQuery])
+  const filteredRooms = useMemo(() => allRooms.filter(room => {
+    const matchesSearch =
+      !searchQuery ||
+      room.room?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.room_code?.toLowerCase().includes(searchQuery.toLowerCase())
+
+    if (!matchesSearch) return false
+
+    const onCanvas = placedRoomIds.has(room.id)
+    if (roomFilterMode === 'placed') return onCanvas
+    if (roomFilterMode === 'unplaced') return !onCanvas
+    return true
+  }), [allRooms, searchQuery, roomFilterMode, placedRoomIds])
 
   const exportLayerItems = useMemo(() => (
     [...canvasElements]
@@ -3653,6 +3731,22 @@ export default function MapViewerPage() {
           <div className={styles.headerRight}>
             {!isMobile && (
               <>
+                {viewMode === 'editor' && (
+                  <button
+                    className={`${styles.loadBtn} ${isFocusMode ? styles.focusModeBtnActive : ''}`}
+                    onClick={toggleFocusMode}
+                    title={isFocusMode ? 'Exit Focus Mode (F)' : 'Enter Focus Mode (F)'}
+                  >
+                    <Monitor size={18} />
+                  </button>
+                )}
+                <button
+                  className={styles.loadBtn}
+                  onClick={() => setShowShortcutsModal(true)}
+                  title="Keyboard shortcuts (?)"
+                >
+                  <Info size={18} />
+                </button>
                 <button
                   className={styles.loadBtn}
                   onClick={() => setLeftPanelOpen(!leftPanelOpen)}
@@ -3814,6 +3908,30 @@ export default function MapViewerPage() {
                       <h3>TOOLBOX</h3>
                     </div>
                     <div className={styles.toolboxContent}>
+                      <div className={styles.toolboxStatusRow}>
+                        <button
+                          className={`${styles.statusPill} ${roomFilterMode === 'all' ? styles.active : ''}`}
+                          onClick={() => setRoomFilterMode('all')}
+                          title="Show all rooms"
+                        >
+                          All {roomStats.total}
+                        </button>
+                        <button
+                          className={`${styles.statusPill} ${roomFilterMode === 'placed' ? styles.active : ''}`}
+                          onClick={() => setRoomFilterMode('placed')}
+                          title="Show rooms already on canvas"
+                        >
+                          Placed {roomStats.placed}
+                        </button>
+                        <button
+                          className={`${styles.statusPill} ${roomFilterMode === 'unplaced' ? styles.active : ''}`}
+                          onClick={() => setRoomFilterMode('unplaced')}
+                          title="Show rooms not yet placed"
+                        >
+                          Missing {roomStats.unplaced}
+                        </button>
+                      </div>
+
                       {/* Toolbox Content - Show if not mobile OR if mobile and active panel is toolbox */}
                       {(!isMobile || activeMobilePanel === 'toolbox') && (
                         <>
@@ -3832,6 +3950,7 @@ export default function MapViewerPage() {
                                 <div className={styles.searchBox}>
                                   <Search size={16} />
                                   <input
+                                    ref={roomSearchInputRef}
                                     type="text"
                                     placeholder="Search rooms..."
                                     value={searchQuery}
@@ -4506,6 +4625,9 @@ export default function MapViewerPage() {
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); setZoom(100); }} title="Reset zoom">
                   <Maximize2 size={16} />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); fitCanvasToViewport(); }} title="Fit to view (Ctrl+0)">
+                  <LayoutGrid size={16} />
                 </button>
               </div>
 
@@ -6081,6 +6203,38 @@ export default function MapViewerPage() {
           </div>
         )
       }
+
+      {showShortcutsModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowShortcutsModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2><Info size={20} /> Keyboard Shortcuts</h2>
+              <button onClick={() => setShowShortcutsModal(false)}><X size={20} /></button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.shortcutGrid}>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + Z</kbd><span>Undo</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + Y</kbd><span>Redo</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + C</kbd><span>Copy selected element(s)</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + V</kbd><span>Paste copied element(s)</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + D</kbd><span>Duplicate selected element(s)</span></div>
+                <div className={styles.shortcutItem}><kbd>Delete</kbd><span>Remove selected element(s)</span></div>
+                <div className={styles.shortcutItem}><kbd>/</kbd><span>Focus room search</span></div>
+                <div className={styles.shortcutItem}><kbd>F</kbd><span>Toggle focus mode</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + 0</kbd><span>Fit canvas to viewport</span></div>
+                <div className={styles.shortcutItem}><kbd>Ctrl/Cmd + Scroll</kbd><span>Smooth zoom</span></div>
+                <div className={styles.shortcutItem}><kbd>Space</kbd><span>Hold to pan</span></div>
+                <div className={styles.shortcutItem}><kbd>?</kbd><span>Open shortcuts</span></div>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setShowShortcutsModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Floating Action Buttons - shown in all view modes */}
       {

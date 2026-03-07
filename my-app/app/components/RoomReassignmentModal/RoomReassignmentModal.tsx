@@ -79,6 +79,34 @@ const hasTimeOverlap = (left?: string, right?: string) => {
   return String(left || '').trim() === String(right || '').trim()
 }
 
+const normalizeCollegeValue = (value: unknown) => String(value || '').trim().toUpperCase()
+
+const isCollegeUnsetValue = (value: unknown) => {
+  const normalized = normalizeCollegeValue(value)
+  return (
+    !normalized ||
+    normalized === 'UNASSIGNED COLLEGE' ||
+    normalized === 'UNASSIGNED' ||
+    normalized === 'N/A' ||
+    normalized === 'NA' ||
+    normalized === 'NONE' ||
+    normalized === 'NULL'
+  )
+}
+
+const isSharedCollegeValue = (value: unknown) => normalizeCollegeValue(value) === 'SHARED'
+
+const areCollegesCompatible = (classCollege: unknown, roomCollege: unknown) => {
+  const normalizedClassCollege = normalizeCollegeValue(classCollege)
+  const normalizedRoomCollege = normalizeCollegeValue(roomCollege)
+
+  if (!normalizedClassCollege || !normalizedRoomCollege) return true
+  if (isCollegeUnsetValue(normalizedClassCollege) || isCollegeUnsetValue(normalizedRoomCollege)) return true
+  if (isSharedCollegeValue(normalizedClassCollege) || isSharedCollegeValue(normalizedRoomCollege)) return true
+
+  return normalizedClassCollege === normalizedRoomCollege
+}
+
 export default function RoomReassignmentModal({
   isOpen,
   allocation,
@@ -182,23 +210,14 @@ export default function RoomReassignmentModal({
     } else { setHasConflict(false); setConflictDetails('') }
   }, [selectedRoom, allocation, allAllocations])
 
-  // NEW: Check for College Mismatch
+  // Hard college compatibility enforcement for selected room.
   const collegeMismatchWarning = useMemo(() => {
     if (!selectedRoom || !allocation) return null
 
-    // Normalize logic
-    const roomCollege = (selectedRoom.college || '').trim().toUpperCase()
-    const sectionCollege = (allocation.college || '').trim().toUpperCase()
-
-    // If room is Shared, no warning
-    if (roomCollege === 'SHARED' || !roomCollege) return null
-
-    // If section has no college, no warning
-    if (!sectionCollege) return null
-
-    if (roomCollege !== sectionCollege) {
+    if (!areCollegesCompatible(allocation.college, selectedRoom.college)) {
       return `Warning: This room belongs to ${selectedRoom.college}, but the class is from ${allocation.college}.`
     }
+
     return null
   }, [selectedRoom, allocation])
 
@@ -284,7 +303,7 @@ export default function RoomReassignmentModal({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+      <div id="view-room-reassign-modal" className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.headerLeft}>
             <h2>Reassign Room</h2>
@@ -292,7 +311,7 @@ export default function RoomReassignmentModal({
               {allocation.course_code} &bull; {allocation.section} &bull; {allocation.schedule_day} {allocation.schedule_time}
             </span>
           </div>
-          <button className={styles.closeButton} onClick={onClose} disabled={loading}><X size={20} /></button>
+          <button id="view-room-reassign-close-btn" className={styles.closeButton} onClick={onClose} disabled={loading}><X size={20} /></button>
         </div>
 
         <div className={styles.modalBody}>
@@ -322,7 +341,7 @@ export default function RoomReassignmentModal({
             </div>
           )}
 
-          <div className={styles.roomSelection}>
+          <div className={styles.roomSelection} id="view-room-reassign-list">
             <h3>Select New Room</h3>
             <div className={styles.filterBar}>
               <div className={styles.searchBox}>
@@ -356,17 +375,19 @@ export default function RoomReassignmentModal({
                   const features = roomFeatures.get(room.id) || []
                   const isExpanded = expandedRoom === room.id
                   const isIncompatible = scoreData && scoreData.total > 0 ? scoreData.missingMandatory.length > 0 : false
+                  const hasCollegeMismatch = !areCollegesCompatible(allocation.college, room.college)
                   return (
                     <div key={room.id} className={styles.roomItemWrapper}>
                       <div
-                        className={`${styles.roomOption} ${selectedRoom?.id === room.id ? styles.selected : ''} ${conflict ? styles.hasConflict : ''} ${isIncompatible ? styles.incompatible : ''}`}
-                        onClick={() => { if (!conflict && !isIncompatible) setSelectedRoom(room) }}
+                        className={`${styles.roomOption} ${selectedRoom?.id === room.id ? styles.selected : ''} ${conflict ? styles.hasConflict : ''} ${isIncompatible ? styles.incompatible : ''} ${hasCollegeMismatch ? styles.collegeMismatch : ''}`}
+                        onClick={() => { if (!conflict && !isIncompatible && !hasCollegeMismatch) setSelectedRoom(room) }}
                       >
                         <div className={styles.roomInfo}>
                           <div className={styles.roomNameRow}>
                             <span className={styles.roomName}>{room.room}</span>
                             {getScoreBadge(room.id)}
                             {conflict && <span className={styles.conflictBadge}><AlertCircle size={11} /> Occupied</span>}
+                            {hasCollegeMismatch && <span className={styles.collegeMismatchBadge}><AlertTriangle size={11} /> College Mismatch</span>}
                           </div>
                           <div className={styles.roomMeta}>{room.building} &bull; {room.campus} &bull; Cap: {room.capacity || 'N/A'}{room.room_type && ` • ${room.room_type}`}</div>
                           {features.length > 0 && (
@@ -382,9 +403,10 @@ export default function RoomReassignmentModal({
                           {features.length === 0 && <div className={styles.noEquipmentNote}>No equipment data</div>}
                           {conflict && <div className={styles.conflictInfo}>Occupied by {conflict.course_code} ({conflict.section})</div>}
                           {scoreData && scoreData.missingMandatory.length > 0 && <div className={styles.missingInfo}>Missing: {scoreData.missingMandatory.join(', ')}</div>}
+                          {hasCollegeMismatch && <div className={styles.collegeMismatchInfo}>Class college: {allocation.college || 'Unassigned'} • Room college: {room.college || 'Unassigned'}</div>}
                         </div>
                         <div className={styles.roomActions}>
-                          {selectedRoom?.id === room.id && !conflict && !isIncompatible && <CheckCircle size={20} className={styles.selectedIcon} />}
+                          {selectedRoom?.id === room.id && !conflict && !isIncompatible && !hasCollegeMismatch && <CheckCircle size={20} className={styles.selectedIcon} />}
                           {features.length > 0 && (
                             <button className={styles.expandBtn} onClick={e => { e.stopPropagation(); setExpandedRoom(isExpanded ? null : room.id) }} title="View equipment">
                               {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -424,18 +446,7 @@ export default function RoomReassignmentModal({
           )}
 
           {collegeMismatchWarning && (
-            <div className={styles.warningMessage} style={{
-              marginTop: '10px',
-              padding: '10px',
-              backgroundColor: '#fffbeb',
-              border: '1px solid #fcd34d',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              color: '#92400e',
-              fontSize: '0.9rem'
-            }}>
+            <div className={styles.warningMessage}>
               <AlertCircle size={20} />
               <div>
                 <p style={{ fontWeight: 600, margin: 0 }}>College Mismatch</p>
@@ -449,7 +460,7 @@ export default function RoomReassignmentModal({
 
         <div className={styles.modalFooter}>
           <button className={styles.cancelButton} onClick={onClose} disabled={loading}>Cancel</button>
-          <button className={`${styles.confirmButton} ${hasConflict ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedRoom || hasConflict}>
+          <button id="view-room-reassign-confirm-btn" className={`${styles.confirmButton} ${hasConflict || !!collegeMismatchWarning ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedRoom || hasConflict || !!collegeMismatchWarning}>
             {loading ? <><RotateCcw size={16} className={styles.spinner} /> Updating...</> : <><CheckCircle size={16} /> Confirm Reassignment</>}
           </button>
         </div>

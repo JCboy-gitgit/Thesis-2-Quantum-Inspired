@@ -380,8 +380,16 @@
   cursor: not-allowed;
 }
 
+.roomOption.collegeMismatch {
+  opacity: 0.55;
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.35);
+  cursor: not-allowed;
+}
+
 .roomOption.incompatible:hover,
-.roomOption.hasConflict:hover {
+.roomOption.hasConflict:hover,
+.roomOption.collegeMismatch:hover {
   background: rgba(239, 68, 68, 0.06);
   border-color: rgba(239, 68, 68, 0.2);
 }
@@ -499,9 +507,27 @@
   font-weight: 600;
 }
 
+.collegeMismatchBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
 .conflictInfo {
   font-size: 0.72rem;
   color: #f87171;
+  font-style: italic;
+}
+
+.collegeMismatchInfo {
+  font-size: 0.72rem;
+  color: #f59e0b;
   font-style: italic;
 }
 
@@ -624,6 +650,20 @@
 .conflictWarning svg { flex-shrink: 0; margin-top: 2px; }
 .conflictTitle { margin: 0 0 3px 0; font-weight: 600; font-size: 0.85rem; }
 .conflictMessage { margin: 0; font-size: 0.8rem; opacity: 0.9; }
+
+.warningMessage {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #f59e0b;
+}
+
+.warningMessage svg { flex-shrink: 0; margin-top: 2px; }
 
 .errorMessage {
   display: flex;

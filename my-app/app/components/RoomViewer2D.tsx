@@ -8,7 +8,8 @@ import {
   MdSwapVert, MdWc, MdMan, MdWoman, MdLaptop, MdScience, MdLocalLibrary, MdRestaurant,
   MdArchive, MdFitnessCenter, MdMusicNote, MdTheaterComedy, MdCoPresent, MdDns, MdWifi,
   MdAir, MdLocalFireDepartment, MdWaterDrop, MdRadioButtonChecked, MdChangeHistory, MdHexagon, MdStar,
-  MdStop, MdFavorite, MdCalendarToday, MdImage, MdClose
+  MdStop, MdFavorite, MdCalendarToday, MdImage, MdClose, MdSearch, MdFilterList, MdCenterFocusStrong,
+  MdHelpOutline, MdVisibilityOff
 } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './RoomViewer2D.module.css'
@@ -229,6 +230,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     moved: false,
   })
   const suppressNextElementClickRef = useRef(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [buildings, setBuildings] = useState<Building[]>([])
@@ -248,6 +250,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [hasFloorPlan, setHasFloorPlan] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(fullscreen)
   const [buildingNavCollapsed, setBuildingNavCollapsed] = useState(false)
+  const [roomSearchQuery, setRoomSearchQuery] = useState('')
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'occupied' | 'unknown'>('all')
+  const [showLegend, setShowLegend] = useState(true)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   const notifyFullscreenChange = (nextValue: boolean) => {
     if (onToggleFullscreen) {
@@ -259,6 +265,84 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     () => [...canvasElements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0)),
     [canvasElements]
   )
+
+  const fitCanvasToViewport = useCallback(() => {
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+
+    const horizontalPadding = 56
+    const verticalPadding = 56
+    const availableWidth = Math.max(0, wrapper.clientWidth - horizontalPadding)
+    const availableHeight = Math.max(0, wrapper.clientHeight - verticalPadding)
+    if (availableWidth <= 0 || availableHeight <= 0) return
+
+    const fitScaleX = (availableWidth / canvasSize.width) * 100
+    const fitScaleY = (availableHeight / canvasSize.height) * 100
+    const nextZoom = Math.min(300, Math.max(10, Math.floor(Math.min(fitScaleX, fitScaleY))))
+
+    setZoom(nextZoom)
+    setZoomInput(String(nextZoom))
+  }, [canvasSize.height, canvasSize.width])
+
+  const roomElements = useMemo(
+    () => sortedCanvasElements.filter((element) => element.type === 'room'),
+    [sortedCanvasElements]
+  )
+
+  const roomSearchOptions = useMemo(() => {
+    const normalizedQuery = roomSearchQuery.trim().toLowerCase()
+    return roomElements
+      .filter((element) => {
+        const roomLabel = element.linkedRoomData?.room || element.label || ''
+        const roomCode = element.linkedRoomData?.room_code || ''
+        if (!normalizedQuery) return true
+        return roomLabel.toLowerCase().includes(normalizedQuery) || roomCode.toLowerCase().includes(normalizedQuery)
+      })
+      .slice(0, 8)
+  }, [roomElements, roomSearchQuery])
+
+  const roomStatusSummary = useMemo(() => {
+    return roomElements.reduce(
+      (summary, element) => {
+        const roomName = element.linkedRoomData?.room || element.label
+        if (!roomName) {
+          summary.unknown += 1
+          return summary
+        }
+
+        const status = getRoomAvailability(roomName)
+        summary.total += 1
+        if (status === 'available') summary.available += 1
+        else if (status === 'occupied') summary.occupied += 1
+        else summary.unknown += 1
+        return summary
+      },
+      { total: 0, available: 0, occupied: 0, unknown: 0 }
+    )
+  }, [roomElements, roomAllocations, currentTime])
+
+  const visibleRoomIdSet = useMemo(() => {
+    const normalizedQuery = roomSearchQuery.trim().toLowerCase()
+    const visibleIds = new Set<string>()
+
+    roomElements.forEach((element) => {
+      const roomLabel = element.linkedRoomData?.room || element.label || ''
+      const roomCode = element.linkedRoomData?.room_code || ''
+      const availability = roomLabel ? getRoomAvailability(roomLabel) : 'unknown'
+
+      const matchesQuery = !normalizedQuery ||
+        roomLabel.toLowerCase().includes(normalizedQuery) ||
+        roomCode.toLowerCase().includes(normalizedQuery)
+
+      const matchesAvailability = availabilityFilter === 'all' || availability === availabilityFilter
+
+      if (matchesQuery && matchesAvailability) {
+        visibleIds.add(element.id)
+      }
+    })
+
+    return visibleIds
+  }, [roomElements, roomSearchQuery, availabilityFilter, roomAllocations, currentTime])
 
   // Check if mobile
   useEffect(() => {
@@ -277,6 +361,11 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  useEffect(() => {
+    if (!isMobile || !selectedFloor) return
+    setAvailabilityFilter('all')
+  }, [isMobile, selectedFloor?.id])
 
   // Update current time every minute
   useEffect(() => {
@@ -337,6 +426,96 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       handleZoomInputBlur()
     }
   }
+
+  const centerAndSelectRoom = useCallback((element: CanvasElement) => {
+    setSelectedElement(element)
+
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+
+    const scale = zoom / 100
+    const targetX = (element.x + element.width / 2) * scale - wrapper.clientWidth / 2
+    const targetY = (element.y + element.height / 2) * scale - wrapper.clientHeight / 2
+
+    wrapper.scrollTo({
+      left: Math.max(0, targetX),
+      top: Math.max(0, targetY),
+      behavior: 'smooth'
+    })
+  }, [zoom])
+
+  const handleWrapperWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!(event.ctrlKey || event.metaKey)) return
+
+    event.preventDefault()
+    const step = event.deltaY > 0 ? -8 : 8
+    setZoom((prev) => Math.max(10, Math.min(300, prev + step)))
+  }
+
+  useEffect(() => {
+    const handleViewerShortcuts = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      const isTypingTarget =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        !!target?.closest('[contenteditable="true"]')
+
+      if (isTypingTarget) return
+
+      if (event.key === '/') {
+        event.preventDefault()
+        searchInputRef.current?.focus()
+        return
+      }
+
+      if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+        event.preventDefault()
+        setShowShortcuts(true)
+        return
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === '0') {
+        event.preventDefault()
+        fitCanvasToViewport()
+        return
+      }
+
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault()
+        setZoom((prev) => Math.min(300, prev + 10))
+        return
+      }
+
+      if (event.key === '-') {
+        event.preventDefault()
+        setZoom((prev) => Math.max(10, prev - 10))
+        return
+      }
+
+      if (event.key.toLowerCase() === 'l') {
+        event.preventDefault()
+        setShowLegend((prev) => !prev)
+        return
+      }
+
+      if (event.key === 'Escape') {
+        if (showShortcuts) {
+          event.preventDefault()
+          setShowShortcuts(false)
+          return
+        }
+
+        if (selectedElement) {
+          event.preventDefault()
+          setSelectedElement(null)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleViewerShortcuts)
+    return () => window.removeEventListener('keydown', handleViewerShortcuts)
+  }, [fitCanvasToViewport, selectedElement, showShortcuts])
 
   const initData = async () => {
     try {
@@ -613,7 +792,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   }
 
   // Get room availability
-  const getRoomAvailability = (roomName: string): 'available' | 'occupied' | 'unknown' => {
+  function getRoomAvailability(roomName: string): 'available' | 'occupied' | 'unknown' {
     if (roomAllocations.length === 0) return 'unknown'
 
     const now = currentTime
@@ -654,7 +833,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   }
 
   // Get current class for room
-  const getCurrentClass = (roomName: string): RoomAllocation | null => {
+  function getCurrentClass(roomName: string): RoomAllocation | null {
     if (roomAllocations.length === 0) return null
 
     const now = currentTime
@@ -867,6 +1046,13 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             >
               <MdZoomIn size={16} />
             </button>
+            <button
+              onClick={fitCanvasToViewport}
+              className={styles.zoomBtn}
+              title="Fit to viewport (Ctrl/Cmd + 0)"
+            >
+              <MdCenterFocusStrong size={16} />
+            </button>
           </div>
 
           {/* Fullscreen toggle */}
@@ -885,6 +1071,14 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             title="Refresh"
           >
             <MdRefresh size={16} />
+          </button>
+
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className={styles.refreshBtn}
+            title="Viewer shortcuts"
+          >
+            <MdHelpOutline size={16} />
           </button>
         </div>
       </div>
@@ -957,7 +1151,86 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
       )}
 
+      <div className={styles.viewerToolbar}>
+        <div className={styles.viewerSearchRow}>
+          <div className={styles.viewerSearchBox}>
+            <MdSearch size={14} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={roomSearchQuery}
+              onChange={(event) => setRoomSearchQuery(event.target.value)}
+              placeholder="Find room by name/code ( / )"
+              aria-label="Search rooms"
+            />
+            {roomSearchQuery && (
+              <button
+                className={styles.searchClearBtn}
+                onClick={() => setRoomSearchQuery('')}
+                title="Clear room search"
+              >
+                <MdClose size={14} />
+              </button>
+            )}
+          </div>
+
+          <button
+            className={styles.legendToggleBtn}
+            onClick={() => setShowLegend((prev) => !prev)}
+            title={showLegend ? 'Hide legend (L)' : 'Show legend (L)'}
+          >
+            {showLegend ? <MdVisibilityOff size={14} /> : <MdVisibility size={14} />}
+            <span>{showLegend ? 'Hide Legend' : 'Show Legend'}</span>
+          </button>
+        </div>
+
+        {roomSearchQuery && (
+          <div className={styles.searchResultsRow}>
+            {roomSearchOptions.length === 0 ? (
+              <span className={styles.searchResultEmpty}>No rooms found for "{roomSearchQuery}"</span>
+            ) : (
+              roomSearchOptions.map((element) => {
+                const roomName = element.linkedRoomData?.room || element.label || 'Room'
+                const roomCode = element.linkedRoomData?.room_code
+                return (
+                  <button
+                    key={`search-room-${element.id}`}
+                    className={styles.searchResultChip}
+                    onClick={() => centerAndSelectRoom(element)}
+                    title={`Jump to ${roomName}`}
+                  >
+                    {roomName}{roomCode ? ` (${roomCode})` : ''}
+                  </button>
+                )
+              })
+            )}
+          </div>
+        )}
+
+        <div className={styles.filterStatsRow}>
+          <div className={styles.filterGroup}>
+            <span className={styles.filterLabel}><MdFilterList size={14} /> Availability</span>
+            {(['all', 'available', 'occupied', 'unknown'] as const).map((filter) => (
+              <button
+                key={`filter-${filter}`}
+                className={`${styles.filterChip} ${availabilityFilter === filter ? styles.active : ''}`}
+                onClick={() => setAvailabilityFilter(filter)}
+              >
+                {filter === 'all' ? 'All' : filter === 'available' ? 'Free' : filter === 'occupied' ? 'In Use' : 'Unknown'}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.statsGroup}>
+            <span className={styles.statCard}>Rooms: {roomStatusSummary.total}</span>
+            <span className={`${styles.statCard} ${styles.statFree}`}>Free: {roomStatusSummary.available}</span>
+            <span className={`${styles.statCard} ${styles.statBusy}`}>In Use: {roomStatusSummary.occupied}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Legend - Enhanced visibility */}
+      {showLegend && (
       <div className={`${styles.legend} ${isMobile ? styles.legendCompact : ''}`}>
         <div className={`${styles.legendItem} ${styles.availableLegend}`}>
           <div className={`${styles.statusIndicator} ${styles.available}`}>
@@ -978,6 +1251,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
         </div>
       </div>
+      )}
 
       {/* Mobile hint */}
       {isMobile && (
@@ -991,6 +1265,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         ref={wrapperRef}
         className={`${styles.canvasWrapper} ${isMobile ? styles.canvasWrapperMobile : ''}`}
         onMouseDown={handleWrapperMouseDown}
+        onWheel={handleWrapperWheel}
         onTouchStart={handleWrapperTouchStart}
         onTouchMove={handleWrapperTouchMove}
         onTouchEnd={endPanDrag}
@@ -1025,6 +1300,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                 ? getCurrentClass(element.linkedRoomData.room)
                 : null
               const isSelected = selectedElement?.id === element.id
+              const isFilteredOutRoom = isRoom && !visibleRoomIdSet.has(element.id)
+              const isSearchMatchRoom = isRoom && roomSearchQuery.trim().length > 0 && visibleRoomIdSet.has(element.id)
 
               const textBgOpacity = element.textBackgroundOpacity ?? (!isTransparentColor(element.color) ? 35 : 0)
               const textHasBackground = textBgOpacity > 0 && !isTransparentColor(element.color)
@@ -1032,7 +1309,9 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
               const resolvedTextColor = resolveElementTextColor(element, textBackgroundColor)
               const elementOpacity = highlightEmpty && availability === 'occupied'
                 ? 0.25
-                : normalizeOpacity(element.opacity)
+                : isFilteredOutRoom
+                  ? Math.max(0.12, normalizeOpacity(element.opacity) * 0.2)
+                  : normalizeOpacity(element.opacity)
 
               const elementStyle: React.CSSProperties = {
                 position: 'absolute',
@@ -1089,7 +1368,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
               return (
                 <div
                   key={element.id}
-                  className={`${styles.canvasElement} ${styles[element.type] || ''} ${isSelected ? styles.selected : ''} ${element.orientation === 'vertical' ? styles.vertical : ''}`}
+                  className={`${styles.canvasElement} ${styles[element.type] || ''} ${isSelected ? styles.selected : ''} ${element.orientation === 'vertical' ? styles.vertical : ''} ${isFilteredOutRoom ? styles.canvasElementFiltered : ''} ${isSearchMatchRoom ? styles.canvasElementSearchMatch : ''}`}
                   style={elementStyle}
                   onClick={() => {
                     if (suppressNextElementClickRef.current) {
@@ -1177,6 +1456,27 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
         </div>{/* end scale wrapper */}
       </div>
+
+      {showShortcuts && (
+        <div className={styles.viewerShortcutOverlay} onClick={() => setShowShortcuts(false)}>
+          <div className={styles.viewerShortcutModal} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.viewerShortcutHeader}>
+              <h3><MdHelpOutline size={18} /> Viewer Shortcuts</h3>
+              <button onClick={() => setShowShortcuts(false)} aria-label="Close shortcuts"><MdClose size={18} /></button>
+            </div>
+            <div className={styles.viewerShortcutGrid}>
+              <div><kbd>/</kbd><span>Focus room search</span></div>
+              <div><kbd>L</kbd><span>Toggle legend</span></div>
+              <div><kbd>+</kbd><span>Zoom in</span></div>
+              <div><kbd>-</kbd><span>Zoom out</span></div>
+              <div><kbd>Ctrl/Cmd + 0</kbd><span>Fit map to viewport</span></div>
+              <div><kbd>Ctrl/Cmd + Scroll</kbd><span>Smooth zoom with wheel</span></div>
+              <div><kbd>?</kbd><span>Open shortcuts</span></div>
+              <div><kbd>Esc</kbd><span>Close selected room/modal</span></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Enhanced Room Details Modal */}
       {selectedElement && selectedElement.type === 'room' && selectedElement.linkedRoomData && (

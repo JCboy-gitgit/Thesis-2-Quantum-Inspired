@@ -40,6 +40,7 @@ interface RoomAllocation {
   department?: string
   lec_hours?: number
   lab_hours?: number
+  college?: string
 }
 
 interface FacultyAssignmentModalProps {
@@ -61,6 +62,34 @@ const hasTimeOverlap = (left?: string, right?: string) => {
   const rightRange = parseScheduleTime(String(right || ''))
   if (leftRange && rightRange) return timeRangesOverlap(leftRange, rightRange)
   return String(left || '').trim() === String(right || '').trim()
+}
+
+const normalizeCollegeValue = (value: unknown) => String(value || '').trim().toUpperCase()
+
+const isCollegeUnsetValue = (value: unknown) => {
+  const normalized = normalizeCollegeValue(value)
+  return (
+    !normalized ||
+    normalized === 'UNASSIGNED COLLEGE' ||
+    normalized === 'UNASSIGNED' ||
+    normalized === 'N/A' ||
+    normalized === 'NA' ||
+    normalized === 'NONE' ||
+    normalized === 'NULL'
+  )
+}
+
+const isSharedCollegeValue = (value: unknown) => normalizeCollegeValue(value) === 'SHARED'
+
+const areCollegesCompatible = (classCollege: unknown, facultyCollege: unknown) => {
+  const normalizedClassCollege = normalizeCollegeValue(classCollege)
+  const normalizedFacultyCollege = normalizeCollegeValue(facultyCollege)
+
+  if (!normalizedClassCollege || !normalizedFacultyCollege) return true
+  if (isCollegeUnsetValue(normalizedClassCollege) || isCollegeUnsetValue(normalizedFacultyCollege)) return true
+  if (isSharedCollegeValue(normalizedClassCollege) || isSharedCollegeValue(normalizedFacultyCollege)) return true
+
+  return normalizedClassCollege === normalizedFacultyCollege
 }
 
 export default function FacultyAssignmentModal({
@@ -189,6 +218,16 @@ export default function FacultyAssignmentModal({
     return list
   }, [allFaculty, searchQuery])
 
+  const collegeMismatchWarning = useMemo(() => {
+    if (!selectedFaculty || !allocation) return null
+
+    if (!areCollegesCompatible(allocation.college, selectedFaculty.college)) {
+      return `Warning: This faculty belongs to ${selectedFaculty.college}, but the class is from ${allocation.college}.`
+    }
+
+    return null
+  }, [selectedFaculty, allocation])
+
   const getFacultyDaySchedule = (facultyName: string) => {
     if (!allocation) return []
     return allAllocations.filter(a =>
@@ -208,7 +247,7 @@ export default function FacultyAssignmentModal({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+      <div id="view-faculty-assign-modal" className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.headerLeft}>
             <h2>Assign Faculty</h2>
@@ -216,7 +255,7 @@ export default function FacultyAssignmentModal({
               {allocation.course_code} &bull; {allocation.section} &bull; {allocation.schedule_day} {allocation.schedule_time}
             </span>
           </div>
-          <button className={styles.closeButton} onClick={onClose} disabled={loading}><X size={20} /></button>
+          <button id="view-faculty-assign-close-btn" className={styles.closeButton} onClick={onClose} disabled={loading}><X size={20} /></button>
         </div>
 
         <div className={styles.modalBody}>
@@ -231,7 +270,7 @@ export default function FacultyAssignmentModal({
             </div>
           </div>
 
-          <div className={styles.facultySelection}>
+          <div className={styles.facultySelection} id="view-faculty-assign-list">
             <div className={styles.selectionHeader}>
               <h3>Select Faculty</h3>
               <div className={styles.eligibleBadge}><GraduationCap size={14} /> {eligibleFaculty.length} assigned to {allocation.course_code}</div>
@@ -262,6 +301,7 @@ export default function FacultyAssignmentModal({
                   const isEligible = faculty.isEligible || eligibleFaculty.some(ef => ef.id === faculty.id)
                   const isExpanded = expandedFaculty === faculty.id
                   const daySchedule = isExpanded ? getFacultyDaySchedule(faculty.full_name) : []
+                  const hasCollegeMismatch = !areCollegesCompatible(allocation.college, faculty.college)
                   const facultyConflict = allAllocations.find(a => {
                     if (a.id === allocation.id) return false
                     if (normalizeTeacherName(a.teacher_name) !== normalizeTeacherName(faculty.full_name)) return false
@@ -272,8 +312,12 @@ export default function FacultyAssignmentModal({
                   return (
                     <div key={faculty.id} className={styles.facultyItemWrapper}>
                       <div
-                        className={`${styles.facultyOption} ${selectedFaculty?.id === faculty.id ? styles.selected : ''} ${facultyConflict ? styles.hasConflict : ''}`}
-                        onClick={() => setSelectedFaculty(faculty)}
+                        className={`${styles.facultyOption} ${selectedFaculty?.id === faculty.id ? styles.selected : ''} ${facultyConflict ? styles.hasConflict : ''} ${hasCollegeMismatch ? styles.collegeMismatch : ''}`}
+                        onClick={() => {
+                          if (!facultyConflict && !hasCollegeMismatch) {
+                            setSelectedFaculty(faculty)
+                          }
+                        }}
                       >
                         <div className={styles.facultyInfo}>
                           <div className={styles.facultyNameRow}>
@@ -281,6 +325,7 @@ export default function FacultyAssignmentModal({
                             {isEligible && <span className={styles.eligibleTag}><BookOpen size={11} /> Teaches this course</span>}
                             {!isEligible && <span className={styles.nonEligibleTag}>Not assigned</span>}
                             {facultyConflict && <span className={styles.conflictBadge}><AlertCircle size={11} /> Conflict</span>}
+                            {hasCollegeMismatch && <span className={styles.collegeMismatchTag}><AlertCircle size={11} /> College Mismatch</span>}
                           </div>
                           <div className={styles.facultyMeta}>
                             {faculty.department || faculty.college || 'No department'}{faculty.college && faculty.department ? ` • ${faculty.college}` : ''}{faculty.specialization && ` • ${faculty.specialization}`}
@@ -290,9 +335,10 @@ export default function FacultyAssignmentModal({
                             {(faculty.teachingLoadCount || 0) > 0 && <span className={styles.loadBadge}><BookOpen size={11} /> {faculty.teachingLoadCount} teaching loads assigned</span>}
                           </div>
                           {facultyConflict && <div className={styles.conflictInfo}>Already teaching {facultyConflict.course_code} ({facultyConflict.section}) at this time</div>}
+                          {hasCollegeMismatch && <div className={styles.collegeMismatchInfo}>Class college: {allocation.college || 'Unassigned'} • Faculty college: {faculty.college || 'Unassigned'}</div>}
                         </div>
                         <div className={styles.facultyActions}>
-                          {selectedFaculty?.id === faculty.id && !facultyConflict && <CheckCircle size={20} className={styles.selectedIcon} />}
+                          {selectedFaculty?.id === faculty.id && !facultyConflict && !hasCollegeMismatch && <CheckCircle size={20} className={styles.selectedIcon} />}
                           <button className={styles.expandBtn} onClick={e => { e.stopPropagation(); setExpandedFaculty(isExpanded ? null : faculty.id) }} title={`${allocation.schedule_day} schedule`}>
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
@@ -330,6 +376,12 @@ export default function FacultyAssignmentModal({
               <div><p className={styles.conflictTitle}>Schedule Conflict</p><p className={styles.conflictMessage}>{conflictDetails}</p></div>
             </div>
           )}
+          {collegeMismatchWarning && (
+            <div className={styles.warningMessage}>
+              <AlertCircle size={20} />
+              <div><p className={styles.conflictTitle}>College Mismatch</p><p className={styles.conflictMessage}>{collegeMismatchWarning}</p></div>
+            </div>
+          )}
           {error && eligibleFaculty.length === 0 && (
             <div className={styles.infoMessage}><AlertCircle size={18} /><p>{error}</p></div>
           )}
@@ -337,7 +389,7 @@ export default function FacultyAssignmentModal({
 
         <div className={styles.modalFooter}>
           <button className={styles.cancelButton} onClick={onClose} disabled={loading}>Cancel</button>
-          <button className={`${styles.confirmButton} ${hasConflict ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedFaculty || hasConflict}>
+          <button id="view-faculty-assign-confirm-btn" className={`${styles.confirmButton} ${hasConflict || !!collegeMismatchWarning ? styles.disabled : ''}`} onClick={handleConfirm} disabled={loading || !selectedFaculty || hasConflict || !!collegeMismatchWarning}>
             {loading ? <><RotateCcw size={16} className={styles.spinner} /> Assigning...</> : <><CheckCircle size={16} /> Assign Faculty</>}
           </button>
         </div>

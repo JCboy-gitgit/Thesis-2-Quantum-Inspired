@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride'
 import { usePathname } from 'next/navigation'
 
@@ -14,6 +14,76 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
     const pathname = usePathname()
     const [steps, setSteps] = useState<Step[]>([])
     const [isMounted, setIsMounted] = useState(false)
+    const lastViewScheduleActionRef = useRef<string>('')
+
+    const triggerViewScheduleAction = (action?: string, index?: number) => {
+        if (!action || typeof window === 'undefined') return
+
+        const dedupeKey = `${index ?? -1}:${action}`
+        if (lastViewScheduleActionRef.current === dedupeKey) return
+        lastViewScheduleActionRef.current = dedupeKey
+
+        const clickIfPresent = (selector: string) => {
+            const element = document.querySelector(selector) as HTMLElement | null
+            if (!element) return false
+            element.click()
+            return true
+        }
+
+        const hasElement = (selector: string) => Boolean(document.querySelector(selector))
+
+        switch (action) {
+            case 'openFirstSchedule':
+                if (!hasElement('#view-schedule-workspace')) clickIfPresent('#view-open-first-schedule-btn')
+                break
+            case 'expandMoreOptions':
+                if (!hasElement('#advanced-schedule-filters')) clickIfPresent('#view-more-options-btn')
+                break
+            case 'openManualEdit':
+                if (!hasElement('#view-manual-edit-modal')) clickIfPresent('#view-manual-place-btn')
+                break
+            case 'closeManualEdit':
+                clickIfPresent('#view-manual-edit-close-btn')
+                break
+            case 'openRoomReassign':
+                if (hasElement('#view-manual-edit-modal')) clickIfPresent('#view-manual-edit-close-btn')
+                if (!hasElement('#view-room-reassign-modal')) clickIfPresent('#view-first-reassign-room-btn')
+                break
+            case 'closeRoomReassign':
+                clickIfPresent('#view-room-reassign-close-btn')
+                break
+            case 'openFacultyAssign':
+                if (hasElement('#view-room-reassign-modal')) clickIfPresent('#view-room-reassign-close-btn')
+                if (hasElement('#view-manual-edit-modal')) clickIfPresent('#view-manual-edit-close-btn')
+                if (!hasElement('#view-faculty-assign-modal')) clickIfPresent('#view-first-assign-faculty-btn')
+                break
+            case 'closeFacultyAssign':
+                clickIfPresent('#view-faculty-assign-close-btn')
+                break
+            case 'openRequestsModal':
+                if (hasElement('#view-faculty-assign-modal')) clickIfPresent('#view-faculty-assign-close-btn')
+                if (hasElement('#view-room-reassign-modal')) clickIfPresent('#view-room-reassign-close-btn')
+                if (hasElement('#view-manual-edit-modal')) clickIfPresent('#view-manual-edit-close-btn')
+                if (!hasElement('#view-requests-modal')) clickIfPresent('#view-review-requests-btn')
+                break
+            case 'closeRequestsModal':
+                clickIfPresent('#view-requests-modal-close-btn')
+                break
+            case 'openBatchFacultyModal':
+                if (hasElement('#view-requests-modal')) clickIfPresent('#view-requests-modal-close-btn')
+                if (!hasElement('#view-batch-faculty-modal')) clickIfPresent('#view-assign-to-faculty-btn')
+                break
+            case 'closeBatchFacultyModal':
+                clickIfPresent('#view-batch-faculty-modal-close-btn')
+                break
+            case 'openExportMenu':
+                if (hasElement('#view-batch-faculty-modal')) clickIfPresent('#view-batch-faculty-modal-close-btn')
+                if (!hasElement('#view-export-menu')) clickIfPresent('#view-export-pdf-btn')
+                break
+            default:
+                break
+        }
+    }
 
     useEffect(() => {
         setIsMounted(true)
@@ -689,14 +759,180 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                     }
                 }
             } else if (pathname.includes('/ViewSchedule')) {
+                const hasSelectedSchedule = typeof window !== 'undefined' && Boolean(document.querySelector('#view-schedule-workspace'))
+                const hasScheduleCard = typeof window !== 'undefined' && Boolean(document.querySelector('#view-open-first-schedule-btn'))
+
                 pageSteps = [
                     {
+                        target: '#view-page-header',
+                        placement: 'bottom',
+                        content: 'Welcome to View Schedule. This full tutorial covers filters, drag-and-drop, manual placement, request review, room/faculty reassignments, exports, and faculty assignment.',
+                        disableBeacon: true,
+                    },
+                ]
+
+                if (!hasSelectedSchedule && hasScheduleCard) {
+                    pageSteps.push(
+                        {
+                            target: '#view-history-controls',
+                            placement: 'bottom',
+                            content: 'Use search, sorting, and stats in history mode to locate a generated schedule quickly.',
+                        },
+                        {
+                            target: '#view-schedule-card-grid',
+                            placement: 'top',
+                            content: 'Each card is a generated schedule snapshot with stats and actions.',
+                        },
+                        {
+                            target: '#view-open-first-schedule-btn',
+                            placement: 'top',
+                            content: 'We will open a schedule now so you can tour all management tools.',
+                            data: { action: 'openFirstSchedule' },
+                        }
+                    )
+                }
+
+                if (!hasSelectedSchedule && !hasScheduleCard) {
+                    pageSteps.push({
                         target: 'body',
                         placement: 'center',
-                        content: 'Schedule Viewer! Everything comes together here. Explore all finalized mappings and easily export to PDF or Print.',
-                        disableBeacon: true,
-                    }
-                ]
+                        content: 'No schedule is available yet. Generate one first, then rerun this tutorial to unlock the complete walkthrough.',
+                    })
+                } else {
+                    pageSteps.push(
+                        {
+                            target: '#view-schedule-header',
+                            placement: 'bottom',
+                            content: 'This header summarizes the selected schedule and shows key admin actions like lock/unlock and faculty assignment.',
+                        },
+                        {
+                            target: '#view-mode-section',
+                            placement: 'bottom',
+                            content: 'Switch timetable perspective by Room, Section, Teacher, Course, or College.',
+                        },
+                        {
+                            target: '#view-filters-bar',
+                            placement: 'bottom',
+                            content: 'Use quick search plus advanced filters to narrow classes before editing.',
+                        },
+                        {
+                            target: '#view-more-options-btn',
+                            placement: 'left',
+                            content: 'This expands advanced filtering options for college, building, room, and day.',
+                            data: { action: 'expandMoreOptions' },
+                        },
+                        {
+                            target: '#advanced-schedule-filters',
+                            placement: 'bottom',
+                            content: 'Advanced filters are optional and can be reset anytime to return to full visibility.',
+                            data: { action: 'expandMoreOptions' },
+                        },
+                        {
+                            target: '#view-draggable-timetable',
+                            placement: 'top',
+                            content: 'Drag and drop class blocks directly on the timetable. Conflict checks run automatically before changes are applied.',
+                        },
+                        {
+                            target: '#view-manual-place-btn',
+                            placement: 'left',
+                            content: 'Manual Place opens the full manual allocation editor for unscheduled or difficult classes.',
+                            data: { action: 'openManualEdit' },
+                        },
+                        {
+                            target: '#view-manual-edit-modal',
+                            placement: 'center',
+                            content: 'This is the Manual Schedule Editor where you can place classes by room/faculty/section with detailed conflict-aware controls.',
+                            data: { action: 'openManualEdit' },
+                        },
+                        {
+                            target: '#view-manual-edit-view-modes',
+                            placement: 'bottom',
+                            content: 'Switch manual editor context between Rooms, Faculty, and Sections while allocating classes.',
+                            data: { action: 'openManualEdit' },
+                        },
+                        {
+                            target: '#view-allocation-panel',
+                            placement: 'top',
+                            content: 'Manual Re-allocation Panel lists all allocations with per-row room and faculty reassignment actions.',
+                            data: { action: 'closeManualEdit' },
+                        },
+                        {
+                            target: '#view-first-reassign-room-btn',
+                            placement: 'left',
+                            content: 'Use this to reassign a class to another room with conflict and college checks enforced.',
+                            data: { action: 'openRoomReassign' },
+                        },
+                        {
+                            target: '#view-room-reassign-modal',
+                            placement: 'center',
+                            content: 'Room Reassignment modal shows availability, compatibility, and mismatch restrictions before confirming.',
+                            data: { action: 'openRoomReassign' },
+                        },
+                        {
+                            target: '#view-first-assign-faculty-btn',
+                            placement: 'left',
+                            content: 'Use this to assign or reassign faculty for a class slot.',
+                            data: { action: 'openFacultyAssign' },
+                        },
+                        {
+                            target: '#view-faculty-assign-modal',
+                            placement: 'center',
+                            content: 'Faculty Assignment modal validates conflicts, teaching load context, and college compatibility before assignment.',
+                            data: { action: 'openFacultyAssign' },
+                        },
+                        {
+                            target: '#view-review-requests-btn',
+                            placement: 'bottom',
+                            content: 'Review Requests opens faculty-submitted schedule change requests for approval workflow.',
+                            data: { action: 'openRequestsModal' },
+                        },
+                        {
+                            target: '#view-requests-modal',
+                            placement: 'center',
+                            content: 'In this modal, you review request details and approve or reject with full context.',
+                            data: { action: 'openRequestsModal' },
+                        },
+                        {
+                            target: '#view-assign-to-faculty-btn',
+                            placement: 'bottom',
+                            content: 'Assign to Faculty lets you publish this schedule as default to selected faculty profiles.',
+                            data: { action: 'openBatchFacultyModal' },
+                        },
+                        {
+                            target: '#view-batch-faculty-modal',
+                            placement: 'center',
+                            content: 'Batch assignment modal supports faculty search, multi-select, and one-click schedule assignment.',
+                            data: { action: 'openBatchFacultyModal' },
+                        },
+                        {
+                            target: '#view-export-pdf-btn',
+                            placement: 'bottom',
+                            content: 'Export PDF gives multiple output scopes like current view, all rooms, sections, teachers, or courses.',
+                            data: { action: 'openExportMenu' },
+                        },
+                        {
+                            target: '#view-export-menu',
+                            placement: 'bottom',
+                            content: 'Choose your PDF export scope based on your reporting needs.',
+                            data: { action: 'openExportMenu' },
+                        },
+                        {
+                            target: '#view-export-csv-btn',
+                            placement: 'bottom',
+                            content: 'Export CSV downloads tabular schedule data for external analysis and reporting.',
+                        },
+                        {
+                            target: '#view-schedule-lock-btn',
+                            placement: 'bottom',
+                            content: 'Lock/Unlock controls whether faculty can submit change requests for this schedule.',
+                        },
+                        {
+                            target: '.account-section',
+                            placement: 'top',
+                            content: 'Theme settings apply to this full workflow. The tutorial is designed to remain readable in both dark and light themes and on smaller screens.',
+                        }
+                    )
+                }
             } else if (pathname.includes('/LiveTimetable')) {
                 if (typeof window !== 'undefined') {
                     const header = document.querySelector('#live-title-section');
@@ -839,7 +1075,14 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
     }, [pathname, run])
 
     const handleJoyrideCallback = (data: CallBackProps) => {
-        const { status, step, index, action } = data
+        const { status, step, index, action, type } = data
+
+        if (pathname?.includes('/ViewSchedule')) {
+            const stepAction = (step as any)?.data?.action as string | undefined
+            if (type === 'step:before' || action === 'start' || action === 'next' || action === 'prev') {
+                triggerViewScheduleAction(stepAction, index)
+            }
+        }
 
         if (([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(status)) {
             setRun(false)

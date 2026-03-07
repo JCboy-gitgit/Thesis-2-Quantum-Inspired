@@ -110,6 +110,195 @@
   flex-wrap: wrap;
 }
 
+.viewerToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.viewerSearchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewerSearchBox {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.viewerSearchBox input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.viewerSearchBox input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.searchClearBtn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.searchClearBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.legendToggleBtn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.legendToggleBtn:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.searchResultsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.searchResultChip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.searchResultChip:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+  transform: translateY(-1px);
+}
+
+.searchResultEmpty {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+.filterStatsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filterLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.filterChip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterChip:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.filterChip.active {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.statsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statCard {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.statFree {
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #86efac;
+}
+
+.statBusy {
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+
 .refreshBtn {
   background: var(--college-primary-light);
   border: 1px solid var(--college-primary);
@@ -491,6 +680,14 @@
   box-shadow: 0 0 0 3px var(--college-primary), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.canvasElementFiltered {
+  filter: grayscale(0.25);
+}
+
+.canvasElementSearchMatch {
+  box-shadow: 0 0 0 2px var(--college-primary), 0 0 22px var(--college-glow), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 .canvasElement.room {
   padding: 8px;
 }
@@ -659,6 +856,97 @@
   gap: 8px;
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
+}
+
+.viewerShortcutOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.76);
+  backdrop-filter: blur(4px);
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.viewerShortcutModal {
+  width: min(560px, 95vw);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.6);
+  overflow: hidden;
+}
+
+.viewerShortcutHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.viewerShortcutHeader h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.viewerShortcutHeader button {
+  border: none;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.viewerShortcutHeader button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.viewerShortcutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px;
+}
+
+.viewerShortcutGrid div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.viewerShortcutGrid kbd {
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(2, 6, 23, 0.7);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  white-space: nowrap;
+}
+
+.viewerShortcutGrid span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
 }
 
 .statusIndicator {
@@ -1209,6 +1497,34 @@
     flex-wrap: wrap;
   }
 
+  .viewerToolbar {
+    padding: 10px;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .viewerSearchBox {
+    min-width: 100%;
+  }
+
+  .legendToggleBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filterStatsRow {
+    gap: 10px;
+  }
+
+  .statsGroup {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .viewerShortcutGrid {
+    grid-template-columns: 1fr;
+  }
+
   /* Building Nav mobile */
   .buildingNav {
     padding: 8px;
@@ -1356,6 +1672,35 @@
 
   .controls {
     gap: 6px;
+  }
+
+  .viewerToolbar {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .filterChip,
+  .statCard,
+  .searchResultChip {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .viewerShortcutHeader h3 {
+    font-size: 14px;
+  }
+
+  .viewerShortcutGrid {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .viewerShortcutGrid div {
+    padding: 8px 10px;
+  }
+
+  .viewerShortcutGrid span {
+    font-size: 11px;
   }
 
   .zoomControls {
@@ -1657,6 +2002,86 @@
 
 :global([data-theme="light"]) .header h2 {
   color: #1e293b;
+}
+
+:global([data-theme="light"]) .viewerToolbar {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .viewerSearchBox {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .viewerSearchBox input {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .viewerSearchBox input::placeholder {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .legendToggleBtn,
+:global([data-theme="light"]) .filterChip,
+:global([data-theme="light"]) .searchResultChip,
+:global([data-theme="light"]) .statCard {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .filterChip.active {
+  color: var(--college-primary);
+  border-color: var(--college-primary);
+  background: var(--college-primary-light);
+}
+
+:global([data-theme="light"]) .searchResultEmpty,
+:global([data-theme="light"]) .filterLabel {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .statFree {
+  color: #15803d;
+}
+
+:global([data-theme="light"]) .statBusy {
+  color: #b91c1c;
+}
+
+:global([data-theme="light"]) .viewerShortcutModal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .viewerShortcutHeader {
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .viewerShortcutHeader h3 {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .viewerShortcutHeader button {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .viewerShortcutGrid div {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .viewerShortcutGrid kbd {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .viewerShortcutGrid span {
+  color: #475569;
 }
 
 :global([data-theme="light"]) .header svg {

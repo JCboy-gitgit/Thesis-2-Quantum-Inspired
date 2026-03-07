@@ -1569,6 +1569,12 @@
   white-space: nowrap;
 }
 
+.focusModeBtnActive {
+  background: var(--primary-alpha);
+  border-color: var(--primary) !important;
+  color: var(--primary);
+}
+
 .adminActionsWrap {
   position: relative;
 }
@@ -1793,6 +1799,37 @@
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+}
+
+.toolboxStatusRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 6px 0 14px;
+}
+
+.statusPill {
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  border-radius: 999px;
+  padding: 6px 8px;
+  color: var(--content-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.statusPill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.statusPill.active {
+  background: var(--primary-alpha);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* ==================== Tool Sections ==================== */
@@ -3956,6 +3993,45 @@
   border-top: 2px solid var(--border-color);
 }
 
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shortcutItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-gray-50);
+}
+
+.shortcutItem kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-white);
+  color: var(--content-text);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.shortcutItem span {
+  color: var(--content-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
 .liveRoomModal {
   width: min(920px, 96vw);
   max-height: 90vh;
@@ -5386,6 +5462,24 @@
     touch-action: none;
   }
 
+  .shortcutGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .shortcutItem {
+    gap: 8px;
+    padding: 9px 10px;
+  }
+
+  .shortcutItem kbd {
+    min-width: 78px;
+    font-size: 10px;
+  }
+
+  .shortcutItem span {
+    font-size: 11px;
+  }
+
   /* Icon grid responsive adjustments for tablet */
   .iconGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -5460,6 +5554,16 @@
 
   .toolboxContent {
     padding: 6px;
+  }
+
+  .toolboxStatusRow {
+    gap: 6px;
+    margin: 4px 0 10px;
+  }
+
+  .statusPill {
+    padding: 6px 4px;
+    font-size: 10px;
   }
 
   .sectionHeader {

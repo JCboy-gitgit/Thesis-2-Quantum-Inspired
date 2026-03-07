@@ -1498,14 +1498,14 @@ export default function ManualEditModal({
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
-            <div className={styles.manualEditModal} onClick={e => e.stopPropagation()}>
-                <div className={styles.modalHeader}>
+            <div id="view-manual-edit-modal" className={styles.manualEditModal} onClick={e => e.stopPropagation()}>
+                <div className={styles.modalHeader} id="view-manual-edit-header">
                     <div className={styles.headerLeft}>
                         <h2>
                             <MdTableChart />
                             <span className={styles.titleText}>Manual Schedule Editor</span>
                         </h2>
-                        <div className={styles.viewSelector}>
+                        <div className={styles.viewSelector} id="view-manual-edit-view-modes">
                             <button
                                 className={viewMode === 'room' ? styles.active : ''}
                                 onClick={() => { setViewMode('room'); setActiveItemIndex(0); }}
@@ -1546,12 +1546,12 @@ export default function ManualEditModal({
                             </button>
                         </div>
                     </div>
-                    <button className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
+                    <button id="view-manual-edit-close-btn" className={styles.modalCloseBtn} onClick={onClose} aria-label="Close">
                         <MdClose size={24} />
                     </button>
                 </div>
 
-                <div className={styles.manualEditBody}>
+                <div className={styles.manualEditBody} id="view-manual-edit-body">
                     <div className={styles.coursesPanel}>
                         <div className={styles.panelHeader}>
                             <h3>Available Courses</h3>

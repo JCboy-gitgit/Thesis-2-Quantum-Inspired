@@ -103,7 +103,7 @@ export default function AllocationTable({
   }
 
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} id="view-allocation-panel">
       <div className={styles.tableHeader}>
         <div className={styles.tableHeaderTop}>
           <div className={styles.headerInfo}>
@@ -113,8 +113,8 @@ export default function AllocationTable({
               {isLocked && <span className={styles.lockedBadge}> (Locked)</span>}
             </p>
           </div>
-          <div className={styles.tableFilters}>
-            <div className={styles.tableSearchBox}>
+          <div className={styles.tableFilters} id="view-allocation-filters">
+            <div className={styles.tableSearchBox} id="view-allocation-search">
               <MdSearch size={14} />
               <input
                 type="text"
@@ -152,8 +152,8 @@ export default function AllocationTable({
         </button>
       </div>
 
-      <div className={styles.scrollWrapper} ref={scrollRef}>
-        <table className={styles.table}>
+      <div className={styles.scrollWrapper} ref={scrollRef} id="view-allocation-table-wrap">
+        <table className={styles.table} id="view-allocation-table">
           <thead>
             <tr>
               <th>Course</th>
@@ -168,7 +168,7 @@ export default function AllocationTable({
             </tr>
           </thead>
           <tbody>
-            {displayAllocations.map((alloc) => (
+            {displayAllocations.map((alloc, index) => (
               <tr key={alloc.id} className={styles.row}>
                 <td className={styles.courseCode}><span className={styles.courseLabel}>{alloc.course_code}</span></td>
                 <td className={styles.section}>{alloc.section}</td>
@@ -182,6 +182,7 @@ export default function AllocationTable({
                 <td className={styles.capacity}>{alloc.capacity || 'N/A'}</td>
                 <td className={styles.actions}>
                   <button
+                    id={index === 0 ? 'view-first-reassign-room-btn' : undefined}
                     className={`${styles.actionBtn} ${styles.actionBtnRoom} ${isLocked ? styles.disabled : ''}`}
                     onClick={() => onReassignRoom(alloc)}
                     disabled={isLocked}
@@ -191,6 +192,7 @@ export default function AllocationTable({
                   </button>
                   {onAssignFaculty && (
                     <button
+                      id={index === 0 ? 'view-first-assign-faculty-btn' : undefined}
                       className={`${styles.actionBtn} ${styles.actionBtnFaculty} ${isLocked ? styles.disabled : ''}`}
                       onClick={() => onAssignFaculty(alloc)}
                       disabled={isLocked}

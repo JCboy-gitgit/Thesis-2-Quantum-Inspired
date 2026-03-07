@@ -138,10 +138,10 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div id="view-requests-modal" className={styles.modal} onClick={e => e.stopPropagation()}>
                 <div className={styles.header}>
                     <h2>Pending Schedule Requests</h2>
-                    <button onClick={onClose} className={styles.closeBtn}>
+                    <button id="view-requests-modal-close-btn" onClick={onClose} className={styles.closeBtn}>
                         <X size={24} />
                     </button>
                 </div>
@@ -155,7 +155,7 @@ export default function ScheduleRequestsModal({ isOpen, onClose, scheduleId, onU
                             <p>No pending requests for this schedule.</p>
                         </div>
                     ) : (
-                        <div className={styles.list}>
+                        <div className={styles.list} id="view-requests-list">
                             {requests.map(request => (
                                 <div key={request.id} className={styles.card}>
                                     <div className={styles.cardHeader}>
