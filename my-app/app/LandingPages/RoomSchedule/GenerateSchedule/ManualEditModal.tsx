@@ -19,6 +19,7 @@ interface ManualEditModalProps {
     initialAllocations: any[]
     collegeRoomMatchingEnabled?: boolean
     allowG1G2SplitSessions?: boolean
+    unscheduledSourceClasses?: any[]
 }
 
 type ViewMode = 'room' | 'faculty' | 'section'
@@ -67,7 +68,8 @@ const parseCollegeLabels = (value?: string) => {
 export default function ManualEditModal({
     isOpen, onClose, onSave, rooms, classes, timeSettings, initialAllocations,
     collegeRoomMatchingEnabled = true,
-    allowG1G2SplitSessions = true
+    allowG1G2SplitSessions = true,
+    unscheduledSourceClasses,
 }: ManualEditModalProps) {
     // 1. Core State
     const [allocations, setAllocations] = useState<any[]>(initialAllocations)
@@ -207,10 +209,17 @@ export default function ManualEditModal({
             .replace(/_LECTURE$/i, '')
             .replace(/_LABORATORY$/i, '')
             .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+            .replace(/-G[12](?:-(?:LAB|LEC|LECTURE|LABORATORY))?$/i, '')
             .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
             .replace(/ LAB$/i, '')
             .replace(/ LEC$/i, '')
             .trim()
+    }
+
+    const makeSectionOptionValue = (section: string, group?: 'G1' | 'G2') => {
+        const base = getSectionBase(section)
+        if (!base) return ''
+        return group ? `${base}-${group}` : base
     }
 
     const getAllocationComponent = (alloc: any): 'LEC' | 'LAB' => {
@@ -485,17 +494,45 @@ export default function ManualEditModal({
         return unique
     }, [classes])
 
+    const splitGroupsBySectionBase = useMemo(() => {
+        const map = new Map<string, Set<'G1' | 'G2'>>()
+
+        allocations.forEach(a => {
+            if (getAllocationComponent(a) !== 'LAB') return
+
+            const group = getSectionGroup(String(a.section || ''))
+            if (!group) return
+
+            const base = makeSectionOptionValue(String(a.section || ''))
+            if (!base) return
+
+            if (!map.has(base)) map.set(base, new Set<'G1' | 'G2'>())
+            map.get(base)?.add(group)
+        })
+
+        return map
+    }, [allocations])
+
     const sections = useMemo(() => {
-        const unique = new Set<string>();
+        const unique = new Set<string>()
         classesWithStats.forEach(c => {
-            unique.add(c.section);
-            if (c.isSplitLab) {
-                unique.add(`${c.section} G1`);
-                unique.add(`${c.section} G2`);
+            const base = makeSectionOptionValue(String(c.section || ''))
+            if (!base) return
+
+            unique.add(base)
+            const allocGroups = splitGroupsBySectionBase.get(base)
+            const hasG1FromAlloc = !!allocGroups?.has('G1')
+            const hasG2FromAlloc = !!allocGroups?.has('G2')
+
+            if (c.isSplitLab || hasG1FromAlloc) {
+                unique.add(makeSectionOptionValue(base, 'G1'))
             }
-        });
-        return Array.from(unique).sort((a, b) => a.localeCompare(b));
-    }, [classesWithStats])
+            if (c.isSplitLab || hasG2FromAlloc) {
+                unique.add(makeSectionOptionValue(base, 'G2'))
+            }
+        })
+        return Array.from(unique).sort((a, b) => a.localeCompare(b))
+    }, [classesWithStats, splitGroupsBySectionBase])
 
     const facultyCollegeMap = useMemo(() => {
         const map = new Map<string, Set<string>>()
@@ -517,16 +554,53 @@ export default function ManualEditModal({
 
         classesWithStats.forEach(c => {
             const colleges = parseCollegeLabels(getEffectiveCollege(c))
-            colleges.forEach(college => addSectionCollege(c.section, college))
-            if (c.isSplitLab) {
+            const base = makeSectionOptionValue(String(c.section || ''))
+            if (!base) return
+
+            colleges.forEach(college => addSectionCollege(base, college))
+            const allocGroups = splitGroupsBySectionBase.get(base)
+            const hasG1FromAlloc = !!allocGroups?.has('G1')
+            const hasG2FromAlloc = !!allocGroups?.has('G2')
+
+            if (c.isSplitLab || hasG1FromAlloc) {
                 colleges.forEach(college => {
-                    addSectionCollege(`${c.section} G1`, college)
-                    addSectionCollege(`${c.section} G2`, college)
+                    addSectionCollege(makeSectionOptionValue(base, 'G1'), college)
+                })
+            }
+            if (c.isSplitLab || hasG2FromAlloc) {
+                colleges.forEach(college => {
+                    addSectionCollege(makeSectionOptionValue(base, 'G2'), college)
                 })
             }
         })
         return map
-    }, [classesWithStats, getEffectiveCollege])
+    }, [classesWithStats, getEffectiveCollege, splitGroupsBySectionBase])
+
+    const groupedSectionFilterOptions = useMemo(() => {
+        const grouped = new Map<string, string[]>()
+
+        sections.forEach(section => {
+            const colleges = Array.from(sectionCollegeMap.get(section) || [])
+            const targetColleges = colleges.length > 0 ? colleges : [UNKNOWN_COLLEGE]
+            targetColleges.forEach(college => {
+                if (!grouped.has(college)) grouped.set(college, [])
+                grouped.get(college)?.push(section)
+            })
+        })
+
+        const sortCollege = (a: string, b: string) => {
+            if (a === UNKNOWN_COLLEGE && b !== UNKNOWN_COLLEGE) return 1
+            if (b === UNKNOWN_COLLEGE && a !== UNKNOWN_COLLEGE) return -1
+            return a.localeCompare(b)
+        }
+
+        return Array.from(grouped.entries())
+            .sort(([a], [b]) => sortCollege(a, b))
+            .map(([college, items]) => ({
+                college,
+                options: Array.from(new Set(items)).sort((a, b) => a.localeCompare(b))
+            }))
+    }, [sections, sectionCollegeMap])
 
     const navigationItems = useMemo(() => {
         if (viewMode === 'room') return rooms
@@ -595,7 +669,16 @@ export default function ManualEditModal({
             const matchesSearch = c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.section.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchesSection = viewMode !== 'section' || filterSection === 'all' || c.section === filterSection || `${c.section} G1` === filterSection || `${c.section} G2` === filterSection;
+
+            const classBaseSection = makeSectionOptionValue(String(c.section || ''))
+            const filterBaseSection = makeSectionOptionValue(filterSection)
+            const filterGroup = getSectionGroup(filterSection)
+
+            const allocGroups = splitGroupsBySectionBase.get(classBaseSection)
+            const hasGroupFromAlloc = !!(filterGroup && allocGroups?.has(filterGroup))
+            const matchesSection = filterSection === 'all'
+                ? true
+                : classBaseSection === filterBaseSection && (!filterGroup || c.lecRemaining > 0 || hasGroupFromAlloc || (c.isSplitLab && (filterGroup === 'G1' ? c.labG1Remaining > 0 : c.labG2Remaining > 0)))
 
             const hasRemaining = c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0
             if (!(matchesSearch && matchesSection && hasRemaining)) return false
@@ -639,13 +722,70 @@ export default function ManualEditModal({
 
             return true
         })
-    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem, canAssignComponentToRoom, getEffectiveTeacherName])
+    }, [classesWithStats, searchQuery, filterSection, viewMode, activeItem, canAssignComponentToRoom, getEffectiveTeacherName, splitGroupsBySectionBase])
+
+    const unscheduledFallbackClasses = useMemo(() => {
+        return classesWithStats.filter(c => {
+            const matchesSearch = c.course_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.course_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.section.toLowerCase().includes(searchQuery.toLowerCase())
+
+            const classBaseSection = makeSectionOptionValue(String(c.section || ''))
+            const filterBaseSection = makeSectionOptionValue(filterSection)
+            const filterGroup = getSectionGroup(filterSection)
+
+            const allocGroups = splitGroupsBySectionBase.get(classBaseSection)
+            const hasGroupFromAlloc = !!(filterGroup && allocGroups?.has(filterGroup))
+            const matchesSection = filterSection === 'all'
+                ? true
+                : classBaseSection === filterBaseSection && (!filterGroup || c.lecRemaining > 0 || hasGroupFromAlloc || (c.isSplitLab && (filterGroup === 'G1' ? c.labG1Remaining > 0 : c.labG2Remaining > 0)))
+
+            const hasRemaining = c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0
+            return matchesSearch && matchesSection && hasRemaining
+        })
+    }, [classesWithStats, searchQuery, filterSection, splitGroupsBySectionBase])
+
+    const sourceUnscheduledFilteredClasses = useMemo(() => {
+        return (unscheduledSourceClasses || []).filter((c: any) => {
+            const code = String(c.course_code || '')
+            const name = String(c.course_name || '')
+            const section = String(c.section || '')
+
+            const matchesSearch =
+                code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                section.toLowerCase().includes(searchQuery.toLowerCase())
+
+            if (!matchesSearch) return false
+            if (filterSection === 'all') return true
+
+            const classBaseSection = makeSectionOptionValue(section)
+            const filterBaseSection = makeSectionOptionValue(filterSection)
+            return classBaseSection === filterBaseSection
+        })
+    }, [unscheduledSourceClasses, searchQuery, filterSection])
 
     const remainingClassCount = useMemo(() => {
         return classesWithStats.filter(c =>
             c.lecRemaining > 0 || c.labRemaining > 0 || c.labG1Remaining > 0 || c.labG2Remaining > 0
         ).length
     }, [classesWithStats])
+
+    const summaryTotals = useMemo(() => {
+        const hasSourceUnscheduledList = Array.isArray(unscheduledSourceClasses)
+        const unscheduled = hasSourceUnscheduledList
+            ? Math.max(0, unscheduledSourceClasses.length)
+            : Math.max(0, remainingClassCount)
+        const total = Math.max(0, classes.length)
+        const scheduled = Math.max(0, total - unscheduled)
+
+        return {
+            total,
+            scheduled,
+            unscheduled,
+            canShow: total > 0 || unscheduled > 0,
+        }
+    }, [classes.length, unscheduledSourceClasses, remainingClassCount])
 
     // 6. Conflict Detection
     const checkConflicts = useCallback((newAlloc: any, ignoreSelfId?: any) => {
@@ -1280,6 +1420,11 @@ export default function ManualEditModal({
                     <div className={styles.coursesPanel}>
                         <div className={styles.panelHeader}>
                             <h3>Available Courses</h3>
+                            {summaryTotals.canShow && (
+                                <p style={{ margin: '2px 0 10px', fontSize: '12px', opacity: 0.9 }}>
+                                    Total: <strong>{summaryTotals.total}</strong> | Scheduled: <strong>{summaryTotals.scheduled}</strong> | Unscheduled: <strong>{summaryTotals.unscheduled}</strong>
+                                </p>
+                            )}
                             <div className={styles.searchBox}>
                                 <MdSearch />
                                 <input
@@ -1293,8 +1438,14 @@ export default function ManualEditModal({
                                 <div className={styles.filterBox}>
                                     <MdGroups />
                                     <select value={filterSection} onChange={e => setFilterSection(e.target.value)}>
-                                        <option value="all">All Sections</option>
-                                        {sections.map(s => <option key={s} value={s}>{s}</option>)}
+                                        <option value="all">All Sections ({sections.length})</option>
+                                        {groupedSectionFilterOptions.map(group => (
+                                            <optgroup key={group.college} label={group.college}>
+                                                {group.options.map(section => (
+                                                    <option key={`${group.college}-${section}`} value={section}>{section}</option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -1330,6 +1481,61 @@ export default function ManualEditModal({
                                                 Switch to Section View
                                             </button>
                                         </>
+                                    )}
+
+                                    {sourceUnscheduledFilteredClasses.length > 0 && (
+                                        <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                                            <p style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                                                Unscheduled classes from source ({sourceUnscheduledFilteredClasses.length}):
+                                            </p>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {sourceUnscheduledFilteredClasses.slice(0, 50).map((c: any) => (
+                                                    <div
+                                                        key={`source-unscheduled-${c.id ?? `${c.course_code}-${c.section}`}`}
+                                                        style={{
+                                                            border: '1px solid rgba(148, 163, 184, 0.25)',
+                                                            borderRadius: '8px',
+                                                            padding: '8px 10px',
+                                                            background: 'rgba(15, 23, 42, 0.35)',
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                                                            <strong style={{ fontSize: '12px' }}>{String(c.course_code || '')} - {makeSectionOptionValue(String(c.section || ''))}</strong>
+                                                        </div>
+                                                        <p style={{ margin: '4px 0 0', fontSize: '11px', opacity: 0.85 }}>{String(c.course_name || '')}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {sourceUnscheduledFilteredClasses.length === 0 && unscheduledFallbackClasses.length > 0 && (
+                                        <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                                            <p style={{ margin: '0 0 10px', fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>
+                                                Unscheduled classes found ({unscheduledFallbackClasses.length}):
+                                            </p>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {unscheduledFallbackClasses.slice(0, 50).map(c => (
+                                                    <div
+                                                        key={`fallback-${c.id}`}
+                                                        style={{
+                                                            border: '1px solid rgba(148, 163, 184, 0.25)',
+                                                            borderRadius: '8px',
+                                                            padding: '8px 10px',
+                                                            background: 'rgba(15, 23, 42, 0.35)',
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                                                            <strong style={{ fontSize: '12px' }}>{c.course_code} - {makeSectionOptionValue(String(c.section || ''))}</strong>
+                                                            <span style={{ fontSize: '11px', opacity: 0.9 }}>
+                                                                {(c.lecRemaining || 0) + (c.labRemaining || 0) + (c.labG1Remaining || 0) + (c.labG2Remaining || 0)}h left
+                                                            </span>
+                                                        </div>
+                                                        <p style={{ margin: '4px 0 0', fontSize: '11px', opacity: 0.85 }}>{c.course_name}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             ) : (

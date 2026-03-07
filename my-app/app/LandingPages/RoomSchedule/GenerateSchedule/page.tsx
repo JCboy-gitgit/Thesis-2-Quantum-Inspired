@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './GenerateSchedule.module.css'
 import MenuBar from '@/app/components/MenuBar'
@@ -299,6 +299,9 @@ const BACKEND_PREFERENCE_LABELS: Record<BackendPreference, string> = {
   render: 'Render',
 }
 
+const CAMPUS_OPENING_MINUTES = 7 * 60
+const CAMPUS_CLOSING_MINUTES = 20 * 60
+
 // Days for timetable
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -325,11 +328,38 @@ function formatSectionDisplayLabel(rawSection: string): string {
   return `${base}-${group}`
 }
 
+function parseHHMMToMinutes(value: string): number {
+  const [h, m] = String(value || '').split(':').map(Number)
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return CAMPUS_OPENING_MINUTES
+  return (h * 60) + m
+}
+
+function minutesToHHMM(value: number): string {
+  const h = Math.floor(value / 60)
+  const m = value % 60
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+}
+
+function normalizeCampusTimeSettings(settings: TimeSettings): TimeSettings {
+  const rawStart = parseHHMMToMinutes(settings.startTime)
+  const rawEnd = parseHHMMToMinutes(settings.endTime)
+
+  const start = Math.max(CAMPUS_OPENING_MINUTES, Math.min(rawStart, CAMPUS_CLOSING_MINUTES - 30))
+  const end = Math.max(start + 30, Math.min(rawEnd, CAMPUS_CLOSING_MINUTES))
+
+  return {
+    ...settings,
+    startTime: minutesToHHMM(start),
+    endTime: minutesToHHMM(end),
+  }
+}
+
 // Utility function to generate time slots from settings
 function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
+  const normalized = normalizeCampusTimeSettings(settings)
   const slots: TimeSlot[] = []
-  const [startHour, startMin] = settings.startTime.split(':').map(Number)
-  const [endHour, endMin] = settings.endTime.split(':').map(Number)
+  const [startHour, startMin] = normalized.startTime.split(':').map(Number)
+  const [endHour, endMin] = normalized.endTime.split(':').map(Number)
 
   let currentTime = startHour * 60 + startMin // Convert to minutes
   const endTimeMinutes = endHour * 60 + endMin
@@ -436,7 +466,7 @@ export default function GenerateSchedulePage() {
   // Time Configuration
   const [timeSettings, setTimeSettings] = useState<TimeSettings>({
     startTime: '07:00',
-    endTime: '21:00',
+    endTime: '20:00',
     slotDuration: 30, // 30 minutes for better granularity and alignment with manual editor
     includeSaturday: true,
     includeSunday: false,
@@ -494,6 +524,8 @@ export default function GenerateSchedulePage() {
   const [showAllRooms, setShowAllRooms] = useState(false)
   const [showAllClasses, setShowAllClasses] = useState(false)
   const [previewSearchQuery, setPreviewSearchQuery] = useState('')
+  const [unscheduledSearchQuery, setUnscheduledSearchQuery] = useState('')
+  const [unscheduledReasonFilter, setUnscheduledReasonFilter] = useState<'all' | string>('all')
   const [backendProbe, setBackendProbe] = useState<BackendProbeState>({
     checking: false,
     reachable: null,
@@ -545,6 +577,56 @@ export default function GenerateSchedulePage() {
       })
     }
   }
+
+  const unscheduledReasonLabels: Record<string, { label: string; icon: string; color: string }> = {
+    INSUFFICIENT_ROOM_CAPACITY: { label: 'Room Capacity', icon: '🏢', color: '#ef4444' },
+    NO_LAB_ROOMS: { label: 'No Lab Rooms', icon: '🔬', color: '#8b5cf6' },
+    TEACHER_OVERLOADED: { label: 'Teacher Overloaded', icon: '👨‍🏫', color: '#f59e0b' },
+    SCHEDULE_FULL: { label: 'Schedule Full', icon: '📅', color: '#ec4899' },
+    TIME_CONFLICT: { label: 'Time Conflicts', icon: '⏰', color: '#3b82f6' },
+    PARTIAL_SCHEDULE: { label: 'Partially Scheduled', icon: '📊', color: '#10b981' },
+    ROOM_TYPE_MISMATCH: { label: 'Room Type Mismatch', icon: '🚪', color: '#6366f1' },
+    UNKNOWN: { label: 'Other', icon: '❓', color: '#6b7280' }
+  }
+
+  const unscheduledReasonCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    const list = scheduleResult?.unscheduledList || []
+    list.forEach((item: UnscheduledItem) => {
+      const code = item.reason_code || 'UNKNOWN'
+      counts[code] = (counts[code] || 0) + 1
+    })
+    return counts
+  }, [scheduleResult?.unscheduledList])
+
+  const filteredUnscheduledList = useMemo(() => {
+    const list = scheduleResult?.unscheduledList || []
+    const query = unscheduledSearchQuery.trim().toLowerCase()
+
+    return list.filter((item: UnscheduledItem) => {
+      const reasonCode = item.reason_code || 'UNKNOWN'
+      if (unscheduledReasonFilter !== 'all' && reasonCode !== unscheduledReasonFilter) {
+        return false
+      }
+
+      if (!query) return true
+
+      const text = [
+        item.course_code,
+        item.course_name,
+        item.section_code,
+        item.teacher_name,
+        item.reason,
+        reasonCode,
+        ...(item.reason_details || []),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return text.includes(query)
+    })
+  }, [scheduleResult?.unscheduledList, unscheduledSearchQuery, unscheduledReasonFilter])
 
   // Helper function to send browser notification
   const sendBrowserNotification = (title: string, body: string, icon: 'success' | 'error' = 'success') => {
@@ -862,13 +944,26 @@ export default function GenerateSchedulePage() {
         .select('*, faculty_profiles(*)')
         .in('course_id', filteredCourses.map((c: any) => c.id))
 
-      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
+      const normalizeCollege = (value?: string | null) => {
+        const raw = String(value || '').trim().toUpperCase()
+        if (!raw) return ''
+        const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+        return abbr || raw
+      }
+      const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
+        const sCol = normalizeCollege(sectionCollege)
+        const fCol = normalizeCollege(facultyCollege)
+        if (!sCol || !fCol) return true
+        return fCol === 'SHARED' || fCol === sCol
+      }
       if (!teachingLoadsError && teachingLoads) {
         teachingLoads.forEach((load: any) => {
           const key = `${load.course_id}-${load.section || ''}`
           teachingLoadsMap.set(key, {
             faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
-            section: load.section || ''
+            section: load.section || '',
+            faculty_college: load.faculty_profiles?.college || null
           })
         })
       }
@@ -935,7 +1030,10 @@ export default function GenerateSchedulePage() {
         for (const course of sectionCourses) {
           const teacherKey = `${course.id}-${section.section_name}`
           const teacherKeyNoSection = `${course.id}-`
-          const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+          const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+          const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
+            ? teacherCandidate
+            : undefined
 
           if (!assignedTeacher) {
             unassigned.push({
@@ -962,7 +1060,8 @@ export default function GenerateSchedulePage() {
             department: course.department || section.department || '',
             semester: course.semester || '',
             academic_year: course.academic_year || '',
-            teacher_name: assignedTeacher?.faculty_name || ''
+            teacher_name: assignedTeacher?.faculty_name || '',
+            college: (section.college && section.college !== 'Unassigned College' ? section.college : (course.college && course.college !== 'Unassigned College' ? course.college : ''))
           })
         }
         classSchedules.push(...splitClasses(currentSectionClasses))
@@ -1057,13 +1156,26 @@ export default function GenerateSchedulePage() {
         .select('*, faculty_profiles(*)')
         .in('course_id', filteredCourses.map((c: any) => c.id))
 
-      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+      const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
+      const normalizeCollege = (value?: string | null) => {
+        const raw = String(value || '').trim().toUpperCase()
+        if (!raw) return ''
+        const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+        return abbr || raw
+      }
+      const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
+        const sCol = normalizeCollege(sectionCollege)
+        const fCol = normalizeCollege(facultyCollege)
+        if (!sCol || !fCol) return true
+        return fCol === 'SHARED' || fCol === sCol
+      }
       if (teachingLoads) {
         teachingLoads.forEach((load: any) => {
           const key = `${load.course_id}-${load.section || ''}`
           teachingLoadsMap.set(key, {
             faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || 'Unknown',
-            section: load.section || ''
+            section: load.section || '',
+            faculty_college: load.faculty_profiles?.college || null
           })
         })
       }
@@ -1082,7 +1194,10 @@ export default function GenerateSchedulePage() {
         for (const course of sectionCourses) {
           const teacherKey = `${course.id}-${section.section_name}`
           const teacherKeyNoSection = `${course.id}-`
-          const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+          const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+          const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
+            ? teacherCandidate
+            : undefined
 
           if (!assignedTeacher) {
             unassigned.push({
@@ -1109,7 +1224,8 @@ export default function GenerateSchedulePage() {
             department: course.department || section.department || '',
             semester: course.semester || '',
             academic_year: course.academic_year || '',
-            teacher_name: assignedTeacher?.faculty_name || ''
+            teacher_name: assignedTeacher?.faculty_name || '',
+            college: (section.college && section.college !== 'Unassigned College' ? section.college : (course.college && course.college !== 'Unassigned College' ? course.college : ''))
           })
         }
       }
@@ -1304,13 +1420,26 @@ export default function GenerateSchedulePage() {
           .from('teaching_loads') as any)
           .select('*, faculty_profiles(*)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
+        const normalizeCollege = (value?: string | null) => {
+          const raw = String(value || '').trim().toUpperCase()
+          if (!raw) return ''
+          const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+          return abbr || raw
+        }
+        const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
+          const sCol = normalizeCollege(sectionCollege)
+          const fCol = normalizeCollege(facultyCollege)
+          if (!sCol || !fCol) return true
+          return fCol === 'SHARED' || fCol === sCol
+        }
         if (teachingLoads) {
           teachingLoads.forEach((load: any) => {
             const key = `${load.course_id}-${load.section || ''}`
             teachingLoadsMap.set(key, {
               faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || load.faculty_profiles?.email || 'Unknown',
-              section: load.section || ''
+              section: load.section || '',
+              faculty_college: load.faculty_profiles?.college || null
             })
           })
         }
@@ -1446,7 +1575,10 @@ export default function GenerateSchedulePage() {
             const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
             const teacherKeyNoSection = `${course.id}-`
-            const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
+              ? teacherCandidate
+              : undefined
             if (!assignedTeacher) {
               allUnassigned.push({
                 course_code: course.course_code || '',
@@ -1478,10 +1610,9 @@ export default function GenerateSchedulePage() {
               required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
                 (course.lab_hours > 0) ? 'LAB' : 'LEC',
-              college: course.college || section.college || ''
+              college: (section.college && section.college !== 'Unassigned College' ? section.college : (course.college && course.college !== 'Unassigned College' ? course.college : ''))
             })
           }
-
           allClassSchedules.push(...splitClasses(currentSectionClasses))
         }
       }
@@ -1561,13 +1692,26 @@ export default function GenerateSchedulePage() {
           .from('teaching_loads') as any)
           .select('*, faculty_profiles(*)')
           .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string }>()
+        const teachingLoadsMap = new Map<string, { faculty_name: string; section: string; faculty_college?: string | null }>()
+        const normalizeCollege = (value?: string | null) => {
+          const raw = String(value || '').trim().toUpperCase()
+          if (!raw) return ''
+          const abbr = raw.match(/\(([^)]+)\)\s*$/)?.[1]?.trim().toUpperCase()
+          return abbr || raw
+        }
+        const isFacultyCollegeCompatible = (sectionCollege?: string | null, facultyCollege?: string | null) => {
+          const sCol = normalizeCollege(sectionCollege)
+          const fCol = normalizeCollege(facultyCollege)
+          if (!sCol || !fCol) return true
+          return fCol === 'SHARED' || fCol === sCol
+        }
         if (teachingLoads) {
           teachingLoads.forEach((load: any) => {
             const key = `${load.course_id}-${load.section || ''}`
             teachingLoadsMap.set(key, {
               faculty_name: load.faculty_profiles?.full_name || load.faculty_profiles?.name || 'Unknown',
-              section: load.section || ''
+              section: load.section || '',
+              faculty_college: load.faculty_profiles?.college || null
             })
           })
         }
@@ -1703,7 +1847,10 @@ export default function GenerateSchedulePage() {
             const courseId = course.id
             const teacherKey = `${course.id}-${section.section_name}`
             const teacherKeyNoSection = `${course.id}-`
-            const assignedTeacher = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            const teacherCandidate = teachingLoadsMap.get(teacherKey) || teachingLoadsMap.get(teacherKeyNoSection)
+            const assignedTeacher = (teacherCandidate && isFacultyCollegeCompatible(section.college || course.college, teacherCandidate.faculty_college))
+              ? teacherCandidate
+              : undefined
             if (!assignedTeacher) {
               allUnassigned.push({
                 course_code: course.course_code || '',
@@ -1735,7 +1882,7 @@ export default function GenerateSchedulePage() {
               required_lab_features: reqMap.get(courseId)?.lab || [],
               component: (course.lec_hours > 0 && course.lab_hours > 0) ? 'COMBINED' :
                 (course.lab_hours > 0) ? 'LAB' : 'LEC',
-              college: course.college || section.college || ''
+              college: (section.college && section.college !== 'Unassigned College' ? section.college : (course.college && course.college !== 'Unassigned College' ? course.college : ''))
             })
           }
           allClassSchedules.push(...splitClasses(currentSectionClasses))
@@ -3053,57 +3200,96 @@ export default function GenerateSchedulePage() {
               {scheduleResult.unscheduledList && scheduleResult.unscheduledList.length > 0 && (
                 <div className={styles.formCard}>
                   <h3 className={styles.formSectionTitle}>
-                    <FaExclamationTriangle style={{ color: '#f59e0b' }} /> Unscheduled Classes ({scheduleResult.unscheduledList.length})
+                    <FaExclamationTriangle style={{ color: '#f59e0b' }} /> Unscheduled Classes ({filteredUnscheduledList.length}/{scheduleResult.unscheduledList.length})
                   </h3>
                   <p className={styles.formDescription}>
                     The following classes could not be scheduled. Review the detailed reasons below to resolve issues.
                   </p>
 
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(220px, 1fr) minmax(200px, 280px) auto',
+                    gap: '10px',
+                    marginBottom: '14px'
+                  }}>
+                    <input
+                      type="text"
+                      value={unscheduledSearchQuery}
+                      onChange={(e) => setUnscheduledSearchQuery(e.target.value)}
+                      placeholder="Search course, section, teacher, reason..."
+                      className={styles.formInput}
+                    />
+                    <select
+                      value={unscheduledReasonFilter}
+                      onChange={(e) => setUnscheduledReasonFilter(e.target.value)}
+                      className={styles.formSelect}
+                    >
+                      <option value="all">All Reason Types</option>
+                      {Object.keys(unscheduledReasonCounts)
+                        .sort((a, b) => (unscheduledReasonCounts[b] || 0) - (unscheduledReasonCounts[a] || 0))
+                        .map((code) => {
+                          const info = unscheduledReasonLabels[code] || unscheduledReasonLabels.UNKNOWN
+                          return (
+                            <option key={code} value={code}>
+                              {`${info.icon} ${info.label} (${unscheduledReasonCounts[code] || 0})`}
+                            </option>
+                          )
+                        })}
+                    </select>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => {
+                        setUnscheduledSearchQuery('')
+                        setUnscheduledReasonFilter('all')
+                      }}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+
                   {/* Summary by reason type */}
                   <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    {(() => {
-                      const reasonCounts: Record<string, number> = {}
-                      scheduleResult.unscheduledList.forEach((item: UnscheduledItem) => {
-                        const code = item.reason_code || 'UNKNOWN'
-                        reasonCounts[code] = (reasonCounts[code] || 0) + 1
-                      })
-
-                      const reasonLabels: Record<string, { label: string; icon: string; color: string }> = {
-                        'INSUFFICIENT_ROOM_CAPACITY': { label: 'Room Capacity', icon: '🏢', color: '#ef4444' },
-                        'NO_LAB_ROOMS': { label: 'No Lab Rooms', icon: '🔬', color: '#8b5cf6' },
-                        'TEACHER_OVERLOADED': { label: 'Teacher Overloaded', icon: '👨‍🏫', color: '#f59e0b' },
-                        'SCHEDULE_FULL': { label: 'Schedule Full', icon: '📅', color: '#ec4899' },
-                        'TIME_CONFLICT': { label: 'Time Conflicts', icon: '⏰', color: '#3b82f6' },
-                        'PARTIAL_SCHEDULE': { label: 'Partially Scheduled', icon: '📊', color: '#10b981' },
-                        'ROOM_TYPE_MISMATCH': { label: 'Room Type Mismatch', icon: '🚪', color: '#6366f1' },
-                        'UNKNOWN': { label: 'Other', icon: '❓', color: '#6b7280' }
-                      }
-
-                      return Object.entries(reasonCounts).map(([code, count]) => {
-                        const info = reasonLabels[code] || reasonLabels['UNKNOWN']
-                        return (
-                          <div key={code} style={{
+                    {Object.entries(unscheduledReasonCounts).map(([code, count]) => {
+                      const info = unscheduledReasonLabels[code] || unscheduledReasonLabels.UNKNOWN
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => setUnscheduledReasonFilter((prev) => prev === code ? 'all' : code)}
+                          style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
                             padding: '8px 12px',
                             borderRadius: '8px',
                             backgroundColor: `${info.color}15`,
-                            border: `1px solid ${info.color}40`,
+                            border: unscheduledReasonFilter === code ? `2px solid ${info.color}` : `1px solid ${info.color}40`,
                             fontSize: '13px',
-                            fontWeight: 500
-                          }}>
-                            <span>{info.icon}</span>
-                            <span style={{ color: info.color }}>{count}</span>
-                            <span style={{ color: '#666' }}>{info.label}</span>
-                          </div>
-                        )
-                      })
-                    })()}
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                          }}
+                          title={unscheduledReasonFilter === code ? 'Click to show all reasons' : `Filter by ${info.label}`}
+                        >
+                          <span>{info.icon}</span>
+                          <span style={{ color: info.color }}>{count}</span>
+                          <span style={{ color: '#666' }}>{info.label}</span>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   <div className={styles.unscheduledList}>
-                    {scheduleResult.unscheduledList.map((item: UnscheduledItem, index: number) => {
+                    {filteredUnscheduledList.length === 0 && (
+                      <div className={styles.unscheduledItem}>
+                        <div className={styles.unscheduledHeader}>
+                          <span className={styles.unscheduledCourse}>No unscheduled entries match the current filters</span>
+                        </div>
+                        <div className={styles.unscheduledName}>Try clearing the search or reason filter.</div>
+                      </div>
+                    )}
+                    {filteredUnscheduledList.map((item: UnscheduledItem, index: number) => {
                       const reasonIcons: Record<string, string> = {
                         'INSUFFICIENT_ROOM_CAPACITY': '🏢',
                         'NO_LAB_ROOMS': '🔬',
@@ -4620,7 +4806,9 @@ export default function GenerateSchedulePage() {
                           type="time"
                           className={styles.formInput}
                           value={timeSettings.startTime}
-                          onChange={(e) => setTimeSettings(prev => ({ ...prev, startTime: e.target.value }))}
+                          min="07:00"
+                          max="19:30"
+                          onChange={(e) => setTimeSettings(prev => normalizeCampusTimeSettings({ ...prev, startTime: e.target.value }))}
                         />
                       </div>
                       <div className={styles.formGroup}>
@@ -4629,7 +4817,9 @@ export default function GenerateSchedulePage() {
                           type="time"
                           className={styles.formInput}
                           value={timeSettings.endTime}
-                          onChange={(e) => setTimeSettings(prev => ({ ...prev, endTime: e.target.value }))}
+                          min="07:30"
+                          max="20:00"
+                          onChange={(e) => setTimeSettings(prev => normalizeCampusTimeSettings({ ...prev, endTime: e.target.value }))}
                         />
                       </div>
                     </div>

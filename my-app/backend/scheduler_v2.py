@@ -450,7 +450,7 @@ class SchedulingConstraints:
     distribute_days_evenly: bool = True
     day_class_start: int = 420       # 07:00 in minutes
     day_class_end: int = 1080        # 18:00 in minutes
-    night_class_end: int = 1260      # 21:00 in minutes - DEFAULT TO 9PM (respects frontend)
+    night_class_end: int = 1200      # 20:00 in minutes - DEFAULT TO 8PM (respects frontend)
     strict_lab_room_matching: bool = True  # Lab classes MUST be in lab rooms
     strict_lecture_room_matching: bool = True  # Lecture classes should NOT be in lab rooms
     # NEW: Realistic class duration constraints
@@ -586,14 +586,14 @@ def minutes_to_time_24h(minutes: int) -> str:
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
 
 
-def generate_30min_slots(start_time: str = "07:00", end_time: str = "21:00") -> List[TimeSlot]:
+def generate_30min_slots(start_time: str = "07:00", end_time: str = "20:00") -> List[TimeSlot]:
     """Generate 30-minute time slots for a day (legacy function)"""
     return generate_time_slots(start_time, end_time, 30)
 
 
 def generate_time_slots(
     start_time: str = "07:00",
-    end_time: str = "21:00",
+    end_time: str = "20:00",
     slot_duration: int = 90,
     lunch_start: Optional[str] = None,
     lunch_end: Optional[str] = None
@@ -609,7 +609,7 @@ def generate_time_slots(
     
     Args:
         start_time: Campus opening time (e.g., "07:00")
-        end_time: Campus closing time (e.g., "21:00")
+        end_time: Campus closing time (e.g., "20:00")
         slot_duration: Duration in minutes (default 90 = 1.5 hours standard academic period)
         lunch_start: Lunch break start time (e.g., "13:00").  None = no gap.
         lunch_end:   Lunch break end time   (e.g., "14:00").  None = no gap.
@@ -4072,7 +4072,7 @@ def run_enhanced_scheduler(
     # Generate time slots using configured duration (skipping lunch gap)
     if not time_slots_data:
         start_time = config.get('start_time', '07:00')
-        end_time = config.get('end_time', '21:00')
+        end_time = config.get('end_time', '20:00')
         time_slots = generate_time_slots(
             start_time, end_time, slot_duration,
             lunch_start=lunch_start_str, lunch_end=lunch_end_str
@@ -4434,8 +4434,8 @@ def run_enhanced_scheduler(
     lunch_start_hour = config.get('lunch_start_hour', 12)
     lunch_end_hour = config.get('lunch_end_hour', 13)
     
-    # Campus closing time - RESPECT FRONTEND'S end_time (e.g., "21:00" for 9PM)
-    end_time_str = config.get('end_time', '21:00')  # Default to 9PM
+    # Campus closing time - RESPECT FRONTEND'S end_time (e.g., "20:00" for 8PM)
+    end_time_str = config.get('end_time', '20:00')  # Default to 8PM
     end_time_minutes = parse_time_to_minutes(end_time_str)
     
     # Mapping max_consecutive_hours to the auto-break threshold
@@ -4626,7 +4626,8 @@ def run_enhanced_scheduler(
     if stats.unscheduled_count > 0:
         print(f"🚨 PASS 2 left {stats.unscheduled_count} items unscheduled. ENABLING EMERGENCY RECOVERY...")
         # Relax constraints: Allow slight capacity overflow, ignore college preference, relax lunch rules
-        scheduler.constraints.college_room_matching_enabled = False
+        # Keep college-room matching enabled to prevent cross-college assignments.
+        scheduler.constraints.college_room_matching_enabled = True
         scheduler.constraints.strict_lab_room_matching = False
         scheduler.constraints.auto_break_after_consecutive_hours += 2 # Give 2 more hours wiggle room
         

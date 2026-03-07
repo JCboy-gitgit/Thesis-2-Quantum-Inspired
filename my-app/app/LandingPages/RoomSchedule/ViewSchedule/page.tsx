@@ -230,8 +230,8 @@ const matchesSectionView = (allocation: RoomAllocation, sectionViewLabel: string
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-// Fixed 30-minute time slots from 7:00 AM to 9:00 PM (29 slots)
-const FIXED_TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
+// Fixed 30-minute time slots from 7:00 AM to 8:00 PM (27 slots)
+const FIXED_TIME_SLOTS = Array.from({ length: 27 }, (_, i) => {
   const hour = Math.floor(i / 2) + 7
   const minute = (i % 2) * 30
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
@@ -395,6 +395,7 @@ export default function ViewSchedulePage() {
   // Manual unscheduled placement state
   const [showManualEditModal, setShowManualEditModal] = useState(false)
   const [manualEditClasses, setManualEditClasses] = useState<ManualClassItem[]>([])
+  const [manualEditSourceUnscheduledClasses, setManualEditSourceUnscheduledClasses] = useState<ManualClassItem[]>([])
   const [manualEditRooms, setManualEditRooms] = useState<any[]>([])
   const [loadingManualEditData, setLoadingManualEditData] = useState(false)
   const [manualEditSourceScheduleId, setManualEditSourceScheduleId] = useState<number | null>(null)
@@ -622,7 +623,7 @@ export default function ViewSchedulePage() {
         .order('created_at', { ascending: false })
 
       if (!scheduleError && scheduleData && scheduleData.length > 0) {
-        // Fetch school names and college names
+        // Fetch school names and derive college labels (supports multi-college schedules)
         const schedulesWithNames = await Promise.all(scheduleData.map(async (schedule: any) => {
           const { data: campusData } = await db
             .from('campuses')
@@ -634,47 +635,62 @@ export default function ViewSchedulePage() {
           // Try to get college from sections table (class_group_id is actually year_batch_id)
           let collegeName = 'All Colleges'
 
-          // First try: look up sections linked to this year batch
-          const { data: sectionData } = await db
-            .from('sections')
+          // Primary source: colleges already attached to this generated schedule allocations.
+          const { data: allocationColleges } = await db
+            .from('room_allocations')
             .select('college')
-            .eq('year_batch_id', schedule.class_group_id)
+            .eq('schedule_id', schedule.id)
             .not('college', 'is', null)
-            .limit(1)
-            .single()
 
-          if (sectionData?.college) {
-            collegeName = sectionData.college
-          } else {
-            // Fallback: try class_schedules with upload_group_id
-            const { data: classData } = await db
-              .from('class_schedules')
-              .select('college')
-              .eq('upload_group_id', schedule.class_group_id)
-              .limit(1)
-              .single()
-
-            if (classData?.college) {
-              collegeName = classData.college
+          if (allocationColleges && allocationColleges.length > 0) {
+            const uniqueAllocColleges = Array.from(new Set(
+              allocationColleges
+                .map((row: any) => String(row.college || '').trim())
+                .filter((name: string) => name.length > 0)
+            ))
+            if (uniqueAllocColleges.length > 1) {
+              collegeName = uniqueAllocColleges.join(', ')
+            } else if (uniqueAllocColleges.length === 1) {
+              collegeName = uniqueAllocColleges[0] as string
             }
           }
 
-          // Check if multiple colleges are in this year batch
-          const { data: allSectionColleges } = await db
-            .from('sections')
-            .select('college')
-            .eq('year_batch_id', schedule.class_group_id)
-            .not('college', 'is', null)
+          // Secondary source: derive from sections/class schedules when allocation rows are missing college.
+          if (collegeName === 'All Colleges') {
+            const { data: sectionData } = await db
+              .from('sections')
+              .select('college')
+              .eq('year_batch_id', schedule.class_group_id)
+              .not('college', 'is', null)
 
-          if (allSectionColleges && allSectionColleges.length > 0) {
-            const collegeNames: string[] = allSectionColleges
-              .map((s: any) => s.college)
-              .filter((c: any): c is string => typeof c === 'string' && c.length > 0)
-            const uniqueColleges: string[] = Array.from(new Set(collegeNames))
-            if (uniqueColleges.length > 1) {
-              collegeName = uniqueColleges.join(', ')
-            } else if (uniqueColleges.length === 1) {
-              collegeName = uniqueColleges[0] as string
+            const uniqueSectionColleges = Array.from(new Set(
+              (sectionData || [])
+                .map((row: any) => String(row.college || '').trim())
+                .filter((name: string) => name.length > 0)
+            ))
+
+            if (uniqueSectionColleges.length > 1) {
+              collegeName = uniqueSectionColleges.join(', ')
+            } else if (uniqueSectionColleges.length === 1) {
+              collegeName = uniqueSectionColleges[0] as string
+            } else {
+              const { data: classData } = await db
+                .from('class_schedules')
+                .select('college')
+                .eq('upload_group_id', schedule.class_group_id)
+                .not('college', 'is', null)
+
+              const uniqueClassColleges = Array.from(new Set(
+                (classData || [])
+                  .map((row: any) => String(row.college || '').trim())
+                  .filter((name: string) => name.length > 0)
+              ))
+
+              if (uniqueClassColleges.length > 1) {
+                collegeName = uniqueClassColleges.join(', ')
+              } else if (uniqueClassColleges.length === 1) {
+                collegeName = uniqueClassColleges[0] as string
+              }
             }
           }
 
@@ -834,11 +850,50 @@ export default function ViewSchedulePage() {
 
               return a
             })
-
-            // Update state again with enriched college data
-            setAllocations(enrichedAllocations)
-            setAllocationsSourceScheduleId(selectedSchedule.id)
           }
+          
+          // Secondary Fallback: look up from `sections` table for remaining unresolved allocations.
+          if (enrichedAllocations.some((a: any) => isCollegeUnset(a.college))) {
+            const unresolvedSections = Array.from(new Set(
+              enrichedAllocations
+                .filter((a: any) => isCollegeUnset(a.college))
+                .map((a: any) => String(a.section || '').trim())
+                .filter(Boolean)
+            ))
+
+            if (unresolvedSections.length > 0) {
+              const { data: sectionData } = await db
+                .from('sections')
+                .select('section_name, college')
+                .in('section_name', unresolvedSections)
+                .not('college', 'is', null)
+
+              if (sectionData && sectionData.length > 0) {
+                const collegeBySection = new Map<string, string>()
+                sectionData.forEach((row: any) => {
+                  const college = String(row.college || '').trim()
+                  if (!college || isCollegeUnset(college)) return
+                  collegeBySection.set(String(row.section_name || '').trim(), college)
+                })
+
+                enrichedAllocations = enrichedAllocations.map((a: any) => {
+                  if (!isCollegeUnset(a.college)) return a
+                  
+                  // Extract base section (e.g. BAB 1A from BAB 1A_G1)
+                  const cleanSectionMatch = String(a.section || '').match(/^([^_]+)(?:_G[12])?$/)
+                  const cleanSection = cleanSectionMatch ? cleanSectionMatch[1].trim() : String(a.section || '').trim()
+
+                  const fromSection = collegeBySection.get(cleanSection)
+                  if (fromSection) return { ...a, college: fromSection }
+                  return a
+                })
+              }
+            }
+          }
+
+          // Update state again with enriched college data
+          setAllocations(enrichedAllocations)
+          setAllocationsSourceScheduleId(selectedSchedule.id)
         }
 
         // Extract unique buildings, rooms, sections and teachers
@@ -848,6 +903,9 @@ export default function ViewSchedulePage() {
         const uniqueTeachers: string[] = [...new Set(enrichedAllocations.map((a: any) => a.teacher_name).filter((t: any): t is string => !!t))]
         const uniqueCourses: string[] = [...new Set(enrichedAllocations.map((a: any) => a.course_code).filter((c: any): c is string => !!c))]
         const uniqueColleges: string[] = [...new Set(enrichedAllocations.map((a: any) => a.college).filter((c: any): c is string => !!c))].sort()
+        const derivedCollegeLabel = uniqueColleges.length > 0
+          ? uniqueColleges.join(', ')
+          : (selectedSchedule.college || 'All Colleges')
 
         // Build building-room mapping
         const brMap = new Map<string, string[]>()
@@ -870,6 +928,19 @@ export default function ViewSchedulePage() {
         setCourses(uniqueCourses)
         setColleges(uniqueColleges)
         setBuildingRoomMap(brMap)
+        setSelectedSchedule(prev => {
+          if (!prev || prev.id !== selectedSchedule.id) return prev
+          if ((prev.college || 'All Colleges') === derivedCollegeLabel) return prev
+          return {
+            ...prev,
+            college: derivedCollegeLabel,
+          }
+        })
+        setSchedules(prev => prev.map(item => {
+          if (item.id !== selectedSchedule.id) return item
+          if ((item.college || 'All Colleges') === derivedCollegeLabel) return item
+          return { ...item, college: derivedCollegeLabel }
+        }))
       } else {
         // Try to build allocations from class_schedules and campuses
         await buildAllocationsFromSource(selectedSchedule)
@@ -943,7 +1014,7 @@ export default function ViewSchedulePage() {
         })
       })
 
-      const classes: ManualClassItem[] = (classData || []).map((cls: any) => {
+      const mapClassRow = (cls: any): ManualClassItem => {
         const key = buildManualClassKey(cls.course_code || '', cls.section || '')
         const teacher = teacherMap.get(key)
         return {
@@ -960,7 +1031,38 @@ export default function ViewSchedulePage() {
           lab_hours: cls.lab_hours ?? cls.lab_hr ?? 0,
           student_count: cls.student_count ?? 0,
         }
-      })
+      }
+
+      let classes: ManualClassItem[] = (classData || []).map(mapClassRow)
+
+      // Fallback: when class_group_id is a year_batch_id instead of upload_group_id,
+      // discover the correct upload_group_id from allocation class_ids so we get ALL
+      // classes (including unscheduled) rather than only the ones with room_allocations.
+      if (classes.length === 0 && (allocations || []).length > 0) {
+        const allocClassIds = [...new Set(
+          (allocations || []).map((a: any) => Number(a.class_id)).filter((id: number) => id > 0)
+        )]
+
+        if (allocClassIds.length > 0) {
+          const { data: sampleRows } = await db
+            .from('class_schedules')
+            .select('upload_group_id')
+            .in('id', allocClassIds.slice(0, 10))
+            .limit(1)
+
+          const discoveredGroupId = sampleRows?.[0]?.upload_group_id
+          if (discoveredGroupId) {
+            const { data: fullClassData } = await db
+              .from('class_schedules')
+              .select('id, course_code, course_name, section, year_level, department, college, lec_hr, lab_hr, lec_hours, lab_hours, student_count')
+              .eq('upload_group_id', discoveredGroupId)
+
+            if (fullClassData && fullClassData.length > 0) {
+              classes = fullClassData.map(mapClassRow)
+            }
+          }
+        }
+      }
 
       const rooms = (roomData || []).map((room: any) => ({
         ...room,
@@ -1017,6 +1119,19 @@ export default function ViewSchedulePage() {
       let resolvedClasses = classes.length > 0 ? classes : Array.from(fallbackClassesMap.values())
       const resolvedRooms = rooms.length > 0 ? rooms : Array.from(fallbackRoomsMap.values())
 
+      // Source-truth unscheduled list: class_schedules entries not present in current room_allocations.
+      const allocatedClassKeys = new Set(
+        (allocations || [])
+          .map((a: any) => buildManualClassKey(String(a.course_code || ''), String(a.section || '')))
+          .filter((key: string) => key !== '|')
+      )
+
+      const sourceUnscheduledClasses = resolvedClasses.filter((cls: ManualClassItem) => {
+        const key = buildManualClassKey(cls.course_code, cls.section)
+        if (key === '|') return false
+        return !allocatedClassKeys.has(key)
+      })
+
       // Backfill unresolved class colleges using class_schedules by course_code+section,
       // even when upload_group mapping is off.
       const unresolvedCodes = Array.from(new Set(
@@ -1046,6 +1161,44 @@ export default function ViewSchedulePage() {
             const mapped = collegeByKey.get(toClassKey(c.course_code, c.section))
             return mapped ? { ...c, college: mapped } : c
           })
+        }
+      }
+      
+      // Secondary Fallback: look up from `sections` table for remaining unresolved classes.
+      if (resolvedClasses.some((c: any) => isCollegeUnset(c.college))) {
+        const unresolvedSections = Array.from(new Set(
+          resolvedClasses
+            .filter((c: any) => isCollegeUnset(c.college))
+            .map((c: any) => String(c.section || '').trim())
+            .filter(Boolean)
+        ))
+
+        if (unresolvedSections.length > 0) {
+          const { data: sectionData } = await db
+            .from('sections')
+            .select('section_name, college')
+            .in('section_name', unresolvedSections)
+            .not('college', 'is', null)
+
+          if (sectionData && sectionData.length > 0) {
+            const collegeBySection = new Map<string, string>()
+            sectionData.forEach((row: any) => {
+              const college = String(row.college || '').trim()
+              if (!college || isCollegeUnset(college)) return
+              collegeBySection.set(String(row.section_name || '').trim(), college)
+            })
+
+            resolvedClasses = resolvedClasses.map((c: any) => {
+              if (!isCollegeUnset(c.college)) return c
+              
+              // Extract base section (e.g. BAB 1A from BAB 1A_G1)
+              const cleanSectionMatch = String(c.section || '').match(/^([^_]+)(?:_G[12])?$/)
+              const cleanSection = cleanSectionMatch ? cleanSectionMatch[1].trim() : String(c.section || '').trim()
+
+              const fromSection = collegeBySection.get(cleanSection)
+              return fromSection ? { ...c, college: fromSection } : c
+            })
+          }
         }
       }
 
@@ -1099,10 +1252,12 @@ export default function ViewSchedulePage() {
       }
 
       setManualEditClasses(resolvedClasses)
+      setManualEditSourceUnscheduledClasses(sourceUnscheduledClasses)
       setManualEditRooms(resolvedRooms)
       setManualEditSourceScheduleId(schedule.id)
     } catch (error) {
       console.error('Error loading manual edit resources:', error)
+      setManualEditSourceUnscheduledClasses([])
       alert('Failed to load unscheduled classes for manual placement.')
     } finally {
       setLoadingManualEditData(false)
@@ -1246,11 +1401,11 @@ export default function ViewSchedulePage() {
   }
 
   useEffect(() => {
-    if (selectedSchedule) {
-      fetchUnifiedSchedule()
-      fetchManualEditResources(selectedSchedule)
-    }
-  }, [selectedSchedule])
+    if (!selectedSchedule) return
+
+    fetchUnifiedSchedule()
+    fetchManualEditResources(selectedSchedule)
+  }, [selectedSchedule?.id])
 
   const handleSelectSchedule = async (schedule: Schedule) => {
     window.scrollTo(0, 0)
@@ -3216,6 +3371,7 @@ export default function ViewSchedulePage() {
             initialAllocations={manualInitialAllocations}
             collegeRoomMatchingEnabled
             allowG1G2SplitSessions
+            unscheduledSourceClasses={manualEditSourceUnscheduledClasses}
           />
         )}
 

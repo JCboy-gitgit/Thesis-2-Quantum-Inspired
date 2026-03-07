@@ -14,6 +14,14 @@ interface EstimationModel {
     msPerIteration: number
 }
 
+interface BackendHeartbeat {
+    checking: boolean
+    reachable: boolean | null
+    latencyMs?: number
+    checkedAtMs?: number
+    message: string
+}
+
 const DEFAULT_MODEL: EstimationModel = {
     baseMs: 10000,
     msPerClass: 350,
@@ -60,8 +68,12 @@ const saveModel = (model: EstimationModel) => {
 
 export default function PersistentSchedulingStatus() {
     const { isScheduling, timer, result, config, resetScheduling } = useScheduling()
-
-    if (!isScheduling && !result) return null
+    const hasActiveOrResult = isScheduling || !!result
+    const [heartbeat, setHeartbeat] = React.useState<BackendHeartbeat>({
+        checking: false,
+        reachable: null,
+        message: 'Backend heartbeat not started.',
+    })
 
     // Fix: Python backend uses snake_case, but our setScheduleResult maps them to camelCase
     // We should safely check both or use the camelCase ones we set
@@ -89,8 +101,18 @@ export default function PersistentSchedulingStatus() {
         return clamp(raw, 10000, 8 * 60 * 1000)
     }, [estimationModel, classCount, maxIterations])
 
-    const etaMs = Math.max(0, estimatedTotalMs - timer)
-    const activeProgress = clamp((timer / estimatedTotalMs) * 100, 6, 96)
+    // If elapsed runtime exceeds the initial estimate, expand ETA dynamically.
+    // This avoids showing ETA=0 while the backend is still actively running.
+    const adaptiveEstimatedTotalMs = useMemo(() => {
+        if (timer <= estimatedTotalMs) return estimatedTotalMs
+
+        const overrunMs = timer - estimatedTotalMs
+        const expansionTail = Math.max(20000, overrunMs * 1.35)
+        return clamp(timer + expansionTail, 15000, 60 * 60 * 1000)
+    }, [timer, estimatedTotalMs])
+
+    const etaMs = Math.max(0, adaptiveEstimatedTotalMs - timer)
+    const activeProgress = clamp((timer / adaptiveEstimatedTotalMs) * 100, 6, 96)
 
     useEffect(() => {
         if (!result) return
@@ -114,11 +136,97 @@ export default function PersistentSchedulingStatus() {
         saveModel(nextModel)
     }, [result, classCount, maxIterations])
 
+    useEffect(() => {
+        if (!isScheduling) {
+            setHeartbeat({
+                checking: false,
+                reachable: null,
+                message: 'Backend heartbeat not started.',
+            })
+            return
+        }
+
+        let cancelled = false
+        const backendPreference = String(config?.backend_preference || 'auto')
+
+        const probe = async () => {
+            try {
+                if (!cancelled) {
+                    setHeartbeat(prev => ({ ...prev, checking: true }))
+                }
+
+                const startedAt = Date.now()
+                const response = await fetch(`/api/schedule/qia-backend?backendPreference=${encodeURIComponent(backendPreference)}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                })
+                const data = await response.json().catch(() => null)
+                const elapsedMs = Date.now() - startedAt
+
+                if (cancelled) return
+
+                if (response.ok && data?.backend_reachable) {
+                    setHeartbeat({
+                        checking: false,
+                        reachable: true,
+                        latencyMs: Number(data?.probe_latency_ms || elapsedMs),
+                        checkedAtMs: Date.now(),
+                        message: 'Backend responding.',
+                    })
+                    return
+                }
+
+                setHeartbeat({
+                    checking: false,
+                    reachable: false,
+                    latencyMs: Number(data?.probe_latency_ms || elapsedMs),
+                    checkedAtMs: Date.now(),
+                    message: data?.error || 'Backend heartbeat failed.',
+                })
+            } catch (error: any) {
+                if (cancelled) return
+                setHeartbeat({
+                    checking: false,
+                    reachable: false,
+                    checkedAtMs: Date.now(),
+                    message: error?.message || 'Backend heartbeat failed.',
+                })
+            }
+        }
+
+        void probe()
+        const intervalId = setInterval(() => {
+            void probe()
+        }, 8000)
+
+        return () => {
+            cancelled = true
+            clearInterval(intervalId)
+        }
+    }, [isScheduling, config?.backend_preference])
+
+    const heartbeatText = useMemo(() => {
+        if (!isScheduling) return ''
+        if (heartbeat.reachable === null) return 'Backend heartbeat: checking...'
+
+        const ageMs = heartbeat.checkedAtMs ? Math.max(0, Date.now() - heartbeat.checkedAtMs) : 0
+        const ageSec = Math.round(ageMs / 1000)
+
+        if (heartbeat.reachable) {
+            const latency = Number(heartbeat.latencyMs || 0)
+            return `Backend heartbeat: online${latency > 0 ? ` (${latency} ms)` : ''}${ageSec >= 0 ? `, ${ageSec}s ago` : ''}`
+        }
+
+        return `Backend heartbeat: unavailable${ageSec >= 0 ? `, ${ageSec}s ago` : ''}`
+    }, [isScheduling, heartbeat])
+
     const handleDismiss = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
         resetScheduling()
     }
+
+    if (!hasActiveOrResult) return null
 
     return (
         <div className={styles.container}>
@@ -131,6 +239,7 @@ export default function PersistentSchedulingStatus() {
                         <span className={styles.statusLabel}>Generating Schedule...</span>
                         <span className={styles.timer}>Elapsed: {formatTime(timer)}</span>
                         <span className={styles.etaText}>ETA: {formatTime(etaMs)}</span>
+                        <span className={styles.heartbeatText}>{heartbeatText}</span>
                         <div className={styles.progressWrap}>
                             <div className={styles.progressBar} style={{ width: `${activeProgress}%` }} />
                         </div>
