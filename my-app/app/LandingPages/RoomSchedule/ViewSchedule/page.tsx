@@ -1545,10 +1545,6 @@ export default function ViewSchedulePage() {
     })
   }, [allocations, manualEditClasses, manualEditRooms])
 
-  const summaryMetricsLoading = Boolean(
-    selectedSchedule && (loadingDetails || allocationsSourceScheduleId !== selectedSchedule.id)
-  )
-
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to archive this schedule? You can restore it from the Archive later.')) {
       return
@@ -2296,10 +2292,13 @@ export default function ViewSchedulePage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
     })
   }
 
@@ -2341,7 +2340,7 @@ export default function ViewSchedulePage() {
   }
 
   if (!authChecked) {
-    return <LoadingFallback message="Loading admin portal..." />
+    return <LoadingFallback message="Checking admin access..." variant="modal" />
   }
 
   if (!isAuthorized) {
@@ -2645,20 +2644,20 @@ export default function ViewSchedulePage() {
                 </div>
                 <div className={styles.scheduleStats}>
                   <div className={styles.statItem}>
-                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : ''}`}>
-                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.total_classes}
+                    <span className={styles.statNumber}>
+                      {selectedSchedule.total_classes}
                     </span>
                     <span className={styles.statText}>Total Allocations</span>
                   </div>
                   <div className={styles.statItem}>
-                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : styles.success}`}>
-                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.scheduled_classes}
+                    <span className={`${styles.statNumber} ${styles.success}`}>
+                      {selectedSchedule.scheduled_classes}
                     </span>
                     <span className={styles.statText}>Scheduled Allocations</span>
                   </div>
                   <div className={styles.statItem}>
-                    <span className={`${styles.statNumber} ${summaryMetricsLoading ? styles.statNumberLoading : styles.warning}`}>
-                      {summaryMetricsLoading ? 'Loading...' : selectedSchedule.unscheduled_classes}
+                    <span className={`${styles.statNumber} ${styles.warning}`}>
+                      {selectedSchedule.unscheduled_classes}
                     </span>
                     <span className={styles.statText}>Unscheduled Allocations</span>
                   </div>

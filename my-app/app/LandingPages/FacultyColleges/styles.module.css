@@ -913,7 +913,228 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: 24px;
+}
+
+.loadingStateFullPage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loadingSkeletonGrid {
+  width: 100%;
+  display: grid;
+  gap: 16px;
+}
+
+.loadingSkeletonGrid_colleges {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.loadingSkeletonGrid_files {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.loadingSkeletonGrid_faculty {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.loadingSkeletonCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.loadingCardHeaderRow,
+.loadingCardFooterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.loadingCardFooterRow {
+  margin-top: 10px;
+}
+
+.loadingCardActionsSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadingHeaderSkeleton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.loadingHeaderMain {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 240px;
+}
+
+.loadingHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loadingHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loadingBreadcrumbSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loadingFiltersSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.loadingStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.loadingStatCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loadingSkeletonRect,
+.loadingSkeletonCircle,
+.loadingSkeletonLine {
+  background: linear-gradient(90deg, var(--primary-alpha), rgba(255, 255, 255, 0.35), var(--primary-alpha));
+  background-size: 200% 100%;
+  animation: facultyCollegesShimmer 1.1s linear infinite;
+}
+
+.loadingSkeletonRect {
+  display: inline-flex;
+  border-radius: 8px;
+  height: 14px;
+}
+
+.loadingSkeletonRect_xs {
+  width: 70px;
+}
+
+.loadingSkeletonRect_sm {
+  width: 110px;
+}
+
+.loadingSkeletonRect_lg {
+  width: 180px;
+}
+
+.loadingSkeletonRect_title {
+  width: 220px;
+  height: 18px;
+}
+
+.loadingSkeletonRect_subtitle {
+  width: 260px;
+  height: 12px;
+}
+
+.loadingSkeletonRect_btnMd {
+  width: 124px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.loadingSkeletonRect_btnLg {
+  width: 208px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.loadingSkeletonRect_search {
+  width: 340px;
+  max-width: 100%;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.loadingSkeletonRect_select {
+  width: 150px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+.loadingSkeletonRect_sectionTitle {
+  width: 220px;
+  height: 16px;
+}
+
+.loadingSkeletonCircle {
+  display: inline-flex;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.loadingSkeletonCircle_sm {
+  width: 32px;
+  height: 32px;
+}
+
+.loadingSkeletonCircle_md {
+  width: 42px;
+  height: 42px;
+}
+
+.loadingSkeletonCircle_lg {
+  width: 50px;
+  height: 50px;
+}
+
+.loadingSkeletonCard_colleges,
+.loadingSkeletonCard_files {
+  border-radius: 16px;
+  min-height: 126px;
+}
+
+.loadingSkeletonCard_faculty {
+  min-height: 112px;
+}
+
+.loadingSkeletonLine {
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 8px;
+}
+
+@keyframes facultyCollegesShimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .spinner {
@@ -1329,8 +1550,31 @@
   }
 
   .collegeGrid,
-  .fileGrid {
+  .fileGrid,
+  .loadingSkeletonGrid,
+  .loadingSkeletonGrid_colleges,
+  .loadingSkeletonGrid_files,
+  .loadingSkeletonGrid_faculty {
     grid-template-columns: 1fr;
+  }
+
+  .loadingHeaderSkeleton,
+  .loadingHeaderActions,
+  .loadingFiltersSkeleton {
+    width: 100%;
+  }
+
+  .loadingSkeletonRect_search,
+  .loadingSkeletonRect_subtitle,
+  .loadingSkeletonRect_title {
+    width: 100%;
+  }
+
+  .loadingSkeletonRect_btnLg,
+  .loadingSkeletonRect_btnMd,
+  .loadingSkeletonRect_select {
+    flex: 1;
+    width: auto;
   }
 
   .searchSection {
@@ -1458,6 +1702,57 @@
 :global([data-theme="light"]) .facultyDept,
 :global([data-theme="light"]) .hierarchyEmail {
   color: #4a5568;
+}
+
+/* Dark mode action buttons (faculty card edit/delete) */
+:global([data-theme="dark"]) .iconBtn {
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #cbd5e1;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+}
+
+:global([data-theme="dark"]) .iconBtn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .danger {
+  background: rgba(127, 29, 29, 0.45);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fca5a5;
+}
+
+:global([data-theme="dark"]) .danger:hover {
+  background: rgba(220, 38, 38, 0.9);
+  border-color: rgba(252, 165, 165, 0.75);
+  color: #ffffff;
+}
+
+/* Dark mode edit/delete buttons used in college and file cards */
+:global([data-theme="dark"]) .editBtn {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .editBtn:hover {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .deleteBtn {
+  background: rgba(127, 29, 29, 0.42);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fca5a5;
+}
+
+:global([data-theme="dark"]) .deleteBtn:hover {
+  background: rgba(220, 38, 38, 0.9);
+  border-color: rgba(252, 165, 165, 0.75);
+  color: #ffffff;
 }
 
 /* ==================== Header Actions ==================== */

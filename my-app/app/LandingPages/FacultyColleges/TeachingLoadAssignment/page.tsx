@@ -830,6 +830,9 @@ function TeachingLoadAssignmentContent() {
     }
   }
 
+  const filteredFaculties = getFilteredFaculties()
+  const loadingSkeletonCount = Math.max(filteredFaculties.length, 1)
+
   return (
     <div className={styles.pageLayout} data-page="admin">
       <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
@@ -900,13 +903,25 @@ function TeachingLoadAssignmentContent() {
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div className={styles.spinner}></div>
-              <p>Loading faculty and courses...</p>
+            <div className={stylesLocal.loadingSkeletonGrid}>
+              {Array.from({ length: loadingSkeletonCount }).map((_, idx) => (
+                <div key={`teaching-load-skeleton-${idx}`} className={stylesLocal.loadingSkeletonCard}>
+                  <div className={stylesLocal.loadingSkeletonHeader}>
+                    <span className={stylesLocal.loadingSkeletonAvatar} />
+                    <span className={stylesLocal.loadingSkeletonToggle} />
+                  </div>
+                  <div className={stylesLocal.loadingSkeletonLine} style={{ width: idx % 2 ? '72%' : '58%' }} />
+                  <div className={stylesLocal.loadingSkeletonLine} style={{ width: '66%' }} />
+                  <div className={stylesLocal.loadingSkeletonSummary}>
+                    <span className={stylesLocal.loadingSkeletonPill} />
+                    <span className={stylesLocal.loadingSkeletonPill} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '16px' }}>
-              {getFilteredFaculties().map(faculty => {
+              {filteredFaculties.map(faculty => {
                 const isExpanded = expandedFaculties.has(faculty.id)
                 const facultyLoads = getTeachingLoadsForFaculty(faculty.id)
                 const units = getTotalUnits(faculty.id)

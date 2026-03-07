@@ -13,6 +13,7 @@ interface SchedulingContextType {
     isScheduling: boolean
     timer: number
     result: any | null
+    config: any | null
     startScheduling: (config: any) => void
     setResult: (result: any) => void
     resetScheduling: () => void
@@ -31,8 +32,8 @@ export function SchedulingProvider({ children }: { children: React.ReactNode }) 
         let interval: NodeJS.Timeout | null = null
         if (isScheduling) {
             interval = setInterval(() => {
-                setTimer(prev => prev + 100)
-            }, 100)
+                setTimer(prev => prev + 500)
+            }, 500)
         }
         return () => {
             if (interval) clearInterval(interval)
@@ -63,6 +64,7 @@ export function SchedulingProvider({ children }: { children: React.ReactNode }) 
             isScheduling,
             timer,
             result,
+            config,
             startScheduling,
             setResult,
             resetScheduling

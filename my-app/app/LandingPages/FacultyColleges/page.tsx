@@ -30,6 +30,8 @@ interface FacultyProfile {
   id: string
   faculty_id: string
   full_name: string
+  name_prefix?: string | null
+  name_suffix?: string | null
   position: string
   role: 'administrator' | 'department_head' | 'program_chair' | 'coordinator' | 'faculty' | 'staff'
   department: string | null
@@ -81,6 +83,43 @@ const ROLE_ORDER: Record<string, number> = {
   'coordinator': 4,
   'faculty': 5,
   'staff': 6
+}
+
+const NAME_PREFIX_OPTIONS = [
+  '',
+  'Mr.',
+  'Ms.',
+  'Mrs.',
+  'Mx.',
+  'Dr.',
+  'Prof.',
+  'Rev.',
+  'Fr.',
+  'Atty.',
+  'Engr.'
+]
+
+function formatDisplayName(fullName: string | null | undefined, prefix?: string | null, suffix?: string | null): string {
+  const baseName = (fullName || '').trim()
+  const normalizedPrefix = (prefix || '').trim()
+  const normalizedSuffix = (suffix || '').trim()
+  const withPrefix = [normalizedPrefix, baseName].filter(Boolean).join(' ').trim()
+
+  if (!withPrefix) return ''
+  return normalizedSuffix ? `${withPrefix}, ${normalizedSuffix}` : withPrefix
+}
+
+function normalizeSearchText(value: string | null | undefined): string {
+  return (value || '')
+    .toLowerCase()
+    .replace(/[.,]/g, ' ')
+    .replace(/\b(mr|ms|mrs|mx|dr|prof|rev|fr|atty|engr)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function getFacultyDisplayName(faculty: Pick<FacultyProfile, 'full_name' | 'name_prefix' | 'name_suffix'>): string {
+  return formatDisplayName(faculty.full_name, faculty.name_prefix, faculty.name_suffix)
 }
 
 function getPositionPriority(position: string | null | undefined): number {
@@ -303,7 +342,9 @@ function FacultyCollegesContent() {
 
   const [facultyFormData, setFacultyFormData] = useState({
     faculty_id: '',
+    name_prefix: '',
     full_name: '',
+    name_suffix: '',
     email: '',
     position: '',
     role: 'faculty' as FacultyProfile['role'],
@@ -889,7 +930,9 @@ function FacultyCollegesContent() {
     setSelectedFacultyProfile(faculty)
     setFacultyFormData({
       faculty_id: faculty.faculty_id || '',
+      name_prefix: faculty.name_prefix || '',
       full_name: faculty.full_name || '',
+      name_suffix: faculty.name_suffix || '',
       email: faculty.email || '',
       position: faculty.position || '',
       role: faculty.role || 'faculty',
@@ -1017,12 +1060,20 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
+      const formattedName = formatDisplayName(
+        facultyFormData.full_name,
+        facultyFormData.name_prefix,
+        facultyFormData.name_suffix
+      )
+
       // First update faculty_profiles
       const { data: updatedFaculty, error: updateError } = await (supabase as any)
         .from('faculty_profiles')
         .update({
           faculty_id: facultyFormData.faculty_id.trim() || null,
+          name_prefix: facultyFormData.name_prefix.trim() || null,
           full_name: facultyFormData.full_name.trim(),
+          name_suffix: facultyFormData.name_suffix.trim() || null,
           email: facultyFormData.email.trim() || null,
           position: facultyFormData.position.trim() || null,
           role: facultyFormData.role,
@@ -1053,7 +1104,7 @@ function FacultyCollegesContent() {
           const { error: userUpdateError } = await (supabase
             .from('users') as any)
             .update({
-              full_name: facultyFormData.full_name.trim(),
+              full_name: formattedName || facultyFormData.full_name.trim(),
               phone: facultyFormData.phone.trim() || null,
               department: facultyFormData.department.trim() || null,
               college: facultyFormData.college.trim() || null,
@@ -1120,7 +1171,9 @@ function FacultyCollegesContent() {
   const resetFacultyForm = () => {
     setFacultyFormData({
       faculty_id: '',
+      name_prefix: '',
       full_name: '',
+      name_suffix: '',
       email: '',
       position: '',
       role: 'faculty',
@@ -1143,9 +1196,17 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
+      const formattedName = formatDisplayName(
+        facultyFormData.full_name,
+        facultyFormData.name_prefix,
+        facultyFormData.name_suffix
+      )
+
       const newFaculty = {
         faculty_id: facultyFormData.faculty_id.trim() || `FAC-${Date.now()}`,
+        name_prefix: facultyFormData.name_prefix.trim() || null,
         full_name: facultyFormData.full_name.trim(),
+        name_suffix: facultyFormData.name_suffix.trim() || null,
         email: facultyFormData.email.trim() || null,
         position: facultyFormData.position.trim() || 'Faculty',
         role: facultyFormData.role,
@@ -1178,7 +1239,7 @@ function FacultyCollegesContent() {
           await db
             .from('users')
             .update({
-              full_name: facultyFormData.full_name.trim(),
+              full_name: formattedName || facultyFormData.full_name.trim(),
               phone: facultyFormData.phone.trim() || null,
               department: facultyFormData.department.trim() || null,
               college: facultyFormData.college.trim() || null,
@@ -1233,10 +1294,10 @@ function FacultyCollegesContent() {
     const rows = faculty.map(f => {
       const row: string[] = []
       if (exportOptions.onlyNames) {
-        row.push(f.full_name || '')
+        row.push(getFacultyDisplayName(f) || f.full_name || '')
       } else {
         if (exportOptions.sortByDepartment) row.push(f.department || 'N/A')
-        row.push(f.full_name || '')
+        row.push(getFacultyDisplayName(f) || f.full_name || '')
         if (exportOptions.includeId) row.push(f.faculty_id || 'N/A')
         if (exportOptions.includeType) row.push(f.employment_type || 'N/A')
       }
@@ -1319,8 +1380,18 @@ function FacultyCollegesContent() {
   // Filter faculty
   const filteredFaculty = facultyProfiles.filter(f => {
     if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      if (!f.full_name?.toLowerCase().includes(term) &&
+      const term = searchTerm.toLowerCase().trim()
+      const normalizedTerm = normalizeSearchText(term)
+      const displayName = getFacultyDisplayName(f).toLowerCase()
+      const normalizedDisplayName = normalizeSearchText(displayName)
+      const normalizedBaseName = normalizeSearchText(f.full_name)
+
+      const matchesName =
+        displayName.includes(term) ||
+        (normalizedTerm.length > 0 && normalizedDisplayName.includes(normalizedTerm)) ||
+        (normalizedTerm.length > 0 && normalizedBaseName.includes(normalizedTerm))
+
+      if (!matchesName &&
         !f.email?.toLowerCase().includes(term) &&
         !f.position?.toLowerCase().includes(term) &&
         !f.department?.toLowerCase().includes(term)) {
@@ -1332,9 +1403,92 @@ function FacultyCollegesContent() {
     return true
   })
 
+  // Reset pagination whenever filter context changes, so search results always start at page 1.
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterRole, filterEmployment, selectedFile?.upload_group_id])
+
   // Pagination
-  const totalPages = Math.ceil(filteredFaculty.length / PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(filteredFaculty.length / PAGE_SIZE))
   const paginatedFaculty = filteredFaculty.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const displayedFacultyCards = hierarchyFaculty.length + paginatedFaculty.filter(f => f.role === 'faculty').length
+
+  // Keep current page in a valid range when data shrinks after filtering.
+  useEffect(() => {
+    setCurrentPage(prev => Math.min(Math.max(prev, 1), totalPages))
+  }, [totalPages])
+
+  const loadingSkeletonCount =
+    currentView === 'files'
+      ? Math.max(fileGroups.length, 1)
+      : currentView === 'faculty'
+        ? Math.max(displayedFacultyCards, 1)
+        : Math.max(colleges.length, 1)
+
+  const renderCollegeCardsSkeleton = (count: number) => (
+    <div className={`${styles.loadingSkeletonGrid} ${styles.loadingSkeletonGrid_colleges}`}>
+      {Array.from({ length: count }).map((_, idx) => (
+        <div key={`colleges-skeleton-${idx}`} className={`${styles.loadingSkeletonCard} ${styles.loadingSkeletonCard_colleges}`}>
+          <div className={styles.loadingCardHeaderRow}>
+            <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+            <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+          </div>
+          <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '72%' : '58%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: '46%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: '82%' }} />
+          <div className={styles.loadingCardFooterRow}>
+            <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_xs}`} />
+            <div className={styles.loadingCardActionsSkeleton}>
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderFilesCardsSkeleton = (count: number) => (
+    <div className={`${styles.loadingSkeletonGrid} ${styles.loadingSkeletonGrid_files}`}>
+      {Array.from({ length: count }).map((_, idx) => (
+        <div key={`files-skeleton-${idx}`} className={`${styles.loadingSkeletonCard} ${styles.loadingSkeletonCard_files}`}>
+          <div className={styles.loadingCardHeaderRow}>
+            <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+            <div className={styles.loadingCardActionsSkeleton}>
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+            </div>
+          </div>
+          <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '76%' : '60%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: '68%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '84%' : '72%' }} />
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderFacultyCardsSkeleton = (count: number) => (
+    <div className={`${styles.loadingSkeletonGrid} ${styles.loadingSkeletonGrid_faculty}`}>
+      {Array.from({ length: count }).map((_, idx) => (
+        <div key={`faculty-skeleton-${idx}`} className={`${styles.loadingSkeletonCard} ${styles.loadingSkeletonCard_faculty}`}>
+          <div className={styles.loadingCardHeaderRow}>
+            <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_md}`} />
+            <div className={styles.loadingCardActionsSkeleton}>
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+              <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_sm}`} />
+            </div>
+          </div>
+          <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '70%' : '56%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: '52%' }} />
+          <div className={styles.loadingSkeletonLine} style={{ width: '78%' }} />
+          <div className={styles.loadingCardFooterRow}>
+            <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_xs}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 
   // ==================== RENDER ====================
   if (loading && currentView === 'colleges' && colleges.length === 0) {
@@ -1343,9 +1497,39 @@ function FacultyCollegesContent() {
         <MenuBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} showSidebarToggle={true} showAccountIcon={true} />
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.main} ${!sidebarOpen ? styles.fullWidth : ''}`}>
-          <div className={styles.loadingState}>
-            <div className={styles.spinner}></div>
-            <p>Loading colleges...</p>
+          <div className={styles.loadingStateFullPage}>
+            <div className={styles.loadingBreadcrumbSkeleton}>
+              <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+              <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_lg}`} />
+            </div>
+
+            <div className={styles.loadingHeaderSkeleton}>
+              <div className={styles.loadingHeaderMain}>
+                <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+                <div className={styles.loadingHeaderText}>
+                  <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_title}`} />
+                  <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_subtitle}`} />
+                </div>
+              </div>
+              <div className={styles.loadingHeaderActions}>
+                <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnLg}`} />
+                <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnMd}`} />
+              </div>
+            </div>
+
+            <div className={styles.loadingStatsGrid}>
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div key={`stats-skeleton-${idx}`} className={styles.loadingStatCard}>
+                  <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_md}`} />
+                  <div className={styles.loadingHeaderText}>
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_xs}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {renderCollegeCardsSkeleton(loadingSkeletonCount)}
           </div>
         </main>
       </div>
@@ -1525,28 +1709,38 @@ function FacultyCollegesContent() {
           {/* ==================== FILES VIEW ==================== */}
           {currentView === 'files' && selectedCollege && (
             <>
-              {/* Header */}
-              <div className={styles.header}>
-                <div className={styles.headerTitleSection}>
-                  <div className={styles.headerIconWrapper}>
-                    <FileIcon />
-                  </div>
-                  <div className={styles.headerText}>
-                    <h1 className={styles.title}>{selectedCollege.department_name}</h1>
-                    <p className={styles.subtitle}>
-                      {fileGroups.length} CSV file(s) with faculty data
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* File Cards Grid */}
               {loading ? (
-                <div className={styles.loadingState}>
-                  <div className={styles.spinner}></div>
-                  <p>Loading files...</p>
+                <div className={styles.loadingStateFullPage}>
+                  <div className={styles.loadingHeaderSkeleton}>
+                    <div className={styles.loadingHeaderMain}>
+                      <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+                      <div className={styles.loadingHeaderText}>
+                        <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_title}`} />
+                        <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_subtitle}`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {renderFilesCardsSkeleton(loadingSkeletonCount)}
                 </div>
               ) : fileGroups.length > 0 ? (
+                <>
+                  {/* Header */}
+                  <div className={styles.header}>
+                    <div className={styles.headerTitleSection}>
+                      <div className={styles.headerIconWrapper}>
+                        <FileIcon />
+                      </div>
+                      <div className={styles.headerText}>
+                        <h1 className={styles.title}>{selectedCollege.department_name}</h1>
+                        <p className={styles.subtitle}>
+                          {fileGroups.length} CSV file(s) with faculty data
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* File Cards Grid */}
                 <div className={styles.fileGrid}>
                   {fileGroups.map(file => (
                     <div key={file.upload_group_id} className={styles.fileCard}>
@@ -1590,6 +1784,7 @@ function FacultyCollegesContent() {
                     </div>
                   ))}
                 </div>
+                </>
               ) : (
                 <div className={styles.emptyState}>
                   <FileIcon />
@@ -1609,89 +1804,111 @@ function FacultyCollegesContent() {
           {/* ==================== FACULTY VIEW ==================== */}
           {currentView === 'faculty' && selectedFile && (
             <>
-              {/* Header */}
-              <div className={styles.header}>
-                <div className={styles.headerTitleSection}>
-                  <div className={styles.headerIconWrapper}>
-                    <UsersIcon />
-                  </div>
-                  <div className={styles.headerText}>
-                    <h1 className={styles.title}>{selectedFile.file_name}</h1>
-                    <p className={styles.subtitle}>
-                      {facultyProfiles.length} faculty members • {selectedCollege?.department_name}
-                    </p>
-                  </div>
-                </div>
-                <div className={styles.headerActions}>
-                  <button
-                    className={styles.exportBtn}
-                    onClick={() => setShowExportModal(true)}
-                    title="Export faculty list"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-                    </svg>
-                    Export
-                  </button>
-                  <button
-                    className={styles.addBtn}
-                    onClick={() => { resetFacultyForm(); setShowAddFacultyModal(true); }}
-                    title="Add new faculty member"
-                    id="add-faculty-btn"
-                  >
-                    <PlusIcon />
-                    Add Faculty
-                  </button>
-                </div>
-              </div>
-
-              {/* Search & Filter */}
-              <div className={styles.searchSection}>
-                <div className={styles.searchBox}>
-                  <SearchIcon className={styles.searchIcon} />
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, position..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className={styles.searchInput}
-                  />
-                </div>
-                <div className={styles.filterButtons}>
-                  <select
-                    className={styles.filterSelect}
-                    value={filterRole}
-                    onChange={e => setFilterRole(e.target.value)}
-                  >
-                    <option value="all">All Roles</option>
-                    <option value="administrator">Administrator</option>
-                    <option value="department_head">Dept. Head</option>
-                    <option value="program_chair">Program Chair</option>
-                    <option value="coordinator">Coordinator</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="staff">Staff</option>
-                  </select>
-                  <select
-                    className={styles.filterSelect}
-                    value={filterEmployment}
-                    onChange={e => setFilterEmployment(e.target.value)}
-                  >
-                    <option value="all">All Types</option>
-                    <option value="full-time">Full-Time</option>
-                    <option value="part-time">Part-Time</option>
-                    <option value="adjunct">Adjunct</option>
-                    <option value="guest">Guest</option>
-                  </select>
-                </div>
-              </div>
-
               {loading ? (
-                <div className={styles.loadingState}>
-                  <div className={styles.spinner}></div>
-                  <p>Loading faculty...</p>
+                <div className={styles.loadingStateFullPage}>
+                  <div className={styles.loadingHeaderSkeleton}>
+                    <div className={styles.loadingHeaderMain}>
+                      <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+                      <div className={styles.loadingHeaderText}>
+                        <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_title}`} />
+                        <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_subtitle}`} />
+                      </div>
+                    </div>
+                    <div className={styles.loadingHeaderActions}>
+                      <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnMd}`} />
+                      <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnMd}`} />
+                    </div>
+                  </div>
+
+                  <div className={styles.loadingFiltersSkeleton}>
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_search}`} />
+                    <div className={styles.loadingHeaderActions}>
+                      <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_select}`} />
+                      <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_select}`} />
+                    </div>
+                  </div>
+
+                  <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sectionTitle}`} />
+                  {renderFacultyCardsSkeleton(loadingSkeletonCount)}
                 </div>
               ) : (
                 <>
+                  {/* Header */}
+                  <div className={styles.header}>
+                    <div className={styles.headerTitleSection}>
+                      <div className={styles.headerIconWrapper}>
+                        <UsersIcon />
+                      </div>
+                      <div className={styles.headerText}>
+                        <h1 className={styles.title}>{selectedFile.file_name}</h1>
+                        <p className={styles.subtitle}>
+                          {facultyProfiles.length} faculty members • {selectedCollege?.department_name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={styles.headerActions}>
+                      <button
+                        className={styles.exportBtn}
+                        onClick={() => setShowExportModal(true)}
+                        title="Export faculty list"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                        </svg>
+                        Export
+                      </button>
+                      <button
+                        className={styles.addBtn}
+                        onClick={() => { resetFacultyForm(); setShowAddFacultyModal(true); }}
+                        title="Add new faculty member"
+                        id="add-faculty-btn"
+                      >
+                        <PlusIcon />
+                        Add Faculty
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search & Filter */}
+                  <div className={styles.searchSection}>
+                    <div className={styles.searchBox}>
+                      <SearchIcon className={styles.searchIcon} />
+                      <input
+                        type="text"
+                        placeholder="Search by name, email, position..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className={styles.searchInput}
+                      />
+                    </div>
+                    <div className={styles.filterButtons}>
+                      <select
+                        className={styles.filterSelect}
+                        value={filterRole}
+                        onChange={e => setFilterRole(e.target.value)}
+                      >
+                        <option value="all">All Roles</option>
+                        <option value="administrator">Administrator</option>
+                        <option value="department_head">Dept. Head</option>
+                        <option value="program_chair">Program Chair</option>
+                        <option value="coordinator">Coordinator</option>
+                        <option value="faculty">Faculty</option>
+                        <option value="staff">Staff</option>
+                      </select>
+                      <select
+                        className={styles.filterSelect}
+                        value={filterEmployment}
+                        onChange={e => setFilterEmployment(e.target.value)}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="full-time">Full-Time</option>
+                        <option value="part-time">Part-Time</option>
+                        <option value="adjunct">Adjunct</option>
+                        <option value="guest">Guest</option>
+                      </select>
+                    </div>
+                  </div>
+
                   {/* Hierarchy Section */}
                   {hierarchyFaculty.length > 0 && (
                     <div className={styles.hierarchySection}>
@@ -1736,7 +1953,7 @@ function FacultyCollegesContent() {
                               </div>
                               <div className={styles.hierarchyInfo}>
                                 <span className={styles.roleIcon}>{roleInfo.icon}</span>
-                                <h4>{faculty.full_name}</h4>
+                                <h4>{getFacultyDisplayName(faculty) || faculty.full_name}</h4>
                                 <p className={styles.facultyIdBadge}>ID: {faculty.faculty_id}</p>
                                 <p className={styles.hierarchyPosition}>{faculty.position}</p>
                                 <span className={styles.roleBadge} style={{ backgroundColor: roleInfo.bgColor, color: roleInfo.color }}>
@@ -1798,7 +2015,7 @@ function FacultyCollegesContent() {
                                 )}
                               </div>
                               <div className={styles.facultyInfo}>
-                                <h4>{faculty.full_name}</h4>
+                                <h4>{getFacultyDisplayName(faculty) || faculty.full_name}</h4>
                                 <p className={styles.facultyIdBadge}>ID: {faculty.faculty_id}</p>
                                 <p>{faculty.department || 'No Department'}</p>
                                 <span className={styles.empBadge} style={{ backgroundColor: empBadge.color }}>
@@ -2027,12 +2244,39 @@ function FacultyCollegesContent() {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Full Name *</label>
+                  <label>Prefix</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.name_prefix}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, name_prefix: e.target.value })}
+                  >
+                    {NAME_PREFIX_OPTIONS.map(option => (
+                      <option key={option || 'none'} value={option}>
+                        {option || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Full Name (Base) *</label>
                   <input
                     type="text"
                     className={styles.formInput}
                     value={facultyFormData.full_name}
                     onChange={e => setFacultyFormData({ ...facultyFormData, full_name: e.target.value })}
+                    placeholder="e.g., Jordan Smith"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Suffix</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.name_suffix}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, name_suffix: e.target.value })}
+                    placeholder="e.g., Ph.D., RN, CPA"
                   />
                 </div>
               </div>
@@ -2473,13 +2717,39 @@ function FacultyCollegesContent() {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label>Full Name *</label>
+                  <label>Prefix</label>
+                  <select
+                    className={styles.formInput}
+                    value={facultyFormData.name_prefix}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, name_prefix: e.target.value })}
+                  >
+                    {NAME_PREFIX_OPTIONS.map(option => (
+                      <option key={option || 'none'} value={option}>
+                        {option || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Full Name (Base) *</label>
                   <input
                     type="text"
                     className={styles.formInput}
                     value={facultyFormData.full_name}
                     onChange={e => setFacultyFormData({ ...facultyFormData, full_name: e.target.value })}
-                    placeholder="Dela Cruz, Juan A."
+                    placeholder="e.g., Jordan Smith"
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Suffix</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={facultyFormData.name_suffix}
+                    onChange={e => setFacultyFormData({ ...facultyFormData, name_suffix: e.target.value })}
+                    placeholder="e.g., Ph.D., RN, CPA"
                   />
                 </div>
               </div>
@@ -2803,7 +3073,7 @@ function FacultyCollegesContent() {
                               )}
                               <div className={styles.exportPreviewRow}>
                                 <span className={styles.exportRowNum}>{idx + 1}.</span>
-                                <span className={styles.exportRowName}>{f.full_name}</span>
+                                <span className={styles.exportRowName}>{getFacultyDisplayName(f) || f.full_name}</span>
                                 {!exportOptions.onlyNames && exportOptions.includeId && (
                                   <span className={styles.exportRowId}>{f.faculty_id}</span>
                                 )}
@@ -2843,7 +3113,60 @@ function FacultyCollegesContent() {
 
 // Loading fallback
 function LoadingFallback() {
-  return <div style={{ padding: '40px', textAlign: 'center' }}>Loading Faculty Colleges...</div>
+  return (
+    <div className={styles.layout} data-page="admin">
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.loadingStateFullPage}>
+            <div className={styles.loadingBreadcrumbSkeleton}>
+              <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+              <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_lg}`} />
+            </div>
+
+            <div className={styles.loadingHeaderSkeleton}>
+              <div className={styles.loadingHeaderMain}>
+                <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+                <div className={styles.loadingHeaderText}>
+                  <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_title}`} />
+                  <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_subtitle}`} />
+                </div>
+              </div>
+              <div className={styles.loadingHeaderActions}>
+                <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnLg}`} />
+                <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_btnMd}`} />
+              </div>
+            </div>
+
+            <div className={styles.loadingStatsGrid}>
+              {Array.from({ length: 3 }).map((_, idx) => (
+                <div key={`fallback-stats-skeleton-${idx}`} className={styles.loadingStatCard}>
+                  <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_md}`} />
+                  <div className={styles.loadingHeaderText}>
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_xs}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className={`${styles.loadingSkeletonGrid} ${styles.loadingSkeletonGrid_colleges}`}>
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={`fallback-colleges-skeleton-${idx}`} className={`${styles.loadingSkeletonCard} ${styles.loadingSkeletonCard_colleges}`}>
+                  <div className={styles.loadingCardHeaderRow}>
+                    <span className={`${styles.loadingSkeletonCircle} ${styles.loadingSkeletonCircle_lg}`} />
+                    <span className={`${styles.loadingSkeletonRect} ${styles.loadingSkeletonRect_sm}`} />
+                  </div>
+                  <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '72%' : '58%' }} />
+                  <div className={styles.loadingSkeletonLine} style={{ width: '46%' }} />
+                  <div className={styles.loadingSkeletonLine} style={{ width: '82%' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
 }
 
 // Main export wrapped in Suspense

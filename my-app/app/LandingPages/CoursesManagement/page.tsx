@@ -858,9 +858,15 @@ function CoursesManagementContent() {
     }
   }
 
+  const selectionSkeletonCount = selectedCollegeFolder
+    ? Math.max(uploadGroups.filter(g => (g.college || 'Uncategorized') === selectedCollegeFolder).length, 1)
+    : Math.max(new Set(uploadGroups.map(g => g.college || 'Uncategorized')).size, 1)
+
+  const listSkeletonCount = Math.max(getCoursesByProgramAndYear().size, 1)
+
   // ==================== Render ====================
   if (!authorized) {
-    return <GlobalLoadingFallback message="Loading admin portal..." />
+    return <GlobalLoadingFallback message="Checking admin access..." variant="modal" />
   }
 
   // Loading state
@@ -871,8 +877,15 @@ function CoursesManagementContent() {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className={`${styles.pageMain} ${!sidebarOpen ? styles.fullWidth : ''}`}>
           <div className={styles.loadingState}>
-            <div className={styles.spinner}></div>
-            <p>Loading courses...</p>
+            <div className={styles.loadingSkeletonGrid}>
+              {Array.from({ length: selectionSkeletonCount }).map((_, idx) => (
+                <div key={`courses-selection-skeleton-${idx}`} className={styles.loadingSkeletonCard}>
+                  <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '66%' : '52%' }} />
+                  <div className={styles.loadingSkeletonLine} style={{ width: '82%' }} />
+                  <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '58%' : '72%' }} />
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       </div>
@@ -1696,8 +1709,15 @@ function CoursesManagementContent() {
               {/* Loading */}
               {loading && (
                 <div className={styles.loadingState}>
-                  <div className={styles.spinner}></div>
-                  <p>Loading courses...</p>
+                  <div className={styles.loadingSkeletonStack}>
+                    {Array.from({ length: listSkeletonCount }).map((_, idx) => (
+                      <div key={`courses-list-skeleton-${idx}`} className={styles.loadingSkeletonSection}>
+                        <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '34%' : '28%' }} />
+                        <div className={styles.loadingSkeletonLine} style={{ width: '88%' }} />
+                        <div className={styles.loadingSkeletonLine} style={{ width: '76%' }} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

@@ -81,6 +81,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
+  const [mutating, setMutating] = useState(false)
   const [view, setView] = useState<'list' | 'archive'>('list')
   const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
   const [archiveSearch, setArchiveSearch] = useState('')
@@ -283,35 +284,46 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
   }
 
   const clearAllNotifications = async () => {
+    const previous = notifications
     const { data: { session } } = await supabase.auth.getSession()
     const userId = session?.user?.id
-
-    // Archive each notification
-    const toArchive = notifications.filter(n => n.type !== 'registration')
-
-    for (const notif of toArchive) {
-      await (supabase.from('archived_items') as any).insert({
-        item_type: 'notification',
-        item_name: notif.title,
-        item_data: notif,
-        deleted_by: userId,
-        original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
-        original_id: notif.id
-      })
-    }
 
     const kept = notifications.filter(n => n.type === 'registration' && !n.read)
     setNotifications(kept)
     savePersistedNotifications([])
+    setMutating(true)
 
-    // Remote cleanup
-    if (userId) {
-      await fetch('/api/alerts', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, action: 'clear_all', audience: 'admin' })
-      })
-      fetchNotifications()
+    // Archive each notification
+    const toArchive = notifications.filter(n => n.type !== 'registration')
+
+    try {
+      await Promise.all(toArchive.map((notif) => {
+        return (supabase.from('archived_items') as any).insert({
+          item_type: 'notification',
+          item_name: notif.title,
+          item_data: notif,
+          deleted_by: userId,
+          original_table: notif.type === 'alert' ? 'system_alerts' : 'local_persistence',
+          original_id: notif.id
+        })
+      }))
+
+      // Remote cleanup
+      if (userId) {
+        await fetch('/api/alerts', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, action: 'clear_all', audience: 'admin' })
+        })
+      }
+
+      void fetchNotifications()
+    } catch (err) {
+      setNotifications(previous)
+      savePersistedNotifications(previous.filter(n => n.type !== 'registration'))
+      toast.error('Unable to clear notifications right now')
+    } finally {
+      setMutating(false)
     }
   }
 
@@ -325,6 +337,7 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     // Optimistic UI update
     setNotifications(prev => prev.filter(n => n.id !== id))
     savePersistedNotifications(notifications.filter(n => n.id !== id && n.type !== 'registration'))
+    setMutating(true)
 
     try {
       // Archive
@@ -351,6 +364,8 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
     } catch (err) {
       console.error('Delete failed:', err)
       fetchNotifications()
+    } finally {
+      setMutating(false)
     }
   }
 
@@ -475,8 +490,10 @@ export default function NotificationBell({ pendingCount = 0, onNotificationClick
               <div className="notification-list">
                 {loading && notifications.length === 0 ? (
                   <div className="notification-empty">
-                    <div className="loading-spinner"></div>
-                    <p>Loading...</p>
+                    <div className="notification-skeleton-card" />
+                    <div className="notification-skeleton-card" />
+                    <div className="notification-skeleton-card short" />
+                    <p>{mutating ? 'Applying updates...' : 'Loading...'}</p>
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className="notification-empty">

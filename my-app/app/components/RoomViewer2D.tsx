@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   MdAccessTime, MdPeople, MdCheckCircle, MdCancel, MdBusiness,
   MdZoomIn, MdZoomOut, MdFullscreen, MdFullscreenExit, MdExpandMore, MdExpandLess, MdChevronLeft, MdChevronRight,
@@ -1286,7 +1286,20 @@ function RoomDetailsModal({
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'details' | 'schedule' | 'images'>('details')
   const [showTimetableModal, setShowTimetableModal] = useState(false)
+  const [isImageLightboxOpen, setIsImageLightboxOpen] = useState(false)
   const [now, setNow] = useState(new Date())
+
+  const hasMultipleImages = roomImages.length > 1
+
+  const goPrevImage = useCallback(() => {
+    if (!hasMultipleImages) return
+    setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)
+  }, [hasMultipleImages, roomImages.length])
+
+  const goNextImage = useCallback(() => {
+    if (!hasMultipleImages) return
+    setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)
+  }, [hasMultipleImages, roomImages.length])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000)
@@ -1298,6 +1311,31 @@ function RoomDetailsModal({
       fetchRoomImages()
     }
   }, [room.id, activeTab])
+
+  useEffect(() => {
+    const handleImageHotkeys = (event: KeyboardEvent) => {
+      if (!isImageLightboxOpen) return
+
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setIsImageLightboxOpen(false)
+        return
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        goPrevImage()
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        goNextImage()
+      }
+    }
+
+    window.addEventListener('keydown', handleImageHotkeys)
+    return () => window.removeEventListener('keydown', handleImageHotkeys)
+  }, [goNextImage, goPrevImage, isImageLightboxOpen])
 
   const fetchRoomImages = async () => {
     try {
@@ -1311,6 +1349,7 @@ function RoomDetailsModal({
       if (!error) {
         setRoomImages(data || [])
         setSelectedImageIdx(0)
+        setIsImageLightboxOpen(false)
       } else {
         setRoomImages([])
       }
@@ -1607,10 +1646,18 @@ function RoomDetailsModal({
                   <div className={styles.imageViewer}>
                     {roomImages[selectedImageIdx] && (
                       <>
+                        <button
+                          className={styles.imageExpandBtn}
+                          onClick={() => setIsImageLightboxOpen(true)}
+                          title="Open full view"
+                        >
+                          <MdFullscreen size={16} /> Full View
+                        </button>
                         <img
                           src={roomImages[selectedImageIdx].image_url}
                           alt={`Room ${room.room}`}
-                          className={styles.mainImage}
+                          className={`${styles.mainImage} ${styles.clickableImage}`}
+                          onClick={() => setIsImageLightboxOpen(true)}
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23e5e7eb" width="300" height="200"/%3E%3Ctext x="50%25" y="50%25" font-size="16" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E'
                           }}
@@ -1622,12 +1669,14 @@ function RoomDetailsModal({
                     )}
                   </div>
 
+                  <div className={styles.imageMeta}>Photo {selectedImageIdx + 1} of {roomImages.length}</div>
+
                   {/* Image navigation */}
-                  {roomImages.length > 1 && (
+                  {hasMultipleImages && (
                     <div className={styles.imageNavigation}>
                       <button
                         className={styles.navBtn}
-                        onClick={() => setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)}
+                        onClick={goPrevImage}
                         title="Previous"
                       >
                         <MdChevronLeft size={18} />
@@ -1637,7 +1686,7 @@ function RoomDetailsModal({
                       </span>
                       <button
                         className={styles.navBtn}
-                        onClick={() => setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)}
+                        onClick={goNextImage}
                         title="Next"
                       >
                         <MdChevronRight size={18} />
@@ -1646,7 +1695,7 @@ function RoomDetailsModal({
                   )}
 
                   {/* Thumbnails */}
-                  {roomImages.length > 1 && (
+                  {hasMultipleImages && (
                     <div className={styles.imageThumbnails}>
                       {roomImages.map((img, idx) => (
                         <button
@@ -1666,6 +1715,46 @@ function RoomDetailsModal({
           )}
         </div>
       </div>
+
+      {isImageLightboxOpen && roomImages[selectedImageIdx] && (
+        <div className={styles.imageLightboxOverlay} onClick={() => setIsImageLightboxOpen(false)}>
+          <div className={styles.imageLightboxContent} onClick={(event) => event.stopPropagation()}>
+            <button
+              className={styles.imageLightboxClose}
+              onClick={() => setIsImageLightboxOpen(false)}
+              aria-label="Close full image"
+            >
+              <MdClose size={18} />
+            </button>
+
+            {hasMultipleImages && (
+              <button className={styles.imageLightboxNavBtn} onClick={goPrevImage} aria-label="Previous image">
+                <MdChevronLeft size={20} />
+              </button>
+            )}
+
+            <img
+              src={roomImages[selectedImageIdx].image_url}
+              alt={`Room ${room.room} photo ${selectedImageIdx + 1}`}
+              className={styles.imageLightboxImage}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="900" height="600"%3E%3Crect fill="%23e5e7eb" width="900" height="600"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E'
+              }}
+            />
+
+            {hasMultipleImages && (
+              <button className={styles.imageLightboxNavBtn} onClick={goNextImage} aria-label="Next image">
+                <MdChevronRight size={20} />
+              </button>
+            )}
+
+            <div className={styles.imageLightboxFooter}>
+              <span>{selectedImageIdx + 1} / {roomImages.length}</span>
+              <span>{roomImages[selectedImageIdx].caption || `Photo of ${room.room}`}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showTimetableModal && (
         <div className={styles.timetableOverlay} onClick={() => setShowTimetableModal(false)}>

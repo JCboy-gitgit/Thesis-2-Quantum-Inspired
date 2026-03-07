@@ -206,6 +206,8 @@ export default function FacultyApprovalPage() {
     (reg.full_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const loadingSkeletonCount = Math.max(filteredRegistrations.length || registrations.length, 1)
+
   const pendingCount = registrations.filter(r => r.status === 'pending' || r.status === 'unconfirmed').length
 
   const formatDate = (dateString: string) => {
@@ -318,8 +320,25 @@ export default function FacultyApprovalPage() {
         <div className={styles.cardGrid} id="approval-card-grid">
           {loading ? (
             <div className={styles.loadingState}>
-              <RotateCcw size={40} className={styles.spinning} />
-              <p>Loading registrations...</p>
+              <div className={styles.loadingSkeletonGrid}>
+                {Array.from({ length: loadingSkeletonCount }).map((_, idx) => (
+                  <div key={`approval-skeleton-${idx}`} className={styles.loadingSkeletonCard}>
+                    <div className={styles.loadingSkeletonHeader}>
+                      <span className={styles.loadingSkeletonAvatar} />
+                      <span className={styles.loadingSkeletonBadge} />
+                    </div>
+                    <div className={styles.loadingSkeletonBody}>
+                      <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '82%' : '68%' }} />
+                      <div className={styles.loadingSkeletonLine} style={{ width: '74%' }} />
+                      <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '56%' : '62%' }} />
+                    </div>
+                    <div className={styles.loadingSkeletonActions}>
+                      <span className={styles.loadingSkeletonButton} />
+                      <span className={styles.loadingSkeletonButton} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : filteredRegistrations.length === 0 ? (
             <div className={styles.emptyState}>

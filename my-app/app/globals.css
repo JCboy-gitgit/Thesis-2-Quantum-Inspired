@@ -288,6 +288,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Disable heavy transitions for one frame during theme toggle. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
 /* ==================== Admin Fullscreen (Menu Hidden) ==================== */
 html[data-menubar-hidden="true"] [data-page="admin"] main {
   margin-top: 0 !important;

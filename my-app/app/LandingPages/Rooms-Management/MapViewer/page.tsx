@@ -3563,15 +3563,15 @@ export default function MapViewerPage() {
   }
 
   if (!mounted) {
-    return <LoadingFallback message="Loading Map Viewer..." theme={globalTheme || 'green'} />
+    return <LoadingFallback message="Loading map viewer..." theme={globalTheme || 'green'} variant="modal" />
   }
 
   if (!authChecked) {
-    return <LoadingFallback message="Loading Map Viewer..." theme={globalTheme || 'green'} />
+    return <LoadingFallback message="Loading map viewer..." theme={globalTheme || 'green'} variant="modal" />
   }
 
   if (!isAuthorized) {
-    return <LoadingFallback message="Redirecting..." theme={globalTheme || 'green'} />
+    return <LoadingFallback message="Redirecting..." theme={globalTheme || 'green'} variant="modal" />
   }
 
   return (
@@ -6280,14 +6280,47 @@ function AdminLiveRoomModal({
   const [roomImages, setRoomImages] = useState<any[]>([])
   const [selectedImageIdx, setSelectedImageIdx] = useState(0)
   const [loadingImages, setLoadingImages] = useState(true)
+  const [isImageLightboxOpen, setIsImageLightboxOpen] = useState(false)
+
+  const hasMultipleImages = roomImages.length > 1
+
+  const goPrevImage = useCallback(() => {
+    if (!hasMultipleImages) return
+    setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)
+  }, [hasMultipleImages, roomImages.length])
+
+  const goNextImage = useCallback(() => {
+    if (!hasMultipleImages) return
+    setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)
+  }, [hasMultipleImages, roomImages.length])
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        if (isImageLightboxOpen) {
+          setIsImageLightboxOpen(false)
+          return
+        }
+        onClose()
+        return
+      }
+
+      if (!isImageLightboxOpen) return
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        goPrevImage()
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        goNextImage()
+      }
     }
+
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
+  }, [goNextImage, goPrevImage, isImageLightboxOpen, onClose])
 
   useEffect(() => {
     const fetchRoomImages = async () => {
@@ -6304,6 +6337,7 @@ function AdminLiveRoomModal({
         } else {
           setRoomImages(data || [])
           setSelectedImageIdx(0)
+          setIsImageLightboxOpen(false)
         }
       } catch (error) {
         console.error('Error fetching room images:', error)
@@ -6424,10 +6458,26 @@ function AdminLiveRoomModal({
             ) : (
               <div className={styles.liveRoomImagesWrap}>
                 <div className={styles.liveRoomImageViewer}>
+                  <button
+                    className={styles.liveRoomExpandBtn}
+                    onClick={() => setIsImageLightboxOpen(true)}
+                    aria-label="Open photo in full view"
+                  >
+                    <Maximize2 size={16} /> Full View
+                  </button>
                   <img
                     src={roomImages[selectedImageIdx]?.image_url}
                     alt={`Room ${room.room}`}
-                    className={styles.liveRoomMainImage}
+                    className={`${styles.liveRoomMainImage} ${styles.clickableImage}`}
+                    onClick={() => setIsImageLightboxOpen(true)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setIsImageLightboxOpen(true)
+                      }
+                    }}
                     onError={(event) => {
                       (event.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23e5e7eb" width="300" height="200"/%3E%3Ctext x="50%25" y="50%25" font-size="16" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E'
                     }}
@@ -6437,27 +6487,93 @@ function AdminLiveRoomModal({
                   )}
                 </div>
 
-                {roomImages.length > 1 && (
+                <div className={styles.liveRoomImageMeta}>
+                  Photo {selectedImageIdx + 1} of {roomImages.length}
+                </div>
+
+                {hasMultipleImages && (
                   <div className={styles.liveRoomImageNav}>
                     <button
                       className={styles.liveRoomImageNavBtn}
-                      onClick={() => setSelectedImageIdx((prev) => (prev - 1 + roomImages.length) % roomImages.length)}
+                      onClick={goPrevImage}
                     >
                       <ChevronLeft size={16} />
                     </button>
                     <span>{selectedImageIdx + 1} / {roomImages.length}</span>
                     <button
                       className={styles.liveRoomImageNavBtn}
-                      onClick={() => setSelectedImageIdx((prev) => (prev + 1) % roomImages.length)}
+                      onClick={goNextImage}
                     >
                       <ChevronRight size={16} />
                     </button>
+                  </div>
+                )}
+
+                {hasMultipleImages && (
+                  <div className={styles.liveRoomThumbStrip}>
+                    {roomImages.map((img, idx) => (
+                      <button
+                        key={`${img.id ?? idx}-${img.image_url}`}
+                        className={`${styles.liveRoomThumbBtn} ${selectedImageIdx === idx ? styles.activeThumb : ''}`}
+                        onClick={() => setSelectedImageIdx(idx)}
+                        aria-label={`Show photo ${idx + 1}`}
+                      >
+                        <img
+                          src={img.image_url}
+                          alt={`Thumbnail ${idx + 1}`}
+                          className={styles.liveRoomThumbImage}
+                          onError={(event) => {
+                            (event.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="60"%3E%3Crect fill="%23e5e7eb" width="100" height="60"/%3E%3C/svg%3E'
+                          }}
+                        />
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
             )
           )}
         </div>
+
+        {isImageLightboxOpen && roomImages[selectedImageIdx] && (
+          <div className={styles.liveRoomLightboxOverlay} onClick={() => setIsImageLightboxOpen(false)}>
+            <div className={styles.liveRoomLightboxContent} onClick={(event) => event.stopPropagation()}>
+              <button
+                className={styles.liveRoomLightboxClose}
+                onClick={() => setIsImageLightboxOpen(false)}
+                aria-label="Close full image view"
+              >
+                <X size={18} />
+              </button>
+
+              {hasMultipleImages && (
+                <button className={styles.liveRoomLightboxNavBtn} onClick={goPrevImage} aria-label="Previous photo">
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+
+              <img
+                src={roomImages[selectedImageIdx].image_url}
+                alt={`Room ${room.room} photo ${selectedImageIdx + 1}`}
+                className={styles.liveRoomLightboxImage}
+                onError={(event) => {
+                  (event.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="900" height="600"%3E%3Crect fill="%23e5e7eb" width="900" height="600"/%3E%3Ctext x="50%25" y="50%25" font-size="24" text-anchor="middle" dy=".3em" fill="%23999"%3EImage not found%3C/text%3E%3C/svg%3E'
+                }}
+              />
+
+              {hasMultipleImages && (
+                <button className={styles.liveRoomLightboxNavBtn} onClick={goNextImage} aria-label="Next photo">
+                  <ChevronRight size={20} />
+                </button>
+              )}
+
+              <div className={styles.liveRoomLightboxFooter}>
+                <span>{selectedImageIdx + 1} / {roomImages.length}</span>
+                <span>{roomImages[selectedImageIdx].caption || `Photo of ${room.room}`}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

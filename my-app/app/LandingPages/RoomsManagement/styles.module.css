@@ -852,22 +852,94 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  gap: 12px;
+  padding: 24px;
 }
 
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid var(--card-border);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+.loadingSkeletonGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
 }
 
-@keyframes spin {
+.loadingSkeletonGrid_files {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.loadingSkeletonGrid_campuses {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.loadingSkeletonGrid_buildings {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.loadingSkeletonGrid_rooms {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.loadingSkeletonCard {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 126px;
+}
+
+.loadingSkeletonCard_files,
+.loadingSkeletonCard_campuses {
+  border-radius: 12px;
+  min-height: 126px;
+}
+
+.loadingSkeletonCard_buildings {
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 136px;
+}
+
+.loadingSkeletonCard_rooms {
+  border-radius: 12px;
+  padding: 16px;
+  padding-top: 44px;
+  min-height: 230px;
+}
+
+.loadingSkeletonLine {
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, var(--primary-alpha), rgba(255, 255, 255, 0.35), var(--primary-alpha));
+  background-size: 200% 100%;
+  animation: loadingShimmer 1.1s linear infinite;
+}
+
+.loadingSkeletonAmenities {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loadingSkeletonChip {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--primary-alpha), rgba(255, 255, 255, 0.35), var(--primary-alpha));
+  background-size: 200% 100%;
+  animation: loadingShimmer 1.1s linear infinite;
+}
+
+@keyframes loadingShimmer {
+  from {
+    background-position: 200% 0;
+  }
   to {
-    transform: rotate(360deg);
+    background-position: -200% 0;
   }
 }
 
@@ -1656,7 +1728,12 @@
   .fileGrid,
   .campusGrid,
   .buildingGrid,
-  .roomsGrid {
+  .roomsGrid,
+  .loadingSkeletonGrid,
+  .loadingSkeletonGrid_files,
+  .loadingSkeletonGrid_campuses,
+  .loadingSkeletonGrid_buildings,
+  .loadingSkeletonGrid_rooms {
     grid-template-columns: 1fr;
   }
 
@@ -2000,4 +2077,17 @@
     padding: 8px 6px;
     justify-content: center;
   }
+}
+
+.syncHint {
+  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  background: var(--primary-alpha);
 }

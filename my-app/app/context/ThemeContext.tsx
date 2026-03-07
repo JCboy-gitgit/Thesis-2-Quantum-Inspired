@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode, useCallback, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 
 // Base themes - includes green (nature-inspired), light, and dark modes
@@ -134,6 +134,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const getCollegeThemeStorageKey = (isFaculty: boolean) =>
     isFaculty ? 'faculty-college-theme' : 'admin-college-theme'
 
+  const applyCollegeThemeCSS = useCallback((college: CollegeTheme) => {
+    const colors = COLLEGE_COLORS[college]
+    const root = document.documentElement
+    root.style.setProperty('--college-primary', colors.primary)
+    root.style.setProperty('--college-primary-rgb', colors.primaryRgb)
+    root.style.setProperty('--college-primary-light', colors.primaryLight)
+    root.style.setProperty('--college-primary-dark', colors.primaryDark)
+    root.style.setProperty('--college-accent', colors.accent)
+    root.style.setProperty('--college-gradient', colors.gradient)
+    root.style.setProperty('--college-glow', colors.glow)
+  }, [])
+
+  const enableFastThemeSwitchMode = useCallback(() => {
+    const root = document.documentElement
+    root.classList.add('theme-switching')
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove('theme-switching')
+      })
+    })
+  }, [])
+
   // Use useLayoutEffect to apply theme BEFORE paint - prevents flash
   useLayoutEffect(() => {
     const isFacultyPage = pathname?.startsWith('/faculty') ?? false
@@ -197,43 +219,39 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.documentElement.setAttribute('data-college-theme', 'default')
       applyCollegeThemeCSS('default')
     }
-  }, [pathname])
+  }, [pathname, applyCollegeThemeCSS])
 
-  const applyCollegeThemeCSS = (college: CollegeTheme) => {
-    const colors = COLLEGE_COLORS[college]
-    const root = document.documentElement
-    root.style.setProperty('--college-primary', colors.primary)
-    root.style.setProperty('--college-primary-rgb', colors.primaryRgb)
-    root.style.setProperty('--college-primary-light', colors.primaryLight)
-    root.style.setProperty('--college-primary-dark', colors.primaryDark)
-    root.style.setProperty('--college-accent', colors.accent)
-    root.style.setProperty('--college-gradient', colors.gradient)
-    root.style.setProperty('--college-glow', colors.glow)
-  }
-
-  const setTheme = (newTheme: BaseTheme) => {
+  const setTheme = useCallback((newTheme: BaseTheme) => {
     const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     const normalizedTheme: BaseTheme = isFacultyPage && newTheme === 'green' ? 'light' : newTheme
     const storageKey = getThemeStorageKey(isFacultyPage)
+
+    if (theme === normalizedTheme) return
+
+    enableFastThemeSwitchMode()
     setThemeState(normalizedTheme)
     localStorage.setItem(storageKey, normalizedTheme)
     // Sync with login page preference as well
     localStorage.setItem('login-theme-preference', normalizedTheme)
     document.documentElement.setAttribute('data-theme', normalizedTheme)
     document.body.setAttribute('data-theme', normalizedTheme)
-  }
+  }, [theme, enableFastThemeSwitchMode])
 
-  const setCollegeTheme = (college: CollegeTheme) => {
+  const setCollegeTheme = useCallback((college: CollegeTheme) => {
     const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     const storageKey = getCollegeThemeStorageKey(isFacultyPage)
+
+    if (collegeTheme === college) return
+
+    enableFastThemeSwitchMode()
     setCollegeThemeState(college)
     localStorage.setItem(storageKey, college)
     document.documentElement.setAttribute('data-college-theme', college)
     document.body.setAttribute('data-college-theme', college)
     applyCollegeThemeCSS(college)
-  }
+  }, [collegeTheme, enableFastThemeSwitchMode, applyCollegeThemeCSS])
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     let newTheme: BaseTheme
     if (isFacultyPage) {
@@ -246,16 +264,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       newTheme = 'green'
     }
     setTheme(newTheme)
-  }
+  }, [theme, setTheme])
 
-  const getCollegeColors = (): CollegeColors => {
+  const getCollegeColors = useCallback((): CollegeColors => {
     return COLLEGE_COLORS[collegeTheme] || COLLEGE_COLORS.default
-  }
+  }, [collegeTheme])
 
   // Always provide the context, but with default values until mounted
-  const value = mounted
-    ? { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors }
-    : defaultContext
+  const value = useMemo(() => {
+    return mounted
+      ? { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors }
+      : defaultContext
+  }, [mounted, theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors])
 
   return (
     <ThemeContext.Provider value={value}>

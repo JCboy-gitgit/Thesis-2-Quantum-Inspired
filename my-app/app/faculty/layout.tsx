@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTheme } from '@/app/context/ThemeContext'
 import LoadingFallback from '@/app/components/LoadingFallback'
@@ -83,48 +83,38 @@ export default function FacultyLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const { theme, collegeTheme } = useTheme()
 
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/reset-password')
   const isLightMode = theme === 'light'
 
-  // Use useLayoutEffect for synchronous DOM updates before paint
+  // Heavy cleanup should only run when route context changes.
   useLayoutEffect(() => {
-    // CRITICAL: Purge admin styles first, before anything else
     purgeAdminStyles()
-    
-    // Apply faculty styles using theme from context
+
+    document.body.classList.add('faculty-page', 'faculty-page-wrapper')
+
+    return () => {
+      document.body.classList.remove('faculty-page', 'faculty-page-wrapper')
+    }
+  }, [pathname])
+
+  // Lightweight theme sync updates only when theme values actually change.
+  useEffect(() => {
     applyFacultyStyles(isLightMode)
-    
-    // Update data attributes to match theme context on BOTH html and body
-    // Body must be synced because the login page sets data-theme on body,
-    // and stale values cause CSS ancestor selector conflicts
+
     document.documentElement.setAttribute('data-theme', theme)
     document.body.setAttribute('data-theme', theme)
     if (collegeTheme) {
       document.documentElement.setAttribute('data-college-theme', collegeTheme)
       document.body.setAttribute('data-college-theme', collegeTheme)
     }
-    
-    setMounted(true)
-    
-    return () => {
-      document.body.classList.remove('faculty-page', 'faculty-page-wrapper')
-      document.body.removeAttribute('data-theme')
-      document.body.removeAttribute('data-college-theme')
-    }
-  }, [theme, collegeTheme, pathname]) // Re-run when theme changes or pathname changes
+  }, [theme, collegeTheme, isLightMode])
 
   // Auth pages render immediately
   if (isAuthPage) {
     return <>{children}</>
-  }
-
-  // Loading state - use current theme from context
-  if (!mounted) {
-    return <LoadingFallback message="Loading faculty portal..." theme={theme} />
   }
 
   return <>{children}</>

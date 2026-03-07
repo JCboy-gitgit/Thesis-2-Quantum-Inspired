@@ -4,7 +4,7 @@
     right: 24px;
     z-index: 10000;
     pointer-events: auto;
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.2s ease-out;
 }
 
 .activeStatus,
@@ -19,7 +19,7 @@
     border: 1px solid rgba(16, 185, 129, 0.2);
     min-width: 280px;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: box-shadow 0.15s ease;
 }
 
 :global([data-theme="dark"]) .activeStatus,
@@ -36,7 +36,7 @@
 }
 
 .resultStatus:hover {
-    transform: translateY(-4px);
+    transform: translateY(-1px);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
 }
 
@@ -50,22 +50,13 @@
 }
 
 .spinningAtom {
-    animation: atomRotate 2s linear infinite;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+    animation: atomRotate 3s linear infinite;
+    filter: none;
 }
 
 @keyframes atomRotate {
-    0% {
-        transform: rotate(0deg) scale(1);
-    }
-
-    50% {
-        transform: rotate(180deg) scale(1.2);
-    }
-
-    100% {
-        transform: rotate(360deg) scale(1);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .iconWrapper {
@@ -88,7 +79,8 @@
 .content {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+    width: 100%;
 }
 
 .statusLabel {
@@ -102,6 +94,46 @@
     font-size: 13px;
     font-weight: 500;
     opacity: 0.9;
+}
+
+.etaText {
+    font-family: var(--font-fira-mono);
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.progressWrap {
+    width: 100%;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.progressBar,
+.progressBarDone {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 250ms linear;
+}
+
+.progressBar {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 1));
+}
+
+.progressBarDone {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+:global([data-theme="dark"]) .resultStatus .progressWrap {
+    background: rgba(148, 163, 184, 0.25);
+}
+
+:global([data-theme="light"]) .resultStatus .progressWrap,
+:global([data-theme="green"]) .resultStatus .progressWrap {
+    background: rgba(16, 185, 129, 0.2);
 }
 
 @keyframes slideIn {
@@ -155,12 +187,12 @@
     cursor: pointer;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
-    transition: all 0.2s ease;
+    transition: transform 0.12s ease;
     z-index: 10;
 }
 
 .dismissStatus:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
     color: #ef4444;
 }
 

@@ -1,0 +1,32 @@
+.progressWrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.progressTrack {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+  transition: opacity 180ms ease;
+}
+
+.progressBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--primary-light));
+  box-shadow: 0 0 14px var(--glow-color);
+  transition: width 160ms ease-out, opacity 220ms ease;
+}
+
+.active .progressTrack {
+  opacity: 1;
+}

@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     // Block rendering until auth check completes
     if (isLoading) {
-        return <LoadingFallback message="Loading admin portal..." />
+        return <LoadingFallback message="Checking admin access..." variant="modal" />
     }
 
     // If not authenticated or not admin, the hook already handles redirection.

@@ -533,6 +533,93 @@
   text-align: center;
 }
 
+.loadingState {
+  padding: 0;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.loadingSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.loadingSkeletonCard {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.loadingSkeletonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: var(--primary-alpha);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.loadingSkeletonAvatar,
+.loadingSkeletonBadge,
+.loadingSkeletonLine,
+.loadingSkeletonButton {
+  background: linear-gradient(90deg, var(--primary-alpha), rgba(255, 255, 255, 0.4), var(--primary-alpha));
+  background-size: 200% 100%;
+  animation: approvalShimmer 1.1s linear infinite;
+}
+
+.loadingSkeletonAvatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+}
+
+.loadingSkeletonBadge {
+  width: 88px;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.loadingSkeletonBody {
+  padding: 20px;
+}
+
+.loadingSkeletonLine {
+  height: 12px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.loadingSkeletonLine:last-child {
+  margin-bottom: 0;
+}
+
+.loadingSkeletonActions {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.loadingSkeletonButton {
+  flex: 1;
+  height: 38px;
+  border-radius: 8px;
+}
+
+@keyframes approvalShimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
 .emptyState svg,
 .loadingState svg {
   color: var(--primary);
@@ -584,6 +671,10 @@
   }
 
   .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .loadingSkeletonGrid {
     grid-template-columns: 1fr;
   }
 }

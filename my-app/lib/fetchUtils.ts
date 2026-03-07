@@ -3,6 +3,8 @@
  * Use these functions instead of raw fetch() to ensure fresh data from APIs
  */
 
+import { beginNetworkActivity, endNetworkActivity } from './networkActivity'
+
 /**
  * Fetch data without any caching - always gets fresh data from the server
  * @param url - The URL to fetch from
@@ -15,15 +17,20 @@ export async function fetchNoCache(url: string, options?: RequestInit): Promise<
   const separator = url.includes('?') ? '&' : '?'
   const urlWithCacheBuster = `${url}${separator}${cacheBuster}`
 
-  return fetch(urlWithCacheBuster, {
-    ...options,
-    cache: 'no-store',
-    headers: {
-      ...options?.headers,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-    },
-  })
+  beginNetworkActivity()
+  try {
+    return await fetch(urlWithCacheBuster, {
+      ...options,
+      cache: 'no-store',
+      headers: {
+        ...options?.headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
+  } finally {
+    endNetworkActivity()
+  }
 }
 
 /**

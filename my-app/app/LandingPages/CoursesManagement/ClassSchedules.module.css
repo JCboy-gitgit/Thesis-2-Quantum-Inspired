@@ -1191,11 +1191,57 @@
 /* ==================== Loading & Empty States ==================== */
 .loadingState {
   text-align: center;
-  padding: 60px 40px;
+  padding: 24px;
   background: var(--bg-white, #ffffff);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.loadingSkeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.loadingSkeletonCard {
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 132px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-white, #ffffff);
+}
+
+.loadingSkeletonStack {
+  display: grid;
+  gap: 16px;
+}
+
+.loadingSkeletonSection {
+  border-radius: 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-white, #ffffff);
+  padding: 16px;
+  min-height: 108px;
+}
+
+.loadingSkeletonLine {
+  height: 11px;
+  border-radius: 999px;
+  margin-top: 10px;
+  background: linear-gradient(90deg, rgba(44, 82, 130, 0.12), rgba(255, 255, 255, 0.55), rgba(44, 82, 130, 0.12));
+  background-size: 200% 100%;
+  animation: coursesShimmer 1.1s linear infinite;
+}
+
+@keyframes coursesShimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
 }
 
 .spinner {
@@ -1259,6 +1305,10 @@
   }
 
   .schedulesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .loadingSkeletonGrid {
     grid-template-columns: 1fr;
   }
 }

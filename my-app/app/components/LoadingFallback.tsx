@@ -16,113 +16,149 @@ export default function LoadingFallback({
   message = 'Loading...',
   variant = 'page',
   theme: forcedTheme,
-  showSpinner = true
+  showSpinner = false
 }: LoadingFallbackProps) {
   const [theme, setTheme] = useState<Theme>(forcedTheme || 'green')
   const [collegeTheme, setCollegeTheme] = useState<CollegeTheme>('default')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (!forcedTheme) {
-        const savedTheme = localStorage.getItem('faculty-base-theme') || localStorage.getItem('admin-base-theme') || 'green'
-        setTheme(savedTheme as Theme)
-      } else {
+      if (forcedTheme) {
         setTheme(forcedTheme)
+      } else {
+        const liveTheme = document.documentElement.getAttribute('data-theme')
+        if (liveTheme && ['green', 'light', 'dark'].includes(liveTheme)) {
+          setTheme(liveTheme as Theme)
+        } else {
+          const savedTheme = localStorage.getItem('faculty-base-theme') || localStorage.getItem('admin-base-theme') || 'green'
+          setTheme(savedTheme as Theme)
+        }
       }
 
-      const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
-      if (savedCollegeTheme && ['science', 'arts-letters', 'architecture'].includes(savedCollegeTheme)) {
-        setCollegeTheme(savedCollegeTheme as CollegeTheme)
+      const liveCollegeTheme = document.documentElement.getAttribute('data-college-theme')
+      if (liveCollegeTheme && ['science', 'arts-letters', 'architecture'].includes(liveCollegeTheme)) {
+        setCollegeTheme(liveCollegeTheme as CollegeTheme)
+      } else {
+        const savedCollegeTheme = localStorage.getItem('faculty-college-theme')
+        if (savedCollegeTheme && ['science', 'arts-letters', 'architecture'].includes(savedCollegeTheme)) {
+          setCollegeTheme(savedCollegeTheme as CollegeTheme)
+        }
       }
     }
   }, [forcedTheme])
 
-  const getColorScheme = () => {
-    const isLight = theme === 'light'
-    if (isLight) {
-      switch (collegeTheme) {
-        case 'science':
-          return { primary: '#0284c7', secondary: '#38bdf8', bg: '#f0f9ff' }
-        case 'arts-letters':
-          return { primary: '#7e22ce', secondary: '#d8b4fe', bg: '#faf5ff' }
-        case 'architecture':
-          return { primary: '#ea580c', secondary: '#fb923c', bg: '#fff7ed' }
-        default:
-          return { primary: '#10b981', secondary: '#34d399', bg: '#ffffff' }
-      }
-    } else {
-      switch (collegeTheme) {
-        case 'science':
-          return { primary: '#0284c7', secondary: '#0284c7', bg: '#001f3f' }
-        case 'arts-letters':
-          return { primary: '#a855f7', secondary: '#a855f7', bg: '#1e1033' }
-        case 'architecture':
-          return { primary: '#f97316', secondary: '#f97316', bg: '#1f1010' }
-        default:
-          return { primary: '#00d4ff', secondary: '#00d4ff', bg: '#0a0e27' }
-      }
-    }
-  }
-
-  const colors = getColorScheme()
+  const SkeletonLine = ({ width = '100%', height = 10 }: { width?: string; height?: number }) => (
+    <div className="q-skeleton" style={{ width, height, borderRadius: 999 }} />
+  )
 
   if (variant === 'page') {
     return (
       <div
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '20px',
-          background: colors.bg,
-          color: colors.primary,
-          zIndex: 9999,
-          overflow: 'hidden'
+          alignItems: 'stretch',
+          justifyContent: 'flex-start',
+          gap: '14px',
+          background: 'var(--background)',
+          color: 'var(--text-primary)',
+          overflow: 'hidden',
+          padding: 'clamp(16px, 3vw, 32px)'
         }}
         data-theme={theme}
         data-college-theme={collegeTheme}
       >
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
-            background: `radial-gradient(circle at 50% 50%, ${colors.secondary}15 0%, transparent 70%)`,
-            animation: 'pulseGlow 3.5s ease-in-out infinite',
-            pointerEvents: 'none'
+            position: 'relative',
+            zIndex: 2,
+            width: '100%',
+            maxWidth: '1280px',
+            margin: '0 auto'
           }}
-        />
-
-        {showSpinner && (
+        >
           <div
             style={{
-              width: '56px',
-              height: '56px',
-              border: `4px solid ${colors.secondary}40`,
-              borderTopColor: colors.primary,
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              boxShadow: `0 0 24px ${colors.secondary}40`,
-              position: 'relative',
-              zIndex: 2
+              height: 54,
+              borderRadius: 12,
+              border: '1px solid var(--card-border)',
+              background: 'var(--card-bg)',
+              padding: '0 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
             }}
-          />
-        )}
+          >
+            <SkeletonLine width="36px" height={36} />
+            <SkeletonLine width="180px" height={12} />
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <SkeletonLine width="30px" height={30} />
+              <SkeletonLine width="30px" height={30} />
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 14,
+              display: 'grid',
+              gridTemplateColumns: '1fr',
+              gap: 14,
+            }}
+          >
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div
+                style={{
+                  borderRadius: 14,
+                  border: '1px solid var(--card-border)',
+                  background: 'var(--card-bg)',
+                  padding: 14,
+                }}
+              >
+                <SkeletonLine width="36%" height={13} />
+                <SkeletonLine width="92%" height={10} />
+                <SkeletonLine width="64%" height={10} />
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={`card-${idx}`}
+                    style={{
+                      borderRadius: 14,
+                      border: '1px solid var(--card-border)',
+                      background: 'var(--card-bg)',
+                      padding: 14,
+                      minHeight: idx % 3 === 0 ? 120 : 96,
+                    }}
+                  >
+                    <SkeletonLine width={idx % 2 ? '68%' : '54%'} height={11} />
+                    <SkeletonLine width="94%" height={10} />
+                    <SkeletonLine width={idx % 2 ? '75%' : '60%'} height={10} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {message && (
           <p
             style={{
-              fontSize: '15px',
-              fontWeight: 500,
-              color: colors.primary,
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
               margin: 0,
               position: 'relative',
-              zIndex: 2
+              zIndex: 2,
+              textAlign: 'center',
+              letterSpacing: '0.01em'
             }}
           >
             {message}
@@ -130,12 +166,9 @@ export default function LoadingFallback({
         )}
 
         <style jsx>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-          @keyframes pulseGlow {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
+          .q-skeleton {
+            display: block;
+            background: var(--primary-alpha);
           }
         `}</style>
       </div>
@@ -152,7 +185,8 @@ export default function LoadingFallback({
           justifyContent: 'center',
           gap: '16px',
           padding: '48px 24px',
-          minHeight: '300px'
+          minHeight: '300px',
+          background: 'var(--background)'
         }}
       >
         {showSpinner && (
@@ -160,18 +194,27 @@ export default function LoadingFallback({
             style={{
               width: '48px',
               height: '48px',
-              border: `4px solid ${colors.secondary}40`,
-              borderTopColor: colors.primary,
+              border: '4px solid var(--card-border)',
+              borderTopColor: 'var(--primary)',
               borderRadius: '50%',
               animation: 'spin 0.8s linear infinite',
-              boxShadow: `0 0 16px ${colors.secondary}30`
+              boxShadow: '0 0 16px var(--primary-alpha)'
             }}
           />
         )}
-        {message && <p style={{ color: colors.primary, fontSize: '14px', margin: 0 }}>{message}</p>}
+        <div style={{ width: '100%', maxWidth: '420px' }}>
+          <div className="q-skeleton" style={{ height: '12px', width: '48%', margin: '0 auto 10px', borderRadius: '999px' }} />
+          <div className="q-skeleton" style={{ height: '11px', width: '100%', marginBottom: '8px', borderRadius: '999px' }} />
+          <div className="q-skeleton" style={{ height: '11px', width: '78%', margin: '0 auto', borderRadius: '999px' }} />
+        </div>
+        {message && <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>{message}</p>}
         <style jsx>{`
           @keyframes spin {
             to { transform: rotate(360deg); }
+          }
+
+          .q-skeleton {
+            background: var(--primary-alpha);
           }
         `}</style>
       </div>
@@ -184,25 +227,17 @@ export default function LoadingFallback({
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '16px'
+        padding: '16px',
+        background: 'var(--background)'
       }}
     >
-      {showSpinner && (
-        <div
-          style={{
-            width: '36px',
-            height: '36px',
-            border: `3px solid ${colors.secondary}40`,
-            borderTopColor: colors.primary,
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite'
-          }}
-        />
-      )}
-      {message && <span style={{ color: colors.primary, fontSize: '13px' }}>{message}</span>}
+      <div className="q-skeleton" style={{ width: '100px', height: '10px', borderRadius: '999px' }} />
+      <div className="q-skeleton" style={{ width: '72px', height: '10px', borderRadius: '999px' }} />
+      {showSpinner && <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Syncing...</span>}
+      {message && <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{message}</span>}
       <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        .q-skeleton {
+          background: var(--primary-alpha);
         }
       `}</style>
     </div>

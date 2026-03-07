@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
@@ -136,6 +136,7 @@ export default function RoomsManagementPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingData, setLoadingData] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
   // Navigation: 'files' -> 'campuses' -> 'buildings' -> 'rooms'
@@ -175,6 +176,8 @@ export default function RoomsManagementPage() {
   const [selectedRoom, setSelectedRoom] = useState<CampusRoom | null>(null)
   const [roomImages, setRoomImages] = useState<RoomImage[]>([])
   const [loadingImages, setLoadingImages] = useState(false)
+  const [uploadingRoomImage, setUploadingRoomImage] = useState(false)
+  const roomImageInputRef = useRef<HTMLInputElement>(null)
 
   // Room features count map (room_id -> feature count)
   const [roomFeatureCounts, setRoomFeatureCounts] = useState<Record<number, number>>({})
@@ -437,6 +440,89 @@ export default function RoomsManagementPage() {
     setRoomImages([])
   }
 
+  const openRoomImagePicker = () => {
+    if (!selectedRoom?.id) {
+      alert('Please select a valid room first.')
+      return
+    }
+    roomImageInputRef.current?.click()
+  }
+
+  const handleRoomImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !selectedRoom?.id) return
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, WebP, or GIF).')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image size must be less than 10MB.')
+      return
+    }
+
+    setUploadingRoomImage(true)
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg'
+      const safeRoomName = (selectedRoom.room || `room-${selectedRoom.id}`)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+      const filePath = `rooms/${selectedRoom.id}/${safeRoomName}-${Date.now()}.${fileExt}`
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('filePath', filePath)
+      formData.append('bucket', 'room-images')
+
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+
+      const uploadRes = await fetch('/api/rooms/upload-image', {
+        method: 'POST',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: formData,
+      })
+
+      const uploadData = await uploadRes.json()
+      if (!uploadRes.ok || !uploadData?.publicUrl) {
+        throw new Error(uploadData?.error || 'Upload failed')
+      }
+
+      const { data: authData } = await supabase.auth.getUser()
+      const uploaderId = authData?.user?.id || null
+
+      const { data: imageRow, error: insertError } = await (supabase
+        .from('room_images') as any)
+        .insert({
+          room_id: selectedRoom.id,
+          image_url: uploadData.publicUrl,
+          caption: null,
+          uploaded_by: uploaderId,
+        })
+        .select('*')
+        .single()
+
+      if (insertError) {
+        throw new Error(insertError.message || 'Failed to save image metadata')
+      }
+
+      setRoomImages((prev) => [imageRow as RoomImage, ...prev])
+      setSuccessMessage('Room image uploaded successfully!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Room image upload error:', error)
+      alert(error?.message || 'Failed to upload room image')
+    } finally {
+      setUploadingRoomImage(false)
+      if (roomImageInputRef.current) {
+        roomImageInputRef.current.value = ''
+      }
+    }
+  }
+
   // ==================== COMPUTED DATA ====================
 
   // Get unique campuses from allRooms
@@ -605,6 +691,34 @@ export default function RoomsManagementPage() {
 
   const hasActiveFilters = filterBuilding !== 'all' || filterFloor !== 'all' || filterRoomType !== 'all' || filterCollege !== 'all' || filterAC || filterTV || filterWhiteboard
 
+  const skeletonVariant = useMemo<'files' | 'campuses' | 'buildings' | 'rooms'>(() => {
+    if (currentView === 'rooms') return 'rooms'
+    if (currentView === 'buildings') return 'buildings'
+    if (currentView === 'campuses') return 'campuses'
+    return 'files'
+  }, [currentView])
+
+  const skeletonCount = useMemo(() => {
+    if (currentView === 'files') return Math.max(campusFiles.length, 1)
+    if (currentView === 'campuses') return Math.max(campusGroups.size, 1)
+    if (currentView === 'buildings') return Math.max(buildingsForCampus.size, 1)
+
+    if (searchTerm || hasActiveFilters) {
+      return Math.max(filteredRooms.length, 1)
+    }
+
+    return Math.max(roomsForBuilding.length, 1)
+  }, [
+    currentView,
+    campusFiles.length,
+    campusGroups.size,
+    buildingsForCampus.size,
+    roomsForBuilding.length,
+    filteredRooms.length,
+    searchTerm,
+    hasActiveFilters
+  ])
+
   const clearFilters = () => {
     setSearchTerm('')
     setFilterBuilding('all')
@@ -624,6 +738,32 @@ export default function RoomsManagementPage() {
       alert('Please fill in all required fields')
       return
     }
+
+    const optimisticId = -Date.now()
+    const optimisticRoom: CampusRoom = {
+      id: optimisticId,
+      upload_group_id: selectedFile.upload_group_id,
+      school_name: selectedFile.school_name,
+      file_name: 'Manual Entry',
+      campus: formData.campus,
+      building: formData.building,
+      room: formData.room,
+      room_code: formData.room_code || null,
+      capacity: formData.capacity,
+      floor_number: formData.floor_number || null,
+      room_type: formData.room_type,
+      specific_classification: formData.specific_classification || null,
+      has_ac: Boolean(formData.has_ac),
+      has_whiteboard: Boolean(formData.has_whiteboard),
+      has_tv: Boolean(formData.has_tv),
+      has_projector: false,
+      status: formData.status || 'usable',
+      notes: formData.notes || null,
+      college: formData.college || null,
+    }
+
+    setAllRooms((prev) => [optimisticRoom, ...prev])
+    setSyncing(true)
 
     try {
       const { data, error } = await (supabase
@@ -653,6 +793,8 @@ export default function RoomsManagementPage() {
 
       if (error) throw error
 
+        setAllRooms((prev) => prev.map((room) => (room.id === optimisticId ? (data as CampusRoom) : room)))
+
       if (openTagsAfterCreate && data?.id) {
         const createdRoom = data as CampusRoom
         setEditingRoom(createdRoom)
@@ -678,19 +820,44 @@ export default function RoomsManagementPage() {
         resetForm()
       }
 
-      await fetchRoomsForFile(selectedFile.upload_group_id)
-      await fetchCampusFiles()
-      await fetchSystemRoomOptions()
+      void fetchRoomsForFile(selectedFile.upload_group_id)
+      void fetchCampusFiles()
+      void fetchSystemRoomOptions()
       router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
+      setAllRooms((prev) => prev.filter((room) => room.id !== optimisticId))
       console.error('Error adding room:', error)
       alert(error.message || 'Failed to add room')
+    } finally {
+      setSyncing(false)
     }
   }
 
   const handleUpdateRoom = async () => {
     if (!editingRoom || !editingRoom.id) return
+
+    const previousRoom = allRooms.find((room) => room.id === editingRoom.id)
+    const optimisticRoom: CampusRoom = {
+      ...editingRoom,
+      campus: formData.campus,
+      building: formData.building,
+      room: formData.room,
+      room_code: formData.room_code || null,
+      capacity: formData.capacity,
+      floor_number: formData.floor_number || null,
+      room_type: formData.room_type,
+      specific_classification: formData.specific_classification || null,
+      has_ac: Boolean(formData.has_ac),
+      has_whiteboard: Boolean(formData.has_whiteboard),
+      has_tv: Boolean(formData.has_tv),
+      status: formData.status || 'usable',
+      notes: formData.notes || null,
+      college: formData.college || null,
+    }
+
+    setAllRooms((prev) => prev.map((room) => (room.id === editingRoom.id ? optimisticRoom : room)))
+    setSyncing(true)
 
     try {
       const { data, error, count } = await (supabase
@@ -723,18 +890,27 @@ export default function RoomsManagementPage() {
 
       setSuccessMessage('Room updated successfully!')
       resetForm()
-      if (selectedFile) await fetchRoomsForFile(selectedFile.upload_group_id)
+      if (selectedFile) void fetchRoomsForFile(selectedFile.upload_group_id)
       router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
+      if (previousRoom) {
+        setAllRooms((prev) => prev.map((room) => (room.id === previousRoom.id ? previousRoom : room)))
+      }
       console.error('Error updating room:', error)
       alert(error.message || 'Failed to update room')
+    } finally {
+      setSyncing(false)
     }
   }
 
   const handleDeleteRoom = async (room: CampusRoom) => {
     if (!room.id) return
     if (!confirm('Are you sure you want to delete this room?')) return
+
+    const previousRooms = allRooms
+    setAllRooms((prev) => prev.filter((item) => item.id !== room.id))
+    setSyncing(true)
 
     try {
       // Archive first
@@ -764,19 +940,34 @@ export default function RoomsManagementPage() {
       }
 
       setSuccessMessage('Room deleted successfully!')
-      if (selectedFile) await fetchRoomsForFile(selectedFile.upload_group_id)
-      await fetchCampusFiles()
+      if (selectedFile) void fetchRoomsForFile(selectedFile.upload_group_id)
+      void fetchCampusFiles()
       router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
+      setAllRooms(previousRooms)
       console.error('Error deleting room:', error)
       alert(error.message || 'Failed to delete room')
+    } finally {
+      setSyncing(false)
     }
   }
 
   const handleDeleteFile = async () => {
     if (!fileToDelete) return
     setDeletingFile(true)
+
+    const previousCampusFiles = campusFiles
+    const previousSelectedFile = selectedFile
+    const previousRooms = allRooms
+
+    setCampusFiles((prev) => prev.filter((file) => file.upload_group_id !== fileToDelete.upload_group_id))
+    if (selectedFile?.upload_group_id === fileToDelete.upload_group_id) {
+      setCurrentView('files')
+      setSelectedFile(null)
+      setAllRooms([])
+    }
+    setSyncing(true)
 
     try {
       // Get all rooms for archiving
@@ -823,13 +1014,17 @@ export default function RoomsManagementPage() {
         setAllRooms([])
       }
 
-      await fetchCampusFiles()
+      void fetchCampusFiles()
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
+      setCampusFiles(previousCampusFiles)
+      setSelectedFile(previousSelectedFile)
+      setAllRooms(previousRooms)
       console.error('Error deleting file:', error)
       alert(error.message || 'Failed to delete file')
     } finally {
       setDeletingFile(false)
+      setSyncing(false)
     }
   }
 
@@ -902,6 +1097,9 @@ export default function RoomsManagementPage() {
           {/* Success Message */}
           {successMessage && (
             <div className={styles.successMessage}>{successMessage}</div>
+          )}
+          {syncing && (
+            <div className={styles.syncHint}>Syncing latest changes...</div>
           )}
 
           {/* Breadcrumb Navigation */}
@@ -1072,8 +1270,26 @@ export default function RoomsManagementPage() {
           {/* Loading State */}
           {(loading || loadingData) && (
             <div className={styles.loadingState}>
-              <div className={styles.spinner}></div>
-              <p>Loading...</p>
+              <div className={`${styles.loadingSkeletonGrid} ${styles[`loadingSkeletonGrid_${skeletonVariant}`]}`}>
+                {Array.from({ length: skeletonCount }).map((_, idx) => (
+                  <div key={`skeleton-${idx}`} className={`${styles.loadingSkeletonCard} ${styles[`loadingSkeletonCard_${skeletonVariant}`]}`}>
+                    <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '62%' : '48%' }} />
+                    <div className={styles.loadingSkeletonLine} style={{ width: '90%' }} />
+                    <div className={styles.loadingSkeletonLine} style={{ width: idx % 2 ? '78%' : '56%' }} />
+
+                    {skeletonVariant === 'rooms' && (
+                      <>
+                        <div className={styles.loadingSkeletonLine} style={{ width: '36%' }} />
+                        <div className={styles.loadingSkeletonAmenities}>
+                          <span className={styles.loadingSkeletonChip} />
+                          <span className={styles.loadingSkeletonChip} />
+                          <span className={styles.loadingSkeletonChip} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1792,6 +2008,22 @@ export default function RoomsManagementPage() {
               {/* Room Images */}
               <div className={styles.roomDetailSection}>
                 <h4><MdImage size={16} /> Room Images</h4>
+                <input
+                  ref={roomImageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  style={{ display: 'none' }}
+                  onChange={handleRoomImageUpload}
+                />
+                <div style={{ marginBottom: '12px' }}>
+                  <button
+                    className={styles.uploadImageBtn}
+                    onClick={openRoomImagePicker}
+                    disabled={uploadingRoomImage}
+                  >
+                    <MdUpload size={16} /> {uploadingRoomImage ? 'Uploading...' : 'Upload Images'}
+                  </button>
+                </div>
                 {loadingImages ? (
                   <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Loading images...</p>
                 ) : roomImages.length > 0 ? (
@@ -1806,9 +2038,6 @@ export default function RoomsManagementPage() {
                   <div className={styles.noImages}>
                     <MdImage size={48} style={{ color: 'var(--text-secondary)', marginBottom: '12px' }} />
                     <p>No images available for this room</p>
-                    <button className={styles.uploadImageBtn} onClick={() => alert('Image upload feature coming soon!')}>
-                      <MdUpload size={16} /> Upload Images
-                    </button>
                   </div>
                 )}
               </div>

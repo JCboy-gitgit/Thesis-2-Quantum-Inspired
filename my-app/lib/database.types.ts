@@ -52,7 +52,9 @@ export type FacultyRole = 'administrator' | 'department_head' | 'program_chair' 
 export interface FacultyProfile {
   id: string;
   faculty_id: string;
+  name_prefix?: string;
   full_name: string;
+  name_suffix?: string;
   position: string;
   role: FacultyRole;
   department?: string;

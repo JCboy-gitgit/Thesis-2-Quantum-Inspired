@@ -39,6 +39,8 @@ interface UserProfile {
   id: string
   email: string
   full_name: string
+  name_prefix?: string
+  name_suffix?: string
   department_id?: number
   is_active: boolean
   phone?: string
@@ -96,6 +98,28 @@ export default function FacultyProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+
+  const formatDisplayName = (fullName?: string, prefix?: string, suffix?: string) => {
+    const baseName = (fullName || '').trim()
+    const normalizedPrefix = (prefix || '').trim()
+    const normalizedSuffix = (suffix || '').trim()
+    const withPrefix = [normalizedPrefix, baseName].filter(Boolean).join(' ').trim()
+    if (!withPrefix) return ''
+    return normalizedSuffix ? `${withPrefix}, ${normalizedSuffix}` : withPrefix
+  }
+
+  const getDepartmentLabel = (deptRaw?: string) => {
+    const value = (deptRaw || '').trim()
+    if (!value) return 'Not set'
+
+    const matched = departments.find((d) =>
+      d.department_code?.toLowerCase() === value.toLowerCase() ||
+      d.department_name?.toLowerCase() === value.toLowerCase()
+    )
+
+    if (!matched) return value
+    return `${matched.department_name} (${matched.department_code})`
+  }
 
   const parseJsonSafely = async (response: Response) => {
     const contentType = response.headers.get('content-type') || ''
@@ -187,14 +211,28 @@ export default function FacultyProfilePage() {
         .eq('user_id', session.user.id)
         .single() as { data: { contact_phone?: string; office_location?: string; bio?: string; specialization?: string } | null; error: any }
 
-      // Also check faculty_profiles for admin-assigned data
-      const { data: facultyProfileData } = await supabase
+      // Resolve faculty profile primarily by user_id; fallback to email (case-insensitive)
+      let facultyProfileData: {
+        full_name?: string;
+        name_prefix?: string;
+        name_suffix?: string;
+        department?: string;
+        college?: string;
+        phone?: string;
+        office_location?: string;
+        position?: string;
+        specialization?: string;
+      } | null = null
+
+      const byUserIdResult = await supabase
         .from('faculty_profiles')
         .select('*')
-        .eq('email', session.user.email || '')
-        .single() as {
+        .eq('user_id', session.user.id)
+        .maybeSingle() as {
           data: {
             full_name?: string;
+            name_prefix?: string;
+            name_suffix?: string;
             department?: string;
             college?: string;
             phone?: string;
@@ -204,16 +242,41 @@ export default function FacultyProfilePage() {
           } | null; error: any
         }
 
+      facultyProfileData = byUserIdResult.data
+
+      if (!facultyProfileData && session.user.email) {
+        const byEmailResult = await supabase
+          .from('faculty_profiles')
+          .select('*')
+          .ilike('email', session.user.email)
+          .maybeSingle() as {
+            data: {
+              full_name?: string;
+              name_prefix?: string;
+              name_suffix?: string;
+              department?: string;
+              college?: string;
+              phone?: string;
+              office_location?: string;
+              position?: string;
+              specialization?: string;
+            } | null; error: any
+          }
+        facultyProfileData = byEmailResult.data
+      }
+
       // Merge data - faculty_profiles (admin-assigned) takes priority for certain fields
       const fullProfile: UserProfile = {
         ...userData,
         full_name: facultyProfileData?.full_name || userData.full_name || '',
+        name_prefix: facultyProfileData?.name_prefix || '',
+        name_suffix: facultyProfileData?.name_suffix || '',
         phone: facultyProfileData?.phone || profileData?.contact_phone || userData.phone || '',
         office_location: facultyProfileData?.office_location || profileData?.office_location || '',
         bio: profileData?.bio || '',
         specialization: facultyProfileData?.specialization || profileData?.specialization || '',
         college: facultyProfileData?.college || '',
-        department: facultyProfileData?.department || '',
+        department: facultyProfileData?.department || userData.department || '',
         position: facultyProfileData?.position || ''
       }
 
@@ -260,14 +323,22 @@ export default function FacultyProfilePage() {
 
     try {
       // Name can now be changed directly by faculty (no approval needed)
-      const nameChanged = editForm.full_name !== user.full_name
+      const nameChanged = (editForm.full_name || '').trim() !== (user.full_name || '').trim()
+      const prefixChanged = (editForm.name_prefix || '').trim() !== (user.name_prefix || '').trim()
+      const suffixChanged = (editForm.name_suffix || '').trim() !== (user.name_suffix || '').trim()
+
+      const displayNameForUsers = formatDisplayName(
+        editForm.full_name,
+        editForm.name_prefix,
+        editForm.name_suffix
+      )
 
       // Update name directly in users table (faculty can now edit their own name)
-      if (nameChanged) {
+      if (nameChanged || prefixChanged || suffixChanged) {
         const { error: nameError } = await supabase
           .from('users')
           .update({
-            full_name: editForm.full_name,
+            full_name: displayNameForUsers || editForm.full_name,
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id)
@@ -281,7 +352,9 @@ export default function FacultyProfilePage() {
         const { error: facultyError } = await supabase
           .from('faculty_profiles')
           .update({
-            full_name: editForm.full_name,
+            full_name: (editForm.full_name || '').trim(),
+            name_prefix: (editForm.name_prefix || '').trim() || null,
+            name_suffix: (editForm.name_suffix || '').trim() || null,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
@@ -361,7 +434,9 @@ export default function FacultyProfilePage() {
       // Update local state with all changes
       setUser({
         ...user,
-        full_name: editForm.full_name,
+        full_name: (editForm.full_name || '').trim(),
+        name_prefix: (editForm.name_prefix || '').trim(),
+        name_suffix: (editForm.name_suffix || '').trim(),
         phone: editForm.phone,
         office_location: editForm.office_location,
         bio: editForm.bio,
@@ -445,11 +520,16 @@ export default function FacultyProfilePage() {
       if (updateError) throw updateError
 
       // Also update faculty_profiles profile_image if record exists (matches by email)
-      if (user.email) {
+      const facultyUpdateByUserId = await db
+        .from('faculty_profiles')
+        .update({ profile_image: publicUrl })
+        .eq('user_id', user.id)
+
+      if (facultyUpdateByUserId?.error && user.email) {
         const facultyUpdateResult = await db
           .from('faculty_profiles')
           .update({ profile_image: publicUrl })
-          .eq('email', user.email)
+          .ilike('email', user.email)
 
         if (facultyUpdateResult?.error) {
           console.log('Note: faculty_profiles profile_image update not critical:', facultyUpdateResult.error)
@@ -678,7 +758,9 @@ export default function FacultyProfilePage() {
                 </button>
               </div>
               <div className={styles.avatarInfo}>
-                <h1 className={styles.profileName}>{user?.full_name || 'Faculty Member'}</h1>
+                <h1 className={styles.profileName}>
+                  {formatDisplayName(user?.full_name, user?.name_prefix, user?.name_suffix) || user?.full_name || 'Faculty Member'}
+                </h1>
                 <p className={styles.email}>{user?.email}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                   <span className={styles.roleBadge}>{user?.position || 'Faculty'}</span>
@@ -736,7 +818,7 @@ export default function FacultyProfilePage() {
                   />
                 ) : (
                   <div className={styles.nameWithPending}>
-                    <p>{user?.full_name || 'Not set'}</p>
+                    <p>{formatDisplayName(user?.full_name, user?.name_prefix, user?.name_suffix) || user?.full_name || 'Not set'}</p>
                     {pendingNameRequest && (
                       <span className={styles.pendingBadge}>
                         <MdAccessTime size={12} />
@@ -745,6 +827,43 @@ export default function FacultyProfilePage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Name Prefix + Suffix in one row */}
+              <div className={`${styles.fullWidth} ${styles.nameMetaRow}`}>
+                <div className={styles.formGroup}>
+                  <label>
+                    <MdPerson size={16} />
+                    Name Prefix
+                  </label>
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={editForm?.name_prefix || ''}
+                      onChange={(e) => setEditForm({ ...editForm!, name_prefix: e.target.value })}
+                      placeholder="e.g., Mr., Ms., Dr., Prof."
+                    />
+                  ) : (
+                    <p>{user?.name_prefix || 'None'}</p>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>
+                    <MdPerson size={16} />
+                    Name Suffix
+                  </label>
+                  {editing ? (
+                    <input
+                      type="text"
+                      value={editForm?.name_suffix || ''}
+                      onChange={(e) => setEditForm({ ...editForm!, name_suffix: e.target.value })}
+                      placeholder="e.g., Ph.D., CPA, RN"
+                    />
+                  ) : (
+                    <p>{user?.name_suffix || 'None'}</p>
+                  )}
+                </div>
               </div>
 
               {/* Email (read-only) */}
@@ -756,12 +875,13 @@ export default function FacultyProfilePage() {
                 <p className={styles.readonly}>{user?.email}</p>
               </div>
 
-              {/* Department - Read only, managed by admin */}
+              {/* Department - read only, managed by admin */}
               <div className={styles.formGroup}>
                 <label>
                   <MdBusiness size={16} />
                   Department
                 </label>
+                <p>{getDepartmentLabel(user?.department)}</p>
                 <p className={styles.readOnly}>Contact admin to update department</p>
               </div>
 
