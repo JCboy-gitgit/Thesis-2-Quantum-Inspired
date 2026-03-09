@@ -420,6 +420,18 @@ function PageContent(): JSX.Element {
       const navHeight = nav?.offsetHeight ?? 72
       const targetLine = navHeight + 18
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+      const scrollTop = window.scrollY || window.pageYOffset
+      const docHeight = document.documentElement.scrollHeight
+
+      // Keep section chip stable near page extremes.
+      if (scrollTop <= 6) {
+        setActiveLandingSection('about')
+        return
+      }
+      if (scrollTop + viewportHeight >= docHeight - 6) {
+        setActiveLandingSection('workflow')
+        return
+      }
 
       const candidates = sectionElements
         .map((section) => {
@@ -450,7 +462,7 @@ function PageContent(): JSX.Element {
       window.removeEventListener('scroll', updateActiveSectionFromScroll)
       window.removeEventListener('resize', updateActiveSectionFromScroll)
     }
-  }, [checkingSession])
+  }, [checkingSession, loginTheme])
 
   useEffect(() => {
     if (checkingSession || typeof window === 'undefined') {
@@ -491,7 +503,7 @@ function PageContent(): JSX.Element {
       window.removeEventListener('scroll', updateStickyNavVisibility)
       window.removeEventListener('resize', updateStickyNavVisibility)
     }
-  }, [checkingSession])
+  }, [checkingSession, loginTheme])
 
   // Fetch colleges on mount
   useEffect(() => {
