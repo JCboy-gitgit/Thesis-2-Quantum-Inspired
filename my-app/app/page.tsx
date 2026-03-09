@@ -3,6 +3,20 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react'
 import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import {
+  MdAdminPanelSettings,
+  MdAutoGraph,
+  MdBolt,
+  MdCheckCircle,
+  MdFactCheck,
+  MdGroups,
+  MdPerson,
+  MdPublish,
+  MdSchedule,
+  MdTimeline,
+  MdTune,
+  MdUploadFile,
+} from 'react-icons/md'
 import './styles/login.css'
 import { supabase } from '@/lib/supabaseClient'
 import { clearBrowserCaches } from '@/lib/clearCache'
@@ -17,6 +31,124 @@ interface College {
   short_name?: string
   is_active: boolean
 }
+
+interface PreviewImageItem {
+  key: string
+  title: string
+  caption: string
+  alt: string
+  lightSrc: string
+  darkSrc: string
+  large?: boolean
+}
+
+const PREVIEW_IMAGES: PreviewImageItem[] = [
+  {
+    key: 'admin-home',
+    title: 'Admin Home',
+    caption: 'Operational dashboard with key controls and status visibility',
+    alt: 'Admin dashboard homepage preview',
+    lightSrc: '/landing/admin-home.png',
+    darkSrc: '/landing/dark/admin-home.png',
+    large: true
+  },
+  {
+    key: 'admin-view-schedule',
+    title: 'Schedule View',
+    caption: 'Generated timetable review and manual refinement workflow',
+    alt: 'Admin schedule view preview',
+    lightSrc: '/landing/admin-view-schedule.png',
+    darkSrc: '/landing/dark/admin-view-schedule.png'
+  },
+  {
+    key: 'admin-live-timetable',
+    title: 'Live Timetable',
+    caption: 'Real-time published schedule visibility for stakeholders',
+    alt: 'Admin live timetable preview',
+    lightSrc: '/landing/admin-live-timetable.png',
+    darkSrc: '/landing/dark/admin-live-timetable.png'
+  },
+  {
+    key: 'faculty-home',
+    title: 'Faculty Home',
+    caption: 'Focused view of assignments, schedule and notifications',
+    alt: 'Faculty homepage preview',
+    lightSrc: '/landing/faculty-home.png',
+    darkSrc: '/landing/dark/faculty-home.png'
+  },
+  {
+    key: 'faculty-view',
+    title: 'Faculty Schedule View',
+    caption: 'Personalized timetable access with streamlined navigation',
+    alt: 'Faculty schedule view preview',
+    lightSrc: '/landing/faculty-view.png',
+    darkSrc: '/landing/dark/faculty-view.png'
+  }
+]
+
+const FEATURE_ITEMS = [
+  {
+    key: 'admin-center',
+    title: 'Admin Command Center',
+    description: 'Manage colleges, departments, rooms, and faculty in one scheduling workspace.',
+    Icon: MdAdminPanelSettings,
+  },
+  {
+    key: 'faculty-portal',
+    title: 'Faculty-Focused Portal',
+    description: 'Faculty view assignments and updates without navigating admin complexity.',
+    Icon: MdPerson,
+  },
+  {
+    key: 'optimization-manual',
+    title: 'Optimization + Manual Control',
+    description: 'Start with generated schedules, then refine edge cases manually.',
+    Icon: MdTune,
+  },
+  {
+    key: 'transparency',
+    title: 'Operational Transparency',
+    description: 'Track pending, approved, and finalized changes with traceable edits.',
+    Icon: MdFactCheck,
+  },
+]
+
+const JOURNEY_ITEMS = [
+  {
+    key: 'data-foundation',
+    badge: '01',
+    title: 'Data Foundation',
+    description: 'Load faculty details, room inventory, course offerings, and policy constraints into the system.',
+    Icon: MdUploadFile,
+  },
+  {
+    key: 'quantum-run',
+    badge: '02',
+    title: 'Quantum-Inspired Run',
+    description: 'Generate candidate timetables that reduce collisions and improve overall schedule quality.',
+    Icon: MdAutoGraph,
+  },
+  {
+    key: 'human-validation',
+    badge: '03',
+    title: 'Human Validation',
+    description: 'Review anomalies, refine schedule segments, and align final loads with institutional decisions.',
+    Icon: MdSchedule,
+  },
+  {
+    key: 'publish-monitor',
+    badge: '04',
+    title: 'Publish And Monitor',
+    description: 'Release final timetables, monitor updates, and keep stakeholders aligned throughout the term.',
+    Icon: MdPublish,
+  },
+]
+
+const SYSTEM_COVER_ITEMS = [
+  { key: 'onboarding', text: 'Faculty onboarding and approval workflow', Icon: MdGroups },
+  { key: 'generation', text: 'Automated generation with manual refinement', Icon: MdTune },
+  { key: 'publishing', text: 'Department timetable publishing with updates', Icon: MdPublish },
+]
 
 const eyeShowSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`
 const eyeHideSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24m4.24 4.24L3 3m6 6l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
@@ -95,6 +227,11 @@ function PageContent(): JSX.Element {
 
   // Login page theme (independent of app theme)
   const [loginTheme, setLoginTheme] = useState<'dark' | 'light'>('light')
+  const [landingRevealReady, setLandingRevealReady] = useState(false)
+  const [darkPreviewImagesReady, setDarkPreviewImagesReady] = useState(false)
+  const [activePreviewIndex, setActivePreviewIndex] = useState(0)
+
+  const previewCount = PREVIEW_IMAGES.length
 
   // Initialize theme from localStorage
   useEffect(() => {
@@ -107,6 +244,60 @@ function PageContent(): JSX.Element {
   // Particle data
   const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
   const [sparkleParticles, setSparkleParticles] = useState<Array<{ left: string; top: string; delay: string; duration: string }>>([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (loginTheme !== 'dark') {
+      setDarkPreviewImagesReady(false)
+      return
+    }
+
+    const checkDarkImages = async () => {
+      try {
+        const checks = await Promise.all(
+          PREVIEW_IMAGES.map(async (item) => {
+            const res = await fetch(item.darkSrc, { method: 'HEAD', cache: 'no-store' })
+            return res.ok
+          })
+        )
+
+        if (!cancelled) {
+          setDarkPreviewImagesReady(checks.every(Boolean))
+        }
+      } catch {
+        if (!cancelled) {
+          setDarkPreviewImagesReady(false)
+        }
+      }
+    }
+
+    checkDarkImages()
+
+    return () => {
+      cancelled = true
+    }
+  }, [loginTheme])
+
+  useEffect(() => {
+    if (previewCount <= 1) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setActivePreviewIndex((prev) => (prev + 1) % previewCount)
+    }, 5000)
+
+    return () => window.clearInterval(timer)
+  }, [previewCount])
+
+  const goToPreview = (direction: -1 | 1) => {
+    if (previewCount <= 1) {
+      return
+    }
+
+    setActivePreviewIndex((prev) => (prev + direction + previewCount) % previewCount)
+  }
 
   // Check existing session on mount
   useEffect(() => {
@@ -157,6 +348,44 @@ function PageContent(): JSX.Element {
     )
   }, [])
 
+  useEffect(() => {
+    if (checkingSession) {
+      return
+    }
+
+    const revealElements = Array.from(document.querySelectorAll<HTMLElement>('.landing-reveal'))
+    if (!revealElements.length) {
+      setLandingRevealReady(false)
+      return
+    }
+
+    setLandingRevealReady(true)
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      revealElements.forEach((el) => el.classList.add('is-visible'))
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+          } else {
+            entry.target.classList.remove('is-visible')
+          }
+        })
+      },
+      { threshold: 0.2, rootMargin: '0px 0px -4% 0px' }
+    )
+
+    revealElements.forEach((el) => observer.observe(el))
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [checkingSession])
+
   // Fetch colleges on mount
   useEffect(() => {
     fetchColleges()
@@ -190,6 +419,16 @@ function PageContent(): JSX.Element {
         setTabAnimation('')
       }, 350)
     }, 150)
+  }
+
+  const openAuthPanel = (targetTab: ActiveTab) => {
+    if (targetTab !== activeTab) {
+      handleTabChange(targetTab)
+    }
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '#auth')
+      document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   // Forgot Password Handler
@@ -454,7 +693,7 @@ function PageContent(): JSX.Element {
   const moonSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
   return (
-    <div className={`login-page ${loginTheme === 'light' ? 'login-light-theme' : ''}`}>
+    <div className={`login-page login-hub-page ${loginTheme === 'light' ? 'login-light-theme' : ''}`}>
       {/* Theme Toggle Button */}
       <button
         type="button"
@@ -532,8 +771,223 @@ function PageContent(): JSX.Element {
         </div>
       )}
 
+      <section className={`landing-shell ${landingRevealReady ? 'landing-animations-ready' : ''}`} id="home">
+        <header className="landing-nav landing-reveal" data-reveal-order="1">
+          <a href="#home" className="landing-brand">
+            <img src="/app-icon.png" alt="Qtime logo" className="landing-brand-logo" />
+            <span className="landing-brand-text">Qtime</span>
+          </a>
+          <nav className="landing-links" aria-label="Landing page sections">
+            <a href="#about" className="landing-link-chip">About</a>
+            <a href="#features" className="landing-link-chip">Features</a>
+            <a href="#visuals" className="landing-link-chip">Visuals</a>
+            <a href="#journey" className="landing-link-chip">Journey</a>
+            <a href="#workflow" className="landing-link-chip">Flow</a>
+          </nav>
+          <div className="landing-nav-actions">
+            <button type="button" className="landing-ghost-btn" onClick={() => openAuthPanel('login')}>
+              Login
+            </button>
+            <button type="button" className="landing-primary-btn" onClick={() => openAuthPanel('signup')}>
+              Register
+            </button>
+          </div>
+        </header>
+
+        <section className="landing-hero landing-reveal" data-reveal-order="2">
+          <div className="landing-hero-copy">
+            <p className="landing-kicker">Clarence Thesis Group | Quantum-Inspired Scheduling</p>
+            <h1>Plan Conflict-Free Faculty Schedules With Confidence</h1>
+            <p>
+              Qtime helps colleges generate optimized timetables, balance teaching loads, and keep schedule decisions
+              transparent for both admin and faculty.
+            </p>
+            <div className="landing-hero-actions">
+              <button
+                type="button"
+                className="landing-primary-btn landing-primary-btn-pulse"
+                onClick={() => openAuthPanel('login')}
+              >
+                Enter Dashboard
+              </button>
+              <button type="button" className="landing-ghost-btn" onClick={() => openAuthPanel('signup')}>
+                Create Faculty Account
+              </button>
+            </div>
+            <div className="landing-stat-row" aria-label="System value highlights">
+              <article className="landing-stat-combined">
+                <div className="landing-stat-item">
+                  <div className="landing-stat-head">
+                    <span className="landing-stat-icon" aria-hidden="true"><MdCheckCircle size={14} /></span>
+                    <strong>Conflict checks</strong>
+                  </div>
+                  <span>Room, slot, and faculty availability validation</span>
+                </div>
+
+                <div className="landing-stat-item">
+                  <div className="landing-stat-head">
+                    <span className="landing-stat-icon" aria-hidden="true"><MdGroups size={14} /></span>
+                    <strong>Role clarity</strong>
+                  </div>
+                  <span>Admin control with simplified faculty visibility</span>
+                </div>
+
+                <div className="landing-stat-item">
+                  <div className="landing-stat-head">
+                    <span className="landing-stat-icon" aria-hidden="true"><MdTimeline size={14} /></span>
+                    <strong>Status tracking</strong>
+                  </div>
+                  <span>Follow progress from draft to published timetable</span>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div className="landing-hero-side" aria-label="Platform and system overview cards">
+            <section id="about" className="landing-section landing-side-card">
+              <p className="landing-card-kicker">Platform Brief</p>
+              <h2>About The Platform</h2>
+              <p>
+                Developed by the Clarence Thesis Group, this platform combines quantum-inspired optimization with practical
+                controls to reduce manual work and improve fairness in load distribution.
+              </p>
+            </section>
+
+            <aside className="landing-hero-panel landing-side-card" aria-label="System overview card">
+              <p className="landing-card-kicker">Capabilities</p>
+              <h2>What The System Covers</h2>
+              <ul>
+                {SYSTEM_COVER_ITEMS.map(({ key, text, Icon }) => (
+                  <li key={key} className="landing-cover-item">
+                    <span className="landing-cover-icon" aria-hidden="true"><Icon size={14} /></span>
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+
+          </div>
+        </section>
+
+        <section id="features" className="landing-feature-grid landing-reveal" data-reveal-order="3">
+          {FEATURE_ITEMS.map(({ key, title, description, Icon }) => (
+            <article key={key}>
+              <div className="landing-card-icon" aria-hidden="true">
+                <Icon size={16} />
+              </div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </section>
+
+        <section id="visuals" className="landing-system-visuals landing-reveal" data-reveal-order="4">
+          <div className="landing-section-head">
+            <h2>System Preview</h2>
+            <p>Actual captured interfaces from admin and faculty accounts inside your running system.</p>
+          </div>
+          <div className="preview-carousel" aria-label="System preview gallery" aria-roledescription="carousel">
+            <div className="preview-carousel-stage">
+              <button
+                type="button"
+                className="preview-arrow preview-arrow-left"
+                aria-label="Show previous preview"
+                onClick={() => goToPreview(-1)}
+              >
+                <span aria-hidden="true">&lt;</span>
+              </button>
+
+              <div className="preview-carousel-viewport">
+                {[
+                  (activePreviewIndex - 1 + previewCount) % previewCount,
+                  activePreviewIndex,
+                  (activePreviewIndex + 1) % previewCount
+                ].map((previewIndex, slotIndex) => {
+                  const item = PREVIEW_IMAGES[previewIndex]
+                  const themedSrc = loginTheme === 'dark' && darkPreviewImagesReady ? item.darkSrc : item.lightSrc
+                  const isCenter = slotIndex === 1
+
+                  return (
+                    <article
+                      key={`${item.key}-${slotIndex}`}
+                      className={`preview-slide ${isCenter ? 'is-center' : 'is-side'}`}
+                      aria-label={`${isCenter ? 'Current' : 'Adjacent'} preview: ${item.title}`}
+                    >
+                      <div className="preview-slide-card">
+                        <img src={themedSrc} alt={item.alt} loading="lazy" width={1405} height={725} />
+                        <div className="visual-caption">
+                          <p className="preview-caption-role">{isCenter ? 'Current View' : 'Side Preview'}</p>
+                          <strong>{item.title}</strong>
+                          <span>{item.caption}</span>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="preview-arrow preview-arrow-right"
+                aria-label="Show next preview"
+                onClick={() => goToPreview(1)}
+              >
+                <span aria-hidden="true">&gt;</span>
+              </button>
+            </div>
+
+            <div className="preview-direction-hints" aria-hidden="true">
+              <span className="preview-direction-pill preview-direction-pill-left">
+              {PREVIEW_IMAGES[(activePreviewIndex - 1 + previewCount) % previewCount].title}
+              </span>
+              <span className="preview-direction-pill preview-direction-pill-current">
+              {PREVIEW_IMAGES[activePreviewIndex].title}
+              </span>
+              <span className="preview-direction-pill preview-direction-pill-right">
+              {PREVIEW_IMAGES[(activePreviewIndex + 1) % previewCount].title}
+              </span>
+            </div>
+
+            <div className="preview-carousel-dots" aria-label="System preview slide controls">
+              {PREVIEW_IMAGES.map((item, index) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`preview-dot ${index === activePreviewIndex ? 'is-active' : ''}`}
+                  aria-label={`Go to ${item.title}`}
+                  onClick={() => setActivePreviewIndex(index)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="journey" className="landing-story-strip landing-reveal" data-reveal-order="5">
+          {JOURNEY_ITEMS.map(({ key, badge, title, description, Icon }) => (
+            <article key={key} className="story-card">
+              <div className="story-top-row">
+                <p className="story-badge">{badge}</p>
+                <span className="story-icon" aria-hidden="true">
+                  <Icon size={16} />
+                </span>
+              </div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </section>
+
+        <section id="workflow" className="landing-section landing-workflow landing-reveal" data-reveal-order="6">
+          <h2>How It Works</h2>
+          <ol>
+            <li>Sign in as admin or register as faculty.</li>
+            <li>Prepare faculty, room, subject, and constraint data.</li>
+            <li>Generate schedules, review conflicts, then publish.</li>
+          </ol>
+        </section>
+      </section>
+
       {/* Content */}
-      <main className="container">
+      <main id="auth" className="container auth-shell auth-shell-open">
         <div className="card tabbed-card">
           {/* Tab Header */}
           <div className="card-header">
