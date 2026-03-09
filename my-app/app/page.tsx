@@ -111,6 +111,18 @@ const FEATURE_ITEMS = [
     description: 'Track pending, approved, and finalized changes with traceable edits.',
     Icon: MdFactCheck,
   },
+  {
+    key: 'live-schedule',
+    title: 'Live Schedule',
+    description: 'Watch timetable updates in real time as publishing and refinements happen.',
+    Icon: MdSchedule,
+  },
+  {
+    key: 'live-2d-map',
+    title: 'Live 2D Map',
+    description: 'View room usage and class placement from a live floor-map perspective.',
+    Icon: MdTimeline,
+  },  
 ]
 
 const JOURNEY_ITEMS = [
@@ -143,6 +155,8 @@ const JOURNEY_ITEMS = [
     Icon: MdPublish,
   },
 ]
+
+const LANDING_SECTION_IDS = ['about', 'features', 'visuals', 'journey', 'workflow'] as const
 
 const SYSTEM_COVER_ITEMS = [
   { key: 'onboarding', text: 'Faculty onboarding and approval workflow', Icon: MdGroups },
@@ -230,6 +244,8 @@ function PageContent(): JSX.Element {
   const [landingRevealReady, setLandingRevealReady] = useState(false)
   const [darkPreviewImagesReady, setDarkPreviewImagesReady] = useState(false)
   const [activePreviewIndex, setActivePreviewIndex] = useState(0)
+  const [activeLandingSection, setActiveLandingSection] = useState<(typeof LANDING_SECTION_IDS)[number]>('about')
+  const [hideStickyNav, setHideStickyNav] = useState(false)
 
   const previewCount = PREVIEW_IMAGES.length
 
@@ -383,6 +399,97 @@ function PageContent(): JSX.Element {
 
     return () => {
       observer.disconnect()
+    }
+  }, [checkingSession])
+
+  useEffect(() => {
+    if (checkingSession || typeof window === 'undefined') {
+      return
+    }
+
+    const sectionElements = LANDING_SECTION_IDS
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el))
+
+    if (!sectionElements.length) {
+      return
+    }
+
+    const updateActiveSectionFromScroll = () => {
+      const nav = document.querySelector('.landing-nav') as HTMLElement | null
+      const navHeight = nav?.offsetHeight ?? 72
+      const targetLine = navHeight + 18
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+
+      const candidates = sectionElements
+        .map((section) => {
+          const rect = section.getBoundingClientRect()
+          const inViewBand = rect.bottom > targetLine && rect.top < viewportHeight * 0.8
+
+          return {
+            id: section.id as (typeof LANDING_SECTION_IDS)[number],
+            distance: Math.abs(rect.top - targetLine),
+            inViewBand
+          }
+        })
+        .filter((item) => item.inViewBand)
+        .sort((a, b) => a.distance - b.distance)
+
+      if (!candidates.length) {
+        return
+      }
+
+      setActiveLandingSection(candidates[0].id)
+    }
+
+    updateActiveSectionFromScroll()
+    window.addEventListener('scroll', updateActiveSectionFromScroll, { passive: true })
+    window.addEventListener('resize', updateActiveSectionFromScroll)
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveSectionFromScroll)
+      window.removeEventListener('resize', updateActiveSectionFromScroll)
+    }
+  }, [checkingSession])
+
+  useEffect(() => {
+    if (checkingSession || typeof window === 'undefined') {
+      return
+    }
+
+    const authSection = document.getElementById('auth')
+    if (!authSection) {
+      return
+    }
+
+    const updateStickyNavVisibility = () => {
+      const nav = document.querySelector('.landing-nav') as HTMLElement | null
+      const navHeight = nav?.offsetHeight ?? 72
+      const rect = authSection.getBoundingClientRect()
+      const authCard = authSection.querySelector('.tabbed-card') as HTMLElement | null
+      const forgotPasswordRow = authSection.querySelector('.forgot-password-link') as HTMLElement | null
+
+      // Primary trigger: when auth card reaches nav zone (matches desired "hide here" behavior).
+      // Fallback: forgot row or mid-auth for states where card target is unavailable.
+      const cardTop = authCard?.getBoundingClientRect().top
+      const fallbackTop = forgotPasswordRow
+        ? forgotPasswordRow.getBoundingClientRect().top
+        : rect.top + rect.height * 0.45
+      const triggerTop = cardTop ?? fallbackTop
+
+      const cardBottom = authCard?.getBoundingClientRect().bottom
+      const authStillVisible = (cardBottom ?? rect.bottom) > navHeight * 0.35
+
+      setHideStickyNav(triggerTop <= navHeight + 12 && authStillVisible)
+    }
+
+    updateStickyNavVisibility()
+    window.addEventListener('scroll', updateStickyNavVisibility, { passive: true })
+    window.addEventListener('resize', updateStickyNavVisibility)
+
+    return () => {
+      window.removeEventListener('scroll', updateStickyNavVisibility)
+      window.removeEventListener('resize', updateStickyNavVisibility)
     }
   }, [checkingSession])
 
@@ -772,17 +879,17 @@ function PageContent(): JSX.Element {
       )}
 
       <section className={`landing-shell ${landingRevealReady ? 'landing-animations-ready' : ''}`} id="home">
-        <header className="landing-nav landing-reveal" data-reveal-order="1">
+        <header className={`landing-nav landing-reveal ${hideStickyNav ? 'is-hidden' : ''}`} data-reveal-order="1">
           <a href="#home" className="landing-brand">
             <img src="/app-icon.png" alt="Qtime logo" className="landing-brand-logo" />
             <span className="landing-brand-text">Qtime</span>
           </a>
           <nav className="landing-links" aria-label="Landing page sections">
-            <a href="#about" className="landing-link-chip">About</a>
-            <a href="#features" className="landing-link-chip">Features</a>
-            <a href="#visuals" className="landing-link-chip">Visuals</a>
-            <a href="#journey" className="landing-link-chip">Journey</a>
-            <a href="#workflow" className="landing-link-chip">Flow</a>
+            <a href="#about" className={`landing-link-chip ${activeLandingSection === 'about' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'about' ? 'page' : undefined}>About</a>
+            <a href="#features" className={`landing-link-chip ${activeLandingSection === 'features' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'features' ? 'page' : undefined}>Features</a>
+            <a href="#visuals" className={`landing-link-chip ${activeLandingSection === 'visuals' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'visuals' ? 'page' : undefined}>Visuals</a>
+            <a href="#journey" className={`landing-link-chip ${activeLandingSection === 'journey' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'journey' ? 'page' : undefined}>Journey</a>
+            <a href="#workflow" className={`landing-link-chip ${activeLandingSection === 'workflow' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'workflow' ? 'page' : undefined}>Flow</a>
           </nav>
           <div className="landing-nav-actions">
             <button type="button" className="landing-ghost-btn" onClick={() => openAuthPanel('login')}>
@@ -802,6 +909,17 @@ function PageContent(): JSX.Element {
               Qtime helps colleges generate optimized timetables, balance teaching loads, and keep schedule decisions
               transparent for both admin and faculty.
             </p>
+            <aside className="landing-hero-media" aria-hidden="true">
+              <div className="landing-hero-media-item">
+                <img
+                  src={loginTheme === 'dark' && darkPreviewImagesReady ? '/landing/dark/qia-scheduler.png' : '/landing/qia-scheduler.png'}
+                  alt=""
+                  loading="lazy"
+                  width={1405}
+                  height={725}
+                />
+              </div>
+            </aside>
             <div className="landing-hero-actions">
               <button
                 type="button"
@@ -843,6 +961,7 @@ function PageContent(): JSX.Element {
             </div>
           </div>
           <div className="landing-hero-side" aria-label="Platform and system overview cards">
+            <div className="landing-section-divider"><span>About</span></div>
             <section id="about" className="landing-section landing-side-card">
               <p className="landing-card-kicker">Platform Brief</p>
               <h2>About The Platform</h2>
@@ -868,6 +987,7 @@ function PageContent(): JSX.Element {
           </div>
         </section>
 
+        <div className="landing-section-divider"><span>Features</span></div>
         <section id="features" className="landing-feature-grid landing-reveal" data-reveal-order="3">
           {FEATURE_ITEMS.map(({ key, title, description, Icon }) => (
             <article key={key}>
@@ -880,6 +1000,7 @@ function PageContent(): JSX.Element {
           ))}
         </section>
 
+        <div className="landing-section-divider"><span>Visuals</span></div>
         <section id="visuals" className="landing-system-visuals landing-reveal" data-reveal-order="4">
           <div className="landing-section-head">
             <h2>System Preview</h2>
@@ -961,6 +1082,7 @@ function PageContent(): JSX.Element {
           </div>
         </section>
 
+        <div className="landing-section-divider"><span>Journey</span></div>
         <section id="journey" className="landing-story-strip landing-reveal" data-reveal-order="5">
           {JOURNEY_ITEMS.map(({ key, badge, title, description, Icon }) => (
             <article key={key} className="story-card">
@@ -976,6 +1098,7 @@ function PageContent(): JSX.Element {
           ))}
         </section>
 
+        <div className="landing-section-divider"><span>Flow</span></div>
         <section id="workflow" className="landing-section landing-workflow landing-reveal" data-reveal-order="6">
           <h2>How It Works</h2>
           <ol>
