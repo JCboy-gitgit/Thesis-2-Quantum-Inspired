@@ -60,7 +60,6 @@ export default function FacultyCampusMapPage() {
   const [isMenuBarHidden, setIsMenuBarHidden] = useState(false)
   const [isCampusMapFullscreen, setIsCampusMapFullscreen] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
-  const [emptyRoomMode, setEmptyRoomMode] = useState(false)
 
   // Stats
   const [buildingCount, setBuildingCount] = useState(0)
@@ -214,17 +213,6 @@ export default function FacultyCampusMapPage() {
             </div>
 
             <div className={s.heroRight}>
-              {/* Empty room finder */}
-              <label className={s.emptyRoomToggle}>
-                <div
-                  className={`${s.toggleSwitch} ${emptyRoomMode ? s.active : ''}`}
-                  onClick={() => setEmptyRoomMode(v => !v)}
-                >
-                  <div className={s.toggleKnob} />
-                </div>
-                <span className={s.toggleLabel}>Empty Rooms</span>
-              </label>
-
               {/* Live clock */}
               <div className={s.liveBadge}>
                 <span className={s.liveDot} />
@@ -254,10 +242,11 @@ export default function FacultyCampusMapPage() {
 
           {/* ─── Floor Plan Viewer ─── */}
           <div className={s.viewerCard}>
-            <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)', minHeight: 430 }}>
+            <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 50px)' : 'calc(100vh - 100px)', minHeight: 300 }}>
               <RoomViewer2D
                 collegeTheme={collegeTheme}
-                highlightEmpty={emptyRoomMode}
+                sidebarWidth={isDesktop && sidebarOpen ? 250 : 0}
+                menuBarHeight={isMenuBarHidden || isCampusMapFullscreen ? 0 : (isDesktop ? 70 : 56)}
                 onToggleFullscreen={(nextIsFullscreen) => {
                   setIsCampusMapFullscreen(nextIsFullscreen)
                   if (nextIsFullscreen) {

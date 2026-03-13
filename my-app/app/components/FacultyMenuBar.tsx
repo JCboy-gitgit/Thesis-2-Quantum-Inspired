@@ -305,7 +305,7 @@ export default function FacultyMenuBar({
 
         {/* Toggle Arrow Button - inside header */}
         <button
-          className={`absolute -bottom-5 left-1/2 -translate-x-1/2 w-12 h-6 border-2 border-t-0 rounded-b-xl cursor-pointer flex items-center justify-center transition-all z-[91] shadow-lg faculty-menu-btn ${isLightMode
+          className={`absolute -bottom-5 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 w-12 h-6 border-2 border-t-0 rounded-b-xl cursor-pointer flex items-center justify-center transition-all z-[91] shadow-lg faculty-menu-btn ${isLightMode
             ? `bg-white/95 ${colors.border} ${colors.text}`
             : `bg-slate-900/95 ${colors.border} ${colors.text}`
             }`}
@@ -320,7 +320,7 @@ export default function FacultyMenuBar({
       {/* Floating Show Button when header is hidden */}
       {isHidden && (
         <button
-          className={`fixed top-0 left-1/2 -translate-x-1/2 w-14 h-8 border-2 border-t-0 rounded-b-2xl cursor-pointer flex items-center justify-center transition-all z-[1001] shadow-lg hover:translate-y-1 faculty-menu-btn ${isLightMode
+          className={`fixed top-0 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 w-14 h-8 border-2 border-t-0 rounded-b-2xl cursor-pointer flex items-center justify-center transition-all z-[1001] shadow-lg hover:translate-y-1 faculty-menu-btn ${isLightMode
             ? `bg-white/95 ${colors.border} ${colors.text}`
             : `bg-slate-900/95 ${colors.border} ${colors.text}`
             }`}

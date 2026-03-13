@@ -32,14 +32,16 @@
 
 .container {
   background: var(--card-bg, rgba(15, 23, 42, 0.95));
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 4px;
   margin-bottom: 0;
   border: 1px solid var(--border-color, var(--college-primary-light));
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  min-height: 600px;
+  min-height: 0;
+  height: 100%;
+  position: relative;
 }
 
 /* Force dark mode container - variable fallback */
@@ -59,10 +61,19 @@
   z-index: 110000;
   border-radius: 0;
   margin: 0;
-  padding: 20px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* In fullscreen, controls go back to absolute within the container */
+.container.fullscreen .floatingControlsOverlay {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 1000;
 }
 
 .container:fullscreen {
@@ -71,7 +82,7 @@
   height: 100dvh;
   border-radius: 0;
   margin: 0;
-  padding: 20px;
+  padding: 4px;
   overflow: hidden;
   background: var(--card-bg, rgba(15, 23, 42, 0.95));
 }
@@ -694,10 +705,408 @@
   min-height: 650px;
   padding: 20px;
   cursor: grab;
+  position: relative;
 }
 
 .canvasWrapper:active {
   cursor: grabbing;
+}
+
+/* ============================================
+   FLOATING CONTROLS OVERLAY - Absolute in container
+   ============================================ */
+.floatingControlsOverlay {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 88;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.floatingControlsOverlay > * {
+  pointer-events: auto;
+}
+
+.controlsMinimized {
+  right: auto;
+}
+
+/* Toggle All Controls Button */
+.toggleAllControlsBtn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--college-primary);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--college-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.toggleAllControlsBtn:hover {
+  background: var(--college-primary);
+  color: #fff;
+}
+
+/* Floating Controls Row */
+.floatingControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
+}
+
+/* Compact Zoom Controls */
+.zoomControlsCompact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.zoomBtnCompact {
+  background: none;
+  border: none;
+  color: var(--college-primary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 5px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoomBtnCompact:hover {
+  background: var(--college-primary);
+  color: #fff;
+}
+
+.zoomLevelCompact {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 38px;
+  text-align: center;
+}
+
+/* Control Button Compact */
+.controlBtnCompact {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: var(--college-primary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 5px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlBtnCompact:hover {
+  background: var(--college-primary);
+  color: #fff;
+}
+
+/* Floating Building Nav */
+.floatingBuildingNav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.buildingChipRowCompact,
+.floorChipRowCompact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.buildingChipCompact {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.buildingChipCompact:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.buildingChipCompact.buildingChipActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+  color: var(--college-primary) !important;
+}
+
+.floorChipCompact {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.floorChipCompact:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.floorChipCompact.floorChipActive {
+  background: var(--college-primary) !important;
+  border-color: var(--college-primary) !important;
+  color: #fff !important;
+}
+
+/* Floating Search Row */
+.floatingSearchRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.searchBoxCompact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  min-width: 100px;
+  max-width: 140px;
+}
+
+.searchBoxCompact svg {
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.searchBoxCompact input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 10px;
+  min-width: 0;
+}
+
+.searchBoxCompact input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.searchClearBtnCompact {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchClearBtnCompact:hover {
+  color: #fff;
+}
+
+.legendToggleBtnCompact {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.legendToggleBtnCompact:hover {
+  color: var(--college-primary);
+}
+
+/* Filter Chips Compact */
+.filterChipsCompact {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.filterChipCompact {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filterChipCompact:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.filterChipCompact.active {
+  background: var(--college-primary-light);
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+/* Stats Compact */
+.statsCompact {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.statFreeCompact {
+  color: #86efac;
+}
+
+.statBusyCompact {
+  color: #fca5a5;
+}
+
+.statDivider {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Search Results Compact */
+.searchResultsCompact {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.searchResultChipCompact {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.searchResultChipCompact:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+/* Legend Compact Inline */
+.legendCompactInline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  width: fit-content;
+}
+
+.legendItemCompact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.legendDotGreen {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
+}
+
+.legendDotRed {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
+}
+
+.liveTimeCompact {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  color: var(--college-primary);
+  font-weight: 600;
 }
 
 .canvasScaleWrapper {
@@ -1342,6 +1751,63 @@
   /* color set via inline style from saved data */
 }
 
+/* Ongoing badge inside room elements */
+.ongoingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(239, 68, 68, 0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+.ongoingBadge:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+}
+
+.ongoingBadge svg {
+  flex-shrink: 0;
+}
+
+/* Free badge inside room elements */
+.freeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.85);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(34, 197, 94, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+}
+
+.freeBadge svg {
+  flex-shrink: 0;
+}
+
 .roomDetails {
   position: fixed;
   top: 50%;
@@ -1352,10 +1818,10 @@
   border-radius: 12px;
   padding: 24px;
   max-width: 400px;
-  width: 90%;
+  width: calc(100% - 20px);
   max-height: 80vh;
   overflow-y: auto;
-  z-index: 1000;
+  z-index: 120000;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -1456,92 +1922,130 @@
 
 /* Mobile view enhancements */
 .mobileView {
-  padding: 4px;
-  border-radius: 6px;
+  padding: 0;
+  border-radius: 4px;
   margin-bottom: 0;
   height: 100%;
   display: flex;
   flex-direction: column;
+  border: none;
 }
 
-/* Compact header for mobile */
-.headerCollapsed {
-  margin-bottom: 4px;
-}
-
-.toggleControlsBtn {
-  margin-left: auto;
-  background: var(--college-primary-light);
-  border: 1px solid var(--college-primary);
-  color: var(--college-primary);
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.toggleControlsBtn:active {
-  transform: scale(0.95);
-}
-
-.controlsHidden {
-  display: none;
-}
-
-/* Compact legend for mobile */
-.legendCompact {
-  padding: 4px 6px;
-  gap: 6px;
-  margin-bottom: 4px;
-  border-radius: 4px;
-}
-
-.legendCompact .legendItem {
-  font-size: 9px;
-  gap: 3px;
-}
-
-.legendCompact .statusIndicator {
-  width: 6px;
-  height: 6px;
-}
-
-/* Mobile hint */
-.mobileHint {
-  background: var(--college-primary-light);
-  border: 1px solid var(--college-primary);
-  border-radius: 4px;
-  padding: 3px 8px;
-  text-align: center;
-  color: var(--college-primary);
-  font-size: 9px;
-  margin-bottom: 4px;
-  opacity: 0.75;
-  line-height: 1.3;
-}
-
-/* Touch-optimized canvas wrapper */
+/* Touch-optimized canvas wrapper - MOBILE */
 .canvasWrapperMobile {
-  min-height: 120px !important;
-  max-height: 180px !important;
-  padding: 4px !important;
+  min-height: unset !important;
+  max-height: unset !important;
+  height: 100% !important;
+  flex: 1 !important;
+  padding: 2px !important;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y pinch-zoom;
   cursor: grab;
-  flex: 1;
   background-size: 12px 12px !important;
   background-position: 0 0, 0 6px, 6px -6px, -6px 0px !important;
+  border-radius: 4px;
 }
 
 .canvasWrapperMobile:active {
   cursor: grabbing;
+}
+
+/* Mobile floating controls adjustments */
+@media (max-width: 768px) {
+  .floatingControlsOverlay {
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    gap: 3px;
+  }
+
+  .toggleAllControlsBtn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .floatingControlsRow {
+    padding: 3px 4px;
+    gap: 3px;
+  }
+
+  .zoomControlsCompact {
+    gap: 1px;
+    padding: 1px;
+  }
+
+  .zoomBtnCompact {
+    padding: 3px;
+  }
+
+  .zoomLevelCompact {
+    font-size: 9px;
+    min-width: 28px;
+  }
+
+  .controlBtnCompact {
+    padding: 3px;
+  }
+
+  .floatingBuildingNav {
+    padding: 3px 4px;
+    gap: 2px;
+  }
+
+  .buildingChipCompact {
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .floorChipCompact {
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  .floatingSearchRow {
+    padding: 3px 4px;
+    gap: 3px;
+  }
+
+  .searchBoxCompact {
+    padding: 2px 4px;
+    min-width: 80px;
+    max-width: 100px;
+  }
+
+  .searchBoxCompact input {
+    font-size: 9px;
+  }
+
+  .filterChipCompact {
+    padding: 2px 4px;
+    font-size: 8px;
+  }
+
+  .statsCompact {
+    font-size: 9px;
+  }
+
+  .legendCompactInline {
+    padding: 2px 4px;
+    gap: 6px;
+  }
+
+  .legendItemCompact {
+    font-size: 8px;
+    gap: 3px;
+  }
+
+  .legendDotGreen,
+  .legendDotRed {
+    width: 5px;
+    height: 5px;
+  }
+
+  .liveTimeCompact {
+    font-size: 8px;
+  }
 }
 
 /* ============================================
@@ -1710,9 +2214,11 @@
   }
 
   .canvasWrapper {
-    min-height: 200px;
-    max-height: 250px;
-    padding: 8px;
+    min-height: unset;
+    max-height: unset;
+    height: 100%;
+    flex: 1;
+    padding: 4px;
   }
 
   .roomDetails {
@@ -1746,13 +2252,14 @@
 /* Mobile phones */
 @media (max-width: 480px) {
   .container {
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    padding: 2px;
+    border-radius: 4px;
+    margin-bottom: 0;
+    border: none;
   }
 
   .container.fullscreen {
-    padding: 10px;
+    padding: 2px;
   }
 
   .header {
@@ -1844,17 +2351,15 @@
 
   .roomDetails {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    width: 100%;
-    max-width: none;
-    border-radius: 16px 16px 0 0;
-    padding: 20px;
-    max-height: 60vh;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 20px);
+    max-width: 360px;
+    border-radius: 12px;
+    padding: 16px;
+    max-height: 80vh;
     overflow-y: auto;
-    transform: translateY(0);
   }
 
   .detailsHeader {
@@ -2470,6 +2975,117 @@
 }
 
 /* ==========================================
+   Floating Controls – Light Theme
+   ========================================== */
+:global([data-theme="light"]) .floatingControlsRow {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .toggleAllControlsBtn {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--college-primary, #0891b2);
+  color: var(--college-primary, #0891b2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .toggleAllControlsBtn:hover {
+  background: var(--college-primary, #0891b2);
+  color: #fff;
+}
+
+:global([data-theme="light"]) .zoomControlsCompact {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme="light"]) .zoomBtnCompact {
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .zoomBtnCompact:hover {
+  background: var(--college-primary, #0891b2);
+  color: #fff;
+}
+
+:global([data-theme="light"]) .zoomLevelCompact {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .controlBtnCompact {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .controlBtnCompact:hover {
+  background: var(--college-primary, #0891b2);
+  color: #fff;
+}
+
+:global([data-theme="light"]) .floatingBuildingNav {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .buildingChipCompact {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .buildingChipCompact:hover {
+  border-color: var(--college-primary, #0891b2);
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .buildingNavIcon {
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .floorChipCompact {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .floorChipCompact:hover {
+  border-color: var(--college-primary, #0891b2);
+  color: var(--college-primary, #0891b2);
+}
+
+:global([data-theme="light"]) .floatingSearchRow {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .searchBoxCompact {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme="light"]) .searchBoxCompact svg {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .searchBoxCompact input {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .searchBoxCompact input::placeholder {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .searchClearBtnCompact {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .searchClearBtnCompact:hover {
+  color: #1e293b;
+}
+
+/* ==========================================
    DARK THEME EXPLICIT OVERRIDES
    Mirror all light overrides with dark values.
    Ensures dark mode always wins regardless of
@@ -2850,7 +3466,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1001;
+  z-index: 120000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4181,15 +4797,16 @@
 /* Mobile Responsive */
 @media (max-width: 640px) {
   .modalOverlay {
-    padding: 0;
-    align-items: flex-end;
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
   }
 
   .modalContent {
-    max-width: 100vw;
-    max-height: 92vh;
-    border-radius: 16px 16px 0 0;
-    border-bottom: none;
+    max-width: calc(100vw - 20px);
+    max-height: 85vh;
+    border-radius: 12px;
+    width: 100%;
   }
 
   .modalHeader {
@@ -4399,4 +5016,511 @@
     font-size: 11px;
     padding: 6px 8px;
   }
+}
+
+/* ============================================
+   MOBILE SEARCH FAB & OVERLAY
+   ============================================ */
+
+/* Floating Action Button - Bottom Right */
+.mobileFab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobileFab {
+    display: flex;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--college-gradient, linear-gradient(135deg, #00d4ff, #0099cc));
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 20px var(--college-glow, rgba(0, 212, 255, 0.3));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: fabPulse 2s ease-in-out infinite;
+  }
+
+  .mobileFab:active {
+    transform: scale(0.92);
+  }
+}
+
+@keyframes fabPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 20px var(--college-glow, rgba(0, 212, 255, 0.3)); }
+  50% { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 30px var(--college-glow, rgba(0, 212, 255, 0.45)); }
+}
+
+/* Overlay Container */
+.mobileSearchOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.mobileSearchOverlayExpanded {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Backdrop */
+.mobileSearchBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Panel */
+.mobileSearchPanel {
+  position: relative;
+  background: rgba(15, 23, 42, 0.97);
+  border-top: 2px solid var(--college-primary, #00d4ff);
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px 24px;
+  pointer-events: auto;
+  backdrop-filter: blur(20px);
+  max-height: 45vh;
+  overflow-y: auto;
+  transform: translateY(0);
+  animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.mobileSearchPanelExpanded {
+  max-height: 85vh;
+  border-radius: 0;
+  animation: expandUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes expandUp {
+  from { max-height: 45vh; border-radius: 20px 20px 0 0; }
+  to { max-height: 85vh; border-radius: 0; }
+}
+
+/* Search Header */
+.mobileSearchHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mobileSearchInputWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.mobileSearchInputWrap:focus-within {
+  border-color: var(--college-primary, #00d4ff);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 12px var(--college-glow, rgba(0, 212, 255, 0.2));
+}
+
+.mobileSearchIcon {
+  color: var(--college-primary, #00d4ff);
+  flex-shrink: 0;
+}
+
+.mobileSearchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.mobileSearchInput::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mobileSearchClear {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.mobileSearchClear:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.mobileSearchCloseBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.mobileSearchCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Filter Row */
+.mobileFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.mobileFilterChip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobileFilterChip:active {
+  transform: scale(0.96);
+}
+
+.mobileFilterChipActive {
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.15)) !important;
+  border-color: var(--college-primary, #00d4ff) !important;
+  color: var(--college-primary, #00d4ff) !important;
+}
+
+.mobileStats {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mobileStatFree { color: #86efac; }
+.mobileStatBusy { color: #fca5a5; }
+.mobileStatDivider { color: rgba(255, 255, 255, 0.3); }
+
+/* Building & Floor Section */
+.mobileBuildingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.mobileBuildingRow,
+.mobileFloorRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mobileSectionIcon {
+  color: var(--college-primary, #00d4ff);
+  flex-shrink: 0;
+}
+
+.mobileBuildingChip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobileBuildingChipActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+  color: var(--college-primary) !important;
+}
+
+.mobileFloorChip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mobileFloorChipActive {
+  background: var(--college-primary) !important;
+  border-color: var(--college-primary) !important;
+  color: #fff !important;
+}
+
+/* Search Results */
+.mobileSearchResults {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: resultsFadeIn 0.25s ease;
+}
+
+@keyframes resultsFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mobileSuggestLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 4px 8px;
+}
+
+.mobileSearchResultItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.mobileSearchResultItem:active {
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.12));
+  border-color: var(--college-primary, #00d4ff);
+  transform: scale(0.98);
+}
+
+.mobileResultIcon {
+  color: var(--college-primary, #00d4ff);
+  flex-shrink: 0;
+}
+
+.mobileResultInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mobileResultName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileResultCode {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mobileResultStatus {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.mobileResultAvail {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.mobileResultOccupied {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.mobileNoResults {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ============================================
+   MOBILE SEARCH - LIGHT THEME
+   ============================================ */
+
+:global([data-theme="light"]) .mobileFab {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 20px var(--college-glow, rgba(0, 212, 255, 0.2));
+}
+
+:global([data-theme="light"]) .mobileSearchPanel {
+  background: rgba(255, 255, 255, 0.97);
+  border-top-color: var(--college-primary, #00d4ff);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme="light"]) .mobileSearchInputWrap {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .mobileSearchInputWrap:focus-within {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: var(--college-primary);
+}
+
+:global([data-theme="light"]) .mobileSearchInput {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .mobileSearchInput::placeholder {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .mobileSearchClear {
+  background: rgba(0, 0, 0, 0.06);
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .mobileSearchCloseBtn {
+  border-color: #e2e8f0;
+  background: rgba(0, 0, 0, 0.04);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .mobileFilterChip {
+  border-color: #e2e8f0;
+  background: #fff;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .mobileStats .mobileStatFree { color: #16a34a; }
+:global([data-theme="light"]) .mobileStats .mobileStatBusy { color: #dc2626; }
+:global([data-theme="light"]) .mobileStats .mobileStatDivider { color: #cbd5e1; }
+
+:global([data-theme="light"]) .mobileBuildingSection {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .mobileBuildingChip {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .mobileFloorChip {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .mobileFloorChipActive {
+  color: #fff !important;
+}
+
+:global([data-theme="light"]) .mobileSuggestLabel {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .mobileSearchResultItem {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .mobileSearchResultItem:active {
+  background: var(--college-primary-light);
+}
+
+:global([data-theme="light"]) .mobileResultName {
+  color: #1e293b;
+}
+
+:global([data-theme="light"]) .mobileResultCode {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .mobileResultAvail {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+:global([data-theme="light"]) .mobileResultOccupied {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+:global([data-theme="light"]) .mobileNoResults {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .mobileSearchBackdrop {
+  background: rgba(0, 0, 0, 0.3);
 }

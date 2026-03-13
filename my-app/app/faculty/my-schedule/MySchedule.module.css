@@ -77,8 +77,8 @@
 
 .main {
     flex: 1;
-    padding: 90px 24px 40px;
-    max-width: 1200px;
+    padding: 70px 24px 24px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -94,7 +94,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 
@@ -220,13 +220,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     background: rgba(var(--ms-primary-rgb), 0.06);
     border: 1px solid rgba(var(--ms-primary-rgb), 0.15);
     border-radius: 10px;
     font-size: 13px;
     color: var(--ms-text-muted);
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 .infoBanner svg {
     color: var(--ms-primary);
@@ -238,18 +238,18 @@
 .statsRow {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 .statCard {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: 10px;
+    padding: 10px 14px;
     background: var(--ms-card-bg);
     border: 1px solid var(--ms-border);
-    border-radius: 12px;
+    border-radius: 10px;
     box-shadow: var(--ms-shadow);
 }
 
@@ -304,7 +304,7 @@
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 .weekNavBtn {
@@ -351,7 +351,7 @@
     gap: 6px;
     overflow-x: auto;
     padding: 4px 0;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -437,7 +437,7 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 48px 20px;
+    padding: 32px 20px;
     color: var(--ms-text-muted);
     font-size: 14px;
 }
@@ -740,7 +740,7 @@
 .tabs {
     display: flex;
     gap: 4px;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
     overflow-x: auto;
     padding-bottom: 4px;
 }
@@ -788,7 +788,7 @@
 
 /* ── List Section (Absences / Requests) ──────────────────────── */
 .listSection {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .listHeader {
@@ -929,7 +929,7 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 48px 20px;
+    padding: 32px 20px;
     color: var(--ms-text-muted);
     font-size: 14px;
 }
@@ -1112,7 +1112,7 @@
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    padding: 80px 20px;
+    padding: 48px 20px;
     color: var(--ms-text-muted);
     text-align: center;
 }
@@ -1191,7 +1191,7 @@
 .viewToggleBar {
     display: flex;
     gap: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     padding: 4px;
     background: var(--ms-surface2);
     border: 1px solid var(--ms-border);
@@ -1234,7 +1234,7 @@
     flex-wrap: wrap;
     gap: 8px 16px;
     padding: 8px 14px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     background: var(--ms-surface2);
     border: 1px solid var(--ms-border);
     border-radius: 10px;
@@ -1630,21 +1630,74 @@
     }
 
     .main {
-        padding: 80px 14px 30px;
+        padding: 64px 10px 16px;
     }
 
     .header {
         flex-direction: column;
-        gap: 10px;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    .headerLeft {
+        gap: 8px;
+    }
+
+    .liveIndicator {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    .title {
+        font-size: 17px;
+        gap: 6px;
+    }
+
+    .titleIcon {
+        font-size: 20px;
+    }
+
+    .subtitle {
+        font-size: 11px;
     }
 
     .headerRight {
         width: 100%;
         justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .headerRight .infoPopupWrapper {
+        margin-right: auto;
+        margin-bottom: 0;
+    }
+
+    .lockedBadge {
+        padding: 3px 8px;
+        font-size: 10px;
+        gap: 4px;
+    }
+
+    .clockDisplay {
+        padding: 4px 10px;
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    .refreshBtn {
+        width: 32px;
+        height: 32px;
     }
 
     .statsRow {
         grid-template-columns: 1fr;
+    }
+
+    .infoBanner {
+        padding: 6px 10px;
+        font-size: 12px;
+        margin-bottom: 8px;
+        gap: 8px;
     }
 
     .daySelector {
@@ -1732,11 +1785,26 @@
 
 @media (max-width: 480px) {
     .main {
-        padding: 76px 10px 24px;
+        padding: 58px 8px 12px;
+    }
+
+    .header {
+        gap: 4px;
+        margin-bottom: 6px;
     }
 
     .title {
-        font-size: 18px;
+        font-size: 16px;
+    }
+
+    .clockDisplay {
+        padding: 3px 8px;
+        font-size: 11px;
+    }
+
+    .refreshBtn {
+        width: 30px;
+        height: 30px;
     }
 
     .dayBtn {
@@ -1747,4 +1815,200 @@
     .dayName {
         font-size: 11px;
     }
+
+    .statsRowCompact {
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+
+    .statPill {
+        padding: 4px 8px;
+        font-size: 11px;
+        gap: 4px;
+    }
+
+    .weekNav {
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Compact Stats Row
+   ═══════════════════════════════════════════════════════════════ */
+.statsRowCompact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.statPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: var(--ms-surface);
+    border: 1px solid var(--ms-border);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--ms-text-muted);
+}
+
+.statPill svg {
+    font-size: 14px;
+    color: var(--ms-primary);
+    flex-shrink: 0;
+}
+
+.statPillValue {
+    font-weight: 700;
+    color: var(--ms-text);
+}
+
+.statPillLabel {
+    font-size: 11px;
+    color: var(--ms-text-muted);
+}
+
+.statPillWarning svg {
+    color: var(--ms-danger);
+}
+.statPillWarning .statPillValue {
+    color: var(--ms-danger);
+}
+
+.statPillPending svg {
+    color: var(--ms-warning);
+}
+.statPillPending .statPillValue {
+    color: var(--ms-warning);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Info Popup
+   ═══════════════════════════════════════════════════════════════ */
+.infoPopupWrapper {
+    position: relative;
+    display: inline-flex;
+    margin-bottom: 0;
+}
+
+.infoPopupBtn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--ms-primary-rgb), 0.1);
+    border: 1px solid rgba(var(--ms-primary-rgb), 0.25);
+    border-radius: 10px;
+    color: var(--ms-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.infoPopupBtn svg {
+    font-size: 18px;
+}
+.infoPopupBtn:hover,
+.infoPopupBtnActive {
+    background: rgba(var(--ms-primary-rgb), 0.18);
+    border-color: var(--ms-primary);
+}
+
+.infoPopup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    width: 280px;
+    background: var(--ms-modal-bg);
+    border: 1px solid var(--ms-border-strong);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    padding: 12px;
+    animation: infoPopupIn 0.15s ease;
+}
+
+@keyframes infoPopupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.infoPopupHeader {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ms-primary);
+}
+.infoPopupHeader svg:first-child {
+    font-size: 16px;
+}
+.infoPopupHeader span {
+    flex: 1;
+}
+
+.infoPopupClose {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--ms-text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.infoPopupClose:hover {
+    background: var(--ms-surface2);
+    color: var(--ms-text);
+}
+
+.infoPopup p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ms-text-muted);
+}
+.infoPopup p strong {
+    color: var(--ms-text);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Week Navigator
+   ═══════════════════════════════════════════════════════════════ */
+.weekNavMobile {
+    gap: 6px;
+}
+
+.weekNavMobile .weekNavBtn {
+    padding: 7px 10px;
+    min-width: 38px;
+}
+
+.weekNavMobile .weekLabel {
+    font-size: 12px;
+    gap: 5px;
+}
+
+.weekNavMobile .weekLabel svg {
+    display: none;
+}
+
+.weekNavMobile .currentWeekBadge {
+    font-size: 9px;
+    padding: 2px 6px;
 }

@@ -368,36 +368,63 @@ function FacultyDirectoryContent() {
             {!selectedCollege ? (
               <>
                 {stats && (
-                  <div className={styles.statsGrid}>
-                    <div className={styles.statCard}>
-                      <MdPeople size={24} />
-                      <div>
-                        <div className={styles.statValue}>{stats.totalFaculty}</div>
-                        <div className={styles.statLabel}>Total Faculty</div>
+                  <>
+                    {isMobile ? (
+                      <div className={styles.statsRowCompact}>
+                        <div className={styles.statPill}>
+                          <MdPeople size={14} />
+                          <span className={styles.statPillValue}>{stats.totalFaculty}</span>
+                          <span className={styles.statPillLabel}>Faculty</span>
+                        </div>
+                        <div className={styles.statPill}>
+                          <MdBusiness size={14} />
+                          <span className={styles.statPillValue}>{stats.totalColleges}</span>
+                          <span className={styles.statPillLabel}>Colleges</span>
+                        </div>
+                        <div className={styles.statPill}>
+                          <MdWork size={14} />
+                          <span className={styles.statPillValue}>{stats.fullTime}</span>
+                          <span className={styles.statPillLabel}>Full-Time</span>
+                        </div>
+                        <div className={styles.statPill}>
+                          <MdWork size={14} />
+                          <span className={styles.statPillValue}>{stats.partTime}</span>
+                          <span className={styles.statPillLabel}>Part-Time</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className={styles.statCard}>
-                      <MdBusiness size={24} />
-                      <div>
-                        <div className={styles.statValue}>{stats.totalColleges}</div>
-                        <div className={styles.statLabel}>Colleges</div>
+                    ) : (
+                      <div className={styles.statsGrid}>
+                        <div className={styles.statCard}>
+                          <MdPeople size={24} />
+                          <div>
+                            <div className={styles.statValue}>{stats.totalFaculty}</div>
+                            <div className={styles.statLabel}>Total Faculty</div>
+                          </div>
+                        </div>
+                        <div className={styles.statCard}>
+                          <MdBusiness size={24} />
+                          <div>
+                            <div className={styles.statValue}>{stats.totalColleges}</div>
+                            <div className={styles.statLabel}>Colleges</div>
+                          </div>
+                        </div>
+                        <div className={styles.statCard}>
+                          <MdWork size={24} />
+                          <div>
+                            <div className={styles.statValue}>{stats.fullTime}</div>
+                            <div className={styles.statLabel}>Full-Time</div>
+                          </div>
+                        </div>
+                        <div className={styles.statCard}>
+                          <MdWork size={24} />
+                          <div>
+                            <div className={styles.statValue}>{stats.partTime}</div>
+                            <div className={styles.statLabel}>Part-Time</div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className={styles.statCard}>
-                      <MdWork size={24} />
-                      <div>
-                        <div className={styles.statValue}>{stats.fullTime}</div>
-                        <div className={styles.statLabel}>Full-Time</div>
-                      </div>
-                    </div>
-                    <div className={styles.statCard}>
-                      <MdWork size={24} />
-                      <div>
-                        <div className={styles.statValue}>{stats.partTime}</div>
-                        <div className={styles.statLabel}>Part-Time</div>
-                      </div>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
 
                 <div className={styles.collegeGrid}>

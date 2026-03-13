@@ -144,7 +144,8 @@ interface RoomViewer2DProps {
   fullscreen?: boolean
   onToggleFullscreen?: (isFullscreen: boolean) => void
   collegeTheme?: string
-  highlightEmpty?: boolean
+  sidebarWidth?: number
+  menuBarHeight?: number
 }
 
 // ... (other interfaces unchanged)
@@ -360,7 +361,7 @@ function parseTimeToMinutes(value: string): number {
   return hours * 60 + minutes
 }
 
-export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', highlightEmpty = false }: RoomViewer2DProps) {
+export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', sidebarWidth = 0, menuBarHeight = 0 }: RoomViewer2DProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -398,6 +399,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'occupied' | 'unknown'>('all')
   const [showLegend, setShowLegend] = useState(true)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showAllControls, setShowAllControls] = useState(true) // Unified controls visibility
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [mobileSearchExpanded, setMobileSearchExpanded] = useState(false) // fullscreen search mode
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
 
   const notifyFullscreenChange = (nextValue: boolean) => {
     if (onToggleFullscreen) {
@@ -1261,237 +1266,209 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       className={`${styles.container} ${isFullscreen ? styles.fullscreen : ''} ${isMobile ? styles.mobileView : ''}`}
       data-college-theme={collegeTheme}
     >
-      {/* Compact Header for Mobile */}
-      <div className={`${styles.header} ${isMobile && !showControls ? styles.headerCollapsed : ''}`}>
-        <div className={styles.headerLeft}>
-          <MdMap size={isMobile ? 16 : 20} />
-          <h2>{isMobile ? 'Building Schedules' : 'Live Building Schedules'}</h2>
-          {isMobile && (
-            <button
-              className={styles.toggleControlsBtn}
-              onClick={() => setShowControls(!showControls)}
-              title={showControls ? 'Hide controls' : 'Show controls'}
-            >
-              {showControls ? '−' : '+'}
-            </button>
-          )}
-        </div>
+      {/* Floating Controls Overlay - Fixed above canvas */}
+      <div
+        className={`${styles.floatingControlsOverlay} ${!showAllControls ? styles.controlsMinimized : ''}`}
+      >
+        {/* Toggle All Controls Button - Always visible */}
+        <button
+          className={styles.toggleAllControlsBtn}
+          onClick={() => setShowAllControls(!showAllControls)}
+          title={showAllControls ? 'Hide all controls' : 'Show all controls'}
+        >
+          {showAllControls ? <MdExpandLess size={16} /> : <MdExpandMore size={16} />}
+        </button>
 
-        <div className={`${styles.controls} ${isMobile && !showControls ? styles.controlsHidden : ''}`}>
-          {/* Zoom controls */}
-          <div className={styles.zoomControls}>
-            <button
-              onClick={() => setZoom(Math.max(10, zoom - 10))}
-              className={styles.zoomBtn}
-              title="Zoom out"
-            >
-              <MdZoomOut size={16} />
-            </button>
-            <input
-              type="text"
-              value={zoomInput}
-              onChange={(e) => handleZoomInputChange(e.target.value)}
-              onBlur={handleZoomInputBlur}
-              onKeyDown={handleZoomInputKeyDown}
-              className={styles.zoomInput}
-              title="Enter zoom percentage (10-300)"
-              aria-label="Zoom percentage"
-            />
-            <span className={styles.zoomPercent}>%</span>
-            <button
-              onClick={() => setZoom(Math.min(300, zoom + 10))}
-              className={styles.zoomBtn}
-              title="Zoom in"
-            >
-              <MdZoomIn size={16} />
-            </button>
-            <button
-              onClick={fitCanvasToViewport}
-              className={styles.zoomBtn}
-              title="Fit to viewport (Ctrl/Cmd + 0)"
-            >
-              <MdCenterFocusStrong size={16} />
-            </button>
-          </div>
-
-          {/* Fullscreen toggle */}
-          <button
-            onClick={handleToggleFullscreen}
-            className={styles.fullscreenBtn}
-            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <MdFullscreenExit size={16} /> : <MdFullscreen size={16} />}
-          </button>
-
-          {/* Refresh */}
-          <button
-            onClick={fetchFloorPlans}
-            className={styles.refreshBtn}
-            title="Refresh"
-          >
-            <MdRefresh size={16} />
-          </button>
-
-          <button
-            onClick={() => setShowShortcuts(true)}
-            className={styles.refreshBtn}
-            title="Viewer shortcuts"
-          >
-            <MdHelpOutline size={16} />
-          </button>
-        </div>
-      </div>
-
-      {/* Building & Floor Navigator — Compact Inline */}
-      {buildings.length > 0 && (
-        <div className={styles.buildingNavInline}>
-          <div className={styles.buildingChipRow}>
-            <MdBusiness size={14} className={styles.buildingNavIcon} />
-            {buildings.map((building, buildingIdx) => (
-              <button
-                key={`building-${building.name}-${buildingIdx}`}
-                className={`${styles.buildingChip} ${selectedBuilding?.id === building.id ? styles.buildingChipActive : ''}`}
-                onClick={() => handleBuildingChange(String(building.id))}
-              >
-                {building.name}
-              </button>
-            ))}
-          </div>
-          {selectedBuilding && selectedBuilding.floors.length > 0 && (
-            <div className={styles.floorChipRow}>
-              <MdLayers size={13} className={styles.buildingNavIcon} />
-              {selectedBuilding.floors.map(floor => {
-                const shortName = floor.floor_name
-                  ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
-                  : `Floor ${floor.floor_number}`
-                const isActive = selectedFloor?.id === floor.id
-                return (
-                  <button
-                    key={floor.id}
-                    className={`${styles.floorChip} ${isActive ? styles.floorChipActive : ''}`}
-                    onClick={() => handleFloorChange(String(floor.id))}
-                    title={floor.floor_name || `Floor ${floor.floor_number}`}
-                  >
-                    {shortName}
-                    {floor.is_default_view && <MdVisibility size={10} />}
-                  </button>
-                )
-              })}
+        {/* Building & Floor Navigator (hidden on mobile, use FAB instead) */}
+        {showAllControls && buildings.length > 0 && !isMobile && (
+          <div className={styles.floatingBuildingNav}>
+            <div className={styles.buildingChipRowCompact}>
+              <MdBusiness size={12} className={styles.buildingNavIcon} />
+              {buildings.map((building, buildingIdx) => (
+                <button
+                  key={`building-${building.name}-${buildingIdx}`}
+                  className={`${styles.buildingChipCompact} ${selectedBuilding?.id === building.id ? styles.buildingChipActive : ''}`}
+                  onClick={() => handleBuildingChange(String(building.id))}
+                >
+                  {building.name}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
-      )}
-
-      <div className={styles.viewerToolbar}>
-        <div className={styles.viewerSearchRow}>
-          <div className={styles.viewerSearchBox}>
-            <MdSearch size={14} />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={roomSearchQuery}
-              onChange={(event) => setRoomSearchQuery(event.target.value)}
-              placeholder="Find room by name/code ( / )"
-              aria-label="Search rooms"
-            />
-            {roomSearchQuery && (
-              <button
-                className={styles.searchClearBtn}
-                onClick={() => setRoomSearchQuery('')}
-                title="Clear room search"
-              >
-                <MdClose size={14} />
-              </button>
-            )}
-          </div>
-
-          <button
-            className={styles.legendToggleBtn}
-            onClick={() => setShowLegend((prev) => !prev)}
-            title={showLegend ? 'Hide legend (L)' : 'Show legend (L)'}
-          >
-            {showLegend ? <MdVisibilityOff size={14} /> : <MdVisibility size={14} />}
-            <span>{showLegend ? 'Hide Legend' : 'Show Legend'}</span>
-          </button>
-        </div>
-
-        {roomSearchQuery && (
-          <div className={styles.searchResultsRow}>
-            {roomSearchOptions.length === 0 ? (
-              <span className={styles.searchResultEmpty}>No rooms found for "{roomSearchQuery}"</span>
-            ) : (
-              roomSearchOptions.map((element) => {
-                const roomName = element.linkedRoomData?.room || element.label || 'Room'
-                const roomCode = element.linkedRoomData?.room_code
-                return (
-                  <button
-                    key={`search-room-${element.id}`}
-                    className={styles.searchResultChip}
-                    onClick={() => centerAndSelectRoom(element)}
-                    title={`Jump to ${roomName}`}
-                  >
-                    {roomName}{roomCode ? ` (${roomCode})` : ''}
-                  </button>
-                )
-              })
+            {selectedBuilding && selectedBuilding.floors.length > 0 && (
+              <div className={styles.floorChipRowCompact}>
+                <MdLayers size={11} className={styles.buildingNavIcon} />
+                {selectedBuilding.floors.map(floor => {
+                  const shortName = floor.floor_name
+                    ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
+                    : `F${floor.floor_number}`
+                  const isActive = selectedFloor?.id === floor.id
+                  return (
+                    <button
+                      key={floor.id}
+                      className={`${styles.floorChipCompact} ${isActive ? styles.floorChipActive : ''}`}
+                      onClick={() => handleFloorChange(String(floor.id))}
+                      title={floor.floor_name || `Floor ${floor.floor_number}`}
+                    >
+                      {shortName}
+                      {floor.is_default_view && <MdVisibility size={8} />}
+                    </button>
+                  )
+                })}
+              </div>
             )}
           </div>
         )}
 
-        <div className={styles.filterStatsRow}>
-          <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}><MdFilterList size={14} /> Availability</span>
-            {(['all', 'available', 'occupied', 'unknown'] as const).map((filter) => (
+        {/* Main Controls Row - Compact */}
+        {showAllControls && (
+          <div className={styles.floatingControlsRow}>
+            {/* Zoom controls - Compact */}
+            <div className={styles.zoomControlsCompact}>
               <button
-                key={`filter-${filter}`}
-                className={`${styles.filterChip} ${availabilityFilter === filter ? styles.active : ''}`}
-                onClick={() => setAvailabilityFilter(filter)}
+                onClick={() => setZoom(Math.max(10, zoom - 10))}
+                className={styles.zoomBtnCompact}
+                title="Zoom out"
               >
-                {filter === 'all' ? 'All' : filter === 'available' ? 'Free' : filter === 'occupied' ? 'In Use' : 'Unknown'}
+                <MdZoomOut size={14} />
               </button>
-            ))}
-          </div>
+              <span className={styles.zoomLevelCompact}>{zoom}%</span>
+              <button
+                onClick={() => setZoom(Math.min(300, zoom + 10))}
+                className={styles.zoomBtnCompact}
+                title="Zoom in"
+              >
+                <MdZoomIn size={14} />
+              </button>
+              <button
+                onClick={fitCanvasToViewport}
+                className={styles.zoomBtnCompact}
+                title="Fit to viewport"
+              >
+                <MdCenterFocusStrong size={14} />
+              </button>
+            </div>
 
-          <div className={styles.statsGroup}>
-            <span className={styles.statCard}>Rooms: {roomStatusSummary.total}</span>
-            <span className={`${styles.statCard} ${styles.statFree}`}>Free: {roomStatusSummary.available}</span>
-            <span className={`${styles.statCard} ${styles.statBusy}`}>In Use: {roomStatusSummary.occupied}</span>
+            {/* Fullscreen toggle */}
+            <button
+              onClick={handleToggleFullscreen}
+              className={styles.controlBtnCompact}
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <MdFullscreenExit size={14} /> : <MdFullscreen size={14} />}
+            </button>
+
+            {/* Refresh */}
+            <button
+              onClick={fetchFloorPlans}
+              className={styles.controlBtnCompact}
+              title="Refresh"
+            >
+              <MdRefresh size={14} />
+            </button>
+
+            {/* Help */}
+            <button
+              onClick={() => setShowShortcuts(true)}
+              className={styles.controlBtnCompact}
+              title="Shortcuts"
+            >
+              <MdHelpOutline size={14} />
+            </button>
           </div>
-        </div>
+        )}
+
+        {/* Search & Filter Row - Compact (hidden on mobile, use FAB instead) */}
+        {showAllControls && !isMobile && (
+          <div className={styles.floatingSearchRow}>
+            <div className={styles.searchBoxCompact}>
+              <MdSearch size={12} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={roomSearchQuery}
+                onChange={(event) => setRoomSearchQuery(event.target.value)}
+                placeholder="Search room..."
+                aria-label="Search rooms"
+              />
+              {roomSearchQuery && (
+                <button
+                  className={styles.searchClearBtnCompact}
+                  onClick={() => setRoomSearchQuery('')}
+                  title="Clear"
+                >
+                  <MdClose size={12} />
+                </button>
+              )}
+            </div>
+
+            <button
+              className={styles.legendToggleBtnCompact}
+              onClick={() => setShowLegend((prev) => !prev)}
+              title={showLegend ? 'Hide legend' : 'Show legend'}
+            >
+              {showLegend ? <MdVisibilityOff size={12} /> : <MdVisibility size={12} />}
+            </button>
+
+            {/* Filter chips - Compact */}
+            <div className={styles.filterChipsCompact}>
+              {(['all', 'available', 'occupied'] as const).map((filter) => (
+                <button
+                  key={`filter-${filter}`}
+                  className={`${styles.filterChipCompact} ${availabilityFilter === filter ? styles.active : ''}`}
+                  onClick={() => setAvailabilityFilter(filter)}
+                >
+                  {filter === 'all' ? 'All' : filter === 'available' ? '✓' : '✗'}
+                </button>
+              ))}
+            </div>
+
+            {/* Stats - Compact */}
+            <div className={styles.statsCompact}>
+              <span className={styles.statFreeCompact}>{roomStatusSummary.available}</span>
+              <span className={styles.statDivider}>/</span>
+              <span className={styles.statBusyCompact}>{roomStatusSummary.occupied}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Search Results Row (hidden on mobile, use FAB instead) */}
+        {showAllControls && !isMobile && roomSearchQuery && roomSearchOptions.length > 0 && (
+          <div className={styles.searchResultsCompact}>
+            {roomSearchOptions.slice(0, 5).map((element) => {
+              const roomName = element.linkedRoomData?.room || element.label || 'Room'
+              return (
+                <button
+                  key={`search-room-${element.id}`}
+                  className={styles.searchResultChipCompact}
+                  onClick={() => centerAndSelectRoom(element)}
+                >
+                  {roomName}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Legend - Compact Inline (hidden on mobile) */}
+        {showAllControls && !isMobile && showLegend && (
+          <div className={styles.legendCompactInline}>
+            <div className={styles.legendItemCompact}>
+              <span className={styles.legendDotGreen}></span>
+              <span>Free</span>
+            </div>
+            <div className={styles.legendItemCompact}>
+              <span className={styles.legendDotRed}></span>
+              <span>In Use</span>
+            </div>
+            <span className={styles.liveTimeCompact}>
+              <MdAccessTime size={10} />
+              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Legend - Enhanced visibility */}
-      {showLegend && (
-      <div className={`${styles.legend} ${isMobile ? styles.legendCompact : ''}`}>
-        <div className={`${styles.legendItem} ${styles.availableLegend}`}>
-          <div className={`${styles.statusIndicator} ${styles.available}`}>
-            <MdCheckCircle size={10} className={styles.statusIcon} />
-          </div>
-          <span>{isMobile ? 'Free' : 'Available / Free'}</span>
-        </div>
-        <div className={`${styles.legendItem} ${styles.occupiedLegend}`}>
-          <div className={`${styles.statusIndicator} ${styles.occupied}`}>
-            <MdCancel size={10} className={styles.statusIcon} />
-          </div>
-          <span>{isMobile ? 'In Use' : 'Occupied / In Use'}</span>
-        </div>
-        <div className={styles.legendItem}>
-          <div className={styles.liveIndicator}>
-            <MdAccessTime size={14} />
-          </div>
-          <span className={styles.liveText}>Live ({currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>
-        </div>
-      </div>
-      )}
-
-      {/* Mobile hint */}
-      {isMobile && (
-        <div className={styles.mobileHint}>
-          <span>👆 Drag to pan • Pinch to zoom • Tap room for details</span>
-        </div>
-      )}
-
-      {/* Canvas Area - Touch optimized */}
+      {/* Canvas Area - Touch optimized - Now the main container */}
       <div
         ref={wrapperRef}
         className={`${styles.canvasWrapper} ${isMobile ? styles.canvasWrapperMobile : ''}`}
@@ -1538,11 +1515,9 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
               const textHasBackground = textBgOpacity > 0 && !isTransparentColor(element.color)
               const textBackgroundColor = !isTransparentColor(element.color) ? element.color! : '#e5e7eb'
               const resolvedTextColor = resolveElementTextColor(element, textBackgroundColor)
-              const elementOpacity = highlightEmpty && availability === 'occupied'
-                ? 0.25
-                : isFilteredOutRoom
-                  ? Math.max(0.12, normalizeOpacity(element.opacity) * 0.2)
-                  : normalizeOpacity(element.opacity)
+              const elementOpacity = isFilteredOutRoom
+                ? Math.max(0.12, normalizeOpacity(element.opacity) * 0.2)
+                : normalizeOpacity(element.opacity)
 
               const elementStyle: React.CSSProperties = {
                 position: 'absolute',
@@ -1624,11 +1599,26 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                         </div>
                       )}
 
-                      {/* Current class info on hover/selection */}
+                      {/* Ongoing badge — clickable to open schedule modal */}
                       {currentClass && (
-                        <div className={styles.classInfo}>
-                          <div className={styles.courseCode}>{currentClass.course_code}</div>
-                          <div className={styles.section}>{currentClass.section}</div>
+                        <button
+                          className={styles.ongoingBadge}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedElement(element)
+                          }}
+                          title={`${currentClass.course_code} — ${currentClass.section}`}
+                        >
+                          <MdAccessTime size={10} />
+                          <span>Ongoing</span>
+                        </button>
+                      )}
+
+                      {/* Free badge — shown when room is available */}
+                      {!currentClass && availability === 'available' && (
+                        <div className={styles.freeBadge}>
+                          <MdCheckCircle size={10} />
+                          <span>Free</span>
                         </div>
                       )}
                     </>
@@ -1689,6 +1679,197 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
         </div>{/* end scale wrapper */}
       </div>
+
+      {/* ===== Mobile Search FAB & Overlay ===== */}
+      {isMobile && !mobileSearchOpen && (
+        <button
+          className={styles.mobileFab}
+          onClick={() => {
+            setMobileSearchOpen(true)
+            setTimeout(() => mobileSearchInputRef.current?.focus(), 300)
+          }}
+          title="Search rooms"
+        >
+          <MdSearch size={22} />
+        </button>
+      )}
+
+      {isMobile && mobileSearchOpen && (
+        <div className={`${styles.mobileSearchOverlay} ${mobileSearchExpanded ? styles.mobileSearchOverlayExpanded : ''}`}>
+          {/* Backdrop – only in expanded mode */}
+          {mobileSearchExpanded && (
+            <div className={styles.mobileSearchBackdrop} onClick={() => {
+              setMobileSearchExpanded(false)
+              setMobileSearchOpen(false)
+              setRoomSearchQuery('')
+            }} />
+          )}
+
+          <div className={`${styles.mobileSearchPanel} ${mobileSearchExpanded ? styles.mobileSearchPanelExpanded : ''}`}>
+            {/* Header / Search Bar */}
+            <div className={styles.mobileSearchHeader}>
+              <div className={styles.mobileSearchInputWrap}>
+                <MdSearch size={18} className={styles.mobileSearchIcon} />
+                <input
+                  ref={mobileSearchInputRef}
+                  type="text"
+                  value={roomSearchQuery}
+                  onChange={(e) => setRoomSearchQuery(e.target.value)}
+                  onFocus={() => setMobileSearchExpanded(true)}
+                  placeholder="Search rooms, buildings..."
+                  className={styles.mobileSearchInput}
+                />
+                {roomSearchQuery && (
+                  <button className={styles.mobileSearchClear} onClick={() => setRoomSearchQuery('')}>
+                    <MdClose size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                className={styles.mobileSearchCloseBtn}
+                onClick={() => {
+                  setMobileSearchExpanded(false)
+                  setMobileSearchOpen(false)
+                  setRoomSearchQuery('')
+                }}
+              >
+                <MdClose size={18} />
+              </button>
+            </div>
+
+            {/* Quick Filters Row */}
+            <div className={styles.mobileFilterRow}>
+              {(['all', 'available', 'occupied'] as const).map((filter) => (
+                <button
+                  key={`m-filter-${filter}`}
+                  className={`${styles.mobileFilterChip} ${availabilityFilter === filter ? styles.mobileFilterChipActive : ''}`}
+                  onClick={() => setAvailabilityFilter(filter)}
+                >
+                  {filter === 'all' ? 'All Rooms' : filter === 'available' ? 'Available' : 'Occupied'}
+                </button>
+              ))}
+              <div className={styles.mobileStats}>
+                <span className={styles.mobileStatFree}>{roomStatusSummary.available}</span>
+                <span className={styles.mobileStatDivider}>/</span>
+                <span className={styles.mobileStatBusy}>{roomStatusSummary.occupied}</span>
+              </div>
+            </div>
+
+            {/* Building & Floor Chips */}
+            {buildings.length > 0 && (
+              <div className={styles.mobileBuildingSection}>
+                <div className={styles.mobileBuildingRow}>
+                  <MdBusiness size={14} className={styles.mobileSectionIcon} />
+                  {buildings.map((building, idx) => (
+                    <button
+                      key={`m-bld-${building.name}-${idx}`}
+                      className={`${styles.mobileBuildingChip} ${selectedBuilding?.id === building.id ? styles.mobileBuildingChipActive : ''}`}
+                      onClick={() => handleBuildingChange(String(building.id))}
+                    >
+                      {building.name}
+                    </button>
+                  ))}
+                </div>
+                {selectedBuilding && selectedBuilding.floors.length > 0 && (
+                  <div className={styles.mobileFloorRow}>
+                    <MdLayers size={13} className={styles.mobileSectionIcon} />
+                    {selectedBuilding.floors.map(floor => {
+                      const shortName = floor.floor_name
+                        ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
+                        : `F${floor.floor_number}`
+                      return (
+                        <button
+                          key={`m-flr-${floor.id}`}
+                          className={`${styles.mobileFloorChip} ${selectedFloor?.id === floor.id ? styles.mobileFloorChipActive : ''}`}
+                          onClick={() => handleFloorChange(String(floor.id))}
+                        >
+                          {shortName}
+                          {floor.is_default_view && <MdVisibility size={10} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Search Results / Suggestions */}
+            {roomSearchQuery && (
+              <div className={styles.mobileSearchResults}>
+                {roomSearchOptions.length > 0 ? (
+                  roomSearchOptions.map((element) => {
+                    const roomName = element.linkedRoomData?.room || element.label || 'Room'
+                    const roomCode = element.linkedRoomData?.room_code || ''
+                    const availability = element.linkedRoomData
+                      ? getRoomAvailability(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id)
+                      : 'unknown'
+                    return (
+                      <button
+                        key={`m-result-${element.id}`}
+                        className={styles.mobileSearchResultItem}
+                        onClick={() => {
+                          centerAndSelectRoom(element)
+                          setMobileSearchExpanded(false)
+                          setMobileSearchOpen(false)
+                          setRoomSearchQuery('')
+                        }}
+                      >
+                        <MdMeetingRoom size={16} className={styles.mobileResultIcon} />
+                        <div className={styles.mobileResultInfo}>
+                          <span className={styles.mobileResultName}>{roomName}</span>
+                          {roomCode && <span className={styles.mobileResultCode}>{roomCode}</span>}
+                        </div>
+                        <span className={`${styles.mobileResultStatus} ${availability === 'available' ? styles.mobileResultAvail : availability === 'occupied' ? styles.mobileResultOccupied : ''}`}>
+                          {availability === 'available' ? 'Free' : availability === 'occupied' ? 'In Use' : ''}
+                        </span>
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className={styles.mobileNoResults}>
+                    <MdSearch size={24} />
+                    <span>No rooms found for &ldquo;{roomSearchQuery}&rdquo;</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quick Suggestions (when no search query) */}
+            {!roomSearchQuery && mobileSearchExpanded && roomElements.length > 0 && (
+              <div className={styles.mobileSearchResults}>
+                <div className={styles.mobileSuggestLabel}>Rooms on this floor</div>
+                {roomElements.slice(0, 8).map((element) => {
+                  const roomName = element.linkedRoomData?.room || element.label || 'Room'
+                  const roomCode = element.linkedRoomData?.room_code || ''
+                  const availability = element.linkedRoomData
+                    ? getRoomAvailability(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id)
+                    : 'unknown'
+                  return (
+                    <button
+                      key={`m-suggest-${element.id}`}
+                      className={styles.mobileSearchResultItem}
+                      onClick={() => {
+                        centerAndSelectRoom(element)
+                        setMobileSearchExpanded(false)
+                        setMobileSearchOpen(false)
+                      }}
+                    >
+                      <MdMeetingRoom size={16} className={styles.mobileResultIcon} />
+                      <div className={styles.mobileResultInfo}>
+                        <span className={styles.mobileResultName}>{roomName}</span>
+                        {roomCode && <span className={styles.mobileResultCode}>{roomCode}</span>}
+                      </div>
+                      <span className={`${styles.mobileResultStatus} ${availability === 'available' ? styles.mobileResultAvail : availability === 'occupied' ? styles.mobileResultOccupied : ''}`}>
+                        {availability === 'available' ? 'Free' : availability === 'occupied' ? 'In Use' : ''}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {showShortcuts && (
         <div className={styles.viewerShortcutOverlay} onClick={() => setShowShortcuts(false)}>

@@ -317,6 +317,9 @@ export default function FacultyLiveTimetablePage() {
     const [groupBy, setGroupBy] = useState<'all' | 'room' | 'faculty' | 'section'>('all')
     const [groupPage, setGroupPage] = useState(0)
     const [searchQuery, setSearchQuery] = useState('')
+    const [showSearch, setShowSearch] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+    const [showInfoPopup, setShowInfoPopup] = useState(false)
 
     // Drag data (for rescheduling my own classes)
     const [draggedAllocId, setDraggedAllocId] = useState<number | null>(null)
@@ -334,6 +337,14 @@ export default function FacultyLiveTimetablePage() {
         fetchFloorPlans()
         clockRef.current = setInterval(() => setCurrentTime(new Date()), 1000)
         return () => { if (clockRef.current) clearInterval(clockRef.current) }
+    }, [])
+
+    // Track mobile screen size
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     useEffect(() => {
@@ -796,64 +807,111 @@ export default function FacultyLiveTimetablePage() {
                         </div>
                     </div>
 
-                    {/* ── Info Banner ── */}
-                    <div className={styles.infoBanner}>
-                        <MdInfo />
-                        <span>
-                            This is the <strong>live view</strong> of the current week's timetable. You can mark absences and request makeup classes directly from here.
-                            The schedule resets every Sunday to the original locked schedule.
-                        </span>
-                    </div>
+                    {/* ── Info Banner - Desktop shows full banner, Mobile shows icon button with popup ── */}
+                    {isMobile ? (
+                        <div className={styles.infoPopupWrapper}>
+                            <button
+                                className={`${styles.infoPopupBtn} ${showInfoPopup ? styles.infoPopupBtnActive : ''}`}
+                                onClick={() => setShowInfoPopup(!showInfoPopup)}
+                                title="Help"
+                            >
+                                <MdInfo />
+                            </button>
+                            {showInfoPopup && (
+                                <div className={styles.infoPopup}>
+                                    <div className={styles.infoPopupHeader}>
+                                        <MdInfo />
+                                        <span>Help</span>
+                                        <button className={styles.infoPopupClose} onClick={() => setShowInfoPopup(false)}>
+                                            <MdClose />
+                                        </button>
+                                    </div>
+                                    <p>
+                                        This is the <strong>live view</strong> of the current week's timetable. You can mark absences and request makeup classes directly from here.
+                                        The schedule resets every Sunday to the original locked schedule.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className={styles.infoBanner}>
+                            <MdInfo />
+                            <span>
+                                This is the <strong>live view</strong> of the current week's timetable. You can mark absences and request makeup classes directly from here.
+                                The schedule resets every Sunday to the original locked schedule.
+                            </span>
+                        </div>
+                    )}
 
                     {/* ── Stats ── */}
-                    <div className={styles.statsRow}>
-                        <div className={styles.statCard}>
-                            <div className={styles.statIconCircle}>
-                                <MdCalendarToday className={styles.statIcon} />
+                    {isMobile ? (
+                        <div className={styles.statsRowCompact}>
+                            <div className={styles.statPill}>
+                                <MdCalendarToday />
+                                <span className={styles.statPillValue}>{myTotalClasses}</span>
+                                <span className={styles.statPillLabel}>Classes</span>
                             </div>
-                            <div>
-                                <div className={styles.statValue}>{myTotalClasses}</div>
-                                <div className={styles.statLabel}>My Classes This Week</div>
+                            <div className={`${styles.statPill} ${styles.statPillWarning}`}>
+                                <MdEventBusy />
+                                <span className={styles.statPillValue}>{myAbsences.length}</span>
+                                <span className={styles.statPillLabel}>Absences</span>
                             </div>
-                        </div>
-                        <div className={`${styles.statCard} ${styles.statWarning}`}>
-                            <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
-                                <MdEventBusy className={styles.statIcon} />
-                            </div>
-                            <div>
-                                <div className={styles.statValue}>{myAbsences.length}</div>
-                                <div className={styles.statLabel}>My Absences This Week</div>
-                            </div>
-                        </div>
-                        <div className={`${styles.statCard} ${styles.statPending}`}>
-                            <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
-                                <MdPending className={styles.statIcon} />
-                            </div>
-                            <div>
-                                <div className={styles.statValue}>{pendingMakeup}</div>
-                                <div className={styles.statLabel}>Pending Makeup Requests</div>
+                            <div className={`${styles.statPill} ${styles.statPillPending}`}>
+                                <MdPending />
+                                <span className={styles.statPillValue}>{pendingMakeup}</span>
+                                <span className={styles.statPillLabel}>Pending</span>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className={styles.statsRow}>
+                            <div className={styles.statCard}>
+                                <div className={styles.statIconCircle}>
+                                    <MdCalendarToday className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{myTotalClasses}</div>
+                                    <div className={styles.statLabel}>My Classes This Week</div>
+                                </div>
+                            </div>
+                            <div className={`${styles.statCard} ${styles.statWarning}`}>
+                                <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
+                                    <MdEventBusy className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{myAbsences.length}</div>
+                                    <div className={styles.statLabel}>My Absences This Week</div>
+                                </div>
+                            </div>
+                            <div className={`${styles.statCard} ${styles.statPending}`}>
+                                <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
+                                    <MdPending className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{pendingMakeup}</div>
+                                    <div className={styles.statLabel}>Pending Makeup Requests</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── Week Navigator ── */}
-                    <div className={styles.weekNav}>
+                    <div className={`${styles.weekNav} ${isMobile ? styles.weekNavMobile : ''}`}>
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
-                            <MdChevronLeft /> Prev
+                            <MdChevronLeft />{!isMobile && ' Prev'}
                         </button>
                         <div className={styles.weekLabel}>
                             <MdCalendarToday />
                             <span>
                                 {currentWeekStart.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                                 {' – '}
-                                {addDays(currentWeekStart, 6).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                {addDays(currentWeekStart, 6).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: isMobile ? undefined : 'numeric' })}
                             </span>
                             {formatDate(currentWeekStart) === formatDate(getMonday(new Date())) && (
-                                <span className={styles.currentWeekBadge}>This Week</span>
+                                <span className={styles.currentWeekBadge}>{isMobile ? 'Now' : 'This Week'}</span>
                             )}
                         </div>
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
-                            Next <MdChevronRight />
+                            {!isMobile && 'Next '}<MdChevronRight />
                         </button>
                     </div>
 
@@ -982,6 +1040,36 @@ export default function FacultyLiveTimetablePage() {
                                                         onChange={(e) => setSearchQuery(e.target.value)}
                                                     />
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Mobile Search Toggle */}
+                                        {viewMode === 'grid' && isMobile && (
+                                            <div className={styles.mobileSearchWrapper}>
+                                                <button
+                                                    className={`${styles.searchToggleBtn} ${showSearch ? styles.searchToggleBtnActive : ''}`}
+                                                    onClick={() => setShowSearch(!showSearch)}
+                                                >
+                                                    <MdSearch />
+                                                    {searchQuery && <span className={styles.searchBadge}>1</span>}
+                                                </button>
+                                                {showSearch && (
+                                                    <div className={styles.mobileSearchBar}>
+                                                        <MdSearch />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search..."
+                                                            value={searchQuery}
+                                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                                            autoFocus
+                                                        />
+                                                        {searchQuery && (
+                                                            <button className={styles.clearSearchBtn} onClick={() => setSearchQuery('')}>
+                                                                <MdClose />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>

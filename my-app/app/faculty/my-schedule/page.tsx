@@ -260,6 +260,10 @@ export default function MySchedulePage() {
     const [selectedDay, setSelectedDay] = useState<string>(getTodayDayName())
     const [scheduleViewMode, setScheduleViewMode] = useState<'list' | 'grid'>('list')
 
+    // Mobile responsiveness
+    const [isMobile, setIsMobile] = useState(false)
+    const [showInfoPopup, setShowInfoPopup] = useState(false)
+
     // Actions dropdown (per card)
     const [openActionCardId, setOpenActionCardId] = useState<number | null>(null)
 
@@ -300,6 +304,14 @@ export default function MySchedulePage() {
         fetchFloorPlans()
         clockRef.current = setInterval(() => setCurrentTime(new Date()), 1000)
         return () => { if (clockRef.current) clearInterval(clockRef.current) }
+    }, [])
+
+    // Track mobile screen size
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     useEffect(() => {
@@ -701,6 +713,31 @@ export default function MySchedulePage() {
                             </div>
                         </div>
                         <div className={styles.headerRight}>
+                            {isMobile && (
+                                <div className={styles.infoPopupWrapper}>
+                                    <button
+                                        className={`${styles.infoPopupBtn} ${showInfoPopup ? styles.infoPopupBtnActive : ''}`}
+                                        onClick={() => setShowInfoPopup(!showInfoPopup)}
+                                        title="Help"
+                                    >
+                                        <MdInfo />
+                                    </button>
+                                    {showInfoPopup && (
+                                        <div className={styles.infoPopup}>
+                                            <div className={styles.infoPopupHeader}>
+                                                <MdInfo />
+                                                <span>Help</span>
+                                                <button className={styles.infoPopupClose} onClick={() => setShowInfoPopup(false)}>
+                                                    <MdClose />
+                                                </button>
+                                            </div>
+                                            <p>
+                                                This is your <strong>personal live schedule</strong>. You can report absences, request makeup sessions, and submit leave requests using the <strong>Actions</strong> menu on each class card.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             {schedule?.is_locked && (
                                 <span className={styles.lockedBadge}>
                                     <MdLock /> LOCKED
@@ -716,49 +753,71 @@ export default function MySchedulePage() {
                         </div>
                     </div>
 
-                    {/* Info Banner */}
-                    <div className={styles.infoBanner}>
-                        <MdInfo />
-                        <span>
-                            This is your <strong>personal live schedule</strong>. You can report absences, request makeup sessions, and submit leave requests using the <strong>Actions</strong> menu on each class card.
-                        </span>
-                    </div>
+                    {/* Info Banner - Desktop only */}
+                    {!isMobile && (
+                        <div className={styles.infoBanner}>
+                            <MdInfo />
+                            <span>
+                                This is your <strong>personal live schedule</strong>. You can report absences, request makeup sessions, and submit leave requests using the <strong>Actions</strong> menu on each class card.
+                            </span>
+                        </div>
+                    )}
 
-                    {/* Stats */}
-                    <div className={styles.statsRow}>
-                        <div className={styles.statCard}>
-                            <div className={styles.statIconCircle}>
-                                <MdCalendarToday className={styles.statIcon} />
+                    {/* Stats - Compact pills on mobile, full cards on desktop */}
+                    {isMobile ? (
+                        <div className={styles.statsRowCompact}>
+                            <div className={styles.statPill}>
+                                <MdCalendarToday />
+                                <span className={styles.statPillValue}>{myTotalClasses}</span>
+                                <span className={styles.statPillLabel}>Classes</span>
                             </div>
-                            <div>
-                                <div className={styles.statValue}>{myTotalClasses}</div>
-                                <div className={styles.statLabel}>My Classes This Week</div>
+                            <div className={`${styles.statPill} ${styles.statPillWarning}`}>
+                                <MdEventBusy />
+                                <span className={styles.statPillValue}>{myAbsences.length}</span>
+                                <span className={styles.statPillLabel}>Absences</span>
                             </div>
-                        </div>
-                        <div className={`${styles.statCard} ${styles.statWarning}`}>
-                            <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
-                                <MdEventBusy className={styles.statIcon} />
-                            </div>
-                            <div>
-                                <div className={styles.statValue}>{myAbsences.length}</div>
-                                <div className={styles.statLabel}>My Absences This Week</div>
-                            </div>
-                        </div>
-                        <div className={`${styles.statCard} ${styles.statPending}`}>
-                            <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
-                                <MdPending className={styles.statIcon} />
-                            </div>
-                            <div>
-                                <div className={styles.statValue}>{pendingMakeup}</div>
-                                <div className={styles.statLabel}>Pending Requests</div>
+                            <div className={`${styles.statPill} ${styles.statPillPending}`}>
+                                <MdPending />
+                                <span className={styles.statPillValue}>{pendingMakeup}</span>
+                                <span className={styles.statPillLabel}>Pending</span>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className={styles.statsRow}>
+                            <div className={styles.statCard}>
+                                <div className={styles.statIconCircle}>
+                                    <MdCalendarToday className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{myTotalClasses}</div>
+                                    <div className={styles.statLabel}>My Classes This Week</div>
+                                </div>
+                            </div>
+                            <div className={`${styles.statCard} ${styles.statWarning}`}>
+                                <div className={`${styles.statIconCircle} ${styles.statIconCircleWarning}`}>
+                                    <MdEventBusy className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{myAbsences.length}</div>
+                                    <div className={styles.statLabel}>My Absences This Week</div>
+                                </div>
+                            </div>
+                            <div className={`${styles.statCard} ${styles.statPending}`}>
+                                <div className={`${styles.statIconCircle} ${styles.statIconCirclePending}`}>
+                                    <MdPending className={styles.statIcon} />
+                                </div>
+                                <div>
+                                    <div className={styles.statValue}>{pendingMakeup}</div>
+                                    <div className={styles.statLabel}>Pending Requests</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Week Navigator */}
-                    <div className={styles.weekNav}>
+                    <div className={`${styles.weekNav} ${isMobile ? styles.weekNavMobile : ''}`}>
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
-                            <MdChevronLeft /> Prev
+                            <MdChevronLeft />{!isMobile && ' Prev'}
                         </button>
                         <div className={styles.weekLabel}>
                             <MdCalendarToday />
@@ -772,7 +831,7 @@ export default function MySchedulePage() {
                             )}
                         </div>
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}>
-                            Next <MdChevronRight />
+                            {!isMobile && 'Next '}<MdChevronRight />
                         </button>
                     </div>
 

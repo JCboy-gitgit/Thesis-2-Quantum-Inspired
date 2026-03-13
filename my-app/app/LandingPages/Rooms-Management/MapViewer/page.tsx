@@ -1104,10 +1104,31 @@ export default function MapViewerPage() {
   }
 
   // Fetch rooms when building/floor changes
+  // Only auto-load a floor plan on very first mount or explicit building switch
+  const prevBuildingRef = useRef<string | null>(null)
+  const prevFloorRef = useRef<number | null>(null)
   useEffect(() => {
-    if (selectedBuilding) {
-      fetchRooms()
-      fetchSavedFloorPlans()
+    if (!selectedBuilding) return
+
+    const isFirstLoad = prevBuildingRef.current === null
+    const buildingChanged = prevBuildingRef.current !== selectedBuilding
+    const floorChanged = prevFloorRef.current !== null && prevFloorRef.current !== selectedFloor
+
+    prevBuildingRef.current = selectedBuilding
+    prevFloorRef.current = selectedFloor
+
+    fetchRooms()
+
+    if (isFirstLoad || buildingChanged || floorChanged) {
+      // Only auto-load when the user actually switched building/floor, not on re-renders
+      // If there are unsaved changes, skip the auto-load to prevent data loss
+      if (hasUnsavedChanges && !isFirstLoad) {
+        fetchSavedFloorPlans(true) // refresh list but don't auto-load
+      } else {
+        fetchSavedFloorPlans()
+      }
+    } else {
+      fetchSavedFloorPlans(true) // refresh list only, don't overwrite canvas
     }
   }, [selectedBuilding, selectedFloor])
 
@@ -1268,6 +1289,17 @@ export default function MapViewerPage() {
       } else {
         setPresetSize('custom')
       }
+    }
+    // Restore canvas background and grid size from saved data
+    if (floorPlan.canvas_data?.backgroundColor != null) {
+      setCanvasBackground(floorPlan.canvas_data.backgroundColor)
+    } else if (floorPlan.background_color != null) {
+      setCanvasBackground(floorPlan.background_color)
+    }
+    if (floorPlan.grid_size != null) {
+      setGridSize(floorPlan.grid_size)
+    } else if (floorPlan.canvas_data?.gridSize != null) {
+      setGridSize(floorPlan.canvas_data.gridSize)
     }
     if (floorPlan.linked_schedule_id) {
       setSelectedScheduleId(floorPlan.linked_schedule_id)
@@ -2558,11 +2590,14 @@ export default function MapViewerPage() {
   }
 
   // Save floor plan
+  const savingRef = useRef(false)
   const saveFloorPlan = async (options?: {
     silent?: boolean
     refreshList?: boolean
     closeModal?: boolean
   }) => {
+    // Prevent concurrent saves using ref (state check may be stale in closures)
+    if (savingRef.current) return
     const silent = options?.silent === true
     const shouldRefreshList = options?.refreshList !== false
     const shouldCloseModal = options?.closeModal !== false
@@ -2580,6 +2615,7 @@ export default function MapViewerPage() {
     const saveStartedAtVersion = changeVersionRef.current
 
     try {
+      savingRef.current = true
       setSaving(true)
 
       const syncedElements = selectedElement
@@ -2712,9 +2748,13 @@ export default function MapViewerPage() {
         showNotification('error', `Save failed: ${errMsg}`)
       }
     } finally {
+      savingRef.current = false
       setSaving(false)
-    }
-  }
+    } to the latest saveFloorPlan so timers/events never capture a stale closure
+  const saveFloorPlanRef = useRef(saveFloorPlan)
+  useEffect(() => {
+    saveFloorPlanRef.current = saveFloorPlan
+  })
 
   useEffect(() => {
     if (!mounted) return
@@ -2724,7 +2764,7 @@ export default function MapViewerPage() {
     if (saving) return
 
     const autoSaveTimer = window.setTimeout(() => {
-      void saveFloorPlan({
+      void saveFloorPlanRef.current({
         silent: true,
         refreshList: false,
         closeModal: false,
@@ -2762,7 +2802,7 @@ export default function MapViewerPage() {
       if (saving) return
       if (viewMode !== 'editor') return
 
-      void saveFloorPlan({
+      void saveFloorPlanRef.current({
         silent: true,
         refreshList: false,
         closeModal: false,
@@ -2786,7 +2826,7 @@ export default function MapViewerPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pagehide', handlePageHide)
     }
-  }, [mounted, autoSaveEnabled, hasUnsavedChanges, saving, viewMode, saveFloorPlan])
+  }, [mounted, autoSaveEnabled, hasUnsavedChanges, saving, viewMode])
 
   const saveStateText = useMemo(() => {
     if (viewMode !== 'editor') return ''

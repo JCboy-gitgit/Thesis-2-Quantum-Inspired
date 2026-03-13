@@ -194,6 +194,45 @@
   color: var(--text-secondary);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Compact Stats Row
+   ═══════════════════════════════════════════════════════════════ */
+.statsRowCompact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.statPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.statPill svg {
+  font-size: 14px;
+  color: var(--college-primary, var(--primary));
+  flex-shrink: 0;
+}
+
+.statPillValue {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.statPillLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .collegeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
