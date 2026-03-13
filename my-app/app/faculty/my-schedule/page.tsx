@@ -1,52 +1,43 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useTheme } from '@/app/context/ThemeContext'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import {
-    MdLiveTv,
+    MdEventNote,
     MdRefresh,
     MdCalendarToday,
     MdAccessTime,
     MdPerson,
     MdMeetingRoom,
-    MdSchool,
-    MdWarning,
     MdCheckCircle,
-    MdCancel,
     MdClose,
     MdEventBusy,
     MdEventAvailable,
     MdPending,
-    MdSend,
     MdInfo,
     MdChevronLeft,
     MdChevronRight,
     MdMenuBook,
     MdGroup,
     MdFiberManualRecord,
-    MdEdit,
-    MdAdd,
-    MdHistory,
     MdMap,
-    MdGridView,
-    MdViewList,
-    MdDragIndicator,
+    MdExpandMore,
+    MdSick,
+    MdScheduleSend,
+    MdContactMail,
+    MdSwapHoriz,
+    MdHelpOutline,
+    MdLock,
     MdTaskAlt,
-    MdFilterList,
-    MdSearch,
-    MdRestartAlt
+    MdViewList,
+    MdGridView
 } from 'react-icons/md'
 import '@/app/styles/faculty-global.css'
-import facultyStyles from './FacultyLiveTimetable.module.css'
-import landingStyles from '@/app/LandingPages/LiveTimetable/LiveTimetable.module.css'
-
-// Fallback to the landing page stylesheet for selectors not yet present
-// in the faculty-specific module (prevents unstyled sections).
-const styles = { ...landingStyles, ...facultyStyles }
+import styles from './MySchedule.module.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RoomAllocation {
@@ -105,40 +96,13 @@ interface Room {
     room: string
     building: string
     room_type?: string
-    specific_classification?: string
-    has_ac?: boolean
-    has_whiteboard?: boolean
-    has_tv?: boolean
-    has_projector?: boolean
     capacity?: number
     floor_number?: number
     status?: string
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-function normalizeDay(day: string): string {
-    const dayMap: { [key: string]: string } = {
-        'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
-        'T': 'Tuesday', 'TUE': 'Tuesday', 'TUESDAY': 'Tuesday',
-        'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
-        'TH': 'Thursday', 'THU': 'Thursday', 'THURSDAY': 'Thursday',
-        'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
-        'S': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
-        'SU': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
-    }
-    return dayMap[day.toUpperCase()] || day
-}
-
-function splitTimeRange(timeStr: string): [string, string] {
-    if (!timeStr) return ['', '']
-    const normalized = timeStr
-        .replace(/[\u2013\u2014]/g, '-')
-        .replace(/\s+to\s+/gi, '-')
-    const parts = normalized.split('-').map(s => s.trim()).filter(Boolean)
-    if (parts.length < 2) return ['', '']
-    return [parts[0], parts[1]]
-}
+const GRID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 function normalizeSection(section: string): string {
     if (!section) return section
@@ -147,7 +111,6 @@ function normalizeSection(section: string): string {
 
 function expandDays(dayStr: string): string[] {
     if (!dayStr) return []
-
     const compact = dayStr.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
     const tokenMap: Record<string, string> = {
         MONDAY: 'Monday', MON: 'Monday', M: 'Monday',
@@ -158,7 +121,6 @@ function expandDays(dayStr: string): string[] {
         SATURDAY: 'Saturday', SAT: 'Saturday', SA: 'Saturday', S: 'Saturday',
         SUNDAY: 'Sunday', SUN: 'Sunday', SU: 'Sunday', U: 'Sunday'
     }
-
     const comboMap: Record<string, string[]> = {
         TTH: ['Tuesday', 'Thursday'],
         MWF: ['Monday', 'Wednesday', 'Friday'],
@@ -167,32 +129,29 @@ function expandDays(dayStr: string): string[] {
         MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     }
-
     if (compact.includes('/') || compact.includes(',')) {
-        return compact
-            .split(/[\/,]+/)
-            .map(token => tokenMap[token] || normalizeDay(token))
-            .filter(Boolean)
+        return compact.split(/[\/,]+/).map(token => tokenMap[token] || token).filter(Boolean)
     }
-
     if (comboMap[compact]) return comboMap[compact]
-
     const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
     const expanded: string[] = []
     let i = 0
-
     while (i < compact.length) {
         const token = orderedTokens.find(t => compact.startsWith(t, i))
-        if (!token) {
-            i += 1
-            continue
-        }
+        if (!token) { i += 1; continue }
         const mapped = tokenMap[token]
         if (mapped) expanded.push(mapped)
         i += token.length
     }
+    return expanded.length > 0 ? Array.from(new Set(expanded)) : []
+}
 
-    return expanded.length > 0 ? Array.from(new Set(expanded)) : [normalizeDay(compact)]
+function splitTimeRange(timeStr: string): [string, string] {
+    if (!timeStr) return ['', '']
+    const normalized = timeStr.replace(/[\u2013\u2014]/g, '-').replace(/\s+to\s+/gi, '-')
+    const parts = normalized.split('-').map(s => s.trim()).filter(Boolean)
+    if (parts.length < 2) return ['', '']
+    return [parts[0], parts[1]]
 }
 
 function parseTimeToMinutes(t: string): number {
@@ -235,21 +194,6 @@ function isClassOngoing(timeStr: string): boolean {
     return nowMin >= start && nowMin < end
 }
 
-function getTodayDayName(): string {
-    const day = new Date().getDay()
-    return DAYS[day === 0 ? 6 : day - 1]
-}
-
-const GRID_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-const FACULTY_TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
-    const hour = Math.floor(i / 2) + 7
-    const minute = (i % 2) * 30
-    const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    return `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`
-})
-
 function isClassDone(timeStr: string, dayName: string, todayDayName: string): boolean {
     const todayIdx = DAYS.indexOf(todayDayName)
     const dayIdx = DAYS.indexOf(dayName)
@@ -264,7 +208,29 @@ function isClassDone(timeStr: string, dayName: string, todayDayName: string): bo
     return nowMin >= end
 }
 
-export default function FacultyLiveTimetablePage() {
+function getTodayDayName(): string {
+    const day = new Date().getDay()
+    return DAYS[day === 0 ? 6 : day - 1]
+}
+
+const FACULTY_TIME_SLOTS = Array.from({ length: 29 }, (_, i) => {
+    const hour = Math.floor(i / 2) + 7
+    const minute = (i % 2) * 30
+    const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    return `${h12}:${minute.toString().padStart(2, '0')} ${ampm}`
+})
+
+// ─── ACTION TYPES ─────────────────────────────────────────────────────────────
+type ActionType =
+    | 'report-absence'
+    | 'schedule-makeup'
+    | 'submit-leave'
+    | 'request-reschedule'
+    | 'room-change-request'
+    | 'general-inquiry'
+
+export default function MySchedulePage() {
     const router = useRouter()
     const { theme, collegeTheme } = useTheme()
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -278,7 +244,6 @@ export default function FacultyLiveTimetablePage() {
     const [overrides, setOverrides] = useState<any[]>([])
     const [allAbsences, setAllAbsences] = useState<Absence[]>([])
     const [allMakeupRequests, setAllMakeupRequests] = useState<MakeupRequest[]>([])
-    const [specialEvents, setSpecialEvents] = useState<any[]>([])
     const [myAbsences, setMyAbsences] = useState<Absence[]>([])
     const [myMakeupRequests, setMyMakeupRequests] = useState<MakeupRequest[]>([])
     const [loading, setLoading] = useState(true)
@@ -287,9 +252,13 @@ export default function FacultyLiveTimetablePage() {
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(getMonday(new Date()))
 
     // View
-    type ViewTab = 'timetable' | 'my-absences' | 'my-requests'
-    const [activeTab, setActiveTab] = useState<ViewTab>('timetable')
+    type ViewTab = 'my-schedule' | 'my-absences' | 'my-requests'
+    const [activeTab, setActiveTab] = useState<ViewTab>('my-schedule')
     const [selectedDay, setSelectedDay] = useState<string>(getTodayDayName())
+    const [scheduleViewMode, setScheduleViewMode] = useState<'list' | 'grid'>('list')
+
+    // Actions dropdown (per card)
+    const [openActionCardId, setOpenActionCardId] = useState<number | null>(null)
 
     // Absence marking modal
     const [markingAbsence, setMarkingAbsence] = useState<RoomAllocation | null>(null)
@@ -300,25 +269,22 @@ export default function FacultyLiveTimetablePage() {
     // Makeup request modal
     const [requestingMakeup, setRequestingMakeup] = useState<{ alloc: RoomAllocation; absenceDate?: string } | null>(null)
     const [makeupDate, setMakeupDate] = useState('')
-    const [makeupTime, setMakeupTime] = useState('')
-    const [makeupStartSlot, setMakeupStartSlot] = useState('')   // e.g. "7:30 AM"
-    const [makeupDuration, setMakeupDuration] = useState(90)     // minutes
+    const [makeupStartSlot, setMakeupStartSlot] = useState('')
+    const [makeupDuration, setMakeupDuration] = useState(90)
     const [makeupRoom, setMakeupRoom] = useState('')
     const [makeupReason, setMakeupReason] = useState('')
     const [submittingMakeup, setSubmittingMakeup] = useState(false)
     const [availableRooms, setAvailableRooms] = useState<Room[]>([])
     const [loadingRooms, setLoadingRooms] = useState(false)
 
-    // View/grid state
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
-    const [groupBy, setGroupBy] = useState<'all' | 'room' | 'faculty' | 'section'>('all')
-    const [groupPage, setGroupPage] = useState(0)
-    const [searchQuery, setSearchQuery] = useState('')
+    // Leave request modal
+    const [requestingLeave, setRequestingLeave] = useState<RoomAllocation | null>(null)
+    const [leaveStartDate, setLeaveStartDate] = useState('')
+    const [leaveEndDate, setLeaveEndDate] = useState('')
+    const [leaveReason, setLeaveReason] = useState('')
+    const [submittingLeave, setSubmittingLeave] = useState(false)
 
-    // Drag data (for rescheduling my own classes)
-    const [draggedAllocId, setDraggedAllocId] = useState<number | null>(null)
-    const [dragOverCell, setDragOverCell] = useState<string | null>(null)
-    // Floor plan map (building → floor_plan_id for "View on Map" links)
+    // Floor plan map
     const [floorPlanMap, setFloorPlanMap] = useState<Record<string, number>>({})
 
     // Realtime clock
@@ -341,36 +307,41 @@ export default function FacultyLiveTimetablePage() {
     useEffect(() => {
         if (!user) return
         const channel = supabase
-            .channel(`faculty_live_${user.id}`)
+            .channel(`my_schedule_${user.id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'live_timetable_absences', filter: `faculty_id=eq.${user.id}` }, () => fetchLiveData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'live_makeup_requests', filter: `faculty_id=eq.${user.id}` }, () => fetchLiveData())
             .subscribe()
         return () => { supabase.removeChannel(channel) }
     }, [user])
 
-    // Fetch available rooms whenever the makeup date / time slot / duration changes
+    // Fetch available rooms for makeup
     useEffect(() => {
         if (requestingMakeup && makeupDate && makeupStartSlot) {
             fetchAvailableRooms(makeupDate, makeupStartSlot, makeupDuration)
         } else {
             setAvailableRooms([])
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [makeupDate, makeupStartSlot, makeupDuration, requestingMakeup])
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        if (openActionCardId !== null) {
+            const handler = () => setOpenActionCardId(null)
+            const timeout = setTimeout(() => document.addEventListener('click', handler), 0)
+            return () => { clearTimeout(timeout); document.removeEventListener('click', handler) }
+        }
+    }, [openActionCardId])
 
     const checkAuth = async () => {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.user) { router.push('/'); return }
-
             const { data: userData } = await supabase
                 .from('users')
                 .select('id, email, full_name, is_active')
                 .eq('id', session.user.id)
                 .single() as { data: any; error: any }
-
             if (!userData?.is_active) { router.push('/'); return }
-
             setUser({ id: userData.id, email: userData.email, full_name: userData.full_name })
         } catch {
             router.push('/')
@@ -384,16 +355,12 @@ export default function FacultyLiveTimetablePage() {
             const weekStr = formatDate(currentWeekStart)
             const res = await fetch(`/api/live-timetable?action=current-week&week_start=${weekStr}`)
             const data = await res.json()
-
             if (data.success) {
                 setSchedule(data.schedule)
                 setAllAllocations(data.allocations || [])
                 setOverrides(data.overrides || [])
                 setAllAbsences(data.absences || [])
                 setAllMakeupRequests(data.makeupClasses || [])
-                setSpecialEvents(data.specialEvents || [])
-
-                // Filter absences and makeup requests for this faculty
                 const myAbs = (data.absences || []).filter((a: Absence) => a.faculty_id === user.id)
                 const myMakeup = (data.makeupClasses || []).filter((m: MakeupRequest) => m.faculty_id === user.id)
                 setMyAbsences(myAbs)
@@ -406,6 +373,118 @@ export default function FacultyLiveTimetablePage() {
         }
     }, [user, currentWeekStart])
 
+    const fetchFloorPlans = async () => {
+        try {
+            const { data: fps } = await (supabase as any)
+                .from('floor_plans')
+                .select('id, buildings:building_id(name)')
+            const map: Record<string, number> = {}
+            fps?.forEach((fp: any) => {
+                const bname = fp.buildings?.name
+                if (bname && !map[bname]) map[bname] = fp.id
+            })
+            setFloorPlanMap(map)
+        } catch (err) {
+            console.error('Failed to load floor plans:', err)
+        }
+    }
+
+    const fetchAvailableRooms = async (date: string, startSlot: string, duration: number) => {
+        if (!date || !startSlot) { setAvailableRooms([]); return }
+        setLoadingRooms(true)
+        try {
+            const { data: rooms } = await (supabase as any)
+                .from('rooms')
+                .select('id, room, building, room_type, capacity, floor_number, status')
+                .neq('status', 'under_maintenance')
+                .order('building').order('room')
+
+            const startMin = parseTimeToMinutes(startSlot)
+            const endMin = startMin + duration
+
+            const dateParts = date.split('-')
+            const dayOfWeek = dateParts.length === 3
+                ? new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2])).toLocaleDateString('en-US', { weekday: 'long' })
+                : ''
+
+            const occupied = new Set<string>()
+            allAllocations.forEach(a => {
+                const days = expandDays(a.schedule_day || '')
+                if (!days.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) return
+                const [sRaw, eRaw] = splitTimeRange(a.schedule_time || '')
+                if (!sRaw || !eRaw) return
+                const aStart = parseTimeToMinutes(sRaw)
+                const aEnd = parseTimeToMinutes(eRaw)
+                if (startMin < aEnd && endMin > aStart) {
+                    occupied.add(`${(a.building || '').toLowerCase()}||${(a.room || '').toLowerCase()}`)
+                }
+            })
+
+            const filtered = (rooms || []).filter((r: Room) =>
+                !occupied.has(`${(r.building || '').toLowerCase()}||${(r.room || '').toLowerCase()}`)
+            )
+            setAvailableRooms(filtered)
+        } catch (err) {
+            console.error('Failed to fetch available rooms:', err)
+            setAvailableRooms([])
+        } finally {
+            setLoadingRooms(false)
+        }
+    }
+
+    // ── Get effective allocations (with overrides) ──
+    const getEffectiveAllocation = (alloc: RoomAllocation) => {
+        const override = overrides.find(o => o.allocation_id === alloc.id)
+        if (!override) return alloc
+        return {
+            ...alloc,
+            schedule_day: override.override_day || alloc.schedule_day,
+            schedule_time: override.override_time || alloc.schedule_time,
+            room: override.override_room || alloc.room,
+            building: override.override_building || alloc.building,
+        }
+    }
+
+    // Get MY classes for a day
+    const getMyDayAllocations = (day: string) => {
+        return allAllocations
+            .map(getEffectiveAllocation)
+            .filter(a => {
+                const days = expandDays(a.schedule_day || '')
+                return days.some(d => d.toLowerCase() === day.toLowerCase())
+            })
+            .filter(a => {
+                if (!user) return false
+                const name = (a.teacher_name || '').toLowerCase().trim()
+                const myName = (user.full_name || '').toLowerCase().trim()
+                return name === myName || name.includes(myName) || myName.includes(name)
+            })
+            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
+    }
+
+    const getDayDate = (dayName: string): string => {
+        const idx = DAYS.indexOf(dayName)
+        if (idx === -1) return ''
+        return formatDate(addDays(currentWeekStart, idx))
+    }
+
+    const isAbsentOnDate = (allocId: number, date: string) => {
+        return myAbsences.some(a => a.allocation_id === allocId && a.absence_date === date)
+    }
+
+    const myTotalClasses = allAllocations.map(getEffectiveAllocation).filter(a => {
+        if (!user) return false
+        const name = (a.teacher_name || '').toLowerCase().trim()
+        const myName = (user.full_name || '').toLowerCase().trim()
+        return name === myName || name.includes(myName) || myName.includes(name)
+    }).length
+
+    const pendingMakeup = myMakeupRequests.filter(m => m.status === 'pending').length
+
+    const isCurrentWeek = formatDate(currentWeekStart) === formatDate(getMonday(new Date()))
+    const todayDayName = getTodayDayName()
+
+    // ── Action handlers ──
     const handleMarkAbsence = async () => {
         if (!markingAbsence || !user || !schedule) return
         setSubmittingAbsence(true)
@@ -430,7 +509,7 @@ export default function FacultyLiveTimetablePage() {
             } else {
                 alert(data.error || 'Failed to mark absence')
             }
-        } catch (err) {
+        } catch {
             alert('Failed to mark absence')
         } finally {
             setSubmittingAbsence(false)
@@ -443,7 +522,6 @@ export default function FacultyLiveTimetablePage() {
             alert('Please select the requested date and time slot.')
             return
         }
-        // Derive time string from slot + duration
         const startMin = parseTimeToMinutes(makeupStartSlot)
         const endMin = startMin + makeupDuration
         const endHr = Math.floor(endMin / 60)
@@ -478,277 +556,114 @@ export default function FacultyLiveTimetablePage() {
                 setMakeupReason('')
                 setAvailableRooms([])
                 await fetchLiveData()
-                alert('Makeup class request submitted! The admin will review it shortly.')
+                alert('Makeup class request submitted. The admin will review it shortly.')
             } else {
                 alert(data.error || 'Failed to submit makeup request')
             }
-        } catch (err) {
+        } catch {
             alert('Failed to submit makeup request')
         } finally {
             setSubmittingMakeup(false)
         }
     }
 
-    const fetchFloorPlans = async () => {
-        try {
-            const { data: fps } = await (supabase as any)
-                .from('floor_plans')
-                .select('id, buildings:building_id(name)')
-            const map: Record<string, number> = {}
-            fps?.forEach((fp: any) => {
-                const bname = fp.buildings?.name
-                if (bname && !map[bname]) map[bname] = fp.id
-            })
-            setFloorPlanMap(map)
-        } catch (err) {
-            console.error('Failed to load floor plans:', err)
+    const handleSubmitLeave = async () => {
+        if (!requestingLeave || !user || !schedule) return
+        if (!leaveStartDate || !leaveEndDate) {
+            alert('Please select start and end dates for your leave.')
+            return
         }
-    }
-
-    // ── Room availability helpers ──────────────────────────────────────────────
-    const getCourseRoomType = (alloc: RoomAllocation): string => {
-        const section = (alloc.section || '').toLowerCase()
-        const course = (alloc.course_name || '').toLowerCase()
-        const code = (alloc.course_code || '').toLowerCase()
-        if (section.includes('_lab') || course.includes('laboratory') || code.includes('lab')) return 'Laboratory'
-        if (course.includes('computer') || code.startsWith('cs') || code.startsWith('it') || code.startsWith('cpe')) return 'Computer Lab'
-        return 'Classroom'
-    }
-
-    const fetchAvailableRooms = async (date: string, startSlot: string, duration: number) => {
-        if (!date || !startSlot) { setAvailableRooms([]); return }
-        setLoadingRooms(true)
+        if (!leaveReason.trim()) {
+            alert('Please provide a reason for the leave request.')
+            return
+        }
+        setSubmittingLeave(true)
         try {
-            const { data: rooms } = await (supabase as any)
-                .from('rooms')
-                .select('id, room, building, room_type, specific_classification, has_ac, has_whiteboard, has_tv, has_projector, capacity, floor_number, status')
-                .neq('status', 'under_maintenance')
-                .order('building').order('room')
-
-            const startMin = parseTimeToMinutes(startSlot)
-            const endMin = startMin + duration
-
-            // Get the day-of-week label from the date string
-            const dateParts = date.split('-')
-            const dayOfWeek = dateParts.length === 3
-                ? new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2])).toLocaleDateString('en-US', { weekday: 'long' })
-                : ''
-
-            // Find rooms that are occupied at this time slot
-            const occupied = new Set<string>()
-            allAllocations.forEach(a => {
-                // Match day
-                const days = expandDays(a.schedule_day || '')
-                if (!days.some(d => d.toLowerCase() === dayOfWeek.toLowerCase())) return
-                // Check time overlap
-                const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
-                if (!startRaw || !endRaw) return
-                const aStart = parseTimeToMinutes(startRaw)
-                const aEnd = parseTimeToMinutes(endRaw)
-                if (startMin < aEnd && endMin > aStart) {
-                    occupied.add(`${(a.building || '').toLowerCase()}||${(a.room || '').toLowerCase()}`)
+            // Mark absence for each day in the leave range that has a class
+            const start = new Date(leaveStartDate)
+            const end = new Date(leaveEndDate)
+            let marked = 0
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dayName = DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1]
+                const dayAllocs = getMyDayAllocations(dayName)
+                const dateStr = formatDate(d)
+                for (const alloc of dayAllocs) {
+                    const alreadyAbsent = myAbsences.some(a => a.allocation_id === alloc.id && a.absence_date === dateStr)
+                    if (!alreadyAbsent) {
+                        await fetch('/api/live-timetable', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'mark-absence',
+                                allocation_id: alloc.id,
+                                faculty_id: user.id,
+                                absence_date: dateStr,
+                                reason: `Leave of Absence: ${leaveReason}`
+                            })
+                        })
+                        marked++
+                    }
                 }
-            })
-
-            const filtered = (rooms || []).filter((r: Room) =>
-                !occupied.has(`${(r.building || '').toLowerCase()}||${(r.room || '').toLowerCase()}`)
-            )
-            setAvailableRooms(filtered)
-        } catch (err) {
-            console.error('Failed to fetch available rooms:', err)
-            setAvailableRooms([])
+            }
+            setRequestingLeave(null)
+            setLeaveStartDate('')
+            setLeaveEndDate('')
+            setLeaveReason('')
+            await fetchLiveData()
+            alert(`Leave request submitted. ${marked} class absence(s) have been recorded.`)
+        } catch {
+            alert('Failed to submit leave request')
         } finally {
-            setLoadingRooms(false)
+            setSubmittingLeave(false)
         }
     }
 
-    const handleFacultyDragOver = (e: React.DragEvent) => { e.preventDefault() }
+    const handleAction = (action: ActionType, alloc: RoomAllocation) => {
+        setOpenActionCardId(null)
+        const dayDate = getDayDate(selectedDay)
 
-    const handleFacultyDrop = (e: React.DragEvent, targetDay: string, slotMinutes: number) => {
-        e.preventDefault()
-        const allocId = parseInt(e.dataTransfer.getData('allocId'))
-        const alloc = allAllocations.find(a => a.id === allocId)
-        if (!alloc) return
-        const slotHour = Math.floor(slotMinutes / 60)
-        const slotMin = slotMinutes % 60
-        const h12 = slotHour > 12 ? slotHour - 12 : slotHour === 0 ? 12 : slotHour
-        const ampm = slotHour >= 12 ? 'PM' : 'AM'
-        const origParts = splitTimeRange(alloc.schedule_time || '')
-        let durationMin = 90
-        if (origParts[0] && origParts[1]) {
-            durationMin = Math.max(30, parseTimeToMinutes(origParts[1]) - parseTimeToMinutes(origParts[0]))
+        switch (action) {
+            case 'report-absence':
+                setMarkingAbsence(alloc)
+                setAbsenceDate(dayDate || formatDate(new Date()))
+                setAbsenceReason('')
+                break
+            case 'schedule-makeup':
+                setRequestingMakeup({ alloc })
+                setMakeupDate('')
+                setMakeupStartSlot('')
+                setMakeupDuration(90)
+                setMakeupRoom('')
+                setMakeupReason('')
+                break
+            case 'submit-leave':
+                setRequestingLeave(alloc)
+                setLeaveStartDate('')
+                setLeaveEndDate('')
+                setLeaveReason('')
+                break
+            case 'request-reschedule':
+                setRequestingMakeup({ alloc })
+                setMakeupDate('')
+                setMakeupStartSlot('')
+                setMakeupDuration(90)
+                setMakeupRoom('')
+                setMakeupReason('Reschedule Request: ')
+                break
+            case 'room-change-request':
+                setRequestingMakeup({ alloc })
+                setMakeupDate(dayDate || '')
+                const [startSlot] = splitTimeRange(alloc.schedule_time || '')
+                setMakeupStartSlot(startSlot)
+                setMakeupDuration(90)
+                setMakeupRoom('')
+                setMakeupReason('Room Change Request: ')
+                break
+            case 'general-inquiry':
+                alert('For general administrative inquiries, please contact your department coordinator or the scheduling office directly.')
+                break
         }
-        const startSlotStr = `${h12}:${slotMin.toString().padStart(2, '0')} ${ampm}`
-        const targetDate = getDayDate(targetDay)
-        setRequestingMakeup({ alloc })
-        setMakeupDate(targetDate)
-        setMakeupStartSlot(startSlotStr)
-        setMakeupDuration(durationMin)
-        setMakeupRoom(alloc.room)
-        setMakeupReason('')
-        setDraggedAllocId(null)
-        setDragOverCell(null)
     }
-
-    // ── Grid / Full Schedule Logic ──
-
-    // Get effective allocation (with override applied)
-    const getEffectiveAllocation = (alloc: RoomAllocation) => {
-        const override = overrides.find(o => o.allocation_id === alloc.id)
-        if (!override) return alloc
-        return {
-            ...alloc,
-            schedule_day: override.override_day || alloc.schedule_day,
-            schedule_time: override.override_time || alloc.schedule_time,
-            room: override.override_room || alloc.room,
-            building: override.override_building || alloc.building,
-            _hasOverride: true,
-            _overrideNote: override.note,
-            _overrideId: override.id
-        } as any
-    }
-
-    const effectiveAllocations = useMemo(() => {
-        const base = allAllocations.map(getEffectiveAllocation)
-        // Add approved makeups as new allocations
-        const makeups = allMakeupRequests
-            .filter(m => m.status === 'approved')
-            .map(m => {
-                const original = allAllocations.find(a => a.id === m.allocation_id)
-                if (!original) return null
-                const [year, month, day] = (m.requested_date || '').split('-')
-                const date = new Date(Number(year), Number(month) - 1, Number(day))
-                const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
-                return {
-                    ...original,
-                    id: -m.id,
-                    schedule_day: dayName,
-                    schedule_time: m.requested_time,
-                    room: m.requested_room || original.room,
-                    _isMakeup: true,
-                    _makeupId: m.id
-                } as any
-            })
-            .filter(Boolean) as RoomAllocation[]
-
-        const specials = specialEvents.map(se => {
-            const [year, month, day] = se.event_date.split('-')
-            const date = new Date(Number(year), Number(month) - 1, Number(day))
-            const dayName = DAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]
-
-            return {
-                id: -(100000 + se.id),
-                building: se.building,
-                room: se.room,
-                course_code: 'SPECIAL EVENT',
-                course_name: se.reason || 'Room Unavailable',
-                section: '',
-                schedule_day: dayName,
-                schedule_time: se.time_start && se.time_end ? `${se.time_start} - ${se.time_end}` : '07:00 AM - 09:00 PM',
-                teacher_name: 'N/A',
-                _isSpecialEvent: true,
-                _specialEventReason: se.reason,
-            } as any
-        })
-
-        return [...base, ...makeups, ...specials]
-    }, [allAllocations, overrides, allMakeupRequests, specialEvents])
-
-    // Grouping
-    const getGroupValues = (): string[] => {
-        const set = new Set<string>()
-        effectiveAllocations.forEach(a => {
-            if (groupBy === 'room') set.add(`${a.building} – ${a.room}`)
-            else if (groupBy === 'faculty') set.add(a.teacher_name || 'Unassigned')
-            else if (groupBy === 'section') set.add(normalizeSection(a.section) || 'Unknown')
-        })
-        return Array.from(set).sort((a, b) => a.localeCompare(b))
-    }
-
-    const groupValues = groupBy !== 'all' ? getGroupValues() : []
-    const pagedGroupValue = groupBy !== 'all' && groupValues.length > 0
-        ? (groupPage < groupValues.length ? groupValues[groupPage] : groupValues[0])
-        : 'all'
-
-    // Get allocations for Grid (All classes)
-    const getFilteredGridAllocations = (day: string) => {
-        let filtered = effectiveAllocations
-
-        // Apply group filter
-        if (groupBy !== 'all' && pagedGroupValue !== 'all') {
-            filtered = filtered.filter(a => {
-                if (groupBy === 'room') return `${a.building} – ${a.room}` === pagedGroupValue
-                if (groupBy === 'faculty') return (a.teacher_name || 'Unassigned') === pagedGroupValue
-                if (groupBy === 'section') return (normalizeSection(a.section) || 'Unknown') === pagedGroupValue
-                return true
-            })
-        }
-
-        // Apply search query
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase()
-            filtered = filtered.filter(a =>
-                a.course_code?.toLowerCase().includes(q) ||
-                a.course_name?.toLowerCase().includes(q) ||
-                a.room?.toLowerCase().includes(q) ||
-                a.teacher_name?.toLowerCase().includes(q) ||
-                a.section?.toLowerCase().includes(q)
-            )
-        }
-
-        return filtered
-            .filter(a => {
-                const days = expandDays(a.schedule_day || '')
-                return days.some(d => d.toLowerCase() === day.toLowerCase())
-            })
-            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
-    }
-
-    // Get allocations for List (My classes only)
-    const getMyDayAllocations = (day: string) => {
-        // We use effectiveAllocations here too so my own view reflects admin overrides/makeups
-        return effectiveAllocations
-            .filter(a => {
-                const days = expandDays(a.schedule_day || '')
-                return days.some(d => d.toLowerCase() === day.toLowerCase())
-            })
-            .filter(a => {
-                if (!user) return false
-                const name = (a.teacher_name || '').toLowerCase().trim()
-                const myName = (user.full_name || '').toLowerCase().trim()
-                return name === myName || name.includes(myName) || myName.includes(name)
-            })
-            .sort((a, b) => parseTimeToMinutes(splitTimeRange(a.schedule_time || '')[0]) - parseTimeToMinutes(splitTimeRange(b.schedule_time || '')[0]))
-    }
-
-    const isEffectiveAbsent = (allocId: number, date: string) => {
-        return allAbsences.some(a => a.allocation_id === allocId && a.absence_date === date && a.status !== 'disputed')
-    }
-
-    // Total count of MY classes this week (across all days)
-    const myTotalClasses = effectiveAllocations.filter(a => {
-        if (!user) return false
-        const name = (a.teacher_name || '').toLowerCase().trim()
-        const myName = (user.full_name || '').toLowerCase().trim()
-        return name === myName || name.includes(myName) || myName.includes(name)
-    }).length
-
-    const getDayDate = (dayName: string): string => {
-        const idx = DAYS.indexOf(dayName)
-        if (idx === -1) return ''
-        return formatDate(addDays(currentWeekStart, idx))
-    }
-
-    const isAbsentOnDate = (allocId: number, date: string) => {
-        return myAbsences.some(a => a.allocation_id === allocId && a.absence_date === date)
-    }
-
-    const pendingMakeup = myMakeupRequests.filter(m => m.status === 'pending').length
-
-    // Derived values for grid view
-    const isCurrentWeek = formatDate(currentWeekStart) === formatDate(getMonday(new Date()))
-    const isPastWeek = formatDate(currentWeekStart) < formatDate(getMonday(new Date()))
-    const todayDayName = getTodayDayName()
 
     if (!mounted) return null
 
@@ -765,7 +680,7 @@ export default function FacultyLiveTimetablePage() {
                 />
 
                 <main className={`${styles.main} ${menuBarHidden ? styles.menuHidden : ''}`}>
-                    {/* ── Header ── */}
+                    {/* Header */}
                     <div className={styles.header}>
                         <div className={styles.headerLeft}>
                             <div className={styles.liveIndicator}>
@@ -774,15 +689,20 @@ export default function FacultyLiveTimetablePage() {
                             </div>
                             <div>
                                 <h1 className={styles.title}>
-                                    <MdLiveTv className={styles.titleIcon} />
-                                    Live Schedule
+                                    <MdEventNote className={styles.titleIcon} />
+                                    My Schedule
                                 </h1>
                                 <p className={styles.subtitle}>
-                                    {schedule ? `${schedule.schedule_name} · ${schedule.semester} ${schedule.academic_year}` : 'Loading schedule...'}
+                                    {schedule ? `${schedule.schedule_name} \u00B7 ${schedule.semester} ${schedule.academic_year}` : 'Loading schedule...'}
                                 </p>
                             </div>
                         </div>
                         <div className={styles.headerRight}>
+                            {schedule?.is_locked && (
+                                <span className={styles.lockedBadge}>
+                                    <MdLock /> LOCKED
+                                </span>
+                            )}
                             <div className={styles.clockDisplay}>
                                 <MdAccessTime />
                                 <span>{currentTime.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
@@ -793,16 +713,15 @@ export default function FacultyLiveTimetablePage() {
                         </div>
                     </div>
 
-                    {/* ── Info Banner ── */}
+                    {/* Info Banner */}
                     <div className={styles.infoBanner}>
                         <MdInfo />
                         <span>
-                            This is the <strong>live view</strong> of the current week's timetable. You can mark absences and request makeup classes directly from here.
-                            The schedule resets every Sunday to the original locked schedule.
+                            This is your <strong>personal live schedule</strong>. You can report absences, request makeup sessions, and submit leave requests using the <strong>Actions</strong> menu on each class card.
                         </span>
                     </div>
 
-                    {/* ── Stats ── */}
+                    {/* Stats */}
                     <div className={styles.statsRow}>
                         <div className={styles.statCard}>
                             <div className={styles.statIconCircle}>
@@ -828,12 +747,12 @@ export default function FacultyLiveTimetablePage() {
                             </div>
                             <div>
                                 <div className={styles.statValue}>{pendingMakeup}</div>
-                                <div className={styles.statLabel}>Pending Makeup Requests</div>
+                                <div className={styles.statLabel}>Pending Requests</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* ── Week Navigator ── */}
+                    {/* Week Navigator */}
                     <div className={styles.weekNav}>
                         <button className={styles.weekNavBtn} onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}>
                             <MdChevronLeft /> Prev
@@ -842,10 +761,10 @@ export default function FacultyLiveTimetablePage() {
                             <MdCalendarToday />
                             <span>
                                 {currentWeekStart.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                                {' – '}
+                                {' \u2013 '}
                                 {addDays(currentWeekStart, 6).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
-                            {formatDate(currentWeekStart) === formatDate(getMonday(new Date())) && (
+                            {isCurrentWeek && (
                                 <span className={styles.currentWeekBadge}>This Week</span>
                             )}
                         </div>
@@ -854,137 +773,65 @@ export default function FacultyLiveTimetablePage() {
                         </button>
                     </div>
 
-                    {/* ── Tabs ── */}
+                    {/* Tabs */}
                     <div className={styles.tabs}>
-                        {(['timetable', 'my-absences', 'my-requests'] as ViewTab[]).map(tab => (
+                        {([
+                            { key: 'my-schedule' as ViewTab, label: 'My Schedule', icon: <MdEventNote /> },
+                            { key: 'my-absences' as ViewTab, label: 'My Absences', icon: <MdEventBusy /> },
+                            { key: 'my-requests' as ViewTab, label: 'Makeup Requests', icon: <MdEventAvailable /> },
+                        ]).map(tab => (
                             <button
-                                key={tab}
-                                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
-                                onClick={() => setActiveTab(tab)}
+                                key={tab.key}
+                                className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
+                                onClick={() => setActiveTab(tab.key)}
                             >
-                                {tab === 'timetable' && <MdLiveTv />}
-                                {tab === 'my-absences' && <MdEventBusy />}
-                                {tab === 'my-requests' && <MdEventAvailable />}
-                                <span>
-                                    {tab === 'timetable' ? 'Live View' : tab === 'my-absences' ? 'My Absences' : 'Makeup Requests'}
-                                </span>
-                                {tab === 'my-absences' && myAbsences.length > 0 && (
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                                {tab.key === 'my-absences' && myAbsences.length > 0 && (
                                     <span className={styles.tabBadge}>{myAbsences.length}</span>
                                 )}
-                                {tab === 'my-requests' && pendingMakeup > 0 && (
+                                {tab.key === 'my-requests' && pendingMakeup > 0 && (
                                     <span className={`${styles.tabBadge} ${styles.tabBadgePending}`}>{pendingMakeup}</span>
                                 )}
                             </button>
                         ))}
                     </div>
 
-                    {/* ── Content ── */}
+                    {/* Content */}
                     {loading ? (
                         <div className={styles.loadingState}>
                             <div className={styles.spinner} />
-                            <p>Loading live timetable...</p>
+                            <p>Loading your schedule...</p>
                         </div>
                     ) : !schedule ? (
                         <div className={styles.emptyState}>
                             <MdInfo className={styles.emptyIcon} />
                             <h3>No Active Schedule</h3>
-                            <p>The admin hasn't locked a schedule yet. Check back later.</p>
+                            <p>No schedule has been locked yet. Check back later.</p>
                         </div>
                     ) : (
                         <>
-                            {/* ── LIVE TIMETABLE TAB ── */}
-                            {activeTab === 'timetable' && (
-                                <div className={styles.timetableSection}>
-                                    {/* View mode toggle */}
-                                    {/* View mode toggle & Toolbar */}
-                                    <div className={styles.timetableToolbar}>
-                                        <div className={styles.viewToggleBar}>
-                                            <button
-                                                className={`${styles.viewToggleBtn} ${viewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
-                                                onClick={() => setViewMode('list')}
-                                            >
-                                                <MdViewList /> Use List View (My Classes)
-                                            </button>
-                                            <button
-                                                className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.viewToggleBtnActive : ''}`}
-                                                onClick={() => {
-                                                    setViewMode('grid')
-                                                    setGroupBy('all') // Reset group when switching to grid
-                                                }}
-                                            >
-                                                <MdGridView /> Full Schedule Grid
-                                            </button>
-                                        </div>
-
-                                        {viewMode === 'grid' && (
-                                            <div className={styles.gridControls}>
-                                                <div className={styles.groupSelector}>
-                                                    <div className={styles.groupLabel}>Group By:</div>
-                                                    <select
-                                                        className={styles.groupSelect}
-                                                        value={groupBy}
-                                                        onChange={(e) => {
-                                                            setGroupBy(e.target.value as any)
-                                                            setGroupPage(0)
-                                                        }}
-                                                    >
-                                                        <option value="all">Show All</option>
-                                                        <option value="room">Room</option>
-                                                        <option value="faculty">Faculty</option>
-                                                        <option value="section">Section</option>
-                                                    </select>
-                                                </div>
-
-                                                {groupBy !== 'all' && groupValues.length > 0 && (
-                                                    <div className={styles.groupPaginator}>
-                                                        <button
-                                                            className={styles.groupPageBtn}
-                                                            onClick={() => setGroupPage(p => Math.max(0, p - 1))}
-                                                            disabled={groupPage === 0}
-                                                        >
-                                                            <MdChevronLeft />
-                                                        </button>
-                                                        <div className={styles.groupPageLabel}>
-                                                            <select
-                                                                className={styles.groupValueInlineSelect}
-                                                                value={groupPage}
-                                                                onChange={(e) => setGroupPage(Number(e.target.value))}
-                                                                aria-label={`Select ${groupBy} group`}
-                                                                title={`Select ${groupBy}`}
-                                                            >
-                                                                {groupValues.map((groupValue, index) => (
-                                                                    <option key={`${groupValue}-${index}`} value={index}>
-                                                                        {groupValue}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <span className={styles.groupPageCount}>{groupPage + 1} / {groupValues.length}</span>
-                                                        </div>
-                                                        <button
-                                                            className={styles.groupPageBtn}
-                                                            onClick={() => setGroupPage(p => Math.min(groupValues.length - 1, p + 1))}
-                                                            disabled={groupPage === groupValues.length - 1}
-                                                        >
-                                                            <MdChevronRight />
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                <div className={styles.searchBar}>
-                                                    <MdSearch />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search schedule..."
-                                                        value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
+                            {/* ── MY SCHEDULE TAB ── */}
+                            {activeTab === 'my-schedule' && (
+                                <>
+                                    {/* View toggle */}
+                                    <div className={styles.viewToggleBar}>
+                                        <button
+                                            className={`${styles.viewToggleBtn} ${scheduleViewMode === 'list' ? styles.viewToggleBtnActive : ''}`}
+                                            onClick={() => setScheduleViewMode('list')}
+                                        >
+                                            <MdViewList /> List View
+                                        </button>
+                                        <button
+                                            className={`${styles.viewToggleBtn} ${scheduleViewMode === 'grid' ? styles.viewToggleBtnActive : ''}`}
+                                            onClick={() => setScheduleViewMode('grid')}
+                                        >
+                                            <MdGridView /> Timetable Grid
+                                        </button>
                                     </div>
 
                                     {/* ── LIST VIEW ── */}
-                                    {viewMode === 'list' && (
+                                    {scheduleViewMode === 'list' && (
                                         <>
                                             {/* Day selector */}
                                             <div className={styles.daySelector}>
@@ -1008,7 +855,7 @@ export default function FacultyLiveTimetablePage() {
                                                 })}
                                             </div>
 
-                                            {/* Class list for selected day */}
+                                            {/* Class cards */}
                                             <div className={styles.classGrid}>
                                                 {getMyDayAllocations(selectedDay).length === 0 && (
                                                     <div className={styles.emptyDay}>
@@ -1019,12 +866,13 @@ export default function FacultyLiveTimetablePage() {
                                                 {getMyDayAllocations(selectedDay).map(alloc => {
                                                     const dayDate = getDayDate(selectedDay)
                                                     const absent = isAbsentOnDate(alloc.id, dayDate)
-                                                    const ongoing = !absent && isClassOngoing(alloc.schedule_time || '')
+                                                    const ongoing = !absent && isCurrentWeek && selectedDay === todayDayName && isClassOngoing(alloc.schedule_time || '')
+                                                    const done = !absent && !ongoing && isCurrentWeek && isClassDone(alloc.schedule_time || '', selectedDay, todayDayName)
 
                                                     return (
                                                         <div
                                                             key={alloc.id}
-                                                            className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''}`}
+                                                            className={`${styles.classCard} ${absent ? styles.classCardAbsent : ''} ${ongoing ? styles.classCardOngoing : ''} ${done ? styles.classCardDone : ''}`}
                                                         >
                                                             {/* Status */}
                                                             <div className={styles.cardStatusRow}>
@@ -1038,6 +886,11 @@ export default function FacultyLiveTimetablePage() {
                                                                         <MdEventBusy /> ABSENT
                                                                     </span>
                                                                 )}
+                                                                {done && (
+                                                                    <span className={styles.doneBadge}>
+                                                                        <MdTaskAlt /> DONE
+                                                                    </span>
+                                                                )}
                                                             </div>
 
                                                             <div className={styles.cardMain}>
@@ -1048,7 +901,7 @@ export default function FacultyLiveTimetablePage() {
                                                                 <div className={styles.cardDetails}>
                                                                     <span><MdAccessTime /> {alloc.schedule_time}</span>
                                                                     <span>
-                                                                        <MdMeetingRoom /> {alloc.building} – {alloc.room}
+                                                                        <MdMeetingRoom /> {alloc.building} &ndash; {alloc.room}
                                                                         {floorPlanMap[alloc.building] && (
                                                                             <button
                                                                                 className={styles.mapLinkBtn}
@@ -1060,53 +913,81 @@ export default function FacultyLiveTimetablePage() {
                                                                         )}
                                                                     </span>
                                                                     <span><MdGroup /> {normalizeSection(alloc.section)}</span>
-                                                                    {alloc.teacher_name && <span><MdPerson /> {alloc.teacher_name}</span>}
                                                                 </div>
                                                             </div>
 
-                                                            {/* Faculty actions */}
-                                                            {!absent && (
-                                                                <div className={styles.cardActions}>
+                                                            {/* Actions Dropdown */}
+                                                            <div className={styles.cardActions}>
+                                                                {!absent && (
                                                                     <button
                                                                         className={styles.markAbsenceBtn}
-                                                                        onClick={() => {
-                                                                            setMarkingAbsence(alloc)
-                                                                            setAbsenceDate(dayDate || formatDate(new Date()))
-                                                                            setAbsenceReason('')
-                                                                        }}
+                                                                        onClick={() => handleAction('report-absence', alloc)}
                                                                     >
-                                                                        <MdEventBusy /> Mark Absent
+                                                                        <MdEventBusy /> Report Absence
                                                                     </button>
-                                                                    <button
-                                                                        className={styles.makeupBtn}
-                                                                        onClick={() => {
-                                                                            setRequestingMakeup({ alloc })
-                                                                            setMakeupDate('')
-                                                                            setMakeupTime('')
-                                                                            setMakeupRoom('')
-                                                                            setMakeupReason('')
-                                                                        }}
-                                                                    >
-                                                                        <MdAdd /> Request Makeup
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            {absent && (
-                                                                <div className={styles.cardActions}>
+                                                                )}
+                                                                {absent && (
                                                                     <button
                                                                         className={styles.makeupBtn}
                                                                         onClick={() => {
                                                                             setRequestingMakeup({ alloc, absenceDate: dayDate })
                                                                             setMakeupDate('')
-                                                                            setMakeupTime('')
+                                                                            setMakeupStartSlot('')
+                                                                            setMakeupDuration(90)
                                                                             setMakeupRoom('')
                                                                             setMakeupReason('')
                                                                         }}
                                                                     >
                                                                         <MdEventAvailable /> Request Makeup Class
                                                                     </button>
+                                                                )}
+                                                                <div className={styles.actionsWrapper}>
+                                                                    <button
+                                                                        className={styles.actionsDropdownBtn}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            setOpenActionCardId(openActionCardId === alloc.id ? null : alloc.id)
+                                                                        }}
+                                                                    >
+                                                                        <MdExpandMore /> Actions
+                                                                    </button>
+                                                                    {openActionCardId === alloc.id && (
+                                                                        <div className={styles.actionsDropdown} onClick={(e) => e.stopPropagation()}>
+                                                                            <div className={styles.dropdownHeader}>Schedule Actions</div>
+
+                                                                            {!absent && (
+                                                                                <button className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`} onClick={() => handleAction('report-absence', alloc)}>
+                                                                                    <MdSick /> Report Immediate Absence
+                                                                                </button>
+                                                                            )}
+
+                                                                            <button className={`${styles.dropdownItem} ${styles.dropdownItemSuccess}`} onClick={() => handleAction('schedule-makeup', alloc)}>
+                                                                                <MdScheduleSend /> Schedule Makeup Session
+                                                                            </button>
+
+                                                                            <button className={`${styles.dropdownItem} ${styles.dropdownItemWarning}`} onClick={() => handleAction('submit-leave', alloc)}>
+                                                                                <MdEventBusy /> Submit Leave of Absence
+                                                                            </button>
+
+                                                                            <div className={styles.dropdownDivider} />
+
+                                                                            <button className={`${styles.dropdownItem} ${styles.dropdownItemInfo}`} onClick={() => handleAction('request-reschedule', alloc)}>
+                                                                                <MdSwapHoriz /> Request Class Reschedule
+                                                                            </button>
+
+                                                                            <button className={`${styles.dropdownItem} ${styles.dropdownItemInfo}`} onClick={() => handleAction('room-change-request', alloc)}>
+                                                                                <MdMeetingRoom /> Request Room Change
+                                                                            </button>
+
+                                                                            <div className={styles.dropdownDivider} />
+
+                                                                            <button className={styles.dropdownItem} onClick={() => handleAction('general-inquiry', alloc)}>
+                                                                                <MdContactMail /> Administrative Inquiry
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
+                                                            </div>
                                                         </div>
                                                     )
                                                 })}
@@ -1115,8 +996,7 @@ export default function FacultyLiveTimetablePage() {
                                     )}
 
                                     {/* ── GRID VIEW ── */}
-                                    {/* ── GRID VIEW (READ ONLY) ── */}
-                                    {viewMode === 'grid' && (
+                                    {scheduleViewMode === 'grid' && (
                                         <>
                                             {/* Legend */}
                                             <div className={styles.gridLegend}>
@@ -1125,11 +1005,9 @@ export default function FacultyLiveTimetablePage() {
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendOngoing}`} /> Ongoing</span>
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendDone}`} /> Done</span>
                                                 <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendAbsent}`} /> Absent</span>
-                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendOverride}`} /> Modified</span>
-                                                <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendMakeup}`} /> Makeup Event</span>
                                             </div>
 
-                                            {/* Grid table: Mon–Sat, 7am–8pm */}
+                                            {/* Grid table */}
                                             <div className={styles.gridWrapper}>
                                                 <div className={styles.gridContainer}>
                                                     <table className={styles.gridTable}>
@@ -1170,8 +1048,7 @@ export default function FacultyLiveTimetablePage() {
                                                                         </td>
                                                                         {GRID_DAYS.map(day => {
                                                                             const dayDate = getDayDate(day)
-                                                                            // Use Full Grid Allocations Logic
-                                                                            const dayAllocs = getFilteredGridAllocations(day)
+                                                                            const dayAllocs = getMyDayAllocations(day)
 
                                                                             const startingHere = dayAllocs.filter(a => {
                                                                                 const [startRaw, endRaw] = splitTimeRange(a.schedule_time || '')
@@ -1188,19 +1065,15 @@ export default function FacultyLiveTimetablePage() {
                                                                             })
                                                                             if (coveredByEarlier && startingHere.length === 0) {
                                                                                 return (
-                                                                                    <td
-                                                                                        key={`${day}-${slot}`}
-                                                                                        className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}
-                                                                                    >
+                                                                                    <td key={`${day}-${slot}`}
+                                                                                        className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}>
                                                                                         <div className={styles.gridCellContent} />
                                                                                     </td>
                                                                                 )
                                                                             }
                                                                             return (
-                                                                                <td
-                                                                                    key={`${day}-${slot}`}
-                                                                                    className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}
-                                                                                >
+                                                                                <td key={`${day}-${slot}`}
+                                                                                    className={`${styles.gridDataCell} ${isNowSlot ? styles.gridNowDataCell : ''}`}>
                                                                                     <div className={styles.gridCellContent}>
                                                                                         {startingHere.map(alloc => {
                                                                                             const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
@@ -1208,35 +1081,28 @@ export default function FacultyLiveTimetablePage() {
                                                                                             const endMin = parseTimeToMinutes(endRaw)
                                                                                             const durationSlots = Math.max(1, Math.ceil((endMin - startMin) / 30))
                                                                                             const compactHeight = durationSlots * 32 - 2
-                                                                                            const absent = isEffectiveAbsent(alloc.id, dayDate)
+                                                                                            const absent = isAbsentOnDate(alloc.id, dayDate)
                                                                                             const ongoing = !absent && isCurrentWeek && isClassOngoing(alloc.schedule_time || '') && day === todayDayName
-                                                                                            const done = !absent && !ongoing && (isPastWeek || (isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)))
-                                                                                            const hasOverride = (alloc as any)._hasOverride
-                                                                                            const isMakeup = (alloc as any)._isMakeup
-                                                                                            const isSpecialEvent = (alloc as any)._isSpecialEvent
+                                                                                            const done = !absent && !ongoing && isCurrentWeek && isClassDone(alloc.schedule_time || '', day, todayDayName)
 
                                                                                             return (
-                                                                                                <div
-                                                                                                    key={alloc.id}
-                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''} ${hasOverride ? styles.gridBlockOverride : ''} ${isMakeup ? styles.gridBlockMakeup : ''} ${isSpecialEvent ? styles.gridBlockAbsent : ''}`}
+                                                                                                <div key={alloc.id}
+                                                                                                    className={`${styles.gridBlock} ${absent ? styles.gridBlockAbsent : ''} ${ongoing ? styles.gridBlockOngoing : ''} ${done ? styles.gridBlockDone : ''}`}
                                                                                                     style={{ height: `${compactHeight}px` }}
-                                                                                                    title={`${alloc.course_code} ${isSpecialEvent ? alloc.course_name : '· ' + normalizeSection(alloc.section)}\n${alloc.schedule_time}\n${alloc.building} ${alloc.room}${alloc.teacher_name && !isSpecialEvent ? '\n' + alloc.teacher_name : ''}${absent ? '\n⚠ ABSENT' : ''}${ongoing && !isSpecialEvent ? '\n● ONGOING' : ''}${done && !isSpecialEvent ? '\n✓ DONE' : ''}${hasOverride ? '\n✎ MODIFIED' : ''}${isMakeup ? '\n★ MAKEUP' : ''}`}
-                                                                                                >
+                                                                                                    title={`${alloc.course_code} — ${normalizeSection(alloc.section)} — ${alloc.building} ${alloc.room} — ${alloc.schedule_time}`}>
                                                                                                     <div className={styles.gridBlockHeader}>
-                                                                                                        {ongoing && !isSpecialEvent && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
-                                                                                                        {(absent || isSpecialEvent) && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
-                                                                                                        {done && !isSpecialEvent && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
-                                                                                                        {hasOverride && !absent && !done && !isSpecialEvent && <span className={styles.gridBlockOverrideIcon}><MdEdit /></span>}
-                                                                                                        {isMakeup && <span className={styles.gridBlockMakeupIcon}><MdEventAvailable /></span>}
+                                                                                                        {ongoing && <span className={styles.gridBlockLiveDot}><MdFiberManualRecord /></span>}
+                                                                                                        {absent && <span className={styles.gridBlockAbsentIcon}><MdEventBusy /></span>}
+                                                                                                        {done && <span className={styles.gridBlockDoneIcon}><MdTaskAlt /></span>}
                                                                                                     </div>
                                                                                                     <span className={styles.gridBlockCode}>{alloc.course_code}</span>
                                                                                                     {durationSlots >= 2 && (
                                                                                                         <>
-                                                                                                            <span className={styles.gridBlockSection}>{isSpecialEvent ? alloc.course_name : normalizeSection(alloc.section)}</span>
+                                                                                                            <span className={styles.gridBlockSection}>{normalizeSection(alloc.section)}</span>
                                                                                                             <span className={styles.gridBlockRoom}>{alloc.room}</span>
                                                                                                         </>
                                                                                                     )}
-                                                                                                    {durationSlots >= 3 && !isSpecialEvent && (
+                                                                                                    {durationSlots >= 3 && (
                                                                                                         <span className={styles.gridBlockTime}>{alloc.schedule_time}</span>
                                                                                                     )}
                                                                                                 </div>
@@ -1255,7 +1121,7 @@ export default function FacultyLiveTimetablePage() {
                                             </div>
                                         </>
                                     )}
-                                </div>
+                                </>
                             )}
 
                             {/* ── MY ABSENCES TAB ── */}
@@ -1273,7 +1139,7 @@ export default function FacultyLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestTitle}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
+                                                                <span>{alloc.course_code} &ndash; {normalizeSection(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>
@@ -1294,10 +1160,10 @@ export default function FacultyLiveTimetablePage() {
                                                                 if (absAlloc) {
                                                                     setRequestingMakeup({ alloc: absAlloc, absenceDate: absence.absence_date })
                                                                     setMakeupDate('')
-                                                                    setMakeupTime('')
+                                                                    setMakeupStartSlot('')
+                                                                    setMakeupDuration(90)
                                                                     setMakeupRoom('')
                                                                     setMakeupReason('')
-                                                                    setActiveTab('timetable')
                                                                 }
                                                             }}
                                                         >
@@ -1310,7 +1176,7 @@ export default function FacultyLiveTimetablePage() {
                                         {myAbsences.length === 0 && (
                                             <div className={styles.emptyList}>
                                                 <MdCheckCircle className={styles.emptyListIcon} />
-                                                <p>No absences recorded this week. Great attendance!</p>
+                                                <p>No absences recorded this week.</p>
                                             </div>
                                         )}
                                     </div>
@@ -1332,7 +1198,7 @@ export default function FacultyLiveTimetablePage() {
                                                         {alloc && (
                                                             <div className={styles.requestTitle}>
                                                                 <MdMenuBook />
-                                                                <span>{alloc.course_code} – {normalizeSection(alloc.section)}</span>
+                                                                <span>{alloc.course_code} &ndash; {normalizeSection(alloc.section)}</span>
                                                             </div>
                                                         )}
                                                         <div className={styles.requestDetails}>
@@ -1350,7 +1216,7 @@ export default function FacultyLiveTimetablePage() {
                                                     </div>
                                                     <div className={styles.requestCardRight}>
                                                         <span className={`${styles.statusBadge} ${styles[`status_${req.status}`]}`}>
-                                                            {req.status === 'pending' ? '⏳ Pending' : req.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+                                                            {req.status}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1358,8 +1224,8 @@ export default function FacultyLiveTimetablePage() {
                                         })}
                                         {myMakeupRequests.length === 0 && (
                                             <div className={styles.emptyList}>
-                                                <MdHistory className={styles.emptyListIcon} />
-                                                <p>No makeup class requests this week</p>
+                                                <MdCheckCircle className={styles.emptyListIcon} />
+                                                <p>No makeup requests submitted yet.</p>
                                             </div>
                                         )}
                                     </div>
@@ -1367,224 +1233,193 @@ export default function FacultyLiveTimetablePage() {
                             )}
                         </>
                     )}
-                </main>
-            </div>
 
-            {/* ── Mark Absence Modal ── */}
-            {markingAbsence && (
-                <div className={styles.modalOverlay} onClick={() => setMarkingAbsence(null)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h3><MdEventBusy /> Mark Class as Absent</h3>
-                            <button className={styles.modalClose} onClick={() => setMarkingAbsence(null)}><MdClose /></button>
-                        </div>
-                        <div className={styles.modalBody}>
-                            <div className={styles.reviewInfo}>
-                                <p><strong>Course:</strong> {markingAbsence.course_code} – {markingAbsence.course_name}</p>
-                                <p><strong>Section:</strong> {normalizeSection(markingAbsence.section)}</p>
-                                <p><strong>Room:</strong> {markingAbsence.building} {markingAbsence.room}</p>
-                                <p><strong>Time:</strong> {markingAbsence.schedule_time}</p>
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>Absence Date</label>
-                                <input
-                                    type="date"
-                                    className={styles.formInput}
-                                    value={absenceDate}
-                                    onChange={e => setAbsenceDate(e.target.value)}
-                                />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>Reason (optional)</label>
-                                <textarea
-                                    className={styles.formTextarea}
-                                    value={absenceReason}
-                                    onChange={e => setAbsenceReason(e.target.value)}
-                                    placeholder="Reason for absence..."
-                                    rows={3}
-                                />
-                            </div>
-                            <div className={styles.warningNote}>
-                                <MdWarning /> The admin will be notified of this absence.
-                            </div>
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button className={styles.cancelBtn} onClick={() => setMarkingAbsence(null)}>Cancel</button>
-                            <button className={styles.submitBtn} onClick={handleMarkAbsence} disabled={submittingAbsence}>
-                                {submittingAbsence ? <span className={styles.btnSpinner} /> : <MdSend />}
-                                Mark Absent
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    {/* ═══════ MODALS ═══════ */}
 
-            {/* ── Makeup Request Modal ── */}
-            {requestingMakeup && (() => {
-                const preferredType = getCourseRoomType(requestingMakeup.alloc)
-                const closeModal = () => {
-                    setRequestingMakeup(null)
-                    setMakeupDate('')
-                    setMakeupStartSlot('')
-                    setMakeupDuration(90)
-                    setMakeupRoom('')
-                    setMakeupReason('')
-                    setAvailableRooms([])
-                }
-                // Build derived time preview
-                let timePreview = ''
-                if (makeupStartSlot) {
-                    const startMin = parseTimeToMinutes(makeupStartSlot)
-                    const endMin = startMin + makeupDuration
-                    const endHr = Math.floor(endMin / 60)
-                    const endMn = endMin % 60
-                    const endH12 = endHr > 12 ? endHr - 12 : endHr === 0 ? 12 : endHr
-                    const endAmpm = endHr >= 12 ? 'PM' : 'AM'
-                    timePreview = `${makeupStartSlot} – ${endH12}:${endMn.toString().padStart(2, '0')} ${endAmpm}`
-                }
-                return (
-                    <div className={styles.modalOverlay} onClick={closeModal}>
-                        <div className={`${styles.modal} ${styles.modalWide}`} onClick={e => e.stopPropagation()}>
-                            <div className={styles.modalHeader}>
-                                <h3><MdEventAvailable /> Request Makeup Class</h3>
-                                <button className={styles.modalClose} onClick={closeModal}><MdClose /></button>
-                            </div>
-                            <div className={styles.modalBody}>
-                                <div className={styles.reviewInfo}>
-                                    <p><strong>Course:</strong> {requestingMakeup.alloc.course_code} – {requestingMakeup.alloc.course_name}</p>
-                                    <p><strong>Section:</strong> {normalizeSection(requestingMakeup.alloc.section)}</p>
-                                    {requestingMakeup.absenceDate && <p><strong>For Absence On:</strong> {requestingMakeup.absenceDate}</p>}
-                                </div>
+                    {/* Absence Modal */}
+                    {markingAbsence && (
+                        <div className={styles.modalOverlay} onClick={() => setMarkingAbsence(null)}>
+                            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                                <h2 className={styles.modalTitle}>
+                                    <MdSick /> Report Absence
+                                </h2>
+                                <p className={styles.modalSubtitle}>
+                                    {markingAbsence.course_code} &ndash; {normalizeSection(markingAbsence.section)}
+                                </p>
 
-                                {/* Date */}
                                 <div className={styles.formGroup}>
-                                    <label>Preferred Makeup Date *</label>
+                                    <label>Absence Date</label>
                                     <input
                                         type="date"
-                                        className={styles.formInput}
-                                        value={makeupDate}
-                                        onChange={e => setMakeupDate(e.target.value)}
-                                        min={formatDate(new Date())}
+                                        value={absenceDate}
+                                        onChange={(e) => setAbsenceDate(e.target.value)}
                                     />
                                 </div>
 
-                                {/* Time Slot Picker */}
                                 <div className={styles.formGroup}>
-                                    <label>Preferred Start Time *</label>
-                                    <div className={styles.timeSlotPicker}>
-                                        {FACULTY_TIME_SLOTS.map(slot => (
-                                            <button
-                                                key={slot}
-                                                type="button"
-                                                className={`${styles.timeSlotBtn} ${makeupStartSlot === slot ? styles.timeSlotBtnActive : ''}`}
-                                                onClick={() => setMakeupStartSlot(makeupStartSlot === slot ? '' : slot)}
-                                            >
-                                                {slot}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Duration Picker */}
-                                <div className={styles.formGroup}>
-                                    <label>Class Duration</label>
-                                    <div className={styles.durationRow}>
-                                        {[30, 60, 90, 120, 150, 180].map(d => (
-                                            <button
-                                                key={d}
-                                                type="button"
-                                                className={`${styles.durationChip} ${makeupDuration === d ? styles.durationChipActive : ''}`}
-                                                onClick={() => setMakeupDuration(d)}
-                                            >
-                                                {d < 60 ? `${d}min` : d % 60 === 0 ? `${d / 60}hr` : `${Math.floor(d / 60)}h ${d % 60}m`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Time Preview */}
-                                {timePreview && (
-                                    <div className={styles.timePreviewBadge}>
-                                        <MdAccessTime /> <strong>Selected:</strong> {timePreview}
-                                    </div>
-                                )}
-
-                                {/* Available Rooms */}
-                                <div className={styles.formGroup}>
-                                    <label>
-                                        Available Rooms
-                                        {preferredType && <span className={styles.roomTypeHint}> — recommended: <em>{preferredType}</em></span>}
-                                    </label>
-                                    {!makeupDate || !makeupStartSlot ? (
-                                        <p className={styles.roomEmptyState}>Select a date and start time to see available rooms.</p>
-                                    ) : loadingRooms ? (
-                                        <div className={styles.roomLoadingState}><span className={styles.btnSpinner} /> Loading rooms…</div>
-                                    ) : availableRooms.length === 0 ? (
-                                        <p className={styles.roomEmptyState}>No rooms available for this time slot.</p>
-                                    ) : (
-                                        <div className={styles.roomGrid}>
-                                            {availableRooms.map(r => {
-                                                const isRecommended = (r.room_type || '').toLowerCase().includes(preferredType.toLowerCase()) ||
-                                                    (r.specific_classification || '').toLowerCase().includes(preferredType.toLowerCase())
-                                                const isSelected = makeupRoom === r.room && (makeupRoom === r.room)
-                                                return (
-                                                    <button
-                                                        key={r.id}
-                                                        type="button"
-                                                        className={[
-                                                            styles.roomCard,
-                                                            isSelected ? styles.roomCardSelected : '',
-                                                            isRecommended && !isSelected ? styles.roomCardRecommended : ''
-                                                        ].filter(Boolean).join(' ')}
-                                                        onClick={() => setMakeupRoom(isSelected ? '' : `${r.room}, ${r.building}`)}
-                                                    >
-                                                        <div className={styles.roomCardName}>{r.room}</div>
-                                                        <div className={styles.roomCardBuilding}>{r.building}{r.floor_number ? ` · Floor ${r.floor_number}` : ''}</div>
-                                                        <div className={styles.roomCardType}>{r.room_type || 'Room'}{r.specific_classification ? ` · ${r.specific_classification}` : ''}</div>
-                                                        <div className={styles.roomCardBadges}>
-                                                            {r.capacity && <span className={styles.roomEquipBadge}>👥 {r.capacity}</span>}
-                                                            {r.has_ac && <span className={styles.roomEquipBadge}>❄️ AC</span>}
-                                                            {r.has_projector && <span className={styles.roomEquipBadge}>📽️ Proj</span>}
-                                                            {r.has_tv && <span className={styles.roomEquipBadge}>📺 TV</span>}
-                                                            {r.has_whiteboard && <span className={styles.roomEquipBadge}>📋 WB</span>}
-                                                            {isRecommended && <span className={`${styles.roomEquipBadge} ${styles.roomRecommendedBadge}`}>✓ Recommended</span>}
-                                                        </div>
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
-                                    )}
-                                    {makeupRoom && (
-                                        <div className={styles.selectedRoomPreview}>
-                                            <MdMeetingRoom /> <strong>Selected room:</strong> {makeupRoom}
-                                            <button type="button" className={styles.clearRoomBtn} onClick={() => setMakeupRoom('')}><MdClose /></button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Reason */}
-                                <div className={styles.formGroup}>
-                                    <label>Reason / Notes</label>
+                                    <label>Reason (Optional)</label>
                                     <textarea
-                                        className={styles.formTextarea}
-                                        value={makeupReason}
-                                        onChange={e => setMakeupReason(e.target.value)}
-                                        placeholder="Explain why you need a makeup class..."
-                                        rows={3}
+                                        value={absenceReason}
+                                        onChange={(e) => setAbsenceReason(e.target.value)}
+                                        placeholder="e.g., Medical appointment, personal emergency..."
                                     />
                                 </div>
-                            </div>
-                            <div className={styles.modalFooter}>
-                                <button className={styles.cancelBtn} onClick={closeModal}>Cancel</button>
-                                <button className={styles.submitBtn} onClick={handleSubmitMakeup} disabled={submittingMakeup || !makeupDate || !makeupStartSlot}>
-                                    {submittingMakeup ? <span className={styles.btnSpinner} /> : <MdSend />}
-                                    Submit Request
-                                </button>
+
+                                <div className={styles.modalActions}>
+                                    <button className={styles.btnSecondary} onClick={() => setMarkingAbsence(null)}>
+                                        Cancel
+                                    </button>
+                                    <button className={styles.btnDanger} onClick={handleMarkAbsence} disabled={submittingAbsence}>
+                                        {submittingAbsence ? 'Submitting...' : 'Confirm Absence'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )
-            })()}
+                    )}
+
+                    {/* Makeup Request Modal */}
+                    {requestingMakeup && (
+                        <div className={styles.modalOverlay} onClick={() => setRequestingMakeup(null)}>
+                            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                                <h2 className={styles.modalTitle}>
+                                    <MdScheduleSend /> Schedule Makeup Session
+                                </h2>
+                                <p className={styles.modalSubtitle}>
+                                    {requestingMakeup.alloc.course_code} &ndash; {normalizeSection(requestingMakeup.alloc.section)}
+                                    {requestingMakeup.absenceDate && ` (absent on ${requestingMakeup.absenceDate})`}
+                                </p>
+
+                                <div className={styles.formGroup}>
+                                    <label>Requested Date</label>
+                                    <input
+                                        type="date"
+                                        value={makeupDate}
+                                        onChange={(e) => setMakeupDate(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>Start Time</label>
+                                    <select value={makeupStartSlot} onChange={(e) => setMakeupStartSlot(e.target.value)}>
+                                        <option value="">Select time slot...</option>
+                                        {FACULTY_TIME_SLOTS.map(slot => (
+                                            <option key={slot} value={slot}>{slot}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>Duration (minutes)</label>
+                                    <select value={makeupDuration} onChange={(e) => setMakeupDuration(Number(e.target.value))}>
+                                        <option value={60}>60 min</option>
+                                        <option value={90}>90 min</option>
+                                        <option value={120}>120 min</option>
+                                        <option value={150}>150 min</option>
+                                        <option value={180}>180 min</option>
+                                    </select>
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>Preferred Room {loadingRooms && '(loading...)'}</label>
+                                    {availableRooms.length > 0 ? (
+                                        <div className={styles.roomList}>
+                                            {availableRooms.map(r => (
+                                                <div
+                                                    key={r.id}
+                                                    className={`${styles.roomItem} ${makeupRoom === r.room ? styles.roomItemSelected : ''}`}
+                                                    onClick={() => setMakeupRoom(r.room)}
+                                                >
+                                                    <span>{r.building} &ndash; {r.room}</span>
+                                                    <span className={styles.roomItemInfo}>
+                                                        {r.room_type && <span>{r.room_type}</span>}
+                                                        {r.capacity && <span>Cap: {r.capacity}</span>}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={makeupRoom}
+                                            onChange={(e) => setMakeupRoom(e.target.value)}
+                                            placeholder={makeupDate && makeupStartSlot ? 'No available rooms found, type manually' : 'Select date and time first'}
+                                        />
+                                    )}
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>Reason</label>
+                                    <textarea
+                                        value={makeupReason}
+                                        onChange={(e) => setMakeupReason(e.target.value)}
+                                        placeholder="Explain the reason for this request..."
+                                    />
+                                </div>
+
+                                <div className={styles.modalActions}>
+                                    <button className={styles.btnSecondary} onClick={() => setRequestingMakeup(null)}>
+                                        Cancel
+                                    </button>
+                                    <button className={styles.btnPrimary} onClick={handleSubmitMakeup} disabled={submittingMakeup}>
+                                        {submittingMakeup ? 'Submitting...' : 'Submit Request'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Leave of Absence Modal */}
+                    {requestingLeave && (
+                        <div className={styles.modalOverlay} onClick={() => setRequestingLeave(null)}>
+                            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                                <h2 className={styles.modalTitle}>
+                                    <MdEventBusy /> Submit Leave of Absence
+                                </h2>
+                                <p className={styles.modalSubtitle}>
+                                    All classes within the date range will be automatically marked as absent.
+                                </p>
+
+                                <div className={styles.formGroup}>
+                                    <label>Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={leaveStartDate}
+                                        onChange={(e) => setLeaveStartDate(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>End Date</label>
+                                    <input
+                                        type="date"
+                                        value={leaveEndDate}
+                                        onChange={(e) => setLeaveEndDate(e.target.value)}
+                                        min={leaveStartDate}
+                                    />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label>Reason</label>
+                                    <textarea
+                                        value={leaveReason}
+                                        onChange={(e) => setLeaveReason(e.target.value)}
+                                        placeholder="e.g., Medical leave, family emergency, conference attendance..."
+                                    />
+                                </div>
+
+                                <div className={styles.modalActions}>
+                                    <button className={styles.btnSecondary} onClick={() => setRequestingLeave(null)}>
+                                        Cancel
+                                    </button>
+                                    <button className={styles.btnDanger} onClick={handleSubmitLeave} disabled={submittingLeave}>
+                                        {submittingLeave ? 'Submitting...' : 'Submit Leave Request'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
         </div>
     )
 }

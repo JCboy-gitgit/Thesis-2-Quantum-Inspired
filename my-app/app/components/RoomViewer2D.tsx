@@ -9,7 +9,7 @@ import {
   MdArchive, MdFitnessCenter, MdMusicNote, MdTheaterComedy, MdCoPresent, MdDns, MdWifi,
   MdAir, MdLocalFireDepartment, MdWaterDrop, MdRadioButtonChecked, MdChangeHistory, MdHexagon, MdStar,
   MdStop, MdFavorite, MdCalendarToday, MdImage, MdClose, MdSearch, MdFilterList, MdCenterFocusStrong,
-  MdHelpOutline, MdVisibilityOff
+  MdHelpOutline, MdVisibilityOff, MdLayers
 } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './RoomViewer2D.module.css'
@@ -62,6 +62,16 @@ interface Room {
   capacity: number
   floor_number?: number
   room_type?: string
+  specific_classification?: string
+  equipment?: string
+  has_ac?: boolean
+  has_whiteboard?: boolean
+  has_tv?: boolean
+  has_projector?: boolean
+  has_wifi?: boolean
+  has_lab_equipment?: boolean
+  has_computers?: number
+  is_accessible?: boolean
 }
 
 interface Building {
@@ -73,13 +83,19 @@ interface Building {
 interface RoomAllocation {
   id?: number
   room: string
+  room_id?: number
+  building?: string
   schedule_day: string
   schedule_time: string
   schedule_id?: number
   course_code?: string
+  course_name?: string
   section?: string
   faculty_name?: string
   teacher_name?: string
+  department?: string
+  campus?: string
+  capacity?: number
 }
 
 interface CanvasElement {
@@ -121,6 +137,7 @@ interface FloorPlan {
   is_default_view: boolean
   linked_schedule_id?: number
   is_published?: boolean
+  background_color?: string
 }
 
 interface RoomViewer2DProps {
@@ -184,7 +201,7 @@ function resolveElementTextColor(element: CanvasElement, fallbackBackground: str
     return '#1f2937'
   }
 
-  const bg = !isTransparentColor(element.color) ? element.color : fallbackBackground
+  const bg = !isTransparentColor(element.color) ? element.color! : fallbackBackground
   return getContrastColor(bg)
 }
 
@@ -217,6 +234,132 @@ function pickFirstFiniteNumber(values: unknown[], fallback: number): number {
   return fallback
 }
 
+function toBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value > 0
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    return normalized === 'true' || normalized === '1' || normalized === 'yes'
+  }
+  return false
+}
+
+function normalizeRoomKey(value?: string): string {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+}
+
+function matchesRoomAllocation(allocRoom: string, roomName?: string, roomCode?: string, allocRoomId?: number, roomId?: number, allocBuilding?: string): boolean {
+  // Match by room_id if both sides have it
+  if (allocRoomId && roomId && allocRoomId === roomId) return true
+
+  const allocKey = normalizeRoomKey(allocRoom)
+  if (!allocKey) return false
+
+  const candidateKeys = [normalizeRoomKey(roomName), normalizeRoomKey(roomCode)].filter(Boolean)
+  if (candidateKeys.includes(allocKey)) return true
+
+  // Also check if allocRoom contains building prefix (e.g. "Building1-Room101")
+  // Try stripping building prefix and matching just the room part
+  if (allocBuilding) {
+    const buildingPrefix = normalizeRoomKey(allocBuilding)
+    if (buildingPrefix && allocKey.startsWith(buildingPrefix)) {
+      const roomPart = allocKey.slice(buildingPrefix.length)
+      if (roomPart && candidateKeys.includes(roomPart)) return true
+    }
+  }
+
+  // Check if any candidate key is contained in allocKey or vice versa
+  for (const candidate of candidateKeys) {
+    if (candidate && candidate.length >= 3) {
+      if (allocKey.includes(candidate) || candidate.includes(allocKey)) return true
+    }
+  }
+
+  return false
+}
+
+function normalizeDayToken(day: string): string {
+  const dayMap: Record<string, string> = {
+    'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+    'T': 'Tuesday', 'TUE': 'Tuesday', 'TU': 'Tuesday', 'TUESDAY': 'Tuesday',
+    'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+    'TH': 'Thursday', 'THU': 'Thursday', 'R': 'Thursday', 'THURSDAY': 'Thursday',
+    'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+    'S': 'Saturday', 'SA': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+    'SU': 'Sunday', 'U': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+  }
+
+  const normalized = String(day || '').trim().toUpperCase().replace(/\./g, '')
+  return dayMap[normalized] || day
+}
+
+function expandScheduleDays(dayText?: string): string[] {
+  if (!dayText) return []
+
+  const compact = dayText.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
+  const comboMap: Record<string, string[]> = {
+    TTH: ['Tuesday', 'Thursday'],
+    MWF: ['Monday', 'Wednesday', 'Friday'],
+    MW: ['Monday', 'Wednesday'],
+    TF: ['Tuesday', 'Friday'],
+    MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  }
+
+  if (comboMap[compact]) return comboMap[compact]
+
+  if (compact.includes('/') || compact.includes(',')) {
+    return compact
+      .split(/[\/,]+/)
+      .map(token => normalizeDayToken(token))
+      .filter(Boolean)
+  }
+
+  const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
+  const expanded: string[] = []
+  let i = 0
+
+  while (i < compact.length) {
+    const token = orderedTokens.find(t => compact.startsWith(t, i))
+    if (!token) {
+      i += 1
+      continue
+    }
+    expanded.push(normalizeDayToken(token))
+    i += token.length
+  }
+
+  if (expanded.length > 0) {
+    return Array.from(new Set(expanded))
+  }
+
+  return [normalizeDayToken(compact)]
+}
+
+function splitTimeRange(timeStr: string): [string, string] {
+  if (!timeStr) return ['', '']
+  const normalized = timeStr
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\s+to\s+/gi, '-')
+  const parts = normalized.split('-').map(part => part.trim()).filter(Boolean)
+  if (parts.length < 2) return ['', '']
+  return [parts[0], parts[1]]
+}
+
+function parseTimeToMinutes(value: string): number {
+  if (!value) return -1
+  const match = value.trim().match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i)
+  if (!match) return -1
+  let hours = parseInt(match[1], 10)
+  const minutes = parseInt(match[2], 10)
+  const period = match[3]?.toUpperCase()
+  if (period === 'PM' && hours !== 12) hours += 12
+  if (period === 'AM' && hours === 12) hours = 0
+  return hours * 60 + minutes
+}
+
 export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, collegeTheme = 'default', highlightEmpty = false }: RoomViewer2DProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -238,6 +381,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   const [selectedFloor, setSelectedFloor] = useState<FloorPlan | null>(null)
   const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([])
   const [roomAllocations, setRoomAllocations] = useState<RoomAllocation[]>([])
+  const [hasLockedCurrentSchedule, setHasLockedCurrentSchedule] = useState(false)
   const [selectedElement, setSelectedElement] = useState<CanvasElement | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isMobile, setIsMobile] = useState(false)
@@ -310,7 +454,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
           return summary
         }
 
-        const status = getRoomAvailability(roomName)
+        const status = getRoomAvailability(roomName, element.linkedRoomData?.room_code, element.linkedRoomData?.id)
         summary.total += 1
         if (status === 'available') summary.available += 1
         else if (status === 'occupied') summary.occupied += 1
@@ -328,7 +472,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     roomElements.forEach((element) => {
       const roomLabel = element.linkedRoomData?.room || element.label || ''
       const roomCode = element.linkedRoomData?.room_code || ''
-      const availability = roomLabel ? getRoomAvailability(roomLabel) : 'unknown'
+      const availability = roomLabel ? getRoomAvailability(roomLabel, element.linkedRoomData?.room_code, element.linkedRoomData?.id) : 'unknown'
 
       const matchesQuery = !normalizedQuery ||
         roomLabel.toLowerCase().includes(normalizedQuery) ||
@@ -548,6 +692,175 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
     }
   }
 
+  const fetchLiveCurrentLockedScheduleAllocations = async (): Promise<{ allocations: RoomAllocation[]; hasSchedule: boolean }> => {
+    try {
+      // Campus map live view must follow the same source of truth as ViewSchedule:
+      // the schedule that is both current and locked.
+      let scheduleResponse = await db
+        .from('generated_schedules')
+        .select('id, created_at, activated_at')
+        .eq('is_current', true)
+        .eq('is_locked', true)
+        .order('activated_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (scheduleResponse.error) {
+        scheduleResponse = await db
+          .from('generated_schedules')
+          .select('id, created_at')
+          .eq('is_current', true)
+          .eq('is_locked', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+      }
+
+      let currentSchedule = scheduleResponse.data?.[0]
+
+      // Fallback: if no locked+current schedule, try just current
+      if (!currentSchedule?.id) {
+        const currentOnlyResponse = await db
+          .from('generated_schedules')
+          .select('id, created_at')
+          .eq('is_current', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        currentSchedule = currentOnlyResponse.data?.[0]
+      }
+
+      // Fallback: if still nothing, try just locked
+      if (!currentSchedule?.id) {
+        const lockedOnlyResponse = await db
+          .from('generated_schedules')
+          .select('id, created_at')
+          .eq('is_locked', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        currentSchedule = lockedOnlyResponse.data?.[0]
+      }
+
+      // Final fallback: use the most recent schedule
+      if (!currentSchedule?.id) {
+        const latestResponse = await db
+          .from('generated_schedules')
+          .select('id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(1)
+
+        currentSchedule = latestResponse.data?.[0]
+      }
+
+      if (!currentSchedule?.id) {
+        return { allocations: [], hasSchedule: false }
+      }
+
+      const { data: allocations } = await supabase
+        .from('room_allocations')
+        .select('*')
+        .eq('schedule_id', currentSchedule.id)
+
+      return { allocations: allocations || [], hasSchedule: true }
+    } catch (err) {
+      console.error('Error fetching locked/current live allocations:', err)
+      return { allocations: [], hasSchedule: false }
+    }
+  }
+
+  const enrichElementsWithRoomMetadata = async (elements: CanvasElement[]): Promise<CanvasElement[]> => {
+    const roomElements = elements.filter((element) => element.type === 'room')
+    if (roomElements.length === 0) return elements
+
+    const roomIds = Array.from(new Set(
+      roomElements
+        .map((element) => Number(element.linkedRoomId || element.linkedRoomData?.id))
+        .filter((id) => Number.isFinite(id) && id > 0)
+    ))
+
+    const roomNames = Array.from(new Set(
+      roomElements
+        .map((element) => String(element.linkedRoomData?.room || element.label || '').trim())
+        .filter(Boolean)
+    ))
+
+    const readColumns = 'id, room, room_code, building, capacity, floor_number, room_type, specific_classification, equipment, has_ac, has_whiteboard, has_tv, has_projector, has_wifi, has_lab_equipment, has_computers, is_accessible'
+    const fallbackColumns = 'id, room, room_code, building, capacity, floor_number, room_type, specific_classification, has_ac, has_whiteboard, has_tv, has_projector'
+
+    const byId = new Map<number, any>()
+    const byRoomName = new Map<string, any>()
+
+    const mergeRows = (rows: any[] | null | undefined) => {
+      ;(rows || []).forEach((row) => {
+        if (Number.isFinite(Number(row.id))) {
+          byId.set(Number(row.id), row)
+        }
+        const normalizedRoom = String(row.room || '').trim().toLowerCase()
+        if (normalizedRoom) {
+          byRoomName.set(normalizedRoom, row)
+        }
+      })
+    }
+
+    try {
+      if (roomIds.length > 0) {
+        let byIdResult = await db
+          .from('campuses')
+          .select(readColumns)
+          .in('id', roomIds)
+
+        if (byIdResult.error) {
+          byIdResult = await db
+            .from('campuses')
+            .select(fallbackColumns)
+            .in('id', roomIds)
+        }
+
+        mergeRows(byIdResult.data)
+      }
+
+      const unresolvedNames = roomNames.filter((name) => !byRoomName.has(name.toLowerCase()))
+      if (unresolvedNames.length > 0) {
+        let byNameResult = await db
+          .from('campuses')
+          .select(readColumns)
+          .in('room', unresolvedNames)
+
+        if (byNameResult.error) {
+          byNameResult = await db
+            .from('campuses')
+            .select(fallbackColumns)
+            .in('room', unresolvedNames)
+        }
+
+        mergeRows(byNameResult.data)
+      }
+    } catch (err) {
+      console.warn('Room metadata enrichment skipped:', err)
+    }
+
+    return elements.map((element) => {
+      if (element.type !== 'room') return element
+
+      const linkedRoomId = Number(element.linkedRoomId || element.linkedRoomData?.id)
+      const linkedRoomName = String(element.linkedRoomData?.room || element.label || '').trim().toLowerCase()
+
+      const roomMeta =
+        (Number.isFinite(linkedRoomId) && linkedRoomId > 0 ? byId.get(linkedRoomId) : null) ||
+        (linkedRoomName ? byRoomName.get(linkedRoomName) : null)
+
+      if (!roomMeta) return element
+
+      return {
+        ...element,
+        linkedRoomData: {
+          ...element.linkedRoomData,
+          ...roomMeta
+        }
+      }
+    })
+  }
+
   const fetchFloorPlans = async () => {
     try {
       // 1. Fetch available building names first
@@ -672,23 +985,25 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
   const loadFloorPlan = async (floorPlan: FloorPlan) => {
 
-    const hasColumnCanvasSize =
-      Number.isFinite(Number(floorPlan.canvas_width)) && Number(floorPlan.canvas_width) > 0 &&
-      Number.isFinite(Number(floorPlan.canvas_height)) && Number(floorPlan.canvas_height) > 0
-
     const hasDataCanvasSize =
       Number.isFinite(Number(floorPlan.canvas_data?.canvasSize?.width)) && Number(floorPlan.canvas_data?.canvasSize?.width) > 0 &&
       Number.isFinite(Number(floorPlan.canvas_data?.canvasSize?.height)) && Number(floorPlan.canvas_data?.canvasSize?.height) > 0
 
-    const resolvedCanvasSize = hasColumnCanvasSize
+    const hasColumnCanvasSize =
+      Number.isFinite(Number(floorPlan.canvas_width)) && Number(floorPlan.canvas_width) > 0 &&
+      Number.isFinite(Number(floorPlan.canvas_height)) && Number(floorPlan.canvas_height) > 0
+
+    // Use canvas_data.canvasSize as primary source of truth since elements were authored at that size
+    // Fall back to DB columns, then default
+    const resolvedCanvasSize = hasDataCanvasSize
       ? {
-        width: toFiniteNumber(floorPlan.canvas_width, 1056),
-        height: toFiniteNumber(floorPlan.canvas_height, 816)
+        width: toFiniteNumber(floorPlan.canvas_data.canvasSize.width, 1056),
+        height: toFiniteNumber(floorPlan.canvas_data.canvasSize.height, 816)
       }
-      : hasDataCanvasSize
+      : hasColumnCanvasSize
         ? {
-          width: toFiniteNumber(floorPlan.canvas_data.canvasSize.width, 1056),
-          height: toFiniteNumber(floorPlan.canvas_data.canvasSize.height, 816)
+          width: toFiniteNumber(floorPlan.canvas_width, 1056),
+          height: toFiniteNumber(floorPlan.canvas_height, 816)
         }
         : {
           width: 1056,
@@ -737,7 +1052,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
 
         return baseElement
       })
-      setCanvasElements(normalizedElements)
+      const enrichedElements = await enrichElementsWithRoomMetadata(normalizedElements)
+      setCanvasElements(enrichedElements)
     } else {
       setCanvasElements([])
     }
@@ -753,77 +1069,32 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       setCanvasBackground('#ffffff')
     }
 
-    // Fetch room allocations if linked to a schedule
-    if (floorPlan.linked_schedule_id) {
-      const { data: allocations } = await supabase
-        .from('room_allocations')
-        .select('*')
-        .eq('schedule_id', floorPlan.linked_schedule_id)
-
-      setRoomAllocations(allocations || [])
-    } else {
-      // Try to get the most recent schedule's allocations
-      let schedulesResponse = await db
-        .from('generated_schedules')
-        .select('id')
-        .order('is_current', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-      if (schedulesResponse.error) {
-        schedulesResponse = await db
-          .from('generated_schedules')
-          .select('id')
-          .order('created_at', { ascending: false })
-          .limit(1)
-      }
-
-      const { data: schedules } = schedulesResponse
-
-      if (schedules && schedules.length > 0) {
-        const { data: allocations } = await supabase
-          .from('room_allocations')
-          .select('*')
-          .eq('schedule_id', schedules[0].id)
-
-        setRoomAllocations(allocations || [])
-      }
-    }
+    const liveSchedule = await fetchLiveCurrentLockedScheduleAllocations()
+    setRoomAllocations(liveSchedule.allocations)
+    setHasLockedCurrentSchedule(liveSchedule.hasSchedule)
   }
 
   // Get room availability
-  function getRoomAvailability(roomName: string): 'available' | 'occupied' | 'unknown' {
+  function getRoomAvailability(roomName: string, roomCode?: string, roomId?: number): 'available' | 'occupied' | 'unknown' {
     if (roomAllocations.length === 0) return 'unknown'
 
     const now = currentTime
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const currentDay = dayNames[now.getDay()]
     const currentHour = now.getHours()
     const currentMinute = now.getMinutes()
 
     const isOccupied = roomAllocations.some(alloc => {
-      if (alloc.room !== roomName) return false
+      if (!matchesRoomAllocation(alloc.room, roomName, roomCode, alloc.room_id, roomId, alloc.building)) return false
 
-      const allocDay = alloc.schedule_day?.toLowerCase()
-      if (!allocDay?.includes(currentDay)) return false
+      const allocDays = expandScheduleDays(alloc.schedule_day)
+      if (!allocDays.some((day) => day.toLowerCase() === currentDay.toLowerCase())) return false
 
-      const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-      if (!timeParts) return false
-
-      let startHour = parseInt(timeParts[1])
-      const startMin = parseInt(timeParts[2])
-      const startPeriod = timeParts[3]?.toUpperCase()
-      let endHour = parseInt(timeParts[4])
-      const endMin = parseInt(timeParts[5])
-      const endPeriod = timeParts[6]?.toUpperCase()
-
-      if (startPeriod === 'PM' && startHour !== 12) startHour += 12
-      if (startPeriod === 'AM' && startHour === 12) startHour = 0
-      if (endPeriod === 'PM' && endHour !== 12) endHour += 12
-      if (endPeriod === 'AM' && endHour === 12) endHour = 0
-
-      const startMins = startHour * 60 + startMin
-      const endMins = endHour * 60 + endMin
+      const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
+      if (!startRaw || !endRaw) return false
+      const startMins = parseTimeToMinutes(startRaw)
+      const endMins = parseTimeToMinutes(endRaw)
+      if (startMins < 0 || endMins < 0) return false
       const currentMins = currentHour * 60 + currentMinute
 
       return currentMins >= startMins && currentMins < endMins
@@ -833,38 +1104,26 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
   }
 
   // Get current class for room
-  function getCurrentClass(roomName: string): RoomAllocation | null {
+  function getCurrentClass(roomName: string, roomCode?: string, roomId?: number): RoomAllocation | null {
     if (roomAllocations.length === 0) return null
 
     const now = currentTime
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const currentDay = dayNames[now.getDay()]
     const currentHour = now.getHours()
     const currentMinute = now.getMinutes()
 
     return roomAllocations.find(alloc => {
-      if (alloc.room !== roomName) return false
+      if (!matchesRoomAllocation(alloc.room, roomName, roomCode, alloc.room_id, roomId, alloc.building)) return false
 
-      const allocDay = alloc.schedule_day?.toLowerCase()
-      if (!allocDay?.includes(currentDay)) return false
+      const allocDays = expandScheduleDays(alloc.schedule_day)
+      if (!allocDays.some((day) => day.toLowerCase() === currentDay.toLowerCase())) return false
 
-      const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-      if (!timeParts) return false
-
-      let startHour = parseInt(timeParts[1])
-      const startMin = parseInt(timeParts[2])
-      const startPeriod = timeParts[3]?.toUpperCase()
-      let endHour = parseInt(timeParts[4])
-      const endMin = parseInt(timeParts[5])
-      const endPeriod = timeParts[6]?.toUpperCase()
-
-      if (startPeriod === 'PM' && startHour !== 12) startHour += 12
-      if (startPeriod === 'AM' && startHour === 12) startHour = 0
-      if (endPeriod === 'PM' && endHour !== 12) endHour += 12
-      if (endPeriod === 'AM' && endHour === 12) endHour = 0
-
-      const startMins = startHour * 60 + startMin
-      const endMins = endHour * 60 + endMin
+      const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
+      if (!startRaw || !endRaw) return false
+      const startMins = parseTimeToMinutes(startRaw)
+      const endMins = parseTimeToMinutes(endRaw)
+      if (startMins < 0 || endMins < 0) return false
       const currentMins = currentHour * 60 + currentMinute
 
       return currentMins >= startMins && currentMins < endMins
@@ -1006,7 +1265,7 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       <div className={`${styles.header} ${isMobile && !showControls ? styles.headerCollapsed : ''}`}>
         <div className={styles.headerLeft}>
           <MdMap size={isMobile ? 16 : 20} />
-          <h2>{isMobile ? 'Floor Plan' : 'Campus Floor Plan'}</h2>
+          <h2>{isMobile ? 'Building Schedules' : 'Live Building Schedules'}</h2>
           {isMobile && (
             <button
               className={styles.toggleControlsBtn}
@@ -1083,71 +1342,43 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
         </div>
       </div>
 
-      {/* Building & Floor Navigator — Collapsible */}
+      {/* Building & Floor Navigator — Compact Inline */}
       {buildings.length > 0 && (
-        <div className={`${styles.buildingNav} ${buildingNavCollapsed ? styles.buildingNavCollapsed : ''}`}>
-          <button
-            className={styles.buildingNavToggle}
-            onClick={() => setBuildingNavCollapsed(!buildingNavCollapsed)}
-          >
-            <div className={styles.buildingNavToggleLeft}>
-              <MdBusiness size={14} />
-              <span>Buildings ({buildings.length})</span>
-            </div>
-            {buildingNavCollapsed ? <MdExpandMore size={14} /> : <MdExpandLess size={14} />}
-          </button>
-          {!buildingNavCollapsed && buildings.map((building, buildingIdx) => (
-            <div key={`building-${building.name}-${buildingIdx}`} className={styles.buildingSection}>
-              {/* Building header row */}
-              <div
-                className={`${styles.buildingSectionHeader} ${selectedBuilding?.id === building.id ? styles.buildingSectionHeaderActive : ''}`}
+        <div className={styles.buildingNavInline}>
+          <div className={styles.buildingChipRow}>
+            <MdBusiness size={14} className={styles.buildingNavIcon} />
+            {buildings.map((building, buildingIdx) => (
+              <button
+                key={`building-${building.name}-${buildingIdx}`}
+                className={`${styles.buildingChip} ${selectedBuilding?.id === building.id ? styles.buildingChipActive : ''}`}
                 onClick={() => handleBuildingChange(String(building.id))}
               >
-                <div className={styles.buildingSectionLeft}>
-                  <MdBusiness size={16} />
-                  <span className={styles.buildingSectionName}>{building.name}</span>
-                </div>
-                <span className={styles.buildingSectionCount}>
-                  {building.floors.length} {building.floors.length === 1 ? 'plan' : 'plans'}
-                </span>
-              </div>
-
-              {/* Floor cards — shown when building is selected */}
-              {selectedBuilding?.id === building.id && building.floors.length > 0 && (
-                <div className={styles.floorCardList}>
-                  {building.floors.map(floor => {
-                    const shortName = floor.floor_name
-                      ? floor.floor_name.replace(new RegExp(`^${building.name}\\s*[-–]\\s*`, 'i'), '')
-                      : `Floor ${floor.floor_number}`
-                    const isActive = selectedFloor?.id === floor.id
-
-                    return (
-                      <button
-                        key={floor.id}
-                        className={`${styles.floorCard} ${isActive ? styles.floorCardActive : ''}`}
-                        onClick={() => handleFloorChange(String(floor.id))}
-                        title={floor.floor_name || `Floor ${floor.floor_number}`}
-                      >
-                        <div className={styles.floorCardInfo}>
-                          <span className={styles.floorCardName}>
-                            {shortName}
-                            {floor.is_default_view && <MdVisibility size={11} className={styles.floorCardDefaultIcon} />}
-                          </span>
-                          <span className={styles.floorCardMeta}>
-                            Floor {floor.floor_number}
-                            {floor.is_default_view ? ' · Published' : ''}
-                          </span>
-                        </div>
-                        <span className={`${styles.floorCardBadge} ${floor.is_default_view ? styles.floorCardBadgePublished : styles.floorCardBadgeDraft}`}>
-                          {floor.is_default_view ? 'Published' : 'Draft'}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+                {building.name}
+              </button>
+            ))}
+          </div>
+          {selectedBuilding && selectedBuilding.floors.length > 0 && (
+            <div className={styles.floorChipRow}>
+              <MdLayers size={13} className={styles.buildingNavIcon} />
+              {selectedBuilding.floors.map(floor => {
+                const shortName = floor.floor_name
+                  ? floor.floor_name.replace(new RegExp(`^${selectedBuilding.name}\\s*[-–]\\s*`, 'i'), '')
+                  : `Floor ${floor.floor_number}`
+                const isActive = selectedFloor?.id === floor.id
+                return (
+                  <button
+                    key={floor.id}
+                    className={`${styles.floorChip} ${isActive ? styles.floorChipActive : ''}`}
+                    onClick={() => handleFloorChange(String(floor.id))}
+                    title={floor.floor_name || `Floor ${floor.floor_number}`}
+                  >
+                    {shortName}
+                    {floor.is_default_view && <MdVisibility size={10} />}
+                  </button>
+                )
+              })}
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -1294,10 +1525,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
             .map(element => {
               const isRoom = element.type === 'room'
               const availability = isRoom && element.linkedRoomData
-                ? getRoomAvailability(element.linkedRoomData.room)
+                ? getRoomAvailability(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id)
                 : 'unknown'
               const currentClass = isRoom && element.linkedRoomData
-                ? getCurrentClass(element.linkedRoomData.room)
+                ? getCurrentClass(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id)
                 : null
               const isSelected = selectedElement?.id === element.id
               const isFilteredOutRoom = isRoom && !visibleRoomIdSet.has(element.id)
@@ -1374,6 +1605,8 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
                     if (suppressNextElementClickRef.current) {
                       return
                     }
+                    // Non-interactive elements should not be selectable
+                    if (element.type === 'hallway' || element.type === 'wall') return
                     setSelectedElement(isSelected ? null : element)
                   }}
                   title={element.label || ''}
@@ -1482,9 +1715,10 @@ export default function RoomViewer2D({ fullscreen = false, onToggleFullscreen, c
       {selectedElement && selectedElement.type === 'room' && selectedElement.linkedRoomData && (
         <RoomDetailsModal
           room={selectedElement.linkedRoomData}
-          availability={getRoomAvailability(selectedElement.linkedRoomData.room)}
-          currentClass={getCurrentClass(selectedElement.linkedRoomData.room)}
+          availability={getRoomAvailability(selectedElement.linkedRoomData.room, selectedElement.linkedRoomData.room_code, selectedElement.linkedRoomData.id)}
+          currentClass={getCurrentClass(selectedElement.linkedRoomData.room, selectedElement.linkedRoomData.room_code, selectedElement.linkedRoomData.id)}
           roomAllocations={roomAllocations}
+          hasLockedCurrentSchedule={hasLockedCurrentSchedule}
           onClose={() => setSelectedElement(null)}
           styles={styles}
         />
@@ -1499,6 +1733,7 @@ interface RoomDetailsModalProps {
   availability: 'available' | 'occupied' | 'unknown'
   currentClass: RoomAllocation | null
   roomAllocations: RoomAllocation[]
+  hasLockedCurrentSchedule: boolean
   onClose: () => void
   styles: any
 }
@@ -1508,6 +1743,7 @@ function RoomDetailsModal({
   availability,
   currentClass,
   roomAllocations,
+  hasLockedCurrentSchedule,
   onClose,
   styles
 }: RoomDetailsModalProps) {
@@ -1519,30 +1755,21 @@ function RoomDetailsModal({
     displayDay: string
   }
 
+  interface DatedRoomSchedule {
+    allocation: RoomAllocation
+    dayIdx: number
+    startMinutes: number
+    endMinutes: number
+  }
+
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const WEEKDAY_COLUMNS = [1, 2, 3, 4, 5, 6] // Mon-Sat
 
   const extractDayIndexes = (dayText?: string): number[] => {
-    if (!dayText) return []
-    const normalized = dayText.toLowerCase()
-    const map = [
-      { idx: 0, patterns: ['sunday', 'sun'] },
-      { idx: 1, patterns: ['monday', 'mon'] },
-      { idx: 2, patterns: ['tuesday', 'tue', 'tues'] },
-      { idx: 3, patterns: ['wednesday', 'wed'] },
-      { idx: 4, patterns: ['thursday', 'thu', 'thur', 'thurs'] },
-      { idx: 5, patterns: ['friday', 'fri'] },
-      { idx: 6, patterns: ['saturday', 'sat'] },
-    ]
-
-    const indices: number[] = []
-    map.forEach(({ idx, patterns }) => {
-      if (patterns.some((pattern) => normalized.includes(pattern))) {
-        indices.push(idx)
-      }
-    })
-
-    return [...new Set(indices)]
+    const expandedDays = expandScheduleDays(dayText)
+    return expandedDays
+      .map((day) => DAY_NAMES.findIndex((dayName) => dayName.toLowerCase() === day.toLowerCase()))
+      .filter((idx) => idx >= 0)
   }
 
   const parseTimeToken = (hourText: string, minuteText: string, period?: string): number => {
@@ -1559,11 +1786,11 @@ function RoomDetailsModal({
   const parseTimeRange = (scheduleTime?: string): { startMinutes: number; endMinutes: number } | null => {
     if (!scheduleTime) return null
 
-    const timeParts = scheduleTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-    if (!timeParts) return null
-
-    const startMinutes = parseTimeToken(timeParts[1], timeParts[2], timeParts[3])
-    let endMinutes = parseTimeToken(timeParts[4], timeParts[5], timeParts[6] || timeParts[3])
+    const [startRaw, endRaw] = splitTimeRange(scheduleTime)
+    if (!startRaw || !endRaw) return null
+    const startMinutes = parseTimeToMinutes(startRaw)
+    let endMinutes = parseTimeToMinutes(endRaw)
+    if (startMinutes < 0 || endMinutes < 0) return null
 
     if (endMinutes <= startMinutes) {
       endMinutes += 12 * 60
@@ -1588,6 +1815,7 @@ function RoomDetailsModal({
   const [showTimetableModal, setShowTimetableModal] = useState(false)
   const [isImageLightboxOpen, setIsImageLightboxOpen] = useState(false)
   const [now, setNow] = useState(new Date())
+  const [selectedScheduleDay, setSelectedScheduleDay] = useState<number | 'all'>('all')
 
   const hasMultipleImages = roomImages.length > 1
 
@@ -1660,7 +1888,7 @@ function RoomDetailsModal({
     }
   }
 
-  const roomSchedules = roomAllocations.filter(a => a.room === room.room)
+  const roomSchedules = roomAllocations.filter(a => matchesRoomAllocation(a.room, room.room, room.room_code, a.room_id, room.id, a.building))
   const parsedRoomSchedules = useMemo<ParsedRoomSchedule[]>(() => {
     return roomSchedules
       .map((allocation) => {
@@ -1688,13 +1916,15 @@ function RoomDetailsModal({
   const nowDayIndex = now.getDay()
   const nowMinutes = now.getHours() * 60 + now.getMinutes()
 
+  const selectedDayText = selectedScheduleDay === 'all' ? 'All days' : DAY_NAMES[selectedScheduleDay]
+
   const nextTodaySchedule = useMemo(() => {
     return parsedRoomSchedules
       .filter((entry) => entry.dayIndexes.includes(nowDayIndex) && entry.startMinutes > nowMinutes)
       .sort((a, b) => a.startMinutes - b.startMinutes)[0] || null
   }, [parsedRoomSchedules, nowDayIndex, nowMinutes])
 
-  const ongoingSchedules = useMemo(() => {
+  const ongoingNowSchedules = useMemo(() => {
     return parsedRoomSchedules.filter((entry) =>
       entry.dayIndexes.includes(nowDayIndex) &&
       nowMinutes >= entry.startMinutes &&
@@ -1711,7 +1941,7 @@ function RoomDetailsModal({
     }
 
     if (availability === 'occupied') {
-      const currentEntry = ongoingSchedules[0]
+      const currentEntry = ongoingNowSchedules[0]
       if (currentEntry) {
         return `Occupied until ${toReadableTime(currentEntry.endMinutes)}`
       }
@@ -1719,22 +1949,94 @@ function RoomDetailsModal({
     }
 
     return 'Availability time unknown'
-  }, [availability, nextTodaySchedule, ongoingSchedules])
+  }, [availability, nextTodaySchedule, ongoingNowSchedules])
 
-  const upcomingSchedules = useMemo(() => {
+  const equipmentList = useMemo(() => {
+    const roomAny = room as any
+    const tags: string[] = []
+
+    if (typeof roomAny.equipment === 'string' && roomAny.equipment.trim()) {
+      roomAny.equipment
+        .split(',')
+        .map((token: string) => token.trim())
+        .filter(Boolean)
+        .forEach((token: string) => tags.push(token))
+    }
+
+    if (toBoolean(roomAny.has_tv ?? roomAny.hasTV)) tags.push('TV')
+    if (toBoolean(roomAny.has_projector ?? roomAny.hasProjector)) tags.push('Projector')
+    if (toBoolean(roomAny.has_whiteboard ?? roomAny.hasWhiteboard)) tags.push('Whiteboard')
+    if (toBoolean(roomAny.has_ac ?? roomAny.hasAC)) tags.push('Air Conditioned')
+    if (toBoolean(roomAny.has_wifi ?? roomAny.hasWifi)) tags.push('WiFi')
+    if (toBoolean(roomAny.has_lab_equipment ?? roomAny.hasLabEquipment)) tags.push('Lab Equipment')
+    if (toBoolean(roomAny.is_accessible ?? roomAny.isPWDAccessible)) tags.push('PWD Accessible')
+
+    const computerCount = Number(roomAny.has_computers)
+    if (Number.isFinite(computerCount) && computerCount > 0) {
+      tags.push(`Desktop PCs (${computerCount})`)
+    }
+
+    if (typeof roomAny.specific_classification === 'string' && roomAny.specific_classification.trim()) {
+      tags.push(roomAny.specific_classification.trim())
+    }
+
+    return Array.from(new Set(tags))
+  }, [room])
+
+  const scheduleEntriesByDay = useMemo<DatedRoomSchedule[]>(() => {
     return parsedRoomSchedules
-      .flatMap((entry) => entry.dayIndexes.map((dayIdx) => ({ dayIdx, entry })))
-      .filter(({ dayIdx, entry }) => {
-        if (dayIdx < nowDayIndex) return false
-        if (dayIdx === nowDayIndex && entry.startMinutes <= nowMinutes) return false
-        return dayIdx <= 6
-      })
+      .flatMap((entry) => entry.dayIndexes.map((dayIdx) => ({
+        allocation: entry.allocation,
+        dayIdx,
+        startMinutes: entry.startMinutes,
+        endMinutes: entry.endMinutes
+      })))
       .sort((a, b) => {
         if (a.dayIdx !== b.dayIdx) return a.dayIdx - b.dayIdx
-        return a.entry.startMinutes - b.entry.startMinutes
+        return a.startMinutes - b.startMinutes
       })
-      .slice(0, 8)
-  }, [parsedRoomSchedules, nowDayIndex, nowMinutes])
+  }, [parsedRoomSchedules])
+
+  const dayButtonIndexes = useMemo(() => {
+    const includesSunday = scheduleEntriesByDay.some((entry) => entry.dayIdx === 0)
+    return includesSunday ? [1, 2, 3, 4, 5, 6, 0] : [1, 2, 3, 4, 5, 6]
+  }, [scheduleEntriesByDay])
+
+  const filteredScheduleEntries = useMemo(() => {
+    if (selectedScheduleDay === 'all') return scheduleEntriesByDay
+    return scheduleEntriesByDay.filter((entry) => entry.dayIdx === selectedScheduleDay)
+  }, [scheduleEntriesByDay, selectedScheduleDay])
+
+  const getScheduleStatus = useCallback((entry: DatedRoomSchedule): 'done' | 'ongoing' | 'upcoming' => {
+    if (entry.dayIdx < nowDayIndex) return 'done'
+    if (entry.dayIdx > nowDayIndex) return 'upcoming'
+    if (nowMinutes >= entry.endMinutes) return 'done'
+    if (nowMinutes >= entry.startMinutes && nowMinutes < entry.endMinutes) return 'ongoing'
+    return 'upcoming'
+  }, [nowDayIndex, nowMinutes])
+
+  const scheduleSections = useMemo(() => {
+    const done: DatedRoomSchedule[] = []
+    const ongoing: DatedRoomSchedule[] = []
+    const upcoming: DatedRoomSchedule[] = []
+
+    filteredScheduleEntries.forEach((entry) => {
+      const status = getScheduleStatus(entry)
+      if (status === 'done') done.push(entry)
+      else if (status === 'ongoing') ongoing.push(entry)
+      else upcoming.push(entry)
+    })
+
+    return { done, ongoing, upcoming }
+  }, [filteredScheduleEntries, getScheduleStatus])
+
+  useEffect(() => {
+    if (activeTab !== 'schedule') return
+    if (selectedScheduleDay !== 'all') return
+    if (nowDayIndex >= 1 && nowDayIndex <= 6) {
+      setSelectedScheduleDay(nowDayIndex)
+    }
+  }, [activeTab, selectedScheduleDay, nowDayIndex])
 
   const timetableHours = useMemo(() => {
     const startHour = 7
@@ -1839,6 +2141,19 @@ function RoomDetailsModal({
                 </div>
               </div>
 
+              <div className={styles.equipmentSection}>
+                <h3>Available Equipment</h3>
+                {equipmentList.length === 0 ? (
+                  <p className={styles.scheduleEmptyText}>No equipment metadata available for this room.</p>
+                ) : (
+                  <div className={styles.equipmentTagList}>
+                    {equipmentList.map((item) => (
+                      <span key={`equip-${item}`} className={styles.equipmentTag}>{item}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {currentClass && (
                 <div className={styles.currentClassSection}>
                   <h3>Currently in Use</h3>
@@ -1859,70 +2174,157 @@ function RoomDetailsModal({
               {roomSchedules.length === 0 ? (
                 <div className={styles.emptyState}>
                   <MdCalendarToday size={32} />
-                  <p>No scheduled classes</p>
+                  <p>{hasLockedCurrentSchedule ? 'No scheduled classes for this room' : 'No locked current schedule is active in ViewSchedule'}</p>
                 </div>
               ) : (
                 <>
-                  <div className={styles.scheduleActions}>
+                  {/* Day filters + timetable button in one row */}
+                  <div className={styles.scheduleTopBar}>
+                    <div className={styles.scheduleDayFilters}>
+                      <button
+                        className={`${styles.scheduleDayBtn} ${selectedScheduleDay === 'all' ? styles.active : ''}`}
+                        onClick={() => setSelectedScheduleDay('all')}
+                      >
+                        All
+                      </button>
+                      {dayButtonIndexes.map((dayIdx) => (
+                        <button
+                          key={`schedule-day-${dayIdx}`}
+                          className={`${styles.scheduleDayBtn} ${selectedScheduleDay === dayIdx ? styles.active : ''}`}
+                          onClick={() => setSelectedScheduleDay(dayIdx)}
+                        >
+                          {DAY_NAMES[dayIdx].slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
                     <button
                       className={styles.timetableBtn}
                       onClick={() => setShowTimetableModal(true)}
+                      title="Open fullscreen timetable"
                     >
-                      <MdFullscreen size={16} /> Fullscreen Timetable (Mon–Sat until 8:00 PM)
+                      <MdFullscreen size={14} />
                     </button>
                   </div>
 
-                  <div className={styles.scheduleSectionBlock}>
-                    <h4 className={styles.scheduleSectionTitle}>Ongoing Now</h4>
-                    {ongoingSchedules.length === 0 ? (
-                      <p className={styles.scheduleEmptyText}>No ongoing class right now.</p>
-                    ) : (
-                      <div className={styles.scheduleList}>
-                        {ongoingSchedules.map((entry, idx) => (
-                          <div key={`ongoing-${entry.allocation.id ?? idx}`} className={styles.scheduleItem}>
-                            <div className={styles.scheduleTime}>
-                              <MdAccessTime size={14} />
-                              {entry.allocation.schedule_time}
-                            </div>
-                            <div className={styles.scheduleDetails}>
-                              <div className={styles.scheduleCourse}>{entry.allocation.course_code || 'N/A'}</div>
-                              <div className={styles.scheduleSection}>{entry.allocation.section || 'No section'}</div>
-                              <div className={styles.scheduleDay}>{entry.displayDay}</div>
-                              {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
-                                <div className={styles.scheduleTeacher}>{entry.allocation.teacher_name || entry.allocation.faculty_name}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className={styles.scheduleScopeText}>
+                    {filteredScheduleEntries.length} class{filteredScheduleEntries.length !== 1 ? 'es' : ''} · {selectedDayText}
                   </div>
 
-                  <div className={styles.scheduleSectionBlock}>
-                    <h4 className={styles.scheduleSectionTitle}>Upcoming</h4>
-                    {upcomingSchedules.length === 0 ? (
-                      <p className={styles.scheduleEmptyText}>No upcoming schedules for the rest of this week.</p>
-                    ) : (
+                  {/* Ongoing Section */}
+                  {scheduleSections.ongoing.length > 0 && (
+                    <div className={styles.scheduleSectionBlock}>
+                      <div className={`${styles.scheduleSectionHeader} ${styles.sectionOngoing}`}>
+                        <span className={styles.sectionLiveDot} />
+                        <h4 className={styles.scheduleSectionTitle}>Ongoing</h4>
+                        <span className={styles.sectionCount}>{scheduleSections.ongoing.length}</span>
+                      </div>
                       <div className={styles.scheduleList}>
-                        {upcomingSchedules.map(({ dayIdx, entry }, idx) => (
-                          <div key={`upcoming-${entry.allocation.id ?? idx}-${dayIdx}`} className={styles.scheduleItem}>
-                            <div className={styles.scheduleTime}>
-                              <MdAccessTime size={14} />
-                              {entry.allocation.schedule_time}
+                        {scheduleSections.ongoing.map((entry, idx) => (
+                          <div key={`ongoing-${entry.allocation.id ?? idx}-${entry.dayIdx}-${entry.startMinutes}`} className={`${styles.scheduleItem} ${styles.scheduleItemOngoing}`}>
+                            <div className={styles.scheduleItemTop}>
+                              <span className={styles.scheduleCourse}>{entry.allocation.course_code || 'N/A'}</span>
+                              <span className={`${styles.scheduleStatusBadge} ${styles.badgeOngoing}`}>LIVE</span>
                             </div>
-                            <div className={styles.scheduleDetails}>
-                              <div className={styles.scheduleCourse}>{entry.allocation.course_code || 'N/A'}</div>
-                              <div className={styles.scheduleSection}>{entry.allocation.section || 'No section'}</div>
-                              <div className={styles.scheduleDay}>{DAY_NAMES[dayIdx]}</div>
-                              {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
-                                <div className={styles.scheduleTeacher}>{entry.allocation.teacher_name || entry.allocation.faculty_name}</div>
-                              )}
+                            <div className={styles.scheduleItemMeta}>
+                              <span className={styles.scheduleMetaItem}>
+                                <MdAccessTime size={11} />
+                                {entry.allocation.schedule_time || `${toReadableTime(entry.startMinutes)} - ${toReadableTime(entry.endMinutes)}`}
+                              </span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{entry.allocation.section || 'No section'}</span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{DAY_NAMES[entry.dayIdx]}</span>
                             </div>
+                            {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
+                              <div className={styles.scheduleTeacher}>
+                                {entry.allocation.teacher_name || entry.allocation.faculty_name}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Upcoming Section */}
+                  {scheduleSections.upcoming.length > 0 && (
+                    <div className={styles.scheduleSectionBlock}>
+                      <div className={`${styles.scheduleSectionHeader} ${styles.sectionUpcoming}`}>
+                        <MdAccessTime size={12} />
+                        <h4 className={styles.scheduleSectionTitle}>Upcoming</h4>
+                        <span className={styles.sectionCount}>{scheduleSections.upcoming.length}</span>
+                      </div>
+                      <div className={styles.scheduleList}>
+                        {scheduleSections.upcoming.map((entry, idx) => (
+                          <div key={`upcoming-${entry.allocation.id ?? idx}-${entry.dayIdx}-${entry.startMinutes}`} className={`${styles.scheduleItem} ${styles.scheduleItemUpcoming}`}>
+                            <div className={styles.scheduleItemTop}>
+                              <span className={styles.scheduleCourse}>{entry.allocation.course_code || 'N/A'}</span>
+                              <span className={`${styles.scheduleStatusBadge} ${styles.badgeUpcoming}`}>NEXT</span>
+                            </div>
+                            <div className={styles.scheduleItemMeta}>
+                              <span className={styles.scheduleMetaItem}>
+                                <MdAccessTime size={11} />
+                                {entry.allocation.schedule_time || `${toReadableTime(entry.startMinutes)} - ${toReadableTime(entry.endMinutes)}`}
+                              </span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{entry.allocation.section || 'No section'}</span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{DAY_NAMES[entry.dayIdx]}</span>
+                            </div>
+                            {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
+                              <div className={styles.scheduleTeacher}>
+                                {entry.allocation.teacher_name || entry.allocation.faculty_name}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Completed Section */}
+                  {scheduleSections.done.length > 0 && (
+                    <div className={styles.scheduleSectionBlock}>
+                      <div className={`${styles.scheduleSectionHeader} ${styles.sectionDone}`}>
+                        <MdCheckCircle size={12} />
+                        <h4 className={styles.scheduleSectionTitle}>Completed</h4>
+                        <span className={styles.sectionCount}>{scheduleSections.done.length}</span>
+                      </div>
+                      <div className={styles.scheduleList}>
+                        {scheduleSections.done.map((entry, idx) => (
+                          <div key={`done-${entry.allocation.id ?? idx}-${entry.dayIdx}-${entry.startMinutes}`} className={`${styles.scheduleItem} ${styles.scheduleItemDone}`}>
+                            <div className={styles.scheduleItemTop}>
+                              <span className={styles.scheduleCourse}>{entry.allocation.course_code || 'N/A'}</span>
+                              <span className={`${styles.scheduleStatusBadge} ${styles.badgeDone}`}>DONE</span>
+                            </div>
+                            <div className={styles.scheduleItemMeta}>
+                              <span className={styles.scheduleMetaItem}>
+                                <MdAccessTime size={11} />
+                                {entry.allocation.schedule_time || `${toReadableTime(entry.startMinutes)} - ${toReadableTime(entry.endMinutes)}`}
+                              </span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{entry.allocation.section || 'No section'}</span>
+                              <span className={styles.scheduleMetaDivider} />
+                              <span className={styles.scheduleMetaItem}>{DAY_NAMES[entry.dayIdx]}</span>
+                            </div>
+                            {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
+                              <div className={styles.scheduleTeacher}>
+                                {entry.allocation.teacher_name || entry.allocation.faculty_name}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show empty state if all sections are empty after filtering */}
+                  {scheduleSections.ongoing.length === 0 && scheduleSections.upcoming.length === 0 && scheduleSections.done.length === 0 && (
+                    <div className={styles.emptyState}>
+                      <MdCalendarToday size={28} />
+                      <p>No classes for {selectedDayText}</p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -2056,55 +2458,149 @@ function RoomDetailsModal({
         </div>
       )}
 
-      {showTimetableModal && (
-        <div className={styles.timetableOverlay} onClick={() => setShowTimetableModal(false)}>
-          <div className={styles.timetableModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.timetableHeader}>
-              <div>
-                <h3 className={styles.timetableTitle}>Weekly Timetable</h3>
-                <p className={styles.timetableSubtitle}>{room.room} · Monday to Saturday · 7:00 AM to 8:00 PM</p>
-              </div>
-              <button className={styles.closeModalBtn} onClick={() => setShowTimetableModal(false)}>✕</button>
-            </div>
+      {showTimetableModal && (() => {
+        const START_HOUR = 7
+        const END_HOUR = 20
+        const TOTAL_SLOTS = END_HOUR - START_HOUR // 13 hour rows
+        const hourLabels: number[] = []
+        for (let h = START_HOUR; h < END_HOUR; h++) hourLabels.push(h)
 
-            <div className={styles.timetableGridWrap}>
-              <table className={styles.timetableGrid}>
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    {WEEKDAY_COLUMNS.map((dayIdx) => (
-                      <th key={`head-${dayIdx}`}>{DAY_NAMES[dayIdx]}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {timetableHours.map((hour24) => (
-                    <tr key={`hour-${hour24}`}>
-                      <td className={styles.timetableTimeCell}>{toReadableTime(hour24 * 60)}</td>
-                      {WEEKDAY_COLUMNS.map((dayIdx) => {
-                        const slotSchedules = getSchedulesForSlot(dayIdx, hour24)
-                        return (
-                          <td key={`slot-${dayIdx}-${hour24}`}>
-                            <div className={styles.timetableSlotContent}>
-                              {slotSchedules.map((entry, idx) => (
-                                <div key={`slot-item-${dayIdx}-${hour24}-${entry.allocation.id ?? idx}`} className={styles.timetableEntry}>
-                                  <div className={styles.timetableCourse}>{entry.allocation.course_code || 'N/A'}</div>
-                                  <div className={styles.timetableMeta}>{entry.allocation.section || 'No section'}</div>
-                                  <div className={styles.timetableMeta}>{entry.allocation.schedule_time}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        )
-                      })}
-                    </tr>
+        // Build per-day entries with grid row positions
+        type GridEntry = { entry: ParsedRoomSchedule; rowStart: number; rowSpan: number; status: 'done' | 'ongoing' | 'upcoming' }
+        const dayGridEntries: Record<number, GridEntry[]> = {}
+        WEEKDAY_COLUMNS.forEach((dayIdx) => {
+          const entries = parsedRoomSchedules.filter((e) => e.dayIndexes.includes(dayIdx))
+          dayGridEntries[dayIdx] = entries.map((entry) => {
+            const clampedStart = Math.max(entry.startMinutes, START_HOUR * 60)
+            const clampedEnd = Math.min(entry.endMinutes, END_HOUR * 60)
+            const rowStart = (clampedStart - START_HOUR * 60) / 60
+            const rowSpan = Math.max((clampedEnd - clampedStart) / 60, 0.5)
+            // Determine status for this day
+            let status: 'done' | 'ongoing' | 'upcoming' = 'upcoming'
+            if (dayIdx < nowDayIndex) status = 'done'
+            else if (dayIdx > nowDayIndex) status = 'upcoming'
+            else if (nowMinutes >= entry.endMinutes) status = 'done'
+            else if (nowMinutes >= entry.startMinutes && nowMinutes < entry.endMinutes) status = 'ongoing'
+            return { entry, rowStart, rowSpan, status }
+          })
+        })
+
+        // NOW indicator position (only show if today is Mon-Sat and within time range)
+        const isTodayVisible = nowDayIndex >= 1 && nowDayIndex <= 6
+        const isNowInRange = nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60
+        const showNowLine = isTodayVisible && isNowInRange
+        const nowRowOffset = showNowLine ? (nowMinutes - START_HOUR * 60) / 60 : 0
+        const todayColIndex = WEEKDAY_COLUMNS.indexOf(nowDayIndex)
+
+        return (
+          <div className={styles.timetableOverlay} onClick={() => setShowTimetableModal(false)}>
+            <div className={styles.timetableModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.timetableHeader}>
+                <div>
+                  <h3 className={styles.timetableTitle}>Weekly Timetable</h3>
+                  <p className={styles.timetableSubtitle}>{room.room} · Monday to Saturday · 7:00 AM to 8:00 PM</p>
+                </div>
+                <button className={styles.closeModalBtn} onClick={() => setShowTimetableModal(false)}>✕</button>
+              </div>
+
+              <div className={styles.timetableGridWrap}>
+                <div className={styles.ttGrid} style={{ gridTemplateRows: `auto repeat(${TOTAL_SLOTS}, 56px)` }}>
+                  {/* Header row */}
+                  <div className={styles.ttCorner}>Time</div>
+                  {WEEKDAY_COLUMNS.map((dayIdx) => (
+                    <div
+                      key={`head-${dayIdx}`}
+                      className={`${styles.ttDayHeader} ${dayIdx === nowDayIndex ? styles.ttDayToday : ''}`}
+                    >
+                      {DAY_NAMES[dayIdx]}
+                      {dayIdx === nowDayIndex && <span className={styles.ttTodayDot} />}
+                    </div>
                   ))}
-                </tbody>
-              </table>
+
+                  {/* Time labels + background cells */}
+                  {hourLabels.map((h, i) => (
+                    <React.Fragment key={`row-${h}`}>
+                      <div className={styles.ttTimeLabel} style={{ gridRow: `${i + 2} / ${i + 3}`, gridColumn: 1 }}>
+                        {toReadableTime(h * 60)}
+                      </div>
+                      {WEEKDAY_COLUMNS.map((dayIdx, di) => (
+                        <div key={`bg-${dayIdx}-${h}`} className={styles.ttCell} style={{ gridRow: `${i + 2} / ${i + 3}`, gridColumn: di + 2 }} />
+                      ))}
+                    </React.Fragment>
+                  ))}
+
+                  {/* NOW indicator line */}
+                  {showNowLine && (() => {
+                    const nowRowStartInt = Math.floor(nowRowOffset)
+                    const nowTopPx = (nowRowOffset - nowRowStartInt) * 56
+                    return (
+                      <>
+                        {/* NOW label in time column */}
+                        <div
+                          className={styles.ttNowLabel}
+                          style={{
+                            gridRow: `${nowRowStartInt + 2} / ${nowRowStartInt + 3}`,
+                            gridColumn: 1,
+                            marginTop: `${nowTopPx - 10}px`,
+                          }}
+                        >
+                          <span className={styles.ttNowBadge}>NOW</span>
+                        </div>
+                        {/* NOW line across all day columns */}
+                        {WEEKDAY_COLUMNS.map((_dayIdx, di) => (
+                          <div
+                            key={`now-line-${di}`}
+                            className={styles.ttNowLine}
+                            style={{
+                              gridRow: `${nowRowStartInt + 2} / ${nowRowStartInt + 3}`,
+                              gridColumn: di + 2,
+                              marginTop: `${nowTopPx}px`,
+                            }}
+                          />
+                        ))}
+                      </>
+                    )
+                  })()}
+
+                  {/* Schedule entries spanning their full time range */}
+                  {WEEKDAY_COLUMNS.map((dayIdx, di) =>
+                    dayGridEntries[dayIdx].map((ge, idx) => {
+                      const rowStartInt = Math.floor(ge.rowStart)
+                      const rowEndInt = Math.ceil(ge.rowStart + ge.rowSpan)
+                      const topOffset = (ge.rowStart - rowStartInt) * 56
+                      const totalHeight = ge.rowSpan * 56
+                      const statusClass = ge.status === 'done'
+                        ? styles.ttEntryDone
+                        : ge.status === 'ongoing'
+                          ? styles.ttEntryOngoing
+                          : ''
+                      return (
+                        <div
+                          key={`entry-${dayIdx}-${ge.entry.allocation.id ?? idx}`}
+                          className={`${styles.ttEntry} ${statusClass}`}
+                          style={{
+                            gridRow: `${rowStartInt + 2} / ${rowEndInt + 2}`,
+                            gridColumn: di + 2,
+                            marginTop: `${topOffset}px`,
+                            height: `${totalHeight}px`,
+                          }}
+                        >
+                          <div className={styles.timetableCourse}>{ge.entry.allocation.course_code || 'N/A'}</div>
+                          <div className={styles.timetableMeta}>{ge.entry.allocation.section || 'No section'}</div>
+                          <div className={styles.timetableMeta}>{ge.entry.allocation.schedule_time}</div>
+                          {(ge.entry.allocation.teacher_name || ge.entry.allocation.faculty_name) && (
+                            <div className={styles.timetableMeta}>{ge.entry.allocation.teacher_name || ge.entry.allocation.faculty_name}</div>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }

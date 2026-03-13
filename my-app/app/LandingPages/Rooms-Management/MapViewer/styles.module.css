@@ -2254,7 +2254,6 @@
 .element_hallway {
   background: #d1d5db !important;
   border: 2px dashed #9ca3af !important;
-  position: relative;
 }
 
 .element_hallway.vertical {

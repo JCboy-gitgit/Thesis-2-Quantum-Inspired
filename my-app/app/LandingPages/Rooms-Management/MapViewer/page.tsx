@@ -50,6 +50,7 @@ interface RoomAllocation {
   id: number
   schedule_id: number
   room: string
+  room_id?: number
   building: string
   course_code: string
   section: string
@@ -937,25 +938,28 @@ export default function MapViewerPage() {
 
     const scaleX = (availW / canvasSize.width) * 100
     const scaleY = (availH / canvasSize.height) * 100
-    const best = Math.min(scaleX, scaleY, 100)
-    setZoom(Math.max(25, Math.round(best / 25) * 25))
+    const best = Math.min(scaleX, scaleY)
+    setZoom(Math.max(25, Math.round(best)))
   }, [canvasSize.height, canvasSize.width])
 
-  // Auto-fit zoom: calculate best zoom to fit canvas in viewport on mount/resize
+  const hasAutoFittedRef = useRef(false)
+
+  // Auto-fit zoom: calculate best zoom to fit canvas in viewport on mount
   useEffect(() => {
+    if (hasAutoFittedRef.current) return
     const container = canvasContainerRef.current
     if (!container) return
 
     // Run once after a short delay so the container has its real size
     const timer = setTimeout(() => {
-      if (zoom === 75) {
+      if (!hasAutoFittedRef.current) {
+        hasAutoFittedRef.current = true
         fitCanvasToViewport()
       }
     }, 200)
 
-    // Only run on mount, don't observe resize to avoid resetting user zoom
     return () => { clearTimeout(timer) }
-  }, [fitCanvasToViewport, zoom])
+  }, [fitCanvasToViewport])
 
   // Ctrl+Scroll wheel zoom on canvas container
   useEffect(() => {
@@ -1313,32 +1317,129 @@ export default function MapViewerPage() {
     return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
   }
 
+  const normalizeRoomKey = (value?: string) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  const matchesAllocationRoom = (allocationRoom: string, roomName?: string, roomCode?: string, allocRoomId?: number, roomId?: number, allocBuilding?: string) => {
+    // Match by room_id if available
+    if (allocRoomId && roomId && allocRoomId === roomId) return true
+
+    const allocKey = normalizeRoomKey(allocationRoom)
+    if (!allocKey) return false
+    const candidateKeys = [normalizeRoomKey(roomName), normalizeRoomKey(roomCode)].filter(Boolean)
+    if (candidateKeys.includes(allocKey)) return true
+
+    // Also check if allocRoom contains building prefix (e.g. "Building1-Room101")
+    if (allocBuilding) {
+      const buildingPrefix = normalizeRoomKey(allocBuilding)
+      if (buildingPrefix && allocKey.startsWith(buildingPrefix)) {
+        const roomPart = allocKey.slice(buildingPrefix.length)
+        if (roomPart && candidateKeys.includes(roomPart)) return true
+      }
+    }
+
+    // Check if any candidate key is contained in allocKey or vice versa
+    for (const candidate of candidateKeys) {
+      if (candidate && candidate.length >= 3) {
+        if (allocKey.includes(candidate) || candidate.includes(allocKey)) return true
+      }
+    }
+
+    return false
+  }
+
+  const normalizeDayToken = (day: string): string => {
+    const dayMap: Record<string, string> = {
+      'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+      'T': 'Tuesday', 'TUE': 'Tuesday', 'TU': 'Tuesday', 'TUESDAY': 'Tuesday',
+      'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+      'TH': 'Thursday', 'THU': 'Thursday', 'R': 'Thursday', 'THURSDAY': 'Thursday',
+      'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+      'S': 'Saturday', 'SA': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+      'SU': 'Sunday', 'U': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+    }
+
+    const normalized = String(day || '').trim().toUpperCase().replace(/\./g, '')
+    return dayMap[normalized] || day
+  }
+
+  const expandScheduleDays = (dayText?: string): string[] => {
+    if (!dayText) return []
+
+    const compact = dayText.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
+    const comboMap: Record<string, string[]> = {
+      TTH: ['Tuesday', 'Thursday'],
+      MWF: ['Monday', 'Wednesday', 'Friday'],
+      MW: ['Monday', 'Wednesday'],
+      TF: ['Tuesday', 'Friday'],
+      MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    }
+
+    if (comboMap[compact]) return comboMap[compact]
+
+    if (compact.includes('/') || compact.includes(',')) {
+      return compact
+        .split(/[\/,]+/)
+        .map(token => normalizeDayToken(token))
+        .filter(Boolean)
+    }
+
+    const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
+    const expanded: string[] = []
+    let i = 0
+
+    while (i < compact.length) {
+      const token = orderedTokens.find(t => compact.startsWith(t, i))
+      if (!token) {
+        i += 1
+        continue
+      }
+      expanded.push(normalizeDayToken(token))
+      i += token.length
+    }
+
+    if (expanded.length > 0) {
+      return Array.from(new Set(expanded))
+    }
+
+    return [normalizeDayToken(compact)]
+  }
+
+  const splitTimeRange = (timeStr: string): [string, string] => {
+    if (!timeStr) return ['', '']
+    const normalized = timeStr
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\s+to\s+/gi, '-')
+    const parts = normalized.split('-').map(part => part.trim()).filter(Boolean)
+    if (parts.length < 2) return ['', '']
+    return [parts[0], parts[1]]
+  }
+
+  const parseTimeToMinutes = (value: string): number => {
+    if (!value) return -1
+    const match = value.trim().match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i)
+    if (!match) return -1
+    let hours = parseInt(match[1], 10)
+    const minutes = parseInt(match[2], 10)
+    const period = match[3]?.toUpperCase()
+    if (period === 'PM' && hours !== 12) hours += 12
+    if (period === 'AM' && hours === 12) hours = 0
+    return hours * 60 + minutes
+  }
+
   // Shared helper: check if an allocation is active at the given day & time
-  const isAllocActiveNow = (alloc: RoomAllocation, roomName: string, day: string, minuteOfDay: number): boolean => {
-    if (alloc.room !== roomName) return false
+  const isAllocActiveNow = (alloc: RoomAllocation, roomName: string, roomCode: string | undefined, day: string, minuteOfDay: number, roomId?: number): boolean => {
+    if (!matchesAllocationRoom(alloc.room, roomName, roomCode, alloc.room_id, roomId, alloc.building)) return false
 
-    const allocDay = alloc.schedule_day?.toLowerCase()
-    if (!allocDay?.includes(day)) return false
+    const allocDays = expandScheduleDays(alloc.schedule_day)
+    if (!allocDays.some((d) => d.toLowerCase() === day.toLowerCase())) return false
 
-    // Parse time range (e.g. "8:00 AM - 9:30 AM" or "14:00 - 15:30")
-    const timeParts = alloc.schedule_time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
-    if (!timeParts) return false
+    const [startRaw, endRaw] = splitTimeRange(alloc.schedule_time || '')
+    if (!startRaw || !endRaw) return false
 
-    let startHour = parseInt(timeParts[1])
-    const startMin = parseInt(timeParts[2])
-    const startPeriod = timeParts[3]?.toUpperCase()
-    let endHour = parseInt(timeParts[4])
-    const endMin = parseInt(timeParts[5])
-    const endPeriod = timeParts[6]?.toUpperCase()
-
-    // Convert to 24-hour
-    if (startPeriod === 'PM' && startHour !== 12) startHour += 12
-    if (startPeriod === 'AM' && startHour === 12) startHour = 0
-    if (endPeriod === 'PM' && endHour !== 12) endHour += 12
-    if (endPeriod === 'AM' && endHour === 12) endHour = 0
-
-    const startMins = startHour * 60 + startMin
-    const endMins = endHour * 60 + endMin
+    const startMins = parseTimeToMinutes(startRaw)
+    const endMins = parseTimeToMinutes(endRaw)
+    if (startMins < 0 || endMins < 0) return false
 
     return minuteOfDay >= startMins && minuteOfDay < endMins
   }
@@ -1353,22 +1454,22 @@ export default function MapViewerPage() {
   }
 
   // Get room availability status
-  const getRoomAvailability = (roomName: string): 'available' | 'occupied' | 'unknown' => {
+  const getRoomAvailability = (roomName: string, roomCode?: string, roomId?: number): 'available' | 'occupied' | 'unknown' => {
     if (!showScheduleOverlay || !selectedScheduleId || roomAllocations.length === 0) {
       return 'unknown'
     }
 
     const { day, minuteOfDay } = getScheduleContext()
-    const isOccupied = roomAllocations.some(alloc => isAllocActiveNow(alloc, roomName, day, minuteOfDay))
+    const isOccupied = roomAllocations.some(alloc => isAllocActiveNow(alloc, roomName, roomCode, day, minuteOfDay, roomId))
     return isOccupied ? 'occupied' : 'available'
   }
 
   // Get current class for a room
-  const getCurrentClass = (roomName: string): RoomAllocation | null => {
+  const getCurrentClass = (roomName: string, roomCode?: string, roomId?: number): RoomAllocation | null => {
     if (!selectedScheduleId || roomAllocations.length === 0) return null
 
     const { day, minuteOfDay } = getScheduleContext()
-    return roomAllocations.find(alloc => isAllocActiveNow(alloc, roomName, day, minuteOfDay)) || null
+    return roomAllocations.find(alloc => isAllocActiveNow(alloc, roomName, roomCode, day, minuteOfDay, roomId)) || null
   }
 
   // Snap position to grid
@@ -4382,8 +4483,8 @@ export default function MapViewerPage() {
                       const isMultiSelected = selectedElements.includes(element.id)
                       const isDraggingEl = draggingElement === element.id
                       const isResizing = resizingElement === element.id
-                      const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room) : 'unknown'
-                      const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room) : null
+                      const availability = element.linkedRoomData ? getRoomAvailability(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id) : 'unknown'
+                      const currentClass = viewMode === 'live' && element.linkedRoomData ? getCurrentClass(element.linkedRoomData.room, element.linkedRoomData.room_code, element.linkedRoomData.id) : null
                       const isActiveTextSelection = element.type === 'text' && viewMode === 'editor' && selectedElement?.id === element.id
                       const textPreviewColor = isActiveTextSelection ? editForm.color : element.color
                       const textPreviewBgOpacity = isActiveTextSelection
@@ -5090,8 +5191,8 @@ export default function MapViewerPage() {
                                 <div className={styles.liveRoomStatus}>
                                   <h5>Current Status</h5>
                                   {(() => {
-                                    const currentClass = getCurrentClass(selectedElement.linkedRoomData.room)
-                                    const availability = getRoomAvailability(selectedElement.linkedRoomData.room)
+                                    const currentClass = getCurrentClass(selectedElement.linkedRoomData.room, selectedElement.linkedRoomData.room_code, selectedElement.linkedRoomData.id)
+                                    const availability = getRoomAvailability(selectedElement.linkedRoomData.room, selectedElement.linkedRoomData.room_code, selectedElement.linkedRoomData.id)
                                     return currentClass ? (
                                       <div className={styles.occupiedInfo}>
                                         <div className={`${styles.statusBadge} ${styles.occupied}`}>
@@ -6393,8 +6494,8 @@ export default function MapViewerPage() {
       {viewMode === 'live' && liveRoomModalRoom && (
         <AdminLiveRoomModal
           room={liveRoomModalRoom}
-          availability={getRoomAvailability(liveRoomModalRoom.room)}
-          currentClass={getCurrentClass(liveRoomModalRoom.room)}
+          availability={getRoomAvailability(liveRoomModalRoom.room, liveRoomModalRoom.room_code, liveRoomModalRoom.id)}
+          currentClass={getCurrentClass(liveRoomModalRoom.room, liveRoomModalRoom.room_code, liveRoomModalRoom.id)}
           roomAllocations={roomAllocations}
           onClose={() => setLiveRoomModalRoom(null)}
         />
@@ -6430,7 +6531,123 @@ function AdminLiveRoomModal({
   roomAllocations,
   onClose
 }: AdminLiveRoomModalProps) {
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  const normalizeDayToken = (day: string): string => {
+    const dayMap: Record<string, string> = {
+      'M': 'Monday', 'MON': 'Monday', 'MONDAY': 'Monday',
+      'T': 'Tuesday', 'TUE': 'Tuesday', 'TU': 'Tuesday', 'TUESDAY': 'Tuesday',
+      'W': 'Wednesday', 'WED': 'Wednesday', 'WEDNESDAY': 'Wednesday',
+      'TH': 'Thursday', 'THU': 'Thursday', 'R': 'Thursday', 'THURSDAY': 'Thursday',
+      'F': 'Friday', 'FRI': 'Friday', 'FRIDAY': 'Friday',
+      'S': 'Saturday', 'SA': 'Saturday', 'SAT': 'Saturday', 'SATURDAY': 'Saturday',
+      'SU': 'Sunday', 'U': 'Sunday', 'SUN': 'Sunday', 'SUNDAY': 'Sunday'
+    }
+
+    const normalized = String(day || '').trim().toUpperCase().replace(/\./g, '')
+    return dayMap[normalized] || day
+  }
+
+  const expandScheduleDays = (dayText?: string): string[] => {
+    if (!dayText) return []
+
+    const compact = dayText.toUpperCase().replace(/\./g, '').replace(/\s+/g, '')
+    const comboMap: Record<string, string[]> = {
+      TTH: ['Tuesday', 'Thursday'],
+      MWF: ['Monday', 'Wednesday', 'Friday'],
+      MW: ['Monday', 'Wednesday'],
+      TF: ['Tuesday', 'Friday'],
+      MTWTHF: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      MTWTHFS: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    }
+
+    if (comboMap[compact]) return comboMap[compact]
+
+    if (compact.includes('/') || compact.includes(',')) {
+      return compact
+        .split(/[\/,]+/)
+        .map(token => normalizeDayToken(token))
+        .filter(Boolean)
+    }
+
+    const orderedTokens = ['THURSDAY', 'THU', 'TH', 'TUESDAY', 'TUE', 'TU', 'MONDAY', 'MON', 'WEDNESDAY', 'WED', 'FRIDAY', 'FRI', 'SATURDAY', 'SAT', 'SUNDAY', 'SUN', 'SA', 'SU', 'M', 'T', 'W', 'R', 'F', 'S', 'U']
+    const expanded: string[] = []
+    let i = 0
+
+    while (i < compact.length) {
+      const token = orderedTokens.find(t => compact.startsWith(t, i))
+      if (!token) {
+        i += 1
+        continue
+      }
+      expanded.push(normalizeDayToken(token))
+      i += token.length
+    }
+
+    if (expanded.length > 0) return Array.from(new Set(expanded))
+    return [normalizeDayToken(compact)]
+  }
+
+  const splitTimeRange = (timeStr: string): [string, string] => {
+    if (!timeStr) return ['', '']
+    const normalized = timeStr
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\s+to\s+/gi, '-')
+    const parts = normalized.split('-').map(part => part.trim()).filter(Boolean)
+    if (parts.length < 2) return ['', '']
+    return [parts[0], parts[1]]
+  }
+
+  const parseTimeToMinutes = (value: string): number => {
+    if (!value) return -1
+    const match = value.trim().match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i)
+    if (!match) return -1
+    let hours = parseInt(match[1], 10)
+    const minutes = parseInt(match[2], 10)
+    const period = match[3]?.toUpperCase()
+    if (period === 'PM' && hours !== 12) hours += 12
+    if (period === 'AM' && hours === 12) hours = 0
+    return hours * 60 + minutes
+  }
+
+  type ModalScheduleEntry = {
+    allocation: RoomAllocation
+    dayIdx: number
+    startMinutes: number
+    endMinutes: number
+  }
+
+  const normalizeRoomKey = (value?: string) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const matchesAllocationRoom = (allocationRoom: string, allocRoomId?: number, allocBuilding?: string) => {
+    // Match by room_id if available
+    if (allocRoomId && allocRoomId === room.id) return true
+
+    const allocKey = normalizeRoomKey(allocationRoom)
+    if (!allocKey) return false
+    const candidateKeys = [normalizeRoomKey(room.room), normalizeRoomKey(room.room_code)].filter(Boolean)
+    if (candidateKeys.includes(allocKey)) return true
+
+    // Also check if allocRoom contains building prefix (e.g. "Building1-Room101")
+    if (allocBuilding) {
+      const buildingPrefix = normalizeRoomKey(allocBuilding)
+      if (buildingPrefix && allocKey.startsWith(buildingPrefix)) {
+        const roomPart = allocKey.slice(buildingPrefix.length)
+        if (roomPart && candidateKeys.includes(roomPart)) return true
+      }
+    }
+
+    // Check if any candidate key is contained in allocKey or vice versa
+    for (const candidate of candidateKeys) {
+      if (candidate && candidate.length >= 3) {
+        if (allocKey.includes(candidate) || candidate.includes(allocKey)) return true
+      }
+    }
+
+    return false
+  }
+
   const [activeTab, setActiveTab] = useState<'details' | 'schedule' | 'images'>('details')
+  const [selectedScheduleDay, setSelectedScheduleDay] = useState<number | 'all'>('all')
   const [roomImages, setRoomImages] = useState<any[]>([])
   const [selectedImageIdx, setSelectedImageIdx] = useState(0)
   const [loadingImages, setLoadingImages] = useState(true)
@@ -6503,7 +6720,56 @@ function AdminLiveRoomModal({
     fetchRoomImages()
   }, [room.id])
 
-  const roomSchedules = roomAllocations.filter((allocation) => allocation.room === room.room)
+  const roomSchedules = roomAllocations.filter((allocation) => matchesAllocationRoom(allocation.room, allocation.room_id, allocation.building))
+
+  const datedSchedules = useMemo<ModalScheduleEntry[]>(() => {
+    return roomSchedules
+      .flatMap((allocation) => {
+        const days = expandScheduleDays(allocation.schedule_day)
+        const [startRaw, endRaw] = splitTimeRange(allocation.schedule_time || '')
+        const startMinutes = parseTimeToMinutes(startRaw)
+        const endMinutes = parseTimeToMinutes(endRaw)
+        if (!startRaw || !endRaw || startMinutes < 0 || endMinutes < 0) return []
+
+        return days
+          .map((day) => DAY_NAMES.findIndex((name) => name.toLowerCase() === day.toLowerCase()))
+          .filter((idx) => idx >= 0)
+          .map((dayIdx) => ({ allocation, dayIdx, startMinutes, endMinutes }))
+      })
+      .sort((a, b) => (a.dayIdx - b.dayIdx) || (a.startMinutes - b.startMinutes))
+  }, [roomSchedules])
+
+  const dayButtonIndexes = useMemo(() => {
+    const includesSunday = datedSchedules.some((entry) => entry.dayIdx === 0)
+    return includesSunday ? [1, 2, 3, 4, 5, 6, 0] : [1, 2, 3, 4, 5, 6]
+  }, [datedSchedules])
+
+  const filteredDatedSchedules = useMemo(() => {
+    if (selectedScheduleDay === 'all') return datedSchedules
+    return datedSchedules.filter((entry) => entry.dayIdx === selectedScheduleDay)
+  }, [datedSchedules, selectedScheduleDay])
+
+  const scheduleBuckets = useMemo(() => {
+    const now = new Date()
+    const nowDayIdx = now.getDay()
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+    const done: ModalScheduleEntry[] = []
+    const ongoing: ModalScheduleEntry[] = []
+    const upcoming: ModalScheduleEntry[] = []
+
+    filteredDatedSchedules.forEach((entry) => {
+      if (entry.dayIdx < nowDayIdx || (entry.dayIdx === nowDayIdx && nowMinutes >= entry.endMinutes)) {
+        done.push(entry)
+      } else if (entry.dayIdx === nowDayIdx && nowMinutes >= entry.startMinutes && nowMinutes < entry.endMinutes) {
+        ongoing.push(entry)
+      } else {
+        upcoming.push(entry)
+      }
+    })
+
+    return { done, ongoing, upcoming }
+  }, [filteredDatedSchedules])
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -6578,23 +6844,56 @@ function AdminLiveRoomModal({
                 <p>No scheduled classes</p>
               </div>
             ) : (
-              <div className={styles.liveRoomScheduleList}>
-                {roomSchedules.map((allocation, index) => (
-                  <div key={`${allocation.id ?? index}-${allocation.course_code}-${allocation.schedule_time}`} className={styles.liveRoomScheduleItem}>
-                    <div className={styles.liveRoomScheduleTime}>
-                      <Clock size={13} /> {allocation.schedule_time}
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  <button
+                    className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === 'all' ? styles.liveRoomTabActive : ''}`}
+                    onClick={() => setSelectedScheduleDay('all')}
+                  >
+                    All Days
+                  </button>
+                  {dayButtonIndexes.map((dayIdx) => (
+                    <button
+                      key={`live-room-day-${dayIdx}`}
+                      className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === dayIdx ? styles.liveRoomTabActive : ''}`}
+                      onClick={() => setSelectedScheduleDay(dayIdx)}
+                    >
+                      {DAY_NAMES[dayIdx]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={styles.liveRoomScheduleList}>
+                  {[
+                    { title: 'Done', items: scheduleBuckets.done },
+                    { title: 'Ongoing', items: scheduleBuckets.ongoing },
+                    { title: 'Upcoming', items: scheduleBuckets.upcoming }
+                  ].map((bucket) => (
+                    <div key={`bucket-${bucket.title}`}>
+                      <h4 style={{ margin: '4px 0 8px 2px', fontSize: 12, opacity: 0.85 }}>{bucket.title}</h4>
+                      {bucket.items.length === 0 ? (
+                        <div className={styles.liveRoomScheduleItem}>
+                          <div className={styles.liveRoomScheduleDetails}>No {bucket.title.toLowerCase()} schedules.</div>
+                        </div>
+                      ) : bucket.items.map((entry, index) => (
+                        <div key={`${bucket.title}-${entry.allocation.id ?? index}-${entry.dayIdx}-${entry.startMinutes}`} className={styles.liveRoomScheduleItem}>
+                          <div className={styles.liveRoomScheduleTime}>
+                            <Clock size={13} /> {entry.allocation.schedule_time}
+                          </div>
+                          <div className={styles.liveRoomScheduleDetails}>
+                            <div className={styles.liveRoomScheduleCourse}>{entry.allocation.course_code}</div>
+                            <div>{entry.allocation.section}</div>
+                            <div>{DAY_NAMES[entry.dayIdx]}</div>
+                            {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
+                              <div>{entry.allocation.teacher_name || entry.allocation.faculty_name}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className={styles.liveRoomScheduleDetails}>
-                      <div className={styles.liveRoomScheduleCourse}>{allocation.course_code}</div>
-                      <div>{allocation.section}</div>
-                      <div>{allocation.schedule_day}</div>
-                      {(allocation.teacher_name || allocation.faculty_name) && (
-                        <div>{allocation.teacher_name || allocation.faculty_name}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )
           )}
 

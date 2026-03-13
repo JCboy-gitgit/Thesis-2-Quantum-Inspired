@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   MdDashboard,
@@ -8,7 +8,8 @@ import {
   MdCalendarToday,
   MdPerson,
   MdMap,
-  MdLiveTv
+  MdLiveTv,
+  MdEventNote
 } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './FacultySidebar.module.css'
@@ -22,15 +23,63 @@ interface FacultySidebarProps {
 export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: FacultySidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const [isScheduleLocked, setIsScheduleLocked] = useState(false)
 
-  const menuItems = [
-    { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
-    { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
-    { icon: MdMap, label: 'Campus Map', path: '/faculty/campus-map' },
-    { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
-    { icon: MdCalendarToday, label: 'Room Schedules', path: '/faculty/schedules' },
-    { icon: MdLiveTv, label: 'Live Timetable', path: '/faculty/live-timetable' },
-  ]
+  // Check if the current/active schedule is locked
+  useEffect(() => {
+    const checkLockStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('generated_schedules')
+          .select('id, is_locked')
+          .eq('is_locked', true)
+          .limit(1)
+
+        if (!error && data && data.length > 0) {
+          setIsScheduleLocked(true)
+        } else {
+          setIsScheduleLocked(false)
+        }
+      } catch {
+        setIsScheduleLocked(false)
+      }
+    }
+
+    checkLockStatus()
+
+    // Listen for realtime changes to schedule lock status
+    const channel = supabase
+      .channel('sidebar_schedule_lock')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'generated_schedules',
+      }, () => {
+        checkLockStatus()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // Build menu items based on lock state
+  const menuItems = isScheduleLocked
+    ? [
+        { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
+        { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
+        { icon: MdEventNote, label: 'My Schedule', path: '/faculty/my-schedule' },
+        { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
+        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
+        { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
+      ]
+    : [
+        { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
+        { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
+        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
+        { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
+        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
+        { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
+      ]
 
   const handleNavigation = (path: string) => {
     router.push(path)

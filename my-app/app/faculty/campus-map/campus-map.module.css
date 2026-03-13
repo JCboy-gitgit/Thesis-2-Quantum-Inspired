@@ -108,28 +108,33 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 88px 24px 24px;
+  padding: 62px 10px 6px;
   max-width: 1560px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
-  gap: 20px;
+  gap: 6px;
+  transition: padding-top 0.3s ease;
+}
+
+.mainMenuHidden {
+  padding-top: 10px;
 }
 
 /* ==========================================
-   Hero Banner
+   Hero Banner — compact single-row header
    ========================================== */
 .heroBanner {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
-  border-radius: var(--cm-radius);
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
   background: var(--cm-gradient);
   overflow: hidden;
-  box-shadow: var(--cm-shadow);
+  box-shadow: var(--cm-shadow-sm);
   flex-wrap: wrap;
 }
 
@@ -146,7 +151,7 @@
 .heroLeft {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   position: relative;
   z-index: 1;
 }
@@ -155,9 +160,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(8px);
   flex-shrink: 0;
@@ -168,7 +173,7 @@
 }
 
 .heroTitle {
-  font-size: 1.55rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #fff;
   margin: 0;
@@ -186,10 +191,53 @@
 .heroRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   position: relative;
   z-index: 1;
   flex-wrap: wrap;
+}
+
+/* ==========================================
+   Hero Center – Inline Stats & Legend
+   ========================================== */
+.heroCenter {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.inlineStats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.inlineStat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.inlineStatValue {
+  font-weight: 800;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.inlineStatLabel {
+  opacity: 0.7;
+}
+
+.statDivider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
 }
 
 /* ==========================================
@@ -198,21 +246,21 @@
 .liveBadge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 5px 10px;
   border-radius: 40px;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .liveDot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #10b981;
   animation: livePulse 2s ease-in-out infinite;
@@ -243,12 +291,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 14px;
+  gap: 0;
+  padding: 5px 8px;
   border-radius: 40px;
   border: none;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0;
   cursor: pointer;
   transition: all 0.25s ease;
   background: transparent;
@@ -414,34 +461,34 @@
 .emptyRoomToggle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
 }
 
 .toggleSwitch {
   position: relative;
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background: var(--cm-toggle-bg);
-  border: 1px solid var(--cm-glass-border);
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: background 0.3s ease, border-color 0.3s ease;
   flex-shrink: 0;
   cursor: pointer;
 }
 
 .toggleSwitch.active {
-  background: var(--cm-accent);
-  border-color: var(--cm-accent);
+  background: rgba(16, 185, 129, 0.8);
+  border-color: rgba(16, 185, 129, 0.9);
 }
 
 .toggleKnob {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
@@ -449,13 +496,13 @@
 }
 
 .toggleSwitch.active .toggleKnob {
-  transform: translateX(20px);
+  transform: translateX(16px);
 }
 
 .toggleLabel {
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--cm-text);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .toggleHint {
@@ -508,15 +555,14 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: var(--cm-radius);
+  border-radius: 8px;
   background: var(--cm-card);
   border: 1px solid var(--cm-card-border);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--cm-shadow-sm);
   overflow: hidden;
-  min-height: 500px;
-  animation: bentoPop 0.5s 0.35s ease both;
+  min-height: 400px;
   transition: border-color 0.3s ease;
 }
 
@@ -526,7 +572,7 @@
 
 .viewerInner {
   flex: 1;
-  padding: 8px;
+  padding: 4px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -599,119 +645,68 @@
    Responsive
    ========================================== */
 @media (max-width: 1024px) {
-  .bentoGrid {
-    grid-template-columns: repeat(2, 1fr);
+  .heroCenter {
+    display: none;
   }
 }
 
 @media (max-width: 768px) {
   .main {
-    padding: 80px 14px 16px;
-    gap: 14px;
+    padding: 60px 8px 6px;
+    gap: 6px;
   }
 
   .heroBanner {
-    padding: 16px 18px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    padding: 6px 10px;
+    gap: 6px;
   }
 
   .heroTitle {
-    font-size: 1.2rem;
+    font-size: 0.85rem;
+  }
+
+  .heroCenter {
+    display: none;
   }
 
   .heroRight {
-    width: 100%;
-    justify-content: space-between;
+    gap: 6px;
   }
 
-  .bentoGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .statCard {
-    padding: 14px 16px;
-    gap: 10px;
-  }
-
-  .statValue {
-    font-size: 1.1rem;
-  }
-
-  .statLabel {
-    font-size: 0.65rem;
-  }
-
-  .statIconBox {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-  }
-
-  .controlsBar {
-    padding: 12px 16px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .controlsRight {
-    width: 100%;
-    justify-content: flex-start;
+  .toggleLabel {
+    display: none;
   }
 
   .viewerCard {
-    min-height: 400px;
+    min-height: 350px;
   }
 }
 
 @media (max-width: 480px) {
   .main {
-    padding: 76px 10px 12px;
-    gap: 10px;
+    padding: 56px 4px 4px;
+    gap: 4px;
   }
 
-  .bentoGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .statCard {
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .statIconBox {
-    width: 34px;
-    height: 34px;
-  }
-
-  .statValue {
-    font-size: 1rem;
+  .heroBanner {
+    padding: 5px 8px;
   }
 
   .heroIconBox {
-    width: 42px;
-    height: 42px;
+    width: 26px;
+    height: 26px;
   }
 
-  .themeToggleBtn {
-    padding: 5px 10px;
-    font-size: 0.68rem;
+  .heroTitle {
+    font-size: 0.8rem;
   }
 
   .liveBadge {
-    padding: 6px 10px;
-    font-size: 0.7rem;
-  }
-
-  .legend {
-    gap: 10px;
+    padding: 3px 6px;
+    font-size: 0.62rem;
   }
 
   .viewerCard {
-    min-height: 350px;
+    min-height: 300px;
   }
 }

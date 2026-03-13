@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { clearBrowserCaches } from '@/lib/clearCache'
 import {
-  MdMap, MdBusiness, MdLayers, MdCheckCircle, MdCancel,
+  MdMap, MdBusiness, MdLayers,
   MdLightMode, MdDarkMode, MdAccessTime
 } from 'react-icons/md'
 import FacultySidebar from '@/app/components/FacultySidebar'
@@ -176,100 +176,45 @@ export default function FacultyCampusMapPage() {
           />
         )}
 
-        <main className={s.main}>
-          {/* ─── Hero Banner ─── */}
+        <main className={`${s.main} ${isMenuBarHidden ? s.mainMenuHidden : ''}`}>
+          {/* ─── Compact Header Row ─── */}
           <div className={s.heroBanner}>
             <div className={s.heroLeft}>
               <div className={s.heroIconBox}>
-                <MdMap size={26} />
+                <MdMap size={20} />
               </div>
               <div>
-                <h1 className={s.heroTitle}>Campus Floor Plan</h1>
-                <p className={s.heroSubtitle}>Interactive real-time view of campus buildings &amp; rooms</p>
+                <h1 className={s.heroTitle}>Live Floor Plan</h1>
+              </div>
+            </div>
+
+            <div className={s.heroCenter}>
+              {/* Inline Stats */}
+              <div className={s.inlineStats}>
+                <div className={s.inlineStat}>
+                  <MdBusiness size={14} />
+                  <span className={s.inlineStatValue}>{buildingCount}</span>
+                  <span className={s.inlineStatLabel}>Buildings</span>
+                </div>
+                <div className={s.inlineStat}>
+                  <MdLayers size={14} />
+                  <span className={s.inlineStatValue}>{floorCount}</span>
+                  <span className={s.inlineStatLabel}>Floors</span>
+                </div>
+                <span className={s.statDivider} />
+                <div className={s.inlineStat}>
+                  <span className={`${s.legendDot} ${s.green}`} />
+                  <span>Available</span>
+                </div>
+                <div className={s.inlineStat}>
+                  <span className={`${s.legendDot} ${s.red}`} />
+                  <span>Occupied</span>
+                </div>
               </div>
             </div>
 
             <div className={s.heroRight}>
-              {/* Live clock */}
-              <div className={s.liveBadge}>
-                <span className={s.liveDot} />
-                <MdAccessTime size={13} />
-                <span>{timeStr}</span>
-                <span style={{ opacity: 0.6 }}>·</span>
-                <span>{dateStr}</span>
-              </div>
-
-              {/* Inline theme toggle */}
-              <div className={s.themeToggle}>
-                <button
-                  className={`${s.themeToggleBtn} ${isLightMode ? s.active : ''}`}
-                  onClick={() => setTheme('light')}
-                  title="Light mode"
-                >
-                  <MdLightMode size={14} /> Light
-                </button>
-                <button
-                  className={`${s.themeToggleBtn} ${!isLightMode ? s.active : ''}`}
-                  onClick={() => setTheme('dark')}
-                  title="Dark mode"
-                >
-                  <MdDarkMode size={14} /> Dark
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── Bento Stats Grid ─── */}
-          <div className={s.bentoGrid}>
-            {/* Buildings */}
-            <div className={s.statCard}>
-              <div className={`${s.statIconBox} ${s.buildings}`}>
-                <MdBusiness size={22} />
-              </div>
-              <div className={s.statInfo}>
-                <span className={s.statValue}>{buildingCount}</span>
-                <span className={s.statLabel}>Buildings</span>
-              </div>
-            </div>
-
-            {/* Floors */}
-            <div className={s.statCard}>
-              <div className={`${s.statIconBox} ${s.floors}`}>
-                <MdLayers size={22} />
-              </div>
-              <div className={s.statInfo}>
-                <span className={s.statValue}>{floorCount}</span>
-                <span className={s.statLabel}>Floor Plans</span>
-              </div>
-            </div>
-
-            {/* Available indicator */}
-            <div className={s.statCard}>
-              <div className={`${s.statIconBox} ${s.available}`}>
-                <MdCheckCircle size={22} />
-              </div>
-              <div className={s.statInfo}>
-                <span className={s.statValue} style={{ color: 'var(--cm-success)' }}>Live</span>
-                <span className={s.statLabel}>Available Rooms</span>
-              </div>
-            </div>
-
-            {/* Occupied indicator */}
-            <div className={s.statCard}>
-              <div className={`${s.statIconBox} ${s.occupied}`}>
-                <MdCancel size={22} />
-              </div>
-              <div className={s.statInfo}>
-                <span className={s.statValue} style={{ color: 'var(--cm-danger)' }}>Live</span>
-                <span className={s.statLabel}>Occupied Rooms</span>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── Controls Bar ─── */}
-          <div className={s.controlsBar}>
-            <div className={s.controlsLeft}>
-              {/* Empty room finder toggle */}
+              {/* Empty room finder */}
               <label className={s.emptyRoomToggle}>
                 <div
                   className={`${s.toggleSwitch} ${emptyRoomMode ? s.active : ''}`}
@@ -277,37 +222,39 @@ export default function FacultyCampusMapPage() {
                 >
                   <div className={s.toggleKnob} />
                 </div>
-                <div>
-                  <span className={s.toggleLabel}>Empty Room Finder</span>
-                  <span className={s.toggleHint}>
-                    {emptyRoomMode ? ' · Highlighting available rooms' : ' · Showing all rooms'}
-                  </span>
-                </div>
+                <span className={s.toggleLabel}>Empty Rooms</span>
               </label>
-            </div>
 
-            <div className={s.controlsRight}>
-              {/* Legend */}
-              <div className={s.legend}>
-                <div className={s.legendItem}>
-                  <span className={`${s.legendDot} ${s.green}`} />
-                  <span>Available</span>
-                </div>
-                <div className={s.legendItem}>
-                  <span className={`${s.legendDot} ${s.red}`} />
-                  <span>Occupied</span>
-                </div>
-                <div className={s.legendItem}>
-                  <span className={`${s.legendDot} ${s.gray}`} />
-                  <span>Unknown</span>
-                </div>
+              {/* Live clock */}
+              <div className={s.liveBadge}>
+                <span className={s.liveDot} />
+                <MdAccessTime size={12} />
+                <span>{timeStr}</span>
+              </div>
+
+              {/* Theme toggle */}
+              <div className={s.themeToggle}>
+                <button
+                  className={`${s.themeToggleBtn} ${isLightMode ? s.active : ''}`}
+                  onClick={() => setTheme('light')}
+                  title="Light mode"
+                >
+                  <MdLightMode size={13} />
+                </button>
+                <button
+                  className={`${s.themeToggleBtn} ${!isLightMode ? s.active : ''}`}
+                  onClick={() => setTheme('dark')}
+                  title="Dark mode"
+                >
+                  <MdDarkMode size={13} />
+                </button>
               </div>
             </div>
           </div>
 
           {/* ─── Floor Plan Viewer ─── */}
           <div className={s.viewerCard}>
-            <div className={s.viewerInner} style={{ height: 'calc(100vh - 360px)', minHeight: 430 }}>
+            <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)', minHeight: 430 }}>
               <RoomViewer2D
                 collegeTheme={collegeTheme}
                 highlightEmpty={emptyRoomMode}

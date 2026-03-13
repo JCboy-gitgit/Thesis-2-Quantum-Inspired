@@ -167,6 +167,27 @@ function RoomSchedulesViewContent() {
     checkAuth()
   }, [])
 
+  // Redirect to My Schedule when schedule is locked
+  useEffect(() => {
+    const checkLockAndRedirect = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('generated_schedules')
+          .select('id, is_locked')
+          .eq('is_locked', true)
+          .limit(1)
+
+        if (!error && data && data.length > 0) {
+          router.replace('/faculty/my-schedule')
+        }
+      } catch {
+        // If check fails, stay on page
+      }
+    }
+
+    checkLockAndRedirect()
+  }, [router])
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768)

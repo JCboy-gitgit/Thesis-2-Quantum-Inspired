@@ -119,7 +119,7 @@ const FEATURE_ITEMS = [
   },
   {
     key: 'live-2d-map',
-    title: 'Live 2D Map',
+    title: 'Live 2D Floor Map',
     description: 'View room usage and class placement from a live floor-map perspective.',
     Icon: MdTimeline,
   },  
@@ -915,8 +915,8 @@ function PageContent(): JSX.Element {
 
         <section className="landing-hero landing-reveal" data-reveal-order="2">
           <div className="landing-hero-copy">
-            <p className="landing-kicker">Clarence Thesis Group | Quantum-Inspired Scheduling</p>
-            <h1>Plan Conflict-Free Faculty Schedules With Confidence</h1>
+            <p className="landing-kicker">Quantum-Inspired Scheduling</p>
+            <h1>Plan Conflict-Free Schedules With Confidence</h1>
             <p>
               Qtime helps colleges generate optimized timetables, balance teaching loads, and keep schedule decisions
               transparent for both admin and faculty.
@@ -978,7 +978,7 @@ function PageContent(): JSX.Element {
               <p className="landing-card-kicker">Platform Brief</p>
               <h2>About The Platform</h2>
               <p>
-                Developed by the Clarence Thesis Group, this platform combines quantum-inspired optimization with practical
+                Developed by the Quantum-Inspired Scheduling Group Batch Nov. 2025 - March 2026, this platform combines quantum-inspired optimization with practical
                 controls to reduce manual work and improve fairness in load distribution.
               </p>
             </section>
@@ -1423,7 +1423,7 @@ function PageContent(): JSX.Element {
           {/* Footer */}
           <div className="card-footer">
             <p className="footer-text">
-              Clarence Thesis Group System
+              Thesis Group 6 System
             </p>
           </div>
         </div>

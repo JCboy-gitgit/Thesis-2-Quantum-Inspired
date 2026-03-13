@@ -33,8 +33,8 @@
 .container {
   background: var(--card-bg, rgba(15, 23, 42, 0.95));
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 30px;
+  padding: 10px;
+  margin-bottom: 0;
   border: 1px solid var(--border-color, var(--college-primary-light));
   transition: all 0.3s ease;
   display: flex;
@@ -614,6 +614,71 @@
   border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
+/* ── Compact Inline Building/Floor Navigator ── */
+.buildingNavInline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.buildingChipRow,
+.floorChipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.buildingNavIcon {
+  color: var(--college-primary, #00d4ff);
+  flex-shrink: 0;
+}
+
+.buildingChip,
+.floorChip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.buildingChip:hover,
+.floorChip:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
+.buildingChipActive {
+  background: var(--college-primary-light) !important;
+  border-color: var(--college-primary) !important;
+  color: var(--college-primary) !important;
+}
+
+.floorChip {
+  font-size: 11px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.floorChipActive {
+  background: var(--college-primary) !important;
+  border-color: var(--college-primary) !important;
+  color: #ffffff !important;
+}
+
 /* Canvas wrapper */
 .canvasWrapper {
   flex: 1;
@@ -668,7 +733,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
 }
 
 .canvasElement:hover {
@@ -695,6 +759,15 @@
 .canvasElement.wall {
   background: #374151;
   border: none;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+  border-radius: 2px;
+}
+
+.canvasElement.wall:hover {
+  box-shadow: none;
+  z-index: auto !important;
 }
 
 .canvasElement.door {
@@ -705,6 +778,15 @@
 .canvasElement.hallway {
   background: #d1d5db;
   border: 2px dashed #9ca3af;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+  border-radius: 4px;
+}
+
+.canvasElement.hallway:hover {
+  box-shadow: none;
+  z-index: auto !important;
 }
 
 .canvasElement.hallway.vertical {
@@ -1526,6 +1608,22 @@
   }
 
   /* Building Nav mobile */
+  .buildingNavInline {
+    padding: 6px 8px;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .buildingChip {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .floorChip {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
   .buildingNav {
     padding: 8px;
     gap: 4px;
@@ -2159,6 +2257,24 @@
 }
 
 /* Building Nav - Light */
+:global([data-theme="light"]) .buildingNavInline {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e2e8f0;
+}
+
+:global([data-theme="light"]) .buildingChip,
+:global([data-theme="light"]) .floorChip {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme="light"]) .buildingChip:hover,
+:global([data-theme="light"]) .floorChip:hover {
+  border-color: var(--college-primary);
+  color: var(--college-primary);
+}
+
 :global([data-theme="light"]) .buildingNav {
   background: rgba(0, 0, 0, 0.02);
   border-color: #e2e8f0;
@@ -2265,8 +2381,7 @@
 }
 
 :global([data-theme="light"]) .canvasElement.hallway {
-  background: rgba(148, 163, 184, 0.4) !important;
-  border-color: #94a3b8 !important;
+  /* hallway colors come from saved element style */
 }
 
 :global([data-theme="light"]) .canvasElement.text {
@@ -2462,6 +2577,29 @@
 }
 
 /* Building Nav - Dark */
+:global([data-theme="dark"]) .buildingNavInline,
+:global([data-theme="green"]) .buildingNavInline {
+  background: rgba(15, 23, 42, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:global([data-theme="dark"]) .buildingChip,
+:global([data-theme="green"]) .buildingChip,
+:global([data-theme="dark"]) .floorChip,
+:global([data-theme="green"]) .floorChip {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:global([data-theme="dark"]) .buildingChip:hover,
+:global([data-theme="green"]) .buildingChip:hover,
+:global([data-theme="dark"]) .floorChip:hover,
+:global([data-theme="green"]) .floorChip:hover {
+  border-color: var(--college-primary) !important;
+  color: var(--college-primary) !important;
+}
+
 :global([data-theme="dark"]) .buildingNav,
 :global([data-theme="green"]) .buildingNav {
   background: rgba(15, 23, 42, 0.55) !important;
@@ -2932,6 +3070,39 @@
   letter-spacing: 0.5px;
 }
 
+.equipmentSection {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.equipmentSection h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--college-primary, #00d4ff);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.equipmentTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.equipmentTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--college-primary, #00d4ff);
+  background: rgba(0, 212, 255, 0.14);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+}
+
 .classInfo {
   display: flex;
   flex-direction: column;
@@ -2947,27 +3118,73 @@
 
 /* Schedule Tab */
 .scheduleTab {
-  min-height: 200px;
+  min-height: 180px;
+}
+
+.scheduleTopBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.scheduleDayFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+
+.scheduleDayBtn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.3;
+}
+
+.scheduleDayBtn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.scheduleDayBtn.active {
+  background: var(--college-primary, #00d4ff);
+  border-color: var(--college-primary, #00d4ff);
+  color: #ffffff;
+}
+
+.scheduleScopeText {
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .scheduleActions {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .timetableBtn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
   border: 1px solid var(--college-primary, #00d4ff);
   background: var(--college-primary-light, rgba(0, 212, 255, 0.15));
   color: var(--college-primary, #00d4ff);
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 6px 8px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .timetableBtn:hover {
@@ -2976,78 +3193,259 @@
 }
 
 .scheduleSectionBlock {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
+}
+
+.scheduleSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.scheduleSectionHeader .scheduleSectionTitle {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.sectionCount {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Ongoing section header */
+.sectionOngoing {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #34d399;
+}
+
+.sectionOngoing .sectionCount {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+}
+
+.sectionLiveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  animation: sectionLivePulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sectionLivePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0); }
+}
+
+/* Upcoming section header */
+.sectionUpcoming {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  color: var(--college-primary, #00d4ff);
+}
+
+.sectionUpcoming .sectionCount {
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.15));
+  color: var(--college-primary, #00d4ff);
+}
+
+/* Done section header */
+.sectionDone {
+  background: rgba(120, 120, 140, 0.08);
+  border: 1px solid rgba(120, 120, 140, 0.15);
+  color: #78788c;
+}
+
+.sectionDone .sectionCount {
+  background: rgba(120, 120, 140, 0.15);
+  color: #78788c;
 }
 
 .scheduleSectionTitle {
-  margin: 0 0 10px;
-  font-size: 13px;
+  margin: 0 0 6px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--college-primary, #00d4ff);
 }
 
 .scheduleEmptyText {
   margin: 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .scheduleList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 
 .scheduleItem {
-  padding: 14px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.scheduleItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scheduleItemMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.scheduleMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.scheduleMetaDivider {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.scheduleItemDone {
+  opacity: 0.5;
+  border-color: rgba(120, 120, 140, 0.15);
+  background: rgba(120, 120, 140, 0.06);
+}
+
+.scheduleItemDone .scheduleCourse {
+  color: #9999a8;
+}
+
+.scheduleItemDone .scheduleItemMeta {
+  color: #78788c;
+}
+
+.scheduleItemOngoing {
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+@keyframes scheduleOngoingGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(52, 211, 153, 0); }
+  50% { box-shadow: 0 0 8px rgba(52, 211, 153, 0.12); }
+}
+
+.scheduleItemOngoing .scheduleItemMeta {
+  color: rgba(52, 211, 153, 0.8);
+}
+
+.scheduleItemUpcoming {
+  border-color: rgba(0, 212, 255, 0.15);
+  background: rgba(0, 212, 255, 0.04);
+}
+
+/* Status badges */
+.scheduleStatusBadge {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.badgeOngoing {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  animation: badgeLivePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgeLivePulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(52, 211, 153, 0.3); }
+  50% { box-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+}
+
+.badgeUpcoming {
+  background: var(--college-primary-light, rgba(0, 212, 255, 0.15));
+  color: var(--college-primary, #00d4ff);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+.badgeDone {
+  background: rgba(120, 120, 140, 0.12);
+  color: #78788c;
+  border: 1px solid rgba(120, 120, 140, 0.2);
 }
 
 .scheduleTime {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 3px;
+  font-size: 11px;
   color: var(--college-primary, #00d4ff);
   font-weight: 600;
-  min-width: 100px;
 }
 
 .scheduleDetails {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .scheduleCourse {
   font-weight: 600;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.3;
 }
 
 .scheduleSection {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .scheduleDay {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
 .scheduleTeacher {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--college-primary, #00d4ff);
-  margin-top: 4px;
+  opacity: 0.75;
+  margin-top: 1px;
 }
 
 .timetableOverlay {
@@ -3097,55 +3495,168 @@
   padding: 12px;
 }
 
-.timetableGrid {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  min-width: 980px;
+/* CSS Grid-based timetable */
+.ttGrid {
+  display: grid;
+  grid-template-columns: 80px repeat(6, 1fr);
+  min-width: 820px;
+  position: relative;
 }
 
-.timetableGrid th,
-.timetableGrid td {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  vertical-align: top;
-}
-
-.timetableGrid th {
+.ttCorner {
   position: sticky;
   top: 0;
+  z-index: 3;
   background: rgba(15, 23, 42, 0.96);
   color: #ffffff;
   font-size: 12px;
+  font-weight: 700;
   padding: 10px 8px;
-  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.timetableGrid td {
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.22);
-  min-height: 56px;
-  height: 56px;
+.ttDayHeader {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: rgba(15, 23, 42, 0.96);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
 }
 
-.timetableTimeCell {
-  width: 95px;
+.ttTimeLabel {
   font-size: 11px;
   font-weight: 700;
   color: var(--college-primary, #00d4ff);
-  background: rgba(0, 0, 0, 0.4) !important;
-}
-
-.timetableSlotContent {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6px 4px;
 }
 
-.timetableEntry {
+.ttCell {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ttEntry {
   border-radius: 6px;
   border: 1px solid rgba(0, 212, 255, 0.35);
   background: rgba(0, 212, 255, 0.16);
-  padding: 4px 6px;
+  padding: 6px 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  z-index: 1;
+  margin: 1px 3px;
+  box-sizing: border-box;
+}
+
+/* Done entry – gray/muted */
+.ttEntryDone {
+  background: rgba(120, 120, 140, 0.12) !important;
+  border-color: rgba(120, 120, 140, 0.3) !important;
+  opacity: 0.55;
+}
+
+.ttEntryDone .timetableCourse {
+  color: #9999a8;
+}
+
+.ttEntryDone .timetableMeta {
+  color: rgba(153, 153, 168, 0.7);
+}
+
+/* Ongoing entry – green pulse */
+.ttEntryOngoing {
+  background: rgba(52, 211, 153, 0.18) !important;
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  animation: ttOngoingPulse 2.5s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.25);
+}
+
+@keyframes ttOngoingPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(52, 211, 153, 0.2); }
+  50% { box-shadow: 0 0 18px rgba(52, 211, 153, 0.4); }
+}
+
+.ttEntryOngoing .timetableCourse {
+  color: #34d399;
+}
+
+.ttEntryOngoing .timetableMeta {
+  color: rgba(52, 211, 153, 0.85);
+}
+
+/* Today column header highlight */
+.ttDayToday {
+  color: #34d399 !important;
+}
+
+.ttTodayDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: todayDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes todayDotPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(52, 211, 153, 0); }
+}
+
+/* NOW indicator line */
+.ttNowLine {
+  height: 2px;
+  background: #34d399;
+  z-index: 5;
+  pointer-events: none;
+  position: relative;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6), 0 0 2px rgba(52, 211, 153, 0.9);
+  align-self: start;
+}
+
+.ttNowLabel {
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.ttNowBadge {
+  display: inline-flex;
+  align-items: center;
+  background: #34d399;
+  color: #064e3b;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  animation: nowBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes nowBadgePulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(52, 211, 153, 0.4); }
+  50% { box-shadow: 0 0 14px rgba(52, 211, 153, 0.7); }
 }
 
 .timetableCourse {
@@ -3457,27 +3968,56 @@
   color: #475569;
 }
 
-:global([data-theme="light"]) .timetableGrid th,
-:global([data-theme="light"]) .timetableGrid td {
+:global([data-theme="light"]) .ttCorner,
+:global([data-theme="light"]) .ttDayHeader {
+  background: #f8fafc;
+  color: #0f172a;
   border-color: rgba(15, 23, 42, 0.16);
 }
 
-:global([data-theme="light"]) .timetableGrid th {
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-:global([data-theme="light"]) .timetableGrid td {
+:global([data-theme="light"]) .ttCell {
   background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.16);
 }
 
-:global([data-theme="light"]) .timetableTimeCell {
-  background: rgba(15, 23, 42, 0.08) !important;
+:global([data-theme="light"]) .ttTimeLabel {
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.16);
 }
 
-:global([data-theme="light"]) .timetableEntry {
+:global([data-theme="light"]) .ttEntry {
   background: rgba(0, 212, 255, 0.1);
   border-color: rgba(0, 212, 255, 0.4);
+}
+
+:global([data-theme="light"]) .ttEntryDone {
+  background: rgba(120, 120, 140, 0.08) !important;
+  border-color: rgba(120, 120, 140, 0.25) !important;
+}
+
+:global([data-theme="light"]) .ttEntryDone .timetableCourse {
+  color: #78788c;
+}
+
+:global([data-theme="light"]) .ttEntryDone .timetableMeta {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .ttEntryOngoing {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+:global([data-theme="light"]) .ttEntryOngoing .timetableCourse {
+  color: #059669;
+}
+
+:global([data-theme="light"]) .ttEntryOngoing .timetableMeta {
+  color: #10b981;
+}
+
+:global([data-theme="light"]) .ttDayToday {
+  color: #059669 !important;
 }
 
 :global([data-theme="light"]) .timetableCourse {
@@ -3490,6 +4030,104 @@
 
 :global([data-theme="light"]) .detailValue {
   color: #0f172a;
+}
+
+:global([data-theme="light"]) .equipmentSection,
+:global([data-theme="light"]) .scheduleItem {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+:global([data-theme="light"]) .scheduleItemDone {
+  background: rgba(120, 120, 140, 0.04);
+  border-color: rgba(120, 120, 140, 0.1);
+}
+
+:global([data-theme="light"]) .scheduleItemDone .scheduleCourse {
+  color: #78788c;
+}
+
+:global([data-theme="light"]) .scheduleItemDone .scheduleItemMeta {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .scheduleItemOngoing {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+:global([data-theme="light"]) .scheduleItemOngoing .scheduleItemMeta {
+  color: #059669;
+}
+
+:global([data-theme="light"]) .scheduleItemUpcoming {
+  background: rgba(14, 165, 233, 0.03);
+  border-color: rgba(14, 165, 233, 0.12);
+}
+
+:global([data-theme="light"]) .scheduleCourse {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .scheduleItemMeta {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .scheduleMetaDivider {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+:global([data-theme="light"]) .scheduleTeacher {
+  color: #0369a1;
+}
+
+:global([data-theme="light"]) .sectionOngoing {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #059669;
+}
+
+:global([data-theme="light"]) .sectionUpcoming {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.15);
+}
+
+:global([data-theme="light"]) .sectionDone {
+  background: rgba(120, 120, 140, 0.06);
+  border-color: rgba(120, 120, 140, 0.12);
+}
+
+:global([data-theme="light"]) .badgeOngoing {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+:global([data-theme="light"]) .badgeDone {
+  background: rgba(120, 120, 140, 0.08);
+  color: #78788c;
+  border-color: rgba(120, 120, 140, 0.15);
+}
+
+:global([data-theme="light"]) .equipmentTag {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.35);
+  color: #0369a1;
+}
+
+:global([data-theme="light"]) .scheduleDayBtn {
+  border-color: rgba(15, 23, 42, 0.18);
+  background: rgba(15, 23, 42, 0.02);
+  color: #475569;
+}
+
+:global([data-theme="light"]) .scheduleDayBtn:hover {
+  border-color: rgba(15, 23, 42, 0.32);
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .scheduleScopeText {
+  color: #64748b;
 }
 
 :global([data-theme="light"]) .currentClassSection,
@@ -3542,17 +4180,115 @@
 
 /* Mobile Responsive */
 @media (max-width: 640px) {
+  .modalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
   .modalContent {
-    max-width: 95vw;
-    max-height: 90vh;
+    max-width: 100vw;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+  }
+
+  .modalHeader {
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .roomTitle {
+    font-size: 18px;
+  }
+
+  .roomSubtitle {
+    font-size: 12px;
+  }
+
+  .statusBadgeModal {
+    margin: 10px 14px 0;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .modalTabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding: 8px 14px;
+  }
+
+  .tabBtn {
+    font-size: 12px;
+    padding: 7px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .modalBody {
+    padding: 12px 14px;
   }
 
   .detailsGrid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .modalTabs {
-    flex-wrap: wrap;
+  .scheduleDayFilters {
+    gap: 3px;
+  }
+
+  .scheduleDayBtn {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .scheduleScopeText {
+    font-size: 10px;
+  }
+
+  .scheduleItem {
+    padding: 7px 8px;
+    gap: 3px;
+  }
+
+  .scheduleTime {
+    font-size: 10px;
+  }
+
+  .scheduleCourse {
+    font-size: 12px;
+  }
+
+  .scheduleSection,
+  .scheduleDay,
+  .scheduleTeacher {
+    font-size: 10px;
+  }
+
+  .scheduleItemMeta {
+    font-size: 10px;
+    gap: 3px;
+  }
+
+  .scheduleSectionHeader {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .scheduleStatusBadge {
+    font-size: 7px;
+    padding: 2px 5px;
+  }
+
+  .scheduleActions {
+    justify-content: stretch;
+  }
+
+  .timetableBtn {
+    padding: 5px 6px;
+    font-size: 10px;
   }
 
   .imageThumbnails {
@@ -3583,24 +4319,84 @@
     padding: 8px 10px;
   }
 
-  .scheduleActions {
-    justify-content: stretch;
-  }
-
-  .timetableBtn {
-    width: 100%;
-    justify-content: center;
-  }
-
+  /* Timetable modal mobile */
   .timetableHeader {
-    padding: 14px;
+    padding: 12px 14px;
   }
 
   .timetableTitle {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .timetableSubtitle {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .timetableGridWrap {
+    padding: 8px;
+  }
+
+  .ttGrid {
+    min-width: 700px;
+  }
+
+  .ttCorner,
+  .ttDayHeader {
+    font-size: 10px;
+    padding: 8px 4px;
+  }
+
+  .ttTimeLabel {
+    font-size: 9px;
+  }
+
+  .ttEntry {
+    padding: 4px 5px;
+  }
+
+  .timetableCourse {
+    font-size: 10px;
+  }
+
+  .timetableMeta {
+    font-size: 9px;
+  }
+
+  .ttNowBadge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+  .modalContent {
+    max-height: 95vh;
+  }
+
+  .modalHeader {
+    padding: 12px;
+  }
+
+  .roomTitle {
+    font-size: 16px;
+  }
+
+  .modalBody {
+    padding: 10px 12px;
+  }
+
+  .scheduleItem {
+    padding: 6px 7px;
+    gap: 2px;
+  }
+
+  .scheduleSectionHeader {
+    padding: 4px 6px;
+  }
+
+  .tabBtn {
+    font-size: 11px;
+    padding: 6px 8px;
   }
 }
