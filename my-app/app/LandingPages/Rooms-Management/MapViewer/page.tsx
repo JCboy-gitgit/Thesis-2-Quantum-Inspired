@@ -2750,7 +2750,8 @@ export default function MapViewerPage() {
     } finally {
       savingRef.current = false
       setSaving(false)
-    } to the latest saveFloorPlan so timers/events never capture a stale closure
+    } // close finally
+  } // close saveFloorPlan
   const saveFloorPlanRef = useRef(saveFloorPlan)
   useEffect(() => {
     saveFloorPlanRef.current = saveFloorPlan
