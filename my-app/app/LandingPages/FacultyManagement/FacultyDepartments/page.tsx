@@ -228,6 +228,10 @@ export default function FacultyDepartmentsPage() {
         throw new Error('Department code and name are required')
       }
 
+      if (formData.contact_phone && !/^\+?[0-9\-() ]{7,20}$/.test(formData.contact_phone.trim())) {
+        throw new Error('Please enter a valid contact phone number (digits only, 7-20 characters)')
+      }
+
       if (modalMode === 'create') {
         const { data, error } = await (supabase
           .from('departments') as any)
@@ -747,8 +751,13 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                     type="tel"
                     name="contact_phone"
                     value={formData.contact_phone}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val && !/^[0-9+\-() ]*$/.test(val)) return
+                      handleInputChange(e)
+                    }}
                     placeholder="e.g., (044) 123-4567"
+                    maxLength={20}
                   />
                 </div>
                 <div className={styles.formGroup}>

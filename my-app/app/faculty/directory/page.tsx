@@ -147,8 +147,7 @@ function FacultyDirectoryContent() {
   const [currentPage, setCurrentPage] = useState(1)
   const PAGE_SIZE = 12
 
-  // Store scroll position in a ref to preserve it across renders
-  const scrollPositionRef = useRef<number>(0)
+  const contentAreaRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -320,6 +319,11 @@ function FacultyDirectoryContent() {
   const endIdx = startIdx + PAGE_SIZE
   const currentData = filteredData.slice(startIdx, endIdx)
 
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+    contentAreaRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -352,7 +356,7 @@ function FacultyDirectoryContent() {
         {/* Content + Side Panel row */}
         <div className={styles.contentRow}>
           {/* Scrollable content area */}
-          <div className={styles.mainContentArea}>
+          <div className={styles.mainContentArea} ref={contentAreaRef}>
             <div className={styles.header}>
               <h1 className={styles.pageTitle}>
                 <MdPeople size={32} />
@@ -426,6 +430,19 @@ function FacultyDirectoryContent() {
                     Back to Colleges
                   </button>
                   <h2 className={styles.collegeTitle}>{selectedCollege}</h2>
+                  <div className={styles.collegeMetaRow}>
+                    <span className={styles.collegeMeta}>
+                      <MdPeople size={16} /> {filteredData.length} faculty member{filteredData.length !== 1 ? 's' : ''}
+                    </span>
+                    {(() => {
+                      const group = collegeGroups.find(g => g.college === selectedCollege)
+                      return group ? (
+                        <span className={styles.collegeMeta}>
+                          <MdBusiness size={16} /> {group.departments.length} department{group.departments.length !== 1 ? 's' : ''}
+                        </span>
+                      ) : null
+                    })()}
+                  </div>
                 </div>
 
                 <div className={styles.searchSection}>
@@ -469,6 +486,13 @@ function FacultyDirectoryContent() {
                 </div>
 
                 <div className={styles.facultyGrid}>
+                  {currentData.length === 0 && (
+                    <div className={styles.emptyState}>
+                      <MdSearch size={48} />
+                      <h3>No faculty found</h3>
+                      <p>Try adjusting your search or filters.</p>
+                    </div>
+                  )}
                   {currentData.map(faculty => (
                     <div
                       key={faculty.id}
@@ -520,7 +544,7 @@ function FacultyDirectoryContent() {
                 {totalPages > 1 && (
                   <div className={styles.pagination}>
                     <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      onClick={() => goToPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
                       className={styles.pageButton}
                     >
@@ -530,7 +554,7 @@ function FacultyDirectoryContent() {
                       Page {currentPage} of {totalPages}
                     </span>
                     <button
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
                       className={styles.pageButton}
                     >

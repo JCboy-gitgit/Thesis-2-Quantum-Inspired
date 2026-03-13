@@ -1187,7 +1187,7 @@
   background: var(--card-bg);
   border-radius: 16px;
   width: 100%;
-  max-width: 600px;
+  max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   margin-top: 0;
@@ -1264,10 +1264,34 @@
   gap: 16px;
 }
 
-/* Keep side-by-side layout unless truly mobile */
-@media (max-width: 480px) {
+/* Responsive modal and form layout for tablets */
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 20px 12px;
+    align-items: flex-start;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+
+  .modalBody {
+    padding: 16px;
+  }
+
+  .modalHeader {
+    padding: 16px;
+  }
+
+  .modalFooter {
+    padding: 12px 16px;
+  }
+
   .formRow {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 

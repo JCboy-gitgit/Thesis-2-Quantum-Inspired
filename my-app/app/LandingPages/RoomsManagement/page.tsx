@@ -440,6 +440,48 @@ export default function RoomsManagementPage() {
     setRoomImages([])
   }
 
+  const compressImage = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      // GIFs can't be compressed via canvas, skip
+      if (file.type === 'image/gif') { resolve(file); return }
+
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+
+        let { width, height } = img
+        // Only downscale if larger than maxWidth
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              // If compressed is bigger, use original
+              resolve(file)
+              return
+            }
+            const compressed = new File([blob], file.name, { type: 'image/webp', lastModified: Date.now() })
+            resolve(compressed)
+          },
+          'image/webp',
+          quality
+        )
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+      img.src = url
+    })
+  }
+
   const openRoomImagePicker = () => {
     if (!selectedRoom?.id) {
       alert('Please select a valid room first.')
@@ -465,7 +507,10 @@ export default function RoomsManagementPage() {
 
     setUploadingRoomImage(true)
     try {
-      const fileExt = file.name.split('.').pop() || 'jpg'
+      // Compress image before upload
+      const compressed = await compressImage(file)
+      const isCompressed = compressed !== file
+      const fileExt = isCompressed ? 'webp' : (file.name.split('.').pop() || 'jpg')
       const safeRoomName = (selectedRoom.room || `room-${selectedRoom.id}`)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -473,7 +518,7 @@ export default function RoomsManagementPage() {
       const filePath = `rooms/${selectedRoom.id}/${safeRoomName}-${Date.now()}.${fileExt}`
 
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', compressed)
       formData.append('filePath', filePath)
       formData.append('bucket', 'room-images')
 
@@ -520,6 +565,56 @@ export default function RoomsManagementPage() {
       if (roomImageInputRef.current) {
         roomImageInputRef.current.value = ''
       }
+    }
+  }
+
+  const handleDeleteRoomImage = async (img: RoomImage) => {
+    if (!confirm('Delete this image? It will be archived.')) return
+
+    const previousImages = roomImages
+    setRoomImages((prev) => prev.filter((i) => i.id !== img.id))
+
+    try {
+      // Archive first
+      const { data: { user } } = await supabase.auth.getUser()
+      await (supabase
+        .from('archived_items') as any)
+        .insert({
+          item_type: 'room_image',
+          item_name: img.caption || `Room image #${img.id}`,
+          item_data: img,
+          deleted_by: user?.id || null,
+          original_table: 'room_images',
+          original_id: String(img.id)
+        })
+
+      // Delete from room_images table
+      const { error } = await supabase
+        .from('room_images')
+        .delete()
+        .eq('id', img.id)
+
+      if (error) throw error
+
+      // Try to remove from storage (extract path from URL)
+      try {
+        const url = new URL(img.image_url)
+        const pathMatch = url.pathname.match(/\/object\/public\/([^/]+)\/(.+)/)
+        if (pathMatch) {
+          const bucket = pathMatch[1]
+          const storagePath = decodeURIComponent(pathMatch[2])
+          await supabase.storage.from(bucket).remove([storagePath])
+        }
+      } catch {
+        // Storage cleanup is best-effort
+      }
+
+      setSuccessMessage('Image deleted and archived!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      setRoomImages(previousImages)
+      console.error('Error deleting room image:', error)
+      alert(error.message || 'Failed to delete image')
     }
   }
 
@@ -2031,6 +2126,13 @@ export default function RoomsManagementPage() {
                     {roomImages.map(img => (
                       <div key={img.id} className={styles.imageItem}>
                         <img src={img.image_url} alt={img.caption || 'Room image'} />
+                        <button
+                          className={styles.imageDeleteBtn}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteRoomImage(img) }}
+                          title="Delete image"
+                        >
+                          <MdDelete size={16} />
+                        </button>
                       </div>
                     ))}
                   </div>

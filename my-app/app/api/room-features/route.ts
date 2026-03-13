@@ -1,27 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Cache-busting wrapper to prevent Next.js from caching Supabase requests
-const fetchWithNoCache = (url: RequestInfo | URL, options: RequestInit = {}) =>
-  fetch(url, { ...options, cache: 'no-store' })
-
-let _supabase: ReturnType<typeof createClient> | null = null
-const supabase = new Proxy({} as ReturnType<typeof createClient>, {
-  get(_, prop) {
-    if (!_supabase) {
-      _supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { fetch: fetchWithNoCache } }
-      )
-    }
-    return (_supabase as any)[prop]
-  },
-})
+import { createAdminClient } from '@/lib/supabase/server'
 
 // Force dynamic - disable caching to always get fresh data
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+function getSupabase() {
+  return createAdminClient()
+}
 
 // ==================== GET - Fetch feature tags and room features ====================
 export async function GET(request: NextRequest) {
@@ -33,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'tags') {
       // Get all feature tags
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('feature_tags')
         .select('*')
         .order('tag_category', { ascending: true })
@@ -45,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'room_features' && roomId) {
       // Get features for a specific room
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('room_features')
         .select(`
           id,
@@ -69,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'all_room_features') {
       // Get all room features (used by course mode to know which tags are available)
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('room_features')
         .select('feature_tag_id')
 
@@ -79,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'subject_requirements' && courseId) {
       // Get requirements for a specific course
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('subject_room_requirements')
         .select(`
           id,
@@ -104,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'room_features_summary') {
       // Get all rooms with their features summary
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('room_features_summary')
         .select('*')
 
@@ -114,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     if (action === 'subject_requirements_summary') {
       // Get all courses with their requirements summary
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('subject_requirements_summary')
         .select('*')
 
@@ -126,7 +112,7 @@ export async function GET(request: NextRequest) {
       // Get rooms compatible with a course's requirements
       const minCapacity = parseInt(searchParams.get('min_capacity') || '1')
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .rpc('get_compatible_rooms_for_subject', {
           p_course_id: parseInt(courseId),
           p_min_capacity: minCapacity
@@ -156,7 +142,7 @@ export async function POST(request: NextRequest) {
     if (action === 'add_room_feature') {
       const { room_id, feature_tag_id, quantity, notes } = body
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('room_features')
         .upsert({
           room_id,
@@ -176,7 +162,7 @@ export async function POST(request: NextRequest) {
       const { course_id, feature_tag_id, is_mandatory, min_quantity, notes } = body
 
       // Check for existing requirement to handle merging logic (LEC + LAB = BOTH)
-      const { data: existing } = await supabase
+      const { data: existing } = await getSupabase()
         .from('subject_room_requirements')
         .select('notes')
         .eq('course_id', course_id)
@@ -197,7 +183,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('subject_room_requirements')
         .upsert({
           course_id,
@@ -223,7 +209,7 @@ export async function POST(request: NextRequest) {
         quantity: 1
       }))
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('room_features')
         .upsert(features, {
           onConflict: 'room_id,feature_tag_id'
@@ -244,7 +230,7 @@ export async function POST(request: NextRequest) {
         min_quantity: 1
       }))
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('subject_room_requirements')
         .upsert(requirements, {
           onConflict: 'course_id,feature_tag_id'
@@ -258,7 +244,7 @@ export async function POST(request: NextRequest) {
     if (action === 'create_tag') {
       const { tag_name, tag_category, description, icon } = body
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('feature_tags')
         .insert({
           tag_name,
@@ -278,7 +264,7 @@ export async function POST(request: NextRequest) {
 
       if (!id) throw new Error('Tag ID is required for update')
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('feature_tags')
         .update({
           tag_name,
@@ -316,7 +302,7 @@ export async function DELETE(request: NextRequest) {
     const featureTagId = searchParams.get('feature_tag_id')
 
     if (action === 'remove_room_feature' && id) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('room_features')
         .delete()
         .eq('id', parseInt(id))
@@ -326,7 +312,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'remove_room_feature_by_tag' && roomId && featureTagId) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('room_features')
         .delete()
         .eq('room_id', parseInt(roomId))
@@ -337,7 +323,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'remove_subject_requirement' && id) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('subject_room_requirements')
         .delete()
         .eq('id', parseInt(id))
@@ -347,7 +333,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'remove_subject_requirement_by_tag' && courseId && featureTagId) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('subject_room_requirements')
         .delete()
         .eq('course_id', parseInt(courseId))
@@ -358,7 +344,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'clear_room_features' && roomId) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('room_features')
         .delete()
         .eq('room_id', parseInt(roomId))
@@ -368,7 +354,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'clear_subject_requirements' && courseId) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('subject_room_requirements')
         .delete()
         .eq('course_id', parseInt(courseId))
@@ -378,7 +364,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (action === 'delete_tag' && id) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('feature_tags')
         .delete()
         .eq('id', parseInt(id))

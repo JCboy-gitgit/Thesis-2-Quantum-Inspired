@@ -15,7 +15,10 @@ import {
   MdTrendingUp,
   MdRefresh,
   MdError,
-  MdClose
+  MdClose,
+  MdEventBusy,
+  MdFiberManualRecord,
+  MdOpenInNew
 } from 'react-icons/md'
 import styles from './styles.module.css'
 import { clearBrowserCaches } from '@/lib/clearCache'
@@ -263,9 +266,19 @@ export default function FacultyHomePage() {
     }
     return ''
   }
-  // Determine class status based on time
-  const getClassStatus = (schedule: ScheduleItem): 'done' | 'ongoing' | 'up-next' | 'future' => {
+  // Determine class status based on time and whether it's actually today
+  const getClassStatus = (schedule: ScheduleItem, forDate?: Date): 'done' | 'ongoing' | 'up-next' | 'future' => {
     const now = new Date()
+    const checkDate = forDate || selectedDate
+
+    // Compare dates (ignoring time)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const check = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate())
+
+    if (check.getTime() < today.getTime()) return 'done'    // past day
+    if (check.getTime() > today.getTime()) return 'future'  // future day
+
+    // It's today — use time-based logic
     const currentTime = now.getHours() * 60 + now.getMinutes()
 
     const [startHour, startMin] = schedule.start_time.split(':').map(Number)
@@ -1279,97 +1292,188 @@ export default function FacultyHomePage() {
         </main>
       </div>
 
-      {/* Quick Action - Mark as Absence */}
+      {/* Quick Action - Report Absence */}
       <button
-        className={`fixed bottom-6 right-6 z-[1500] px-4 py-3 rounded-full shadow-lg text-sm font-semibold transition-all ${isLightMode
+        className={`fixed bottom-6 right-6 z-[1500] flex items-center gap-2 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-bold transition-all hover:scale-105 active:scale-95 ${isLightMode
           ? isScience
-            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+            ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30'
             : isArtsLetters
-              ? 'bg-orange-500 text-white hover:bg-orange-600'
+              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/30'
               : isArchitecture
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-          : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400'
+                ? 'bg-red-500 text-white hover:bg-red-600 shadow-red-500/30'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/30'
+          : 'bg-cyan-500 text-slate-900 hover:bg-cyan-400 shadow-cyan-500/30'
           }`}
         onClick={() => setAttendanceOpen(true)}
       >
-        Mark as Absence
+        <MdEventBusy size={18} />
+        Report Absence
       </button>
 
       {attendanceOpen && (
-        <div className="fixed inset-0 z-[1600] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-2xl p-5 border ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-900 border-cyan-500/20'}`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-base sm:text-lg font-bold ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Mark Absence</h3>
+        <div className="fixed inset-0 z-[1600] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setAttendanceOpen(false)}>
+          <div
+            className={`w-full max-w-lg rounded-2xl border overflow-hidden ${isLightMode ? 'bg-white border-slate-200 shadow-2xl' : 'bg-slate-900 border-slate-700/50 shadow-2xl shadow-black/40'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between px-5 py-4 border-b ${isLightMode ? 'border-slate-100 bg-slate-50' : 'border-slate-800 bg-slate-800/50'}`}>
+              <div>
+                <h3 className={`text-lg font-bold m-0 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>Report Absence</h3>
+                <p className={`text-xs m-0 mt-0.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
               <button
-                className={`text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isLightMode ? 'hover:bg-slate-200 text-slate-500' : 'hover:bg-slate-700 text-slate-400'}`}
                 onClick={() => setAttendanceOpen(false)}
               >
-                Close
+                <MdClose size={20} />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <label className={`text-xs font-semibold ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Scope</label>
-              <select
-                className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
-                value={attendanceScope}
-                onChange={(e) => setAttendanceScope(e.target.value as any)}
-              >
-                <option value="class">Current Class</option>
-                <option value="day">Whole Day</option>
-                <option value="week">Whole Week</option>
-                <option value="range">Date Range</option>
-              </select>
+            {/* Today's Classes List */}
+            <div className={`px-5 py-4 max-h-[60vh] overflow-y-auto`}>
+              <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Today&apos;s Classes ({filteredSchedules.filter(s => s.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })).length})
+              </p>
 
-              {attendanceScope === 'day' && (
-                <input
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
-                  value={attendanceDay}
-                  onChange={(e) => setAttendanceDay(e.target.value)}
-                  placeholder="Day of week (e.g., Monday)"
-                />
-              )}
+              {(() => {
+                const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                const todayClasses = schedules.filter(s => s.day === todayName).sort((a, b) => {
+                  const [aH, aM] = a.start_time.split(':').map(Number)
+                  const [bH, bM] = b.start_time.split(':').map(Number)
+                  return (aH * 60 + aM) - (bH * 60 + bM)
+                })
 
-              {attendanceScope === 'range' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
-                    value={attendanceStartDate}
-                    onChange={(e) => setAttendanceStartDate(e.target.value)}
-                  />
-                  <input
-                    type="date"
-                    className={`w-full rounded-lg border px-3 py-2 text-sm ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
-                    value={attendanceEndDate}
-                    onChange={(e) => setAttendanceEndDate(e.target.value)}
+                if (todayClasses.length === 0) {
+                  return (
+                    <div className={`flex flex-col items-center py-8 text-center ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <MdCalendarToday size={32} className="mb-2 opacity-50" />
+                      <p className="text-sm font-medium">No classes today</p>
+                      <p className="text-xs mt-1">Use the Live Timetable for other days</p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="flex flex-col gap-2">
+                    {todayClasses.map((schedule) => {
+                      const status = getClassStatus(schedule, new Date())
+                      const isSelected = attendanceScope === 'class' && currentClass?.id === schedule.id && currentClass?.day === schedule.day
+                      return (
+                        <button
+                          key={`${schedule.id}-${schedule.day}-${schedule.start_time}`}
+                          className={`w-full text-left rounded-xl p-3.5 border-2 transition-all ${isSelected
+                            ? isLightMode
+                              ? `border-red-400 bg-red-50 shadow-sm`
+                              : `border-red-500/60 bg-red-500/10`
+                            : isLightMode
+                              ? `border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm ${status === 'done' ? 'opacity-60' : ''}`
+                              : `border-slate-700 bg-slate-800/50 hover:border-slate-600 ${status === 'done' ? 'opacity-50' : ''}`
+                            }`}
+                          onClick={() => {
+                            setAttendanceScope('class')
+                            setCurrentClass(schedule)
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-sm font-bold ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                                  {schedule.course_code}
+                                </span>
+                                {status === 'ongoing' && (
+                                  <span className={`flex items-center gap-1 text-[10px] font-bold uppercase ${getCollegeColorClass('text')}`}>
+                                    <MdFiberManualRecord size={8} className="animate-pulse" /> Live
+                                  </span>
+                                )}
+                                {status === 'done' && (
+                                  <span className={`text-[10px] font-bold uppercase ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>Done</span>
+                                )}
+                                {status === 'up-next' && (
+                                  <span className="text-[10px] font-bold uppercase text-amber-500">Up Next</span>
+                                )}
+                              </div>
+                              <p className={`text-xs mb-1.5 truncate ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                {schedule.course_name}
+                              </p>
+                              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] ${isLightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <span className="flex items-center gap-1">
+                                  <MdAccessTime size={12} />
+                                  {formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MdLocationOn size={12} />
+                                  {schedule.room}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MdMenuBook size={12} />
+                                  {schedule.section}
+                                </span>
+                              </div>
+                            </div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${isSelected
+                              ? 'border-red-500 bg-red-500'
+                              : isLightMode ? 'border-slate-300' : 'border-slate-600'
+                              }`}>
+                              {isSelected && (
+                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
+              {/* Reason */}
+              {attendanceScope === 'class' && currentClass && (
+                <div className="mt-4">
+                  <label className={`text-xs font-semibold block mb-1.5 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Reason (optional)
+                  </label>
+                  <textarea
+                    className={`w-full rounded-xl border-2 px-3.5 py-2.5 text-sm min-h-[70px] resize-none transition-colors ${isLightMode
+                      ? 'bg-white border-slate-200 focus:border-slate-400 text-slate-800 placeholder:text-slate-300'
+                      : 'bg-slate-800 border-slate-700 focus:border-slate-500 text-white placeholder:text-slate-600'
+                      }`}
+                    style={{ outline: 'none' }}
+                    value={attendanceReason}
+                    onChange={(e) => setAttendanceReason(e.target.value)}
+                    placeholder="e.g., Medical appointment, Emergency..."
                   />
                 </div>
               )}
+            </div>
 
-              <textarea
-                className={`w-full rounded-lg border px-3 py-2 text-sm min-h-[90px] ${isLightMode ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700 text-white'}`}
-                value={attendanceReason}
-                onChange={(e) => setAttendanceReason(e.target.value)}
-                placeholder="Reason (optional)"
-              />
-
+            {/* Modal Footer */}
+            <div className={`px-5 py-4 border-t flex flex-col gap-2 ${isLightMode ? 'border-slate-100 bg-slate-50' : 'border-slate-800 bg-slate-800/30'}`}>
               <button
-                className={`w-full rounded-lg px-4 py-2 font-semibold ${isLightMode
-                  ? isScience
-                    ? 'bg-emerald-600 text-white'
-                    : isArtsLetters
-                      ? 'bg-orange-500 text-white'
-                      : isArchitecture
-                        ? 'bg-red-500 text-white'
-                        : 'bg-blue-600 text-white'
-                  : 'bg-cyan-500 text-slate-900'
+                className={`w-full rounded-xl px-4 py-3 font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed ${isLightMode
+                  ? 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700'
+                  : 'bg-red-600 text-white hover:bg-red-500 active:bg-red-700'
                   }`}
                 onClick={handleMarkAbsent}
-                disabled={attendanceSubmitting}
+                disabled={attendanceSubmitting || !currentClass || attendanceScope !== 'class'}
               >
-                {attendanceSubmitting ? 'Submitting...' : 'Confirm Absence'}
+                <MdEventBusy size={16} />
+                {attendanceSubmitting ? 'Submitting...' : currentClass ? `Report Absent for ${currentClass.course_code}` : 'Select a class above'}
+              </button>
+              <button
+                className={`w-full rounded-xl px-4 py-2.5 font-semibold text-xs transition-all flex items-center justify-center gap-1.5 ${isLightMode
+                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                onClick={() => {
+                  setAttendanceOpen(false)
+                  router.push('/faculty/live-timetable')
+                }}
+              >
+                <MdOpenInNew size={14} />
+                Open Live Timetable for full management
               </button>
             </div>
           </div>

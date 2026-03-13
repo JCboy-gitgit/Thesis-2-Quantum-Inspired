@@ -318,6 +318,13 @@ export default function FacultyProfilePage() {
   const handleSave = async () => {
     if (!editForm || !user) return
 
+    // Validate phone number if provided
+    const phoneValue = (editForm.phone || '').trim()
+    if (phoneValue && !/^\+?[0-9\-() ]{7,20}$/.test(phoneValue)) {
+      setMessage({ type: 'error', text: 'Please enter a valid contact number (digits only, 7-20 characters).' })
+      return
+    }
+
     setSaving(true)
     setMessage(null)
 
@@ -335,8 +342,8 @@ export default function FacultyProfilePage() {
 
       // Update name directly in users table (faculty can now edit their own name)
       if (nameChanged || prefixChanged || suffixChanged) {
-        const { error: nameError } = await supabase
-          .from('users')
+        const { error: nameError } = await (supabase
+          .from('users') as any)
           .update({
             full_name: displayNameForUsers || editForm.full_name,
             updated_at: new Date().toISOString()
@@ -349,8 +356,8 @@ export default function FacultyProfilePage() {
         }
 
         // Also update faculty_profiles by user_id (primary key relationship)
-        const { error: facultyError } = await supabase
-          .from('faculty_profiles')
+        const { error: facultyError } = await (supabase
+          .from('faculty_profiles') as any)
           .update({
             full_name: (editForm.full_name || '').trim(),
             name_prefix: (editForm.name_prefix || '').trim() || null,
@@ -368,8 +375,8 @@ export default function FacultyProfilePage() {
 
       // Update phone in both tables
       if (editForm.phone !== user.phone) {
-        const { error: phoneError } = await supabase
-          .from('users')
+        const { error: phoneError } = await (supabase
+          .from('users') as any)
           .update({
             phone: editForm.phone,
             updated_at: new Date().toISOString()
@@ -381,8 +388,8 @@ export default function FacultyProfilePage() {
         }
 
         // Also update in faculty_profiles
-        const { error: facultyPhoneError } = await supabase
-          .from('faculty_profiles')
+        const { error: facultyPhoneError } = await (supabase
+          .from('faculty_profiles') as any)
           .update({
             phone: editForm.phone,
             updated_at: new Date().toISOString()
@@ -404,16 +411,16 @@ export default function FacultyProfilePage() {
       }
 
       // Try to update first
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('user_profiles')
+      const { data: existingProfile, error: checkError } = await (supabase
+        .from('user_profiles') as any)
         .select('id')
         .eq('user_id', user.id)
         .single()
 
       if (existingProfile) {
         // Update existing record
-        const { error: updateError } = await supabase
-          .from('user_profiles')
+        const { error: updateError } = await (supabase
+          .from('user_profiles') as any)
           .update(profileData)
           .eq('user_id', user.id)
 
@@ -422,8 +429,8 @@ export default function FacultyProfilePage() {
         }
       } else {
         // Insert new record if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('user_profiles')
+        const { error: insertError } = await (supabase
+          .from('user_profiles') as any)
           .insert([profileData])
 
         if (insertError) {
@@ -462,6 +469,38 @@ export default function FacultyProfilePage() {
     setEditing(false)
   }
 
+  // Compress image using canvas before upload
+  const compressImage = (file: File, maxWidth = 1024, quality = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      if (file.type === 'image/gif') { resolve(file); return }
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        let { width, height } = img
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) { resolve(file); return }
+            resolve(new File([blob], file.name, { type: 'image/webp', lastModified: Date.now() }))
+          },
+          'image/webp',
+          quality
+        )
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+      img.src = url
+    })
+  }
+
   // Handle profile image upload
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -482,15 +521,17 @@ export default function FacultyProfilePage() {
 
     setUploadingImage(true)
     try {
-      // Create a unique filename
-      const fileExt = file.name.split('.').pop()
+      // Compress image before upload
+      const compressed = await compressImage(file)
+      const isCompressed = compressed !== file
+      const fileExt = isCompressed ? 'webp' : (file.name.split('.').pop() || 'jpg')
       const fileName = `${user.id}-${Date.now()}.${fileExt}`
       const filePath = `avatars/${fileName}`
 
       // Upload to Supabase Storage
       const { error: uploadError, data } = await supabase.storage
         .from('profile-images')
-        .upload(filePath, file, {
+        .upload(filePath, compressed, {
           cacheControl: '3600',
           upsert: true
         })
@@ -882,7 +923,9 @@ export default function FacultyProfilePage() {
                   Department
                 </label>
                 <p>{getDepartmentLabel(user?.department)}</p>
-                <p className={styles.readOnly}>Contact admin to update department</p>
+                {!user?.department?.trim() && (
+                  <p className={styles.readOnly}>Contact admin to update department</p>
+                )}
               </div>
 
               {/* Phone */}
@@ -892,12 +935,25 @@ export default function FacultyProfilePage() {
                   Contact Number
                 </label>
                 {editing ? (
-                  <input
-                    type="tel"
-                    value={editForm?.phone || ''}
-                    onChange={(e) => setEditForm({ ...editForm!, phone: e.target.value })}
-                    placeholder="+63 XXX XXX XXXX"
-                  />
+                  <>
+                    <input
+                      type="tel"
+                      value={editForm?.phone || ''}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        // Only allow digits, +, spaces, dashes, parentheses
+                        if (val && !/^[0-9+\-() ]*$/.test(val)) return
+                        setEditForm({ ...editForm!, phone: val })
+                      }}
+                      placeholder="+63 XXX XXX XXXX"
+                      maxLength={20}
+                    />
+                    {editForm?.phone && !/^\+?[0-9\-() ]{7,20}$/.test(editForm.phone.trim()) && (
+                      <span style={{ color: 'var(--color-error, #ef4444)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                        Enter a valid phone number (7-20 digits, may start with +)
+                      </span>
+                    )}
+                  </>
                 ) : (
                   <p>{user?.phone || 'Not set'}</p>
                 )}

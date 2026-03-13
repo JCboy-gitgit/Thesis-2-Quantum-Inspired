@@ -1686,6 +1686,34 @@
   object-fit: cover;
 }
 
+.imageDeleteBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(239, 68, 68, 0.85);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.imageItem:hover .imageDeleteBtn {
+  opacity: 1;
+}
+
+.imageDeleteBtn:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: scale(1.1);
+}
+
 .noImages {
   text-align: center;
   padding: 40px;
