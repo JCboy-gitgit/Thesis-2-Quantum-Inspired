@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QSA - One-File Backend Algorithm Demo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #79c0ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --pink: #ff7b72;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --hard: #f85149;
+    --soft: #3fb950;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2128 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 2rem 2rem;
+    text-align: center;
+  }
+  header h1 { font-size: 2rem; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+  header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+  header .badge { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 0.2rem 0.8rem; font-size: 0.8rem; color: var(--purple); margin-top: 0.5rem; }
+  .header-actions { margin-top: 0.9rem; }
+  .toggle-btn {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .toggle-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  nav {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    padding: 1rem 2rem; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    justify-content: center;
+  }
+  nav button {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); padding: 0.4rem 1rem; border-radius: 20px;
+    cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+  }
+  nav button:hover, nav button.active {
+    background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  section { display: none; }
+  section.active { display: block; }
+
+  .algo-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 2rem; overflow: hidden;
+  }
+  .algo-card .card-header {
+    background: var(--surface2); padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .algo-num {
+    background: var(--accent); color: #000; font-weight: 800;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; flex-shrink: 0;
+  }
+  .card-header h2 { font-size: 1.05rem; color: var(--text); }
+  .card-header span { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+  .card-body { padding: 1.5rem; }
+
+  .math-block {
+    background: #0d1117; border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 1.2rem 1.5rem;
+    font-family: 'Courier New', monospace; font-size: 0.92rem;
+    line-height: 1.9; margin: 1rem 0; overflow-x: auto;
+    color: #cdd9e5;
+  }
+  .hide-math .math-block { display: none; }
+  .math-block .kw { color: var(--purple); font-weight: bold; }
+  .math-block .fn { color: var(--accent); }
+  .math-block .num { color: var(--orange); }
+  .math-block .comment { color: var(--muted); font-style: italic; }
+  .math-block .penalty { color: var(--red); font-weight: bold; }
+  .math-block .soft { color: var(--green); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  .info-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem;
+  }
+  .info-box h4 { color: var(--accent2); font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .info-box p, .info-box li { font-size: 0.875rem; color: var(--muted); }
+  .info-box ul { padding-left: 1.2rem; }
+  .info-box li { margin-bottom: 0.25rem; }
+
+  .viz-area { margin: 1.5rem 0; }
+  .viz-area h3 { font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+
+  canvas { max-height: 300px; }
+
+  /* Schedule Grid Viz */
+  .schedule-grid { overflow-x: auto; }
+  .sg-table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
+  .sg-table th { background: var(--surface2); color: var(--muted); padding: 0.4rem 0.6rem; border: 1px solid var(--border); text-align: center; }
+  .sg-table td { border: 1px solid var(--border); padding: 0.35rem 0.5rem; text-align: center; height: 38px; }
+  .cell-empty { color: var(--border); font-size: 0.7rem; }
+  .cell-class { border-radius: 4px; font-weight: 600; font-size: 0.75rem; padding: 3px 5px; }
+  .c1 { background: #1d3a6b; color: var(--accent2); }
+  .c2 { background: #1e3a2e; color: var(--green); }
+  .c3 { background: #3a1e1e; color: var(--pink); }
+  .c4 { background: #2e2818; color: var(--orange); }
+  .c5 { background: #2a1e3a; color: var(--purple); }
+  .conflict { background: #5c1a1a; color: var(--red); border: 2px solid var(--red); }
+
+  /* SA temperature viz */
+  .temp-bar-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .temp-row { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
+  .temp-label { width: 80px; color: var(--muted); flex-shrink: 0; text-align: right; }
+  .temp-bar-outer { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; border: 1px solid var(--border); }
+  .temp-bar-inner { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: 600; transition: width 0.5s; }
+  .temp-val { width: 80px; color: var(--muted); font-size: 0.8rem; }
+
+  /* Tunneling viz */
+  .tunnel-viz { position: relative; width: 100%; height: 200px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+  .tunnel-label { position: absolute; font-size: 0.7rem; color: var(--muted); }
+
+  /* Neighbor move viz */
+  .move-cards { display: flex; flex-wrap: wrap; gap: 1rem; }
+  .move-card {
+    flex: 1; min-width: 160px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem; text-align: center;
+  }
+  .move-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .move-card h4 { font-size: 0.85rem; color: var(--accent2); margin-bottom: 0.4rem; }
+  .move-card p { font-size: 0.78rem; color: var(--muted); }
+
+  /* Energy table */
+  .etable { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .etable th { background: var(--surface2); color: var(--muted); padding: 0.5rem 0.75rem; border: 1px solid var(--border); text-align: left; }
+  .etable td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  .etable tr.hard td { color: var(--red); }
+  .etable tr.soft td { color: var(--green); }
+  .etable tr.hard td:first-child { font-weight: bold; }
+
+  /* Interactive SA demo */
+  .demo-btn {
+    background: var(--accent); color: #000; border: none;
+    padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer;
+    font-weight: 700; font-size: 0.85rem; margin-right: 0.5rem; margin-bottom: 0.5rem;
+  }
+  .demo-btn:hover { background: var(--accent2); }
+  .demo-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; flex: 1; min-width: 130px; text-align: center; }
+  .stat-box .val { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+  .stat-box .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .tag { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin: 2px; }
+  .tag.hard { background: #3a1111; color: var(--red); border: 1px solid #5c2020; }
+  .tag.soft { background: #0f2e17; color: var(--green); border: 1px solid #1c4d28; }
+
+  .formula { text-align: center; font-size: 1.1rem; padding: 1rem; color: var(--accent2); font-family: 'Courier New', monospace; }
+
+  .plain-talk {
+    background: #10253a;
+    border: 1px solid #1c466b;
+    border-left: 4px solid var(--accent2);
+    color: #cfe9ff;
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .plain-talk strong { color: #ffffff; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* Sort viz */
+  .sort-items { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+  .sort-item { padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+  .sort-p1 { background: #1a1a3a; color: var(--purple); border: 1px solid #3a2a6a; }
+  .sort-p2 { background: #1e2e0a; color: var(--green); border: 1px solid #3a5010; }
+  .sort-p3 { background: #2e1e0a; color: var(--orange); border: 1px solid #6a3a10; }
+  .sort-p4 { background: #1a2e3a; color: var(--accent); border: 1px solid #1a4a6a; }
+  .sort-arrow { color: var(--muted); font-size: 1.2rem; display: flex; align-items: center; }
+
+</style>
+</head>
+<body class="hide-math">
+
+<header>
+  <h1>Quantum-Inspired Scheduling Algorithm</h1>
+  <p>One-file visual demo of the backend scheduler, explained in simple terms.</p>
+  <span class="badge">QUBO · Simulated Annealing · Quantum Tunneling</span>
+  <div class="header-actions">
+    <button id="mathToggle" class="toggle-btn" onclick="toggleMath()">Show Math Details</button>
+  </div>
+</header>
+
+<nav>
+  <button class="active" data-target="overview" onclick="showSection('overview', this)">📐 Overview</button>
+  <button data-target="algo1" onclick="showSection('algo1', this)">① Main Scheduler</button>
+  <button data-target="algo2" onclick="showSection('algo2', this)">② Greedy Construction</button>
+  <button data-target="algo3" onclick="showSection('algo3', this)">③ Energy Function</button>
+  <button data-target="algo4" onclick="showSection('algo4', this)">④ Quantum Tunneling</button>
+  <button data-target="algo5" onclick="showSection('algo5', this)">⑤ Neighbor Generation</button>
+  <button data-target="demo" onclick="showSection('demo', this)">🎮 Live Demo</button>
+</nav>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════════ OVERVIEW -->
+<section id="overview" class="active">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">∑</div>
+      <h2>Mathematical Foundation — QUBO Formulation</h2>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>Explain it like I am new:</strong> Think of this as a smart "arrange classes" machine. It starts with a rough schedule, checks what is bad, then keeps making better swaps until the schedule is clean and practical.
+      </div>
+      <p style="color:var(--muted); margin-bottom:1rem;">The scheduling problem is encoded as a <strong style="color:var(--accent)">Quadratic Unconstrained Binary Optimization (QUBO)</strong> — we seek an assignment that minimizes a global energy (cost) function.</p>
+
+      <div class="formula">
+        x* = arg min E(x) = arg min [ λ·H(x) + Σ wᵢ·Sᵢ(x) ]
+      </div>
+
+      <div class="two-col">
+        <div class="info-box">
+          <h4>Variables</h4>
+          <ul>
+            <li><strong style="color:var(--accent)">x</strong> — assignment vector: each section s mapped to (room r, day d, time t)</li>
+            <li><strong style="color:var(--accent)">E(x)</strong> — total energy of assignment x</li>
+            <li><strong style="color:var(--red)">λ = 1,000,000</strong> — hard constraint penalty</li>
+            <li><strong style="color:var(--green)">wᵢ ∈ [10, 500]</strong> — soft constraint weights</li>
+          </ul>
+        </div>
+        <div class="info-box">
+          <h4>Objective</h4>
+          <ul>
+            <li><strong>H(x)</strong> — sum of all hard constraint violations</li>
+            <li><strong>Sᵢ(x)</strong> — soft constraint penalty terms</li>
+            <li>Goal: drive <strong style="color:var(--green)">E(x*) → 0</strong></li>
+            <li>Hard violations: E(x) ≥ 1,000,000 (infeasible)</li>
+          </ul>
+        </div>
+      </div>
+
+      <hr>
+      <h3 style="margin-bottom:1rem; color:var(--muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em;">System Architecture Flow</h3>
+      <div style="display:flex; gap:0; flex-wrap:wrap; align-items:center; justify-content:center; margin:1rem 0;">
+        <div style="text-align:center; padding:0.75rem 1rem; background:var(--surface2); border-radius:8px; min-width:120px; border:1px solid var(--border);">
+          <div style="font-size:1.5rem;">📥</div>
+          <div style="font-size:0.78rem; color:var(--muted); margin-top:4px;">Input<br>S, R, T, D</div>
+        </div>
+        <div style="font-size:1.5rem; color:var(--border); padding:0 0.5rem;">→</div>
+        <div style="text-align:center; padding:0.75rem 1rem; background:#1a2a1a; border-radius:8px; min-width:120px; border:1px solid #2a4a2a;">
+          <div style="font-size:1.5rem;">🏗️</div>
+          <div style="font-size:0.78rem; color:var(--green); margin-top:4px;">Greedy<br>Construction</div>
+        </div>
+        <div style="font-size:1.5rem; color:var(--border); padding:0 0.5rem;">→</div>
+        <div style="text-align:center; padding:0.75rem 1rem; background:#1a1a3a; border-radius:8px; min-width:120px; border:1px solid #2a2a6a;">
+          <div style="font-size:1.5rem;">🌡️</div>
+          <div style="font-size:0.78rem; color:var(--purple); margin-top:4px;">Simulated<br>Annealing</div>
+        </div>
+        <div style="font-size:1.5rem; color:var(--border); padding:0 0.5rem;">→</div>
+        <div style="text-align:center; padding:0.75rem 1rem; background:#2a1a2a; border-radius:8px; min-width:120px; border:1px solid #4a2a4a;">
+          <div style="font-size:1.5rem;">⚛️</div>
+          <div style="font-size:0.78rem; color:var(--pink); margin-top:4px;">Quantum<br>Tunneling</div>
+        </div>
+        <div style="font-size:1.5rem; color:var(--border); padding:0 0.5rem;">→</div>
+        <div style="text-align:center; padding:0.75rem 1rem; background:#1a2e3a; border-radius:8px; min-width:120px; border:1px solid #1a4a6a;">
+          <div style="font-size:1.5rem;">✅</div>
+          <div style="font-size:0.78rem; color:var(--accent); margin-top:4px;">Optimal<br>Schedule</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ ALGO 1 -->
+<section id="algo1">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">1</div>
+      <h2>Main Scheduler — Simulated Annealing Core</h2>
+      <span>Metropolis Acceptance Criterion</span>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>In plain words:</strong> The system tries small changes. If a change improves the schedule, it keeps it. If a change is worse, it might still keep it early on so it can explore and avoid getting stuck.
+      </div>
+
+      <div class="math-block">
+<span class="comment">// Core optimization loop — mathematical form:</span>
+
+<span class="kw">Given:</span>  x₀ ← GreedyConstruct(S, R, T, D)
+         T₀ ← initial temperature,  α ← cooling rate ∈ (0,1)
+
+<span class="kw">At each iteration k:</span>
+  x' ← GetNeighbor(xₖ)          <span class="comment">// small perturbation</span>
+  Δ  ← E(x') - E(xₖ)            <span class="comment">// energy delta</span>
+
+  <span class="comment">// Metropolis Acceptance:</span>
+  P(accept) = { <span class="fn">1</span>                    if Δ &lt; 0
+             { <span class="fn">exp(−Δ / Tₖ)</span>       if Δ ≥ 0
+
+  <span class="comment">// Adaptive Cooling:</span>
+  Tₖ₊₁ = max(Tₖ × α,  T_min)
+
+  <span class="comment">// Quantum Tunneling trigger:</span>
+  IF stagnation_count &gt; <span class="num">50</span> THEN QuantumTunnel(xₖ, Tₖ)
+
+<span class="kw">Termination:</span>
+  E(x*) = <span class="num">0</span>                      <span class="comment">// perfect schedule</span>
+  E(x*) &lt; <span class="num">1000</span> AND k &gt; <span class="num">100</span>     <span class="comment">// good enough</span>
+  No improvement for <span class="num">500</span> iters  <span class="comment">// exhausted</span>
+      </div>
+
+      <div class="viz-area">
+        <h3>Acceptance Probability vs ΔE at Different Temperatures</h3>
+        <canvas id="metropolisChart"></canvas>
+      </div>
+
+      <div class="two-col" style="margin-top:1.5rem;">
+        <div class="info-box">
+          <h4>Why exp(−Δ/T)?</h4>
+          <p>When T is <strong>high</strong>, even bad moves (Δ > 0) are accepted with high probability — the algorithm <em>explores</em> freely. As T <strong>decreases</strong>, only improvements are accepted — the algorithm <em>exploits</em> promising regions. This prevents getting stuck in local minima.</p>
+        </div>
+        <div class="info-box">
+          <h4>Cooling Schedule</h4>
+          <p>Geometric cooling: <strong style="color:var(--accent)">Tₖ = T₀ × αᵏ</strong></p>
+          <p>Typical values: T₀ = 1000, α = 0.995, T_min = 0.1. After 1000 iterations, T drops to ≈ 0.67% of initial, making acceptance of worse solutions extremely rare.</p>
+        </div>
+      </div>
+
+      <div class="viz-area" style="margin-top:1.5rem;">
+        <h3>Temperature Cooling Curve</h3>
+        <canvas id="coolingChart"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ ALGO 2 -->
+<section id="algo2">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">2</div>
+      <h2>Greedy Construction — Initial Solution</h2>
+      <span>Priority-Ordered Placement</span>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>In plain words:</strong> The algorithm first places the hardest classes (fixed, lab, big sections). Easy classes are placed later. This gives a much better starting point before deep optimization.
+      </div>
+
+      <div class="math-block">
+<span class="comment">// Formally: a prioritized greedy heuristic</span>
+
+<span class="kw">Define</span> priority function π(s) for section s:
+
+  π(s) = { <span class="num">4</span>  if s is pinned (admin-fixed)
+         { <span class="num">3</span>  if s is a lab session
+         { <span class="num">2</span>  if student_count(s) is large
+         { <span class="num">1</span>  if weekly_hours(s) is large
+         { <span class="num">0</span>  otherwise
+
+<span class="kw">Sort:</span> S_sorted = sort(S, key=π, descending)
+
+<span class="kw">For each</span> section s ∈ S_sorted:
+  best_slot* = arg min { fit_cost(r, d, t) }
+                  (r,d,t) ∈ compatible_rooms[s] × D × T
+                  subject to: no_conflict(s, r, d, t) = TRUE
+
+  <span class="kw">fit_cost</span>(r, d, t) = capacity_waste(r, s) + time_preference(t)
+
+  <span class="comment">// Non-consecutive day constraint:</span>
+  IF ∃ session s' of same subject on day d±1 THEN skip d
+      </div>
+
+      <div class="viz-area">
+        <h3>Section Sorting Priority</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; margin-bottom:1rem;">
+          <div class="sort-item sort-p1">📌 Pinned (admin)</div>
+          <div class="sort-arrow">→</div>
+          <div class="sort-item sort-p2">🔬 Lab sections</div>
+          <div class="sort-arrow">→</div>
+          <div class="sort-item sort-p3">👥 Large classes</div>
+          <div class="sort-arrow">→</div>
+          <div class="sort-item sort-p4">🕐 Many hours/week</div>
+          <div class="sort-arrow">→</div>
+          <div class="sort-item" style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">Others</div>
+        </div>
+        <p style="color:var(--muted); font-size:0.82rem;">Hardest-to-place sections go first. Placing easier sections later maximizes the chance all hard constraints can be satisfied.</p>
+      </div>
+
+      <div class="viz-area">
+        <h3>Sample Schedule Grid After Greedy Construction</h3>
+        <div class="schedule-grid">
+          <table class="sg-table">
+            <thead>
+              <tr>
+                <th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th>
+              </tr>
+            </thead>
+            <tbody id="greedyGridBody"></tbody>
+          </table>
+        </div>
+        <p style="color:var(--muted); font-size:0.78rem; margin-top:0.5rem;">🔴 Red cells = conflicts to be resolved by SA · Colors = different sections</p>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="info-box">
+          <h4>Session Splitting Rule</h4>
+          <p>A 3-hr lecture → 1 session. A 5-hr class → 2 sessions (e.g., 3hr + 2hr). This prevents scheduling impossibly long single-day blocks and spreads cognitive load.</p>
+        </div>
+        <div class="info-box">
+          <h4>Non-Consecutive Day Rule</h4>
+          <p>If subject A meets on Monday, it <em>cannot</em> meet on Tuesday (adjacent). This forces spacing, reducing student fatigue. Mathematically: |d₁ − d₂| ≥ 2 for same subject sessions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ ALGO 3 -->
+<section id="algo3">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">3</div>
+      <h2>Energy Function — QUBO Cost Calculation</h2>
+      <span>Objective Function E(x)</span>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>In plain words:</strong> "Energy" is just a score. Bad schedule issues add points. Lower score is better. Hard rule breaks add huge points so the optimizer avoids them first.
+      </div>
+
+      <div class="math-block">
+<span class="comment">// Full energy function:</span>
+
+<span class="fn">E(x)</span> = λ · <span class="fn">H(x)</span>  +  Σᵢ wᵢ · <span class="fn">Sᵢ(x)</span>
+
+<span class="comment">// ── Hard Constraints H(x): penalty = λ = 1,000,000 ──────</span>
+<span class="kw">H(x)</span> = Σ [ room_double_book(r,d,t)      <span class="comment">// same room, 2+ classes</span>
+           + teacher_double_book(p,d,t)   <span class="comment">// teacher in 2 places</span>
+           + teacher_teleport(p,d,t,t+1)  <span class="comment">// diff building, consecutive</span>
+           + online_room_mismatch(c)       <span class="comment">// online class in phys. room</span>
+           + outside_hours(c)             <span class="comment">// before 7AM or after 9PM</span>
+           + capacity_exceeded(c)         <span class="comment">// students > 110% capacity</span>
+           + lab_in_wrong_room(c)         <span class="comment">// lab ↔ lecture room swap</span>
+           + strict_lunch_overlap(c) ]    <span class="comment">// overlaps lunch (strict mode)</span>
+
+<span class="comment">// ── Soft Constraints Sᵢ(x): weighted penalties ───────────</span>
+<span class="kw">S(x)</span> = <span class="num">50</span>  · room_type_mismatch(c)
+       + <span class="num">15</span>  · waste_ratio(c)           <span class="comment">// (capacity - students)/capacity</span>
+       + <span class="num">500</span> · lunch_overlap_flex(c)
+       + <span class="num">80</span>  · extra_daily_hours(p)
+       + <span class="num">150</span> · late_lecture(c)
+       + <span class="num">100</span> · lec_lab_diff_days(c)
+       + <span class="num">200</span> · teacher_gap_3h(p)
+       - <span class="num">10</span>  · accessible_room_bonus(c)   <span class="comment">// reward good placement</span>
+      </div>
+
+      <div class="viz-area">
+        <h3>Constraint Hierarchy & Weight Visualization</h3>
+        <canvas id="energyChart"></canvas>
+      </div>
+
+      <div class="viz-area" style="margin-top:1.5rem;">
+        <h3>Constraint Reference Table</h3>
+        <table class="etable">
+          <thead><tr><th>Type</th><th>Constraint</th><th>Penalty</th><th>Tag</th></tr></thead>
+          <tbody>
+            <tr class="hard"><td>HARD</td><td>Room double-booking (same room, day, time)</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="hard"><td>HARD</td><td>Teacher double-booking (two places at once)</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="hard"><td>HARD</td><td>Teacher teleportation (diff. buildings, consecutive)</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="hard"><td>HARD</td><td>Class outside 7AM–9PM</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="hard"><td>HARD</td><td>Student count > 110% room capacity</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="hard"><td>HARD</td><td>Lab class in non-lab room (or vice versa)</td><td>1,000,000</td><td><span class="tag hard">H</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Class overlaps lunch (flexible mode)</td><td>500</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Teacher 3+ hour gap in daily schedule</td><td>200</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Lecture scheduled at late time of day</td><td>150</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Lec & Lab of same subject on different days</td><td>100</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Teacher exceeds max daily hours (per extra hour)</td><td>80</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Room type mismatch</td><td>50</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Room capacity waste (per unit ratio)</td><td>15</td><td><span class="tag soft">S</span></td></tr>
+            <tr class="soft"><td>SOFT</td><td>Accessible room used for mobility needs</td><td>−10 (bonus)</td><td><span class="tag soft">+</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ ALGO 4 -->
+<section id="algo4">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">4</div>
+      <h2>Quantum Tunneling — Escaping Local Minima</h2>
+      <span>Large-Step Perturbation</span>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>In plain words:</strong> If the optimizer stops improving for too long, it makes a big jump to a new arrangement. This is the "quantum tunneling" idea.
+      </div>
+
+      <div class="math-block">
+<span class="comment">// Triggered when: stagnation_count > 50 iterations</span>
+<span class="comment">// Makes a LARGE structural change — unlike SA's small steps</span>
+
+<span class="kw">Strategy</span> ← Uniform({block_swap, random_replacement, online_shift})
+
+<span class="kw">IF</span> block_swap:
+  dept ← random department d ∈ Departments
+  day₁, day₂ ← two distinct days (same college)
+  x' = x <span class="comment">// swap ALL classes of dept between day₁ ↔ day₂</span>
+
+<span class="kw">IF</span> random_replacement:
+  s ← random section s ∈ S
+  x' = x \ {s → (r, d, t)}                  <span class="comment">// remove from current slot</span>
+  x' = x' ∪ {s → (r', d', t')} where        <span class="comment">// place anywhere valid</span>
+       (r', d', t') = arg min fit_cost
+
+<span class="kw">IF</span> online_shift:
+  s ← random non-lab section
+  x' = move s between physical ↔ online day
+
+<span class="comment">// Metaphor: quantum particle tunnels through energy barrier</span>
+<span class="comment">// instead of climbing over it (SA) — jumps past local minima</span>
+      </div>
+
+      <div class="viz-area">
+        <h3>Energy Landscape — SA vs Quantum Tunneling</h3>
+        <canvas id="tunnelChart"></canvas>
+        <p style="color:var(--muted); font-size:0.8rem; margin-top:0.5rem;">
+          🔵 SA gradually climbs out of local minima by accepting worse solutions with probability exp(−Δ/T) &nbsp;|&nbsp;
+          ⚛️ Quantum Tunneling jumps past the barrier entirely
+        </p>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem;">
+        <div class="info-box">
+          <h4>Why "Quantum"?</h4>
+          <p>In quantum physics, particles can <em>tunnel through</em> energy barriers they classically couldn't overcome. Here we simulate this: when SA gets stuck (stagnation > 50), we make a large structural jump — "tunneling" past the energy barrier — rather than slowly climbing over it.</p>
+        </div>
+        <div class="info-box">
+          <h4>Stagnation Trigger</h4>
+          <p>If no improvement in E(x) for 50+ consecutive iterations, standard SA is stuck in a local minimum. Quantum tunneling provides a controlled escape by perturbing the global structure (entire department days), not just single assignments.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ ALGO 5 -->
+<section id="algo5">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">5</div>
+      <h2>Neighbor Generation — Local Perturbation</h2>
+      <span>3-Move Operator</span>
+    </div>
+    <div class="card-body">
+      <div class="plain-talk">
+        <strong>In plain words:</strong> Each step edits only one thing: room, day, or time. Tiny moves let the algorithm improve gradually without destroying the full schedule.
+      </div>
+
+      <div class="math-block">
+<span class="comment">// Neighborhood function N(x): generates candidate x' near x</span>
+
+<span class="kw">Select:</span> a ← random assignment (a = s → (r, d, t)),  a ∉ Pinned
+
+<span class="kw">Move type</span> ← Uniform({change_room, change_day, change_time})
+
+<span class="kw">change_room:</span>
+  r' ← r' ∈ compatible_rooms[s],  r' ≠ r
+  x' = x \ {s→(r,d,t)} ∪ {s→(r',d,t)}
+  <span class="comment">// Valid if: room_available(r', d, t) = TRUE</span>
+
+<span class="kw">change_day:</span>
+  d' ← d' ∈ D,  d' ≠ d,  d' not restricted for labs,
+       |d' - d_other_session| ≥ 2   <span class="comment">// non-consecutive rule</span>
+  x' = x \ {s→(r,d,t)} ∪ {s→(r,d',t)}
+  <span class="comment">// Valid if: no teacher conflict on (d', t)</span>
+
+<span class="kw">change_time:</span>
+  t' ← t' ∈ T,  t' ≠ t,
+       t' ∉ lunch_slots (strict mode)
+  x' = x \ {s→(r,d,t)} ∪ {s→(r,d,t')}
+  <span class="comment">// Valid if: no room or teacher conflict on (d, t')</span>
+
+<span class="kw">IF</span> no valid move found → <span class="fn">RETURN NULL</span>  <span class="comment">// skip this iteration</span>
+      </div>
+
+      <div class="viz-area">
+        <h3>The Three Move Types</h3>
+        <div class="move-cards">
+          <div class="move-card">
+            <div class="move-icon">🏠</div>
+            <h4>Change Room</h4>
+            <p>Keep same day and time. Move to a different compatible room. Fixes room-type mismatches and capacity waste.</p>
+          </div>
+          <div class="move-card">
+            <div class="move-icon">📅</div>
+            <h4>Change Day</h4>
+            <p>Keep same room and time slot. Move to a different active day. Respects non-consecutive and online-day rules.</p>
+          </div>
+          <div class="move-card">
+            <div class="move-icon">🕐</div>
+            <h4>Change Time</h4>
+            <p>Keep same room and day. Slide to a different time slot. Avoids lunch conflicts and late-day penalties.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="viz-area" style="margin-top:1rem;">
+        <h3>Move Validity Constraints</h3>
+        <canvas id="moveChart"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════ DEMO -->
+<section id="demo">
+  <div class="algo-card">
+    <div class="card-header">
+      <div class="algo-num">▶</div>
+      <h2>Live Simulated Annealing Demo</h2>
+      <span>Watch energy minimize in real time</span>
+    </div>
+    <div class="card-body">
+      <p style="color:var(--muted); margin-bottom:1rem;">A simplified simulation of the SA loop on a toy scheduling problem. Watch the energy drop as the algorithm iterates.</p>
+
+      <div class="stat-row">
+        <div class="stat-box"><div class="val" id="demoEnergy">—</div><div class="lbl">Current Energy E(x)</div></div>
+        <div class="stat-box"><div class="val" id="demoBest">—</div><div class="lbl">Best Energy</div></div>
+        <div class="stat-box"><div class="val" id="demoTemp">—</div><div class="lbl">Temperature T</div></div>
+        <div class="stat-box"><div class="val" id="demoIter">0</div><div class="lbl">Iteration</div></div>
+        <div class="stat-box"><div class="val" id="demoTunnels">0</div><div class="lbl">Quantum Tunnels</div></div>
+      </div>
+
+      <div style="margin: 1rem 0;">
+        <button class="demo-btn" onclick="startDemo()">▶ Start</button>
+        <button class="demo-btn secondary" onclick="stopDemo()">⏸ Stop</button>
+        <button class="demo-btn secondary" onclick="resetDemo()">↺ Reset</button>
+      </div>
+
+      <div style="margin-bottom:0.5rem; font-size:0.8rem; color:var(--muted);">
+        <span style="color:var(--accent);">●</span> Current Energy &nbsp;
+        <span style="color:var(--green);">●</span> Best Energy &nbsp;
+        <span style="color:var(--orange);">▲</span> Quantum Tunneling event
+      </div>
+      <canvas id="demoChart" style="max-height:280px;"></canvas>
+
+      <div id="demoLog" style="margin-top:1rem; font-size:0.75rem; color:var(--muted); font-family:monospace; max-height:80px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<script>
+// ─────────────── NAV ───────────────
+function showSection(id, sourceBtn) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (sourceBtn) {
+    sourceBtn.classList.add('active');
+    return;
+  }
+  const targetBtn = document.querySelector(`nav button[data-target="${id}"]`);
+  if (targetBtn) targetBtn.classList.add('active');
+}
+
+function toggleMath() {
+  document.body.classList.toggle('hide-math');
+  const btn = document.getElementById('mathToggle');
+  const showingMath = !document.body.classList.contains('hide-math');
+  btn.textContent = showingMath ? 'Hide Math Details' : 'Show Math Details';
+}
+
+// ─────────────── METROPOLIS CHART ───────────────
+(function() {
+  const ctx = document.getElementById('metropolisChart').getContext('2d');
+  const deltas = Array.from({length: 60}, (_, i) => i * 10);
+
+  const temps = [
+    { t: 1000, label: 'T = 1000 (hot)', color: '#f85149' },
+    { t: 100,  label: 'T = 100',        color: '#d29922' },
+    { t: 10,   label: 'T = 10',         color: '#3fb950' },
+    { t: 1,    label: 'T = 1 (cold)',   color: '#58a6ff' },
+  ];
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: deltas,
+      datasets: temps.map(t => ({
+        label: t.label,
+        data: deltas.map(d => Math.exp(-d / t.t)),
+        borderColor: t.color,
+        backgroundColor: t.color + '22',
+        pointRadius: 0,
+        borderWidth: 2,
+        tension: 0.4,
+      }))
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { title: { display: true, text: 'ΔE (energy increase)', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { title: { display: true, text: 'P(accept)', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, min: 0, max: 1 }
+      }
+    }
+  });
+})();
+
+// ─────────────── COOLING CHART ───────────────
+(function() {
+  const ctx = document.getElementById('coolingChart').getContext('2d');
+  const iters = Array.from({length: 200}, (_, i) => i * 5);
+  const alpha = 0.995, T0 = 1000;
+  const temps = iters.map(i => Math.max(T0 * Math.pow(alpha, i), 0.1));
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: iters,
+      datasets: [{
+        label: 'Temperature Tₖ = 1000 × 0.995ᵏ',
+        data: temps,
+        borderColor: '#bc8cff',
+        backgroundColor: '#bc8cff22',
+        pointRadius: 0, borderWidth: 2, tension: 0.4, fill: true
+      }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { title: { display: true, text: 'Iteration k', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+        y: { title: { display: true, text: 'Temperature T', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+      }
+    }
+  });
+})();
+
+// ─────────────── GREEDY GRID ───────────────
+(function() {
+  const times = ['7:00–8:00', '8:00–9:00', '9:00–10:00', '10:00–11:00', '12:00–1:00', '1:00–2:00', '2:00–3:00', '3:00–4:00'];
+  const grid = [
+    ['c1','','c2','','c3','','',''],
+    ['','c4','','c1','','c5','',''],
+    ['c2','','conflict','','c4','','c1',''],
+    ['','c3','','c5','','c2','','c4'],
+    ['c5','','c4','','','c3','',''],
+    ['','c1','','conflict','c2','','c5',''],
+    ['c3','','c5','','c1','','','c2'],
+    ['','c2','','c3','','c4','conflict',''],
+  ];
+  const labels = {c1:'Math 101', c2:'Physics 2', c3:'CS 301', c4:'EE Lab', c5:'Chem 1', conflict:'⚠ CONFLICT', '':'—'};
+  const tbody = document.getElementById('greedyGridBody');
+  times.forEach((time, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="color:var(--muted);font-size:0.75rem;">${time}</td>` +
+      grid[i].map(c => c === 'conflict'
+        ? `<td><span class="cell-class conflict">${labels[c]}</span></td>`
+        : c
+          ? `<td><span class="cell-class ${c}">${labels[c]}</span></td>`
+          : `<td class="cell-empty">·</td>`
+      ).join('');
+    tbody.appendChild(tr);
+  });
+})();
+
+// ─────────────── ENERGY CHART ───────────────
+(function() {
+  const ctx = document.getElementById('energyChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Room\ndouble-book','Teacher\nconflict','Lab/room\nmismatch','Outside\nhours','Capacity\nexceeded','Lunch\noverlap','Teacher\ngap 3h+','Late\nlecture','Diff-day\nLec/Lab','Room\nwaste'],
+      datasets: [{
+        label: 'Penalty Value',
+        data: [1000000, 1000000, 1000000, 1000000, 1000000, 500, 200, 150, 100, 15],
+        backgroundColor: [
+          '#f8514988','#f8514988','#f8514988','#f8514988','#f8514988',
+          '#3fb95088','#3fb95088','#3fb95088','#3fb95088','#3fb95088'
+        ],
+        borderColor: [
+          '#f85149','#f85149','#f85149','#f85149','#f85149',
+          '#3fb950','#3fb950','#3fb950','#3fb950','#3fb950'
+        ],
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+        y: {
+          ticks: { color: '#8b949e', callback: v => v >= 1000 ? (v/1000)+'k' : v },
+          grid: { color: '#21262d' },
+          type: 'logarithmic',
+          title: { display: true, text: 'Penalty (log scale)', color: '#8b949e' }
+        }
+      }
+    }
+  });
+})();
+
+// ─────────────── TUNNEL CHART ───────────────
+(function() {
+  const ctx = document.getElementById('tunnelChart').getContext('2d');
+  const xs = Array.from({length: 200}, (_, i) => (i - 100) * 0.06);
+  const landscape = xs.map(x => {
+    return 2*Math.sin(x) + 0.5*Math.sin(3*x) + 0.8*Math.cos(2*x - 1) + x*0.1 + 5;
+  });
+
+  // SA path: slowly climbs out
+  const saPath = xs.map((x, i) => i < 50 ? landscape[i] + 0.5 : i < 70 ? landscape[i] + 1.5 : null);
+  // Tunnel path: jumps
+  const tunnelPath = xs.map((x, i) => i < 50 ? landscape[i] + 0.5 : i === 50 ? landscape[150] + 0.5 : null);
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xs.map(x => x.toFixed(1)),
+      datasets: [
+        { label: 'Energy Landscape', data: landscape, borderColor: '#30363d', backgroundColor: '#21262d88', pointRadius: 0, borderWidth: 2, tension: 0.4, fill: true },
+        { label: 'SA path', data: saPath, borderColor: '#58a6ff', pointRadius: 0, borderWidth: 2, borderDash: [5,3], tension: 0 },
+        { label: 'Quantum Tunnel', data: tunnelPath, borderColor: '#bc8cff', pointRadius: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,10], borderWidth: 2, tension: 0, pointBackgroundColor: '#bc8cff' },
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { display: false },
+        y: { title: { display: true, text: 'E(x) — Energy', color: '#8b949e' }, ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+      }
+    }
+  });
+})();
+
+// ─────────────── MOVE CHART ───────────────
+(function() {
+  const ctx = document.getElementById('moveChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Room available?', 'No teacher conflict', 'Not pinned', 'Lab/online rule', 'Non-consecutive', 'No lunch overlap'],
+      datasets: [
+        { label: 'Change Room', data: [1, 1, 1, 0, 0, 0], borderColor: '#58a6ff', backgroundColor: '#58a6ff33', pointBackgroundColor: '#58a6ff' },
+        { label: 'Change Day',  data: [0, 1, 1, 1, 1, 0], borderColor: '#3fb950', backgroundColor: '#3fb95033', pointBackgroundColor: '#3fb950' },
+        { label: 'Change Time', data: [1, 1, 1, 0, 0, 1], borderColor: '#bc8cff', backgroundColor: '#bc8cff33', pointBackgroundColor: '#bc8cff' },
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        r: { ticks: { display: false }, grid: { color: '#30363d' }, pointLabels: { color: '#8b949e', font: { size: 11 } }, min: 0, max: 1 }
+      }
+    }
+  });
+})();
+
+// ─────────────── LIVE DEMO ───────────────
+let demoInterval = null;
+let demoChartInstance = null;
+let energyHistory = [], bestHistory = [], labels = [], iter = 0, temp = 1000, best = 999999, current = 999999, tunnels = 0, stagnation = 0;
+
+function initDemoChart() {
+  const ctx = document.getElementById('demoChart').getContext('2d');
+  if (demoChartInstance) demoChartInstance.destroy();
+  demoChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Current E(x)', data: [], borderColor: '#58a6ff', pointRadius: 0, borderWidth: 1.5, tension: 0 },
+        { label: 'Best E(x)', data: [], borderColor: '#3fb950', pointRadius: 0, borderWidth: 2, tension: 0 },
+      ]
+    },
+    options: {
+      animation: false,
+      plugins: { legend: { labels: { color: '#8b949e' } } },
+      scales: {
+        x: { ticks: { color: '#8b949e', maxTicksLimit: 10 }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, title: { display: true, text: 'Energy E(x)', color: '#8b949e' } }
+      }
+    }
+  });
+}
+
+function startDemo() {
+  if (demoInterval) return;
+  if (iter === 0) resetDemo();
+
+  demoInterval = setInterval(() => {
+    iter++;
+    // Simulate: generate neighbor, compute delta
+    const delta = (Math.random() - 0.45) * (current * 0.05 + 50);
+    const newE = Math.max(0, current + delta);
+
+    let accepted = false;
+    if (delta < 0 || Math.random() < Math.exp(-delta / temp)) {
+      current = newE;
+      accepted = true;
+    }
+    if (current < best) { best = current; stagnation = 0; }
+    else if (accepted) stagnation++;
+    else stagnation++;
+
+    // Quantum tunneling
+    let tunneled = false;
+    if (stagnation > 50) {
+      current = Math.max(0, current * (0.6 + Math.random() * 0.6));
+      stagnation = 0; tunnels++;
+      tunneled = true;
+    }
+
+    temp = Math.max(temp * 0.997, 0.1);
+
+    energyHistory.push(Math.round(current));
+    bestHistory.push(Math.round(best));
+    labels.push(iter);
+
+    // Keep last 500 points
+    if (energyHistory.length > 500) {
+      energyHistory.shift(); bestHistory.shift(); labels.shift();
+    }
+
+    demoChartInstance.data.labels = labels;
+    demoChartInstance.data.datasets[0].data = energyHistory;
+    demoChartInstance.data.datasets[1].data = bestHistory;
+    demoChartInstance.update('none');
+
+    document.getElementById('demoEnergy').textContent = Math.round(current).toLocaleString();
+    document.getElementById('demoBest').textContent = Math.round(best).toLocaleString();
+    document.getElementById('demoTemp').textContent = temp.toFixed(1);
+    document.getElementById('demoIter').textContent = iter;
+    document.getElementById('demoTunnels').textContent = tunnels;
+
+    if (tunneled) {
+      document.getElementById('demoLog').innerHTML = `<span style="color:var(--purple)">⚛️ Iter ${iter}: Quantum Tunnel activated! Energy: ${Math.round(current)}</span>`;
+    }
+
+    if (best < 10 || iter > 2000) { clearInterval(demoInterval); demoInterval = null; }
+  }, 30);
+}
+
+function stopDemo() {
+  if (!demoInterval) return;
+  clearInterval(demoInterval);
+  demoInterval = null;
+  document.getElementById('demoLog').innerHTML = '<span style="color:var(--orange)">Paused. Press Start to continue.</span>';
+}
+
+function resetDemo() {
+  clearInterval(demoInterval); demoInterval = null;
+  energyHistory = []; bestHistory = []; labels = [];
+  iter = 0; temp = 1000; best = 8000 + Math.random()*2000; current = best; tunnels = 0; stagnation = 0;
+  initDemoChart();
+  document.getElementById('demoEnergy').textContent = '—';
+  document.getElementById('demoBest').textContent = '—';
+  document.getElementById('demoTemp').textContent = '—';
+  document.getElementById('demoIter').textContent = '0';
+  document.getElementById('demoTunnels').textContent = '0';
+  document.getElementById('demoLog').innerHTML = '';
+}
+
+// Init demo chart on load
+initDemoChart();
+</script>
+</body>
+</html>
