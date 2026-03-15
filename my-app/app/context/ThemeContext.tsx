@@ -161,8 +161,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const isFacultyPage = pathname?.startsWith('/faculty') ?? false
     const isLoginPage = pathname === '/' || pathname === '/login'
 
-    // Skip theme management for login page (it has its own styles)
-    if (isLoginPage) return
+    // Login page has its own theme system, but we must still ensure
+    // data-theme is NOT stale (e.g., left as "green" from an admin session).
+    if (isLoginPage) {
+      const savedLoginTheme = localStorage.getItem('login-theme-preference')
+      const loginTheme: BaseTheme = (savedLoginTheme === 'dark' || savedLoginTheme === 'light')
+        ? savedLoginTheme
+        : 'light'
+      document.documentElement.setAttribute('data-theme', loginTheme)
+      document.body.setAttribute('data-theme', loginTheme)
+      setThemeState(loginTheme)
+      return
+    }
 
     const themeKey = getThemeStorageKey(isFacultyPage)
     const savedTheme = localStorage.getItem(themeKey) as BaseTheme

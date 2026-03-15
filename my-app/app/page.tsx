@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense, useRef } from 'react'
+import React, { useState, useEffect, useLayoutEffect, Suspense, useRef } from 'react'
 import type { FormEvent, JSX } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -249,12 +249,14 @@ function PageContent(): JSX.Element {
 
   const previewCount = PREVIEW_IMAGES.length
 
-  // Initialize theme from localStorage
-  useEffect(() => {
+  // Initialize theme from localStorage and sync data-theme on html/body
+  // (handles client-side navigation where the inline script doesn't re-run)
+  useLayoutEffect(() => {
     const savedTheme = localStorage.getItem('login-theme-preference')
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      setLoginTheme(savedTheme)
-    }
+    const themeToApply = (savedTheme === 'dark' || savedTheme === 'light') ? savedTheme : 'light'
+    setLoginTheme(themeToApply)
+    document.documentElement.setAttribute('data-theme', themeToApply)
+    document.body.setAttribute('data-theme', themeToApply)
   }, [])
 
   // Particle data
@@ -805,6 +807,9 @@ function PageContent(): JSX.Element {
     const newTheme = loginTheme === 'dark' ? 'light' : 'dark'
     setLoginTheme(newTheme)
     localStorage.setItem('login-theme-preference', newTheme)
+    // Sync data-theme on html/body so global CSS variables match
+    document.documentElement.setAttribute('data-theme', newTheme)
+    document.body.setAttribute('data-theme', newTheme)
   }
 
   // Theme toggle button SVGs
