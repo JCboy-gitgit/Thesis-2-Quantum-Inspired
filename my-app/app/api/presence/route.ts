@@ -86,9 +86,28 @@ export async function POST(request: NextRequest) {
         const newSessionToken = crypto.randomUUID()
         const now = new Date().toISOString()
 
+        // Close any open sessions for this user before creating a new one
+        try {
+          const { data: openSessions } = await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .select('id, login_at' as any)
+            .eq('user_id' as any, user_id)
+            .is('logout_at' as any, null)
+          if (openSessions && openSessions.length > 0) {
+            for (const sess of openSessions as any[]) {
+              const loginAt = new Date(sess.login_at).getTime()
+              const duration = Math.floor((Date.now() - loginAt) / 60000)
+              await supabaseAdmin
+                .from('faculty_sessions' as any)
+                .update({ logout_at: now, duration_minutes: duration } as any)
+                .eq('id' as any, sess.id)
+            }
+          }
+        } catch { /* table may not exist */ }
+
         const { error: updateError } = await supabaseAdmin
           .from('users')
-          .update({ 
+          .update({
             session_token: newSessionToken,
             is_online: true,
             last_login: now,
@@ -101,6 +120,13 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
         }
 
+        // Record new session
+        try {
+          await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .insert({ user_id, login_at: now, session_token: newSessionToken } as any)
+        } catch { /* table may not exist */ }
+
         return NextResponse.json({ success: true, session_token: newSessionToken })
       }
 
@@ -110,9 +136,29 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ success: false, error: 'Missing user_id' }, { status: 400 })
         }
 
+        // Close any open sessions
+        const logoutNow = new Date().toISOString()
+        try {
+          const { data: openSessions } = await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .select('id, login_at' as any)
+            .eq('user_id' as any, user_id)
+            .is('logout_at' as any, null)
+          if (openSessions && openSessions.length > 0) {
+            for (const sess of openSessions as any[]) {
+              const loginAt = new Date(sess.login_at).getTime()
+              const duration = Math.floor((Date.now() - loginAt) / 60000)
+              await supabaseAdmin
+                .from('faculty_sessions' as any)
+                .update({ logout_at: logoutNow, duration_minutes: duration } as any)
+                .eq('id' as any, sess.id)
+            }
+          }
+        } catch { /* table may not exist */ }
+
         const { error: updateError } = await supabaseAdmin
           .from('users')
-          .update({ 
+          .update({
             session_token: null,
             is_online: false
           })
@@ -191,6 +237,60 @@ export async function POST(request: NextRequest) {
 
         if (userError || !facultyUser) {
           return NextResponse.json({ success: false, error: 'Faculty user not found' }, { status: 404 })
+        }
+
+        // Compute session duration metrics
+        const now = Date.now()
+        let current_session_minutes: number | null = null
+        let offline_minutes: number | null = null
+        const fiveMinAgo = now - 5 * 60 * 1000
+        const hbTime = facultyUser.last_heartbeat ? new Date(facultyUser.last_heartbeat).getTime() : null
+        const loginTime = facultyUser.last_login ? new Date(facultyUser.last_login).getTime() : null
+        const isReallyOnline = facultyUser.is_online && hbTime && hbTime >= fiveMinAgo
+
+        if (isReallyOnline && loginTime) {
+          // Online session duration = now - last_login (login marks session start)
+          current_session_minutes = Math.floor((now - loginTime) / 60000)
+        }
+        if (!isReallyOnline && hbTime) {
+          // Offline duration = now - last_heartbeat
+          offline_minutes = Math.floor((now - hbTime) / 60000)
+        }
+
+        // Fetch session history from faculty_sessions table (if it exists)
+        let session_history: any[] = []
+        let total_sessions = 0
+        let total_online_minutes = 0
+        try {
+          const { data: sessions, error: sessError } = await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .select('*' as any)
+            .eq('user_id' as any, user_id)
+            .order('login_at' as any, { ascending: false })
+            .limit(10)
+          if (!sessError && sessions) {
+            session_history = sessions as any[]
+          }
+
+          const { count: sessCount } = await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .select('id' as any, { count: 'exact', head: true })
+            .eq('user_id' as any, user_id)
+          total_sessions = sessCount || 0
+
+          // Sum total online minutes from completed sessions (last 30 days)
+          const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 1000).toISOString()
+          const { data: recentSessions } = await supabaseAdmin
+            .from('faculty_sessions' as any)
+            .select('duration_minutes' as any)
+            .eq('user_id' as any, user_id)
+            .gte('login_at' as any, thirtyDaysAgo)
+            .not('duration_minutes' as any, 'is', null)
+          if (recentSessions) {
+            total_online_minutes = (recentSessions as any[]).reduce((acc: number, s: any) => acc + (s.duration_minutes || 0), 0)
+          }
+        } catch {
+          // faculty_sessions table may not exist yet - that's ok
         }
 
         const safeCountByColumn = async (table: string, column: string, value: string) => {
@@ -292,6 +392,14 @@ export async function POST(request: NextRequest) {
               last_heartbeat: facultyUser.last_heartbeat,
               created_at: facultyUser.created_at,
               updated_at: facultyUser.updated_at,
+            },
+            session_info: {
+              is_really_online: !!isReallyOnline,
+              current_session_minutes,
+              offline_minutes,
+              total_sessions,
+              total_online_minutes_30d: total_online_minutes,
+              session_history,
             },
             activity_counts: {
               profile_change_requests_total: profileRequestsTotal,

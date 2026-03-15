@@ -7,7 +7,7 @@ import { fetchNoCache } from '@/lib/fetchUtils'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import LoadingFallback from '@/app/components/LoadingFallback'
-import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar, MdClose, MdShield, MdAdminPanelSettings, MdTimeline, MdPersonSearch } from 'react-icons/md'
+import { MdCalendarToday, MdPeople, MdAccessTime, MdDomain, MdMeetingRoom, MdMenuBook, MdSchool, MdUpload, MdSettings, MdTableChart, MdShowChart, MdChevronLeft, MdChevronRight, MdLocationOn, MdFlashOn, MdVisibility, MdHowToReg, MdCalendarMonth, MdDashboard, MdTrendingUp, MdNotifications, MdStar, MdClose, MdShield, MdAdminPanelSettings, MdTimeline, MdPersonSearch, MdSearch, MdHistory, MdTimer } from 'react-icons/md'
 import './styles.css'
 
 // Philippine Holidays 2024-2026
@@ -108,6 +108,19 @@ interface FacultyActivityPayload {
     created_at?: string
     updated_at?: string
   }
+  session_info?: {
+    is_really_online?: boolean
+    current_session_minutes?: number | null
+    offline_minutes?: number | null
+    total_sessions?: number
+    total_online_minutes_30d?: number
+    session_history?: Array<{
+      id: string
+      login_at: string
+      logout_at?: string | null
+      duration_minutes?: number | null
+    }>
+  }
   activity_counts?: {
     profile_change_requests_total?: number | null
     profile_change_requests_pending?: number | null
@@ -183,6 +196,8 @@ export default function AdminDashboard() {
   const [facultyActivityDetails, setFacultyActivityDetails] = useState<Record<string, FacultyActivityPayload>>({})
   const [showAdminIntel, setShowAdminIntel] = useState(false)
   const [intelTapCount, setIntelTapCount] = useState(0)
+  const [facultySearchQuery, setFacultySearchQuery] = useState('')
+  const [facultyStatusFilter, setFacultyStatusFilter] = useState<'all' | 'online' | 'offline'>('all')
 
   useEffect(() => {
     // Set initial date on client side only (avoids hydration mismatch)
@@ -469,6 +484,18 @@ export default function AdminDashboard() {
 
   const getFacultyLastSeen = (faculty: OnlineFaculty) => faculty.last_heartbeat || faculty.last_login
 
+  const formatDuration = (minutes?: number | null) => {
+    if (minutes == null || minutes < 0) return 'N/A'
+    if (minutes < 1) return '< 1 min'
+    if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''}`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours < 24) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    const days = Math.floor(hours / 24)
+    const remHours = hours % 24
+    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`
+  }
+
   const buildTimeline = (payload?: FacultyActivityPayload) => {
     if (!payload) return [] as Array<{ label: string; date?: string; detail?: string }>
 
@@ -510,11 +537,11 @@ export default function AdminDashboard() {
     return timeline.filter(item => item.date)
   }
 
-  const fetchFacultyActivityDetails = async (facultyId: string) => {
+  const fetchFacultyActivityDetails = async (facultyId: string, forceRefresh = false) => {
     setFacultyActivityLoading(true)
     setFacultyActivityError(null)
     try {
-      if (facultyActivityDetails[facultyId]) {
+      if (!forceRefresh && facultyActivityDetails[facultyId]) {
         setFacultyActivityLoading(false)
         return
       }
@@ -544,6 +571,8 @@ export default function AdminDashboard() {
     setShowAdminIntel(false)
     setIntelTapCount(0)
     setFacultyActivityError(null)
+    setFacultySearchQuery('')
+    setFacultyStatusFilter('all')
 
     try {
       const { data: listData, error } = await supabase
@@ -977,7 +1006,19 @@ export default function AdminDashboard() {
             />
           )}
 
-          {showFacultyActivityModal && (
+          {showFacultyActivityModal && (() => {
+            const filteredFacultyList = facultyActivityList.filter((faculty) => {
+              const q = facultySearchQuery.toLowerCase()
+              const matchesSearch = !q || (faculty.full_name || '').toLowerCase().includes(q) || (faculty.email || '').toLowerCase().includes(q) || (faculty.department || '').toLowerCase().includes(q)
+              if (!matchesSearch) return false
+              if (facultyStatusFilter === 'all') return true
+              const isOnlineNow = !!faculty.is_online && !!faculty.last_heartbeat && (Date.now() - new Date(faculty.last_heartbeat).getTime()) <= 5 * 60 * 1000
+              return facultyStatusFilter === 'online' ? isOnlineNow : !isOnlineNow
+            })
+            const onlineCount = facultyActivityList.filter(f => !!f.is_online && !!f.last_heartbeat && (Date.now() - new Date(f.last_heartbeat).getTime()) <= 5 * 60 * 1000).length
+            const offlineCount = facultyActivityList.length - onlineCount
+
+            return (
             <div className="faculty-activity-modal-overlay" onClick={() => setShowFacultyActivityModal(false)}>
               <div className="faculty-activity-modal" onClick={(event) => event.stopPropagation()}>
                 <div className="faculty-activity-header" onClick={() => {
@@ -991,6 +1032,10 @@ export default function AdminDashboard() {
                     <MdPersonSearch size={20} />
                     Faculty Activity Center
                   </h3>
+                  <div className="faculty-activity-header-stats">
+                    <span className="header-stat online-stat">{onlineCount} Online</span>
+                    <span className="header-stat offline-stat">{offlineCount} Offline</span>
+                  </div>
                   <button className="faculty-activity-close" onClick={() => setShowFacultyActivityModal(false)}>
                     <MdClose size={20} />
                   </button>
@@ -998,13 +1043,34 @@ export default function AdminDashboard() {
 
                 <div className="faculty-activity-body">
                   <aside className="faculty-activity-list">
-                    <div className="faculty-activity-list-title">
-                      <MdPeople size={16} /> Faculty Status
+                    <div className="faculty-activity-search-bar">
+                      <MdSearch size={16} />
+                      <input
+                        type="text"
+                        placeholder="Search faculty..."
+                        value={facultySearchQuery}
+                        onChange={(e) => setFacultySearchQuery(e.target.value)}
+                        className="faculty-search-input"
+                      />
                     </div>
-                    {facultyActivityList.length === 0 ? (
-                      <div className="faculty-activity-empty">No faculty records loaded.</div>
+                    <div className="faculty-status-filter-bar">
+                      {(['all', 'online', 'offline'] as const).map(filter => (
+                        <button
+                          key={filter}
+                          className={`status-filter-btn ${facultyStatusFilter === filter ? 'active' : ''}`}
+                          onClick={() => setFacultyStatusFilter(filter)}
+                        >
+                          {filter === 'all' ? `All (${facultyActivityList.length})` : filter === 'online' ? `Online (${onlineCount})` : `Offline (${offlineCount})`}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="faculty-activity-list-title">
+                      <MdPeople size={16} /> Faculty Status <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 400 }}>{filteredFacultyList.length} shown</span>
+                    </div>
+                    {filteredFacultyList.length === 0 ? (
+                      <div className="faculty-activity-empty">No faculty match your filter.</div>
                     ) : (
-                      facultyActivityList.map((faculty) => {
+                      filteredFacultyList.map((faculty) => {
                         const isOnlineNow = !!faculty.is_online && !!faculty.last_heartbeat && (Date.now() - new Date(faculty.last_heartbeat).getTime()) <= 5 * 60 * 1000
                         return (
                           <button
@@ -1012,18 +1078,19 @@ export default function AdminDashboard() {
                             className={`faculty-activity-list-item ${selectedFacultyId === faculty.id ? 'active' : ''}`}
                             onClick={() => {
                               setSelectedFacultyId(faculty.id)
-                              fetchFacultyActivityDetails(faculty.id)
+                              fetchFacultyActivityDetails(faculty.id, true)
                             }}
                           >
                             <div className="faculty-activity-list-main">
                               <span className="faculty-activity-name">{faculty.full_name || 'Faculty Member'}</span>
                               <span className={`faculty-activity-status ${isOnlineNow ? 'online' : 'offline'}`}>
+                                <span className={`status-dot ${isOnlineNow ? 'online' : 'offline'}`}></span>
                                 {isOnlineNow ? 'Online' : 'Offline'}
                               </span>
                             </div>
                             <div className="faculty-activity-meta">
                               <span>{faculty.department || faculty.college || 'No department'}</span>
-                              <span>Offline: {getOfflineDays(getFacultyLastSeen(faculty))}</span>
+                              <span>{isOnlineNow ? `Active ${formatTimeAgo(faculty.last_heartbeat!)}` : `Last seen: ${formatTimeAgo(getFacultyLastSeen(faculty) || '')}`}</span>
                             </div>
                           </button>
                         )
@@ -1035,7 +1102,10 @@ export default function AdminDashboard() {
                     {facultyActivityError && <div className="faculty-activity-error">{facultyActivityError}</div>}
                     {facultyActivityLoading && <div className="faculty-activity-loading">Loading activity details...</div>}
 
-                    {!facultyActivityLoading && selectedFacultyDetails && (
+                    {!facultyActivityLoading && selectedFacultyDetails && (() => {
+                      const si = selectedFacultyDetails.session_info
+                      const isReallyOnline = si?.is_really_online ?? selectedFacultyDetails.user.is_online
+                      return (
                       <>
                         <div className="faculty-activity-profile">
                           <div className="faculty-activity-avatar">
@@ -1044,6 +1114,7 @@ export default function AdminDashboard() {
                             ) : (
                               <span>{selectedFacultyDetails.user.full_name?.charAt(0) || 'F'}</span>
                             )}
+                            <span className={`avatar-status-dot ${isReallyOnline ? 'online' : 'offline'}`}></span>
                           </div>
                           <div>
                             <h4>{selectedFacultyDetails.user.full_name || 'Faculty Member'}</h4>
@@ -1052,11 +1123,37 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
+                        {/* Session Duration Banner */}
+                        <div className={`session-duration-banner ${isReallyOnline ? 'online' : 'offline'}`}>
+                          <div className="session-duration-main">
+                            <MdTimer size={20} />
+                            <div className="session-duration-text">
+                              <strong>{isReallyOnline ? 'Currently Online' : 'Currently Offline'}</strong>
+                              <span>
+                                {isReallyOnline
+                                  ? `Session active for ${formatDuration(si?.current_session_minutes)}`
+                                  : `Offline for ${formatDuration(si?.offline_minutes)}`
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          <div className="session-duration-stats">
+                            <div className="session-stat">
+                              <span className="session-stat-value">{si?.total_sessions ?? 'N/A'}</span>
+                              <span className="session-stat-label">Total Sessions</span>
+                            </div>
+                            <div className="session-stat">
+                              <span className="session-stat-value">{formatDuration(si?.total_online_minutes_30d)}</span>
+                              <span className="session-stat-label">Online (30d)</span>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="faculty-activity-metrics">
                           <div className="activity-metric-card">
                             <span className="metric-label">Current Status</span>
-                            <span className={`metric-value ${selectedFacultyDetails.user.is_online ? 'online' : 'offline'}`}>
-                              {selectedFacultyDetails.user.is_online ? 'Online' : 'Offline'}
+                            <span className={`metric-value ${isReallyOnline ? 'online' : 'offline'}`}>
+                              {isReallyOnline ? 'Online' : 'Offline'}
                             </span>
                           </div>
                           <div className="activity-metric-card">
@@ -1068,8 +1165,8 @@ export default function AdminDashboard() {
                             <span className="metric-value">{formatDateTime(selectedFacultyDetails.user.last_login)}</span>
                           </div>
                           <div className="activity-metric-card">
-                            <span className="metric-label">Offline Days</span>
-                            <span className="metric-value">{getOfflineDays(selectedFacultyDetails.user.last_heartbeat || selectedFacultyDetails.user.last_login)}</span>
+                            <span className="metric-label">Offline Duration</span>
+                            <span className="metric-value">{isReallyOnline ? 'N/A (Online)' : formatDuration(si?.offline_minutes)}</span>
                           </div>
                         </div>
 
@@ -1091,6 +1188,26 @@ export default function AdminDashboard() {
                             <span className="metric-value">{selectedFacultyDetails.activity_counts?.faculty_preferences_total ?? 'N/A'}</span>
                           </div>
                         </div>
+
+                        {/* Session History Section */}
+                        {si?.session_history && si.session_history.length > 0 && (
+                          <div className="faculty-activity-timeline">
+                            <div className="timeline-title">
+                              <MdHistory size={16} /> Session History (Last 10)
+                            </div>
+                            {si.session_history.map((sess, idx) => (
+                              <div key={sess.id || idx} className="timeline-item session-history-item">
+                                <div>
+                                  <strong>Login: {formatDateTime(sess.login_at)}</strong>
+                                  <p>{sess.logout_at ? `Logout: ${formatDateTime(sess.logout_at)}` : 'Session still active'}</p>
+                                </div>
+                                <span className={`session-duration-badge ${sess.logout_at ? '' : 'active'}`}>
+                                  {sess.duration_minutes != null ? formatDuration(sess.duration_minutes) : 'Active'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="faculty-activity-timeline">
                           <div className="timeline-title">
@@ -1137,7 +1254,8 @@ export default function AdminDashboard() {
                           </div>
                         )}
                       </>
-                    )}
+                      )
+                    })()}
 
                     {!facultyActivityLoading && !selectedFacultyDetails && (
                       <div className="faculty-activity-empty">Select a faculty member to view details.</div>
@@ -1155,7 +1273,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          )}
+            )
+          })()}
         </div>
       </main>
     </div>

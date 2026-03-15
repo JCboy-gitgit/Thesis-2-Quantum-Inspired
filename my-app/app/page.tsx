@@ -631,12 +631,14 @@ function PageContent(): JSX.Element {
         // Map login theme to admin theme: dark → dark, light → green (default admin)
         const adminTheme = loginTheme === 'dark' ? 'dark' : 'green'
         localStorage.setItem('admin-base-theme', adminTheme)
-        document.documentElement.setAttribute('data-theme', adminTheme)
-        document.body.setAttribute('data-theme', adminTheme)
 
         setLoginMessage('Admin login successful. Redirecting...')
         sessionStorage.setItem('sidebar_fresh_login', 'true')
         setTimeout(() => {
+          // Apply admin theme right before navigation to avoid green-theme
+          // CSS !important rules from flashing on the login page
+          document.documentElement.setAttribute('data-theme', adminTheme)
+          document.body.setAttribute('data-theme', adminTheme)
           router.push('/LandingPages/Home')
         }, 1000)
         return
