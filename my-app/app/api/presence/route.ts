@@ -224,6 +224,39 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, online_faculty: onlineFaculty || [] })
       }
 
+      case 'get_all_faculty': {
+        // Get ALL faculty users for the Faculty Activity Center modal
+        const fiveMinAgoAll = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+
+        const [facultyResult, adminResult] = await Promise.all([
+          supabaseAdmin
+            .from('users')
+            .select('id, full_name, email, department_id, last_login, last_heartbeat, is_online, avatar_url, created_at')
+            .eq('role', 'faculty')
+            .order('last_heartbeat', { ascending: false, nullsFirst: false })
+            .order('last_login', { ascending: false, nullsFirst: false })
+            .limit(120),
+          supabaseAdmin
+            .from('users')
+            .select('id, full_name, is_online, last_heartbeat')
+            .in('role', ['admin', 'sub_admin'])
+            .eq('is_online', true)
+            .gte('last_heartbeat', fiveMinAgoAll)
+        ])
+
+        if (facultyResult.error) {
+          console.error('Get all faculty error:', facultyResult.error)
+          return NextResponse.json({ success: false, error: facultyResult.error.message }, { status: 500 })
+        }
+
+        return NextResponse.json({
+          success: true,
+          faculty_list: facultyResult.data || [],
+          admin_online_count: adminResult.data?.length || 0,
+          admin_online_users: (adminResult.data || []).map((u: any) => ({ id: u.id, full_name: u.full_name }))
+        })
+      }
+
       case 'get_faculty_activity': {
         if (!user_id) {
           return NextResponse.json({ success: false, error: 'Missing user_id' }, { status: 400 })
@@ -231,7 +264,7 @@ export async function POST(request: NextRequest) {
 
         const { data: facultyUser, error: userError } = await supabaseAdmin
           .from('users')
-          .select('id, full_name, email, role, department, department_id, college, avatar_url, is_online, last_login, last_heartbeat, created_at, updated_at, session_token')
+          .select('id, full_name, email, role, department_id, avatar_url, is_online, last_login, last_heartbeat, created_at, updated_at, session_token')
           .eq('id', user_id)
           .single()
 
@@ -384,8 +417,7 @@ export async function POST(request: NextRequest) {
               full_name: facultyUser.full_name,
               email: facultyUser.email,
               role: facultyUser.role,
-              department: facultyUser.department || facultyUser.department_id,
-              college: facultyUser.college,
+              department: facultyUser.department_id,
               avatar_url: facultyUser.avatar_url,
               is_online: facultyUser.is_online,
               last_login: facultyUser.last_login,

@@ -198,6 +198,8 @@ export default function AdminDashboard() {
   const [intelTapCount, setIntelTapCount] = useState(0)
   const [facultySearchQuery, setFacultySearchQuery] = useState('')
   const [facultyStatusFilter, setFacultyStatusFilter] = useState<'all' | 'online' | 'offline'>('all')
+  const [adminOnlineCount, setAdminOnlineCount] = useState(0)
+  const [adminOnlineUsers, setAdminOnlineUsers] = useState<Array<{ id: string; full_name: string }>>([])
 
   useEffect(() => {
     // Set initial date on client side only (avoids hydration mismatch)
@@ -575,18 +577,18 @@ export default function AdminDashboard() {
     setFacultyStatusFilter('all')
 
     try {
-      const { data: listData, error } = await supabase
-        .from('users')
-        .select('id, full_name, email, department, college, last_login, last_heartbeat, is_online, avatar_url, created_at')
-        .eq('role', 'faculty')
-        .order('last_heartbeat', { ascending: false, nullsFirst: false })
-        .order('last_login', { ascending: false, nullsFirst: false })
-        .limit(120)
+      const response = await fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_all_faculty' })
+      })
+      const data = await response.json()
+      if (!data?.success) throw new Error(data?.error || 'Failed to load faculty list')
 
-      if (error) throw error
-
-      const list = (listData || []) as OnlineFaculty[]
+      const list = (data.faculty_list || []) as OnlineFaculty[]
       setFacultyActivityList(list)
+      setAdminOnlineCount(data.admin_online_count || 0)
+      setAdminOnlineUsers(data.admin_online_users || [])
 
       const targetId = facultyId || list[0]?.id || null
       setSelectedFacultyId(targetId)
@@ -1035,6 +1037,7 @@ export default function AdminDashboard() {
                   <div className="faculty-activity-header-stats">
                     <span className="header-stat online-stat">{onlineCount} Online</span>
                     <span className="header-stat offline-stat">{offlineCount} Offline</span>
+                    <span className="header-stat admin-stat" title={adminOnlineUsers.map(u => u.full_name).join(', ') || 'None'}>{adminOnlineCount} Admin{adminOnlineCount !== 1 ? 's' : ''} Active</span>
                   </div>
                   <button className="faculty-activity-close" onClick={() => setShowFacultyActivityModal(false)}>
                     <MdClose size={20} />
