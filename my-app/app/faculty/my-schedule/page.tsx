@@ -318,7 +318,7 @@ export default function MySchedulePage() {
         if (user) fetchLiveData()
     }, [user, currentWeekStart])
 
-    // Realtime subscription
+    // Realtime subscription for personal data (absences/makeup requests)
     useEffect(() => {
         if (!user) return
         const channel = supabase
@@ -387,6 +387,20 @@ export default function MySchedulePage() {
             setLoading(false)
         }
     }, [user, currentWeekStart])
+
+    // Realtime subscription to detect when admin changes the current schedule
+    useEffect(() => {
+        const channel = supabase
+            .channel('schedule_current_updates')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'generated_schedules' }, (payload) => {
+                // When is_current changes, refetch data to get the new current schedule
+                if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
+                    fetchLiveData()
+                }
+            })
+            .subscribe()
+        return () => { supabase.removeChannel(channel) }
+    }, [fetchLiveData])
 
     const fetchFloorPlans = async () => {
         try {

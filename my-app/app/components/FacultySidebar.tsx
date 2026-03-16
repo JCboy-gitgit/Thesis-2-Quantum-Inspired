@@ -68,15 +68,13 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
         { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
         { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
         { icon: MdEventNote, label: 'My Schedule', path: '/faculty/my-schedule' },
-        { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
         { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
         { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
       ]
     : [
         { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
         { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
-        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
-        { icon: MdPeople, label: 'Faculty Directory', path: '/faculty/directory' },
+        { icon: MdMap, label: 'My Schedule', path: '/faculty/schedules' },
         { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
         { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
       ]

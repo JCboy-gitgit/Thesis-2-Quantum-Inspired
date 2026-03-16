@@ -64,6 +64,7 @@ export default function FacultyCampusMapPage() {
   // Stats
   const [buildingCount, setBuildingCount] = useState(0)
   const [floorCount, setFloorCount] = useState(0)
+  const [scheduleVersion, setScheduleVersion] = useState(0)
 
   const isLightMode = theme === 'light'
 
@@ -122,6 +123,20 @@ export default function FacultyCampusMapPage() {
         }
       } catch { /* silent */ }
     })()
+  }, [])
+
+  /* ─── Realtime subscription to detect when admin changes the current schedule ─── */
+  useEffect(() => {
+    const channel = supabase
+      .channel('campus_map_schedule_updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'generated_schedules' }, (payload) => {
+        // When is_current changes, increment version to force RoomViewer2D to remount and refetch
+        if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
+          setScheduleVersion(v => v + 1)
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   /* ─── Formatted time strings ─── */
@@ -244,6 +259,7 @@ export default function FacultyCampusMapPage() {
           <div className={s.viewerCard}>
             <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 50px)' : 'calc(100vh - 100px)', minHeight: 300 }}>
               <RoomViewer2D
+                key={`room-viewer-${scheduleVersion}`}
                 collegeTheme={collegeTheme}
                 sidebarWidth={isDesktop && sidebarOpen ? 250 : 0}
                 menuBarHeight={isMenuBarHidden || isCampusMapFullscreen ? 0 : (isDesktop ? 70 : 56)}

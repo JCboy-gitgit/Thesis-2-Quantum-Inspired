@@ -418,6 +418,7 @@ export default function ViewSchedulePage() {
   const [showBatchFacultyModal, setShowBatchFacultyModal] = useState(false)
   const [approvedFaculty, setApprovedFaculty] = useState<ApprovedFaculty[]>([])
   const [selectedFacultyIds, setSelectedFacultyIds] = useState<string[]>([])
+  const [currentlyAssignedFacultyIds, setCurrentlyAssignedFacultyIds] = useState<Set<string>>(new Set())
   const [loadingFaculty, setLoadingFaculty] = useState(false)
   const [assigningSchedule, setAssigningSchedule] = useState(false)
   const [assignmentMessage, setAssignmentMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -506,13 +507,33 @@ export default function ViewSchedulePage() {
   const fetchApprovedFaculty = async () => {
     setLoadingFaculty(true)
     try {
-      const response = await fetchNoCache('/api/faculty-default-schedule?action=approved-faculty')
-      const data = await response.json()
+      // Fetch approved faculty and current assignments in parallel
+      const [facultyResponse, assignmentsResponse] = await Promise.all([
+        fetchNoCache('/api/faculty-default-schedule?action=approved-faculty'),
+        selectedSchedule
+          ? fetchNoCache(`/api/faculty-default-schedule?action=schedule-assignments&scheduleId=${selectedSchedule.id}`)
+          : Promise.resolve({ json: () => ({ success: true, assignments: [] }) })
+      ])
 
-      if (data.success && data.approvedFaculty) {
-        setApprovedFaculty(data.approvedFaculty)
+      const facultyData = await facultyResponse.json()
+      const assignmentsData = await (assignmentsResponse as Response).json?.() || assignmentsResponse
+
+      if (facultyData.success && facultyData.approvedFaculty) {
+        setApprovedFaculty(facultyData.approvedFaculty)
       } else {
-        console.error('Error fetching approved faculty:', data.error)
+        console.error('Error fetching approved faculty:', facultyData.error)
+      }
+
+      // Set currently assigned faculty IDs
+      if (assignmentsData.success && assignmentsData.assignments) {
+        const assignedIds = new Set<string>(
+          assignmentsData.assignments.map((a: any) => a.faculty_user_id)
+        )
+        setCurrentlyAssignedFacultyIds(assignedIds)
+        // Pre-select currently assigned faculty
+        setSelectedFacultyIds(Array.from(assignedIds))
+      } else {
+        setCurrentlyAssignedFacultyIds(new Set())
       }
     } catch (error) {
       console.error('Error fetching approved faculty:', error)
@@ -525,7 +546,7 @@ export default function ViewSchedulePage() {
   const handleOpenFacultyAssignModal = () => {
     window.scrollTo(0, 0)
     setShowBatchFacultyModal(true)
-    setSelectedFacultyIds([])
+    // Don't reset selectedFacultyIds here - fetchApprovedFaculty will set them based on current assignments
     setFacultySearchQuery('')
     setAssignmentMessage(null)
     fetchApprovedFaculty()
@@ -538,6 +559,51 @@ export default function ViewSchedulePage() {
         ? prev.filter(id => id !== facultyId)
         : [...prev, facultyId]
     )
+  }
+
+  // Auto-assign faculty who have classes in the current schedule
+  const handleAutoAssignFaculty = () => {
+    if (!selectedSchedule || allocations.length === 0) {
+      setAssignmentMessage({ type: 'error', text: 'No schedule data available for auto-assignment' })
+      return
+    }
+
+    // Get unique teacher names from allocations
+    const teacherNames = new Set<string>()
+    allocations.forEach(alloc => {
+      if (alloc.teacher_name && alloc.teacher_name.trim()) {
+        teacherNames.add(alloc.teacher_name.trim().toLowerCase())
+      }
+    })
+
+    if (teacherNames.size === 0) {
+      setAssignmentMessage({ type: 'error', text: 'No faculty found in the schedule allocations' })
+      return
+    }
+
+    // Match teacher names to approved faculty
+    const matchedFacultyIds: string[] = []
+    approvedFaculty.forEach(faculty => {
+      const facultyName = (faculty.full_name || '').trim().toLowerCase()
+      if (teacherNames.has(facultyName)) {
+        matchedFacultyIds.push(faculty.id)
+      }
+    })
+
+    if (matchedFacultyIds.length === 0) {
+      setAssignmentMessage({
+        type: 'error',
+        text: `No matching faculty found. Teachers in schedule: ${Array.from(teacherNames).slice(0, 3).join(', ')}${teacherNames.size > 3 ? '...' : ''}`
+      })
+      return
+    }
+
+    // Select all matched faculty
+    setSelectedFacultyIds(matchedFacultyIds)
+    setAssignmentMessage({
+      type: 'success',
+      text: `Auto-selected ${matchedFacultyIds.length} faculty members who have classes in this schedule`
+    })
   }
 
   // Assign schedule to selected faculty
@@ -579,13 +645,23 @@ export default function ViewSchedulePage() {
     }
   }
 
-  // Filter faculty by search query
-  const filteredApprovedFaculty = approvedFaculty.filter(f => {
-    if (!facultySearchQuery) return true
-    const query = facultySearchQuery.toLowerCase()
-    return f.full_name?.toLowerCase().includes(query) ||
-      f.email?.toLowerCase().includes(query)
-  })
+  // Filter faculty by search query and sort currently assigned first
+  const filteredApprovedFaculty = approvedFaculty
+    .filter(f => {
+      if (!facultySearchQuery) return true
+      const query = facultySearchQuery.toLowerCase()
+      return f.full_name?.toLowerCase().includes(query) ||
+        f.email?.toLowerCase().includes(query)
+    })
+    .sort((a, b) => {
+      // Sort currently assigned faculty first
+      const aAssigned = currentlyAssignedFacultyIds.has(a.id)
+      const bAssigned = currentlyAssignedFacultyIds.has(b.id)
+      if (aAssigned && !bAssigned) return -1
+      if (!aAssigned && bAssigned) return 1
+      // Then sort alphabetically by name
+      return (a.full_name || '').localeCompare(b.full_name || '')
+    })
 
   // Filter and sort schedules when filters change
   useEffect(() => {
@@ -3026,9 +3102,12 @@ export default function ViewSchedulePage() {
                   </div>
                   <button
                     id="view-assign-to-faculty-btn"
-                    className={styles.assignFacultyBtn}
+                    className={`${styles.assignFacultyBtn} ${!selectedSchedule.is_current ? styles.disabled : ''}`}
                     onClick={handleOpenFacultyAssignModal}
-                    title="Assign this schedule as default for faculty members"
+                    disabled={!selectedSchedule.is_current}
+                    title={selectedSchedule.is_current
+                      ? "Assign this schedule as default for faculty members"
+                      : "Only the Current Schedule can be assigned to faculty. Set this as Current Schedule first."}
                   >
                     <MdPersonAdd size={18} /> Assign to Faculty
                   </button>
@@ -3652,24 +3731,34 @@ export default function ViewSchedulePage() {
               </div>
 
               <div className={styles.batchModalBody}>
-                <div className={styles.batchSearchBox}>
-                  <MdSearch size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search faculty by name or email..."
-                    value={facultySearchQuery}
-                    onChange={e => setFacultySearchQuery(e.target.value)}
-                    className={styles.batchSearchInput}
-                  />
-                  {facultySearchQuery && (
-                    <button className={styles.batchClearSearch} onClick={() => setFacultySearchQuery('')}>
-                      <MdClose size={14} />
-                    </button>
-                  )}
+                <div className={styles.batchActionsRow}>
+                  <div className={styles.batchSearchBox}>
+                    <MdSearch size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search faculty by name or email..."
+                      value={facultySearchQuery}
+                      onChange={e => setFacultySearchQuery(e.target.value)}
+                      className={styles.batchSearchInput}
+                    />
+                    {facultySearchQuery && (
+                      <button className={styles.batchClearSearch} onClick={() => setFacultySearchQuery('')}>
+                        <MdClose size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    className={styles.autoAssignBtn}
+                    onClick={handleAutoAssignFaculty}
+                    disabled={loadingFaculty || allocations.length === 0}
+                    title="Automatically select all faculty who have classes in this schedule"
+                  >
+                    <MdCheckCircleOutline size={16} /> Auto Assign
+                  </button>
                 </div>
 
                 <div className={styles.batchFacultyCount}>
-                  {selectedFacultyIds.length} selected &bull; {filteredApprovedFaculty.length} faculty found
+                  {selectedFacultyIds.length} selected &bull; {currentlyAssignedFacultyIds.size} currently assigned &bull; {filteredApprovedFaculty.length} faculty found
                 </div>
 
                 <div className={styles.batchFacultyList}>
@@ -3684,26 +3773,34 @@ export default function ViewSchedulePage() {
                       <p>No approved faculty found</p>
                     </div>
                   ) : (
-                    filteredApprovedFaculty.map(faculty => (
-                      <label
-                        key={faculty.id}
-                        className={`${styles.batchFacultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.batchSelected : ''}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedFacultyIds.includes(faculty.id)}
-                          onChange={() => toggleFacultySelection(faculty.id)}
-                          className={styles.batchCheckbox}
-                        />
-                        <div className={styles.batchFacultyInfo}>
-                          <span className={styles.batchFacultyName}>{faculty.full_name}</span>
-                          <span className={styles.batchFacultyEmail}>{faculty.email}</span>
-                        </div>
-                        {selectedFacultyIds.includes(faculty.id) && (
-                          <MdCheckCircle size={16} className={styles.batchCheckIcon} />
-                        )}
-                      </label>
-                    ))
+                    filteredApprovedFaculty.map(faculty => {
+                      const isCurrentlyAssigned = currentlyAssignedFacultyIds.has(faculty.id)
+                      return (
+                        <label
+                          key={faculty.id}
+                          className={`${styles.batchFacultyItem} ${selectedFacultyIds.includes(faculty.id) ? styles.batchSelected : ''} ${isCurrentlyAssigned ? styles.batchCurrentlyAssigned : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedFacultyIds.includes(faculty.id)}
+                            onChange={() => toggleFacultySelection(faculty.id)}
+                            className={styles.batchCheckbox}
+                          />
+                          <div className={styles.batchFacultyInfo}>
+                            <span className={styles.batchFacultyName}>
+                              {faculty.full_name}
+                              {isCurrentlyAssigned && (
+                            <span className={styles.currentlyAssignedBadge}>Currently Assigned</span>
+                              )}
+                            </span>
+                            <span className={styles.batchFacultyEmail}>{faculty.email}</span>
+                          </div>
+                          {selectedFacultyIds.includes(faculty.id) && (
+                            <MdCheckCircle size={16} className={styles.batchCheckIcon} />
+                          )}
+                        </label>
+                      )
+                    })
                   )}
                 </div>
 

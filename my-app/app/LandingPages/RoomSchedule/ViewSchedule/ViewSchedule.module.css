@@ -2306,6 +2306,22 @@
   box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
+.assignFacultyBtn.disabled,
+.assignFacultyBtn:disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+.assignFacultyBtn.disabled:hover,
+.assignFacultyBtn:disabled:hover {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  transform: none;
+  box-shadow: none;
+}
+
 /* ==================== Lock/Unlock Schedule Button ==================== */
 .lockScheduleBtn {
   display: flex;
@@ -2941,6 +2957,73 @@
   border-color: var(--primary);
   background: var(--primary-alpha);
   box-shadow: 0 4px 12px var(--primary-alpha);
+}
+
+.batchFacultyItem.batchCurrentlyAssigned {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.batchFacultyItem.batchCurrentlyAssigned.batchSelected {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.currentlyAssignedBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.batchActionsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.batchActionsRow .batchSearchBox {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.autoAssignBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.autoAssignBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.autoAssignBtn:disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
 }
 
 .batchCheckbox {

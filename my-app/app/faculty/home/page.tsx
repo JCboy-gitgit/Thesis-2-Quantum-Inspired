@@ -453,6 +453,21 @@ export default function FacultyHomePage() {
     return () => clearInterval(heartbeatInterval)
   }, [user, sessionToken, router])
 
+  // Realtime subscription to detect when admin changes the current schedule
+  useEffect(() => {
+    if (!user?.email) return
+    const channel = supabase
+      .channel('home_schedule_updates')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'generated_schedules' }, (payload) => {
+        // When is_current changes, refetch data to get the new current schedule
+        if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
+          fetchSchedules(user.email)
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.email])
+
   // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
   useEffect(() => {
     if (!user) return

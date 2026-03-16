@@ -375,8 +375,22 @@ function buildTeachingLoadsCandidatesMap(teachingLoads: any[]): Map<string, Teac
       faculty_college: load?.faculty_profiles?.college || null,
     }
 
-    const specificKey = `${load?.course_id}-${section}`
-    const genericKey = `${load?.course_id}-`
+    // Use course_code from joined class_schedules for matching
+    const courseCode = String(load?.class_schedules?.course_code || '').trim().toUpperCase()
+    // Also use course_id as fallback
+    const courseId = load?.course_id
+
+    // Build keys by course_code (primary) and course_id (fallback)
+    if (courseCode) {
+      const specificKeyByCode = `code:${courseCode}-${section}`
+      const genericKeyByCode = `code:${courseCode}-`
+      pushCandidate(specificKeyByCode, candidate)
+      if (section) pushCandidate(genericKeyByCode, candidate)
+    }
+
+    // Keep course_id based keys for backward compatibility
+    const specificKey = `${courseId}-${section}`
+    const genericKey = `${courseId}-`
     pushCandidate(specificKey, candidate)
     if (section) pushCandidate(genericKey, candidate)
   })
@@ -388,13 +402,30 @@ function resolveTeachingLoadCandidate(
   map: Map<string, TeachingLoadCandidate[]>,
   courseId: number,
   sectionName: string,
-  sectionCollege?: string | null
+  sectionCollege?: string | null,
+  courseCode?: string
 ): TeachingLoadCandidate | undefined {
-  const specificKey = `${courseId}-${String(sectionName || '').trim()}`
-  const genericKey = `${courseId}-`
-  const specific = map.get(specificKey) || []
-  const generic = map.get(genericKey) || []
-  const candidates = [...specific, ...generic]
+  const trimmedSection = String(sectionName || '').trim()
+  const normalizedCourseCode = String(courseCode || '').trim().toUpperCase()
+
+  // Try course_code based lookup first (more reliable across different class_schedules entries)
+  let candidates: TeachingLoadCandidate[] = []
+  if (normalizedCourseCode) {
+    const specificKeyByCode = `code:${normalizedCourseCode}-${trimmedSection}`
+    const genericKeyByCode = `code:${normalizedCourseCode}-`
+    const specificByCode = map.get(specificKeyByCode) || []
+    const genericByCode = map.get(genericKeyByCode) || []
+    candidates = [...specificByCode, ...genericByCode]
+  }
+
+  // Fallback to course_id based lookup if no matches by course_code
+  if (candidates.length === 0) {
+    const specificKey = `${courseId}-${trimmedSection}`
+    const genericKey = `${courseId}-`
+    const specific = map.get(specificKey) || []
+    const generic = map.get(genericKey) || []
+    candidates = [...specific, ...generic]
+  }
 
   if (candidates.length === 0) return undefined
 
@@ -403,7 +434,7 @@ function resolveTeachingLoadCandidate(
       let total = 0
       if (isMeaningfulFacultyName(candidate.faculty_name)) total += 4
       if (isFacultyCollegeCompatible(sectionCollege, candidate.faculty_college)) total += 2
-      if (String(candidate.section || '').trim() === String(sectionName || '').trim()) total += 1
+      if (String(candidate.section || '').trim() === trimmedSection) total += 1
       return total
     }
     return score(b) - score(a)
@@ -412,7 +443,8 @@ function resolveTeachingLoadCandidate(
   const best = ranked[0]
   if (!best) return undefined
   if (!isMeaningfulFacultyName(best.faculty_name)) return undefined
-  if (!isFacultyCollegeCompatible(sectionCollege, best.faculty_college)) return undefined
+  // College compatibility is used for ranking but should NOT reject
+  // explicitly assigned faculty — cross-college teaching is allowed
   return best
 }
 
@@ -1050,12 +1082,21 @@ export default function GenerateSchedulePage() {
       setCourses(filteredCourses)
 
       // Fetch teaching loads to check for assigned teachers
+      // Query teaching loads and join with class_schedules to get course_code for matching
+      const courseCodes = [...new Set(filteredCourses.map((c: any) => c.course_code).filter(Boolean))]
       const { data: teachingLoads, error: teachingLoadsError } = await (supabase
         .from('teaching_loads') as any)
-        .select('*, faculty_profiles(*)')
-        .in('course_id', filteredCourses.map((c: any) => c.id))
+        .select('*, faculty_profiles(*), class_schedules:course_id(course_code)')
 
-      const teachingLoadsMap = buildTeachingLoadsCandidatesMap((!teachingLoadsError && teachingLoads) ? teachingLoads : [])
+      // Filter teaching loads to only those matching our course codes
+      const filteredTeachingLoads = (!teachingLoadsError && teachingLoads)
+        ? teachingLoads.filter((load: any) => {
+            const loadCourseCode = String(load?.class_schedules?.course_code || '').trim().toUpperCase()
+            return courseCodes.some(code => String(code || '').trim().toUpperCase() === loadCourseCode)
+          })
+        : []
+
+      const teachingLoadsMap = buildTeachingLoadsCandidatesMap(filteredTeachingLoads)
 
       // Build class schedules from sections and their assigned courses
       const classSchedules: ClassSchedule[] = []
@@ -1121,7 +1162,8 @@ export default function GenerateSchedulePage() {
             teachingLoadsMap,
             Number(course.id),
             section.section_name || '',
-            section.college || course.college
+            section.college || course.college,
+            course.course_code
           )
 
           if (!assignedTeacher) {
@@ -1240,12 +1282,20 @@ export default function GenerateSchedulePage() {
       setCourses(filteredCourses)
 
       // Fetch teaching loads
+      const courseCodes = [...new Set(filteredCourses.map((c: any) => c.course_code).filter(Boolean))]
       const { data: teachingLoads } = await (supabase
         .from('teaching_loads') as any)
-        .select('*, faculty_profiles(*)')
-        .in('course_id', filteredCourses.map((c: any) => c.id))
+        .select('*, faculty_profiles(*), class_schedules:course_id(course_code)')
 
-      const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
+      // Filter teaching loads to only those matching our course codes
+      const filteredTeachingLoads = teachingLoads
+        ? teachingLoads.filter((load: any) => {
+            const loadCourseCode = String(load?.class_schedules?.course_code || '').trim().toUpperCase()
+            return courseCodes.some(code => String(code || '').trim().toUpperCase() === loadCourseCode)
+          })
+        : []
+
+      const teachingLoadsMap = buildTeachingLoadsCandidatesMap(filteredTeachingLoads)
 
       // Build class schedules
       const classSchedules: ClassSchedule[] = []
@@ -1263,7 +1313,8 @@ export default function GenerateSchedulePage() {
             teachingLoadsMap,
             Number(course.id),
             section.section_name || '',
-            section.college || course.college
+            section.college || course.college,
+            course.course_code
           )
 
           if (!assignedTeacher) {
@@ -1483,11 +1534,17 @@ export default function GenerateSchedulePage() {
         }
         allCoursesList.push(...filteredCourses)
 
+        const courseCodes = [...new Set(filteredCourses.map((c: any) => c.course_code).filter(Boolean))]
         const { data: teachingLoads } = await (supabase
           .from('teaching_loads') as any)
-          .select('*, faculty_profiles(*)')
-          .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
+          .select('*, faculty_profiles(*), class_schedules:course_id(course_code)')
+        const filteredTeachingLoads = teachingLoads
+          ? teachingLoads.filter((load: any) => {
+              const loadCourseCode = String(load?.class_schedules?.course_code || '').trim().toUpperCase()
+              return courseCodes.some(code => String(code || '').trim().toUpperCase() === loadCourseCode)
+            })
+          : []
+        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(filteredTeachingLoads)
 
         // Fetch course requirements
         const { data: reqData } = await supabase
@@ -1622,7 +1679,8 @@ export default function GenerateSchedulePage() {
               teachingLoadsMap,
               Number(course.id),
               section.section_name || '',
-              section.college || course.college
+              section.college || course.college,
+              course.course_code
             )
             if (!assignedTeacher) {
               allUnassigned.push({
@@ -1733,11 +1791,17 @@ export default function GenerateSchedulePage() {
         })
         allCoursesList.push(...filteredCourses)
 
+        const courseCodes = [...new Set(filteredCourses.map((c: any) => c.course_code).filter(Boolean))]
         const { data: teachingLoads } = await (supabase
           .from('teaching_loads') as any)
-          .select('*, faculty_profiles(*)')
-          .in('course_id', filteredCourses.map((c: any) => c.id))
-        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(teachingLoads || [])
+          .select('*, faculty_profiles(*), class_schedules:course_id(course_code)')
+        const filteredTeachingLoads = teachingLoads
+          ? teachingLoads.filter((load: any) => {
+              const loadCourseCode = String(load?.class_schedules?.course_code || '').trim().toUpperCase()
+              return courseCodes.some(code => String(code || '').trim().toUpperCase() === loadCourseCode)
+            })
+          : []
+        const teachingLoadsMap = buildTeachingLoadsCandidatesMap(filteredTeachingLoads)
 
         // Fetch course requirements
         const { data: reqData } = await supabase
@@ -1872,7 +1936,8 @@ export default function GenerateSchedulePage() {
               teachingLoadsMap,
               Number(course.id),
               section.section_name || '',
-              section.college || course.college
+              section.college || course.college,
+              course.course_code
             )
             if (!assignedTeacher) {
               allUnassigned.push({
