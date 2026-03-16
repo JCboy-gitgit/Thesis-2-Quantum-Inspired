@@ -89,7 +89,7 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
     : [
         { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
         { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
-        { icon: MdMap, label: 'My New Schedule', path: '/faculty/schedules' },
+        { icon: MdCalendarToday, label: 'My New Schedule', path: '/faculty/schedules' },
         { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
         { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
       ]

@@ -31,6 +31,8 @@ import {
   MdMessage
 } from 'react-icons/md'
 import DraggableTimetable, { DragDropResult } from '@/app/components/DraggableTimetable/DraggableTimetable'
+import FacultySidebar from '@/app/components/FacultySidebar'
+import FacultyMenuBar from '@/app/components/FacultyMenuBar'
 import styles from './styles.module.css'
 import '@/app/styles/faculty-global.css'
 
@@ -109,6 +111,8 @@ function RoomSchedulesViewContent() {
   const router = useRouter()
   const { theme, collegeTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [menuBarHidden, setMenuBarHidden] = useState(false)
 
   // User and view state
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -1436,6 +1440,17 @@ function RoomSchedulesViewContent() {
   const currentAllocations = viewMode === 'my-schedule' ? myAllocations : allocations
 
   return (
+    <>
+      <FacultySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} menuBarHidden={menuBarHidden} />
+      <div className={`${styles.mainLayout} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+        <FacultyMenuBar
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+          isHidden={menuBarHidden}
+          onToggleHidden={setMenuBarHidden}
+          userEmail={user?.email}
+        />
+        <main className={`${styles.main} ${menuBarHidden ? styles.menuHidden : ''}`}>
     <div className={`${styles.pageContainer} faculty-page-wrapper`} data-theme={theme} data-college-theme={collegeTheme}>
       <div className={styles.header}>
         <button onClick={() => router.push('/faculty/home')} className={styles.backButton}>
@@ -2455,6 +2470,9 @@ function RoomSchedulesViewContent() {
       )}
 
     </div>
+        </main>
+      </div>
+    </>
   )
 }
 

@@ -1,5 +1,40 @@
 /* Room Schedules View - Faculty Side */
 
+/* ==================== Layout ==================== */
+.mainLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: padding-left 0.3s ease;
+}
+
+.mainLayout.sidebarOpen {
+  padding-left: 260px;
+}
+
+.main {
+  flex: 1;
+  padding: 70px 24px 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.main.menuHidden {
+  padding-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .mainLayout.sidebarOpen {
+    padding-left: 0;
+  }
+
+  .main {
+    padding: 64px 10px 16px;
+  }
+}
+
 /* ==================== Scrollbar Styling ==================== */
 .pageContainer,
 .pageContainer * {
