@@ -46,6 +46,7 @@ import {
     MdMap
 } from 'react-icons/md'
 import styles from './LiveTimetable.module.css'
+import { toast } from 'sonner'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface RoomAllocation {
@@ -699,40 +700,49 @@ export default function AdminLiveTimetablePage() {
         }
     }
 
-    // Check if dragging into a cell causes a conflict (same room or same teacher already occupied)
-    const hasDragConflict = (targetDay: string, targetSlotMinutes: number, draggingAllocId: number): boolean => {
+    // Returns list of conflict reasons when dragging into a cell (same room or same teacher already occupied)
+    const getDragConflictReasons = (targetDay: string, targetSlotMinutes: number, draggingAllocId: number): string[] => {
         const draggingAlloc = allocations.find(a => a.id === draggingAllocId)
-        if (!draggingAlloc) return false
+        if (!draggingAlloc) return []
         const [dragStartRaw, dragEndRaw] = splitTimeRange(draggingAlloc.schedule_time || '')
         const duration = dragStartRaw && dragEndRaw ? parseTimeToMinutes(dragEndRaw) - parseTimeToMinutes(dragStartRaw) : 60
         const newStart = targetSlotMinutes
         const newEnd = targetSlotMinutes + duration
 
-        return effectiveAllocations.some(a => {
-            if (a.id === draggingAllocId) return false
+        const reasons: string[] = []
+        effectiveAllocations.forEach(a => {
+            if (a.id === draggingAllocId) return
             const aDays = expandDays(a.schedule_day || '')
-            if (!aDays.some(d => d.toLowerCase() === targetDay.toLowerCase())) return false
+            if (!aDays.some(d => d.toLowerCase() === targetDay.toLowerCase())) return
             const [aStartRaw, aEndRaw] = splitTimeRange(a.schedule_time || '')
-            if (!aStartRaw || !aEndRaw) return false
+            if (!aStartRaw || !aEndRaw) return
             const aStart = parseTimeToMinutes(aStartRaw)
             const aEnd = parseTimeToMinutes(aEndRaw)
-            // Time overlap check
             const timesOverlap = newStart < aEnd && newEnd > aStart
-            if (!timesOverlap) return false
-            // Same room OR same teacher conflict
+            if (!timesOverlap) return
             const sameRoom = a.room === draggingAlloc.room && a.building === draggingAlloc.building
             const sameTeacher = a.teacher_name && draggingAlloc.teacher_name && a.teacher_name === draggingAlloc.teacher_name
-            return sameRoom || !!sameTeacher
+            if (sameRoom) reasons.push(`Room conflict: ${a.course_code} (${formatSectionDisplay(a.section)}) is in ${a.building} ${a.room} at ${targetDay} ${a.schedule_time}`)
+            else if (sameTeacher) reasons.push(`Prof conflict: ${a.teacher_name} is teaching ${a.course_code} (${formatSectionDisplay(a.section)}) at ${targetDay} ${a.schedule_time}`)
         })
+        return reasons
     }
+    const hasDragConflict = (targetDay: string, targetSlotMinutes: number, draggingAllocId: number): boolean =>
+        getDragConflictReasons(targetDay, targetSlotMinutes, draggingAllocId).length > 0
 
     // Drag-and-drop handlers
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault() }
     const handleDrop = (e: React.DragEvent, day: string, slotMinutes: number) => {
         e.preventDefault()
         if (draggedAllocId === null) return
-        // Don’t allow drop on conflict
-        if (hasDragConflict(day, slotMinutes, draggedAllocId)) {
+        // Don’t allow drop on conflict — show toast notification
+        const conflictReasons = getDragConflictReasons(day, slotMinutes, draggedAllocId)
+        if (conflictReasons.length > 0) {
+            const draggingAlloc = allocations.find(a => a.id === draggedAllocId)
+            toast.error(‘Constraint Violation’, {
+                description: `${draggingAlloc?.course_code || ‘’} (${formatSectionDisplay(draggingAlloc?.section || ‘’)})\n${day}\n\n${conflictReasons.map((r, i) => `${i + 1}. ${r}`).join(‘\n’)}`,
+                duration: 7000,
+            })
             setDraggedAllocId(null)
             setDragOverCell(null)
             setDragConflict(false)
