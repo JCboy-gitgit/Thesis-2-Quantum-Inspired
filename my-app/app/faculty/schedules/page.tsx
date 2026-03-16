@@ -415,18 +415,23 @@ function RoomSchedulesViewContent() {
         if (!session?.user) return
 
         // Fetch fresh user data
-        const { data: userData } = await supabase
+        const { data: rawUserData } = await supabase
           .from('users')
           .select('id, email, full_name')
           .eq('id', session.user.id)
           .single()
+        const userData = rawUserData as { id: string; email: string; full_name: string } | null
 
         // Fetch faculty_profiles for updated name
-        const { data: facultyProfile } = await supabase
-          .from('faculty_profiles')
-          .select('full_name, department, college')
-          .eq('user_id', userData?.id)
-          .single()
+        let facultyProfile: { full_name: string; department: string; college: string } | null = null
+        if (userData?.id) {
+          const { data: rawFacultyProfile } = await supabase
+            .from('faculty_profiles')
+            .select('full_name, department, college')
+            .eq('user_id', userData.id)
+            .single()
+          facultyProfile = rawFacultyProfile as { full_name: string; department: string; college: string } | null
+        }
 
         if (userData) {
           setUser({
