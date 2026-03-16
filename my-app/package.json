@@ -8,7 +8,15 @@
     "build:test": "next build",
     "start": "next start",
     "lint": "eslint",
-    "backend:benchmark": "..\\.venv\\Scripts\\python.exe backend\\benchmark_scheduler.py"
+    "backend:benchmark": "..\\.venv\\Scripts\\python.exe backend\\benchmark_scheduler.py",
+    "test:all": "npx playwright test",
+    "test:e2e": "npx playwright test tests/e2e/",
+    "test:e2e:login": "npx playwright test tests/e2e/login.spec.ts",
+    "test:e2e:admin": "npx playwright test tests/e2e/admin-pages.spec.ts",
+    "test:e2e:faculty": "npx playwright test tests/e2e/faculty-pages.spec.ts",
+    "test:stress": "npx playwright test tests/stress/",
+    "test:stress:standalone": "npx tsx tests/stress/run-stress.ts",
+    "test:report": "npx playwright show-report"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -25,6 +33,7 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.4",
@@ -35,6 +44,7 @@
     "playwright": "^1.58.2",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
