@@ -161,7 +161,7 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
           exact: true
         },
         {
-          label: 'Room Schedule View',
+          label: 'Schedule History',
           path: '/LandingPages/RoomSchedule/ViewSchedule',
           icon: MdVisibility
         },
