@@ -735,12 +735,12 @@ export default function AdminLiveTimetablePage() {
     const handleDrop = (e: React.DragEvent, day: string, slotMinutes: number) => {
         e.preventDefault()
         if (draggedAllocId === null) return
-        // Don’t allow drop on conflict — show toast notification
+        // Don't allow drop on conflict — show toast notification
         const conflictReasons = getDragConflictReasons(day, slotMinutes, draggedAllocId)
         if (conflictReasons.length > 0) {
             const draggingAlloc = allocations.find(a => a.id === draggedAllocId)
-            toast.error(‘Constraint Violation’, {
-                description: `${draggingAlloc?.course_code || ‘’} (${formatSectionDisplay(draggingAlloc?.section || ‘’)})\n${day}\n\n${conflictReasons.map((r, i) => `${i + 1}. ${r}`).join(‘\n’)}`,
+            toast.error('Constraint Violation', {
+                description: `${draggingAlloc?.course_code || ''} (${formatSectionDisplay(draggingAlloc?.section || '')})\n${day}\n\n${conflictReasons.map((r, i) => `${i + 1}. ${r}`).join('\n')}`,
                 duration: 7000,
             })
             setDraggedAllocId(null)
