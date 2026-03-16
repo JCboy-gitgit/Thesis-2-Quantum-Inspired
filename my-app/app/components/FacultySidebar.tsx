@@ -47,8 +47,8 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
 
     checkLockStatus()
 
-    // Listen for realtime changes to schedule lock status
-    const channel = supabase
+    // Listen for realtime changes via postgres_changes (fallback)
+    const dbChannel = supabase
       .channel('sidebar_schedule_lock')
       .on('postgres_changes', {
         event: '*',
@@ -59,7 +59,22 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Listen for broadcast events (instant updates from admin)
+    const broadcastChannel = supabase
+      .channel('schedule_lock_broadcast')
+      .on('broadcast', { event: 'lock_status_changed' }, (payload) => {
+        if (payload.payload && typeof payload.payload.isLocked === 'boolean') {
+          setIsScheduleLocked(payload.payload.isLocked)
+        } else {
+          checkLockStatus()
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(dbChannel)
+      supabase.removeChannel(broadcastChannel)
+    }
   }, [])
 
   // Build menu items based on lock state

@@ -85,6 +85,15 @@ export async function PATCH(request: NextRequest) {
             schedule_id: scheduleId
         })
 
+        // Broadcast the lock status change to all connected clients
+        const channel = supabase.channel('schedule_lock_broadcast')
+        await channel.send({
+            type: 'broadcast',
+            event: 'lock_status_changed',
+            payload: { scheduleId, isLocked }
+        })
+        await supabase.removeChannel(channel)
+
         return NextResponse.json({
             success: true,
             scheduleId,
