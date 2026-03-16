@@ -106,6 +106,29 @@
   transition: color 0.3s ease;
 }
 
+.download-template-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 16px;
+  background: transparent;
+  color: var(--primary, #00a651);
+  border: 1.5px solid var(--primary, #00a651);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.download-template-btn:hover {
+  background: var(--primary, #00a651);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--glow-color, rgba(0, 166, 81, 0.3));
+}
+
 .form-group {
   margin-bottom: 16px;
   flex: 1;
@@ -281,6 +304,17 @@
   color: var(--primary);
 }
 
+:global([data-theme="dark"]) .download-template-btn {
+  color: var(--primary, #00d4ff);
+  border-color: var(--primary, #00d4ff);
+}
+
+:global([data-theme="dark"]) .download-template-btn:hover {
+  background: var(--primary, #00d4ff);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+}
+
 :global([data-theme="dark"]) .text-medium {
   color: var(--text-secondary);
 }
@@ -306,6 +340,17 @@
 
 :global([data-theme="green"]) .format-info h3 {
   color: var(--primary);
+}
+
+:global([data-theme="green"]) .download-template-btn {
+  color: var(--primary, #2EAF7D);
+  border-color: var(--primary, #2EAF7D);
+}
+
+:global([data-theme="green"]) .download-template-btn:hover {
+  background: var(--primary, #2EAF7D);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(46, 175, 125, 0.3);
 }
 
 :global([data-theme="green"]) .text-medium {

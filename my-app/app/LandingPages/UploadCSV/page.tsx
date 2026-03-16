@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { MdDescription, MdUpload, MdDomain, MdCheckCircle, MdCancel, MdArrowForward, MdTableChart, MdInfo, MdWarning, MdMenuBook, MdSchool, MdMeetingRoom, MdTv, MdAccountBalance, MdError } from 'react-icons/md'
+import { MdDescription, MdUpload, MdDomain, MdCheckCircle, MdCancel, MdArrowForward, MdTableChart, MdInfo, MdWarning, MdMenuBook, MdSchool, MdMeetingRoom, MdTv, MdAccountBalance, MdError, MdDownload } from 'react-icons/md'
 import styles from './styles/bQtime.module.css'
 import React, { useState } from 'react'
 import type { JSX } from 'react'
@@ -30,6 +30,34 @@ export default function UploadCSVPage(): JSX.Element {
   const [facultyLoading, setFacultyLoading] = useState(false)
   const [facultyMessage, setFacultyMessage] = useState<string | null>(null)
   const [facultyError, setFacultyError] = useState<string | null>(null)
+
+  // ==================== Download CSV Template ====================
+  const downloadTemplate = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const roomsTemplateCSV = `Room_ID,Room_Name,Building,Floor,College,Primary_Type,Specific_Classification,Capacity,Is_Airconditioned,Has_Whiteboard,Has_TV
+CS-101,Room 101,Science Building,1,CS,Lecture Room,Standard Classroom,40,true,true,false
+,Room 202,Engineering Building,2,CICT,Laboratory,Computer Lab,35,true,true,true`
+
+  const degreeProgramTemplateCSV = `Degree Program,Year Level,Semester,Grade,Course Code,Descriptive Title,Lab Units,Lab Hours,Lec Hours,Pre-requisite
+BS Biology,1,1st Semester,1.0,BIO 101,General Biology,1,3,2,None
+BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
+
+  const facultyTemplateCSV = `Name | Position | Department | Type
+"Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"
+"Harris R. Dela Cruz" | "Faculty" | "Mathematics" | "Faculty"
+"Joshua P. Valeroso" | "Faculty (Part-Time)" | "Mathematics" | "Faculty (Part-Time)"
+"Aubrey Rose T. Gan" | "Faculty (Adjunct)" | "Mathematics" | "Faculty (Adjunct)"
+"Karl Kenneth R. Santos" | "Guest Lecturer" | "Science" | "Guest Lecturer"`
 
   // Auth check on mount
   React.useEffect(() => {
@@ -818,6 +846,14 @@ export default function UploadCSVPage(): JSX.Element {
                 <MdError size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
                 <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
               </div>
+              <button
+                type="button"
+                className={styles['download-template-btn']}
+                onClick={() => downloadTemplate(roomsTemplateCSV, 'rooms_template.csv')}
+              >
+                <MdDownload size={14} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+                Download CSV Template
+              </button>
             </div>
 
             <div className={styles['form-row']}>
@@ -927,6 +963,14 @@ export default function UploadCSVPage(): JSX.Element {
                 <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the CoursesManagement folder.</span>
               </div>
+              <button
+                type="button"
+                className={styles['download-template-btn']}
+                onClick={() => downloadTemplate(degreeProgramTemplateCSV, 'degree_program_template.csv')}
+              >
+                <MdDownload size={14} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+                Download CSV Template
+              </button>
             </div>
 
             <div className={styles['form-group']}>
@@ -1029,6 +1073,14 @@ export default function UploadCSVPage(): JSX.Element {
                 <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the FacultyColleges folder.</span>
               </div>
+              <button
+                type="button"
+                className={styles['download-template-btn']}
+                onClick={() => downloadTemplate(facultyTemplateCSV, 'faculty_profiles_template.csv')}
+              >
+                <MdDownload size={14} style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+                Download CSV Template
+              </button>
             </div>
 
             <div className={styles['form-group']}>
