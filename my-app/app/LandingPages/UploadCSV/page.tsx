@@ -866,7 +866,7 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                     value={roomSchoolName}
                     onChange={(e) => setRoomSchoolName(e.target.value)}
                     className={styles['input']}
-                    placeholder="e.g., University of the Philippines"
+                    placeholder="e.g., Bulacan State University"
                     required
                   />
                 </label>
@@ -881,7 +881,7 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                     value={roomCampusName}
                     onChange={(e) => setRoomCampusName(e.target.value)}
                     className={styles['input']}
-                    placeholder="e.g., Main Campus, Diliman Campus"
+                    placeholder="e.g., Main Campus, Sarmiento Campus"
                     required
                   />
                 </label>
