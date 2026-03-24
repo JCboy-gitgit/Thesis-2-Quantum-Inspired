@@ -3177,7 +3177,7 @@ export default function GenerateSchedulePage() {
                   Quantum-Inspired Room Allocation
                 </h1>
                 <p className={styles.scheduleSubtitle} id="gen-steps-indicator">
-                  Advanced QIA Algorithm for Optimal Class-Room-Teacher Scheduling
+                  Advanced Algorithm for Optimal Class-Room-Teacher Scheduling
                 </p>
                 <div className={styles.backendStatusRow}>
                   <div
@@ -5163,7 +5163,7 @@ export default function GenerateSchedulePage() {
                   {/* Online Days Configuration (Quantum Rule: The "Online Day" Rule) */}
                   <div className={styles.formCard} id="gen-online-config">
                     <h3 className={styles.formSectionTitle}>
-                      <MdFlashOn /> Online Days Configuration (Quantum-Inspired Rule)
+                      <MdFlashOn /> Online Days Configuration
                     </h3>
                     <div className={styles.timeConfigInfo}>
                       <MdFlashOn size={20} />
@@ -5532,7 +5532,7 @@ export default function GenerateSchedulePage() {
                       onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                     >
                       <MdSettings size={18} />
-                      Advanced Algorithm Settings
+                      Advanced Settings
                       {showAdvancedSettings ? <MdKeyboardArrowDown size={18} /> : <MdKeyboardArrowRight size={18} />}
                     </button>
                   </div>
@@ -5541,22 +5541,20 @@ export default function GenerateSchedulePage() {
                   {showAdvancedSettings && (
                     <div className={styles.formCard}>
                       <h3 className={styles.formSectionTitle}>
-                        <FaAtom /> Quantum-Inspired Algorithm Parameters
+                        <FaAtom /> Quantum-Inspired Algorithm Settings
                       </h3>
 
                       <div className={styles.algorithmInfo}>
                         <MdFlashOn size={20} />
                         <p>
-                          The QIA (Quantum-Inspired Annealing) algorithm uses quantum tunneling simulation
-                          to escape local minima and find globally optimal room allocations. Default settings
-                          are optimized for thorough optimization.
+                          A smart optimization method that mimics quantum behavior to avoid getting stuck in “good but not best” solutions, helping it find the best possible way to assign rooms.
                         </p>
                       </div>
 
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Max Iterations
+                            Number of Attempts
                             <span className={styles.formHint}>Higher = better solution (default: max)</span>
                           </label>
                           <input
@@ -5574,7 +5572,7 @@ export default function GenerateSchedulePage() {
                         </div>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Initial Temperature
+                            Starting Shuffle
                             <span className={styles.formHint}>Starting randomness level</span>
                           </label>
                           <input
@@ -5595,7 +5593,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Cooling Rate
+                            Slowdown Rate
                             <span className={styles.formHint}>Temperature decrease rate (0.99-0.9999)</span>
                           </label>
                           <input
@@ -5613,7 +5611,7 @@ export default function GenerateSchedulePage() {
                         </div>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Quantum Tunneling Probability
+                            Escape Chance
                             <span className={styles.formHint}>Chance to escape local minima (0.05-0.30)</span>
                           </label>
                           <input
