@@ -108,7 +108,8 @@ async def get_all_sections(department: Optional[str] = None) -> List[Dict]:
     if department:
         query = query.eq("department", department)
     
-    response = query.execute()
+    # Optimize for large datasets: limit result size, order by recent
+    response = query.limit(5000).order("created_at", desc=True).execute()
     return response.data or []
 
 
@@ -236,14 +237,14 @@ async def get_teacher_availability(teacher_id: Any) -> Dict:
 
 
 async def create_teacher(teacher_data: Dict) -> Dict:
-    """Create a new teacher"""
-    response = _db().table("teachers").insert(teacher_data).execute()
+    """Create a new teacher in faculty_profiles"""
+    response = _db().table("faculty_profiles").insert(teacher_data).execute()
     return response.data[0] if response.data else {}
 
 
 async def bulk_create_teachers(teachers: List[Dict]) -> List[Dict]:
-    """Bulk create teachers"""
-    response = _db().table("teachers").insert(teachers).execute()
+    """Bulk create teachers in faculty_profiles"""
+    response = _db().table("faculty_profiles").insert(teachers).execute()
     return response.data or []
 
 
@@ -362,9 +363,13 @@ async def check_teacher_conflicts(
     schedule_id: int
 ) -> List[Dict]:
     """Check if teacher is already scheduled at this time - Now uses room_allocations"""
+    if not teacher_id:
+        return []  # No teacher assigned
     response = _db().table("room_allocations").select("*").eq(
         "schedule_id", schedule_id
-    ).eq("schedule_day", day_of_week).execute()
+    ).eq("schedule_day", day_of_week).eq(
+        "teacher_id", teacher_id
+    ).execute()
     return response.data or []
 
 

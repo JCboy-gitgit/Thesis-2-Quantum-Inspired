@@ -101,13 +101,12 @@ async def health_check():
         result = client.table("rooms").select("id").limit(1).execute()
         db_status = "connected"
     except Exception as e:
-        db_status = f"error: {str(e)}"
+        db_status = "error"
     
     return {
         "status": "healthy" if db_status == "connected" else "degraded",
         "database": db_status,
-        "supabase_url_set": bool(os.getenv("SUPABASE_URL")),
-        "supabase_key_set": bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
+        "configured": bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
         "timestamp": datetime.utcnow().isoformat()
     }
 
@@ -137,27 +136,27 @@ async def list_rooms(
 ):
     """Get all rooms with optional filtering"""
     try:
-        rooms = await get_all_rooms()
+        # Let database handle filtering for efficiency
+        rooms = await get_available_rooms(
+            room_type=room_type,
+            min_capacity=min_capacity or 0,
+            campus=campus
+        )
         
-        # Apply filters
-        if campus:
-            rooms = [r for r in rooms if r.get("campus") == campus]
+        # Client-side filtering only if needed
         if building:
             rooms = [r for r in rooms if r.get("building") == building]
-        if room_type:
-            rooms = [r for r in rooms if r.get("room_type") == room_type]
-        if min_capacity:
-            rooms = [r for r in rooms if r.get("capacity", 0) >= min_capacity]
         
         return rooms
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve rooms")
 
 
 @app.get("/api/rooms/{room_id}")
 async def get_room(room_id: int):
     """Get a specific room by ID"""
     try:
+        # Fetch all rooms and find by ID (efficient since rooms list is typically small)
         rooms = await get_all_rooms()
         room = next((r for r in rooms if r.get("id") == room_id), None)
         if not room:
@@ -166,7 +165,7 @@ async def get_room(room_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve room")
 
 
 @app.get("/api/rooms/{room_id}/utilization")
@@ -176,7 +175,7 @@ async def get_room_utilization_stats(room_id: int, schedule_id: Optional[int] = 
         stats = await get_room_utilization(room_id, schedule_id)
         return stats
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve room utilization")
 
 
 # ========================
@@ -190,14 +189,16 @@ async def list_sections(
 ):
     """Get all sections with optional filtering"""
     try:
+        # Database-level filtering for department
         sections = await get_all_sections(department)
         
+        # Client-side filtering only for course_code (less likely to be indexed)
         if course_code:
             sections = [s for s in sections if s.get("course_code") == course_code]
         
         return sections
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve sections")
 
 
 # ========================
@@ -212,7 +213,7 @@ async def list_teachers(department: Optional[str] = None):
         
         return teachers
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve teachers")
 
 
 # ========================
@@ -226,7 +227,7 @@ async def list_time_slots():
         slots = await get_time_slots()
         return slots
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve time slots")
 
 
 # ========================
@@ -402,6 +403,20 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     Supports 30-minute time slot intervals for flexible scheduling.
     """
     try:
+        # Input validation
+        if not request.schedule_name or not request.schedule_name.strip():
+            raise HTTPException(status_code=400, detail="schedule_name is required")
+        if not request.semester or not request.semester.strip():
+            raise HTTPException(status_code=400, detail="semester is required")
+        if not request.academic_year or not request.academic_year.strip():
+            raise HTTPException(status_code=400, detail="academic_year is required")
+        if request.max_iterations < 100:
+            raise HTTPException(status_code=400, detail="max_iterations must be at least 100")
+        if request.cooling_rate <= 0 or request.cooling_rate >= 1:
+            raise HTTPException(status_code=400, detail="cooling_rate must be between 0 and 1")
+        if request.initial_temperature <= 0:
+            raise HTTPException(status_code=400, detail="initial_temperature must be positive")
+        
         print("=" * 60)
         print("🚀 SCHEDULE GENERATION STARTED (Enhanced v2)")
         print("=" * 60)
@@ -440,7 +455,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                 print(f"⏰ Using {len(time_slots)} time slots from database")
         else:
             print("🔍 Fetching data from database")
-            all_sections = await get_sections_for_scheduling()
+            all_sections = await get_sections_for_scheduling(request.semester, request.academic_year)
             all_rooms = await get_all_rooms()
             
             lunch_start_str2 = request.lunch_start if request.lunch_mode != 'none' else None
@@ -615,20 +630,24 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                 allocation = {
                     "schedule_id": generated_schedule_id,
                     "class_id": entry.get("section_id"),
+                    "section_id": entry.get("section_id"),  # NEW: section_id for analytics
                     "room_id": entry.get("room_id"),
                     "course_code": entry.get("course_code", ""),
                     "course_name": entry.get("course_name", ""),
                     "section": entry.get("section_code", ""),
+                    "section_code": entry.get("section_code", ""),
                     "year_level": entry.get("year_level", 1),
                     "schedule_day": entry.get("day_of_week", ""),
+                    "day_of_week": entry.get("day_of_week", ""),  # NEW: day_of_week for analytics
                     "schedule_time": f"{entry.get('start_time', '')} - {entry.get('end_time', '')}",
                     "campus": entry.get("campus", ""),
                     "building": entry.get("building", ""),
                     "room": entry.get("room_code", entry.get("room_name", "")),
+                    "room_code": entry.get("room_code", ""),
                     "capacity": entry.get("room_capacity", 0),
+                    "teacher_id": entry.get("teacher_id"),  # NEW: teacher_id for analytics
                     "teacher_name": entry.get("teacher_name", ""),
                     "department": entry.get("department", ""),
-                    # "college": entry.get("college", ""),  # REVERT: Removed as column missing in DB
                     "lec_hours": entry.get("lec_hours", 0),
                     "lab_hours": entry.get("lab_hours", 0),
                     "component": entry.get("component") or entry.get("section_type", "lecture"),
@@ -693,7 +712,7 @@ async def list_schedules():
         schedules = await get_all_schedules()
         return schedules
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve schedules")
 
 
 @app.get("/api/schedules/{schedule_id}")
@@ -707,7 +726,7 @@ async def get_schedule(schedule_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve schedule")
 
 
 @app.delete("/api/schedules/{schedule_id}")
@@ -717,7 +736,7 @@ async def remove_schedule(schedule_id: int):
         await delete_schedule(schedule_id)
         return {"message": "Schedule deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to delete schedule")
 
 
 # ========================
@@ -731,7 +750,7 @@ async def list_generated_schedules():
         schedules = await get_generated_schedules()
         return schedules
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve generated schedules")
 
 
 @app.get("/api/generated-schedules/{schedule_id}")
@@ -745,7 +764,7 @@ async def get_generated_schedule(schedule_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve generated schedule")
 
 
 @app.get("/api/generated-schedules/{schedule_id}/allocations")
@@ -759,7 +778,7 @@ async def get_schedule_allocations(schedule_id: int):
             "total": len(allocations)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve allocations")
 
 
 @app.delete("/api/generated-schedules/{schedule_id}")
@@ -769,7 +788,7 @@ async def remove_generated_schedule(schedule_id: int):
         await delete_generated_schedule(schedule_id)
         return {"message": "Generated schedule deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to delete generated schedule")
 
 
 # ========================
@@ -795,7 +814,7 @@ async def get_room_schedule(schedule_id: int, room_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve room schedule")
 
 
 @app.get("/api/schedules/{schedule_id}/by-teacher/{teacher_id}")
@@ -817,7 +836,7 @@ async def get_teacher_schedule(schedule_id: int, teacher_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve teacher schedule")
 
 
 @app.get("/api/schedules/{schedule_id}/by-section/{section_id}")
@@ -839,7 +858,7 @@ async def get_section_schedule(schedule_id: int, section_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve section schedule")
 
 
 @app.get("/api/schedules/{schedule_id}/by-day/{day}")
@@ -861,7 +880,7 @@ async def get_day_schedule(schedule_id: int, day: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve day schedule")
 
 
 # ========================
@@ -872,18 +891,62 @@ async def get_day_schedule(schedule_id: int, day: str):
 async def check_conflicts(schedule_id: int):
     """Check for conflicts in a schedule"""
     try:
-        room_conflicts = await check_room_conflicts(schedule_id)
-        teacher_conflicts = await check_teacher_conflicts(schedule_id)
+        schedule = await get_schedule_by_id(schedule_id)
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        # Get allocations for this schedule
+        allocations = await get_room_allocations_by_schedule(schedule_id)
+        
+        # Detect room-time conflicts: same room booked twice on same day/time
+        room_conflicts = []
+        room_day_time_map = {}
+        for alloc in allocations:
+            key = (alloc.get("room_id"), alloc.get("schedule_day"), alloc.get("schedule_time"))
+            if key in room_day_time_map:
+                room_conflicts.append({
+                    "type": "room_double_booking",
+                    "room_id": key[0],
+                    "day": key[1],
+                    "time": key[2],
+                    "allocations": [room_day_time_map[key], alloc]
+                })
+            else:
+                room_day_time_map[key] = alloc
+        
+        # Detect teacher-time conflicts: same teacher booked twice on same day/time
+        teacher_conflicts = []
+        teacher_day_time_map = {}
+        for alloc in allocations:
+            teacher = alloc.get("teacher_name") or ""
+            if not teacher:
+                continue
+            key = (teacher, alloc.get("schedule_day"), alloc.get("schedule_time"))
+            if key in teacher_day_time_map:
+                teacher_conflicts.append({
+                    "type": "teacher_double_booking",
+                    "teacher": key[0],
+                    "day": key[1],
+                    "time": key[2],
+                    "allocations": [teacher_day_time_map[key], alloc]
+                })
+            else:
+                teacher_day_time_map[key] = alloc
         
         return {
             "schedule_id": schedule_id,
             "has_conflicts": len(room_conflicts) > 0 or len(teacher_conflicts) > 0,
             "room_conflicts": room_conflicts,
             "teacher_conflicts": teacher_conflicts,
-            "total_conflicts": len(room_conflicts) + len(teacher_conflicts)
+            "total_conflicts": len(room_conflicts) + len(teacher_conflicts),
+            "total_allocations": len(allocations)
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Conflict check failed")
 
 
 # ========================
@@ -894,32 +957,23 @@ async def check_conflicts(schedule_id: int):
 async def get_analytics_room_utilization(schedule_id: Optional[int] = None):
     """Get room utilization analytics"""
     try:
-        rooms = await get_all_rooms()
-        utilization_data = []
+        if not schedule_id:
+            raise HTTPException(status_code=400, detail="schedule_id is required")
         
-        for room in rooms:
-            stats = await get_room_utilization(room["id"], schedule_id)
-            utilization_data.append({
-                "room_id": room["id"],
-                "room_code": room.get("room_code", room.get("room", "")),
-                "room_name": room.get("room_name", room.get("room", "")),
-                "building": room.get("building", ""),
-                "capacity": room.get("capacity", 0),
-                **stats
-            })
+        utilization_data = await get_room_utilization(schedule_id)
         
         # Calculate averages
-        total_utilization = sum(r.get("utilization_rate", 0) for r in utilization_data)
+        total_utilization = sum(r.get("utilization_percentage", 0) for r in utilization_data)
         avg_utilization = total_utilization / len(utilization_data) if utilization_data else 0
         
         return {
             "schedule_id": schedule_id,
             "average_utilization": avg_utilization,
-            "total_rooms": len(rooms),
+            "total_rooms": len(utilization_data),
             "rooms": utilization_data
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve analytics")
 
 
 @app.get("/api/analytics/summary")
