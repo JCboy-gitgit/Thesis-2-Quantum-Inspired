@@ -171,17 +171,20 @@ function RoomSchedulesViewContent() {
     checkAuth()
   }, [])
 
-  // Redirect to My Schedule when schedule is locked
+  // Redirect to My Schedule only when the current schedule is locked.
   useEffect(() => {
     const checkLockAndRedirect = async () => {
       try {
         const { data, error } = await supabase
           .from('generated_schedules')
           .select('id, is_locked')
-          .eq('is_locked', true)
+          .eq('is_current', true)
+          .order('activated_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
           .limit(1)
+          .single()
 
-        if (!error && data && data.length > 0) {
+        if (!error && data && (data as any).is_locked) {
           router.replace('/faculty/my-schedule')
         }
       } catch {
@@ -411,6 +414,51 @@ function RoomSchedulesViewContent() {
     }
   }, [user, viewMode, selectedSchedule])
 
+  // Keep faculty schedules page synced when current schedule or assignment changes.
+  useEffect(() => {
+    if (!user?.id || !user?.email) return
+
+    const refreshAll = async () => {
+      await fetchMySchedule(user.email)
+      await fetchSchedules()
+      if (selectedSchedule) {
+        await handleSelectSchedule(selectedSchedule)
+      }
+    }
+
+    const channel = supabase
+      .channel(`faculty_schedules_sync_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'generated_schedules' },
+        (payload) => {
+          if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
+            refreshAll()
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'faculty_default_schedules',
+          filter: `faculty_user_id=eq.${user.id}`
+        },
+        () => {
+          refreshAll()
+        }
+      )
+      .subscribe()
+
+    const refreshId = setInterval(refreshAll, 15000)
+
+    return () => {
+      clearInterval(refreshId)
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, user?.email, selectedSchedule])
+
   // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
   useEffect(() => {
     const refreshUserData = async () => {
@@ -578,7 +626,7 @@ function RoomSchedulesViewContent() {
 
   const fetchMySchedule = async (email: string) => {
     try {
-      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}&t=${Date.now()}`)
 
       if (response.ok) {
         const data = await parseJsonSafely(response)
@@ -596,10 +644,18 @@ function RoomSchedulesViewContent() {
           setRooms(uniqueRooms)
           setTeachers(uniqueTeachers)
           setFilteredRooms(uniqueRooms)
+        } else {
+          setHasAssignedSchedule(false)
+          setMyAllocations([])
         }
+      } else {
+        setHasAssignedSchedule(false)
+        setMyAllocations([])
       }
     } catch (error) {
       console.error('Error fetching my schedule:', error)
+      setHasAssignedSchedule(false)
+      setMyAllocations([])
     }
   }
 

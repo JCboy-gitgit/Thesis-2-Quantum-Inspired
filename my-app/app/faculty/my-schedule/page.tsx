@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import { useTheme } from '@/app/context/ThemeContext'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
@@ -368,7 +369,7 @@ export default function MySchedulePage() {
         setLoading(true)
         try {
             const weekStr = formatDate(currentWeekStart)
-            const res = await fetch(`/api/live-timetable?action=current-week&week_start=${weekStr}`)
+            const res = await fetchNoCache(`/api/live-timetable?action=current-week&week_start=${weekStr}&t=${Date.now()}`)
             const data = await res.json()
             if (data.success) {
                 setSchedule(data.schedule)
@@ -401,6 +402,14 @@ export default function MySchedulePage() {
             .subscribe()
         return () => { supabase.removeChannel(channel) }
     }, [fetchLiveData])
+
+    useEffect(() => {
+        if (!user) return
+        const refreshId = setInterval(() => {
+            fetchLiveData()
+        }, 15000)
+        return () => clearInterval(refreshId)
+    }, [user, fetchLiveData])
 
     const fetchFloorPlans = async () => {
         try {

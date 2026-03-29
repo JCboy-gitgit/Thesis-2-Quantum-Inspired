@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import { useTheme } from '@/app/context/ThemeContext'
 import FacultySidebar from '@/app/components/FacultySidebar'
 import FacultyMenuBar from '@/app/components/FacultyMenuBar'
@@ -396,7 +397,7 @@ export default function FacultyLiveTimetablePage() {
         setLoading(true)
         try {
             const weekStr = formatDate(currentWeekStart)
-            const res = await fetch(`/api/live-timetable?action=current-week&week_start=${weekStr}`)
+            const res = await fetchNoCache(`/api/live-timetable?action=current-week&week_start=${weekStr}&t=${Date.now()}`)
             const data = await res.json()
 
             if (data.success) {
@@ -433,6 +434,14 @@ export default function FacultyLiveTimetablePage() {
             .subscribe()
         return () => { supabase.removeChannel(channel) }
     }, [fetchLiveData])
+
+    useEffect(() => {
+        if (!user) return
+        const refreshId = setInterval(() => {
+            fetchLiveData()
+        }, 15000)
+        return () => clearInterval(refreshId)
+    }, [user, fetchLiveData])
 
     const handleMarkAbsence = async () => {
         if (!markingAbsence || !user || !schedule) return
@@ -963,7 +972,13 @@ export default function FacultyLiveTimetablePage() {
                         <div className={styles.emptyState}>
                             <MdInfo className={styles.emptyIcon} />
                             <h3>No Active Schedule</h3>
-                            <p>The admin hasn't locked a schedule yet. Check back later.</p>
+                            <p>No current schedule is available yet. Please check back later.</p>
+                        </div>
+                    ) : !schedule.is_locked ? (
+                        <div className={styles.emptyState}>
+                            <MdLock className={styles.emptyIcon} />
+                            <h3>Live Schedule Not Available Yet</h3>
+                            <p>The current schedule is not locked yet by the admin. Live features will unlock once it is locked.</p>
                         </div>
                     ) : (
                         <>

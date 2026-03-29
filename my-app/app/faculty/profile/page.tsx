@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { fetchNoCache } from '@/lib/fetchUtils'
@@ -92,8 +92,9 @@ export default function FacultyProfilePage() {
 
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [changingPassword, setChangingPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -150,10 +151,15 @@ export default function FacultyProfilePage() {
     }
   }
 
-  const fetchAssignedSchedule = async (email: string) => {
+  const fetchAssignedSchedule = useCallback(async (email: string) => {
+    if (!email) {
+      setAssignedSchedule(null)
+      return
+    }
+
     setLoadingSchedule(true)
     try {
-      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`)
+      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}&t=${Date.now()}`)
 
       if (response.ok) {
         const data = await parseJsonSafely(response)
@@ -167,14 +173,19 @@ export default function FacultyProfilePage() {
             assigned_at: data.assignment?.assigned_at || '',
             total_classes: data.allocations?.length || 0
           })
+        } else {
+          setAssignedSchedule(null)
         }
+      } else {
+        setAssignedSchedule(null)
       }
     } catch (error) {
       console.error('Error fetching assigned schedule:', error)
+      setAssignedSchedule(null)
     } finally {
       setLoadingSchedule(false)
     }
-  }
+  }, [])
 
   const checkAuthAndLoad = async () => {
     try {
@@ -285,7 +296,7 @@ export default function FacultyProfilePage() {
 
       // Fetch assigned schedule
       if (session.user.email) {
-        fetchAssignedSchedule(session.user.email)
+        await fetchAssignedSchedule(session.user.email)
       }
 
       // Check for pending name change requests
@@ -298,6 +309,50 @@ export default function FacultyProfilePage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!user?.id || !user?.email) return
+
+    const refreshSchedule = async () => {
+      await fetchAssignedSchedule(user.email)
+    }
+
+    const channel = supabase
+      .channel(`faculty_profile_schedule_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'faculty_default_schedules',
+          filter: `faculty_user_id=eq.${user.id}`
+        },
+        () => {
+          refreshSchedule()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'generated_schedules'
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
+            refreshSchedule()
+          }
+        }
+      )
+      .subscribe()
+
+    const interval = setInterval(refreshSchedule, 15000)
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, user?.email, fetchAssignedSchedule])
 
   const fetchPendingNameRequest = async (userId: string) => {
     try {
@@ -600,8 +655,8 @@ export default function FacultyProfilePage() {
 
   // Handle password change
   const handlePasswordChange = async () => {
-    if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setMessage({ type: 'error', text: 'Please fill in both password fields' })
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: 'Please fill in all password fields' })
       return
     }
 
@@ -615,10 +670,30 @@ export default function FacultyProfilePage() {
       return
     }
 
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      setMessage({ type: 'error', text: 'New password must be different from current password' })
+      return
+    }
+
+    if (!user?.email) {
+      setMessage({ type: 'error', text: 'Unable to verify account. Please sign in again.' })
+      return
+    }
+
     setChangingPassword(true)
     setMessage(null)
 
     try {
+      // Re-authenticate using current password before allowing password update.
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordForm.currentPassword
+      })
+
+      if (verifyError) {
+        throw new Error('Current password is incorrect')
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: passwordForm.newPassword
       })
@@ -629,8 +704,11 @@ export default function FacultyProfilePage() {
       }
 
       setMessage({ type: 'success', text: '✅ Password changed successfully!' })
-      setPasswordForm({ newPassword: '', confirmPassword: '' })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setShowPasswordChange(false)
+      setShowCurrentPassword(false)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
     } catch (error: any) {
       console.error('Password change failed:', error)
       setMessage({ type: 'error', text: '❌ ' + (error.message || 'Failed to change password') })
@@ -1044,6 +1122,27 @@ export default function FacultyProfilePage() {
                   <div className={styles.formGroup}>
                     <label>
                       <MdLock size={16} />
+                      Current Password
+                    </label>
+                    <div className={styles.passwordInputWrapper}>
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        type="button"
+                        className={styles.passwordToggle}
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      >
+                        {showCurrentPassword ? <MdVisibilityOff size={18} /> : <MdVisibility size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>
+                      <MdLock size={16} />
                       New Password
                     </label>
                     <div className={styles.passwordInputWrapper}>
@@ -1088,7 +1187,10 @@ export default function FacultyProfilePage() {
                       className={styles.cancelBtn}
                       onClick={() => {
                         setShowPasswordChange(false)
-                        setPasswordForm({ newPassword: '', confirmPassword: '' })
+                        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+                        setShowCurrentPassword(false)
+                        setShowNewPassword(false)
+                        setShowConfirmPassword(false)
                       }}
                       disabled={changingPassword}
                     >

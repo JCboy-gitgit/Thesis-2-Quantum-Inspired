@@ -9,7 +9,8 @@ import {
   MdPerson,
   MdMap,
   MdLiveTv,
-  MdEventNote
+  MdEventNote,
+  MdLock
 } from 'react-icons/md'
 import { supabase } from '@/lib/supabaseClient'
 import styles from './FacultySidebar.module.css'
@@ -32,11 +33,14 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
         const { data, error } = await supabase
           .from('generated_schedules')
           .select('id, is_locked')
-          .eq('is_locked', true)
+          .eq('is_current', true)
+          .order('activated_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
           .limit(1)
+          .single()
 
-        if (!error && data && data.length > 0) {
-          setIsScheduleLocked(true)
+        if (!error && data) {
+          setIsScheduleLocked(Boolean((data as any).is_locked))
         } else {
           setIsScheduleLocked(false)
         }
@@ -77,24 +81,36 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
     }
   }, [])
 
-  // Build menu items based on lock state
-  const menuItems = isScheduleLocked
-    ? [
-        { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
-        { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
-        { icon: MdEventNote, label: 'My Schedule', path: '/faculty/my-schedule' },
-        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
-        { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
-      ]
-    : [
-        { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
-        { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
-        { icon: MdCalendarToday, label: 'My New Schedule', path: '/faculty/schedules' },
-        { icon: MdMap, label: 'Live Floor Map', path: '/faculty/campus-map' },
-        { icon: MdLiveTv, label: 'Live Schedule', path: '/faculty/live-timetable' },
-      ]
+  const lockMessage = 'Live features are disabled until the admin locks the current schedule.'
 
-  const handleNavigation = (path: string) => {
+  // Build menu items based on lock state
+  const menuItems = [
+    { icon: MdDashboard, label: 'Dashboard', path: '/faculty/home' },
+    { icon: MdPerson, label: 'My Profile', path: '/faculty/profile' },
+    isScheduleLocked
+      ? { icon: MdEventNote, label: 'My Schedule', path: '/faculty/my-schedule' }
+      : { icon: MdCalendarToday, label: 'My New Schedule', path: '/faculty/schedules' },
+    {
+      icon: MdMap,
+      label: 'Live Floor Map',
+      path: '/faculty/campus-map',
+      disabled: !isScheduleLocked,
+      disabledReason: lockMessage,
+    },
+    {
+      icon: MdLiveTv,
+      label: 'Live Schedule',
+      path: '/faculty/live-timetable',
+      disabled: !isScheduleLocked,
+      disabledReason: lockMessage,
+    },
+  ]
+
+  const handleNavigation = (path: string, disabled?: boolean, disabledReason?: string) => {
+    if (disabled) {
+      alert(disabledReason || lockMessage)
+      return
+    }
     router.push(path)
     if (onClose) onClose()
   }
@@ -135,11 +151,14 @@ export default function FacultySidebar({ isOpen, onClose, menuBarHidden }: Facul
             return (
               <button
                 key={index}
-                onClick={() => handleNavigation(item.path)}
-                className={`${styles.menuItem} ${active ? styles.active : ''}`}
+                onClick={() => handleNavigation(item.path, (item as any).disabled, (item as any).disabledReason)}
+                className={`${styles.menuItem} ${active ? styles.active : ''} ${(item as any).disabled ? styles.disabled : ''}`}
+                title={(item as any).disabled ? (item as any).disabledReason : undefined}
+                aria-disabled={(item as any).disabled ? true : false}
               >
                 <Icon size={20} />
                 <span>{item.label}</span>
+                {(item as any).disabled && <MdLock size={14} />}
               </button>
             )
           })}

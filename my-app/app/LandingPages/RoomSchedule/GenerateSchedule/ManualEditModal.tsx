@@ -987,6 +987,7 @@ export default function ManualEditModal({
                 student_count: Number(existing.student_count || 0),
                 college: String(existing.college || ''),
                 room_college: String(existing.room_college || ''),
+                is_online: Boolean(existing.is_online || false), // Include online flag for conflict checking
             }))
 
         const targetRoomName = String(room?.room || newAlloc.room || '')

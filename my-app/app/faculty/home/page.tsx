@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { fetchNoCache } from '@/lib/fetchUtils'
 import {
   MdCalendarToday,
   MdAccessTime,
@@ -153,6 +154,9 @@ export default function FacultyHomePage() {
   const [attendanceEndDate, setAttendanceEndDate] = useState('')
   const [attendanceSubmitting, setAttendanceSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [holidayMap, setHolidayMap] = useState<Record<string, string>>(philippineHolidays)
+  const [holidayCalendarDate, setHolidayCalendarDate] = useState(new Date())
+  const [selectedHoliday, setSelectedHoliday] = useState<{ name: string; date: string } | null>(null)
 
   // Notifications State
   const [notifications, setNotifications] = useState<any[]>([])
@@ -380,11 +384,29 @@ export default function FacultyHomePage() {
   useEffect(() => {
     checkAuthAndLoad()
     updateGreeting()
+    refreshHolidays()
 
     // Update greeting every minute
     const interval = setInterval(updateGreeting, 60000)
-    return () => clearInterval(interval)
+    const holidayInterval = setInterval(refreshHolidays, 60000)
+    return () => {
+      clearInterval(interval)
+      clearInterval(holidayInterval)
+    }
   }, [])
+
+  const refreshHolidays = async () => {
+    try {
+      const response = await fetchNoCache(`/api/holidays?t=${Date.now()}`)
+      if (!response.ok) return
+      const data = await response.json()
+      if (data?.holidayMap && typeof data.holidayMap === 'object') {
+        setHolidayMap(data.holidayMap)
+      }
+    } catch (error) {
+      console.error('Failed to refresh holidays:', error)
+    }
+  }
 
   useEffect(() => {
     if (attendanceOpen && !attendanceDay) {
@@ -466,6 +488,14 @@ export default function FacultyHomePage() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
+  }, [user?.email])
+
+  useEffect(() => {
+    if (!user?.email) return
+    const refreshId = setInterval(() => {
+      fetchSchedules(user.email)
+    }, 15000)
+    return () => clearInterval(refreshId)
   }, [user?.email])
 
   // Periodically refresh user data (name, avatar) every 30 seconds to stay in sync with profile changes
@@ -594,9 +624,7 @@ export default function FacultyHomePage() {
         return
       }
 
-      const response = await fetch(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}`, {
-        cache: 'no-store'
-      })
+      const response = await fetchNoCache(`/api/faculty-default-schedule?action=faculty-schedule&email=${encodeURIComponent(email)}&t=${Date.now()}`)
 
       if (!response.ok) {
         setSchedules([])
@@ -801,6 +829,47 @@ export default function FacultyHomePage() {
       month: 'long',
       day: 'numeric'
     })
+  }
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startingDay = firstDay.getDay()
+
+    const days: (number | null)[] = []
+    for (let i = 0; i < startingDay; i++) days.push(null)
+    for (let i = 1; i <= daysInMonth; i++) days.push(i)
+    return days
+  }
+
+  const getHolidayForDate = (day: number) => {
+    const dateStr = `${holidayCalendarDate.getFullYear()}-${String(holidayCalendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return holidayMap[dateStr]
+  }
+
+  const isHolidayToday = (day: number) => {
+    const now = new Date()
+    return (
+      day === now.getDate() &&
+      holidayCalendarDate.getMonth() === now.getMonth() &&
+      holidayCalendarDate.getFullYear() === now.getFullYear()
+    )
+  }
+
+  const prevHolidayMonth = () => {
+    setHolidayCalendarDate(new Date(holidayCalendarDate.getFullYear(), holidayCalendarDate.getMonth() - 1, 1))
+    setSelectedHoliday(null)
+  }
+
+  const nextHolidayMonth = () => {
+    setHolidayCalendarDate(new Date(holidayCalendarDate.getFullYear(), holidayCalendarDate.getMonth() + 1, 1))
+    setSelectedHoliday(null)
   }
 
 
@@ -1290,6 +1359,62 @@ export default function FacultyHomePage() {
             </div>
           </section>
 
+          {/* Holiday Calendar */}
+          <section className="mb-4 sm:mb-5 md:mb-6">
+            <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+              <MdCalendarToday size={18} className="sm:w-5 sm:h-5" />
+              Holiday Calendar
+            </h3>
+            <div className={`rounded-xl border p-3 sm:p-4 ${isLightMode ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/70 border-slate-700'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <button className={`p-1.5 rounded-lg ${isLightMode ? 'hover:bg-slate-100' : 'hover:bg-slate-700'}`} onClick={prevHolidayMonth}>
+                  <MdChevronLeft size={18} />
+                </button>
+                <div className="font-semibold text-sm sm:text-base">
+                  {monthNames[holidayCalendarDate.getMonth()]} {holidayCalendarDate.getFullYear()}
+                </div>
+                <button className={`p-1.5 rounded-lg ${isLightMode ? 'hover:bg-slate-100' : 'hover:bg-slate-700'}`} onClick={nextHolidayMonth}>
+                  <MdChevronRight size={18} />
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs mb-1">
+                {dayNames.map((day) => (
+                  <div key={day} className={`font-semibold ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>{day}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {getDaysInMonth(holidayCalendarDate).map((day, index) => {
+                  const holiday = day ? getHolidayForDate(day) : null
+                  const dateStr = day ? `${holidayCalendarDate.getFullYear()}-${String(holidayCalendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : ''
+                  const isSelected = selectedHoliday?.date === dateStr
+                  return (
+                    <button
+                      key={index}
+                      className={`h-9 rounded-md text-xs relative ${!day ? 'opacity-0 pointer-events-none' : ''} ${isHolidayToday(day || 0) ? (isLightMode ? 'border border-slate-400' : 'border border-slate-500') : ''} ${holiday ? (isLightMode ? 'bg-red-50 text-red-700' : 'bg-red-900/30 text-red-300') : (isLightMode ? 'hover:bg-slate-100 text-slate-700' : 'hover:bg-slate-700 text-slate-200')} ${isSelected ? (isLightMode ? 'ring-2 ring-red-400' : 'ring-2 ring-red-500') : ''}`}
+                      title={holiday || ''}
+                      onClick={() => {
+                        if (!holiday || !day) {
+                          setSelectedHoliday(null)
+                          return
+                        }
+                        setSelectedHoliday(isSelected ? null : { name: holiday, date: dateStr })
+                      }}
+                    >
+                      {day}
+                      {holiday && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-red-500" />}
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedHoliday && (
+                <div className={`mt-3 rounded-lg p-2.5 text-sm ${isLightMode ? 'bg-red-50 text-red-700' : 'bg-red-900/20 text-red-300'}`}>
+                  <div className="font-semibold">{selectedHoliday.name}</div>
+                  <div className="text-xs opacity-80">{new Date(selectedHoliday.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Upcoming Holidays Calendar */}
           <section className="mb-4 sm:mb-5 md:mb-6">
             <h3 className={`text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
@@ -1297,6 +1422,7 @@ export default function FacultyHomePage() {
               Upcoming Holidays
             </h3>
             <UpcomingHolidaysCard
+              holidayMap={holidayMap}
               isLightMode={isLightMode}
               isScience={isScience}
               isArtsLetters={isArtsLetters}
@@ -1523,6 +1649,7 @@ export default function FacultyHomePage() {
 
 // Upcoming Holidays Card Component - Mobile Optimized
 interface UpcomingHolidaysCardProps {
+  holidayMap: Record<string, string>
   isLightMode: boolean
   isScience: boolean
   isArtsLetters: boolean
@@ -1530,14 +1657,14 @@ interface UpcomingHolidaysCardProps {
   getCollegeColorClass: (type: 'bg' | 'text' | 'border' | 'shadow', variant?: 'light' | 'normal' | 'dark') => string
 }
 
-function UpcomingHolidaysCard({ isLightMode, isScience, isArtsLetters, isArchitecture, getCollegeColorClass }: UpcomingHolidaysCardProps) {
+function UpcomingHolidaysCard({ holidayMap, isLightMode, isScience, isArtsLetters, isArchitecture, getCollegeColorClass }: UpcomingHolidaysCardProps) {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
   const getUpcomingHolidays = () => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
-    return Object.entries(philippineHolidays)
+    return Object.entries(holidayMap)
       .filter(([date]) => date >= todayStr)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(0, 6)

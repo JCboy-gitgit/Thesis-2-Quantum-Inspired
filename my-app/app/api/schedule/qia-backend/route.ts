@@ -934,6 +934,7 @@ function reconcileScheduleMetrics(result: any): any {
 
   // Metrics are allocation-block based (not unique class based).
   // Scheduled blocks are concrete room/time allocations in the final timetable.
+  // IMPORTANT: Always use actual allocations count as source of truth
   const scheduledAllocations = allocations.length
 
   // For unscheduled blocks, prefer explicit slot deficits from backend reasons.
@@ -947,22 +948,16 @@ function reconcileScheduleMetrics(result: any): any {
     return sum + 1
   }, 0)
 
-  let unscheduledClasses = Math.max(
-    backendUnscheduled > 0 ? backendUnscheduled : 0,
-    inferredUnscheduledAllocations
-  )
+  // Calculate unscheduled count based on unscheduled list
+  const unscheduledClasses = normalizedUnscheduled.length > 0 
+    ? normalizedUnscheduled.length 
+    : Math.max(backendUnscheduled, inferredUnscheduledAllocations)
 
-  // If backend has no unscheduled payload, keep a conservative fallback.
-  if (normalizedUnscheduled.length === 0 && backendUnscheduled === 0) {
-    unscheduledClasses = 0
-  }
+  // Always use actual allocations as scheduled count (source of truth from final timetable)
+  const scheduledClasses = scheduledAllocations
 
-  let scheduledClasses = Math.max(backendScheduled > 0 ? backendScheduled : 0, scheduledAllocations)
-
-  let totalClasses = backendTotal > 0 ? backendTotal : (scheduledClasses + unscheduledClasses)
-  if (scheduledClasses + unscheduledClasses > totalClasses) {
-    totalClasses = scheduledClasses + unscheduledClasses
-  }
+  // Total is sum of scheduled + unscheduled
+  const totalClasses = scheduledClasses + unscheduledClasses
 
   const hardConflictCount = Number(result?.optimization_stats?.conflict_count || 0)
   const successRate = totalClasses > 0 ? (scheduledClasses / totalClasses) * 100 : 0

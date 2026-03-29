@@ -65,6 +65,7 @@ export default function FacultyCampusMapPage() {
   const [buildingCount, setBuildingCount] = useState(0)
   const [floorCount, setFloorCount] = useState(0)
   const [scheduleVersion, setScheduleVersion] = useState(0)
+  const [isCurrentScheduleLocked, setIsCurrentScheduleLocked] = useState(false)
 
   const isLightMode = theme === 'light'
 
@@ -127,12 +128,34 @@ export default function FacultyCampusMapPage() {
 
   /* ─── Realtime subscription to detect when admin changes the current schedule ─── */
   useEffect(() => {
+    const refreshCurrentScheduleLockState = async () => {
+      try {
+        const { data: currentSchedule } = await (supabase as any)
+          .from('generated_schedules')
+          .select('id, is_locked')
+          .eq('is_current', true)
+          .order('activated_at', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        setIsCurrentScheduleLocked(Boolean(currentSchedule?.is_locked))
+      } catch {
+        setIsCurrentScheduleLocked(false)
+      }
+    }
+
+    refreshCurrentScheduleLockState()
+
     const channel = supabase
       .channel('campus_map_schedule_updates')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'generated_schedules' }, (payload) => {
         // When is_current changes, increment version to force RoomViewer2D to remount and refetch
         if (payload.new && (payload.new as any).is_current !== (payload.old as any)?.is_current) {
           setScheduleVersion(v => v + 1)
+        }
+        if (payload.new && (((payload.new as any).is_current !== (payload.old as any)?.is_current) || ((payload.new as any).is_locked !== (payload.old as any)?.is_locked))) {
+          refreshCurrentScheduleLockState()
         }
       })
       .subscribe()
@@ -257,23 +280,30 @@ export default function FacultyCampusMapPage() {
 
           {/* ─── Floor Plan Viewer ─── */}
           <div className={s.viewerCard}>
-            <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 50px)' : 'calc(100vh - 100px)', minHeight: 300 }}>
-              <RoomViewer2D
-                key={`room-viewer-${scheduleVersion}`}
-                collegeTheme={collegeTheme}
-                sidebarWidth={isDesktop && sidebarOpen ? 250 : 0}
-                menuBarHeight={isMenuBarHidden || isCampusMapFullscreen ? 0 : (isDesktop ? 70 : 56)}
-                onToggleFullscreen={(nextIsFullscreen) => {
-                  setIsCampusMapFullscreen(nextIsFullscreen)
-                  if (nextIsFullscreen) {
-                    setSidebarOpen(false)
-                    setIsMenuBarHidden(true)
-                  } else {
-                    setIsMenuBarHidden(false)
-                  }
-                }}
-              />
-            </div>
+            {isCurrentScheduleLocked ? (
+              <div className={s.viewerInner} style={{ height: isMenuBarHidden ? 'calc(100vh - 50px)' : 'calc(100vh - 100px)', minHeight: 300 }}>
+                <RoomViewer2D
+                  key={`room-viewer-${scheduleVersion}`}
+                  collegeTheme={collegeTheme}
+                  sidebarWidth={isDesktop && sidebarOpen ? 250 : 0}
+                  menuBarHeight={isMenuBarHidden || isCampusMapFullscreen ? 0 : (isDesktop ? 70 : 56)}
+                  onToggleFullscreen={(nextIsFullscreen) => {
+                    setIsCampusMapFullscreen(nextIsFullscreen)
+                    if (nextIsFullscreen) {
+                      setSidebarOpen(false)
+                      setIsMenuBarHidden(true)
+                    } else {
+                      setIsMenuBarHidden(false)
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className={s.lockNotice}>
+                <h3>Live Floor Map Not Available Yet</h3>
+                <p>The current schedule is not locked yet by the admin. Live features will unlock once it is locked.</p>
+              </div>
+            )}
           </div>
         </main>
       </div>

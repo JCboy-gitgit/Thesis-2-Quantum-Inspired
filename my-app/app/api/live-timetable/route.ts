@@ -26,21 +26,34 @@ export async function GET(request: NextRequest) {
             const mondayStr = weekStart || monday.toISOString().split('T')[0]
             const sundayStr = getSunday(new Date(mondayStr)).toISOString().split('T')[0]
 
-            // 1. Get the locked/current schedule
-            let schedQuery = supabaseAdmin
-                .from('generated_schedules')
-                .select('id, schedule_name, semester, academic_year, is_locked, is_current')
-                .order('is_current', { ascending: false })
-                .order('created_at', { ascending: false })
+            // 1. Resolve schedule for live/faculty views.
+            // Priority: explicit scheduleId > current schedule (even if unlocked) > locked schedule > latest.
+            let schedule: any = null
 
             if (scheduleId) {
-                schedQuery = schedQuery.eq('id', scheduleId)
-            } else {
-                schedQuery = schedQuery.eq('is_locked', true)
-            }
+                const { data: selectedScheduleRows } = await supabaseAdmin
+                    .from('generated_schedules')
+                    .select('id, schedule_name, semester, academic_year, is_locked, is_current, created_at, activated_at')
+                    .eq('id', scheduleId)
+                    .limit(1)
 
-            const { data: schedules } = await schedQuery.limit(1)
-            const schedule = schedules?.[0]
+                schedule = selectedScheduleRows?.[0] || null
+            } else {
+                const { data: candidateSchedules } = await supabaseAdmin
+                    .from('generated_schedules')
+                    .select('id, schedule_name, semester, academic_year, is_locked, is_current, created_at, activated_at')
+                    .order('is_current', { ascending: false })
+                    .order('activated_at', { ascending: false, nullsFirst: false })
+                    .order('created_at', { ascending: false })
+                    .limit(25)
+
+                const candidates = candidateSchedules || []
+                schedule =
+                    candidates.find((s: any) => s.is_current) ||
+                    candidates.find((s: any) => s.is_locked) ||
+                    candidates[0] ||
+                    null
+            }
 
             if (!schedule) {
                 return NextResponse.json({ success: true, schedule: null, allocations: [], overrides: [], absences: [], makeupClasses: [] })

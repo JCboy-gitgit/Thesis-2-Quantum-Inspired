@@ -102,23 +102,40 @@ export async function GET(request: NextRequest) {
         console.error('Error fetching faculty schedule:', error)
       }
 
-      // If we have a default schedule, fetch the allocations for it - FILTERED by teacher_name
+      // Resolve effective schedule for faculty views.
+      // Source of truth is the current schedule when present; default assignment is fallback.
       let allocations: any[] = []
-      let effectiveSchedule = defaultSchedule?.generated_schedules || null
-      let effectiveScheduleId = defaultSchedule?.schedule_id || null
+      let effectiveSchedule = null as any
+      let effectiveScheduleId: number | null = null
+
+      const { data: currentSchedule } = await supabaseAdmin
+        .from('generated_schedules')
+        .select('*')
+        .eq('is_current', true)
+        .order('activated_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (currentSchedule) {
+        effectiveSchedule = currentSchedule
+        effectiveScheduleId = currentSchedule.id
+      } else if (defaultSchedule?.generated_schedules) {
+        effectiveSchedule = defaultSchedule.generated_schedules
+        effectiveScheduleId = defaultSchedule.schedule_id
+      }
 
       if (!effectiveScheduleId) {
-        const { data: currentSchedule } = await supabaseAdmin
+        const { data: latestSchedule } = await supabaseAdmin
           .from('generated_schedules')
           .select('*')
-          .eq('is_current', true)
           .order('created_at', { ascending: false })
           .limit(1)
           .single()
 
-        if (currentSchedule) {
-          effectiveSchedule = currentSchedule
-          effectiveScheduleId = currentSchedule.id
+        if (latestSchedule) {
+          effectiveSchedule = latestSchedule
+          effectiveScheduleId = latestSchedule.id
         }
       }
 

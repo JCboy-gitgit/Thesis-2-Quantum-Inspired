@@ -181,6 +181,21 @@
   flex-shrink: 0;
 }
 
+.menuItem.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.menuItem.disabled:hover {
+  background: transparent;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+:global([data-theme="light"]) .menuItem.disabled:hover,
+:global([data-theme="green"]) .menuItem.disabled:hover {
+  color: var(--text-secondary, #64748b);
+}
+
 /* Footer */
 .sidebarFooter {
   padding: 10px;

@@ -1997,28 +1997,15 @@ export default function ViewSchedulePage() {
 
   const handleSetCurrentSchedule = async (scheduleId: number) => {
     try {
-      const { error: resetError } = await db
-        .from('generated_schedules')
-        .update({ is_current: false, activated_at: null, activated_by: null })
-        .neq('id', scheduleId)
+      const response = await fetch('/api/schedule-current', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduleId })
+      })
 
-      if (resetError) {
-        console.warn('Failed to reset current schedule flags:', resetError)
-      }
-
-      const { data: setData, error: setError } = await db
-        .from('generated_schedules')
-        .update({ is_current: true, activated_at: new Date().toISOString() })
-        .eq('id', scheduleId)
-        .select()
-
-      if (setError) {
-        throw setError
-      }
-
-      // Check if any rows were actually updated (RLS may block silently)
-      if (!setData || setData.length === 0) {
-        throw new Error('Update failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+      const result = await response.json()
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Failed to set current schedule')
       }
 
       // Notify faculty about the newly activated schedule
@@ -2028,7 +2015,7 @@ export default function ViewSchedulePage() {
         body: JSON.stringify({
           title: 'New schedule activated',
           message: 'A new current schedule is now active. Please refresh your faculty view.',
-          audience: 'faculty',
+          audience: 'all',
           severity: 'info',
           category: 'schedule',
           scheduleId
@@ -2036,6 +2023,8 @@ export default function ViewSchedulePage() {
       })
 
       setSchedules(prev => prev.map(s => ({ ...s, is_current: s.id === scheduleId })))
+      setFilteredSchedules(prev => prev.map(s => ({ ...s, is_current: s.id === scheduleId })))
+      setSelectedSchedule(prev => prev ? { ...prev, is_current: prev.id === scheduleId } : prev)
       router.refresh() // Force refresh cached data
     } catch (error: any) {
       console.error('Failed to set current schedule:', error)

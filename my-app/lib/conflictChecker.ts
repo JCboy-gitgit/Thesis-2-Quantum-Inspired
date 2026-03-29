@@ -22,6 +22,7 @@ export interface AllocationSlot {
     student_count?: number
     college?: string
     room_college?: string
+    is_online?: boolean // Online classes don't need physical rooms
 }
 
 export interface ConflictCheckResult {
@@ -102,6 +103,7 @@ export function timeRangesOverlap(a: TimeRange, b: TimeRange): boolean {
 
 /**
  * Check for room conflict: another allocation occupies the same room at the same day/time
+ * NOTE: Online classes (is_online=true) are skipped as they don't need physical rooms
  */
 export function checkRoomConflict(
     allAllocations: AllocationSlot[],
@@ -112,6 +114,8 @@ export function checkRoomConflict(
 ): AllocationSlot[] {
     return allAllocations.filter(alloc => {
         if (excludeAllocationId && alloc.id === excludeAllocationId) return false
+        // Skip online classes - they don't need physical rooms
+        if (alloc.is_online) return false
         if (alloc.room !== targetRoom) return false
         if (!isDayMatch(alloc.schedule_day, targetDay)) return false
 

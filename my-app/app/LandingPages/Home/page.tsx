@@ -152,6 +152,15 @@ interface ScheduleInfo {
   total_classes: number
 }
 
+interface HolidayRecord {
+  id: number
+  holiday_name: string
+  holiday_date: string
+  description?: string | null
+  holiday_type?: string | null
+  is_active: boolean
+}
+
 interface DashboardStats {
   totalRooms: number
   totalFaculty: number
@@ -187,6 +196,12 @@ export default function AdminDashboard() {
     onlineFaculty: 0
   })
   const [selectedHoliday, setSelectedHoliday] = useState<{ name: string, date: string } | null>(null)
+  const [holidayMap, setHolidayMap] = useState<Record<string, string>>(philippineHolidays)
+  const [holidayRows, setHolidayRows] = useState<HolidayRecord[]>([])
+  const [holidayForm, setHolidayForm] = useState({ holiday_name: '', holiday_date: '', description: '' })
+  const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
+  const [holidaySaving, setHolidaySaving] = useState(false)
+  const [holidayError, setHolidayError] = useState<string | null>(null)
   const [authorized, setAuthorized] = useState(false)
   const [showFacultyActivityModal, setShowFacultyActivityModal] = useState(false)
   const [facultyActivityList, setFacultyActivityList] = useState<OnlineFaculty[]>([])
@@ -208,6 +223,7 @@ export default function AdminDashboard() {
 
     checkAuth()
     fetchDashboardData()
+    fetchHolidays()
 
     // Update current time every minute
     const timer = setInterval(() => {
@@ -219,11 +235,110 @@ export default function AdminDashboard() {
       refreshOnlineFaculty()
     }, 30000)
 
+    const holidayRefresh = setInterval(() => {
+      fetchHolidays()
+    }, 60000)
+
     return () => {
       clearInterval(timer)
       clearInterval(onlineRefresh)
+      clearInterval(holidayRefresh)
     }
   }, [])
+
+  const fetchHolidays = async () => {
+    try {
+      const response = await fetchNoCache(`/api/holidays?includeInactive=1&t=${Date.now()}`)
+      if (!response.ok) return
+      const data = await response.json()
+      if (data?.holidayMap && typeof data.holidayMap === 'object') {
+        setHolidayMap(data.holidayMap)
+      }
+      if (Array.isArray(data?.holidays)) {
+        setHolidayRows(data.holidays)
+      }
+      setHolidayError(null)
+    } catch (error: any) {
+      setHolidayError(error?.message || 'Failed to load holidays')
+    }
+  }
+
+  const resetHolidayForm = () => {
+    setHolidayForm({ holiday_name: '', holiday_date: '', description: '' })
+    setEditingHolidayId(null)
+  }
+
+  const saveHoliday = async () => {
+    const holidayName = holidayForm.holiday_name.trim()
+    const holidayDate = holidayForm.holiday_date.trim()
+
+    if (!holidayName || !holidayDate) {
+      setHolidayError('Holiday name and date are required.')
+      return
+    }
+
+    setHolidaySaving(true)
+    setHolidayError(null)
+    try {
+      const method = editingHolidayId ? 'PATCH' : 'POST'
+      const payload = editingHolidayId
+        ? { id: editingHolidayId, ...holidayForm }
+        : holidayForm
+
+      const response = await fetch('/api/holidays', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to save holiday')
+      }
+
+      resetHolidayForm()
+      await fetchHolidays()
+    } catch (error: any) {
+      setHolidayError(error?.message || 'Failed to save holiday')
+    } finally {
+      setHolidaySaving(false)
+    }
+  }
+
+  const startEditHoliday = (row: HolidayRecord) => {
+    setEditingHolidayId(row.id)
+    setHolidayForm({
+      holiday_name: row.holiday_name,
+      holiday_date: row.holiday_date,
+      description: row.description || '',
+    })
+    setHolidayError(null)
+  }
+
+  const deleteHoliday = async (id: number) => {
+    if (!confirm('Delete this holiday?')) return
+    setHolidaySaving(true)
+    setHolidayError(null)
+    try {
+      const response = await fetch('/api/holidays', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to delete holiday')
+      }
+      if (editingHolidayId === id) {
+        resetHolidayForm()
+      }
+      await fetchHolidays()
+    } catch (error: any) {
+      setHolidayError(error?.message || 'Failed to delete holiday')
+    } finally {
+      setHolidaySaving(false)
+    }
+  }
 
   // Function to refresh just the online faculty list
   const refreshOnlineFaculty = async () => {
@@ -426,7 +541,7 @@ export default function AdminDashboard() {
   const getHolidayForDate = (day: number) => {
     if (!calendarDate) return undefined
     const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    return philippineHolidays[dateStr]
+    return holidayMap[dateStr]
   }
 
   const isToday = (day: number) => {
@@ -638,7 +753,7 @@ export default function AdminDashboard() {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
-    return Object.entries(philippineHolidays)
+    return Object.entries(holidayMap)
       .filter(([date]) => date >= todayStr)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(0, 5)
@@ -873,6 +988,55 @@ export default function AdminDashboard() {
                             <span className="holiday-name">{holiday.name}</span>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="holiday-admin-tools">
+                        <h3>{editingHolidayId ? 'Edit Holiday' : 'Add Holiday'}</h3>
+                        <div className="holiday-admin-form">
+                          <input
+                            type="text"
+                            placeholder="Holiday name"
+                            value={holidayForm.holiday_name}
+                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_name: e.target.value }))}
+                          />
+                          <input
+                            type="date"
+                            value={holidayForm.holiday_date}
+                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_date: e.target.value }))}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Description (optional)"
+                            value={holidayForm.description}
+                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, description: e.target.value }))}
+                          />
+                          <div className="holiday-admin-actions">
+                            <button type="button" onClick={saveHoliday} disabled={holidaySaving}>
+                              {holidaySaving ? 'Saving...' : editingHolidayId ? 'Update Holiday' : 'Add Holiday'}
+                            </button>
+                            {editingHolidayId && (
+                              <button type="button" className="secondary" onClick={resetHolidayForm} disabled={holidaySaving}>
+                                Cancel Edit
+                              </button>
+                            )}
+                          </div>
+                          {holidayError && <p className="holiday-admin-error">{holidayError}</p>}
+                        </div>
+
+                        <div className="holiday-admin-list">
+                          {holidayRows.slice(0, 12).map((row) => (
+                            <div key={row.id} className="holiday-admin-row">
+                              <div>
+                                <div className="holiday-admin-name">{row.holiday_name}</div>
+                                <div className="holiday-admin-date">{row.holiday_date}</div>
+                              </div>
+                              <div className="holiday-admin-row-actions">
+                                <button type="button" className="secondary" onClick={() => startEditHoliday(row)} disabled={holidaySaving}>Edit</button>
+                                <button type="button" className="danger" onClick={() => deleteHoliday(row.id)} disabled={holidaySaving}>Delete</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </section>
