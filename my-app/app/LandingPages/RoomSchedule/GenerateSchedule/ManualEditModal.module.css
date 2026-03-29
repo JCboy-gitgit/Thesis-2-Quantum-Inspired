@@ -58,7 +58,7 @@
 }
 
 .headerLeft h2 svg {
-    color: #10b981;
+    color: var(--primary, #10b981);
 }
 
 .viewSelector {
@@ -92,7 +92,7 @@
 
 .viewSelector button.active {
     background: white;
-    color: #10b981;
+    color: var(--primary, #10b981);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -190,8 +190,8 @@
 
 .searchBox:focus-within {
     background: white;
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: var(--primary, #10b981);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 .searchBox svg {
@@ -227,7 +227,7 @@
 }
 
 .filterBox:focus-within {
-    border-color: #10b981;
+    border-color: var(--primary, #10b981);
     background: white;
 }
 
@@ -283,8 +283,8 @@
 }
 
 .classCard:hover {
-    border-color: #10b981;
-    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.05);
+    border-color: var(--primary, #10b981);
+    box-shadow: 0 10px 15px -3px rgba(var(--primary-rgb, 16, 185, 129), 0.05);
     transform: translateY(-2px);
 }
 
@@ -306,8 +306,8 @@
 }
 
 .hoursBadge {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
+    background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+    color: var(--primary-dark, #059669);
     padding: 2px 8px;
     border-radius: 6px;
     font-size: 11px;
@@ -355,8 +355,8 @@
 
 .teacherInlineSelect:focus {
     outline: none;
-    border-color: #10b981;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    border-color: var(--primary, #10b981);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 .featureTags {
@@ -416,9 +416,9 @@
 
 .itemNavigator button:hover {
     background: #f1f5f9;
-    color: #10b981;
-    border-color: #10b981;
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);
+    color: var(--primary, #10b981);
+    border-color: var(--primary, #10b981);
+    box-shadow: 0 4px 10px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 .currentItem {
@@ -432,7 +432,7 @@
 }
 
 .currentItem svg {
-    color: #10b981;
+    color: var(--primary, #10b981);
 }
 
 .navigatorSelect {
@@ -508,12 +508,12 @@
     top: 4px;
     left: 4px;
     right: 4px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--primary, #10b981) 0%, var(--primary-dark, #059669) 100%);
     color: white;
     padding: 10px;
     border-radius: 10px;
     font-size: 11px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 16, 185, 129), 0.2);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -552,11 +552,11 @@
     justify-content: center;
     gap: 6px;
     padding: 6px;
-    border: 2px dashed #10b981;
+    border: 2px dashed var(--primary, #10b981);
     border-radius: 8px;
     font-size: 11px;
     font-weight: 700;
-    color: #10b981;
+    color: var(--primary, #10b981);
     cursor: grab;
     transition: all 0.2s;
 }
@@ -573,7 +573,7 @@
 .placedClass:hover {
     transform: scale(1.02);
     z-index: 20 !important;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 .labComp:hover {
@@ -759,7 +759,7 @@
 }
 
 .footerStats strong {
-    color: #10b981;
+    color: var(--primary, #10b981);
     font-size: 18px;
 }
 
@@ -790,7 +790,7 @@
     padding: 12px 32px;
     border-radius: 12px;
     border: none;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--primary, #10b981) 0%, var(--primary-dark, #059669) 100%);
     color: white;
     font-weight: 700;
     cursor: pointer;
@@ -799,12 +799,12 @@
     gap: 10px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 15px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 16, 185, 129), 0.25);
 }
 
 .saveBtn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb, 16, 185, 129), 0.4);
 }
 
 .saveBtn svg {
@@ -858,7 +858,7 @@
 
 :global([data-theme="dark"]) .viewSelector button.active {
     background: #334155;
-    color: #10b981;
+    color: var(--primary, #10b981);
 }
 
 :global([data-theme="dark"]) .manualEditBody {
@@ -902,9 +902,9 @@
 }
 
 .silValid {
-    background: rgba(16, 185, 129, 0.2);
-    border: 3px dashed #10b981;
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    background: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
+    border: 3px dashed var(--primary, #10b981);
+    box-shadow: 0 0 15px rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 .silInvalid {
@@ -932,7 +932,7 @@
 }
 
 .silValid .silContent svg {
-    color: #10b981;
+    color: var(--primary, #10b981);
 }
 
 .silInvalid .silContent svg {
@@ -947,7 +947,7 @@
 
 .isHovered {
     background: #f1f5f9 !important;
-    box-shadow: inset 0 0 0 2px #10b981;
+    box-shadow: inset 0 0 0 2px var(--primary, #10b981);
 }
 
 :global([data-theme="dark"]) .isHovered {
@@ -1033,7 +1033,7 @@
 
 :global([data-theme="dark"]) .itemNavigator button:hover {
     background: #334155;
-    color: #10b981;
+    color: var(--primary, #10b981);
 }
 
 :global([data-theme="dark"]) select {
@@ -1096,11 +1096,11 @@
 /* Green Theme Support */
 :global([data-theme="green"]) .manualEditModal {
     background: #ffffff;
-    border-color: rgba(46, 175, 125, 0.4);
+    border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.4);
 }
 
 :global([data-theme="green"]) .modalHeader {
-    border-bottom-color: rgba(46, 175, 125, 0.2);
+    border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .manualEditBody {
@@ -1108,32 +1108,32 @@
 }
 
 :global([data-theme="green"]) .viewSelector {
-    background: rgba(46, 175, 125, 0.15);
+    background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .viewSelector button {
-    color: #166534;
+    color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .viewSelector button.active {
     background: white;
-    color: #2EAF7D;
-    box-shadow: 0 4px 12px rgba(46, 175, 125, 0.2);
+    color: var(--primary, #2EAF7D);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .classCard:hover {
-    border-color: #2EAF7D;
-    box-shadow: 0 10px 15px -3px rgba(46, 175, 125, 0.1);
+    border-color: var(--primary, #2EAF7D);
+    box-shadow: 0 10px 15px -3px rgba(var(--primary-rgb, 46, 175, 125), 0.1);
 }
 
 :global([data-theme="green"]) .hoursBadge {
-    background: rgba(46, 175, 125, 0.15);
-    color: #166534;
+    background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+    color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .placedClass {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, var(--primary, #10b981) 0%, var(--primary-dark, #059669) 100%);
+    box-shadow: 0 6px 15px rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 :global([data-theme="green"]) .currentItem {
@@ -1142,18 +1142,18 @@
 
 :global([data-theme="green"]) .currentItem svg,
 :global([data-theme="green"]) .headerLeft h2 svg {
-    color: #2EAF7D;
+    color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .itemNavigator button:hover {
     background: white;
-    color: #2EAF7D;
-    border-color: #2EAF7D;
+    color: var(--primary, #2EAF7D);
+    border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .saveBtn {
-    background: linear-gradient(135deg, #2EAF7D 0%, #166534 100%);
-    box-shadow: 0 6px 15px rgba(46, 175, 125, 0.3);
+    background: linear-gradient(135deg, var(--primary, #2EAF7D) 0%, var(--primary-dark, #166534) 100%);
+    box-shadow: 0 6px 15px rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 /* Mobile Responsive Adjustments */
@@ -1399,3 +1399,7 @@
         display: none;
     }
 }
+
+
+
+

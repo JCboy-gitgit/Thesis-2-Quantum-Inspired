@@ -4,9 +4,11 @@
 
 /* Green Theme (Default - Nature-Inspired Light Mode) */
 :root,
-[data-theme="green"] {
+html[data-theme="green"],
+body[data-theme="green"] {
   /* Primary Colors - Nature green */
   --primary: #2EAF7D;
+  --primary-rgb: 46, 175, 125;
   --primary-dark: #449342;
   --primary-light: #3FD0C9;
   --primary-alpha: rgba(46, 175, 125, 0.15);
@@ -80,9 +82,11 @@
 }
 
 /* Dark Theme (Quantum Inspired) */
-[data-theme="dark"] {
+html[data-theme="dark"],
+body[data-theme="dark"] {
   /* Primary Colors */
   --primary: #00d4ff;
+  --primary-rgb: 0, 212, 255;
   --primary-dark: #0099cc;
   --primary-light: #66e5ff;
   --primary-alpha: rgba(0, 212, 255, 0.15);
@@ -156,9 +160,11 @@
 }
 
 /* Light Theme */
-[data-theme="light"] {
+html[data-theme="light"],
+body[data-theme="light"] {
   /* Primary Colors */
   --primary: #00a651;
+  --primary-rgb: 0, 166, 81;
   --primary-dark: #005826;
   --primary-light: #4cff96;
   --primary-alpha: rgba(0, 166, 81, 0.1);
@@ -517,3 +523,4 @@ html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb {
   display: block !important;
 }
+

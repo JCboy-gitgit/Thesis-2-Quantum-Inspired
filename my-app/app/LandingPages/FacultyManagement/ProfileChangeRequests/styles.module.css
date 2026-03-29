@@ -7,47 +7,46 @@
 
 :global([data-theme="green"]) .mainContent {
   --card-bg: rgba(255, 255, 255, 0.95);
-  --card-border: rgba(46, 175, 125, 0.25);
+  --card-border: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --text-primary: #02353c;
-  --text-secondary: #166534;
-  --primary: #2eaf7d;
-  --primary-alpha: rgba(46, 175, 125, 0.15);
+  --text-secondary: var(--primary-dark, #166534);
+  --primary-alpha: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
-  border: 2px solid rgba(46, 175, 125, 0.25) !important;
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12) !important;
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25) !important;
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.12) !important;
 }
 
 :global([data-theme="green"]) .cardHeader {
   background: rgba(193, 246, 237, 0.4) !important;
-  border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+  border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2) !important;
 }
 
 :global([data-theme="green"]) .cardActions {
   background: rgba(193, 246, 237, 0.2) !important;
-  border-top-color: rgba(46, 175, 125, 0.2) !important;
+  border-top-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2) !important;
 }
 
 :global([data-theme="green"]) .searchBox,
 :global([data-theme="green"]) .filterTabs,
 :global([data-theme="green"]) .refreshBtn {
   background: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(46, 175, 125, 0.25) !important;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25) !important;
 }
 
 :global([data-theme="green"]) .filterTab.active {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%) !important;
 }
 
 :global([data-theme="green"]) .userAvatar {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%) !important;
 }
 
 :global([data-theme="green"]) .headerTitle svg,
 :global([data-theme="green"]) .infoRow svg {
-  color: #2eaf7d !important;
+  color: var(--primary, #2EAF7D) !important;
 }
 
 /* ==================== Light Theme ==================== */
@@ -675,3 +674,7 @@
   color: var(--text-primary);
   border-color: var(--card-border);
 }
+
+
+
+

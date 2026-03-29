@@ -316,6 +316,14 @@ const buildManualClassKey = (courseCode?: string, section?: string): string => {
   return `${normalizedCode}|${normalizedSection}`
 }
 
+const countScheduledClassKeys = (allocations: Array<Partial<RoomAllocation>>): number => {
+  return new Set(
+    (allocations || [])
+      .map((allocation) => buildManualClassKey(allocation.course_code, allocation.section))
+      .filter((key) => key !== '|')
+  ).size
+}
+
 const buildManualClassLookup = (classes: ManualClassItem[]) => {
   const byId = new Map<number, ManualClassItem>()
   const byKey = new Map<string, ManualClassItem>()
@@ -1392,12 +1400,20 @@ export default function ViewSchedulePage() {
         }
       }
 
-      // Keep summary counts aligned with allocation blocks, not unique class count.
-      const currentTotal = Number(schedule.total_classes || 0)
-      const derivedScheduledClasses = (scheduleAllocations || []).length
-      let derivedTotalClasses = Math.max(currentTotal, derivedScheduledClasses)
-      let derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
+      // Keep summary counts aligned with Course Management classes for this schedule.
+      const sourceTotalClasses = new Set(
+        resolvedClasses
+          .map((cls: ManualClassItem) => buildManualClassKey(cls.course_code, cls.section))
+          .filter((key: string) => key !== '|')
+      ).size
 
+      const derivedTotalClasses = sourceTotalClasses > 0
+        ? sourceTotalClasses
+        : Number(schedule.total_classes || 0)
+      const derivedScheduledClasses = countScheduledClassKeys(scheduleAllocations || [])
+      const derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
+
+      const currentTotal = Number(schedule.total_classes || 0)
       const currentScheduled = Number(schedule.scheduled_classes || 0)
       const currentUnscheduled = Number(schedule.unscheduled_classes || 0)
       const hasSummaryMismatch =
@@ -1548,9 +1564,10 @@ export default function ViewSchedulePage() {
         }
       }
 
-      const scheduledClasses = rowsToInsert.length
-      const currentTotal = Number(selectedSchedule.total_classes || 0)
-      const totalClasses = Math.max(currentTotal, scheduledClasses)
+      const scheduledClasses = countScheduledClassKeys(rowsToInsert)
+      const totalClasses = classLookup.byKey.size > 0
+        ? classLookup.byKey.size
+        : Number(selectedSchedule.total_classes || 0)
       const unscheduledClasses = Math.max(0, totalClasses - scheduledClasses)
 
       const { error: summaryUpdateError } = await db
@@ -3075,19 +3092,28 @@ export default function ViewSchedulePage() {
                     <span className={styles.statNumber}>
                       {selectedSchedule.total_classes}
                     </span>
-                    <span className={styles.statText}>Total Allocations</span>
+                    <span className={styles.statText}>
+                      Total Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                   <div className={styles.statItem}>
                     <span className={`${styles.statNumber} ${styles.success}`}>
                       {selectedSchedule.scheduled_classes}
                     </span>
-                    <span className={styles.statText}>Scheduled Allocations</span>
+                    <span className={styles.statText}>
+                      Scheduled Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                   <div className={styles.statItem}>
                     <span className={`${styles.statNumber} ${styles.warning}`}>
                       {selectedSchedule.unscheduled_classes}
                     </span>
-                    <span className={styles.statText}>Unscheduled Allocations</span>
+                    <span className={styles.statText}>
+                      Unscheduled Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                   <button
                     id="view-assign-to-faculty-btn"

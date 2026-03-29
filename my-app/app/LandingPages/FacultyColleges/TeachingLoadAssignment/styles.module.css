@@ -760,8 +760,8 @@
 }
 
 :global([data-theme="green"]) .uploadInstructions {
-  background: rgba(46, 175, 125, 0.08);
-  border-color: rgba(46, 175, 125, 0.2);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.08);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 /* ==================== Tooltips ==================== */
@@ -896,3 +896,6 @@
 :global([data-theme="green"]) .statusLabel {
   color: var(--text-primary, #ffffff);
 }
+
+
+

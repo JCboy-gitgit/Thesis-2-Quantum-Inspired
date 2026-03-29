@@ -46,14 +46,43 @@ export default function AllocationTable({
   const [canScrollRight, setCanScrollRight] = useState(false)
 
   const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-  const activeDays = useMemo(() => {
-    return [...new Set(allocations.map(a => a.schedule_day))].sort(
-      (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
-    )
+  const normalizeDayName = (day: string) => {
+    const normalized = String(day || '').trim().toLowerCase()
+    const dayMap: Record<string, string> = {
+      mon: 'Monday', monday: 'Monday',
+      tue: 'Tuesday', tues: 'Tuesday', tuesday: 'Tuesday',
+      wed: 'Wednesday', wednesday: 'Wednesday',
+      thu: 'Thursday', thur: 'Thursday', thurs: 'Thursday', thursday: 'Thursday',
+      fri: 'Friday', friday: 'Friday',
+      sat: 'Saturday', saturday: 'Saturday',
+      sun: 'Sunday', sunday: 'Sunday',
+    }
+
+    if (dayMap[normalized]) return dayMap[normalized]
+    if (!normalized) return ''
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+  }
+
+  const dayRank = (day: string) => {
+    const idx = DAYS.indexOf(normalizeDayName(day))
+    return idx === -1 ? Number.MAX_SAFE_INTEGER : idx
+  }
+
+  const normalizedAllocations = useMemo(() => {
+    return allocations.map(a => ({
+      ...a,
+      schedule_day: normalizeDayName(a.schedule_day),
+    }))
   }, [allocations])
 
+  const activeDays = useMemo(() => {
+    return [...new Set(normalizedAllocations.map(a => a.schedule_day).filter(Boolean))].sort(
+      (a, b) => dayRank(a) - dayRank(b)
+    )
+  }, [normalizedAllocations])
+
   const displayAllocations = useMemo(() => {
-    let filtered = [...allocations]
+    let filtered = [...normalizedAllocations]
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       filtered = filtered.filter(a =>
@@ -65,14 +94,14 @@ export default function AllocationTable({
         (a.teacher_name || '').toLowerCase().includes(q)
       )
     }
-    if (filterDay !== 'all') filtered = filtered.filter(a => a.schedule_day === filterDay)
+    if (filterDay !== 'all') filtered = filtered.filter(a => normalizeDayName(a.schedule_day) === filterDay)
     filtered.sort((a, b) => {
-      const dayDiff = DAYS.indexOf(a.schedule_day) - DAYS.indexOf(b.schedule_day)
+      const dayDiff = dayRank(a.schedule_day) - dayRank(b.schedule_day)
       if (dayDiff !== 0) return dayDiff
       return a.schedule_time.localeCompare(b.schedule_time)
     })
     return filtered
-  }, [allocations, searchQuery, filterDay])
+  }, [normalizedAllocations, searchQuery, filterDay])
 
   // Horizontal scroll detection
   const checkScroll = () => {

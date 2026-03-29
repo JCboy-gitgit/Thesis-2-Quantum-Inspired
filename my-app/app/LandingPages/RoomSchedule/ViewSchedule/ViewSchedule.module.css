@@ -3,7 +3,7 @@
 /* Supports: green, dark, and light themes */
 
 /* ==================== Green Theme - Nature Inspired Light Mode ==================== */
-/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), var(--primary-dark, #449342) (olive green), var(--primary, #2EAF7D) (bright green), var(--primary-light, #3FD0C9) (cyan) */
 
 :global([data-theme="green"]) .qtimeLayout,
 :global([data-theme="green"]) .qtimeMain {
@@ -14,19 +14,19 @@
 :global([data-theme="green"]) .welcomeSection,
 :global([data-theme="green"]) .scheduleCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.12);
 }
 
 :global([data-theme="green"]) .pageTitle {
-  background: linear-gradient(135deg, #02353C, #449342);
+  background: linear-gradient(135deg, #02353C, var(--primary-dark, #449342));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 :global([data-theme="green"]) .pageSubtitle {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .scheduleTitle {
@@ -35,7 +35,7 @@
 }
 
 :global([data-theme="green"]) .scheduleCardHeader {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
 }
 
 :global([data-theme="green"]) .scheduleCardHeader .scheduleTitle {
@@ -44,15 +44,15 @@
 
 :global([data-theme="green"]) .scheduleInfoGrid {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border-color: rgba(46, 175, 125, 0.2);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .infoIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .infoLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .infoValue {
@@ -65,16 +65,16 @@
 
 :global([data-theme="green"]) .statBadge {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 1px solid rgba(46, 175, 125, 0.25);
+  border: 1px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .statLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .scheduleActions {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border-top-color: rgba(46, 175, 125, 0.2);
+  border-top-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .backButton,
@@ -82,8 +82,8 @@
 :global([data-theme="green"]) .detailsButton,
 :global([data-theme="green"]) .viewButton,
 :global([data-theme="green"]) .primaryButton {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .backButton:hover,
@@ -91,30 +91,30 @@
 :global([data-theme="green"]) .detailsButton:hover,
 :global([data-theme="green"]) .viewButton:hover,
 :global([data-theme="green"]) .primaryButton:hover {
-  background: linear-gradient(135deg, #2EAF7D 0%, #3FD0C9 100%);
-  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.5);
+  background: linear-gradient(135deg, var(--primary, #2EAF7D) 0%, var(--primary-light, #3FD0C9) 100%);
+  box-shadow: 0 6px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.5);
 }
 
 :global([data-theme="green"]) .actionButton {
   background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .actionButton:hover {
-  background: rgba(46, 175, 125, 0.15);
-  border-color: #2EAF7D;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-color: var(--primary, #2EAF7D);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .loadingState,
 :global([data-theme="green"]) .emptyState {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .emptyIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .emptyState h2 {
@@ -122,12 +122,12 @@
 }
 
 :global([data-theme="green"]) .emptyState p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .spinner {
-  border-color: rgba(46, 175, 125, 0.15);
-  border-top-color: #2EAF7D;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-top-color: var(--primary, #2EAF7D);
 }
 
 /* Filters and Search */
@@ -135,7 +135,7 @@
 :global([data-theme="green"]) .viewModeSection,
 :global([data-theme="green"]) .historyControls {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .filterSelect,
@@ -144,7 +144,7 @@
 :global([data-theme="green"]) .sortSelect,
 :global([data-theme="green"]) .viewModeSelect {
   background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
   color: #02353C;
 }
 
@@ -152,8 +152,8 @@
 :global([data-theme="green"]) .searchInput:focus,
 :global([data-theme="green"]) .historySearchInput:focus,
 :global([data-theme="green"]) .viewModeSelect:focus {
-  border-color: #2EAF7D;
-  box-shadow: 0 0 0 3px rgba(46, 175, 125, 0.2);
+  border-color: var(--primary, #2EAF7D);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .filterGroup label {
@@ -161,7 +161,7 @@
 }
 
 :global([data-theme="green"]) .searchIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .viewModeLabel {
@@ -170,19 +170,19 @@
 
 :global([data-theme="green"]) .viewModeButton {
   background: rgba(255, 255, 255, 0.98);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .viewModeButton:hover {
-  background: rgba(46, 175, 125, 0.15);
-  border-color: #2EAF7D;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-color: var(--primary, #2EAF7D);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .viewModeButton.active {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
-  border-color: #2EAF7D;
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%);
+  border-color: var(--primary, #2EAF7D);
   color: #ffffff;
 }
 
@@ -190,13 +190,13 @@
 :global([data-theme="green"]) .timetableWrapper,
 :global([data-theme="green"]) .legend {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .timetableTitle,
 :global([data-theme="green"]) .timeHeader,
 :global([data-theme="green"]) .dayHeader {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
 }
 
 :global([data-theme="green"]) .timeCell {
@@ -214,7 +214,7 @@
 
 :global([data-theme="green"]) .allocationCard {
   background: linear-gradient(135deg, rgba(240, 253, 244, 0.98) 0%, rgba(193, 246, 237, 0.4) 100%);
-  border-left-color: #2EAF7D;
+  border-left-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .courseCode {
@@ -222,15 +222,15 @@
 }
 
 :global([data-theme="green"]) .courseName {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .sectionInfo {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .roomInfo {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .legendTitle {
@@ -244,7 +244,7 @@
 /* Schedule Info Header */
 :global([data-theme="green"]) .scheduleInfoHeader {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .scheduleInfoMain h2 {
@@ -252,11 +252,11 @@
 }
 
 :global([data-theme="green"]) .scheduleInfoMain p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .semesterInfo {
-  background: rgba(46, 175, 125, 0.15);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
   color: #02353C;
 }
 
@@ -265,52 +265,52 @@
 }
 
 :global([data-theme="green"]) .statText {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 /* Optimization Info */
 :global([data-theme="green"]) .optimizationInfo {
   background: rgba(240, 253, 244, 0.95);
-  border-color: rgba(46, 175, 125, 0.2);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .optStatLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .optStatValue {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 /* Card Date */
 :global([data-theme="green"]) .cardDate {
   background: rgba(240, 253, 244, 0.95);
-  color: #166534;
-  border-top-color: rgba(46, 175, 125, 0.2);
+  color: var(--primary-dark, #166534);
+  border-top-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 /* Delete Button */
 :global([data-theme="green"]) .deleteIconButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 /* History */
 :global([data-theme="green"]) .historyCount {
-  background: rgba(46, 175, 125, 0.15);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .sortOrderButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .sortOrderButton:hover {
-  background: rgba(46, 175, 125, 0.15);
-  border-color: #2EAF7D;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-color: var(--primary, #2EAF7D);
   color: #02353C;
 }
 
@@ -1104,7 +1104,7 @@
 .resetFiltersButton:hover {
   border-color: var(--primary);
   color: var(--primary);
-  background: var(--primary-alpha-soft, rgba(0, 166, 81, 0.1));
+  background: var(--primary-alpha-soft, rgba(var(--primary-rgb, 0, 166, 81), 0.1));
 }
 
 .searchIcon {
@@ -2100,12 +2100,12 @@
 :global([data-theme="light"]) .scheduleCard,
 :global([data-theme="light"]) .scheduleInfoGrid {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme="light"]) .pageTitle {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2124,7 +2124,7 @@
 }
 
 :global([data-theme="light"]) .scheduleCardHeader {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
 }
 
 :global([data-theme="light"]) .scheduleCardHeader .scheduleTitle {
@@ -2136,19 +2136,19 @@
 :global([data-theme="light"]) .detailsButton,
 :global([data-theme="light"]) .viewButton,
 :global([data-theme="light"]) .primaryButton {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
 }
 
 :global([data-theme="light"]) .actionButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .actionButton:hover {
-  background: rgba(0, 166, 81, 0.08);
-  border-color: #00a651;
-  color: #00a651;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.08);
+  border-color: var(--primary, #00a651);
+  color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .filtersBar,
@@ -2157,7 +2157,7 @@
 :global([data-theme="light"]) .timetableWrapper,
 :global([data-theme="light"]) .legend {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .filterSelect,
@@ -2165,30 +2165,30 @@
 :global([data-theme="light"]) .historySearchInput,
 :global([data-theme="light"]) .viewModeSelect {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .moreOptionsButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .activeFilterBadge {
-  background: rgba(0, 166, 81, 0.15);
-  color: #005826;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.15);
+  color: var(--primary-dark, #005826);
 }
 
 :global([data-theme="light"]) .resetFiltersButton {
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #4a5568;
 }
 
 :global([data-theme="light"]) .filterSelect:focus,
 :global([data-theme="light"]) .searchInput:focus {
-  border-color: #00a651;
-  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+  border-color: var(--primary, #00a651);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .filterGroup label,
@@ -2198,28 +2198,28 @@
 
 :global([data-theme="light"]) .viewModeButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .viewModeButton:hover {
-  background: rgba(0, 166, 81, 0.08);
-  border-color: #00a651;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.08);
+  border-color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .viewModeButton.active {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
   color: white;
 }
 
 :global([data-theme="light"]) .timetableTitle,
 :global([data-theme="light"]) .timeHeader,
 :global([data-theme="light"]) .dayHeader {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
 }
 
 :global([data-theme="light"]) .timeCell {
-  background: rgba(0, 166, 81, 0.05);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.05);
   color: #1a1a1a;
 }
 
@@ -2228,12 +2228,12 @@
 }
 
 :global([data-theme="light"]) .dataCell:hover {
-  background: rgba(0, 166, 81, 0.08);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.08);
 }
 
 :global([data-theme="light"]) .allocationCard {
-  background: rgba(0, 166, 81, 0.06);
-  border-left-color: #00a651;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.06);
+  border-left-color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .courseCode {
@@ -2246,7 +2246,7 @@
 }
 
 :global([data-theme="light"]) .sectionInfo {
-  color: #00a651;
+  color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .legendTitle,
@@ -2257,7 +2257,7 @@
 :global([data-theme="light"]) .loadingState,
 :global([data-theme="light"]) .emptyState {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .emptyState h2 {
@@ -2269,17 +2269,17 @@
 }
 
 :global([data-theme="light"]) .statsContainer {
-  background: rgba(0, 166, 81, 0.05);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.05);
 }
 
 :global([data-theme="light"]) .statBadge {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .deleteIconButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #4a5568;
 }
 
@@ -2362,8 +2362,8 @@
 
 /* Light theme */
 :global([data-theme="light"]) .lockScheduleBtn {
-  background: linear-gradient(135deg, #00a651 0%, #005826 100%);
-  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
+  background: linear-gradient(135deg, var(--primary, #00a651) 0%, var(--primary-dark, #005826) 100%);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 0, 166, 81), 0.3);
 }
 
 :global([data-theme="light"]) .lockScheduleBtn.locked {
@@ -3158,3 +3158,6 @@
     transform: rotate(360deg);
   }
 }
+
+
+

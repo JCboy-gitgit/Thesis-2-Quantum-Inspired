@@ -180,7 +180,7 @@
 }
 
 .statCard.statUsable {
-  border-left: 4px solid #22c55e;
+  border-left: 4px solid var(--primary, #22c55e);
 }
 
 .statCard.statNotUsable {
@@ -190,27 +190,27 @@
 .statIcon {
   width: 52px;
   height: 52px;
-  background: rgba(0, 166, 81, 0.12);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.12);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00A651;
+  color: var(--primary, #00a651);
 }
 
 .statIcon svg {
   width: 24px;
   height: 24px;
-  color: #00A651;
+  color: var(--primary, #00a651);
 }
 
 .statCard.statUsable .statIcon {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  background: var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.12));
+  color: var(--primary, #22c55e);
 }
 
 .statCard.statUsable .statIcon svg {
-  color: #22c55e;
+  color: var(--primary, #22c55e);
 }
 
 .statCard.statNotUsable .statIcon {
@@ -242,7 +242,7 @@
 }
 
 .statCard.statUsable .statValue {
-  color: #22c55e;
+  color: var(--primary, #22c55e);
 }
 
 .statCard.statNotUsable .statValue {
@@ -361,7 +361,7 @@
 .fileCard {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #16a34a) 0%, var(--primary, #22c55e) 50%, var(--primary-light, #4ade80) 100%);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
@@ -371,7 +371,7 @@
 
 .fileCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(8, 145, 178, 0.3);
+  box-shadow: 0 12px 40px var(--glow-color);
 }
 
 .fileCardContent {
@@ -447,7 +447,7 @@
 .campusCard {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  background: var(--primary-gradient);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
@@ -456,7 +456,7 @@
 
 .campusCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 12px 40px var(--glow-color);
 }
 
 .campusCardContent {
@@ -521,7 +521,7 @@
 .buildingCard {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  background: var(--primary-gradient);
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
@@ -530,7 +530,7 @@
 
 .buildingCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 12px 40px var(--glow-color);
 }
 
 .buildingCardContent {
@@ -637,7 +637,7 @@
 }
 
 .roomCard.check {
-  border-left: 4px solid #22c55e;
+  border-left: 4px solid var(--primary, #22c55e);
 }
 
 .roomCard.x {
@@ -669,13 +669,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 166, 81, 0.12);
-  color: #00A651;
+  background: var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.12));
+  color: var(--primary, #00a651);
   flex-shrink: 0;
 }
 
 .roomCardIcon svg {
-  color: #00A651;
+  color: var(--primary, #00a651);
 }
 
 .roomCardInfo {
@@ -751,8 +751,8 @@
 }
 
 .hasAmenity {
-  background: #d1fae5;
-  color: #059669;
+  background: var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.15));
+  color: var(--primary-dark, #059669);
 }
 
 .noAmenity {
@@ -1203,35 +1203,34 @@
 :global([data-theme="green"]) .main {
   background: transparent;
   --card-bg: #ffffff;
-  --card-border: rgba(46, 175, 125, 0.25);
+  --card-border: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --bg-white: #ffffff;
   --bg-gray-50: rgba(240, 253, 244, 0.95);
   --bg-gray-100: rgba(193, 246, 237, 0.4);
-  --border-color: rgba(46, 175, 125, 0.25);
+  --border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --text-dark: #02353c;
   --text-primary: #02353c;
-  --text-secondary: #166534;
-  --text-light: #166534;
-  --primary: #2eaf7d;
-  --primary-gradient: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
-  --glow-color: rgba(46, 175, 125, 0.35);
+  --text-secondary: var(--primary-dark, #166534);
+  --text-light: var(--primary-dark, #166534);
+  --primary-gradient: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
+  --glow-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .breadcrumb {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .backBtn {
-  background: rgba(46, 175, 125, 0.1);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #2eaf7d;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.1);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .backBtn:hover {
   background: var(--primary-gradient);
   color: #ffffff;
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .title,
@@ -1240,7 +1239,7 @@
 }
 
 :global([data-theme="green"]) .subtitle {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .headerIconWrapper {
@@ -1276,17 +1275,17 @@
 
 :global([data-theme="green"]) .addBtn {
   background: var(--primary-gradient);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.35);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .addBtn:hover {
-  box-shadow: 0 6px 20px rgba(46, 175, 125, 0.45);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb, 46, 175, 125), 0.45);
 }
 
 :global([data-theme="green"]) .statCard,
 :global([data-theme="green"]) .roomCard {
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border-color: rgba(46, 175, 125, 0.3);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
   box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
   position: relative;
   overflow: hidden;
@@ -1331,7 +1330,7 @@
 }
 
 :global([data-theme="green"]) .statLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .statValue {
@@ -1353,36 +1352,36 @@
 
 :global([data-theme="green"]) .searchSection {
   background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.08);
 }
 
 :global([data-theme="green"]) .searchInput,
 :global([data-theme="green"]) .filterSelect {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .searchInput:focus,
 :global([data-theme="green"]) .filterSelect:focus {
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .amenityBtn {
-  background: rgba(46, 175, 125, 0.1);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #2eaf7d;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.1);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .amenityBtn:hover {
-  border-color: #2eaf7d;
-  background: rgba(46, 175, 125, 0.15);
+  border-color: var(--primary, #2EAF7D);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .amenityBtn.active {
   background: var(--primary-gradient);
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
   color: #ffffff;
 }
 
@@ -1391,12 +1390,12 @@
 }
 
 :global([data-theme="green"]) .roomCardInfo p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .emptyState {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .emptyState h3 {
@@ -1404,7 +1403,7 @@
 }
 
 :global([data-theme="green"]) .emptyState p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .modalOverlay {
@@ -1413,12 +1412,12 @@
 
 :global([data-theme="green"]) .modalContent {
   background: #ffffff;
-  border: 1px solid rgba(46, 175, 125, 0.3);
+  border: 1px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .modalHeader {
   background: var(--primary-gradient);
-  border-color: rgba(46, 175, 125, 0.3);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
   color: #ffffff;
 }
 
@@ -1436,40 +1435,40 @@
 }
 
 :global([data-theme="green"]) .formGroup label {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .formInput,
 :global([data-theme="green"]) .formSelect,
 :global([data-theme="green"]) .formTextarea {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .formInput:focus,
 :global([data-theme="green"]) .formSelect:focus,
 :global([data-theme="green"]) .formTextarea:focus {
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .featureCheckbox {
-  background: rgba(46, 175, 125, 0.1);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.1);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .modalFooter {
-  border-color: rgba(46, 175, 125, 0.2);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .btnCancel {
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
   background: #ffffff;
 }
 
 :global([data-theme="green"]) .btnCancel:hover {
-  background: rgba(46, 175, 125, 0.1);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.1);
 }
 
 :global([data-theme="green"]) .btnSave {
@@ -1959,8 +1958,8 @@
 }
 
 :global([data-theme="dark"]) .roomAmenities .hasAmenity {
-  background: rgba(16, 185, 129, 0.2);
-  color: #34d399;
+  background: var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.2));
+  color: var(--primary-light, #34d399);
 }
 
 :global([data-theme="dark"]) .roomAmenities .noAmenity {
@@ -1983,7 +1982,7 @@
 :global([data-theme="light"]) .breadcrumb,
 :global([data-theme="light"]) .roomCard {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
@@ -2005,23 +2004,23 @@
 :global([data-theme="light"]) .filterSelect,
 :global([data-theme="light"]) .amenityBtn {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .searchInput:focus,
 :global([data-theme="light"]) .filterSelect:focus {
-  border-color: #00a651;
-  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+  border-color: var(--primary, #00a651);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .amenityBtn:hover {
-  border-color: #00a651;
-  color: #00a651;
+  border-color: var(--primary, #00a651);
+  color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .amenityBtn.active {
-  background: #00a651;
+  background: var(--primary, #00a651);
   color: white;
 }
 
@@ -2029,18 +2028,18 @@
 :global([data-theme="light"]) .editBtn {
   background: rgba(0, 0, 0, 0.03);
   color: #1a1a1a;
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .backBtn:hover,
 :global([data-theme="light"]) .editBtn:hover {
-  background: #00a651;
+  background: var(--primary, #00a651);
   color: white;
 }
 
 :global([data-theme="light"]) .roomType {
-  background: rgba(0, 166, 81, 0.1);
-  color: #00a651;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.1);
+  color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .roomCode {
@@ -2050,7 +2049,7 @@
 :global([data-theme="light"]) .emptyState,
 :global([data-theme="light"]) .loadingState {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .emptyState h3 {
@@ -2119,3 +2118,6 @@
   color: var(--primary-dark);
   background: var(--primary-alpha);
 }
+
+
+

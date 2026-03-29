@@ -1,5 +1,5 @@
 /* ==================== Green Theme Overrides ==================== */
-/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+/* New Color Palette: #C1F6ED (light mint), #02353C (dark teal), var(--primary-dark, #449342) (olive green), var(--primary, #2EAF7D) (bright green), var(--primary-light, #3FD0C9) (cyan) */
 
 /* Main Layout with Nature Background */
 :global([data-theme="green"]) .layout {
@@ -9,8 +9,8 @@
 /* Header Card */
 :global([data-theme="green"]) .header {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(193, 246, 237, 0.4) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .title {
@@ -18,36 +18,36 @@
 }
 
 :global([data-theme="green"]) .titleIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 /* Back Button */
 :global([data-theme="green"]) .backButton {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .backButton:hover {
-  border-color: #2EAF7D;
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
-  color: #2EAF7D;
+  border-color: var(--primary, #2EAF7D);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  color: var(--primary, #2EAF7D);
 }
 
 /* Welcome Card */
 :global([data-theme="green"]) .welcomeCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.35);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.35);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.12);
 }
 
 :global([data-theme="green"]) .welcomeCard::before {
-  background: linear-gradient(90deg, #449342 0%, #2EAF7D 50%, #3FD0C9 100%);
+  background: linear-gradient(90deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
 }
 
 :global([data-theme="green"]) .welcomeIcon {
-  color: #2EAF7D;
-  filter: drop-shadow(0 4px 12px rgba(46, 175, 125, 0.3));
+  color: var(--primary, #2EAF7D);
+  filter: drop-shadow(0 4px 12px rgba(var(--primary-rgb, 46, 175, 125), 0.3));
 }
 
 :global([data-theme="green"]) .welcomeCard h2 {
@@ -55,17 +55,17 @@
 }
 
 :global([data-theme="green"]) .welcomeCard p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 /* Search Bar */
 :global([data-theme="green"]) .searchBar {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .searchIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .searchInput {
@@ -73,19 +73,19 @@
 }
 
 :global([data-theme="green"]) .searchInput::placeholder {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 /* Stat Badge */
 :global([data-theme="green"]) .statBadge {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
   color: #02353C;
 }
 
 /* Filters Section */
 :global([data-theme="green"]) .filtersSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .filterGroup label {
@@ -93,33 +93,33 @@
 }
 
 :global([data-theme="green"]) .filterGroup label svg {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .filterSelect {
   background: rgba(255, 255, 255, 0.95);
-  border: 2px solid rgba(46, 175, 125, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .filterSelect:hover,
 :global([data-theme="green"]) .filterSelect:focus {
-  border-color: #2EAF7D;
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .resultCount {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
-  color: #166534;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  color: var(--primary-dark, #166534);
 }
 
 /* Empty State */
 :global([data-theme="green"]) .emptyState {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.35);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .emptyIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .emptyState h3 {
@@ -127,33 +127,33 @@
 }
 
 :global([data-theme="green"]) .emptyState p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .uploadButton {
-  background: linear-gradient(135deg, #2EAF7D 0%, #449342 100%);
-  box-shadow: 0 4px 16px rgba(46, 175, 125, 0.25);
+  background: linear-gradient(135deg, var(--primary, #2EAF7D) 0%, var(--primary-dark, #449342) 100%);
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .uploadButton:hover {
-  background: linear-gradient(135deg, #3FD0C9 0%, #2EAF7D 100%);
-  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.4);
+  background: linear-gradient(135deg, var(--primary-light, #3FD0C9) 0%, var(--primary, #2EAF7D) 100%);
+  box-shadow: 0 6px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.4);
 }
 
 /* File Cards */
 :global([data-theme="green"]) .fileCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
-  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  box-shadow: 0 4px 20px rgba(var(--primary-rgb, 46, 175, 125), 0.1);
 }
 
 :global([data-theme="green"]) .fileCard:hover {
-  border-color: #2EAF7D;
-  box-shadow: 0 12px 40px rgba(46, 175, 125, 0.25);
+  border-color: var(--primary, #2EAF7D);
+  box-shadow: 0 12px 40px rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .fileCardIcon {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%);
 }
 
 :global([data-theme="green"]) .fileCardContent h3 {
@@ -161,22 +161,22 @@
 }
 
 :global([data-theme="green"]) .fileDepartment {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .fileStats {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .fileStats span svg {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 /* Pyramid Section */
 :global([data-theme="green"]) .pyramidSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.1);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.1);
 }
 
 :global([data-theme="green"]) .pyramidTitle {
@@ -184,22 +184,22 @@
 }
 
 :global([data-theme="green"]) .levelLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .pyramidCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .pyramidCard:hover {
-  border-color: #2EAF7D;
-  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
+  border-color: var(--primary, #2EAF7D);
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .pyramidCard.selected {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .pyramidName {
@@ -207,19 +207,19 @@
 }
 
 :global([data-theme="green"]) .pyramidId {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .moreIndicator {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 /* Carousel Section */
 :global([data-theme="green"]) .carouselSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .carouselTitle {
@@ -228,21 +228,21 @@
 
 :global([data-theme="green"]) .carouselButton {
   background: rgba(255, 255, 255, 0.95);
-  border: 2px solid rgba(46, 175, 125, 0.25);
-  color: #166534;
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .carouselButton:hover:not(:disabled) {
-  border-color: #2EAF7D;
-  color: #2EAF7D;
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
+  border-color: var(--primary, #2EAF7D);
+  color: var(--primary, #2EAF7D);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.2) 100%);
 }
 
 /* Profile Card */
 :global([data-theme="green"]) .profileCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.15);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .profileHeader {
@@ -250,7 +250,7 @@
 }
 
 :global([data-theme="green"]) .profileBadge {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%);
 }
 
 :global([data-theme="green"]) .profileName {
@@ -258,42 +258,42 @@
 }
 
 :global([data-theme="green"]) .profilePosition {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .profileId {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 /* Quick Nav */
 :global([data-theme="green"]) .quickNavItem {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353C;
 }
 
 :global([data-theme="green"]) .quickNavItem:hover {
-  border-color: #2EAF7D;
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border-color: var(--primary, #2EAF7D);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.1) 0%, rgba(193, 246, 237, 0.3) 100%);
 }
 
 :global([data-theme="green"]) .quickNavItem.activeNav {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.35) 100%);
-  border-color: #2EAF7D;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.15) 0%, rgba(193, 246, 237, 0.35) 100%);
+  border-color: var(--primary, #2EAF7D);
 }
 
 /* Loading State */
 :global([data-theme="green"]) .loadingState {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.35);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .loadingState p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .spinner {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 /* ==================== Faculty Profiles Page Styles ==================== */
@@ -711,18 +711,18 @@
 .fileCardIcon {
   width: 56px;
   height: 56px;
-  background: rgba(0, 166, 81, 0.12);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.12);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00A651;
+  color: var(--primary, #00a651);
   font-size: 24px;
   flex-shrink: 0;
 }
 
 .fileCardIcon svg {
-  color: #00A651;
+  color: var(--primary, #00a651);
 }
 
 .fileCardContent {
@@ -1325,3 +1325,7 @@
 :global([data-theme="dark"]) .fileCardIcon svg {
   color: #38bdf8;
 }
+
+
+
+

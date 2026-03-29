@@ -28,6 +28,7 @@ interface College {
 
 interface FacultyProfile {
   id: string
+  user_id?: string | null
   faculty_id: string
   full_name: string
   name_prefix?: string | null
@@ -1030,19 +1031,16 @@ function FacultyCollegesContent() {
 
       if (updateError) throw updateError
 
-      // Also update users table if faculty has a user account
-      if (facultyFormData.email) {
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', facultyFormData.email)
-          .single()
+      // Also update users table only via verified linked user_id.
+      const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
+      if (linkedUserId) {
+        const { error: avatarUpdateError } = await (supabase
+          .from('users') as any)
+          .update({ avatar_url: publicUrl })
+          .eq('id', linkedUserId)
 
-        if (existingUser) {
-          await (supabase
-            .from('users') as any)
-            .update({ avatar_url: publicUrl })
-            .eq('id', (existingUser as any).id)
+        if (avatarUpdateError) {
+          console.warn('Could not sync avatar to linked user account:', avatarUpdateError)
         }
       }
 
@@ -1093,6 +1091,40 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
+      const nextEmail = facultyFormData.email.trim().toLowerCase()
+      if (nextEmail) {
+        const { data: duplicateProfile, error: duplicateProfileError } = await (supabase as any)
+          .from('faculty_profiles')
+          .select('id, full_name')
+          .ilike('email', nextEmail)
+          .neq('id', selectedFacultyProfile.id)
+          .maybeSingle()
+
+        if (duplicateProfileError && duplicateProfileError.code !== 'PGRST116') {
+          throw new Error(`Failed validating faculty email: ${duplicateProfileError.message}`)
+        }
+
+        if (duplicateProfile) {
+          throw new Error(`Email is already assigned to another faculty profile: ${duplicateProfile.full_name || duplicateProfile.id}`)
+        }
+
+        const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
+        const { data: duplicateUser, error: duplicateUserError } = await supabase
+          .from('users')
+          .select('id, full_name')
+          .ilike('email', nextEmail)
+          .neq('id', linkedUserId || '00000000-0000-0000-0000-000000000000')
+          .maybeSingle()
+
+        if (duplicateUserError && duplicateUserError.code !== 'PGRST116') {
+          throw new Error(`Failed validating user email: ${duplicateUserError.message}`)
+        }
+
+        if (duplicateUser) {
+          throw new Error(`Email is already bound to another user account: ${duplicateUser.full_name || duplicateUser.id}`)
+        }
+      }
+
       const formattedName = formatDisplayName(
         facultyFormData.full_name,
         facultyFormData.name_prefix,
@@ -1107,7 +1139,7 @@ function FacultyCollegesContent() {
           name_prefix: facultyFormData.name_prefix.trim() || null,
           full_name: facultyFormData.full_name.trim(),
           name_suffix: facultyFormData.name_suffix.trim() || null,
-          email: facultyFormData.email.trim() || null,
+          email: nextEmail || null,
           position: facultyFormData.position.trim() || null,
           role: facultyFormData.role,
           employment_type: facultyFormData.employment_type,
@@ -1124,30 +1156,37 @@ function FacultyCollegesContent() {
         console.error('Faculty update error:', updateError)
         throw new Error(`Database error: ${updateError.message}`)
       }
-      // If email is provided, sync this data to the users table (for approved faculty)
-      if (facultyFormData.email.trim()) {
-        const { data: existingUser, error: userCheckError } = await supabase
+      // Sync users table only via verified linked user_id.
+      const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
+      if (linkedUserId) {
+        const { data: linkedUser, error: linkedUserError } = await supabase
           .from('users')
-          .select('id')
-          .eq('email', facultyFormData.email.trim())
-          .single()
+          .select('id, email')
+          .eq('id', linkedUserId)
+          .maybeSingle()
 
-        if (existingUser && !userCheckError) {
-          // Update the user's profile with faculty data
-          const { error: userUpdateError } = await (supabase
-            .from('users') as any)
-            .update({
-              full_name: formattedName || facultyFormData.full_name.trim(),
-              phone: facultyFormData.phone.trim() || null,
-              department: facultyFormData.department.trim() || null,
-              college: facultyFormData.college.trim() || null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', (existingUser as any).id)
+        if (linkedUserError) {
+          console.warn('Could not verify linked user account:', linkedUserError)
+        } else if (linkedUser) {
+          const userEmail = String(linkedUser.email || '').trim().toLowerCase()
+          const canSyncProfileFields = !nextEmail || !userEmail || userEmail === nextEmail
+          if (canSyncProfileFields) {
+            const { error: userUpdateError } = await (supabase
+              .from('users') as any)
+              .update({
+                full_name: formattedName || facultyFormData.full_name.trim(),
+                phone: facultyFormData.phone.trim() || null,
+                department: facultyFormData.department.trim() || null,
+                college: facultyFormData.college.trim() || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', linkedUserId)
 
-          if (userUpdateError) {
-            console.warn('Could not sync to user account:', userUpdateError)
+            if (userUpdateError) {
+              console.warn('Could not sync linked user profile fields:', userUpdateError)
+            }
           } else {
+            console.warn('Skipped users sync because linked account email does not match edited faculty email.')
           }
         }
       }
@@ -1229,6 +1268,53 @@ function FacultyCollegesContent() {
 
     setSaving(true)
     try {
+      const nextEmail = facultyFormData.email.trim().toLowerCase()
+      let linkedUserId: string | null = null
+
+      if (nextEmail) {
+        const { data: duplicateProfile, error: duplicateProfileError } = await (supabase as any)
+          .from('faculty_profiles')
+          .select('id, full_name')
+          .ilike('email', nextEmail)
+          .maybeSingle()
+
+        if (duplicateProfileError && duplicateProfileError.code !== 'PGRST116') {
+          throw new Error(`Failed validating faculty email: ${duplicateProfileError.message}`)
+        }
+
+        if (duplicateProfile) {
+          throw new Error(`Email is already assigned to a faculty profile: ${duplicateProfile.full_name || duplicateProfile.id}`)
+        }
+
+        const { data: existingUser, error: userLookupError } = await db
+          .from('users')
+          .select('id, email, full_name')
+          .ilike('email', nextEmail)
+          .maybeSingle()
+
+        if (userLookupError && userLookupError.code !== 'PGRST116') {
+          throw new Error(`Failed validating user email: ${userLookupError.message}`)
+        }
+
+        if (existingUser?.id) {
+          linkedUserId = String(existingUser.id)
+
+          const { data: profileLinkedToUser, error: profileLinkedToUserError } = await (supabase as any)
+            .from('faculty_profiles')
+            .select('id, full_name')
+            .eq('user_id', linkedUserId)
+            .maybeSingle()
+
+          if (profileLinkedToUserError && profileLinkedToUserError.code !== 'PGRST116') {
+            throw new Error(`Failed validating linked user mapping: ${profileLinkedToUserError.message}`)
+          }
+
+          if (profileLinkedToUser) {
+            throw new Error(`This user account is already linked to another faculty profile: ${profileLinkedToUser.full_name || profileLinkedToUser.id}`)
+          }
+        }
+      }
+
       const formattedName = formatDisplayName(
         facultyFormData.full_name,
         facultyFormData.name_prefix,
@@ -1237,10 +1323,11 @@ function FacultyCollegesContent() {
 
       const newFaculty = {
         faculty_id: facultyFormData.faculty_id.trim() || `FAC-${Date.now()}`,
+        user_id: linkedUserId,
         name_prefix: facultyFormData.name_prefix.trim() || null,
         full_name: facultyFormData.full_name.trim(),
         name_suffix: facultyFormData.name_suffix.trim() || null,
-        email: facultyFormData.email.trim() || null,
+        email: nextEmail || null,
         position: facultyFormData.position.trim() || 'Faculty',
         role: facultyFormData.role,
         employment_type: facultyFormData.employment_type,
@@ -1259,26 +1346,21 @@ function FacultyCollegesContent() {
 
       if (error) throw error
 
-      // If email is provided, sync this data to the users table (for approved faculty)
-      if (facultyFormData.email.trim()) {
-        const { data: existingUser } = await db
+      // Sync users table only when this faculty is linked to a verified user_id.
+      if (linkedUserId) {
+        const { error: userUpdateError } = await db
           .from('users')
-          .select('id')
-          .eq('email', facultyFormData.email.trim())
-          .single()
+          .update({
+            full_name: formattedName || facultyFormData.full_name.trim(),
+            phone: facultyFormData.phone.trim() || null,
+            department: facultyFormData.department.trim() || null,
+            college: facultyFormData.college.trim() || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', linkedUserId)
 
-        if (existingUser) {
-          // Update the user's profile with faculty data
-          await db
-            .from('users')
-            .update({
-              full_name: formattedName || facultyFormData.full_name.trim(),
-              phone: facultyFormData.phone.trim() || null,
-              department: facultyFormData.department.trim() || null,
-              college: facultyFormData.college.trim() || null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingUser.id)
+        if (userUpdateError) {
+          console.warn('Could not sync linked user profile during add:', userUpdateError)
         }
       }
 

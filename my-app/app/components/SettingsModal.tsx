@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { MdClose as X, MdDarkMode as Moon, MdLightMode as Sun, MdEco as Leaf, MdMonitor as Monitor, MdDomain as Building2, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdCheck as Check, MdDragIndicator as GripVertical, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdCheckCircle as CheckCircle, MdEdit as Edit } from 'react-icons/md'
+import React, { useEffect, useState } from 'react'
+import { MdClose as X, MdDarkMode as Moon, MdLightMode as Sun, MdEco as Leaf, MdMonitor as Monitor, MdDomain as Building2, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdCheck as Check, MdDragIndicator as GripVertical, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdCheckCircle as CheckCircle, MdEdit as Edit, MdPalette as Palette } from 'react-icons/md'
 import { useTheme } from '../context/ThemeContext'
 import { useColleges, BulSUCollege } from '../context/CollegesContext'
 import GlobalTagsSettings from './GlobalTagsSettings'
@@ -14,8 +14,9 @@ interface SettingsModalProps {
 
 // Inner component that uses the theme hook - only rendered when modal is open
 function SettingsModalContent({ onClose }: { onClose: () => void }) {
-  const { theme, setTheme } = useTheme()
+  const { theme, iconColor, setTheme, setIconColor } = useTheme()
   const { colleges, activeColleges, loading, isDefault, addCollege, updateCollege, deleteCollege, refreshColleges } = useColleges()
+  const [showIconPalette, setShowIconPalette] = useState(false)
 
   // College management state
   const [showCollegeForm, setShowCollegeForm] = useState(false)
@@ -23,6 +24,16 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
   const [collegeForm, setCollegeForm] = useState({ code: '', name: '', short_name: '' })
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+
+  const iconPalettePresets = ['#0ea5e9', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#111827']
+  const effectiveAccentColor = iconColor || '#00a651'
+  const isLightThemeActive = theme === 'light'
+
+  useEffect(() => {
+    if (!isLightThemeActive && showIconPalette) {
+      setShowIconPalette(false)
+    }
+  }, [isLightThemeActive, showIconPalette])
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -151,9 +162,17 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                 {theme === 'dark' && <span className="theme-active-badge">Active</span>}
               </button>
 
-              <button
+              <div
                 className={`theme-option ${theme === 'light' ? 'active' : ''}`}
+                role="button"
+                tabIndex={0}
                 onClick={() => setTheme('light')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setTheme('light')
+                  }
+                }}
               >
                 <div className="theme-preview light-preview">
                   <div className="sun-container">
@@ -164,9 +183,59 @@ function SettingsModalContent({ onClose }: { onClose: () => void }) {
                 </div>
                 <span className="theme-name">Light Mode</span>
                 <span className="theme-description">Classic bright look</span>
-                {theme === 'light' && <span className="theme-active-badge">Active</span>}
-              </button>
+                <div className="theme-option-right-controls">
+                  {isLightThemeActive && (
+                    <button
+                      type="button"
+                      className="theme-icon-palette-btn"
+                      aria-label="Choose system theme color"
+                      title="Choose system theme color"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowIconPalette((prev) => !prev)
+                      }}
+                    >
+                      <Palette size={16} color={effectiveAccentColor} />
+                    </button>
+                  )}
+                  {theme === 'light' && <span className="theme-active-badge">Active</span>}
+                </div>
+              </div>
             </div>
+
+            {showIconPalette && isLightThemeActive && (
+              <div className="theme-icon-palette-panel">
+                <div className="theme-icon-palette-colors">
+                  {iconPalettePresets.map((paletteColor) => {
+                    const isSelected = effectiveAccentColor.toLowerCase() === paletteColor.toLowerCase()
+                    return (
+                      <button
+                        key={paletteColor}
+                        type="button"
+                        className={`theme-icon-color-dot ${isSelected ? 'active' : ''}`}
+                        style={{ background: paletteColor }}
+                        onClick={() => setIconColor(paletteColor)}
+                        title={`Set icon color ${paletteColor}`}
+                      />
+                    )
+                  })}
+                  <input
+                    type="color"
+                    value={effectiveAccentColor}
+                    className="theme-icon-color-input"
+                    onChange={(e) => setIconColor(e.target.value)}
+                    title="Custom system theme color"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="theme-icon-reset-btn"
+                  onClick={() => setIconColor(null)}
+                >
+                  Reset
+                </button>
+              </div>
+            )}
           </div>
 
           {/* BulSU Colleges Section */}

@@ -12,8 +12,10 @@ type CollegeTheme = 'science' | 'arts-letters' | 'architecture' | 'default'
 interface ThemeContextType {
   theme: BaseTheme
   collegeTheme: CollegeTheme
+  iconColor: string | null
   setTheme: (theme: BaseTheme) => void
   setCollegeTheme: (college: CollegeTheme) => void
+  setIconColor: (color: string | null) => void
   toggleTheme: () => void
   getCollegeColors: () => CollegeColors
 }
@@ -112,8 +114,10 @@ export const getCollegeThemeFromName = (collegeName: string): CollegeTheme => {
 const defaultContext: ThemeContextType = {
   theme: 'green',
   collegeTheme: 'default',
+  iconColor: null,
   setTheme: () => { },
   setCollegeTheme: () => { },
+  setIconColor: () => { },
   toggleTheme: () => { },
   getCollegeColors: () => COLLEGE_COLORS.default,
 }
@@ -124,6 +128,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // DEFAULT: green mode (nature-inspired) with default color theme
   const [theme, setThemeState] = useState<BaseTheme>('green')
   const [collegeTheme, setCollegeThemeState] = useState<CollegeTheme>('default')
+  const [iconColor, setIconColorState] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
 
@@ -133,6 +138,101 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const getCollegeThemeStorageKey = (isFaculty: boolean) =>
     isFaculty ? 'faculty-college-theme' : 'admin-college-theme'
+
+  const getIconColorStorageKey = (isFaculty: boolean) =>
+    isFaculty ? 'faculty-light-icon-color' : 'admin-light-icon-color'
+
+  const isValidHexColor = (value: string | null): value is string => {
+    if (!value) return false
+    return /^#[0-9A-Fa-f]{6}$/.test(value)
+  }
+
+  const hexToRgb = (hex: string) => {
+    const normalized = hex.replace('#', '')
+    const r = parseInt(normalized.slice(0, 2), 16)
+    const g = parseInt(normalized.slice(2, 4), 16)
+    const b = parseInt(normalized.slice(4, 6), 16)
+    return { r, g, b }
+  }
+
+  const mixWith = (hex: string, mixHex: string, weight: number) => {
+    const base = hexToRgb(hex)
+    const mix = hexToRgb(mixHex)
+    const clamped = Math.max(0, Math.min(1, weight))
+    const r = Math.round(base.r * (1 - clamped) + mix.r * clamped)
+    const g = Math.round(base.g * (1 - clamped) + mix.g * clamped)
+    const b = Math.round(base.b * (1 - clamped) + mix.b * clamped)
+    return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+  }
+
+  const clearAdminAccentCSS = useCallback(() => {
+    const root = document.documentElement
+    const body = document.body
+    const varsToClear = [
+      '--primary',
+      '--primary-rgb',
+      '--primary-dark',
+      '--primary-light',
+      '--primary-medium',
+      '--primary-alpha',
+      '--primary-gradient',
+      '--card-border',
+      '--glow-color',
+      '--accent-gradient',
+      '--border-color',
+      '--submenu-bg',
+      '--sidebar-text',
+      '--green-primary',
+      '--green-accent',
+      '--green-card-border',
+      '--icon-color',
+      '--icon-color-rgb',
+    ]
+    varsToClear.forEach((varName) => {
+      root.style.removeProperty(varName)
+      body.style.removeProperty(varName)
+    })
+  }, [])
+
+  const applyAdminAccentCSS = useCallback((
+    color: string | null,
+    isFacultyPage: boolean,
+    isLoginPage: boolean,
+    currentTheme: BaseTheme
+  ) => {
+    const isAdminColorCustomizableTheme = currentTheme === 'light'
+    if (isFacultyPage || isLoginPage || !isAdminColorCustomizableTheme || !color || !isValidHexColor(color)) {
+      clearAdminAccentCSS()
+      return
+    }
+
+    // Clear any previously injected theme-wide overrides before applying icon-only vars.
+    clearAdminAccentCSS()
+
+    const root = document.documentElement
+    const body = document.body
+    const { r, g, b } = hexToRgb(color)
+    const dark = mixWith(color, '#000000', 0.32)
+    const light = mixWith(color, '#ffffff', 0.32)
+    const medium = mixWith(color, '#000000', 0.16)
+
+    const targets = [root, body]
+    targets.forEach((target) => {
+      // Apply selected light-mode accent to theme tokens so pages respond consistently.
+      target.style.setProperty('--primary', color)
+      target.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`)
+      target.style.setProperty('--primary-dark', dark)
+      target.style.setProperty('--primary-light', light)
+      target.style.setProperty('--primary-medium', medium)
+      target.style.setProperty('--primary-alpha', `rgba(${r}, ${g}, ${b}, 0.14)`)
+      target.style.setProperty('--primary-gradient', `linear-gradient(135deg, ${dark} 0%, ${color} 100%)`)
+      target.style.setProperty('--glow-color', `rgba(${r}, ${g}, ${b}, 0.35)`)
+
+      // Keep dedicated icon vars for places that explicitly use icon accenting.
+      target.style.setProperty('--icon-color', color)
+      target.style.setProperty('--icon-color-rgb', `${r}, ${g}, ${b}`)
+    })
+  }, [clearAdminAccentCSS])
 
   const applyCollegeThemeCSS = useCallback((college: CollegeTheme) => {
     const colors = COLLEGE_COLORS[college]
@@ -171,6 +271,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.documentElement.setAttribute('data-theme', loginTheme)
       document.body.setAttribute('data-theme', loginTheme)
       setThemeState(loginTheme)
+      setIconColorState(null)
+      clearAdminAccentCSS()
       return
     }
 
@@ -210,7 +312,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       })
     }
 
-  }, [pathname])
+    const iconColorKey = getIconColorStorageKey(isFacultyPage)
+    const savedIconColor = localStorage.getItem(iconColorKey)
+    if (isValidHexColor(savedIconColor)) {
+      setIconColorState(savedIconColor)
+      applyAdminAccentCSS(savedIconColor, isFacultyPage, isLoginPage, themeToApply)
+    } else {
+      setIconColorState(null)
+      applyAdminAccentCSS(null, isFacultyPage, isLoginPage, themeToApply)
+    }
+
+  }, [pathname, applyAdminAccentCSS, clearAdminAccentCSS])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const isFacultyPage = window.location.pathname.startsWith('/faculty')
+    const isLoginPage = window.location.pathname === '/' || window.location.pathname === '/login'
+    applyAdminAccentCSS(iconColor, isFacultyPage, isLoginPage, theme)
+  }, [iconColor, theme, pathname, applyAdminAccentCSS])
 
   // Initial mount: set up college theme
   useEffect(() => {
@@ -261,6 +380,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyCollegeThemeCSS(college)
   }, [collegeTheme, enableFastThemeSwitchMode, applyCollegeThemeCSS])
 
+  const setIconColor = useCallback((color: string | null) => {
+    const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
+    const isLoginPage = typeof window !== 'undefined' && (window.location.pathname === '/' || window.location.pathname === '/login')
+    const storageKey = getIconColorStorageKey(isFacultyPage)
+    const normalizedColor = color ? color.trim() : null
+
+    if (normalizedColor && !isValidHexColor(normalizedColor)) {
+      return
+    }
+
+    if (iconColor === normalizedColor) return
+
+    setIconColorState(normalizedColor)
+    if (normalizedColor) {
+      localStorage.setItem(storageKey, normalizedColor)
+      applyAdminAccentCSS(normalizedColor, isFacultyPage, isLoginPage, theme)
+    } else {
+      localStorage.removeItem(storageKey)
+      applyAdminAccentCSS(null, isFacultyPage, isLoginPage, theme)
+    }
+  }, [iconColor, applyAdminAccentCSS, theme])
+
   const toggleTheme = useCallback(() => {
     const isFacultyPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/faculty')
     let newTheme: BaseTheme
@@ -283,9 +424,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Always provide the context, but with default values until mounted
   const value = useMemo(() => {
     return mounted
-      ? { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors }
+      ? { theme, collegeTheme, iconColor, setTheme, setCollegeTheme, setIconColor, toggleTheme, getCollegeColors }
       : defaultContext
-  }, [mounted, theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme, getCollegeColors])
+  }, [mounted, theme, collegeTheme, iconColor, setTheme, setCollegeTheme, setIconColor, toggleTheme, getCollegeColors])
 
   return (
     <ThemeContext.Provider value={value}>

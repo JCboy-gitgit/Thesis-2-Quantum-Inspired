@@ -7,62 +7,61 @@
 
 :global([data-theme="green"]) .mainContent {
   --card-bg: rgba(255, 255, 255, 0.95);
-  --card-border: rgba(46, 175, 125, 0.25);
+  --card-border: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --text-primary: #02353c;
-  --text-secondary: #166534;
-  --primary: #2eaf7d;
-  --primary-alpha: rgba(46, 175, 125, 0.15);
+  --text-secondary: var(--primary-dark, #166534);
+  --primary-alpha: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
   --dark-bg: transparent;
 }
 
 :global([data-theme="green"]) .card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%) !important;
-  border: 2px solid rgba(46, 175, 125, 0.25) !important;
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.12) !important;
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25) !important;
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.12) !important;
 }
 
 :global([data-theme="green"]) .card:hover {
-  box-shadow: 0 12px 40px rgba(46, 175, 125, 0.2) !important;
+  box-shadow: 0 12px 40px rgba(var(--primary-rgb, 46, 175, 125), 0.2) !important;
 }
 
 :global([data-theme="green"]) .cardHeader {
   background: rgba(193, 246, 237, 0.4) !important;
-  border-bottom-color: rgba(46, 175, 125, 0.2) !important;
+  border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2) !important;
 }
 
 :global([data-theme="green"]) .cardActions {
   background: rgba(193, 246, 237, 0.2) !important;
-  border-top-color: rgba(46, 175, 125, 0.2) !important;
+  border-top-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2) !important;
 }
 
 :global([data-theme="green"]) .searchBox,
 :global([data-theme="green"]) .filterTabs,
 :global([data-theme="green"]) .refreshBtn {
   background: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(46, 175, 125, 0.25) !important;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25) !important;
 }
 
 :global([data-theme="green"]) .filterTab.active {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%) !important;
 }
 
 :global([data-theme="green"]) .formGroup input {
   background: rgba(255, 255, 255, 0.9) !important;
-  border-color: rgba(46, 175, 125, 0.25) !important;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25) !important;
   color: #02353c !important;
 }
 
 :global([data-theme="green"]) .formGroup input:focus {
-  border-color: #2eaf7d !important;
+  border-color: var(--primary, #2EAF7D) !important;
 }
 
 :global([data-theme="green"]) .userAvatar {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%) !important;
 }
 
 :global([data-theme="green"]) .headerTitle svg,
 :global([data-theme="green"]) .infoRow svg {
-  color: #2eaf7d !important;
+  color: var(--primary, #2EAF7D) !important;
 }
 
 /* ==================== Layout ==================== */
@@ -686,16 +685,15 @@
 
 :global([data-theme="light"]) .mainContent {
   --card-bg: rgba(255, 255, 255, 0.98);
-  --card-border: rgba(0, 166, 81, 0.2);
+  --card-border: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   --text-primary: #1a1a1a;
   --text-secondary: #4a5568;
-  --primary: #00a651;
-  --primary-alpha: rgba(0, 166, 81, 0.1);
+  --primary-alpha: rgba(var(--primary-rgb, 0, 166, 81), 0.1);
 }
 
 :global([data-theme="light"]) .card {
   background: rgba(255, 255, 255, 0.98) !important;
-  border: 2px solid rgba(0, 166, 81, 0.2) !important;
+  border: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.2) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -704,20 +702,20 @@
 }
 
 :global([data-theme="light"]) .cardHeader {
-  background: rgba(0, 166, 81, 0.06) !important;
-  border-bottom-color: rgba(0, 166, 81, 0.15) !important;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.06) !important;
+  border-bottom-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15) !important;
 }
 
 :global([data-theme="light"]) .cardActions {
-  background: rgba(0, 166, 81, 0.03) !important;
-  border-top-color: rgba(0, 166, 81, 0.15) !important;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.03) !important;
+  border-top-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15) !important;
 }
 
 :global([data-theme="light"]) .searchBox,
 :global([data-theme="light"]) .filterTabs,
 :global([data-theme="light"]) .refreshBtn {
   background: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(0, 166, 81, 0.2) !important;
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2) !important;
 }
 
 :global([data-theme="light"]) .searchBox input {
@@ -729,18 +727,18 @@
 }
 
 :global([data-theme="light"]) .filterTab.active {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%) !important;
   color: white;
 }
 
 :global([data-theme="light"]) .formGroup input {
   background: rgba(255, 255, 255, 0.98) !important;
-  border-color: rgba(0, 166, 81, 0.2) !important;
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2) !important;
   color: #1a1a1a !important;
 }
 
 :global([data-theme="light"]) .formGroup input:focus {
-  border-color: #00a651 !important;
+  border-color: var(--primary, #00a651) !important;
 }
 
 :global([data-theme="light"]) .headerTitle {
@@ -752,5 +750,8 @@
 }
 
 :global([data-theme="light"]) .userAvatar {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%) !important;
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%) !important;
 }
+
+
+

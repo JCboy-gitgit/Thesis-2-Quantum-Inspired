@@ -2,7 +2,7 @@
 /* Uses global theme variables from globals.css for dynamic theme switching */
 
 /* ==================== Green Theme - Nature Inspired Light Mode ==================== */
-/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), #449342 (olive green), #2EAF7D (bright green), #3FD0C9 (cyan) */
+/* Color Palette: #C1F6ED (light mint), #02353C (dark teal), var(--primary-dark, #449342) (olive green), var(--primary, #2EAF7D) (bright green), var(--primary-light, #3FD0C9) (cyan) */
 
 :global([data-theme="green"]) .modalOverlay {
   background: rgba(2, 53, 60, 0.5);
@@ -10,13 +10,13 @@
 
 :global([data-theme="green"]) .modalContainer {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.3);
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .modalHeader {
   background: linear-gradient(135deg, rgba(240, 253, 244, 0.98) 0%, rgba(193, 246, 237, 0.4) 100%);
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .modalTitle {
@@ -25,16 +25,16 @@
 }
 
 :global([data-theme="green"]) .modalSubtitle {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .tabs {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .tab {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .tab:hover {
@@ -42,8 +42,8 @@
 }
 
 :global([data-theme="green"]) .activeTab {
-  color: #2EAF7D;
-  border-bottom-color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
+  border-bottom-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .modalContent {
@@ -56,14 +56,14 @@
 :global([data-theme="green"]) .campusSection,
 :global([data-theme="green"]) .buildingSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 253, 244, 0.95) 100%);
-  border: 2px solid rgba(46, 175, 125, 0.25);
-  box-shadow: 0 4px 20px rgba(46, 175, 125, 0.1);
+  border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  box-shadow: 0 4px 20px rgba(var(--primary-rgb, 46, 175, 125), 0.1);
 }
 
 :global([data-theme="green"]) .statCard:hover,
 :global([data-theme="green"]) .timeSlotsSection:hover {
-  border-color: #2EAF7D;
-  box-shadow: 0 8px 32px rgba(46, 175, 125, 0.2);
+  border-color: var(--primary, #2EAF7D);
+  box-shadow: 0 8px 32px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .statValue,
@@ -80,7 +80,7 @@
 :global([data-theme="green"]) .summaryLabel,
 :global([data-theme="green"]) .timeSlotsDescription,
 :global([data-theme="green"]) .timeSlotLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .summaryValue,
@@ -90,18 +90,18 @@
 }
 
 :global([data-theme="green"]) .statIcon {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .iconButton {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(46, 175, 125, 0.3);
-  color: #166534;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .iconButton:hover {
-  background: rgba(46, 175, 125, 0.15);
-  border-color: #2EAF7D;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-color: var(--primary, #2EAF7D);
   color: #02353C;
 }
 
@@ -130,17 +130,17 @@
 }
 
 :global([data-theme="green"]) .participantsTable thead {
-  background: rgba(46, 175, 125, 0.12);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.12);
 }
 
 :global([data-theme="green"]) .participantsTable th {
   color: #02353C;
-  border-bottom-color: rgba(46, 175, 125, 0.25);
+  border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .participantsTable td {
   color: #02353C;
-  border-bottom-color: rgba(46, 175, 125, 0.15);
+  border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 :global([data-theme="green"]) .participantsTable tbody tr:hover {
@@ -148,7 +148,7 @@
 }
 
 :global([data-theme="green"]) .seatNo {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .nameCell {
@@ -156,11 +156,11 @@
 }
 
 :global([data-theme="green"]) .emailCell {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .badge {
-  background: rgba(46, 175, 125, 0.15);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
   color: #02353C;
 }
 
@@ -169,8 +169,8 @@
 }
 
 :global([data-theme="green"]) .timeSlotCard.activeSlot {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border-color: rgba(46, 175, 125, 0.4);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.15) 0%, rgba(193, 246, 237, 0.3) 100%);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.4);
 }
 
 :global([data-theme="green"]) .timeSlotCard.emptySlot {
@@ -178,31 +178,31 @@
 }
 
 :global([data-theme="green"]) .activeSlot .timeSlotIcon {
-  background: linear-gradient(135deg, #449342 0%, #2EAF7D 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 100%);
 }
 
 :global([data-theme="green"]) .activeSlot .timeSlotStat {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .activeSlot .timeSlotStat svg {
-  color: #2EAF7D;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .spinner {
-  border-color: rgba(46, 175, 125, 0.15);
-  border-top-color: #2EAF7D;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
+  border-top-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .loadingState {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .batchTitle,
 :global([data-theme="green"]) .batchStat,
 :global([data-theme="green"]) .roomStats,
 :global([data-theme="green"]) .roomStat {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 
@@ -440,7 +440,7 @@
 
 .statCard.success {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
-  border-color: #86efac;
+  border-color: var(--primary-light, #86efac);
 }
 
 .statCard.pwd {
@@ -450,7 +450,7 @@
 
 .statIcon {
   font-size: 24px;
-  color: #00A651;
+  color: var(--primary, #00a651);
   flex-shrink: 0;
   width: 48px;
   height: 48px;
@@ -458,7 +458,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 166, 81, 0.12);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.12);
 }
 
 .statCard.success .statIcon {
@@ -834,7 +834,7 @@
 
 .utilizationBadge.high {
   background: rgba(16, 185, 129, 0.15);
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 .utilizationBadge.medium {
@@ -897,7 +897,7 @@
 
 .timeSlotCard.activeSlot {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
-  border-color: #86efac;
+  border-color: var(--primary-light, #86efac);
 }
 
 .timeSlotCard.emptySlot {
@@ -1002,7 +1002,7 @@
 
 /* Active slot specific styling */
 .activeSlot .timeSlotStat {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 .activeSlot .timeSlotStat svg {
@@ -1050,3 +1050,6 @@
     overflow-x: auto;
   }
 }
+
+
+

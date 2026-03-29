@@ -359,75 +359,75 @@
 /* ============================================================
    GREEN THEME
    ============================================================ */
-:global([data-theme="green"]) .tableContainer { background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.15) 100%); border: 2px solid rgba(46, 175, 125, 0.25); }
-:global([data-theme="green"]) .tableHeader { border-bottom: 2px solid rgba(46, 175, 125, 0.2); }
+:global([data-theme="green"]) .tableContainer { background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.15) 100%); border: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.25); }
+:global([data-theme="green"]) .tableHeader { border-bottom: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.2); }
 :global([data-theme="green"]) .tableHeaderTop h3 { color: #02353C; }
-:global([data-theme="green"]) .subtitle { color: #166534; }
+:global([data-theme="green"]) .subtitle { color: var(--primary-dark, #166534); }
 :global([data-theme="green"]) .lockedBadge { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
-:global([data-theme="green"]) .tableSearchBox { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); }
-:global([data-theme="green"]) .tableSearchBox:focus-within { border-color: #2EAF7D; }
+:global([data-theme="green"]) .tableSearchBox { background: rgba(var(--primary-rgb, 46, 175, 125), 0.05); border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2); }
+:global([data-theme="green"]) .tableSearchBox:focus-within { border-color: var(--primary, #2EAF7D); }
 :global([data-theme="green"]) .tableSearchInput { color: #02353C; }
 :global([data-theme="green"]) .tableSearchInput::placeholder { color: rgba(2, 53, 60, 0.35); }
 :global([data-theme="green"]) .tableClearSearch { color: rgba(2, 53, 60, 0.4); }
 :global([data-theme="green"]) .tableClearSearch:hover { color: #02353C; }
-:global([data-theme="green"]) .tableDaySelect { background: rgba(46, 175, 125, 0.05); border-color: rgba(46, 175, 125, 0.2); color: #02353C; }
+:global([data-theme="green"]) .tableDaySelect { background: rgba(var(--primary-rgb, 46, 175, 125), 0.05); border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2); color: #02353C; }
 :global([data-theme="green"]) .tableDaySelect option { background: white; color: #02353C; }
-:global([data-theme="green"]) .scrollControlsRow { background: rgba(46, 175, 125, 0.04); border-bottom-color: rgba(46, 175, 125, 0.12); }
-:global([data-theme="green"]) .scrollBtn { background: rgba(255, 255, 255, 0.9); border-color: rgba(46, 175, 125, 0.2); color: #166534; }
-:global([data-theme="green"]) .scrollBtn:hover { background: rgba(46, 175, 125, 0.12); border-color: #2EAF7D; color: #02353C; }
+:global([data-theme="green"]) .scrollControlsRow { background: rgba(var(--primary-rgb, 46, 175, 125), 0.04); border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.12); }
+:global([data-theme="green"]) .scrollBtn { background: rgba(255, 255, 255, 0.9); border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2); color: var(--primary-dark, #166534); }
+:global([data-theme="green"]) .scrollBtn:hover { background: rgba(var(--primary-rgb, 46, 175, 125), 0.12); border-color: var(--primary, #2EAF7D); color: #02353C; }
 :global([data-theme="green"]) .scrollHint { color: rgba(2, 53, 60, 0.35); }
-:global([data-theme="green"]) .table thead th { background: rgba(46, 175, 125, 0.08); border-bottom: 2px solid rgba(46, 175, 125, 0.2); color: #166534; }
-:global([data-theme="green"]) .table tbody tr { border-bottom-color: rgba(46, 175, 125, 0.1); }
-:global([data-theme="green"]) .table tbody tr:hover { background: rgba(46, 175, 125, 0.06); }
+:global([data-theme="green"]) .table thead th { background: rgba(var(--primary-rgb, 46, 175, 125), 0.08); border-bottom: 2px solid rgba(var(--primary-rgb, 46, 175, 125), 0.2); color: var(--primary-dark, #166534); }
+:global([data-theme="green"]) .table tbody tr { border-bottom-color: rgba(var(--primary-rgb, 46, 175, 125), 0.1); }
+:global([data-theme="green"]) .table tbody tr:hover { background: rgba(var(--primary-rgb, 46, 175, 125), 0.06); }
 :global([data-theme="green"]) .table tbody td { color: #02353C; }
-:global([data-theme="green"]) .courseCode { color: #449342; }
-:global([data-theme="green"]) .courseLabel { color: #166534; }
+:global([data-theme="green"]) .courseCode { color: var(--primary-dark, #449342); }
+:global([data-theme="green"]) .courseLabel { color: var(--primary-dark, #166534); }
 :global([data-theme="green"]) .time { color: #02353C; }
 :global([data-theme="green"]) .unassigned { color: #dc2626; }
-:global([data-theme="green"]) .roomBadge { background: rgba(46, 175, 125, 0.1); border-color: rgba(46, 175, 125, 0.25); color: #02353C; }
-:global([data-theme="green"]) .building { color: #166534; }
+:global([data-theme="green"]) .roomBadge { background: rgba(var(--primary-rgb, 46, 175, 125), 0.1); border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25); color: #02353C; }
+:global([data-theme="green"]) .building { color: var(--primary-dark, #166534); }
 :global([data-theme="green"]) .capacity { color: rgba(2, 53, 60, 0.4); }
-:global([data-theme="green"]) .actionBtnRoom { background: rgba(46, 175, 125, 0.08); border-color: rgba(46, 175, 125, 0.25); color: #2EAF7D; }
-:global([data-theme="green"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(46, 175, 125, 0.15); border-color: #2EAF7D; }
-:global([data-theme="green"]) .actionBtnFaculty { background: rgba(68, 147, 66, 0.08); border-color: rgba(68, 147, 66, 0.25); color: #449342; }
-:global([data-theme="green"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(68, 147, 66, 0.15); border-color: #449342; }
-:global([data-theme="green"]) .emptyState { color: #166534; }
+:global([data-theme="green"]) .actionBtnRoom { background: rgba(var(--primary-rgb, 46, 175, 125), 0.08); border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25); color: var(--primary, #2EAF7D); }
+:global([data-theme="green"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(var(--primary-rgb, 46, 175, 125), 0.15); border-color: var(--primary, #2EAF7D); }
+:global([data-theme="green"]) .actionBtnFaculty { background: rgba(68, 147, 66, 0.08); border-color: rgba(68, 147, 66, 0.25); color: var(--primary-dark, #449342); }
+:global([data-theme="green"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(68, 147, 66, 0.15); border-color: var(--primary-dark, #449342); }
+:global([data-theme="green"]) .emptyState { color: var(--primary-dark, #166534); }
 
 /* ============================================================
    LIGHT THEME
    ============================================================ */
-:global([data-theme="light"]) .tableContainer { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(0, 166, 81, 0.18); }
-:global([data-theme="light"]) .tableHeader { border-bottom: 2px solid rgba(0, 166, 81, 0.12); }
-:global([data-theme="light"]) .tableHeaderTop h3 { color: #005826; }
+:global([data-theme="light"]) .tableContainer { background: rgba(255, 255, 255, 0.98); border: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.18); }
+:global([data-theme="light"]) .tableHeader { border-bottom: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.12); }
+:global([data-theme="light"]) .tableHeaderTop h3 { color: var(--primary-dark, #005826); }
 :global([data-theme="light"]) .subtitle { color: #4a5568; }
 :global([data-theme="light"]) .lockedBadge { background: rgba(220, 38, 38, 0.08); color: #b91c1c; }
-:global([data-theme="light"]) .tableSearchBox { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); }
-:global([data-theme="light"]) .tableSearchBox:focus-within { border-color: #00a651; }
+:global([data-theme="light"]) .tableSearchBox { background: rgba(var(--primary-rgb, 0, 166, 81), 0.03); border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15); }
+:global([data-theme="light"]) .tableSearchBox:focus-within { border-color: var(--primary, #00a651); }
 :global([data-theme="light"]) .tableSearchInput { color: #1a1a1a; }
 :global([data-theme="light"]) .tableSearchInput::placeholder { color: rgba(0, 0, 0, 0.35); }
 :global([data-theme="light"]) .tableClearSearch { color: rgba(0, 0, 0, 0.4); }
 :global([data-theme="light"]) .tableClearSearch:hover { color: #1a1a1a; }
-:global([data-theme="light"]) .tableDaySelect { background: rgba(0, 166, 81, 0.03); border-color: rgba(0, 166, 81, 0.15); color: #1a1a1a; }
+:global([data-theme="light"]) .tableDaySelect { background: rgba(var(--primary-rgb, 0, 166, 81), 0.03); border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15); color: #1a1a1a; }
 :global([data-theme="light"]) .tableDaySelect option { background: white; color: #1a1a1a; }
-:global([data-theme="light"]) .scrollControlsRow { background: rgba(0, 166, 81, 0.03); border-bottom-color: rgba(0, 166, 81, 0.08); }
-:global([data-theme="light"]) .scrollBtn { background: rgba(255, 255, 255, 0.95); border-color: rgba(0, 166, 81, 0.15); color: #4a5568; }
-:global([data-theme="light"]) .scrollBtn:hover { background: rgba(0, 166, 81, 0.08); border-color: #00a651; color: #005826; }
+:global([data-theme="light"]) .scrollControlsRow { background: rgba(var(--primary-rgb, 0, 166, 81), 0.03); border-bottom-color: rgba(var(--primary-rgb, 0, 166, 81), 0.08); }
+:global([data-theme="light"]) .scrollBtn { background: rgba(255, 255, 255, 0.95); border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15); color: #4a5568; }
+:global([data-theme="light"]) .scrollBtn:hover { background: rgba(var(--primary-rgb, 0, 166, 81), 0.08); border-color: var(--primary, #00a651); color: var(--primary-dark, #005826); }
 :global([data-theme="light"]) .scrollHint { color: rgba(0, 0, 0, 0.3); }
-:global([data-theme="light"]) .table thead th { background: rgba(0, 166, 81, 0.05); border-bottom: 2px solid rgba(0, 166, 81, 0.12); color: #4a5568; }
+:global([data-theme="light"]) .table thead th { background: rgba(var(--primary-rgb, 0, 166, 81), 0.05); border-bottom: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.12); color: #4a5568; }
 :global([data-theme="light"]) .table tbody tr { border-bottom-color: rgba(0, 0, 0, 0.06); }
-:global([data-theme="light"]) .table tbody tr:hover { background: rgba(0, 166, 81, 0.04); }
+:global([data-theme="light"]) .table tbody tr:hover { background: rgba(var(--primary-rgb, 0, 166, 81), 0.04); }
 :global([data-theme="light"]) .table tbody td { color: #1a1a1a; }
-:global([data-theme="light"]) .courseCode { color: #005826; }
+:global([data-theme="light"]) .courseCode { color: var(--primary-dark, #005826); }
 :global([data-theme="light"]) .courseLabel { color: #4a5568; }
 :global([data-theme="light"]) .time { color: #1a1a1a; }
 :global([data-theme="light"]) .unassigned { color: #b91c1c; }
-:global([data-theme="light"]) .roomBadge { background: rgba(0, 166, 81, 0.08); border-color: rgba(0, 166, 81, 0.18); color: #1a1a1a; }
+:global([data-theme="light"]) .roomBadge { background: rgba(var(--primary-rgb, 0, 166, 81), 0.08); border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.18); color: #1a1a1a; }
 :global([data-theme="light"]) .building { color: #4a5568; }
 :global([data-theme="light"]) .capacity { color: rgba(0, 0, 0, 0.35); }
-:global([data-theme="light"]) .actionBtnRoom { background: rgba(0, 166, 81, 0.06); border-color: rgba(0, 166, 81, 0.18); color: #00a651; }
-:global([data-theme="light"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(0, 166, 81, 0.12); border-color: #00a651; }
-:global([data-theme="light"]) .actionBtnFaculty { background: rgba(0, 88, 38, 0.06); border-color: rgba(0, 88, 38, 0.18); color: #005826; }
-:global([data-theme="light"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(0, 88, 38, 0.12); border-color: #005826; }
+:global([data-theme="light"]) .actionBtnRoom { background: rgba(var(--primary-rgb, 0, 166, 81), 0.06); border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.18); color: var(--primary, #00a651); }
+:global([data-theme="light"]) .actionBtnRoom:hover:not(:disabled) { background: rgba(var(--primary-rgb, 0, 166, 81), 0.12); border-color: var(--primary, #00a651); }
+:global([data-theme="light"]) .actionBtnFaculty { background: rgba(0, 88, 38, 0.06); border-color: rgba(0, 88, 38, 0.18); color: var(--primary-dark, #005826); }
+:global([data-theme="light"]) .actionBtnFaculty:hover:not(:disabled) { background: rgba(0, 88, 38, 0.12); border-color: var(--primary-dark, #005826); }
 :global([data-theme="light"]) .emptyState { color: #4a5568; }
 
 /* ============================================================
@@ -454,3 +454,5 @@
   .scrollControlsRow { padding: 4px 12px; }
   .table { min-width: 650px; }
 }
+
+

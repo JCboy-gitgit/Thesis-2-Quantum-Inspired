@@ -84,7 +84,7 @@
 .format-info {
   margin-bottom: 20px;
   padding: 12px;
-  background: var(--primary-alpha, rgba(0, 166, 81, 0.1));
+  background: var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.1));
   border-left: 4px solid var(--primary, #00a651);
   border-radius: 4px;
   transition: background 0.3s ease;
@@ -126,7 +126,7 @@
   background: var(--primary, #00a651);
   color: #fff;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px var(--glow-color, rgba(0, 166, 81, 0.3));
+  box-shadow: 0 2px 8px var(--glow-color, rgba(var(--primary-rgb, 0, 166, 81), 0.3));
 }
 
 .form-group {
@@ -184,7 +184,7 @@
 .input:focus {
   outline: none;
   border-color: var(--primary, #00a651);
-  box-shadow: 0 0 0 3px var(--primary-alpha, rgba(0, 166, 81, 0.2));
+  box-shadow: 0 0 0 3px var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.2));
 }
 
 .file-input {
@@ -201,7 +201,7 @@
   width: 100%;
   margin-top: 20px;
   padding: 12px;
-  background: var(--primary-gradient, linear-gradient(135deg, #005826, #00a651));
+  background: var(--primary-gradient, linear-gradient(135deg, var(--primary-dark, #005826), var(--primary, #00a651)));
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -213,7 +213,7 @@
 
 .upload-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--glow-color, rgba(0, 166, 81, 0.4));
+  box-shadow: 0 4px 12px var(--glow-color, rgba(var(--primary-rgb, 0, 166, 81), 0.4));
 }
 
 .upload-button:disabled {
@@ -334,8 +334,8 @@
 }
 
 :global([data-theme="green"]) .format-info {
-  background: rgba(46, 175, 125, 0.08);
-  border-color: rgba(46, 175, 125, 0.2);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.08);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .format-info h3 {
@@ -350,9 +350,13 @@
 :global([data-theme="green"]) .download-template-btn:hover {
   background: var(--primary, #2EAF7D);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(46, 175, 125, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .text-medium {
   color: var(--text-secondary);
 }
+
+
+
+

@@ -202,6 +202,7 @@ export default function AdminDashboard() {
   const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
   const [holidaySaving, setHolidaySaving] = useState(false)
   const [holidayError, setHolidayError] = useState<string | null>(null)
+  const [showHolidayModal, setShowHolidayModal] = useState(false)
   const [authorized, setAuthorized] = useState(false)
   const [showFacultyActivityModal, setShowFacultyActivityModal] = useState(false)
   const [facultyActivityList, setFacultyActivityList] = useState<OnlineFaculty[]>([])
@@ -266,6 +267,12 @@ export default function AdminDashboard() {
   const resetHolidayForm = () => {
     setHolidayForm({ holiday_name: '', holiday_date: '', description: '' })
     setEditingHolidayId(null)
+  }
+
+  const closeHolidayModal = () => {
+    setShowHolidayModal(false)
+    setHolidayError(null)
+    resetHolidayForm()
   }
 
   const saveHoliday = async () => {
@@ -735,14 +742,14 @@ export default function AdminDashboard() {
 
   // Quick navigation items - using nature-inspired theme colors
   const quickNavItems = [
-    { icon: MdMeetingRoom, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: '#2EAF7D', desc: 'Manage rooms & buildings' },
-    { icon: MdPeople, label: 'Faculty Management', path: '/LandingPages/FacultyManagement/FacultyApproval', color: '#449342', desc: 'Approve & manage faculty' },
-    { icon: MdMenuBook, label: 'Courses Management', path: '/LandingPages/CoursesManagement', color: '#3FD0C9', desc: 'Manage courses & sections' },
-    { icon: MdFlashOn, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: '#2EAF7D', desc: 'Create new schedules' },
-    { icon: MdVisibility, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: '#449342', desc: 'View generated schedules' },
-    { icon: MdUpload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: '#3FD0C9', desc: 'Import data from CSV' },
-    { icon: MdSchool, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: '#2EAF7D', desc: 'Manage college assignments' },
-    { icon: MdLocationOn, label: 'Floor Plans', path: '/floor-plan/admin', color: '#449342', desc: 'View & edit floor plans' },
+    { icon: MdMeetingRoom, label: 'Rooms Management', path: '/LandingPages/RoomsManagement', color: 'var(--primary, #2EAF7D)', desc: 'Manage rooms & buildings' },
+    { icon: MdPeople, label: 'Faculty Management', path: '/LandingPages/FacultyManagement/FacultyApproval', color: 'var(--primary-dark, #449342)', desc: 'Approve & manage faculty' },
+    { icon: MdMenuBook, label: 'Courses Management', path: '/LandingPages/CoursesManagement', color: 'var(--primary-light, #3FD0C9)', desc: 'Manage courses & sections' },
+    { icon: MdFlashOn, label: 'Generate Schedule', path: '/LandingPages/RoomSchedule/GenerateSchedule', color: 'var(--primary, #2EAF7D)', desc: 'Create new schedules' },
+    { icon: MdVisibility, label: 'View Schedules', path: '/LandingPages/RoomSchedule/ViewSchedule', color: 'var(--primary-dark, #449342)', desc: 'View generated schedules' },
+    { icon: MdUpload, label: 'Upload CSV', path: '/LandingPages/UploadCSV', color: 'var(--primary-light, #3FD0C9)', desc: 'Import data from CSV' },
+    { icon: MdSchool, label: 'Faculty Colleges', path: '/LandingPages/FacultyColleges', color: 'var(--primary, #2EAF7D)', desc: 'Manage college assignments' },
+    { icon: MdLocationOn, label: 'Floor Plans', path: '/floor-plan/admin', color: 'var(--primary-dark, #449342)', desc: 'View & edit floor plans' },
   ]
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -976,6 +983,15 @@ export default function AdminDashboard() {
                         <MdNotifications size={22} />
                         Upcoming Holidays
                       </h2>
+                      <button
+                        className="holiday-manage-btn"
+                        onClick={() => {
+                          setHolidayError(null)
+                          setShowHolidayModal(true)
+                        }}
+                      >
+                        + Manage Holidays
+                      </button>
                     </div>
                     <div className="card-content">
                       <div className="holidays-list">
@@ -988,55 +1004,6 @@ export default function AdminDashboard() {
                             <span className="holiday-name">{holiday.name}</span>
                           </div>
                         ))}
-                      </div>
-
-                      <div className="holiday-admin-tools">
-                        <h3>{editingHolidayId ? 'Edit Holiday' : 'Add Holiday'}</h3>
-                        <div className="holiday-admin-form">
-                          <input
-                            type="text"
-                            placeholder="Holiday name"
-                            value={holidayForm.holiday_name}
-                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_name: e.target.value }))}
-                          />
-                          <input
-                            type="date"
-                            value={holidayForm.holiday_date}
-                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_date: e.target.value }))}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Description (optional)"
-                            value={holidayForm.description}
-                            onChange={(e) => setHolidayForm((prev) => ({ ...prev, description: e.target.value }))}
-                          />
-                          <div className="holiday-admin-actions">
-                            <button type="button" onClick={saveHoliday} disabled={holidaySaving}>
-                              {holidaySaving ? 'Saving...' : editingHolidayId ? 'Update Holiday' : 'Add Holiday'}
-                            </button>
-                            {editingHolidayId && (
-                              <button type="button" className="secondary" onClick={resetHolidayForm} disabled={holidaySaving}>
-                                Cancel Edit
-                              </button>
-                            )}
-                          </div>
-                          {holidayError && <p className="holiday-admin-error">{holidayError}</p>}
-                        </div>
-
-                        <div className="holiday-admin-list">
-                          {holidayRows.slice(0, 12).map((row) => (
-                            <div key={row.id} className="holiday-admin-row">
-                              <div>
-                                <div className="holiday-admin-name">{row.holiday_name}</div>
-                                <div className="holiday-admin-date">{row.holiday_date}</div>
-                              </div>
-                              <div className="holiday-admin-row-actions">
-                                <button type="button" className="secondary" onClick={() => startEditHoliday(row)} disabled={holidaySaving}>Edit</button>
-                                <button type="button" className="danger" onClick={() => deleteHoliday(row.id)} disabled={holidaySaving}>Delete</button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </section>
@@ -1170,6 +1137,65 @@ export default function AdminDashboard() {
               style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
               onClick={() => setSelectedHoliday(null)}
             />
+          )}
+
+          {showHolidayModal && (
+            <div className="holiday-modal-overlay" onClick={closeHolidayModal}>
+              <div className="holiday-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="holiday-modal-header">
+                  <h3>{editingHolidayId ? 'Edit Holiday' : 'Manage Holidays'}</h3>
+                  <button type="button" className="holiday-modal-close" onClick={closeHolidayModal}>
+                    <MdClose size={20} />
+                  </button>
+                </div>
+
+                <div className="holiday-admin-form">
+                  <input
+                    type="text"
+                    placeholder="Holiday name"
+                    value={holidayForm.holiday_name}
+                    onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_name: e.target.value }))}
+                  />
+                  <input
+                    type="date"
+                    value={holidayForm.holiday_date}
+                    onChange={(e) => setHolidayForm((prev) => ({ ...prev, holiday_date: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Description (optional)"
+                    value={holidayForm.description}
+                    onChange={(e) => setHolidayForm((prev) => ({ ...prev, description: e.target.value }))}
+                  />
+                  <div className="holiday-admin-actions">
+                    <button type="button" onClick={saveHoliday} disabled={holidaySaving}>
+                      {holidaySaving ? 'Saving...' : editingHolidayId ? 'Update Holiday' : 'Add Holiday'}
+                    </button>
+                    {editingHolidayId && (
+                      <button type="button" className="secondary" onClick={resetHolidayForm} disabled={holidaySaving}>
+                        Cancel Edit
+                      </button>
+                    )}
+                  </div>
+                  {holidayError && <p className="holiday-admin-error">{holidayError}</p>}
+                </div>
+
+                <div className="holiday-admin-list">
+                  {holidayRows.map((row) => (
+                    <div key={row.id} className="holiday-admin-row">
+                      <div>
+                        <div className="holiday-admin-name">{row.holiday_name}</div>
+                        <div className="holiday-admin-date">{row.holiday_date}</div>
+                      </div>
+                      <div className="holiday-admin-row-actions">
+                        <button type="button" className="secondary" onClick={() => startEditHoliday(row)} disabled={holidaySaving}>Edit</button>
+                        <button type="button" className="danger" onClick={() => deleteHoliday(row.id)} disabled={holidaySaving}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {showFacultyActivityModal && (() => {

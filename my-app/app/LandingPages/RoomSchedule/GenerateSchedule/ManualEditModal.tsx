@@ -72,6 +72,13 @@ const parseCollegeLabels = (value?: string) => {
     return [normalized]
 }
 
+const removeUnknownCollegeWhenKnownExists = (colleges: Set<string>) => {
+    if (colleges.size > 1 && colleges.has(UNKNOWN_COLLEGE)) {
+        colleges.delete(UNKNOWN_COLLEGE)
+    }
+    return colleges
+}
+
 const isUnassignedFacultyName = (value?: string) => {
     const normalized = String(value || '').trim().toUpperCase()
     if (!normalized) return true
@@ -657,6 +664,7 @@ export default function ManualEditModal({
                 colleges.forEach(college => map.get(facultyName)?.add(college))
             })
         })
+        map.forEach(colleges => removeUnknownCollegeWhenKnownExists(colleges))
         return map
     }, [classes, getEffectiveCollege])
 
@@ -688,6 +696,7 @@ export default function ManualEditModal({
                 })
             }
         })
+        map.forEach(colleges => removeUnknownCollegeWhenKnownExists(colleges))
         return map
     }, [classesWithStats, getEffectiveCollege, splitGroupsBySectionBase])
 

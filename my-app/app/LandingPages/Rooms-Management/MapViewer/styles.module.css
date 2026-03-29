@@ -9,20 +9,20 @@
 
 :global([data-theme="green"]) .header {
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 :global([data-theme="green"]) .leftPanel,
 :global([data-theme="green"]) .rightPanel {
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 :global([data-theme="green"]) .canvas {
   background-color: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -34,16 +34,16 @@
 
 :global([data-theme="green"]) .sectionHeader {
   color: #1e293b;
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
 }
 
 :global([data-theme="green"]) .sectionHeader:hover {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.12);
 }
 
 :global([data-theme="green"]) .roomItem {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #334155;
 }
 
@@ -57,43 +57,43 @@
 }
 
 :global([data-theme="green"]) .roomItem:hover {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+  border-color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .saveBtn {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
 }
 
 :global([data-theme="green"]) .exportBtn,
 :global([data-theme="green"]) .shareBtn {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #334155;
 }
 
 :global([data-theme="green"]) .exportBtn:hover,
 :global([data-theme="green"]) .shareBtn:hover {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: #10b981;
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .toggleBtn.active {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: #ffffff;
 }
 
 :global([data-theme="green"]) .panelToggle,
 :global([data-theme="green"]) .panelToggleRight {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: white;
 }
 
 :global([data-theme="green"]) .toolItem {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #334155;
 }
 
@@ -102,14 +102,14 @@
 }
 
 :global([data-theme="green"]) .toolItem:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
 }
 
 :global([data-theme="green"]) .searchBox {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
 }
 
 :global([data-theme="green"]) .searchBox input {
@@ -123,14 +123,14 @@
 :global([data-theme="green"]) .propertyInput,
 :global([data-theme="green"]) .propertySelect {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #1e293b;
 }
 
 :global([data-theme="green"]) .propertyInput:focus,
 :global([data-theme="green"]) .propertySelect:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: var(--primary, #10b981);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 :global([data-theme="green"]) .propertyLabel,
@@ -139,8 +139,8 @@
 }
 
 :global([data-theme="green"]) .panelTabs {
-  background: rgba(16, 185, 129, 0.05);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
+  border-bottom: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .panelTab {
@@ -148,28 +148,28 @@
 }
 
 :global([data-theme="green"]) .panelTab:hover {
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
 }
 
 :global([data-theme="green"]) .panelTab.active {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border-bottom-color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.12);
+  color: var(--primary, #10b981);
+  border-bottom-color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .layerItem {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.15);
   color: #334155;
 }
 
 :global([data-theme="green"]) .layerItem:hover {
-  background: rgba(16, 185, 129, 0.05);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
 }
 
 :global([data-theme="green"]) .layerItem.selected {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+  border-color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .layerControls button {
@@ -177,24 +177,24 @@
 }
 
 :global([data-theme="green"]) .layerControls button:hover {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .gridToggleBtn {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #475569;
 }
 
 :global([data-theme="green"]) .gridToggleBtn:hover {
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
 }
 
 :global([data-theme="green"]) .gridToggleBtn.active {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border-color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.15);
+  color: var(--primary, #10b981);
+  border-color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .sectionTitle {
@@ -207,13 +207,13 @@
 
 :global([data-theme="green"]) .select {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #1e293b;
 }
 
 :global([data-theme="green"]) .select:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: var(--primary, #10b981);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 :global([data-theme="green"]) .divider {
@@ -221,18 +221,18 @@
 }
 
 :global([data-theme="green"]) .buildingSelector svg {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .zoomControls button {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #475569;
 }
 
 :global([data-theme="green"]) .zoomControls button:hover {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .zoomLevel {
@@ -245,13 +245,13 @@
 
 :global([data-theme="green"]) .undoRedoBtn {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #475569;
 }
 
 :global([data-theme="green"]) .undoRedoBtn:hover:not(:disabled) {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .layerName,
@@ -281,7 +281,7 @@
 
 :global([data-theme="green"]) .modal {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
 }
 
 :global([data-theme="green"]) .modalHeader h2 {
@@ -296,20 +296,20 @@
 :global([data-theme="green"]) .modalInput,
 :global([data-theme="green"]) .modalTextarea {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #1e293b;
 }
 
 :global([data-theme="green"]) .modalInput:focus,
 :global([data-theme="green"]) .modalTextarea:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: var(--primary, #10b981);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 :global([data-theme="green"]) .typeDisplay {
   color: #1e293b;
   background: #ffffff;
-  border: 2px solid rgba(16, 185, 129, 0.3);
+  border: 2px solid rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 :global([data-theme="green"]) .propertiesContent {
@@ -330,12 +330,12 @@
 
 /* Green theme - Layers Panel specific styles */
 :global([data-theme="green"]) .layerSectionHeader {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .layerSectionHeader span {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .layerSettings {
@@ -348,14 +348,14 @@
 
 :global([data-theme="green"]) .gridSizeControl button {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #334155;
 }
 
 :global([data-theme="green"]) .gridSizeControl button:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
 }
 
 :global([data-theme="green"]) .gridSizeControl span {
@@ -363,7 +363,7 @@
 }
 
 :global([data-theme="green"]) .bgColorPicker input[type="color"] {
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
 }
 
 :global([data-theme="green"]) .bgColorPicker span {
@@ -371,20 +371,20 @@
 }
 
 :global([data-theme="green"]) .bgPresets button {
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
 }
 
 :global([data-theme="green"]) .bgPresets button:hover {
-  border-color: #10b981;
+  border-color: var(--primary, #10b981);
 }
 
 /* Green theme - Legend styles */
 :global([data-theme="green"]) .legend {
-  border-top-color: rgba(16, 185, 129, 0.2);
+  border-top-color: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
 }
 
 :global([data-theme="green"]) .legend h4 {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .legendHint {
@@ -402,7 +402,7 @@
 /* Green theme - Canvas Controls (floating overlay) */
 :global([data-theme="green"]) .canvasControls {
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -420,25 +420,25 @@
 
 :global([data-theme="green"]) .toggleBtn {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #475569;
 }
 
 :global([data-theme="green"]) .toggleBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .toggleBtn.active {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-  border-color: #34d399;
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
+  border-color: var(--primary-light, #34d399);
   color: #ffffff;
 }
 
 /* Green Theme - Mode Toggle & Mode Buttons */
 :global([data-theme="green"]) .modeToggle {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .modeBtn {
@@ -447,36 +447,36 @@
 }
 
 :global([data-theme="green"]) .modeBtn:hover {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .modeBtn.active {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 /* Green Theme - Floor Plan List & Items */
 :global([data-theme="green"]) .floorPlanList {
-  scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
+  scrollbar-color: rgba(var(--primary-rgb, 16, 185, 129), 0.3) transparent;
 }
 
 :global([data-theme="green"]) .floorPlanItem {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #334155;
 }
 
 :global([data-theme="green"]) .floorPlanItem:hover {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.03);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+  border-color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.03);
+  box-shadow: 0 2px 8px rgba(var(--primary-rgb, 16, 185, 129), 0.12);
 }
 
 :global([data-theme="green"]) .floorPlanItem.active {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
 }
 
 :global([data-theme="green"]) .floorPlanInfo {
@@ -503,11 +503,11 @@
 
 :global([data-theme="green"]) .modalHeader {
   background: #ffffff;
-  border-bottom-color: rgba(16, 185, 129, 0.15);
+  border-bottom-color: rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .modalHeader button {
-  background: rgba(16, 185, 129, 0.08);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
   color: #475569;
 }
 
@@ -523,53 +523,53 @@
 
 :global([data-theme="green"]) .modalFooter {
   background: #f8fafc;
-  border-top-color: rgba(16, 185, 129, 0.15);
+  border-top-color: rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .modalSelect {
   background: #ffffff;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   color: #1e293b;
 }
 
 :global([data-theme="green"]) .modalSelect:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: var(--primary, #10b981);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 /* Green Theme - Modal Buttons */
 :global([data-theme="green"]) .cancelBtn {
   background: #ffffff;
   color: #475569;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.25);
 }
 
 :global([data-theme="green"]) .cancelBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
 }
 
 :global([data-theme="green"]) .saveModalBtn {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: #ffffff;
 }
 
 :global([data-theme="green"]) .saveModalBtn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 16, 185, 129), 0.35);
 }
 
 /* Green Theme - Load Button & Clear Button */
 :global([data-theme="green"]) .loadBtn {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #475569;
 }
 
 :global([data-theme="green"]) .loadBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.05);
 }
 
 :global([data-theme="green"]) .clearBtn {
@@ -607,42 +607,42 @@
 /* Green Theme - Select Mode & Canvas Controls */
 :global([data-theme="green"]) .selectModeBtn {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #475569;
 }
 
 :global([data-theme="green"]) .selectModeBtn:hover {
-  border-color: #10b981;
-  color: #10b981;
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .selectModeBtn.active {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: #ffffff;
-  border-color: #34d399;
+  border-color: var(--primary-light, #34d399);
 }
 
 :global([data-theme="green"]) .selectedCount {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary, #10b981);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 /* Green Theme - Schedule Selector */
 :global([data-theme="green"]) .overlayToggle {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.25);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.25);
   color: #475569;
 }
 
 :global([data-theme="green"]) .overlayToggle:hover {
-  border-color: #10b981;
-  color: #10b981;
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .overlayToggle.active {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: #10b981;
-  color: #10b981;
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+  border-color: var(--primary, #10b981);
+  color: var(--primary, #10b981);
 }
 
 /* Green Theme - Select Options */
@@ -653,12 +653,12 @@
 
 /* Green Theme - Back Button */
 :global([data-theme="green"]) .backBtn {
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  background: linear-gradient(135deg, var(--primary-light, #34d399) 0%, var(--primary, #10b981) 100%);
   color: #ffffff;
 }
 
 :global([data-theme="green"]) .backBtn:hover {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 16, 185, 129), 0.35);
 }
 
 /* Dark Theme */
@@ -955,14 +955,14 @@
 
 :global([data-theme="light"]) .header {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border: 2px solid rgba(0, 166, 81, 0.25);
+  border: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.25);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 :global([data-theme="light"]) .leftPanel,
 :global([data-theme="light"]) .rightPanel {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border: 2px solid rgba(0, 166, 81, 0.2);
+  border: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .canvas {
@@ -972,7 +972,7 @@
 
 :global([data-theme="light"]) .canvasControls {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border: 2px solid rgba(0, 166, 81, 0.2);
+  border: 2px solid rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .title,
@@ -982,11 +982,11 @@
 
 :global([data-theme="light"]) .sectionHeader {
   color: #1e293b;
-  background: rgba(0, 166, 81, 0.08);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.08);
 }
 
 :global([data-theme="light"]) .sectionHeader:hover {
-  background: rgba(0, 166, 81, 0.15);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .roomItem {
@@ -996,12 +996,12 @@
 }
 
 :global([data-theme="light"]) .roomItem:hover {
-  border-color: #22c55e;
+  border-color: var(--primary, #22c55e);
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
 :global([data-theme="light"]) .saveBtn {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, var(--primary, #22c55e) 0%, var(--primary-dark, #16a34a) 100%);
 }
 
 :global([data-theme="light"]) .exportBtn,
@@ -1012,13 +1012,13 @@
 }
 
 :global([data-theme="light"]) .toggleBtn.active {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, var(--primary, #22c55e) 0%, var(--primary-dark, #16a34a) 100%);
   color: #ffffff;
 }
 
 :global([data-theme="light"]) .panelToggle,
 :global([data-theme="light"]) .panelToggleRight {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  background: linear-gradient(135deg, var(--primary, #22c55e) 0%, var(--primary-dark, #16a34a) 100%);
   color: white;
 }
 
@@ -1029,8 +1029,8 @@
 }
 
 :global([data-theme="light"]) .toolItem:hover {
-  border-color: #22c55e;
-  color: #22c55e;
+  border-color: var(--primary, #22c55e);
+  color: var(--primary, #22c55e);
 }
 
 :global([data-theme="light"]) .searchBox {
@@ -1123,16 +1123,16 @@
 }
 
 :global([data-theme="green"]) .toolItem:hover svg {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .rotationInput span {
   color: #1e293b;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 :global([data-theme="green"]) .colorPicker input[type="color"] {
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.3);
 }
 
 :global([data-theme="green"]) .canvasSizeControl label,
@@ -1165,7 +1165,7 @@
 }
 
 :global([data-theme="light"]) .toolItem:hover svg {
-  color: #22c55e;
+  color: var(--primary, #22c55e);
 }
 
 :global([data-theme="light"]) .rotationInput span {
@@ -1256,8 +1256,8 @@
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 0 60px rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.2);
+  box-shadow: 0 0 60px rgba(var(--primary-rgb, 16, 185, 129), 0.1);
 }
 
 .authLoadingContent h2 {
@@ -1268,9 +1268,9 @@
 }
 
 .spinnerIcon {
-  color: #10b981;
+  color: var(--primary, #10b981);
   animation: spin 1s linear infinite;
-  filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.5));
+  filter: drop-shadow(0 0 20px rgba(var(--primary-rgb, 16, 185, 129), 0.5));
 }
 
 @keyframes spin {
@@ -1475,8 +1475,8 @@
 
 .saveStateSaved {
   color: var(--primary);
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.35);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.08);
 }
 
 .saveStateUnsaved {
@@ -1627,7 +1627,7 @@
 }
 
 .adminActionItem:hover:not(:disabled) {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.12);
   color: var(--primary);
 }
 
@@ -1951,7 +1951,7 @@
 }
 
 .addedCheck {
-  color: var(--success-green, #10b981);
+  color: var(--success-green, var(--primary, #10b981));
   flex-shrink: 0;
 }
 
@@ -2142,7 +2142,7 @@
 
 .element_door {
   background: #d1fae5;
-  border-color: #10b981;
+  border-color: var(--primary, #10b981);
 }
 
 .element_stair {
@@ -2878,8 +2878,8 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+  border: 1px solid rgba(var(--primary-rgb, 16, 185, 129), 0.3);
   border-radius: 6px;
   color: #059669;
   font-size: 11px;
@@ -3350,11 +3350,11 @@
 }
 
 .notification.success {
-  border-left: 4px solid #10b981;
+  border-left: 4px solid var(--primary, #10b981);
 }
 
 .notification.success svg {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 .notification.error {
@@ -3548,7 +3548,7 @@
 }
 
 .availabilityDot.available {
-  background: #22c55e;
+  background: var(--primary, #22c55e);
   animation: glow-green 2s ease-in-out infinite;
 }
 
@@ -3608,7 +3608,7 @@
 }
 
 .availabilityDotLegend.available {
-  background: #22c55e;
+  background: var(--primary, #22c55e);
 }
 
 .availabilityDotLegend.occupied {
@@ -3689,7 +3689,7 @@
 
 .statusBadge.available {
   background: rgba(34, 197, 94, 0.15);
-  color: #16a34a;
+  color: var(--primary-dark, #16a34a);
 }
 
 .statusBadge.occupied {
@@ -3850,7 +3850,7 @@
 }
 
 .element_shape {
-  background: #10b981;
+  background: var(--primary, #10b981);
   border-color: #059669;
   border-radius: 8px;
 }
@@ -4512,7 +4512,7 @@
 
 .published {
   background: rgba(34, 197, 94, 0.15);
-  color: #16a34a;
+  color: var(--primary-dark, #16a34a);
 }
 
 .draft {
@@ -4769,11 +4769,11 @@
 
 :global([data-theme="green"]) .exportSectionTitle {
   color: #64748b;
-  border-bottom-color: rgba(16, 185, 129, 0.15);
+  border-bottom-color: rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .exportSectionTitle svg {
-  color: #10b981;
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .exportToggleSlider {
@@ -4781,7 +4781,7 @@
 }
 
 :global([data-theme="green"]) .exportToggle input:checked+.exportToggleSlider {
-  background: #10b981;
+  background: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .exportPreviewArea {
@@ -4791,15 +4791,15 @@
 :global([data-theme="green"]) .exportPreviewLabel {
   color: #475569;
   background: #f1f5f9;
-  border-bottom-color: rgba(16, 185, 129, 0.15);
+  border-bottom-color: rgba(var(--primary-rgb, 16, 185, 129), 0.15);
 }
 
 :global([data-theme="green"]) .exportSlider::-webkit-slider-thumb {
-  background: #10b981;
+  background: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .exportSlider::-moz-range-thumb {
-  background: #10b981;
+  background: var(--primary, #10b981);
 }
 
 /* Export Preview - Dark Theme */
@@ -5063,7 +5063,7 @@
 }
 
 .statusDot.published {
-  background: #10b981;
+  background: var(--primary, #10b981);
   box-shadow: 0 0 0 2px white;
 }
 
@@ -5979,7 +5979,7 @@
 /* Green Theme */
 :global([data-theme="green"]) .detailCard {
   background: #ffffff;
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
 }
 
 :global([data-theme="green"]) .formGroup label,
@@ -5997,8 +5997,8 @@
 }
 
 :global([data-theme="green"]) .iconBtn:hover {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background-color: rgba(var(--primary-rgb, 16, 185, 129), 0.1);
+  color: var(--primary, #10b981);
 }
 
 :global([data-theme="green"]) .defaultBadge {
@@ -6131,7 +6131,7 @@
   /* Adjust theme specific colors for the mobile panel */
   :global([data-theme="green"]) .planDetailsColumn {
     background: #ffffff;
-    border-top-color: rgba(16, 185, 129, 0.2);
+    border-top-color: rgba(var(--primary-rgb, 16, 185, 129), 0.2);
   }
 
   :global([data-theme="dark"]) .planDetailsColumn {
@@ -6207,3 +6207,6 @@
     padding: 8px 12px;
   }
 }
+
+
+

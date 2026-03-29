@@ -818,8 +818,8 @@ function ClassSectionAssigningContent() {
               right: '24px',
               padding: '14px 20px',
               borderRadius: '12px',
-              background: notification.type === 'success' ? '#c6f6d5' : '#fed7d7',
-              color: notification.type === 'success' ? '#276749' : '#c53030',
+              background: notification.type === 'success' ? 'rgba(var(--primary-rgb, 16, 185, 129), 0.15)' : '#fed7d7',
+              color: notification.type === 'success' ? 'var(--primary-dark, #059669)' : '#c53030',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -871,8 +871,8 @@ function ClassSectionAssigningContent() {
               padding: '12px 24px',
               fontWeight: 700,
               fontSize: '14px',
-              color: 'var(--primary-dark, #276749)',
-              borderBottom: '3px solid var(--primary-medium, #38a169)',
+              color: 'var(--primary-dark, #059669)',
+              borderBottom: '3px solid var(--primary, #10b981)',
               marginBottom: '-2px',
               cursor: 'pointer',
               display: 'flex',
@@ -896,7 +896,7 @@ function ClassSectionAssigningContent() {
               id="add-batch-btn"
               style={{
                 padding: '12px 20px',
-                background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                background: 'var(--primary-gradient)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
@@ -905,7 +905,7 @@ function ClassSectionAssigningContent() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 12px rgba(56, 161, 105, 0.3)',
+                boxShadow: '0 4px 12px rgba(var(--primary-rgb, 16, 185, 129), 0.3)',
                 transition: 'all 0.2s ease'
               }}
             >
@@ -918,8 +918,8 @@ function ClassSectionAssigningContent() {
               style={{
                 padding: '12px 20px',
                 background: 'var(--card-bg, #fff)',
-                color: 'var(--primary-medium, #38a169)',
-                border: '2px solid var(--primary-medium, #38a169)',
+                color: 'var(--primary, #10b981)',
+                border: '2px solid var(--primary, #10b981)',
                 borderRadius: '10px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1175,11 +1175,11 @@ function ClassSectionAssigningContent() {
                         downloadBatchCSV(batch)
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(56, 161, 105, 0.15)'
+                        e.currentTarget.style.background = 'rgba(var(--primary-rgb, 16, 185, 129), 0.15)'
                         e.currentTarget.style.transform = 'scale(1.05)'
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(56, 161, 105, 0.1)'
+                        e.currentTarget.style.background = 'rgba(var(--primary-rgb, 16, 185, 129), 0.1)'
                         e.currentTarget.style.transform = 'scale(1)'
                       }}
                       className={styles.downloadCsvBtn}
@@ -1225,7 +1225,7 @@ function ClassSectionAssigningContent() {
                                   marginBottom: '12px'
                                 }}
                               >
-                                <Layers size={16} style={{ color: 'var(--primary-medium, #38a169)' }} />
+                                <Layers size={16} style={{ color: 'var(--primary, #10b981)' }} />
                                 <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-dark, #1a202c)' }}>
                                   {getYearLevelLabel(yearLevel)}
                                 </span>
@@ -1244,18 +1244,18 @@ function ClassSectionAssigningContent() {
                                     openCreateSectionModal(batch.id)
                                   }}
                                   onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'var(--primary-medium, #38a169)'
+                                    e.currentTarget.style.background = 'var(--primary, #10b981)'
                                     e.currentTarget.style.color = 'white'
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
-                                    e.currentTarget.style.color = 'var(--primary-dark, #276749)'
+                                    e.currentTarget.style.background = 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))'
+                                    e.currentTarget.style.color = 'var(--primary-dark, #059669)'
                                   }}
                                   style={{
                                     marginLeft: 'auto',
                                     padding: '4px 10px',
-                                    background: 'var(--primary-light, #c6f6d5)',
-                                    color: 'var(--primary-dark, #276749)',
+                                    background: 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))',
+                                    color: 'var(--primary-dark, #059669)',
                                     border: 'none',
                                     borderRadius: '6px',
                                     fontSize: '11px',
@@ -1312,7 +1312,7 @@ function ClassSectionAssigningContent() {
                                       >
                                         {/* Card Header - Colored Banner */}
                                         <div style={{
-                                          background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                                          background: 'var(--primary-gradient)',
                                           padding: '16px',
                                           color: 'white',
                                           position: 'relative'
@@ -1472,7 +1472,7 @@ function ClassSectionAssigningContent() {
                                                 height: '100%',
                                                 background: section.student_count >= section.max_capacity
                                                   ? '#e53e3e'
-                                                  : 'var(--primary-medium, #38a169)',
+                                                  : 'var(--primary, #10b981)',
                                                 borderRadius: '3px'
                                               }} />
                                             </div>
@@ -1510,10 +1510,10 @@ function ClassSectionAssigningContent() {
                                                   {assignedCourses.length > 3 && (
                                                     <span style={{
                                                       padding: '2px 8px',
-                                                      background: 'var(--primary-light, #c6f6d5)',
+                                                      background: 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))',
                                                       borderRadius: '4px',
                                                       fontSize: '11px',
-                                                      color: 'var(--primary-dark, #276749)',
+                                                      color: 'var(--primary-dark, #059669)',
                                                       fontWeight: 600
                                                     }}>
                                                       +{assignedCourses.length - 3} more
@@ -1540,19 +1540,19 @@ function ClassSectionAssigningContent() {
                                             }}
                                             id="assign-courses-btn"
                                             onMouseEnter={(e) => {
-                                              e.currentTarget.style.background = 'var(--primary-light, #c6f6d5)'
-                                              e.currentTarget.style.borderColor = 'var(--primary-dark, #276749)'
+                                              e.currentTarget.style.background = 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))'
+                                              e.currentTarget.style.borderColor = 'var(--primary-dark, #059669)'
                                             }}
                                             onMouseLeave={(e) => {
                                               e.currentTarget.style.background = 'var(--bg-gray-50, #f7fafc)'
-                                              e.currentTarget.style.borderColor = 'var(--primary-medium, #38a169)'
+                                              e.currentTarget.style.borderColor = 'var(--primary, #10b981)'
                                             }}
                                             style={{
                                               width: '100%',
                                               padding: '10px',
                                               background: 'var(--bg-gray-50, #f7fafc)',
-                                              color: 'var(--primary-medium, #38a169)',
-                                              border: '1px dashed var(--primary-medium, #38a169)',
+                                              color: 'var(--primary, #10b981)',
+                                              border: '1px dashed var(--primary, #10b981)',
                                               borderRadius: '8px',
                                               fontWeight: 600,
                                               cursor: 'pointer',
@@ -1593,7 +1593,7 @@ function ClassSectionAssigningContent() {
                 style={{
                   marginTop: '16px',
                   padding: '12px 24px',
-                  background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                  background: 'var(--primary-gradient)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '10px',
@@ -2011,7 +2011,7 @@ function ClassSectionAssigningContent() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+              background: 'var(--primary-gradient)',
               color: 'white',
               borderRadius: '16px 16px 0 0'
             }}>
@@ -2118,13 +2118,13 @@ function ClassSectionAssigningContent() {
               {/* Info Box */}
               <div style={{
                 padding: '12px 16px',
-                background: 'var(--primary-light, #c6f6d5)',
+                background: 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))',
                 borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
                 fontSize: '13px',
-                color: 'var(--primary-dark, #276749)'
+                color: 'var(--primary-dark, #059669)'
               }}>
                 <CheckCircle size={18} />
                 <span>
@@ -2169,13 +2169,13 @@ function ClassSectionAssigningContent() {
                             width: '36px',
                             height: '36px',
                             borderRadius: '8px',
-                            background: 'var(--primary-light, #c6f6d5)',
+                            background: 'var(--primary-alpha, rgba(var(--primary-rgb, 16, 185, 129), 0.15))',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0
                           }}>
-                            <BookOpen size={18} style={{ color: 'var(--primary-dark, #276749)' }} />
+                            <BookOpen size={18} style={{ color: 'var(--primary-dark, #059669)' }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
@@ -2204,7 +2204,7 @@ function ClassSectionAssigningContent() {
                             </div>
                             <div style={{
                               fontSize: '10px',
-                              color: 'var(--primary-medium, #38a169)',
+                              color: 'var(--primary, #10b981)',
                               fontWeight: 500
                             }}>
                               {course.semester || 'N/A'}
@@ -2271,7 +2271,7 @@ function ClassSectionAssigningContent() {
                   padding: '12px 24px',
                   background: getCoursesForAssignment().length === 0
                     ? 'var(--bg-gray-200, #cbd5e0)'
-                    : 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                    : 'var(--primary-gradient)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '10px',
@@ -2307,8 +2307,8 @@ function LoadingFallback() {
       <div style={{
         width: '48px',
         height: '48px',
-        border: '4px solid rgba(56, 161, 105, 0.1)',
-        borderTopColor: '#38a169',
+        border: '4px solid rgba(var(--primary-rgb, 16, 185, 129), 0.1)',
+        borderTopColor: 'var(--primary, #10b981)',
         borderRadius: '50%',
         animation: 'spin 0.8s linear infinite'
       }}></div>
@@ -2325,4 +2325,5 @@ export default function ClassSectionAssigningPage() {
     </Suspense>
   )
 }
+
 

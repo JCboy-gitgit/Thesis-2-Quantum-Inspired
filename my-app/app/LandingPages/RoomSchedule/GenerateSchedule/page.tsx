@@ -529,6 +529,40 @@ function generateTimeSlots(settings: TimeSettings): TimeSlot[] {
   return slots
 }
 
+function normalizeSectionForCount(section: string): string {
+  return String(section || '')
+    .replace(/_LAB$/i, '')
+    .replace(/_LEC$/i, '')
+    .replace(/_LECTURE$/i, '')
+    .replace(/_LABORATORY$/i, '')
+    .replace(/_G[12](_LAB|_LEC|_LECTURE|_LABORATORY)?$/i, '')
+    .replace(/ G[12](\s+)?(LAB|LEC|LECTURE|LABORATORY)?$/i, '')
+    .replace(/, LAB$/i, '')
+    .replace(/, LEC$/i, '')
+    .replace(/, LECTURE$/i, '')
+    .replace(/, LABORATORY$/i, '')
+    .replace(/ LAB$/i, '')
+    .replace(/ LEC$/i, '')
+    .replace(/-LAB$/i, '')
+    .replace(/-LEC$/i, '')
+    .replace(/_/g, ' ')
+    .trim()
+}
+
+function buildCourseSectionCountKey(courseCode?: string, section?: string): string {
+  const code = String(courseCode || '').trim().toLowerCase()
+  const normalizedSection = normalizeSectionForCount(String(section || '')).toLowerCase()
+  return `${code}|${normalizedSection}`
+}
+
+function countUniqueCourseSections(rows: Array<{ course_code?: string; section?: string }>): number {
+  return new Set(
+    (rows || [])
+      .map((row) => buildCourseSectionCountKey(row.course_code, row.section))
+      .filter((key) => key !== '|')
+  ).size
+}
+
 export default function GenerateSchedulePage() {
   const router = useRouter()
   const { activeColleges: bulsuColleges } = useColleges()
@@ -2470,14 +2504,36 @@ export default function GenerateSchedulePage() {
         checkedAt: new Date().toISOString(),
       })
 
+      const sourceTotalClasses = countUniqueCourseSections(classes)
+      const scheduledClasses = countUniqueCourseSections(result.allocations || [])
+      const totalClasses = sourceTotalClasses > 0
+        ? sourceTotalClasses
+        : Number(result.total_classes || classes.length || 0)
+      const unscheduledClasses = Math.max(0, totalClasses - scheduledClasses)
+
+      if (Number(result.schedule_id) > 0) {
+        const { error: summarySyncError } = await (supabase
+          .from('generated_schedules') as any)
+          .update({
+            total_classes: totalClasses,
+            scheduled_classes: scheduledClasses,
+            unscheduled_classes: unscheduledClasses,
+          })
+          .eq('id', Number(result.schedule_id))
+
+        if (summarySyncError) {
+          console.warn('Failed to sync generated schedule counts:', summarySyncError)
+        }
+      }
+
       setScheduleResult({
         success: result.success,
         scheduleId: result.schedule_id,
         savedToDatabase: result.saved_to_database || false,
         message: result.message,
-        totalClasses: result.total_classes || classes.length,
-        scheduledClasses: result.scheduled_classes || 0,
-        unscheduledClasses: result.unscheduled_classes || 0,
+        totalClasses,
+        scheduledClasses,
+        unscheduledClasses,
         unscheduledList: result.unscheduled_list || [],
         conflicts: result.conflicts || [],
         optimizationStats: {
@@ -2515,8 +2571,8 @@ export default function GenerateSchedulePage() {
       setShowTimetable(true)
 
       // Show success notification with details
-      const scheduledCount = result.scheduled_classes || 0
-      const unscheduledCount = result.unscheduled_classes || 0
+      const scheduledCount = scheduledClasses
+      const unscheduledCount = unscheduledClasses
       const hardConflictCount = Number(result.optimization_stats?.conflict_count || 0)
 
       if (result.success && hardConflictCount === 0 && unscheduledCount === 0) {
@@ -3281,21 +3337,30 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statIcon}><FaLayerGroup /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.totalClasses}</span>
-                    <span className={styles.statLabel}>Total Allocations</span>
+                    <span className={styles.statLabel}>
+                      Total Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                 </div>
                 <div className={styles.statCard}>
                   <div className={styles.statIcon}><FaCheckCircle /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.scheduledClasses}</span>
-                    <span className={styles.statLabel}>Scheduled Allocations</span>
+                    <span className={styles.statLabel}>
+                      Scheduled Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                 </div>
                 <div className={styles.statCard}>
                   <div className={styles.statIcon}><FaExclamationTriangle /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.unscheduledClasses}</span>
-                    <span className={styles.statLabel}>Unscheduled Allocations</span>
+                    <span className={styles.statLabel}>
+                      Unscheduled Allocations
+                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                    </span>
                   </div>
                 </div>
                 <div className={styles.statCard}>

@@ -8,17 +8,16 @@
 :global([data-theme="green"]) .main {
   background: transparent;
   --card-bg: #ffffff;
-  --card-border: rgba(46, 175, 125, 0.25);
+  --card-border: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --bg-white: #ffffff;
   --bg-gray-50: rgba(240, 253, 244, 0.95);
   --bg-gray-100: rgba(193, 246, 237, 0.4);
-  --border-color: rgba(46, 175, 125, 0.25);
+  --border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   --text-dark: #02353c;
-  --text-secondary: #166534;
-  --text-light: #166534;
-  --primary: #2eaf7d;
-  --primary-gradient: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
-  --glow-color: rgba(46, 175, 125, 0.35);
+  --text-secondary: var(--primary-dark, #166534);
+  --text-light: var(--primary-dark, #166534);
+  --primary-gradient: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
+  --glow-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .headerIconWrapper,
@@ -37,12 +36,12 @@
 }
 
 :global([data-theme="green"]) .collegeCard {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
-  box-shadow: 0 10px 30px rgba(46, 175, 125, 0.25);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
+  box-shadow: 0 10px 30px rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .collegeCard:hover {
-  box-shadow: 0 14px 40px rgba(46, 175, 125, 0.35);
+  box-shadow: 0 14px 40px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 /* ==================== Layout ==================== */
@@ -276,7 +275,7 @@
 .collegeCard {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #00d4ff 0%, #00b4d8 50%, #0096c7 100%);
+  background: var(--primary-gradient);
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
@@ -287,7 +286,7 @@
 
 .collegeCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 12px 40px var(--glow-color);
 }
 
 .collegeCardContent {
@@ -412,7 +411,7 @@
 .fileCard {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #00d4ff 0%, #00b4d8 50%, #0096c7 100%);
+  background: var(--primary-gradient);
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
@@ -421,7 +420,7 @@
 
 .fileCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 12px 40px var(--glow-color);
 }
 
 .fileCardContent {
@@ -1403,13 +1402,13 @@
 :global([data-theme="green"]) .breadcrumb,
 :global([data-theme="green"]) .searchSection {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.3) 100%);
-  border-color: rgba(46, 175, 125, 0.35);
-  box-shadow: 0 6px 24px rgba(46, 175, 125, 0.12);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
+  box-shadow: 0 6px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.12);
 }
 
 :global([data-theme="green"]) .backBtn {
-  background: rgba(46, 175, 125, 0.12);
-  border-color: rgba(46, 175, 125, 0.35);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.12);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
   color: #02353c;
 }
 
@@ -1421,8 +1420,8 @@
 :global([data-theme="green"]) .headerIconWrapper,
 :global([data-theme="green"]) .addBtn,
 :global([data-theme="green"]) .btnSave {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
-  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.35);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .title,
@@ -1432,15 +1431,15 @@
 
 :global([data-theme="green"]) .subtitle,
 :global([data-theme="green"]) .statLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .statCard,
 :global([data-theme="green"]) .hierarchyCard,
 :global([data-theme="green"]) .facultyCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.25) 100%);
-  border-color: rgba(46, 175, 125, 0.25);
-  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.12);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.12);
 }
 
 :global([data-theme="green"]) .statIcon,
@@ -1448,7 +1447,7 @@
 :global([data-theme="green"]) .fileIcon,
 :global([data-theme="green"]) .facultyAvatar,
 :global([data-theme="green"]) .hierarchyAvatar {
-  background: linear-gradient(135deg, rgba(46, 175, 125, 0.2) 0%, rgba(193, 246, 237, 0.45) 100%);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 46, 175, 125), 0.2) 0%, rgba(193, 246, 237, 0.45) 100%);
   color: #02353c;
 }
 
@@ -1458,8 +1457,8 @@
 
 :global([data-theme="green"]) .collegeCard,
 :global([data-theme="green"]) .fileCard {
-  background: linear-gradient(135deg, #449342 0%, #2eaf7d 50%, #3fd0c9 100%);
-  box-shadow: 0 12px 36px rgba(46, 175, 125, 0.3);
+  background: linear-gradient(135deg, var(--primary-dark, #449342) 0%, var(--primary, #2EAF7D) 50%, var(--primary-light, #3FD0C9) 100%);
+  box-shadow: 0 12px 36px rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 :global([data-theme="green"]) .collegeInfo h4,
@@ -1480,7 +1479,7 @@
 :global([data-theme="green"]) .formSelect,
 :global([data-theme="green"]) .formTextarea {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.35);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
   color: #02353c;
 }
 
@@ -1489,7 +1488,7 @@
 :global([data-theme="green"]) .formInput:focus,
 :global([data-theme="green"]) .formSelect:focus,
 :global([data-theme="green"]) .formTextarea:focus {
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .hierarchyInfo h4,
@@ -1502,25 +1501,25 @@
 :global([data-theme="green"]) .hierarchyEmail,
 :global([data-theme="green"]) .facultyInfo p,
 :global([data-theme="green"]) .facultyEmail {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .paginationBtn {
   background: #ffffff;
-  border-color: rgba(46, 175, 125, 0.35);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .paginationBtn:hover:not(:disabled) {
-  border-color: #2eaf7d;
-  color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .emptyState,
 :global([data-theme="green"]) .modalContent {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(193, 246, 237, 0.35) 100%);
-  border-color: rgba(46, 175, 125, 0.35);
-  box-shadow: 0 8px 24px rgba(46, 175, 125, 0.2);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .emptyState h3 {
@@ -1528,11 +1527,11 @@
 }
 
 :global([data-theme="green"]) .emptyState p {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .modalHeader {
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .modalHeader h3 {
@@ -1540,21 +1539,21 @@
 }
 
 :global([data-theme="green"]) .modalClose {
-  background: rgba(46, 175, 125, 0.15);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .modalFooter {
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
 }
 
 :global([data-theme="green"]) .btnCancel {
-  border-color: rgba(46, 175, 125, 0.35);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.35);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .btnCancel:hover {
-  background: rgba(46, 175, 125, 0.15);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.15);
 }
 
 /* ==================== Responsive ==================== */
@@ -1631,11 +1630,10 @@
 :global([data-theme="light"]) .main {
   background: transparent;
   --card-bg: rgba(255, 255, 255, 0.98);
-  --card-border: rgba(0, 166, 81, 0.2);
+  --card-border: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   --text-dark: #1a1a1a;
   --text-secondary: #4a5568;
-  --primary: #00a651;
-  --primary-gradient: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  --primary-gradient: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
 }
 
 :global([data-theme="light"]) .header,
@@ -1645,7 +1643,7 @@
 :global([data-theme="light"]) .detailCard,
 :global([data-theme="light"]) .memberCard {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
@@ -1664,31 +1662,31 @@
 :global([data-theme="light"]) .searchInput,
 :global([data-theme="light"]) .filterSelect {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .searchInput:focus,
 :global([data-theme="light"]) .filterSelect:focus {
-  border-color: #00a651;
-  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.15);
+  border-color: var(--primary, #00a651);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .backBtn {
   background: rgba(255, 255, 255, 0.98);
   color: #1a1a1a;
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .backBtn:hover {
-  background: #00a651;
+  background: var(--primary, #00a651);
   color: white;
 }
 
 :global([data-theme="light"]) .emptyState,
 :global([data-theme="light"]) .loadingState {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .emptyState h3,
@@ -1701,20 +1699,20 @@
 }
 
 :global([data-theme="light"]) .facultyIdBadge {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
   color: white;
 }
 
 :global([data-theme="light"]) .memberCard,
 :global([data-theme="light"]) .facultyCard {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 :global([data-theme="light"]) .memberCard:hover,
 :global([data-theme="light"]) .facultyCard:hover {
-  border-color: #00a651;
-  box-shadow: 0 8px 24px rgba(0, 166, 81, 0.15);
+  border-color: var(--primary, #00a651);
+  box-shadow: 0 8px 24px rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .memberName,
@@ -2038,54 +2036,54 @@
 /* ==================== Green Theme Export Styles ==================== */
 :global([data-theme="green"]) .exportBtn {
   background: rgba(193, 246, 237, 0.4);
-  border-color: rgba(46, 175, 125, 0.3);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .exportBtn:hover {
   background: var(--primary-gradient);
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
   color: white;
-  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .exportInfo {
   background: rgba(193, 246, 237, 0.3);
-  border-color: rgba(46, 175, 125, 0.25);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
   color: #02353c;
 }
 
 :global([data-theme="green"]) .exportSectionLabel {
-  color: #166534;
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .formatBtn {
   background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(46, 175, 125, 0.25);
-  color: #166534;
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.25);
+  color: var(--primary-dark, #166534);
 }
 
 :global([data-theme="green"]) .formatBtn:hover {
-  border-color: #2eaf7d;
-  color: #2eaf7d;
-  background: rgba(46, 175, 125, 0.08);
+  border-color: var(--primary, #2EAF7D);
+  color: var(--primary, #2EAF7D);
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.08);
 }
 
 :global([data-theme="green"]) .formatBtn.active {
   background: var(--primary-gradient);
-  border-color: #2eaf7d;
+  border-color: var(--primary, #2EAF7D);
   color: white;
-  box-shadow: 0 4px 12px rgba(46, 175, 125, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 46, 175, 125), 0.35);
 }
 
 :global([data-theme="green"]) .exportCheckbox {
   background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(46, 175, 125, 0.2);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.2);
 }
 
 :global([data-theme="green"]) .exportCheckbox:hover {
-  background: rgba(46, 175, 125, 0.08);
-  border-color: #2eaf7d;
+  background: rgba(var(--primary-rgb, 46, 175, 125), 0.08);
+  border-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .exportCheckbox span {
@@ -2093,11 +2091,11 @@
 }
 
 :global([data-theme="green"]) .exportCheckbox input[type="checkbox"] {
-  accent-color: #2eaf7d;
+  accent-color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="green"]) .exportPreviewWrapper {
-  border-color: rgba(46, 175, 125, 0.3);
+  border-color: rgba(var(--primary-rgb, 46, 175, 125), 0.3);
 }
 
 /* ==================== Dark Theme Export Styles ==================== */
@@ -2168,20 +2166,20 @@
 /* ==================== Light Theme Export Styles ==================== */
 :global([data-theme="light"]) .exportBtn {
   background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 166, 81, 0.25);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.25);
   color: #1a1a1a;
 }
 
 :global([data-theme="light"]) .exportBtn:hover {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
-  border-color: #00a651;
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
+  border-color: var(--primary, #00a651);
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 0, 166, 81), 0.35);
 }
 
 :global([data-theme="light"]) .exportInfo {
   background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #1a1a1a;
 }
 
@@ -2191,31 +2189,31 @@
 
 :global([data-theme="light"]) .formatBtn {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
   color: #4a5568;
 }
 
 :global([data-theme="light"]) .formatBtn:hover {
-  border-color: #00a651;
-  color: #00a651;
-  background: rgba(0, 166, 81, 0.05);
+  border-color: var(--primary, #00a651);
+  color: var(--primary, #00a651);
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.05);
 }
 
 :global([data-theme="light"]) .formatBtn.active {
-  background: linear-gradient(135deg, #005826 0%, #00a651 100%);
-  border-color: #00a651;
+  background: linear-gradient(135deg, var(--primary-dark, #005826) 0%, var(--primary, #00a651) 100%);
+  border-color: var(--primary, #00a651);
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.35);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb, 0, 166, 81), 0.35);
 }
 
 :global([data-theme="light"]) .exportCheckbox {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(0, 166, 81, 0.15);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.15);
 }
 
 :global([data-theme="light"]) .exportCheckbox:hover {
-  background: rgba(0, 166, 81, 0.05);
-  border-color: #00a651;
+  background: rgba(var(--primary-rgb, 0, 166, 81), 0.05);
+  border-color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .exportCheckbox span {
@@ -2223,11 +2221,11 @@
 }
 
 :global([data-theme="light"]) .exportCheckbox input[type="checkbox"] {
-  accent-color: #00a651;
+  accent-color: var(--primary, #00a651);
 }
 
 :global([data-theme="light"]) .exportPreviewWrapper {
-  border-color: rgba(0, 166, 81, 0.2);
+  border-color: rgba(var(--primary-rgb, 0, 166, 81), 0.2);
 }
 
 /* ==================== Email Suggestions Autocomplete ==================== */
@@ -2334,7 +2332,7 @@
 }
 
 :global([data-theme="green"]) .folderIconSmall {
-  color: #2eaf7d;
+  color: var(--primary, #2EAF7D);
 }
 
 :global([data-theme="dark"]) .folderIconSmall {
@@ -2343,7 +2341,7 @@
 
 /* Move Modal Header Styling for Green Theme */
 :global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] {
-  background: linear-gradient(135deg, #276749 0%, #38a169 50%, #2EAF7D 100%);
+  background: linear-gradient(135deg, #276749 0%, #38a169 50%, var(--primary, #2EAF7D) 100%);
   color: #ffffff;
 }
 
@@ -2359,3 +2357,7 @@
 :global([data-theme="green"]) .modalHeader[data-modal-header="move-file"] .modalClose:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+
+
+

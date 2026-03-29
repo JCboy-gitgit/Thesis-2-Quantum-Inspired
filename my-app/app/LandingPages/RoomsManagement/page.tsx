@@ -7,7 +7,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import { useColleges } from '@/app/context/CollegesContext'
-import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdPalette, MdLabel, MdDescription } from 'react-icons/md'
+import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdLabel, MdDescription } from 'react-icons/md'
 import { SiGoogleclassroom } from 'react-icons/si'
 import styles from './styles.module.css'
 
@@ -61,16 +61,6 @@ interface RoomImage {
   uploaded_at: string
 }
 
-// Color presets for folder customization
-const FOLDER_COLORS = [
-  { name: 'Green', gradient: 'linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%)' },
-  { name: 'Blue', gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)' },
-  { name: 'Purple', gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%)' },
-  { name: 'Orange', gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)' },
-  { name: 'Pink', gradient: 'linear-gradient(135deg, #db2777 0%, #ec4899 50%, #f472b6 100%)' },
-  { name: 'Teal', gradient: 'linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%)' }
-]
-
 // ==================== HELPERS ====================
 
 const displayValue = (value: any, defaultVal: string = 'None'): string => {
@@ -111,16 +101,36 @@ const getRoomStatusInfo = (status: string | null | undefined) => {
     case 'usable':
     case 'available':
     case 'active':
-      return { label: 'Usable', color: '#059669', bgColor: '#d1fae5', icon: 'check' as const }
+      return {
+        label: 'Usable',
+        color: 'var(--primary-dark, #059669)',
+        bgColor: 'var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.15))',
+        icon: 'check' as const,
+      }
     case 'not_usable':
     case 'unavailable':
     case 'inactive':
-      return { label: 'Not Usable', color: '#dc2626', bgColor: '#fee2e2', icon: 'x' as const }
+      return {
+        label: 'Not Usable',
+        color: 'var(--error, #dc2626)',
+        bgColor: 'rgba(239, 68, 68, 0.12)',
+        icon: 'x' as const,
+      }
     case 'maintenance':
     case 'under_maintenance':
-      return { label: 'Maintenance', color: '#d97706', bgColor: '#fef3c7', icon: 'wrench' as const }
+      return {
+        label: 'Maintenance',
+        color: 'var(--warning-orange, #d97706)',
+        bgColor: 'var(--warning-bg, #fef3c7)',
+        icon: 'wrench' as const,
+      }
     default:
-      return { label: 'Usable', color: '#059669', bgColor: '#d1fae5', icon: 'check' as const }
+      return {
+        label: 'Usable',
+        color: 'var(--primary-dark, #059669)',
+        bgColor: 'var(--primary-alpha, rgba(var(--primary-rgb, 0, 166, 81), 0.15))',
+        icon: 'check' as const,
+      }
   }
 }
 
@@ -166,10 +176,6 @@ export default function RoomsManagementPage() {
   const [showDeleteFileModal, setShowDeleteFileModal] = useState(false)
   const [fileToDelete, setFileToDelete] = useState<CampusFile | null>(null)
   const [deletingFile, setDeletingFile] = useState(false)
-
-  // Color customization states
-  const [folderColors, setFolderColors] = useState<Record<string, string>>({})
-  const [showColorPicker, setShowColorPicker] = useState<string | null>(null)
 
   // Room detail modal states
   const [showRoomDetail, setShowRoomDetail] = useState(false)
@@ -366,37 +372,6 @@ export default function RoomsManagementPage() {
       setAllRooms([])
     }
   }
-
-  // ==================== COLOR CUSTOMIZATION ====================
-
-  const getFolderColor = (key: string): string => {
-    return folderColors[key] || FOLDER_COLORS[0].gradient
-  }
-
-  const handleColorSelect = (key: string, color: string) => {
-    setFolderColors(prev => ({ ...prev, [key]: color }))
-    setShowColorPicker(null)
-    // Store in localStorage for persistence
-    try {
-      const stored = JSON.parse(localStorage.getItem('roomFolderColors') || '{}')
-      stored[key] = color
-      localStorage.setItem('roomFolderColors', JSON.stringify(stored))
-    } catch (e) {
-      console.error('Error saving folder colors:', e)
-    }
-  }
-
-  // Load saved colors on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('roomFolderColors')
-      if (stored) {
-        setFolderColors(JSON.parse(stored))
-      }
-    } catch (e) {
-      console.error('Error loading folder colors:', e)
-    }
-  }, [])
 
   // ==================== ROOM DETAIL & IMAGES ====================
 
@@ -1403,38 +1378,12 @@ export default function RoomsManagementPage() {
               ) : (
                 <div className={styles.fileGrid} id="rooms-file-grid">
                   {campusFiles.map(file => {
-                    const fileKey = `file-${file.upload_group_id}`
                     return (
                       <div
                         key={file.upload_group_id}
                         className={styles.fileCard}
-                        style={{ background: getFolderColor(fileKey) }}
                         onClick={() => handleSelectFile(file)}
                       >
-                        {/* Color Picker */}
-                        <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                          <button
-                            className={styles.colorPickerBtn}
-                            style={{ background: getFolderColor(fileKey) }}
-                            onClick={() => setShowColorPicker(showColorPicker === fileKey ? null : fileKey)}
-                          >
-                            <MdPalette size={16} color="white" />
-                          </button>
-                          {showColorPicker === fileKey && (
-                            <div className={styles.colorPickerMenu}>
-                              {FOLDER_COLORS.map(c => (
-                                <div
-                                  key={c.name}
-                                  className={`${styles.colorOption} ${getFolderColor(fileKey) === c.gradient ? styles.selected : ''}`}
-                                  style={{ background: c.gradient }}
-                                  onClick={() => handleColorSelect(fileKey, c.gradient)}
-                                  title={c.name}
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
                         <div className={styles.fileCardContent}>
                           <div className={styles.fileIcon}>
                             <MdSchool size={24} />
@@ -1470,38 +1419,12 @@ export default function RoomsManagementPage() {
               {Array.from(campusGroups.entries()).map(([campusName, rooms]) => {
                 const buildings = new Set(rooms.map(r => r.building)).size
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
-                const campusKey = `campus-${campusName}`
                 return (
                   <div
                     key={campusName}
                     className={styles.campusCard}
-                    style={{ background: getFolderColor(campusKey) }}
                     onClick={() => handleSelectCampus(campusName)}
                   >
-                    {/* Color Picker */}
-                    <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className={styles.colorPickerBtn}
-                        style={{ background: getFolderColor(campusKey) }}
-                        onClick={() => setShowColorPicker(showColorPicker === campusKey ? null : campusKey)}
-                      >
-                        <MdPalette size={16} color="white" />
-                      </button>
-                      {showColorPicker === campusKey && (
-                        <div className={styles.colorPickerMenu}>
-                          {FOLDER_COLORS.map(c => (
-                            <div
-                              key={c.name}
-                              className={`${styles.colorOption} ${getFolderColor(campusKey) === c.gradient ? styles.selected : ''}`}
-                              style={{ background: c.gradient }}
-                              onClick={() => handleColorSelect(campusKey, c.gradient)}
-                              title={c.name}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
                     <div className={styles.campusCardContent}>
                       <div className={styles.campusIcon}>
                         <MdLocationOn size={24} />
@@ -1526,38 +1449,12 @@ export default function RoomsManagementPage() {
               {Array.from(buildingsForCampus.entries()).map(([buildingName, rooms]) => {
                 const floors = new Set(rooms.map(r => r.floor_number).filter(f => f !== null)).size
                 const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
-                const buildingKey = `building-${selectedCampusName}-${buildingName}`
                 return (
                   <div
                     key={buildingName}
                     className={styles.buildingCard}
-                    style={{ background: getFolderColor(buildingKey) }}
                     onClick={() => handleSelectBuilding(buildingName)}
                   >
-                    {/* Color Picker */}
-                    <div className={styles.colorPicker} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className={styles.colorPickerBtn}
-                        style={{ background: getFolderColor(buildingKey) }}
-                        onClick={() => setShowColorPicker(showColorPicker === buildingKey ? null : buildingKey)}
-                      >
-                        <MdPalette size={16} color="white" />
-                      </button>
-                      {showColorPicker === buildingKey && (
-                        <div className={styles.colorPickerMenu}>
-                          {FOLDER_COLORS.map(c => (
-                            <div
-                              key={c.name}
-                              className={`${styles.colorOption} ${getFolderColor(buildingKey) === c.gradient ? styles.selected : ''}`}
-                              style={{ background: c.gradient }}
-                              onClick={() => handleColorSelect(buildingKey, c.gradient)}
-                              title={c.name}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
                     <div className={styles.buildingCardContent}>
                       <div className={styles.buildingIcon}>
                         <MdDomain size={24} />

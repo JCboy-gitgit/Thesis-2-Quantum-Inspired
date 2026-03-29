@@ -182,7 +182,12 @@ const TOOLBOX_ITEMS = {
 
 export default function MapViewerPage() {
   const router = useRouter()
-  const { theme: globalTheme } = useTheme() // Use global theme from context
+  const { theme: globalTheme, iconColor } = useTheme() // Use global theme and admin accent from context
+  const [accentColors, setAccentColors] = useState({
+    primary: '#10b981',
+    primaryDark: '#16a34a',
+    primaryLight: '#34d399'
+  })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [menuBarHidden, setMenuBarHidden] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -469,6 +474,7 @@ export default function MapViewerPage() {
     } else if (dragItem.type === 'toolbox') {
       const item = dragItem.data
       const isTextItem = item.type === 'text'
+      const itemColor = item.type === 'door' ? accentColors.primary : item.color
       const newElement: CanvasElement = {
         id: generateId(),
         type: item.type,
@@ -478,10 +484,10 @@ export default function MapViewerPage() {
         height: item.height || 60,
         rotation: 0,
         label: item.label,
-        color: item.color,
-        borderColor: item.color,
-        textColor: isTextItem ? '#1f2937' : getContrastColor(item.color || '#1f2937'),
-        iconColor: isTextItem ? '#1f2937' : getContrastColor(item.color || '#1f2937'),
+        color: itemColor,
+        borderColor: itemColor,
+        textColor: isTextItem ? '#1f2937' : getContrastColor(itemColor || '#1f2937'),
+        iconColor: isTextItem ? '#1f2937' : getContrastColor(itemColor || '#1f2937'),
         textBackgroundOpacity: isTextItem ? 0 : undefined,
         zIndex: canvasElements.length + 1
       }
@@ -517,9 +523,9 @@ export default function MapViewerPage() {
         height: 60,
         rotation: 0,
         label: shapeOption.label,
-        color: '#10b981',
-        textColor: getContrastColor('#10b981'),
-        iconColor: getContrastColor('#10b981'),
+        color: accentColors.primary,
+        textColor: getContrastColor(accentColors.primary),
+        iconColor: getContrastColor(accentColors.primary),
         shapeType: shapeOption.name,
         zIndex: canvasElements.length + 1
       }
@@ -530,7 +536,7 @@ export default function MapViewerPage() {
     setDragItem(null)
     setIsDragging(false)
     setDragGhost(null)
-  }, [viewMode, dragItem, zoom, canvasElements])
+  }, [viewMode, dragItem, zoom, canvasElements, accentColors])
 
   useEffect(() => {
     if (!pointerDragActive) return
@@ -773,6 +779,70 @@ export default function MapViewerPage() {
     textBackgroundOpacity: 0,
     borderWidth: 2
   })
+
+  const syncAccentColors = useCallback(() => {
+    if (typeof window === 'undefined') return
+
+    const isValidHexColor = (value: string | null): value is string => !!value && /^#[0-9A-Fa-f]{6}$/.test(value)
+    const hexToRgb = (hex: string) => {
+      const normalized = hex.replace('#', '')
+      const r = parseInt(normalized.slice(0, 2), 16)
+      const g = parseInt(normalized.slice(2, 4), 16)
+      const b = parseInt(normalized.slice(4, 6), 16)
+      return { r, g, b }
+    }
+    const mixWith = (hex: string, mixHex: string, weight: number) => {
+      const base = hexToRgb(hex)
+      const mix = hexToRgb(mixHex)
+      const clamped = Math.max(0, Math.min(1, weight))
+      const r = Math.round(base.r * (1 - clamped) + mix.r * clamped)
+      const g = Math.round(base.g * (1 - clamped) + mix.g * clamped)
+      const b = Math.round(base.b * (1 - clamped) + mix.b * clamped)
+      return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+    }
+
+    const canUseCustomAccent =
+      isValidHexColor(iconColor) &&
+      globalTheme === 'light'
+
+    if (canUseCustomAccent) {
+      setAccentColors({
+        primary: iconColor,
+        primaryDark: mixWith(iconColor, '#000000', 0.32),
+        primaryLight: mixWith(iconColor, '#ffffff', 0.32)
+      })
+      return
+    }
+
+    const rootStyles = getComputedStyle(document.documentElement)
+    const readColor = (varName: string, fallback: string) => rootStyles.getPropertyValue(varName).trim() || fallback
+
+    setAccentColors({
+      primary: readColor('--primary', '#10b981'),
+      primaryDark: readColor('--primary-dark', '#16a34a'),
+      primaryLight: readColor('--primary-light', '#34d399')
+    })
+  }, [iconColor, globalTheme])
+
+  useEffect(() => {
+    syncAccentColors()
+    if (typeof window === 'undefined') return
+
+    const observer = new MutationObserver(syncAccentColors)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style', 'class', 'data-theme']
+    })
+
+    if (document.body) {
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['style', 'class', 'data-theme']
+      })
+    }
+
+    return () => observer.disconnect()
+  }, [syncAccentColors])
 
   // Sync canvas background with global theme
   useEffect(() => {
@@ -1346,6 +1416,13 @@ export default function MapViewerPage() {
 
   const getRoomColor = (roomType?: string) => {
     const type = normalizeRoomType(roomType)
+    if (type === 'library') {
+      return {
+        ...ROOM_TYPE_COLORS.library,
+        bg: accentColors.primary,
+        border: accentColors.primaryDark
+      }
+    }
     return ROOM_TYPE_COLORS[type] || ROOM_TYPE_COLORS.default
   }
 
@@ -3051,7 +3128,7 @@ export default function MapViewerPage() {
 
       // Large Q box
       const wSize = Math.min(pageW, pageH) * sf * 0.35
-      ctx.fillStyle = '#16a34a'
+      ctx.fillStyle = accentColors.primaryDark
       const radius = wSize * 0.12
       const qX = -wSize / 2
       const qY = -wSize / 2
@@ -3076,7 +3153,7 @@ export default function MapViewerPage() {
       ctx.fillText('Q', 0, 0)
 
       // "time" text below
-      ctx.fillStyle = '#16a34a'
+      ctx.fillStyle = accentColors.primaryDark
       ctx.font = `bold ${wSize * 0.22}px Arial`
       ctx.fillText('time', 0, wSize / 2 + wSize * 0.15)
 
@@ -3170,7 +3247,7 @@ export default function MapViewerPage() {
         ctx.drawImage(logoImageRef.current, qX, qY, wSize, wSize)
       } else {
         // Fallback if image not loaded
-        ctx.fillStyle = '#16a34a'
+        ctx.fillStyle = accentColors.primaryDark
         const radius = wSize * 0.12
         ctx.beginPath()
         if (ctx.roundRect) {
@@ -3375,7 +3452,7 @@ export default function MapViewerPage() {
 
       if (showScheduleOverlay) {
         lx += 5 * sf
-        ctx.fillStyle = '#22c55e'
+        ctx.fillStyle = accentColors.primary
         ctx.beginPath()
         ctx.arc(lx, legendY2 - 1.5 * sf, 1.5 * sf, 0, Math.PI * 2)
         ctx.fill()
@@ -3419,7 +3496,7 @@ export default function MapViewerPage() {
     if (logoImageRef.current) {
       ctx.drawImage(logoImageRef.current, boxX, boxY, boxS, boxS)
     } else {
-      ctx.fillStyle = '#16a34a'
+      ctx.fillStyle = accentColors.primaryDark
       ctx.beginPath()
       if (ctx.roundRect) {
         ctx.roundRect(boxX, boxY, boxS, boxS, 1.2 * sf)
@@ -3444,7 +3521,7 @@ export default function MapViewerPage() {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canvasSize, exportSettings, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan, legendItems])
+  }, [canvasSize, exportSettings, floorPlanName, selectedBuilding, selectedFloor, schedules, selectedScheduleId, canvasBackground, currentFloorPlan, legendItems, accentColors])
 
   // Re-render preview when settings change
   useEffect(() => {

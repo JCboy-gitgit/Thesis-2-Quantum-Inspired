@@ -198,26 +198,65 @@ export async function PATCH(request: Request) {
         }
       }
 
-      // Update faculty_profiles if the email matches
+      // Update faculty_profiles only via stable identity mapping (user_id/id), never by email.
       // faculty_profiles has different fields: full_name, position, role, department, college, email, phone, etc.
       const facultyProfileFields = ['full_name', 'position', 'role', 'department', 'college', 'phone', 'office_location', 'employment_type', 'bio', 'specialization', 'education']
       if (facultyProfileFields.includes(changeRequest.field_name)) {
-        const { error: facultyUpdateError } = await supabaseAdmin
-          .from('faculty_profiles')
-          .update({
-            [changeRequest.field_name]: changeRequest.requested_value,
-            updated_at: new Date().toISOString()
-          })
-          .eq('email', changeRequest.email)
+        let targetFacultyProfileId: string | null = null
 
-        if (facultyUpdateError) {
-          console.warn('Faculty profile update skipped:', facultyUpdateError?.message || facultyUpdateError?.code || 'Unknown error', facultyUpdateError?.hint || '')
-          // If this is the primary target table for this field, return error
+        const { data: profileByUserId, error: profileByUserIdError } = await supabaseAdmin
+          .from('faculty_profiles')
+          .select('id')
+          .eq('user_id', changeRequest.user_id)
+          .maybeSingle()
+
+        if (profileByUserIdError && profileByUserIdError.code !== 'PGRST116') {
+          console.warn('Faculty profile lookup by user_id failed:', profileByUserIdError)
+        }
+
+        if (profileByUserId?.id) {
+          targetFacultyProfileId = String(profileByUserId.id)
+        } else {
+          const { data: profileById, error: profileByIdError } = await supabaseAdmin
+            .from('faculty_profiles')
+            .select('id')
+            .eq('id', changeRequest.user_id)
+            .maybeSingle()
+
+          if (profileByIdError && profileByIdError.code !== 'PGRST116') {
+            console.warn('Faculty profile lookup by id failed:', profileByIdError)
+          }
+
+          if (profileById?.id) {
+            targetFacultyProfileId = String(profileById.id)
+          }
+        }
+
+        if (!targetFacultyProfileId) {
           if (!usersTableFields.includes(changeRequest.field_name)) {
             return NextResponse.json(
-              { error: `Failed to update faculty profile: ${facultyUpdateError.message}` },
+              { error: 'Failed to locate linked faculty profile by user mapping.' },
               { status: 500 }
             )
+          }
+        } else {
+          const { error: facultyUpdateError } = await supabaseAdmin
+            .from('faculty_profiles')
+            .update({
+              [changeRequest.field_name]: changeRequest.requested_value,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', targetFacultyProfileId)
+
+          if (facultyUpdateError) {
+            console.warn('Faculty profile update skipped:', facultyUpdateError?.message || facultyUpdateError?.code || 'Unknown error', facultyUpdateError?.hint || '')
+            // If this is the primary target table for this field, return error
+            if (!usersTableFields.includes(changeRequest.field_name)) {
+              return NextResponse.json(
+                { error: `Failed to update faculty profile: ${facultyUpdateError.message}` },
+                { status: 500 }
+              )
+            }
           }
         }
       }

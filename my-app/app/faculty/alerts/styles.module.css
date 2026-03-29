@@ -184,3 +184,5 @@
 :global([data-theme="light"]) .iconBadge {
   box-shadow: 0 8px 16px rgba(var(--college-primary-rgb, 8, 145, 178), 0.2);
 }
+
+

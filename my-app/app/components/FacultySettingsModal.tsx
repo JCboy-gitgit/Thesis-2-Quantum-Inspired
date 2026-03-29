@@ -4,7 +4,7 @@
 // Theme-aware modal that respects light/dark mode
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { MdClose, MdDarkMode, MdLightMode, MdMonitor } from 'react-icons/md'
+import { MdClose, MdDarkMode, MdLightMode, MdMonitor, MdPalette } from 'react-icons/md'
 import { useTheme } from '../context/ThemeContext'
 
 interface FacultySettingsModalProps {
@@ -13,7 +13,8 @@ interface FacultySettingsModalProps {
 }
 
 function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
-  const { theme, collegeTheme, setTheme, setCollegeTheme } = useTheme()
+  const { theme, collegeTheme, iconColor, setTheme, setCollegeTheme, setIconColor } = useTheme()
+  const [showLightIconPicker, setShowLightIconPicker] = useState(false)
 
   // For faculty pages, 'green' is treated as 'light' mode (green is only for admin)
   const displayMode = theme === 'dark' ? 'dark' : 'light'
@@ -96,6 +97,9 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
       iconColor: '#92400e'
     }
   ]
+
+  const iconPalettePresets = ['#0ea5e9', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#111827']
+  const effectiveLightIconColor = iconColor || '#92400e'
 
   // Theme-aware colors - now uses current college theme color
   const colors = {
@@ -304,9 +308,13 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
           {/* Display Modes */}
           {displayModes.map((mode) => {
             const isModeActive = displayMode === mode.id
+            const isLightModeOption = mode.id === 'light'
+            const modeIconColor = isLightModeOption ? effectiveLightIconColor : mode.iconColor
             return (
-              <button
+              <div
                 key={mode.id}
+                role="button"
+                tabIndex={0}
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -321,6 +329,12 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
                   transition: 'all 0.2s',
                 }}
                 onClick={() => handleThemeChange(mode.id as 'light' | 'dark')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleThemeChange(mode.id as 'light' | 'dark')
+                  }
+                }}
                 onMouseEnter={(e) => {
                   if (!isModeActive) {
                     e.currentTarget.style.background = colors.optionHoverBg
@@ -344,7 +358,7 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
                   justifyContent: 'center',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                 }}>
-                  <mode.icon size={28} color={mode.iconColor} />
+                  <mode.icon size={28} color={modeIconColor} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'left' }}>
                   <div style={{ color: colors.textPrimary, fontSize: '1rem', fontWeight: 600, marginBottom: '4px' }}>
@@ -354,6 +368,41 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
                     {mode.description}
                   </div>
                 </div>
+                {isLightModeOption && (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Choose icon color"
+                    title="Choose icon color"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '999px',
+                      border: `2px solid ${colors.optionBorder}`,
+                      background: isLightMode
+                        ? '#ffffff'
+                        : 'rgba(255, 255, 255, 0.08)',
+                      color: effectiveLightIconColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowLightIconPicker((prev) => !prev)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setShowLightIconPicker((prev) => !prev)
+                      }
+                    }}
+                  >
+                    <MdPalette size={18} />
+                  </div>
+                )}
                 {isModeActive && (
                   <span style={{
                     padding: '6px 12px',
@@ -368,9 +417,79 @@ function FacultySettingsModalContent({ onClose }: { onClose: () => void }) {
                     Active
                   </span>
                 )}
-              </button>
+              </div>
             )
           })}
+
+          {showLightIconPicker && (
+            <div style={{
+              marginTop: '-4px',
+              marginBottom: '12px',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              border: `1px solid ${colors.optionBorder}`,
+              background: colors.optionBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {iconPalettePresets.map((paletteColor) => {
+                  const isSelected = effectiveLightIconColor.toLowerCase() === paletteColor.toLowerCase()
+                  return (
+                    <button
+                      key={paletteColor}
+                      type="button"
+                      onClick={() => setIconColor(paletteColor)}
+                      title={`Set icon color ${paletteColor}`}
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '999px',
+                        border: isSelected
+                          ? `2px solid ${colors.textPrimary}`
+                          : `1px solid ${colors.optionBorder}`,
+                        background: paletteColor,
+                        cursor: 'pointer',
+                      }}
+                    />
+                  )
+                })}
+                <input
+                  type="color"
+                  value={effectiveLightIconColor}
+                  onChange={(e) => setIconColor(e.target.value)}
+                  title="Custom icon color"
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '999px',
+                    border: `1px solid ${colors.optionBorder}`,
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    padding: '0',
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIconColor(null)}
+                style={{
+                  border: `1px solid ${colors.optionBorder}`,
+                  background: 'transparent',
+                  color: colors.textSecondary,
+                  borderRadius: '999px',
+                  padding: '6px 10px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
