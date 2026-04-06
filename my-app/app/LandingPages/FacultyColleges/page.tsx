@@ -213,7 +213,7 @@ function EditIcon({ className }: { className?: string }) {
 function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+      <path d="M20.54 5.23 19.15 3.5C18.88 3.17 18.49 3 18.06 3H5.94c-.43 0-.82.17-1.09.5L3.46 5.23C3.17 5.57 3 5.98 3 6.41V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.41c0-.43-.17-.84-.46-1.18zM12 17l-4-4h2.5v-3h3v3H16l-4 4zm-6.12-12 .81-1h10.62l.81 1H5.88z" />
     </svg>
   )
 }
@@ -610,6 +610,27 @@ function FacultyCollegesContent() {
     }
   }
 
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      void fetchColleges()
+      void fetchAllFaculty()
+      if (selectedCollege) {
+        void fetchFilesForCollege(selectedCollege.college || selectedCollege.department_name)
+      }
+      if (selectedFile) {
+        void fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
+      }
+    }
+
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [selectedCollege, selectedFile])
+
   // ==================== NAVIGATION HANDLERS ====================
   const handleSelectCollege = (college: College) => {
     setSelectedCollege(college)
@@ -745,18 +766,18 @@ function FacultyCollegesContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
-      setSuccessMessage(`"${selectedCollege.department_name}" has been archived and deleted`)
+      setSuccessMessage(`"${selectedCollege.department_name}" has been archived`)
       setShowDeleteCollegeConfirm(false)
       setSelectedCollege(null)
       setCurrentView('colleges')
       fetchColleges()
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
-      console.error('Error deleting college:', error)
-      alert(`Failed to delete college: ${error.message}`)
+      console.error('Error archiving college:', error)
+      alert(`Failed to archive college: ${error.message}`)
     } finally {
       setDeleting(false)
     }
@@ -829,10 +850,10 @@ function FacultyCollegesContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
-      setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived and deleted`)
+      setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived`)
       setShowDeleteFileConfirm(false)
       setSelectedFile(null)
       if (selectedCollege) {
@@ -840,8 +861,8 @@ function FacultyCollegesContent() {
       }
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
-      console.error('Error deleting file:', error)
-      alert(`Failed to delete file: ${error.message}`)
+      console.error('Error archiving file:', error)
+      alert(`Failed to archive file: ${error.message}`)
     } finally {
       setDeleting(false)
     }
@@ -1011,9 +1032,15 @@ function FacultyCollegesContent() {
       formData.append('filePath', filePath)
       formData.append('bucket', 'profile-images')
 
+      const { data: { session } } = await supabase.auth.getSession()
+      const authHeader: Record<string, string> = session?.access_token
+        ? { authorization: `Bearer ${session.access_token}` }
+        : {}
+
       const response = await fetch('/api/faculty/upload-image', {
         method: 'POST',
         body: formData,
+        headers: authHeader,
       })
 
       if (!response.ok) {
@@ -1031,8 +1058,45 @@ function FacultyCollegesContent() {
 
       if (updateError) throw updateError
 
-      // Also update users table only via verified linked user_id.
-      const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
+      // Sync users.avatar_url so the faculty-side profile updates.
+      // Prefer linking by user_id; if missing, attempt to link by email (safe only if that user isn't linked elsewhere).
+      const linkedUserIdRaw = String(selectedFacultyProfile.user_id || '').trim()
+      let linkedUserId = linkedUserIdRaw
+
+      const emailToMatch = String(facultyFormData.email || selectedFacultyProfile.email || '').trim().toLowerCase()
+      if (!linkedUserId && emailToMatch) {
+        const { data: existingUser, error: existingUserError } = await (supabase as any)
+          .from('users')
+          .select('id, email')
+          .ilike('email', emailToMatch)
+          .maybeSingle()
+
+        if (!existingUserError || existingUserError.code === 'PGRST116') {
+          const existingUserId = String(existingUser?.id || '').trim()
+          if (existingUserId) {
+            const { data: profileLinkedToUser, error: profileLinkedToUserError } = await (supabase as any)
+              .from('faculty_profiles')
+              .select('id')
+              .eq('user_id', existingUserId)
+              .neq('id', selectedFacultyProfile.id)
+              .maybeSingle()
+
+            if (!profileLinkedToUserError || profileLinkedToUserError.code === 'PGRST116') {
+              if (!profileLinkedToUser) {
+                const { error: linkError } = await (supabase as any)
+                  .from('faculty_profiles')
+                  .update({ user_id: existingUserId })
+                  .eq('id', selectedFacultyProfile.id)
+
+                if (!linkError) {
+                  linkedUserId = existingUserId
+                }
+              }
+            }
+          }
+        }
+      }
+
       if (linkedUserId) {
         const { error: avatarUpdateError } = await (supabase
           .from('users') as any)
@@ -1047,7 +1111,7 @@ function FacultyCollegesContent() {
       // Update local state
       const imageUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`
       setFacultyFormData({ ...facultyFormData, profile_image: imageUrlWithCacheBust })
-      setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: imageUrlWithCacheBust })
+      setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: imageUrlWithCacheBust, user_id: linkedUserId || selectedFacultyProfile.user_id })
 
       // Update the main faculty list so cards show the new image
       setFacultyProfiles(prev => prev.map(f =>
@@ -1061,6 +1125,91 @@ function FacultyCollegesContent() {
     } catch (error: any) {
       console.error('Error uploading faculty image:', error)
       alert(`Failed to upload image: ${error.message || error}`)
+    } finally {
+      setUploadingFacultyImage(false)
+      if (facultyImageInputRef.current) {
+        facultyImageInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRemoveFacultyPhoto = async () => {
+    if (!selectedFacultyProfile) return
+    if (!confirm('Remove this profile photo?')) return
+
+    setUploadingFacultyImage(true)
+    try {
+      // Clear faculty_profiles image
+      const { error: clearFacultyError } = await (supabase as any)
+        .from('faculty_profiles')
+        .update({ profile_image: null })
+        .eq('id', selectedFacultyProfile.id)
+
+      if (clearFacultyError) throw clearFacultyError
+
+      // Also clear linked users.avatar_url so it reflects on faculty side
+      const linkedUserIdRaw = String(selectedFacultyProfile.user_id || '').trim()
+      let linkedUserId = linkedUserIdRaw
+      const emailToMatch = String(facultyFormData.email || selectedFacultyProfile.email || '').trim().toLowerCase()
+
+      // If not linked yet, attempt to link by email (safe only if that user isn't linked elsewhere).
+      if (!linkedUserId && emailToMatch) {
+        const { data: existingUser, error: existingUserError } = await (supabase as any)
+          .from('users')
+          .select('id, email')
+          .ilike('email', emailToMatch)
+          .maybeSingle()
+
+        if (!existingUserError || existingUserError.code === 'PGRST116') {
+          const existingUserId = String(existingUser?.id || '').trim()
+          if (existingUserId) {
+            const { data: profileLinkedToUser, error: profileLinkedToUserError } = await (supabase as any)
+              .from('faculty_profiles')
+              .select('id')
+              .eq('user_id', existingUserId)
+              .neq('id', selectedFacultyProfile.id)
+              .maybeSingle()
+
+            if (!profileLinkedToUserError || profileLinkedToUserError.code === 'PGRST116') {
+              if (!profileLinkedToUser) {
+                const { error: linkError } = await (supabase as any)
+                  .from('faculty_profiles')
+                  .update({ user_id: existingUserId })
+                  .eq('id', selectedFacultyProfile.id)
+
+                if (!linkError) {
+                  linkedUserId = existingUserId
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (linkedUserId) {
+        const { error: clearUserError } = await (supabase as any)
+          .from('users')
+          .update({ avatar_url: null })
+          .eq('id', linkedUserId)
+
+        if (clearUserError) {
+          console.warn('Could not clear linked user avatar:', clearUserError)
+        }
+      }
+
+      setFacultyFormData({ ...facultyFormData, profile_image: null })
+      setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: null, user_id: linkedUserId || selectedFacultyProfile.user_id })
+      setFacultyProfiles(prev => prev.map(f =>
+        f.id === selectedFacultyProfile.id
+          ? { ...f, profile_image: null }
+          : f
+      ))
+
+      setSuccessMessage('✅ Profile photo removed!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Error removing faculty photo:', error)
+      alert(`Failed to remove photo: ${error.message || error}`)
     } finally {
       setUploadingFacultyImage(false)
       if (facultyImageInputRef.current) {
@@ -1092,6 +1241,8 @@ function FacultyCollegesContent() {
     setSaving(true)
     try {
       const nextEmail = facultyFormData.email.trim().toLowerCase()
+      const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
+      let userIdToLink: string | null = null
       if (nextEmail) {
         const { data: duplicateProfile, error: duplicateProfileError } = await (supabase as any)
           .from('faculty_profiles')
@@ -1108,20 +1259,43 @@ function FacultyCollegesContent() {
           throw new Error(`Email is already assigned to another faculty profile: ${duplicateProfile.full_name || duplicateProfile.id}`)
         }
 
-        const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
-        const { data: duplicateUser, error: duplicateUserError } = await supabase
+        const { data: existingUser, error: existingUserError } = await supabase
           .from('users')
-          .select('id, full_name')
+          .select('id, full_name, email')
           .ilike('email', nextEmail)
-          .neq('id', linkedUserId || '00000000-0000-0000-0000-000000000000')
           .maybeSingle()
 
-        if (duplicateUserError && duplicateUserError.code !== 'PGRST116') {
-          throw new Error(`Failed validating user email: ${duplicateUserError.message}`)
+        if (existingUserError && existingUserError.code !== 'PGRST116') {
+          throw new Error(`Failed validating user email: ${existingUserError.message}`)
         }
 
-        if (duplicateUser) {
-          throw new Error(`Email is already bound to another user account: ${duplicateUser.full_name || duplicateUser.id}`)
+        if (existingUser?.id) {
+          const existingUserId = String(existingUser.id)
+
+          // If this faculty is already linked to a different user, block.
+          if (linkedUserId && existingUserId !== linkedUserId) {
+            throw new Error(`Email is already bound to another user account: ${existingUser.full_name || existingUser.id}`)
+          }
+
+          // If this faculty is NOT linked yet, allow the email if that user isn't linked to a different faculty profile.
+          if (!linkedUserId) {
+            const { data: profileLinkedToUser, error: profileLinkedToUserError } = await (supabase as any)
+              .from('faculty_profiles')
+              .select('id, full_name')
+              .eq('user_id', existingUserId)
+              .neq('id', selectedFacultyProfile.id)
+              .maybeSingle()
+
+            if (profileLinkedToUserError && profileLinkedToUserError.code !== 'PGRST116') {
+              throw new Error(`Failed validating linked faculty user: ${profileLinkedToUserError.message}`)
+            }
+
+            if (profileLinkedToUser) {
+              throw new Error(`Email is already bound to another user account: ${existingUser.full_name || existingUser.id}`)
+            }
+
+            userIdToLink = existingUserId
+          }
         }
       }
 
@@ -1131,10 +1305,7 @@ function FacultyCollegesContent() {
         facultyFormData.name_suffix
       )
 
-      // First update faculty_profiles
-      const { data: updatedFaculty, error: updateError } = await (supabase as any)
-        .from('faculty_profiles')
-        .update({
+      const facultyProfileUpdate: any = {
           faculty_id: facultyFormData.faculty_id.trim() || null,
           name_prefix: facultyFormData.name_prefix.trim() || null,
           full_name: facultyFormData.full_name.trim(),
@@ -1148,7 +1319,17 @@ function FacultyCollegesContent() {
           phone: facultyFormData.phone.trim() || null,
           office_location: facultyFormData.office_location.trim() || null,
           updated_at: new Date().toISOString()
-        })
+      }
+
+      // If the email matches an existing user and this faculty profile isn't linked yet, link it now.
+      if (!linkedUserId && userIdToLink) {
+        facultyProfileUpdate.user_id = userIdToLink
+      }
+
+      // First update faculty_profiles
+      const { data: updatedFaculty, error: updateError } = await (supabase as any)
+        .from('faculty_profiles')
+        .update(facultyProfileUpdate)
         .eq('id', selectedFacultyProfile.id)
         .select()
 
@@ -1157,12 +1338,12 @@ function FacultyCollegesContent() {
         throw new Error(`Database error: ${updateError.message}`)
       }
       // Sync users table only via verified linked user_id.
-      const linkedUserId = String(selectedFacultyProfile.user_id || '').trim()
-      if (linkedUserId) {
+      const verifiedLinkedUserId = linkedUserId || userIdToLink || ''
+      if (verifiedLinkedUserId) {
         const { data: linkedUser, error: linkedUserError } = await supabase
           .from('users')
           .select('id, email')
-          .eq('id', linkedUserId)
+          .eq('id', verifiedLinkedUserId)
           .maybeSingle()
 
         if (linkedUserError) {
@@ -1180,7 +1361,7 @@ function FacultyCollegesContent() {
                 college: facultyFormData.college.trim() || null,
                 updated_at: new Date().toISOString()
               })
-              .eq('id', linkedUserId)
+              .eq('id', verifiedLinkedUserId)
 
             if (userUpdateError) {
               console.warn('Could not sync linked user profile fields:', userUpdateError)
@@ -1216,6 +1397,23 @@ function FacultyCollegesContent() {
     if (!selectedFacultyProfile) return
     setDeleting(true)
     try {
+      // Archive before deleting
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        await db
+          .from('archived_items')
+          .insert({
+            item_type: 'faculty',
+            item_name: selectedFacultyProfile.full_name,
+            item_data: selectedFacultyProfile,
+            deleted_by: user?.id || null,
+            original_table: 'faculty_profiles',
+            original_id: selectedFacultyProfile.id
+          })
+      } catch (archiveError) {
+        console.warn('Could not archive faculty:', archiveError)
+      }
+
       const { data, error } = await db
         .from('faculty_profiles')
         .delete()
@@ -1223,17 +1421,17 @@ function FacultyCollegesContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
-      setSuccessMessage('Faculty deleted successfully')
+      setSuccessMessage('Faculty archived successfully')
       setDeleteFacultyTarget(null)
       setSelectedFacultyProfile(null)
       if (selectedFile) fetchFacultyForFile(selectedFile.upload_group_id, selectedFile.isLegacy)
       setTimeout(() => setSuccessMessage(''), 2500)
     } catch (error: any) {
-      console.error('Error deleting faculty:', error)
-      alert(`Failed to delete faculty: ${error.message || error}`)
+      console.error('Error archiving faculty:', error)
+      alert(`Failed to archive faculty: ${error.message || error}`)
     } finally {
       setDeleting(false)
     }
@@ -1798,7 +1996,7 @@ function FacultyCollegesContent() {
                       <button
                         className={styles.deleteBtn}
                         onClick={(e) => { e.stopPropagation(); setSelectedCollege(college); setShowDeleteCollegeConfirm(true); }}
-                        title="Delete college"
+                        title="Archive college"
                       >
                         <TrashIcon />
                       </button>
@@ -1890,7 +2088,7 @@ function FacultyCollegesContent() {
                         <button
                           className={styles.deleteBtn}
                           onClick={(e) => { e.stopPropagation(); openDeleteFileConfirmModal(file); }}
-                          title="Delete file"
+                          title="Archive file"
                         >
                           <TrashIcon />
                         </button>
@@ -2044,16 +2242,16 @@ function FacultyCollegesContent() {
                                 </button>
                                 <button
                                   className={`${styles.iconBtn} ${styles.danger}`}
-                                  title="Delete"
+                                  title="Archive"
                                   onClick={(e) => { e.stopPropagation(); openDeleteFacultyConfirm(faculty) }}
                                 >
                                   <TrashIcon />
                                 </button>
                                 {deleteFacultyTarget === faculty.id && (
                                   <div className={styles.inlineConfirm}>
-                                    <p>Delete this faculty?</p>
+                                    <p>Archive this faculty?</p>
                                     <div className={styles.inlineConfirmActions}>
-                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Yes</button>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Archive</button>
                                       <button onClick={(e) => { e.stopPropagation(); setDeleteFacultyTarget(null); setSelectedFacultyProfile(null) }}>Cancel</button>
                                     </div>
                                   </div>
@@ -2107,16 +2305,16 @@ function FacultyCollegesContent() {
                                 </button>
                                 <button
                                   className={`${styles.iconBtn} ${styles.danger}`}
-                                  title="Delete"
+                                  title="Archive"
                                   onClick={(e) => { e.stopPropagation(); openDeleteFacultyConfirm(faculty) }}
                                 >
                                   <TrashIcon />
                                 </button>
                                 {deleteFacultyTarget === faculty.id && (
                                   <div className={styles.inlineConfirm}>
-                                    <p>Delete this faculty?</p>
+                                    <p>Archive this faculty?</p>
                                     <div className={styles.inlineConfirmActions}>
-                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Yes</button>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDeleteFaculty() }} disabled={deleting}>Archive</button>
                                       <button onClick={(e) => { e.stopPropagation(); setDeleteFacultyTarget(null); setSelectedFacultyProfile(null) }}>Cancel</button>
                                     </div>
                                   </div>
@@ -2341,6 +2539,17 @@ function FacultyCollegesContent() {
                   >
                     {uploadingFacultyImage ? 'Uploading...' : 'Upload Photo'}
                   </button>
+                  {facultyFormData.profile_image && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveFacultyPhoto}
+                      disabled={uploadingFacultyImage}
+                      className={styles.btnCancel}
+                      style={{ marginLeft: '10px', padding: '8px 16px' }}
+                    >
+                      Remove Photo
+                    </button>
+                  )}
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                     JPG, PNG, GIF or WebP. Max 5MB.
                   </p>
@@ -2635,22 +2844,22 @@ function FacultyCollegesContent() {
         </div>
       )}
 
-      {/* Delete College Confirmation Modal */}
+      {/* Archive College Confirmation Modal */}
       {showDeleteCollegeConfirm && selectedCollege && (
         <div className={styles.modalOverlay} onClick={() => setShowDeleteCollegeConfirm(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <div className={styles.modalHeader}>
-              <h3>⚠️ Delete College</h3>
+              <h3>⚠️ Archive College</h3>
               <button className={styles.modalClose} onClick={() => setShowDeleteCollegeConfirm(false)}>✕</button>
             </div>
             <div className={styles.modalBody}>
-              <p>Are you sure you want to delete <strong>"{selectedCollege.department_name}"</strong>?</p>
-              <p className={styles.warningText}>This will archive the college and can be restored later.</p>
+              <p>Are you sure you want to archive <strong>"{selectedCollege.department_name}"</strong>?</p>
+              <p className={styles.warningText}>This will move the college to Archive and can be restored later.</p>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setShowDeleteCollegeConfirm(false)}>Cancel</button>
               <button className={styles.btnDelete} onClick={handleDeleteCollege} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Delete & Archive'}
+                {deleting ? 'Archiving...' : 'Archive'}
               </button>
             </div>
           </div>
@@ -2688,23 +2897,23 @@ function FacultyCollegesContent() {
         </div>
       )}
 
-      {/* Delete File Confirmation Modal */}
+      {/* Archive File Confirmation Modal */}
       {showDeleteFileConfirm && selectedFile && (
         <div className={styles.modalOverlay} onClick={() => setShowDeleteFileConfirm(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className={styles.modalHeader}>
-              <h3>⚠️ Delete File</h3>
+              <h3>⚠️ Archive File</h3>
               <button className={styles.modalClose} onClick={() => setShowDeleteFileConfirm(false)}>✕</button>
             </div>
             <div className={styles.modalBody}>
-              <p>Are you sure you want to delete <strong>"{selectedFile.file_name}"</strong>?</p>
-              <p className={styles.dangerText}>⚠️ This will delete <strong>{selectedFile.faculty_count} faculty members</strong>!</p>
-              <p className={styles.warningText}>All data will be archived and can be restored later.</p>
+              <p>Are you sure you want to archive <strong>"{selectedFile.file_name}"</strong>?</p>
+              <p className={styles.dangerText}>⚠️ This will archive <strong>{selectedFile.faculty_count} faculty members</strong>.</p>
+              <p className={styles.warningText}>All data will be saved in Archive and can be restored later.</p>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setShowDeleteFileConfirm(false)}>Cancel</button>
               <button className={styles.btnDelete} onClick={handleDeleteFile} disabled={deleting}>
-                {deleting ? 'Deleting...' : `Delete ${selectedFile.faculty_count} Faculty`}
+                {deleting ? 'Archiving...' : 'Archive'}
               </button>
             </div>
           </div>

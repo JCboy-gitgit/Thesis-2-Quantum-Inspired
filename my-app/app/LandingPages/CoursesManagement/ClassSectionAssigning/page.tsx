@@ -6,7 +6,7 @@ import Sidebar from '@/app/components/Sidebar'
 import styles from '../ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useColleges } from '@/app/context/CollegesContext'
-import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdLayers as Layers, MdBookmark as BookMarked, MdPeople as Users, MdSearch as Search, MdDelete as Trash2, MdCreateNewFolder as FolderPlus, MdPersonAdd as UserPlus, MdDescription as FileText, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdDownload as Download, MdEdit as Edit } from 'react-icons/md'
+import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdLayers as Layers, MdBookmark as BookMarked, MdPeople as Users, MdSearch as Search, MdOutlineArchive as ArchiveIcon, MdCreateNewFolder as FolderPlus, MdPersonAdd as UserPlus, MdDescription as FileText, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdDownload as Download, MdEdit as Edit } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -235,6 +235,19 @@ function ClassSectionAssigningContent() {
       setLoading(false)
     }
   }
+
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      fetchData()
+    }
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [])
 
   // Get year level label
   const getYearLevelLabel = (year: number): string => {
@@ -498,12 +511,33 @@ function ClassSectionAssigningContent() {
 
   const handleDeleteYearBatch = async (id: number) => {
     try {
+      // Archive the year batch before deleting (best-effort)
+      const batchToDelete = yearBatches.find(b => b.id === id)
+      if (batchToDelete) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('archived_items')
+            .insert({
+              item_type: 'year_batch',
+              item_name: batchToDelete.year_batch,
+              item_data: batchToDelete,
+              deleted_by: user?.id || null,
+              original_table: 'year_batches',
+              original_id: String(id)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive year batch (table may not exist):', archiveError)
+        }
+      }
+
       // Check if there are sections associated with this year batch
       const associatedSections = sections.filter(s => s.year_batch_id === id)
       if (associatedSections.length > 0) {
         setNotification({
           type: 'error',
-          message: `Cannot delete: ${associatedSections.length} section(s) are assigned to this year batch. Delete the sections first.`
+          message: `Cannot archive: ${associatedSections.length} section(s) are assigned to this year batch. Archive the sections first.`
         })
         setDeleteYearBatchConfirm(null)
         return
@@ -517,10 +551,10 @@ function ClassSectionAssigningContent() {
         .select()
       if (error) {
         console.error('Supabase delete error:', error)
-        throw new Error(error.message || 'Failed to delete year batch')
+        throw new Error(error.message || 'Failed to archive year batch')
       }
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       setYearBatches(prev => prev.filter(b => b.id !== id))
@@ -529,10 +563,10 @@ function ClassSectionAssigningContent() {
         next.delete(id)
         return next
       })
-      setNotification({ type: 'success', message: 'Year batch deleted successfully!' })
+      setNotification({ type: 'success', message: 'Year batch archived successfully! You can restore it from the Archive.' })
     } catch (error) {
-      console.error('Error deleting year batch:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete year batch.'
+      console.error('Error archiving year batch:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to archive year batch.'
       setNotification({ type: 'error', message: errorMessage })
     }
     setDeleteYearBatchConfirm(null)
@@ -686,6 +720,31 @@ function ClassSectionAssigningContent() {
 
   const handleDeleteSection = async (id: number) => {
     try {
+      // Archive the section (and its assignments) before deleting (best-effort)
+      const sectionToDelete = sections.find(s => s.id === id)
+      if (sectionToDelete) {
+        const assignmentsToArchive = assignments.filter(a => a.section_id === id)
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('archived_items')
+            .insert({
+              item_type: 'section',
+              item_name: sectionToDelete.section_name,
+              item_data: {
+                section: sectionToDelete,
+                assignments: assignmentsToArchive
+              },
+              deleted_by: user?.id || null,
+              original_table: 'sections',
+              original_id: String(id)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive section (table may not exist):', archiveError)
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('sections')
@@ -694,15 +753,15 @@ function ClassSectionAssigningContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       setSections(prev => prev.filter(s => s.id !== id))
       setAssignments(prev => prev.filter(a => a.section_id !== id))
-      setNotification({ type: 'success', message: 'Section deleted successfully!' })
+      setNotification({ type: 'success', message: 'Section archived successfully! You can restore it from the Archive.' })
     } catch (error) {
-      console.error('Error deleting section:', error)
-      setNotification({ type: 'error', message: 'Failed to delete section.' })
+      console.error('Error archiving section:', error)
+      setNotification({ type: 'error', message: 'Failed to archive section.' })
     }
     setDeleteConfirm(null)
   }
@@ -1104,7 +1163,7 @@ function ClassSectionAssigningContent() {
                       <Edit size={14} />
                     </button>
 
-                    {/* Delete Year Batch Button */}
+                    {/* Archive Year Batch Button */}
                     {deleteYearBatchConfirm === batch.id ? (
                       <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
                         <button
@@ -1123,7 +1182,7 @@ function ClassSectionAssigningContent() {
                             cursor: 'pointer'
                           }}
                         >
-                          Confirm
+                          Archive
                         </button>
                         <button
                           onClick={(e) => {
@@ -1150,7 +1209,7 @@ function ClassSectionAssigningContent() {
                           e.stopPropagation()
                           setDeleteYearBatchConfirm(batch.id)
                         }}
-                        title="Delete Year Batch"
+                        title="Archive Year Batch"
                         style={{
                           padding: '6px 10px',
                           background: 'rgba(229, 62, 62, 0.1)',
@@ -1165,7 +1224,7 @@ function ClassSectionAssigningContent() {
                           transition: 'all 0.2s ease'
                         }}
                       >
-                        <Trash2 size={14} />
+                        <ArchiveIcon size={14} />
                       </button>
                     )}
 
@@ -1396,7 +1455,7 @@ function ClassSectionAssigningContent() {
                                                     fontSize: '10px'
                                                   }}
                                                 >
-                                                  Yes
+                                                  Archive
                                                 </button>
                                                 <button
                                                   onClick={() => setDeleteConfirm(null)}
@@ -1410,7 +1469,7 @@ function ClassSectionAssigningContent() {
                                                     fontSize: '10px'
                                                   }}
                                                 >
-                                                  No
+                                                  Cancel
                                                 </button>
                                               </div>
                                             ) : (
@@ -1419,6 +1478,7 @@ function ClassSectionAssigningContent() {
                                                   e.stopPropagation()
                                                   setDeleteConfirm(section.id)
                                                 }}
+                                                title="Archive section"
                                                 onMouseEnter={(e) => {
                                                   e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)'
                                                   e.currentTarget.style.transform = 'scale(1.1)'
@@ -1437,7 +1497,7 @@ function ClassSectionAssigningContent() {
                                                   transition: 'all 0.2s ease'
                                                 }}
                                               >
-                                                <Trash2 size={14} />
+                                                <ArchiveIcon size={14} />
                                               </button>
                                             )}
                                           </div>

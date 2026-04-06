@@ -8,7 +8,7 @@ import GlobalLoadingFallback from '@/app/components/LoadingFallback'
 import { useColleges } from '@/app/context/CollegesContext'
 import styles from './ClassSchedules.module.css'
 import { supabase } from '@/lib/supabaseClient'
-import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdTableChart as FileSpreadsheet, MdWarning as AlertTriangle, MdDelete as Trash2, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdAccessTime as Clock, MdLayers as Layers, MdBookmark as BookMarked, MdFilterList as Filter, MdPeople as Users, MdArrowBack as ArrowLeft, MdSearch as Search, MdLabel as Tag, MdScience as Beaker, MdFolder as Folder, MdFolderOpen as FolderOpen, MdHome as Home, MdSettings as Settings, MdPalette as Palette, MdMoreVert as MoreVertical, MdDriveFileMove as FolderInput, MdArrowForward as MoveRight, MdMonitor as Monitor, MdSlideshow as Presentation, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
+import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdTableChart as FileSpreadsheet, MdWarning as AlertTriangle, MdArchive as ArchiveIcon, MdAdd as Plus, MdEdit as Edit3, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdAccessTime as Clock, MdLayers as Layers, MdBookmark as BookMarked, MdFilterList as Filter, MdPeople as Users, MdArrowBack as ArrowLeft, MdSearch as Search, MdLabel as Tag, MdScience as Beaker, MdFolder as Folder, MdFolderOpen as FolderOpen, MdHome as Home, MdSettings as Settings, MdPalette as Palette, MdMoreVert as MoreVertical, MdDriveFileMove as FolderInput, MdArrowForward as MoveRight, MdMonitor as Monitor, MdSlideshow as Presentation, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -471,6 +471,25 @@ function CoursesManagementContent() {
     }
   }
 
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      void (async () => {
+        await fetchUploadGroups()
+        if (selectedGroupId) {
+          await fetchCourses(selectedGroupId)
+        }
+      })()
+    }
+
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [selectedGroupId])
+
   // Calculate stats
   const calculateStats = (coursesList: Course[]) => {
     const degreePrograms = new Set(coursesList.map(c => c.degree_program).filter(Boolean))
@@ -754,7 +773,7 @@ function CoursesManagementContent() {
     }
   }
 
-  // Delete single course
+  // Archive single course
   const handleDelete = async (id: number) => {
     try {
       // Find the course to archive
@@ -789,7 +808,7 @@ function CoursesManagementContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       // Update local state
@@ -799,12 +818,12 @@ function CoursesManagementContent() {
       setDeleteConfirm(null)
       router.refresh() // Force refresh cached data
     } catch (error) {
-      console.error('Error deleting course:', error)
-      alert('Failed to delete. Please try again.')
+      console.error('Error archiving course:', error)
+      alert('Failed to archive. Please try again.')
     }
   }
 
-  // Delete entire upload group
+  // Archive entire upload group
   const handleDeleteGroup = async (groupId: number) => {
     try {
       // Find the group info for archiving
@@ -853,8 +872,8 @@ function CoursesManagementContent() {
       setDeleteGroupConfirm(null)
       router.refresh() // Force refresh cached data
     } catch (error) {
-      console.error('Error deleting upload group:', error)
-      alert('Failed to delete group. Please try again.')
+      console.error('Error archiving upload group:', error)
+      alert('Failed to archive group. Please try again.')
     }
   }
 
@@ -1382,13 +1401,13 @@ function CoursesManagementContent() {
                                   fontWeight: 600,
                                   transition: 'all 0.2s ease'
                                 }}
-                                title="Delete entire group"
+                                title="Archive group"
                               >
-                                <Trash2 size={16} />
+                                <ArchiveIcon size={16} />
                               </button>
                             </div>
 
-                            {/* Delete Group Confirmation */}
+                            {/* Archive Group Confirmation */}
                             {deleteGroupConfirm === group.upload_group_id && (
                               <div style={{
                                 marginTop: '12px',
@@ -1400,7 +1419,7 @@ function CoursesManagementContent() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                   <AlertCircle size={16} color="#c53030" />
                                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#c53030' }}>
-                                    Delete all {group.total_courses} courses?
+                                    Archive all {group.total_courses} courses?
                                   </span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -1418,7 +1437,7 @@ function CoursesManagementContent() {
                                       fontSize: '12px'
                                     }}
                                   >
-                                    Yes, Delete All
+                                    Yes, Archive All
                                   </button>
                                   <button
                                     onClick={() => setDeleteGroupConfirm(null)}
@@ -1874,7 +1893,7 @@ function CoursesManagementContent() {
                                                       fontWeight: 600
                                                     }}
                                                   >
-                                                    Yes
+                                                    Archive
                                                   </button>
                                                   <button
                                                     onClick={() => setDeleteConfirm(null)}
@@ -1889,7 +1908,7 @@ function CoursesManagementContent() {
                                                       fontWeight: 600
                                                     }}
                                                   >
-                                                    No
+                                                    Cancel
                                                   </button>
                                                 </div>
                                               ) : (
@@ -1905,9 +1924,9 @@ function CoursesManagementContent() {
                                                     display: 'flex',
                                                     alignItems: 'center'
                                                   }}
-                                                  title="Delete"
+                                                  title="Archive"
                                                 >
-                                                  <Trash2 size={14} />
+                                                  <ArchiveIcon size={14} />
                                                 </button>
                                               )}
                                             </div>

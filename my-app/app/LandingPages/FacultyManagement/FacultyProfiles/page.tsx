@@ -26,7 +26,7 @@ import {
   FaStar,
   FaGraduationCap,
   FaChalkboardTeacher,
-  FaTrash,
+  FaArchive,
   FaUserCog,
   FaUserShield,
   FaUserGraduate,
@@ -323,6 +323,19 @@ function FacultyProfilesContent() {
     }
   }
 
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      void fetchFacultyProfiles()
+    }
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [])
+
   const applyFilters = () => {
     let filtered = [...allFaculty]
 
@@ -390,7 +403,7 @@ function FacultyProfilesContent() {
   }
 
   const handleDeleteProfile = async (profile: FacultyProfile) => {
-    if (!confirm(`Are you sure you want to delete "${profile.full_name}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to archive "${profile.full_name}"?\n\nYou can restore it later from the Archive.`)) {
       return
     }
 
@@ -426,18 +439,18 @@ function FacultyProfilesContent() {
       
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+        throw new Error('Archive failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
       }
 
       // Update local state
       setAllFaculty(prev => prev.filter(f => f.id !== profile.id))
 
       router.refresh() // Force refresh cached data
-      alert(`"${profile.full_name}" deleted successfully`)
+      alert(`"${profile.full_name}" archived successfully`)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Error deleting profile:', error)
-      alert(`Failed to delete profile: ${errorMessage}`)
+      console.error('Error archiving profile:', error)
+      alert(`Failed to archive profile: ${errorMessage}`)
     } finally {
       setDeleting(null)
     }
@@ -978,9 +991,9 @@ function FacultyProfilesContent() {
                                   {deleting === selectedProfile.id ? (
                                     <FaSpinner className={styles.spinnerSmall} />
                                   ) : (
-                                    <FaTrash />
+                                      <FaArchive />
                                   )}
-                                  Delete Profile
+                                    Archive Profile
                                 </button>
                               </div>
                             </div>

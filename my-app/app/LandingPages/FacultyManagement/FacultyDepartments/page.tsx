@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/hooks/useAuth'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
-import { MdDomain as Building2, MdArrowBack as ArrowLeft, MdSearch as Search, MdPeople as Users, MdMenuBook as BookOpen, MdSchool as GraduationCap, MdWork as Briefcase, MdFolderOpen as FolderOpen, MdAdd as Plus, MdEdit as Edit2, MdDelete as Trash2, MdClose as X, MdSave as Save, MdCheck as Check, MdWarning as AlertTriangle, MdUpload as Upload, MdTableChart as FileSpreadsheet, MdDownload as Download, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
+import { MdDomain as Building2, MdArrowBack as ArrowLeft, MdSearch as Search, MdPeople as Users, MdMenuBook as BookOpen, MdSchool as GraduationCap, MdWork as Briefcase, MdFolderOpen as FolderOpen, MdAdd as Plus, MdEdit as Edit2, MdArchive as ArchiveIcon, MdClose as X, MdSave as Save, MdCheck as Check, MdWarning as AlertTriangle, MdUpload as Upload, MdTableChart as FileSpreadsheet, MdDownload as Download, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdEdit as Edit, MdDescription as FileText } from 'react-icons/md'
 import styles from './styles.module.css'
 
 interface Department {
@@ -160,6 +160,20 @@ export default function FacultyDepartmentsPage() {
     }
   }
 
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      void fetchDepartments()
+    }
+
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [])
+
   const getDepartmentIcon = (code: string) => {
     const iconMap: Record<string, React.ReactNode> = {
       'CICS': <BookOpen />,
@@ -303,15 +317,15 @@ export default function FacultyDepartmentsPage() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       await fetchDepartments()
       setDeleteConfirm(null)
 
     } catch (error: any) {
-      console.error('Error deleting department:', error)
-      alert('Failed to delete department: ' + error.message)
+      console.error('Error archiving department:', error)
+      alert('Failed to archive department: ' + error.message)
     } finally {
       setDeleteLoading(false)
     }
@@ -631,9 +645,9 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                           e.stopPropagation()
                           setDeleteConfirm(dept)
                         }}
-                        title="Delete Department"
+                        title="Archive Department"
                       >
-                        <Trash2 size={16} />
+                        <ArchiveIcon size={16} />
                       </button>
                     </div>
                   </div>
@@ -816,18 +830,18 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Archive Confirmation Modal */}
       {deleteConfirm && (
         <div className={styles.modalOverlay} onClick={() => setDeleteConfirm(null)}>
           <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
             <div className={styles.confirmIcon}>
               <AlertCircle size={48} />
             </div>
-            <h3>Delete Department</h3>
+            <h3>Archive Department</h3>
             <p>
-              Are you sure you want to delete <strong>{deleteConfirm.department_name}</strong>?
+              Are you sure you want to archive <strong>{deleteConfirm.department_name}</strong>?
               <br />
-              <span className={styles.warningText}>This will move the department to archive.</span>
+              <span className={styles.warningText}>You can restore it later from the Archive.</span>
             </p>
             <div className={styles.confirmActions}>
               <button
@@ -842,7 +856,7 @@ CS-003,Rosario M. Poñado,Department Head,department_head,Science Department,Col
                 onClick={handleDelete}
                 disabled={deleteLoading}
               >
-                {deleteLoading ? 'Deleting...' : 'Delete'}
+                {deleteLoading ? 'Archiving...' : 'Archive'}
               </button>
             </div>
           </div>

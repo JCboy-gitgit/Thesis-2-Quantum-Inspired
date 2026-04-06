@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import {
   MdArchive,
@@ -21,7 +22,7 @@ import './ArchiveModal.css'
 
 interface ArchivedItem {
   id: string
-  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification'
+  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification' | 'course' | 'year_batch' | 'section' | 'teaching_load'
   item_name: string
   item_data: any
   deleted_at: string
@@ -35,11 +36,12 @@ interface ArchiveModalProps {
   onClose: () => void
   onRestore?: (item: ArchivedItem) => void
   onPermanentDelete?: (item: ArchivedItem) => void
-  forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification'
-  excludeType?: 'notification' | 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room'
+  forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification' | 'course' | 'year_batch' | 'section' | 'teaching_load'
+  excludeType?: 'notification' | 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'course' | 'year_batch' | 'section' | 'teaching_load'
 }
 
 export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete, forcedType, excludeType }: ArchiveModalProps) {
+  const router = useRouter()
   const [archivedItems, setArchivedItems] = useState<ArchivedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -90,29 +92,80 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         // For CSV files (campuses/class_schedules), restore all records
         const data = item.item_data
         if (data.rooms && Array.isArray(data.rooms)) {
-          // Restore campus rooms - remove id to let DB generate new ones if conflict
+          // Restore campus rooms - preserve IDs when possible (fallback to insert without id)
           for (const room of data.rooms) {
-            const { id, ...roomWithoutId } = room
-            const { error } = await supabase.from('campuses').insert(roomWithoutId)
-            if (error && !error.message?.includes('duplicate')) {
-              console.error('Error restoring room:', error)
-              throw error
+            const { error: upsertError } = await (supabase as any)
+              .from('campuses')
+              .upsert(room, { onConflict: 'id' })
+
+            if (upsertError) {
+              const { id, ...roomWithoutId } = room
+              const { error: insertError } = await supabase.from('campuses').insert(roomWithoutId)
+              if (insertError && !insertError.message?.includes('duplicate')) {
+                console.error('Error restoring room:', insertError)
+                throw insertError
+              }
             }
           }
         } else if (data.schedules && Array.isArray(data.schedules)) {
           // Restore class schedules
           for (const schedule of data.schedules) {
-            const { id, ...scheduleWithoutId } = schedule
-            const { error } = await supabase.from('class_schedules').insert(scheduleWithoutId)
-            if (error && !error.message?.includes('duplicate')) {
-              console.error('Error restoring class schedule:', error)
-              throw error
+            const { error: upsertError } = await (supabase as any)
+              .from('class_schedules')
+              .upsert(schedule, { onConflict: 'id' })
+
+            if (upsertError) {
+              const { id, ...scheduleWithoutId } = schedule
+              const { error: insertError } = await supabase.from('class_schedules').insert(scheduleWithoutId)
+              if (insertError && !insertError.message?.includes('duplicate')) {
+                console.error('Error restoring class schedule:', insertError)
+                throw insertError
+              }
             }
           }
         }
       } else if (item.item_type === 'faculty') {
         // Teacher schedules table removed; skip restore for legacy teacher payloads
         console.info('Teacher schedules are deprecated; skipping restore for item', item.id)
+      } else if (item.item_type === 'course') {
+        // Restore single course row while preserving ID
+        const courseRow = item.item_data
+        const { error } = await (supabase as any)
+          .from(item.original_table)
+          .upsert(courseRow, { onConflict: 'id' })
+        if (error) throw error
+      } else if (item.item_type === 'year_batch') {
+        const batchRow = item.item_data
+        const { error } = await (supabase as any)
+          .from(item.original_table)
+          .upsert(batchRow, { onConflict: 'id' })
+        if (error) throw error
+      } else if (item.item_type === 'section') {
+        const data = item.item_data || {}
+        const sectionRow = data.section || data
+        const { year_batch, assigned_courses, ...cleanSection } = sectionRow
+
+        const { error: sectionError } = await (supabase as any)
+          .from(item.original_table)
+          .upsert(cleanSection, { onConflict: 'id' })
+        if (sectionError) throw sectionError
+
+        const archivedAssignments = Array.isArray(data.assignments) ? data.assignments : []
+        if (archivedAssignments.length > 0) {
+          const { error: assignmentError } = await (supabase as any)
+            .from('section_course_assignments')
+            .upsert(archivedAssignments, { onConflict: 'id' })
+          if (assignmentError) {
+            console.warn('Warning restoring section assignments:', assignmentError)
+          }
+        }
+      } else if (item.item_type === 'teaching_load') {
+        const loadRow = item.item_data
+        const { faculty, course, ...cleanLoad } = loadRow || {}
+        const { error } = await (supabase as any)
+          .from(item.original_table)
+          .upsert(cleanLoad, { onConflict: 'id' })
+        if (error) throw error
       } else if (item.item_type === 'schedule') {
         // Restore generated schedule and its allocations
         const data = item.item_data
@@ -329,6 +382,20 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       setMessage({ type: 'success', text: `${item.item_name} has been restored successfully` })
       onRestore?.(item)
 
+      // Trigger UI refresh for pages that rely on cached data.
+      try {
+        router.refresh()
+      } catch {
+        // no-op
+      }
+
+      // Also emit a browser event for client pages to react immediately.
+      try {
+        window.dispatchEvent(new CustomEvent('archive:restored', { detail: item }))
+      } catch {
+        // no-op
+      }
+
       setTimeout(() => setMessage(null), 3000)
     } catch (error: any) {
       console.error('Error restoring item:', error?.message || error?.code || JSON.stringify(error) || error)
@@ -380,18 +447,56 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             const data = item.item_data
             if (data.rooms && Array.isArray(data.rooms)) {
               for (const room of data.rooms) {
-                const { id: roomId, ...roomWithoutId } = room
-                await supabase.from('campuses').insert(roomWithoutId)
+                const { error: upsertError } = await (supabase as any)
+                  .from('campuses')
+                  .upsert(room, { onConflict: 'id' })
+                if (upsertError) {
+                  const { id: roomId, ...roomWithoutId } = room
+                  await supabase.from('campuses').insert(roomWithoutId)
+                }
               }
             } else if (data.schedules && Array.isArray(data.schedules)) {
               for (const schedule of data.schedules) {
-                const { id: scheduleId, ...scheduleWithoutId } = schedule
-                await supabase.from('class_schedules').insert(scheduleWithoutId)
+                const { error: upsertError } = await (supabase as any)
+                  .from('class_schedules')
+                  .upsert(schedule, { onConflict: 'id' })
+                if (upsertError) {
+                  const { id: scheduleId, ...scheduleWithoutId } = schedule
+                  await supabase.from('class_schedules').insert(scheduleWithoutId)
+                }
               }
             }
           } else if (item.item_type === 'faculty') {
             // Teacher schedules table removed; skip restore for legacy teacher payloads
             console.info('Teacher schedules are deprecated; skipping restore for item', item.id)
+          } else if (item.item_type === 'course') {
+            await (supabase as any)
+              .from(item.original_table)
+              .upsert(item.item_data, { onConflict: 'id' })
+          } else if (item.item_type === 'year_batch') {
+            await (supabase as any)
+              .from(item.original_table)
+              .upsert(item.item_data, { onConflict: 'id' })
+          } else if (item.item_type === 'section') {
+            const data = item.item_data || {}
+            const sectionRow = data.section || data
+            const { year_batch, assigned_courses, ...cleanSection } = sectionRow
+            await (supabase as any)
+              .from(item.original_table)
+              .upsert(cleanSection, { onConflict: 'id' })
+
+            const archivedAssignments = Array.isArray(data.assignments) ? data.assignments : []
+            if (archivedAssignments.length > 0) {
+              await (supabase as any)
+                .from('section_course_assignments')
+                .upsert(archivedAssignments, { onConflict: 'id' })
+            }
+          } else if (item.item_type === 'teaching_load') {
+            const loadRow = item.item_data
+            const { faculty, course, ...cleanLoad } = loadRow || {}
+            await (supabase as any)
+              .from(item.original_table)
+              .upsert(cleanLoad, { onConflict: 'id' })
           } else if (item.item_type === 'schedule_snapshot') {
             const data = item.item_data || {}
             const schedule = data.schedule
@@ -528,6 +633,18 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       setSelectedItems([])
       setMessage({ type: 'success', text: `${restoredCount} items restored successfully` })
 
+      try {
+        router.refresh()
+      } catch {
+        // no-op
+      }
+
+      try {
+        window.dispatchEvent(new CustomEvent('archive:bulkRestored'))
+      } catch {
+        // no-op
+      }
+
       setTimeout(() => setMessage(null), 3000)
     } catch (error: any) {
       console.error('Error bulk restoring:', error?.message || error)
@@ -581,6 +698,10 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'csv_file': return <MdInsertDriveFile size={20} />
       case 'department': return <MdBusiness size={20} />
       case 'faculty': return <MdPeople size={20} />
+      case 'course': return <MdInsertDriveFile size={20} />
+      case 'year_batch': return <MdInsertDriveFile size={20} />
+      case 'section': return <MdInsertDriveFile size={20} />
+      case 'teaching_load': return <MdPeople size={20} />
       case 'schedule_snapshot': return <MdAccessTime size={20} />
       case 'notification': return <MdNotifications size={20} />
       default: return <MdArchive size={20} />
@@ -592,6 +713,10 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'csv_file': return 'CSV File'
       case 'department': return 'Department'
       case 'faculty': return 'Faculty'
+      case 'course': return 'Course'
+      case 'year_batch': return 'Year Batch'
+      case 'section': return 'Section'
+      case 'teaching_load': return 'Teaching Load'
       case 'schedule': return 'Schedule'
       case 'schedule_snapshot': return 'Schedule Backup'
       case 'room': return 'Room'
@@ -662,6 +787,10 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             <select value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="all">All Types</option>
               {excludeType !== 'csv_file' && <option value="csv_file">CSV Files</option>}
+              {excludeType !== 'course' && <option value="course">Courses</option>}
+              {excludeType !== 'year_batch' && <option value="year_batch">Year Batches</option>}
+              {excludeType !== 'section' && <option value="section">Sections</option>}
+              {excludeType !== 'teaching_load' && <option value="teaching_load">Teaching Loads</option>}
               {excludeType !== 'department' && <option value="department">Departments</option>}
               {excludeType !== 'faculty' && <option value="faculty">Faculty</option>}
               {excludeType !== 'schedule' && <option value="schedule">Schedules</option>}

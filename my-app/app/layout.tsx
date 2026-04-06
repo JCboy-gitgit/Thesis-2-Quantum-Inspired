@@ -11,7 +11,7 @@ const firaMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-fira-mono" 
 
 export const metadata: Metadata = {
   title: "Qtime Scheduler",
-  description: "Quantum-Inspired Room Scheduling System",
+  description: "Room and teaching load scheduling system",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

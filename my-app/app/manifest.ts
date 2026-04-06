@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Qtime Scheduler',
     short_name: 'Qtime',
-    description: 'Quantum-Inspired Room Scheduling System',
+    description: 'Room and teaching load scheduling system',
     start_url: '/',
     display: 'standalone',
     background_color: '#00331a',

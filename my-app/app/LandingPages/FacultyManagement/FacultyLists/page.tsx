@@ -207,7 +207,7 @@ function EditIcon({ className }: { className?: string }) {
 function TrashIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+      <path d="M20.54 5.23 19.15 3.5C18.88 3.17 18.49 3 18.06 3H5.94c-.43 0-.82.17-1.09.5L3.46 5.23C3.17 5.57 3 5.98 3 6.41V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.41c0-.43-.17-.84-.46-1.18zM12 17l-4-4h2.5v-3h3v3H16l-4 4zm-6.12-12 .81-1h10.62l.81 1H5.88z" />
     </svg>
   )
 }
@@ -355,6 +355,19 @@ function FacultyListsContent() {
       setLoading(false)
     }
   }
+
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      setRefreshKey(prev => prev + 1)
+    }
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [])
 
   const applyFilters = () => {
     let filtered = [...allFaculty]
@@ -510,7 +523,7 @@ function FacultyListsContent() {
     }
   }
 
-  // DELETE - Archive and delete faculty
+  // ARCHIVE - Move faculty to archive
   const handleDeleteFaculty = async () => {
     if (!selectedFaculty) return
 
@@ -542,13 +555,13 @@ function FacultyListsContent() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
       // Remove from local state directly
       setAllFaculty(prev => prev.filter(f => f.id !== selectedFaculty.id))
 
-      setSuccessMessage(`"${selectedFaculty.full_name}" has been archived and deleted`)
+      setSuccessMessage(`"${selectedFaculty.full_name}" has been archived`)
       setShowDeleteConfirm(false)
       setSelectedFaculty(null)
       setRefreshKey(prev => prev + 1) // Force re-fetch to update stats
@@ -557,8 +570,8 @@ function FacultyListsContent() {
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Error deleting faculty:', error)
-      alert(`Failed to delete faculty: ${errorMessage}`)
+      console.error('Error archiving faculty:', error)
+      alert(`Failed to archive faculty: ${errorMessage}`)
     } finally {
       setDeleting(false)
     }
@@ -601,7 +614,7 @@ function FacultyListsContent() {
     }
   }
 
-  // DELETE FILE - Delete all faculty from this file
+  // ARCHIVE FILE - Archive all faculty from this file
   const handleDeleteFile = async () => {
     if (!selectedFile) return
 
@@ -642,7 +655,7 @@ function FacultyListsContent() {
 
       if (error) throw error
 
-      setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived and deleted`)
+      setSuccessMessage(`File "${selectedFile.file_name}" with ${selectedFile.faculty_count} faculty members has been archived`)
       setShowDeleteFileConfirm(false)
       setSelectedFile(null)
       fetchFacultyData()
@@ -651,8 +664,8 @@ function FacultyListsContent() {
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Error deleting file:', error)
-      alert(`Failed to delete file: ${errorMessage}`)
+      console.error('Error archiving file:', error)
+      alert(`Failed to archive file: ${errorMessage}`)
     } finally {
       setDeleting(false)
     }
@@ -746,7 +759,7 @@ function FacultyListsContent() {
                     ✏️ Rename
                   </button>
                   <button className={styles.deleteFileBtn} onClick={() => openDeleteFileConfirm(selectedFile)}>
-                    🗑️ Delete File
+                    Archive File
                   </button>
                   <button className={styles.changeFileBtn} onClick={() => setSelectedFile(null)}>
                     View All Files
@@ -864,7 +877,7 @@ function FacultyListsContent() {
                       <button
                         className={styles.fileDeleteBtn}
                         onClick={(e) => { e.stopPropagation(); openDeleteFileConfirm(group); }}
-                        title="Delete file"
+                        title="Archive file"
                       >
                         <TrashIcon />
                       </button>
@@ -1432,12 +1445,12 @@ function FacultyListsContent() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Archive Confirmation Modal */}
       {showDeleteConfirm && selectedFaculty && (
         <div className={styles.modalOverlay} onClick={() => setShowDeleteConfirm(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
             <div className={styles.modalHeader}>
-              <h3>⚠️ Confirm Delete</h3>
+              <h3>⚠️ Confirm Archive</h3>
               <button className={styles.modalClose} onClick={() => setShowDeleteConfirm(false)}>
                 ✕
               </button>
@@ -1445,10 +1458,10 @@ function FacultyListsContent() {
 
             <div className={styles.modalBody}>
               <p style={{ marginBottom: '16px' }}>
-                Are you sure you want to delete <strong>&quot;{selectedFaculty.full_name}&quot;</strong>?
+                Are you sure you want to archive <strong>&quot;{selectedFaculty.full_name}&quot;</strong>?
               </p>
               <p style={{ color: 'var(--text-light)', fontSize: '14px' }}>
-                This faculty member will be moved to the archive and can be restored later if needed.
+                You can restore this faculty member later from the Archive.
               </p>
             </div>
 
@@ -1469,7 +1482,7 @@ function FacultyListsContent() {
                   cursor: 'pointer'
                 }}
               >
-                {deleting ? 'Deleting...' : 'Delete & Archive'}
+                {deleting ? 'Archiving...' : 'Archive'}
               </button>
             </div>
           </div>
@@ -1515,12 +1528,12 @@ function FacultyListsContent() {
         </div>
       )}
 
-      {/* Delete File Confirmation Modal */}
+      {/* Archive File Confirmation Modal */}
       {showDeleteFileConfirm && selectedFile && (
         <div className={styles.modalOverlay} onClick={() => setShowDeleteFileConfirm(false)}>
           <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className={styles.modalHeader}>
-              <h3>⚠️ Delete Entire CSV File</h3>
+              <h3>⚠️ Archive Entire CSV File</h3>
               <button className={styles.modalClose} onClick={() => setShowDeleteFileConfirm(false)}>
                 ✕
               </button>
@@ -1528,13 +1541,13 @@ function FacultyListsContent() {
 
             <div className={styles.modalBody}>
               <p style={{ marginBottom: '16px' }}>
-                Are you sure you want to delete the file <strong>&quot;{selectedFile.file_name}&quot;</strong>?
+                Are you sure you want to archive the file <strong>&quot;{selectedFile.file_name}&quot;</strong>?
               </p>
               <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '12px' }}>
-                ⚠️ This will delete <strong>{selectedFile.faculty_count} faculty members</strong> from the database!
+                ⚠️ This will archive <strong>{selectedFile.faculty_count} faculty members</strong> from the database!
               </p>
               <p style={{ color: 'var(--text-light)', fontSize: '14px' }}>
-                All faculty members from this file will be archived and can be restored later if needed.
+                You can restore them later from the Archive.
               </p>
             </div>
 
@@ -1555,7 +1568,7 @@ function FacultyListsContent() {
                   cursor: 'pointer'
                 }}
               >
-                {deleting ? 'Deleting...' : `Delete ${selectedFile.faculty_count} Faculty Members`}
+                {deleting ? 'Archiving...' : `Archive ${selectedFile.faculty_count} Faculty Members`}
               </button>
             </div>
           </div>

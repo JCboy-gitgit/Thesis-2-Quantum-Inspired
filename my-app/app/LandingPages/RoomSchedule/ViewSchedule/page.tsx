@@ -38,7 +38,7 @@ import {
 import {
   MdAccessTime, MdMessage, MdDownload, MdKeyboardArrowDown, MdKeyboardArrowRight,
   MdVisibility, MdMeetingRoom, MdGroup, MdMenuBook, MdSearch, MdClose,
-  MdBusiness, MdSchool, MdCheckCircle, MdDeleteOutline, MdPersonAdd,
+  MdBusiness, MdSchool, MdCheckCircle, MdOutlineArchive, MdPersonAdd,
   MdRefresh, MdLock, MdLockOpen, MdGridView, MdCheckCircle as MdCheckCircleOutline
 } from 'react-icons/md'
 
@@ -645,6 +645,19 @@ export default function ViewSchedulePage() {
 
     return () => {
       isMounted = false
+    }
+  }, [])
+
+  // Refresh schedules when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      fetchSchedules()
+    }
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
     }
   }, [])
 
@@ -2419,12 +2432,12 @@ export default function ViewSchedulePage() {
 
       if (error) {
         console.error('Error deleting from generated_schedules:', error)
-        throw new Error(`Failed to delete schedule: ${error.message}`)
+        throw new Error(`Failed to archive schedule: ${error.message}`)
       }
 
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
+        throw new Error('Archive failed - no rows affected. Please run database/QUICK_FIX_RLS.sql in Supabase to fix permissions.')
       }
 
       // Update local state immediately
@@ -3396,9 +3409,9 @@ export default function ViewSchedulePage() {
                           e.stopPropagation()
                           handleDelete(schedule.id)
                         }}
-                        title="Delete Schedule"
+                        title="Archive Schedule"
                       >
-                        <MdDeleteOutline size={16} />
+                        <MdOutlineArchive size={16} />
                       </button>
 
                       <div className={styles.scheduleCardHeader}>

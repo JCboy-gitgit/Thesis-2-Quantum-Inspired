@@ -351,6 +351,19 @@ function TeachingLoadAssignmentContent() {
     }
   }
 
+  // Refresh teaching loads when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      fetchTeachingLoads()
+    }
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [])
+
   // Get unique colleges
   const getColleges = () => {
     return [...new Set(faculties.map(f => f.college).filter(Boolean))] as string[]
@@ -659,9 +672,36 @@ function TeachingLoadAssignmentContent() {
     }
   }
 
-  // Delete teaching load
+  // Archive teaching load
   const deleteTeachingLoad = async (loadId: number) => {
     try {
+      // Archive the teaching load before deleting (best-effort)
+      const loadToDelete = teachingLoads.find(l => l.id === loadId)
+      if (loadToDelete) {
+        const { faculty: _faculty, course: _course, ...cleanLoad } = loadToDelete
+        const facultyName = loadToDelete.faculty?.full_name || loadToDelete.faculty_id
+        const courseLabel = loadToDelete.course?.course_code || `Course ${loadToDelete.course_id}`
+        const sectionLabel = loadToDelete.section ? ` (${loadToDelete.section})` : ''
+        const name = `${facultyName} • ${courseLabel} • ${loadToDelete.academic_year} ${loadToDelete.semester}${sectionLabel}`
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('archived_items')
+            .insert({
+              item_type: 'teaching_load',
+              item_name: name,
+              item_data: cleanLoad,
+              deleted_by: user?.id || null,
+              original_table: 'teaching_loads',
+              original_id: String(loadId)
+            })
+        } catch (archiveError) {
+          console.warn('Could not archive teaching load (table may not exist):', archiveError)
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('teaching_loads')
@@ -671,15 +711,15 @@ function TeachingLoadAssignmentContent() {
 
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed.')
+        throw new Error('Archive failed.')
       }
 
-      setNotification({ type: 'success', message: 'Course assignment removed successfully!' })
+      setNotification({ type: 'success', message: 'Course assignment archived successfully! You can restore it from the Archive.' })
       setShowDeleteConfirm(null)
       await fetchTeachingLoads()
     } catch (error) {
-      console.error('Error deleting assignment:', error)
-      setNotification({ type: 'error', message: 'Failed to delete assignment.' })
+      console.error('Error archiving assignment:', error)
+      setNotification({ type: 'error', message: 'Failed to archive assignment.' })
     }
   }
 
@@ -1275,14 +1315,14 @@ function TeachingLoadAssignmentContent() {
             <div className={stylesLocal.modalOverlay} onClick={() => setShowDeleteConfirm(null)}>
               <div className={stylesLocal.modalContent} style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
                 <div className={stylesLocal.modalHeader}>
-                  <h2>Confirm Delete</h2>
+                  <h2>Confirm Archive</h2>
                 </div>
                 <div className={stylesLocal.modalBody}>
-                  <p>Remove this assignment?</p>
+                  <p>Archive this assignment? You can restore it from the Archive.</p>
                 </div>
                 <div className={stylesLocal.modalFooter}>
                   <button className={stylesLocal.secondaryButton} onClick={() => setShowDeleteConfirm(null)}>Cancel</button>
-                  <button className={stylesLocal.dangerButton} onClick={() => deleteTeachingLoad(showDeleteConfirm)}>Delete</button>
+                  <button className={stylesLocal.dangerButton} onClick={() => deleteTeachingLoad(showDeleteConfirm)}>Archive</button>
                 </div>
               </div>
             </div>

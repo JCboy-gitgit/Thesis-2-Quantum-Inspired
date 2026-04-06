@@ -426,6 +426,16 @@
   color: #f472b6;
 }
 
+.type-badge.course,
+.type-badge.year_batch,
+.type-badge.section,
+.type-badge.teaching_load,
+.type-badge.schedule_snapshot,
+.type-badge.notification {
+  background: var(--primary-alpha);
+  color: var(--primary);
+}
+
 /* Item Date */
 .archive-item-date {
   display: flex;

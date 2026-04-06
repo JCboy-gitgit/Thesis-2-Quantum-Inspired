@@ -46,7 +46,7 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
   {
     key: 'admin-home',
     title: 'Admin Home',
-    caption: 'Operational dashboard with key controls and status visibility',
+    caption: 'Admin dashboard with key controls and live status visibility',
     alt: 'Admin dashboard homepage preview',
     lightSrc: '/landing/admin-home.png',
     darkSrc: '/landing/dark/admin-home.png',
@@ -55,7 +55,7 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
   {
     key: 'admin-view-schedule',
     title: 'Schedule View',
-    caption: 'Generated timetable review and manual refinement workflow',
+    caption: 'Review generated timetables and refine them manually',
     alt: 'Admin schedule view preview',
     lightSrc: '/landing/admin-view-schedule.png',
     darkSrc: '/landing/dark/admin-view-schedule.png'
@@ -63,7 +63,7 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
   {
     key: 'admin-live-timetable',
     title: 'Live Timetable',
-    caption: 'Real-time published schedule visibility for stakeholders',
+    caption: 'Published timetables visible in real time for stakeholders',
     alt: 'Admin live timetable preview',
     lightSrc: '/landing/admin-live-timetable.png',
     darkSrc: '/landing/dark/admin-live-timetable.png'
@@ -71,7 +71,7 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
   {
     key: 'faculty-home',
     title: 'Faculty Home',
-    caption: 'Focused view of assignments, schedule and notifications',
+    caption: 'Focused view of assignments, schedule, and notifications',
     alt: 'Faculty homepage preview',
     lightSrc: '/landing/faculty-home.png',
     darkSrc: '/landing/dark/faculty-home.png'
@@ -79,7 +79,7 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
   {
     key: 'faculty-view',
     title: 'Faculty Schedule View',
-    caption: 'Personalized timetable access with streamlined navigation',
+    caption: 'Personal timetable access with simple navigation',
     alt: 'Faculty schedule view preview',
     lightSrc: '/landing/faculty-view.png',
     darkSrc: '/landing/dark/faculty-view.png'
@@ -89,38 +89,38 @@ const PREVIEW_IMAGES: PreviewImageItem[] = [
 const FEATURE_ITEMS = [
   {
     key: 'admin-center',
-    title: 'Admin Command Center',
-    description: 'Manage colleges, departments, rooms, and faculty in one scheduling workspace.',
+    title: 'Admin Workspace',
+    description: 'Manage colleges, departments, rooms, and faculty in one place.',
     Icon: MdAdminPanelSettings,
   },
   {
     key: 'faculty-portal',
-    title: 'Faculty-Focused Portal',
-    description: 'Faculty view assignments and updates without navigating admin complexity.',
+    title: 'Faculty Portal',
+    description: 'Faculty see their schedules and updates without admin-only controls.',
     Icon: MdPerson,
   },
   {
     key: 'optimization-manual',
-    title: 'Optimization + Manual Control',
-    description: 'Start with generated schedules, then refine edge cases manually.',
+    title: 'Auto + Manual Scheduling',
+    description: 'Start with a generated draft, then adjust special cases manually.',
     Icon: MdTune,
   },
   {
     key: 'transparency',
-    title: 'Operational Transparency',
-    description: 'Track pending, approved, and finalized changes with traceable edits.',
+    title: 'Clear Status Tracking',
+    description: 'Track draft, pending, approved, and published updates with traceable edits.',
     Icon: MdFactCheck,
   },
   {
     key: 'live-schedule',
     title: 'Live Schedule',
-    description: 'Watch timetable updates in real time as publishing and refinements happen.',
+    description: 'See timetable updates in real time as changes are published.',
     Icon: MdSchedule,
   },
   {
     key: 'live-2d-map',
-    title: 'Live 2D Floor Map',
-    description: 'View room usage and class placement from a live floor-map perspective.',
+    title: 'Campus Map View',
+    description: 'Check room usage and class placement in a visual floor plan view.',
     Icon: MdTimeline,
   },  
 ]
@@ -129,29 +129,29 @@ const JOURNEY_ITEMS = [
   {
     key: 'data-foundation',
     badge: '01',
-    title: 'Data Foundation',
-    description: 'Load faculty details, room inventory, course offerings, and policy constraints into the system.',
+    title: 'Set Up Your Data',
+    description: 'Add faculty, rooms, courses, and key scheduling rules.',
     Icon: MdUploadFile,
   },
   {
     key: 'quantum-run',
     badge: '02',
-    title: 'Quantum-Inspired Run',
-    description: 'Generate candidate timetables that reduce collisions and improve overall schedule quality.',
+    title: 'Generate A Draft',
+    description: 'Generate a draft timetable designed to reduce conflicts and improve schedule quality.',
     Icon: MdAutoGraph,
   },
   {
     key: 'human-validation',
     badge: '03',
-    title: 'Human Validation',
-    description: 'Review anomalies, refine schedule segments, and align final loads with institutional decisions.',
+    title: 'Review And Adjust',
+    description: 'Review conflicts, refine schedule segments, and finalize teaching loads.',
     Icon: MdSchedule,
   },
   {
     key: 'publish-monitor',
     badge: '04',
-    title: 'Publish And Monitor',
-    description: 'Release final timetables, monitor updates, and keep stakeholders aligned throughout the term.',
+    title: 'Publish And Share',
+    description: 'Publish final timetables and keep stakeholders aligned with live updates.',
     Icon: MdPublish,
   },
 ]
@@ -160,8 +160,8 @@ const LANDING_SECTION_IDS = ['about', 'features', 'visuals', 'journey', 'workflo
 
 const SYSTEM_COVER_ITEMS = [
   { key: 'onboarding', text: 'Faculty onboarding and approval workflow', Icon: MdGroups },
-  { key: 'generation', text: 'Automated generation with manual refinement', Icon: MdTune },
-  { key: 'publishing', text: 'Department timetable publishing with updates', Icon: MdPublish },
+  { key: 'generation', text: 'Draft generation with manual refinement', Icon: MdTune },
+  { key: 'publishing', text: 'Timetable publishing with live updates', Icon: MdPublish },
 ]
 
 const eyeShowSVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>`
@@ -908,25 +908,25 @@ function PageContent(): JSX.Element {
             <a href="#features" className={`landing-link-chip ${activeLandingSection === 'features' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'features' ? 'page' : undefined}>Features</a>
             <a href="#visuals" className={`landing-link-chip ${activeLandingSection === 'visuals' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'visuals' ? 'page' : undefined}>Visuals</a>
             <a href="#journey" className={`landing-link-chip ${activeLandingSection === 'journey' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'journey' ? 'page' : undefined}>Journey</a>
-            <a href="#workflow" className={`landing-link-chip ${activeLandingSection === 'workflow' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'workflow' ? 'page' : undefined}>Flow</a>
+            <a href="#workflow" className={`landing-link-chip ${activeLandingSection === 'workflow' ? 'is-active' : ''}`} aria-current={activeLandingSection === 'workflow' ? 'page' : undefined}>Workflow</a>
           </nav>
           <div className="landing-nav-actions">
             <button type="button" className="landing-ghost-btn" onClick={() => openAuthPanel('login')}>
-              Login
+              Sign in
             </button>
             <button type="button" className="landing-primary-btn" onClick={() => openAuthPanel('signup')}>
-              Register
+              Sign up
             </button>
           </div>
         </header>
 
         <section className="landing-hero landing-reveal" data-reveal-order="2">
           <div className="landing-hero-copy">
-            <p className="landing-kicker">Quantum-Inspired Scheduling</p>
-            <h1>Plan Conflict-Free Schedules With Confidence</h1>
+            <p className="landing-kicker">Room & Teaching Load Scheduling</p>
+            <h1>Build conflict-free schedules with confidence</h1>
             <p>
-              Qtime helps colleges generate optimized timetables, balance teaching loads, and keep schedule decisions
-              transparent for both admin and faculty.
+              Qtime helps colleges generate timetables, balance teaching loads, and share updates clearly for both admins
+              and faculty.
             </p>
             <aside className="landing-hero-media" aria-hidden="true">
               <div className="landing-hero-media-item">
@@ -945,10 +945,10 @@ function PageContent(): JSX.Element {
                 className="landing-primary-btn landing-primary-btn-pulse"
                 onClick={() => openAuthPanel('login')}
               >
-                Enter Dashboard
+                Sign in
               </button>
               <button type="button" className="landing-ghost-btn" onClick={() => openAuthPanel('signup')}>
-                Create Faculty Account
+                Create faculty account
               </button>
             </div>
             <div className="landing-stat-row" aria-label="System value highlights">
@@ -958,7 +958,7 @@ function PageContent(): JSX.Element {
                     <span className="landing-stat-icon" aria-hidden="true"><MdCheckCircle size={14} /></span>
                     <strong>Conflict checks</strong>
                   </div>
-                  <span>Room, slot, and faculty availability validation</span>
+                  <span>Validates room, time slot, and faculty availability</span>
                 </div>
 
                 <div className="landing-stat-item">
@@ -966,7 +966,7 @@ function PageContent(): JSX.Element {
                     <span className="landing-stat-icon" aria-hidden="true"><MdGroups size={14} /></span>
                     <strong>Role clarity</strong>
                   </div>
-                  <span>Admin control with simplified faculty visibility</span>
+                  <span>Admins manage, faculty see what they need</span>
                 </div>
 
                 <div className="landing-stat-item">
@@ -983,10 +983,10 @@ function PageContent(): JSX.Element {
             <div className="landing-section-divider"><span>About</span></div>
             <section id="about" className="landing-section landing-side-card">
               <p className="landing-card-kicker">Platform Brief</p>
-              <h2>About The Platform</h2>
+              <h2>About the platform</h2>
               <p>
-                Developed by the Quantum-Inspired Scheduling Group Batch Nov. 2025 - March 2026, this platform combines quantum-inspired optimization with practical
-                controls to reduce manual work and improve fairness in load distribution.
+                Built as a thesis project (Nov 2025–Mar 2026), this platform combines optimization with practical admin controls to reduce manual scheduling work
+                and improve fairness in teaching load distribution.
               </p>
             </section>
 
@@ -1023,7 +1023,7 @@ function PageContent(): JSX.Element {
         <section id="visuals" className="landing-system-visuals landing-reveal" data-reveal-order="4">
           <div className="landing-section-head">
             <h2>System Preview</h2>
-            <p>Actual captured interfaces from admin and faculty accounts inside your running system.</p>
+            <p>Captured screens from admin and faculty accounts in the running system.</p>
           </div>
           <div className="preview-carousel" aria-label="System preview gallery" aria-roledescription="carousel">
             <div className="preview-carousel-stage">
@@ -1117,13 +1117,13 @@ function PageContent(): JSX.Element {
           ))}
         </section>
 
-        <div className="landing-section-divider"><span>Flow</span></div>
+        <div className="landing-section-divider"><span>Workflow</span></div>
         <section id="workflow" className="landing-section landing-workflow landing-reveal" data-reveal-order="6">
           <h2>How It Works</h2>
           <ol>
-            <li>Sign in as admin or register as faculty.</li>
-            <li>Prepare faculty, room, subject, and constraint data.</li>
-            <li>Generate schedules, review conflicts, then publish.</li>
+            <li>Sign in as admin or create a faculty account.</li>
+            <li>Set up faculty, rooms, courses, and scheduling rules.</li>
+            <li>Generate a draft schedule, review conflicts, then publish.</li>
           </ol>
         </section>
       </section>
@@ -1139,14 +1139,14 @@ function PageContent(): JSX.Element {
                 className={`tab-button ${activeTab === 'login' ? 'active' : ''}`}
                 onClick={() => handleTabChange('login')}
               >
-                Login
+                Sign in
               </button>
               <button
                 type="button"
                 className={`tab-button ${activeTab === 'signup' ? 'active' : ''}`}
                 onClick={() => handleTabChange('signup')}
               >
-                Sign Up
+                Sign up
               </button>
             </div>
           </div>
@@ -1166,8 +1166,8 @@ function PageContent(): JSX.Element {
                     />
                     <span className="qtime-brand-text">Qtime</span>
                   </div>
-                  <h2 className="tab-content-title">Log in to Your Account</h2>
-                  <p className="tab-content-subtitle">Admin and Faculty access</p>
+                  <h2 className="tab-content-title">Sign in to your account</h2>
+                  <p className="tab-content-subtitle">Admin and faculty access</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="form">
@@ -1176,7 +1176,7 @@ function PageContent(): JSX.Element {
                     <label className="label">
                       <span className="label-text">
                         <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                        E-mail address
+                        Email address
                       </span>
                       <input
                         type="email"
@@ -1232,7 +1232,7 @@ function PageContent(): JSX.Element {
                       onClick={() => setShowForgotPassword(true)}
                       className="forgot-password-link"
                     >
-                      Forgot Password?
+                      Forgot password?
                     </button>
                   </div>
 
@@ -1248,7 +1248,7 @@ function PageContent(): JSX.Element {
                         Logging in...
                       </>
                     ) : (
-                      <>LOGIN</>
+                      <>Sign in</>
                     )}
                   </button>
 
@@ -1264,7 +1264,7 @@ function PageContent(): JSX.Element {
                       onClick={() => handleTabChange('signup')}
                       className="link-button"
                     >
-                      SIGN UP
+                      Sign up
                     </button>
                   </div>
                 </form>
@@ -1273,8 +1273,8 @@ function PageContent(): JSX.Element {
               <div className={`tab-content ${tabAnimation}`}>
                 {/* Signup Content */}
                 <div className="tab-content-header">
-                  <h2 className="tab-content-title">Faculty Registration</h2>
-                  <p className="tab-content-subtitle">Register as faculty. You will be approved by admin.</p>
+                  <h2 className="tab-content-title">Create your faculty account</h2>
+                  <p className="tab-content-subtitle">Sign up as faculty. An admin will review and approve your account.</p>
                 </div>
 
                 <form onSubmit={handleSignup} className="form">
@@ -1301,7 +1301,7 @@ function PageContent(): JSX.Element {
                     <label className="label">
                       <span className="label-text">
                         <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                        Email Address
+                        Email address
                       </span>
                       <input
                         type="email"
@@ -1319,7 +1319,7 @@ function PageContent(): JSX.Element {
                     <label className="label">
                       <span className="label-text">
                         <span dangerouslySetInnerHTML={{ __html: buildingSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                        Select your College
+                        Select your college
                       </span>
                       <select
                         value={selectedCollege}
@@ -1342,7 +1342,7 @@ function PageContent(): JSX.Element {
                     <label className="label">
                       <span className="label-text">
                         <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                        Create Password
+                        Create password
                       </span>
                       <div className="password-input-wrapper">
                         <input
@@ -1369,7 +1369,7 @@ function PageContent(): JSX.Element {
                     <label className="label">
                       <span className="label-text">
                         <span dangerouslySetInnerHTML={{ __html: lockSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                        Confirm Password
+                        Confirm password
                       </span>
                       <div className="password-input-wrapper">
                         <input
@@ -1400,10 +1400,10 @@ function PageContent(): JSX.Element {
                     {signupLoading ? (
                       <>
                         <span className="spinner"></span>
-                        Registering...
+                        Creating account...
                       </>
                     ) : (
-                      <>REGISTER</>
+                      <>Create account</>
                     )}
                   </button>
 
@@ -1419,7 +1419,7 @@ function PageContent(): JSX.Element {
                       onClick={() => handleTabChange('login')}
                       className="link-button"
                     >
-                      LOGIN
+                      Sign in
                     </button>
                   </div>
                 </form>
@@ -1462,7 +1462,7 @@ function PageContent(): JSX.Element {
                 <label className="label">
                   <span className="label-text">
                     <span dangerouslySetInnerHTML={{ __html: emailSVG }} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
-                    Email Address
+                    Email address
                   </span>
                   <input
                     type="email"
@@ -1500,7 +1500,7 @@ function PageContent(): JSX.Element {
                   onClick={closeForgotPasswordModal}
                   className="link-button"
                 >
-                  ← Back to Login
+                  ← Back to sign in
                 </button>
               </div>
             </form>

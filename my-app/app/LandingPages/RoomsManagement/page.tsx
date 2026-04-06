@@ -7,7 +7,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import FeatureTagsManager from '@/app/components/FeatureTagsManager'
 import { useColleges } from '@/app/context/CollegesContext'
-import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdDelete, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdLabel, MdDescription } from 'react-icons/md'
+import { MdDomain, MdArrowBack, MdSearch, MdCalendarToday, MdAdd, MdCheck, MdClose, MdPeople, MdBarChart, MdMeetingRoom, MdEdit, MdArchive, MdKeyboardArrowDown, MdKeyboardArrowRight, MdLocationOn, MdSchool, MdHotel, MdAccountBalance, MdAir, MdTv, MdCoPresent, MdCheckCircle, MdCancel, MdBuild, MdSave, MdTableChart, MdLayers, MdFilterList, MdInfo, MdImage, MdUpload, MdLabel, MdDescription } from 'react-icons/md'
 import { SiGoogleclassroom } from 'react-icons/si'
 import styles from './styles.module.css'
 
@@ -327,6 +327,23 @@ export default function RoomsManagementPage() {
     }
   }
 
+  // Refresh data when something is restored from Archive
+  useEffect(() => {
+    const handler = () => {
+      void fetchCampusFiles()
+      if (selectedFile?.upload_group_id) {
+        void fetchRoomsForFile(selectedFile.upload_group_id)
+      }
+    }
+
+    window.addEventListener('archive:restored', handler)
+    window.addEventListener('archive:bulkRestored', handler)
+    return () => {
+      window.removeEventListener('archive:restored', handler)
+      window.removeEventListener('archive:bulkRestored', handler)
+    }
+  }, [selectedFile])
+
   const fetchSystemRoomOptions = async () => {
     try {
       const { data, error } = await supabase
@@ -544,7 +561,7 @@ export default function RoomsManagementPage() {
   }
 
   const handleDeleteRoomImage = async (img: RoomImage) => {
-    if (!confirm('Delete this image? It will be archived.')) return
+    if (!confirm('Archive this image? You can restore it from the Archive.')) return
 
     const previousImages = roomImages
     setRoomImages((prev) => prev.filter((i) => i.id !== img.id))
@@ -584,12 +601,12 @@ export default function RoomsManagementPage() {
         // Storage cleanup is best-effort
       }
 
-      setSuccessMessage('Image deleted and archived!')
+      setSuccessMessage('Image archived successfully!')
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       setRoomImages(previousImages)
-      console.error('Error deleting room image:', error)
-      alert(error.message || 'Failed to delete image')
+      console.error('Error archiving room image:', error)
+      alert(error.message || 'Failed to archive image')
     }
   }
 
@@ -976,7 +993,7 @@ export default function RoomsManagementPage() {
 
   const handleDeleteRoom = async (room: CampusRoom) => {
     if (!room.id) return
-    if (!confirm('Are you sure you want to delete this room?')) return
+    if (!confirm('Are you sure you want to archive this room? You can restore it from the Archive.')) return
 
     const previousRooms = allRooms
     setAllRooms((prev) => prev.filter((item) => item.id !== room.id))
@@ -1006,18 +1023,18 @@ export default function RoomsManagementPage() {
 
       // Check if any rows were actually deleted (RLS may block silently)
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
+        throw new Error('Archive failed - no rows affected. Please check your permissions or run the RLS fix script in Supabase.')
       }
 
-      setSuccessMessage('Room deleted successfully!')
+      setSuccessMessage('Room archived successfully!')
       if (selectedFile) void fetchRoomsForFile(selectedFile.upload_group_id)
       void fetchCampusFiles()
       router.refresh() // Force refresh cached data
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (error: any) {
       setAllRooms(previousRooms)
-      console.error('Error deleting room:', error)
-      alert(error.message || 'Failed to delete room')
+      console.error('Error archiving room:', error)
+      alert(error.message || 'Failed to archive room')
     } finally {
       setSyncing(false)
     }
@@ -1070,10 +1087,10 @@ export default function RoomsManagementPage() {
         .select()
       if (error) throw error
       if (!data || data.length === 0) {
-        throw new Error('Delete failed - database did not confirm the change. Check RLS policies in Supabase.')
+        throw new Error('Archive failed - database did not confirm the change. Check RLS policies in Supabase.')
       }
 
-      setSuccessMessage(`"${fileToDelete.school_name}" deleted successfully!`)
+      setSuccessMessage(`"${fileToDelete.school_name}" archived successfully!`)
       setShowDeleteFileModal(false)
       setFileToDelete(null)
 
@@ -1090,8 +1107,8 @@ export default function RoomsManagementPage() {
       setCampusFiles(previousCampusFiles)
       setSelectedFile(previousSelectedFile)
       setAllRooms(previousRooms)
-      console.error('Error deleting file:', error)
-      alert(error.message || 'Failed to delete file')
+      console.error('Error archiving file:', error)
+      alert(error.message || 'Failed to archive file')
     } finally {
       setDeletingFile(false)
       setSyncing(false)
@@ -1400,8 +1417,12 @@ export default function RoomsManagementPage() {
                           </div>
                         </div>
                         <div className={styles.fileActions}>
-                          <button className={styles.deleteBtn} onClick={(e) => { e.stopPropagation(); setFileToDelete(file); setShowDeleteFileModal(true); }}>
-                            <MdDelete size={16} />
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={(e) => { e.stopPropagation(); setFileToDelete(file); setShowDeleteFileModal(true); }}
+                            title="Archive file"
+                          >
+                            <MdArchive size={16} />
                           </button>
                         </div>
                         <span className={styles.fileArrow}>→</span>
@@ -1547,7 +1568,7 @@ export default function RoomsManagementPage() {
                           <MdInfo size={14} />
                         </button>
                         <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><MdEdit size={14} /></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><MdDelete size={14} /></button>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)} title="Archive room"><MdArchive size={14} /></button>
                       </div>
                     </div>
                   )
@@ -1609,7 +1630,7 @@ export default function RoomsManagementPage() {
                           <MdInfo size={14} />
                         </button>
                         <button className={styles.editBtn} onClick={() => handleEditRoom(room)}><MdEdit size={14} /></button>
-                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)}><MdDelete size={14} /></button>
+                        <button className={styles.deleteBtn} onClick={() => handleDeleteRoom(room)} title="Archive room"><MdArchive size={14} /></button>
                       </div>
                     </div>
                   )
@@ -1878,26 +1899,26 @@ export default function RoomsManagementPage() {
         </div>
       )}
 
-      {/* Delete File Modal */}
+      {/* Archive File Modal */}
       {showDeleteFileModal && fileToDelete && (
         <div className={styles.modalOverlay} onClick={() => { setShowDeleteFileModal(false); setFileToDelete(null); }}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>Delete Campus File</h3>
+              <h3>Archive Campus File</h3>
               <button className={styles.modalClose} onClick={() => { setShowDeleteFileModal(false); setFileToDelete(null); }}>×</button>
             </div>
             <div className={styles.modalBody}>
               <p className={styles.dangerText}>
-                Are you sure you want to delete "{fileToDelete.school_name}"?
+                Are you sure you want to archive "{fileToDelete.school_name}"?
               </p>
               <p className={styles.warningText}>
-                This will delete all {fileToDelete.row_count} rooms in this file. This action can be undone from the Archive.
+                This will archive all {fileToDelete.row_count} rooms in this file. You can restore them from the Archive.
               </p>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => { setShowDeleteFileModal(false); setFileToDelete(null); }}>Cancel</button>
               <button className={styles.btnDelete} onClick={handleDeleteFile} disabled={deletingFile}>
-                {deletingFile ? 'Deleting...' : 'Delete File'}
+                {deletingFile ? 'Archiving...' : 'Archive File'}
               </button>
             </div>
           </div>
@@ -2026,9 +2047,9 @@ export default function RoomsManagementPage() {
                         <button
                           className={styles.imageDeleteBtn}
                           onClick={(e) => { e.stopPropagation(); handleDeleteRoomImage(img) }}
-                          title="Delete image"
+                          title="Archive image"
                         >
-                          <MdDelete size={16} />
+                          <MdArchive size={16} />
                         </button>
                       </div>
                     ))}
