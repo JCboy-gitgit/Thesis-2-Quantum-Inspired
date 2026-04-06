@@ -7,6 +7,22 @@ const ENV_BACKEND_URL = process.env.PYTHON_BACKEND_URL || process.env.API_URL ||
 const LAPTOP_BACKEND_URL = process.env.LAPTOP_BACKEND_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
 const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
+
+const parseTimeoutMs = (raw: string | undefined, fallback: number) => {
+  const parsed = Number(String(raw || '').trim())
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+// Schedule generation can legitimately take several minutes (queue + compute).
+// Defaults are tuned for local dev; override via env vars if needed.
+const PYTHON_BACKEND_GENERATE_LOCAL_TIMEOUT_MS = parseTimeoutMs(
+  process.env.PYTHON_BACKEND_GENERATE_LOCAL_TIMEOUT_MS,
+  10 * 60 * 1000
+)
+const PYTHON_BACKEND_GENERATE_REMOTE_TIMEOUT_MS = parseTimeoutMs(
+  process.env.PYTHON_BACKEND_GENERATE_REMOTE_TIMEOUT_MS,
+  10 * 60 * 1000
+)
 const LOCAL_BACKEND_FALLBACKS = [
   LOCAL_BACKEND_URL,
   'http://localhost:8000',
@@ -949,32 +965,33 @@ function reconcileScheduleMetrics(result: any): any {
   const backendScheduled = Number(result?.scheduled_classes || 0)
   const backendUnscheduled = Number(result?.unscheduled_classes || 0)
 
-  // Metrics are allocation-block based (not unique class based).
-  // Scheduled blocks are concrete room/time allocations in the final timetable.
-  // IMPORTANT: Always use actual allocations count as source of truth
-  const scheduledAllocations = allocations.length
+  // Prefer backend-provided section counts when they are present and internally consistent.
+  // The allocations array can represent multiple blocks per section, so using allocations.length
+  // as "scheduled_classes" can inflate totals and confuse the UI.
+  const hasBackendCounts = Number.isFinite(backendTotal) && backendTotal > 0
+    && Number.isFinite(backendScheduled) && backendScheduled >= 0
+    && Number.isFinite(backendUnscheduled) && backendUnscheduled >= 0
 
-  // For unscheduled blocks, prefer explicit slot deficits from backend reasons.
-  const inferredUnscheduledAllocations = normalizedUnscheduled.reduce((sum: number, item: any) => {
-    const needed = Number(item?.needed_slots)
-    const assigned = Number(item?.assigned_slots)
-    if (Number.isFinite(needed) && needed > 0) {
-      const missing = Math.max(0, needed - (Number.isFinite(assigned) ? assigned : 0))
-      return sum + missing
-    }
-    return sum + 1
-  }, 0)
+  const backendCountsConsistent = hasBackendCounts
+    && Math.abs((backendScheduled + backendUnscheduled) - backendTotal) <= 1
 
-  // Calculate unscheduled count based on unscheduled list
-  const unscheduledClasses = normalizedUnscheduled.length > 0 
-    ? normalizedUnscheduled.length 
-    : Math.max(backendUnscheduled, inferredUnscheduledAllocations)
+  const unscheduledFromList = normalizedUnscheduled.length
 
-  // Always use actual allocations as scheduled count (source of truth from final timetable)
-  const scheduledClasses = scheduledAllocations
+  // If unscheduled_list is present, trust it for unscheduled count (it is what the UI shows).
+  // Otherwise, fall back to backendUnscheduled.
+  const unscheduledClasses = unscheduledFromList > 0
+    ? unscheduledFromList
+    : (Number.isFinite(backendUnscheduled) && backendUnscheduled > 0 ? backendUnscheduled : 0)
 
-  // Total is sum of scheduled + unscheduled
-  const totalClasses = scheduledClasses + unscheduledClasses
+  const totalClasses = backendCountsConsistent
+    ? backendTotal
+    : (
+        (Number.isFinite(backendScheduled) && backendScheduled > 0) || (Number.isFinite(backendUnscheduled) && backendUnscheduled > 0)
+          ? Math.max(0, backendScheduled) + Math.max(0, backendUnscheduled)
+          : Math.max(0, Number(result?.total_sections || 0)) || Math.max(0, allocations.length + unscheduledClasses)
+      )
+
+  const scheduledClasses = Math.max(0, totalClasses - unscheduledClasses)
 
   const hardConflictCount = Number(result?.optimization_stats?.conflict_count || 0)
   const successRate = totalClasses > 0 ? (scheduledClasses / totalClasses) * 100 : 0
@@ -1361,7 +1378,11 @@ export async function POST(request: NextRequest) {
       fixed_allocations: normalizedManualAllocations // NEW: Manual edits to prioritize
     }
 
-    const uniqueBackendUrls = buildPreferredBackendCandidates(backendPreference, 180000, 300000)
+    const uniqueBackendUrls = buildPreferredBackendCandidates(
+      backendPreference,
+      PYTHON_BACKEND_GENERATE_LOCAL_TIMEOUT_MS,
+      PYTHON_BACKEND_GENERATE_REMOTE_TIMEOUT_MS
+    )
 
     if (uniqueBackendUrls.length === 0) {
       return NextResponse.json(
@@ -1387,6 +1408,16 @@ export async function POST(request: NextRequest) {
     let lastError: any = null
     let backendResponseMs: number | null = null
 
+    const backendAttempts: Array<{
+      url: string
+      type: string
+      ok: boolean
+      status?: number
+      error?: string
+      response_preview?: string
+      response_ms?: number
+    }> = []
+
     for (const backend of orderedBackendUrls) {
       try {
         const backendRequestStartedAt = Date.now()
@@ -1401,18 +1432,47 @@ export async function POST(request: NextRequest) {
         })
         backendResponseMs = Date.now() - backendRequestStartedAt
 
-        // If this backend is up but returned a server/gateway failure (e.g., ngrok
-        // offline tunnel), try the next candidate instead of failing immediately.
         if (!candidateResponse.ok) {
-          const backendErrorPreview = await candidateResponse.clone().text()
-          const isNgrokTunnelOffline = /ERR_NGROK_/i.test(backendErrorPreview)
+          let backendErrorPreview = ''
+          try {
+            backendErrorPreview = await candidateResponse.clone().text()
+          } catch {
+            backendErrorPreview = ''
+          }
 
-          if (candidateResponse.status >= 500 || isNgrokTunnelOffline) {
+          const isNgrokTunnelOffline = /ERR_NGROK_/i.test(backendErrorPreview)
+          const isMisconfiguredEndpoint = candidateResponse.status === 404 || candidateResponse.status === 405
+          const isRetryableStatus = candidateResponse.status >= 500 || candidateResponse.status === 429
+          const shouldTryNext = isRetryableStatus || isNgrokTunnelOffline || isMisconfiguredEndpoint
+
+          backendAttempts.push({
+            url: backend.url,
+            type: backend.type,
+            ok: false,
+            status: candidateResponse.status,
+            response_preview: backendErrorPreview.slice(0, 4000) || undefined,
+            response_ms: backendResponseMs ?? undefined,
+          })
+
+          if (shouldTryNext) {
             console.warn(`⚠️ ${backend.type} backend responded ${candidateResponse.status}; trying next backend candidate...`)
             lastError = new Error(`Backend ${backend.url} returned status ${candidateResponse.status}`)
             continue
           }
+
+          // Non-retryable client error (likely payload/config issue); stop here.
+          backendResponse = candidateResponse
+          usedBackendUrl = backend.url
+          break
         }
+
+        backendAttempts.push({
+          url: backend.url,
+          type: backend.type,
+          ok: true,
+          status: candidateResponse.status,
+          response_ms: backendResponseMs ?? undefined,
+        })
 
         backendResponse = candidateResponse
         usedBackendUrl = backend.url
@@ -1422,39 +1482,48 @@ export async function POST(request: NextRequest) {
         lastError = fetchError
         console.warn(`⚠️ ${backend.type} backend failed:`, fetchError.message)
 
-        // Continue to next backend
-        if (backend === orderedBackendUrls[orderedBackendUrls.length - 1]) {
-          // This was the last backend, throw error
-          console.error('❌ All backends failed')
+        backendAttempts.push({
+          url: backend.url,
+          type: backend.type,
+          ok: false,
+          error: fetchError?.message || 'Connection failed',
+        })
 
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Cannot connect to any Python backend. Tried: ${uniqueBackendUrls.map(b => b.url).join(', ')}`,
-              details: 'Ensure at least one backend server is running. Using fallback scheduler...',
-              backend_preference: backendPreference,
-              local_backend: LOCAL_BACKEND_URL,
-              laptop_backend: LAPTOP_BACKEND_URL || null,
-              render_backend: RENDER_BACKEND_URL
-            },
-            { status: 503 }
-          )
-        }
+        // Continue to next backend candidate; if all fail we will fall back.
+        continue
       }
     }
 
     if (!backendResponse) {
-      // Fallback: Generate schedule locally using simple round-robin
-      const fallbackResult = await generateFallbackSchedule(body, sections, rooms, timeSlots)
-      return NextResponse.json({
-        ...fallbackResult,
-        iteration_clamp: iterationClamp,
-        execution_source: 'fallback-local',
-        backend_preference: backendPreference,
-        backend_reachable: false,
-        backend_replied: false,
-        backend_url: null,
-      })
+      console.error('❌ All backends failed; using fallback scheduler')
+
+      try {
+        // Fallback: Generate schedule locally using simple round-robin
+        const fallbackResult = await generateFallbackSchedule(body, sections, rooms, timeSlots)
+        return NextResponse.json({
+          ...fallbackResult,
+          iteration_clamp: iterationClamp,
+          execution_source: 'fallback-local',
+          backend_preference: backendPreference,
+          backend_reachable: false,
+          backend_replied: false,
+          backend_url: null,
+          backend_attempts: backendAttempts,
+        })
+      } catch (fallbackError: any) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Cannot generate schedule (all backends failed and fallback scheduler errored).',
+            details: fallbackError?.message || String(fallbackError || 'Unknown error'),
+            backend_preference: backendPreference,
+            attempted_backends: uniqueBackendUrls.map(b => b.url),
+            backend_attempts: backendAttempts,
+            last_backend_error: lastError?.message || null,
+          },
+          { status: 503 }
+        )
+      }
     }
 
     if (!backendResponse.ok) {

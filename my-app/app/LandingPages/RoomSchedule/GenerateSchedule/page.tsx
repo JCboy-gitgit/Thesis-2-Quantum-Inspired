@@ -2772,12 +2772,19 @@ export default function GenerateSchedulePage() {
         checkedAt: new Date().toISOString(),
       })
 
-      const sourceTotalClasses = countUniqueCourseSections(classes)
-      const scheduledClasses = countUniqueCourseSections(result.allocations || [])
-      const totalClasses = sourceTotalClasses > 0
-        ? sourceTotalClasses
-        : Number(result.total_classes || classes.length || 0)
-      const unscheduledClasses = Math.max(0, totalClasses - scheduledClasses)
+      // Use backend-provided section-level counts when available.
+      // This keeps the summary cards consistent with the detailed unscheduled list,
+      // especially when the backend splits hybrid classes into multiple sections.
+      const backendTotal = Number(result.total_classes || 0)
+      const backendUnscheduledList = Array.isArray(result.unscheduled_list) ? result.unscheduled_list : []
+      const backendUnscheduledCount = backendUnscheduledList.length > 0
+        ? backendUnscheduledList.length
+        : Math.max(0, Number(result.unscheduled_classes || 0) || 0)
+
+      const fallbackTotalClasses = Math.max(0, countUniqueCourseSections(classes) || classes.length || 0)
+      const totalClasses = backendTotal > 0 ? backendTotal : fallbackTotalClasses
+      const unscheduledClasses = Math.min(totalClasses, backendUnscheduledCount)
+      const scheduledClasses = Math.max(0, totalClasses - unscheduledClasses)
 
       if (Number(result.schedule_id) > 0) {
         const { error: summarySyncError } = await (supabase

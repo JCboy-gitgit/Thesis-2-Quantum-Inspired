@@ -470,7 +470,14 @@ async def save_room_allocations(allocations: List[Dict]) -> List[Dict]:
         try:
             response = await _execute(_db().table("room_allocations").insert(payload))
             if removed_columns:
-                print(f"⚠️ room_allocations insert fallback removed unknown columns: {', '.join(removed_columns)}")
+                print(
+                    "⚠️ room_allocations insert fallback removed unknown columns: "
+                    f"{', '.join(removed_columns)}"
+                )
+                print(
+                    "   ↳ Recommended fix: apply Supabase migration "
+                    "202604060001_add_room_allocations_analytics_columns.sql"
+                )
             return response.data or []
         except Exception as exc:
             message = str(exc)

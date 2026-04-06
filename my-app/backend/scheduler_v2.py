@@ -21,6 +21,7 @@ PERFORMANCE OPTIMIZATIONS (v2.3):
 from typing import List, Dict, Tuple, Optional, Set, Any, Union
 from dataclasses import dataclass, field, replace
 from enum import Enum
+import copy
 import random
 import time
 import math
@@ -467,6 +468,7 @@ class SchedulingConstraints:
     auto_break_duration_minutes: int = 60  # 1hr mandatory break
     allow_split_sessions: bool = True  # Whether to split long classes into multiple days
     combine_split_lectures: bool = True  # NEW: If True, large groups share one LEC but split for LAB
+    max_subject_sessions_per_week: int = MAX_SUBJECT_SESSIONS_PER_WEEK  # LEC+LAB combined per subject/cohort
     college_room_matching_enabled: bool = True # NEW: Enforce "college room == college course" rule
     allow_g1_g2_split_sessions: bool = True # NEW: Toggle for splitting lab sections into G1/G2
     enforce_g1_g2_equal_hours: bool = True # NEW: Ensure split groups have balanced hours
@@ -2173,7 +2175,8 @@ class EnhancedQuantumScheduler:
         """
         subject_key = self._get_subject_key(section)
         existing_days = self.subject_scheduled_days.get(subject_key, set())
-        return len(existing_days) >= MAX_SUBJECT_SESSIONS_PER_WEEK
+        max_sessions = int(getattr(self.constraints, 'max_subject_sessions_per_week', MAX_SUBJECT_SESSIONS_PER_WEEK) or MAX_SUBJECT_SESSIONS_PER_WEEK)
+        return len(existing_days) >= max_sessions
     
     # ==================== Equipment Constraint ====================
     
@@ -2466,8 +2469,9 @@ class EnhancedQuantumScheduler:
                     conflict_detected = True
             
             # Check max sessions per week
-            if len(scheduled_days) > MAX_SUBJECT_SESSIONS_PER_WEEK:
-                cost += HARD_CONSTRAINT_PENALTY * (len(scheduled_days) - MAX_SUBJECT_SESSIONS_PER_WEEK)
+            max_sessions = int(getattr(self.constraints, 'max_subject_sessions_per_week', MAX_SUBJECT_SESSIONS_PER_WEEK) or MAX_SUBJECT_SESSIONS_PER_WEEK)
+            if len(scheduled_days) > max_sessions:
+                cost += HARD_CONSTRAINT_PENALTY * (len(scheduled_days) - max_sessions)
                 conflict_detected = True
 
         # HARD: College-Room Matching Rule (New)
@@ -3336,14 +3340,33 @@ class EnhancedQuantumScheduler:
         # Lectures (anchors) are scheduled before labs (satellites) so:
         # 1. Moving a lecture auto-updates schedules for both G1 and G2
         # 2. Labs can be placed around already-scheduled lectures
+
+        active_days_lower = {str(d).strip().lower() for d in (self.active_days or []) if str(d).strip()}
+
+        def _teacher_available_days(section: Section) -> int:
+            """Lower means harder to schedule (place earlier)."""
+            if not active_days_lower:
+                return 0
+            tid = getattr(section, 'teacher_id', None)
+            if not tid or not self.faculty_profiles or tid not in self.faculty_profiles:
+                return len(active_days_lower)
+            profile = self.faculty_profiles.get(tid)
+            unavailable = {
+                str(d).strip().lower()
+                for d in (getattr(profile, 'unavailable_days', set()) or set())
+                if str(d).strip()
+            }
+            return max(0, len(active_days_lower - unavailable))
+
         sorted_sections = sorted(
             self.sections.values(),
             key=lambda s: (
                 not getattr(s, 'is_pinned', False),  # 1. Pinned first
                 s.requires_lab or s.lab_hours > 0,  # 2. LECTURES first (False < True)
                 len(self.compatible_rooms.get(s.id, [])),  # 3. Fewer compatible rooms = harder
-                -s.student_count,  # 4. Larger classes next (capacity constraints)
-                -s.weekly_hours  # 5. More hours = harder to fit
+                _teacher_available_days(s),  # 4. Fewer available days = harder
+                -s.student_count,  # 5. Larger classes next (capacity constraints)
+                -s.weekly_hours  # 6. More hours = harder to fit
             )
         )
         
@@ -3704,11 +3727,7 @@ class EnhancedQuantumScheduler:
                     for slot in self.time_slots:
                         if remaining_slots <= 0:
                             break
-                        
-                        # Still respect strict lunch mode
-                        if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, 2):
-                            continue
-                        
+
                         # Determine slot count and actual minutes from session plan
                         if session_idx < len(sessions):
                             slots_to_assign = sessions[session_idx][0]
@@ -3717,6 +3736,10 @@ class EnhancedQuantumScheduler:
                             slots_to_assign = min(remaining_slots, 2)
                             actual_mins = slots_to_assign * self.slot_duration_minutes
                         slots_to_assign = min(slots_to_assign, remaining_slots)
+
+                        # Still respect strict lunch mode (use actual session length)
+                        if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, slots_to_assign):
+                            continue
                         
                         # Check teacher availability (BulSU Rules)
                         if section.teacher_id:
@@ -3756,11 +3779,7 @@ class EnhancedQuantumScheduler:
                         for slot in self.time_slots:
                             if remaining_slots <= 0:
                                 break
-                            
-                            # Still respect strict lunch mode
-                            if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, 2):
-                                continue
-                            
+
                             # Determine slot count and actual minutes from session plan
                             if session_idx < len(sessions):
                                 slots_to_assign = sessions[session_idx][0]
@@ -3769,6 +3788,10 @@ class EnhancedQuantumScheduler:
                                 slots_to_assign = min(remaining_slots, 2)
                                 actual_mins = slots_to_assign * self.slot_duration_minutes
                             slots_to_assign = min(slots_to_assign, remaining_slots)
+
+                            # Still respect strict lunch mode (use actual session length)
+                            if self.constraints.lunch_mode == 'strict' and self._is_during_lunch(slot.id, slots_to_assign):
+                                continue
                                 
                             if self._is_slot_range_available(room_id, day, slot.id, slots_to_assign):
                                 
@@ -4401,6 +4424,13 @@ class EnhancedQuantumScheduler:
         # USER REQUEST: Resolve overlapping teacher schedules to TBD
         self._resolve_teacher_conflicts_to_tbd()
 
+        # Cleanup: prevent over-allocation from blocking the last few items.
+        trimmed_blocks = self._trim_overallocated_sections()
+        if trimmed_blocks:
+            print(f"🧹 Trimmed {trimmed_blocks} extra session block(s) beyond required hours")
+            self._aggressive_scheduling_pass()
+            self._resolve_teacher_conflicts_to_tbd()
+
         # Final hard-conflict audit for trustworthy API metrics.
         conflict_summary = self._summarize_hard_conflicts()
         self.stats.conflict_count = conflict_summary['total_conflicts']
@@ -4497,6 +4527,45 @@ class EnhancedQuantumScheduler:
                     
         if conflict_count > 0:
             print(f"✅ Auto-resolved {conflict_count} teacher conflicts to 'TBD'")
+
+    def _trim_overallocated_sections(self) -> int:
+        """Remove extra scheduled blocks beyond each section's required slot count.
+
+        Over-allocation can unnecessarily consume scarce contiguous windows (labs)
+        and cause avoidable unscheduled items.
+
+        Returns the number of removed assignment blocks.
+        """
+        removed_blocks = 0
+
+        for section in self.sections.values():
+            required = self._get_required_slot_count(section)
+
+            while True:
+                assignments = list(self.section_assignments.get(section.id, []))
+                assigned = sum(a[3] for a in assignments)
+                if assigned <= required:
+                    break
+
+                # Prefer removing the smallest non-pinned block that doesn't
+                # drop the section below its required slots.
+                candidate = None
+                for room_id, day, start_slot_id, slot_count in sorted(assignments, key=lambda a: a[3]):
+                    slot = self.schedule.get((room_id, day, start_slot_id))
+                    if slot and getattr(slot, 'is_pinned', False):
+                        continue
+                    if assigned - slot_count >= required:
+                        candidate = (room_id, day, start_slot_id, slot_count)
+                        break
+
+                if candidate is None:
+                    break
+
+                room_id, day, start_slot_id, slot_count = candidate
+                self._deallocate_section_assignment(section.id, room_id, day, start_slot_id, slot_count)
+                removed_blocks += 1
+
+        return removed_blocks
 
     def _summarize_hard_conflicts(self) -> Dict[str, int]:
         """Count remaining teacher/student hard conflicts in the finalized schedule."""
@@ -5334,6 +5403,32 @@ def run_enhanced_scheduler(
 
     scheduler.cpu_yield_every_iterations = config.get("cpu_yield_every_iterations", 0)
     scheduler.cpu_yield_seconds = config.get("cpu_yield_seconds", 0.0)
+
+    overall_start = time.perf_counter()
+
+    def _snapshot_scheduler_state(s: EnhancedQuantumScheduler) -> Dict[str, Any]:
+        return {
+            'schedule': copy.deepcopy(s.schedule),
+            'section_assignments': copy.deepcopy(s.section_assignments),
+            'assignment_durations': copy.deepcopy(s.assignment_durations),
+            'subject_scheduled_days': copy.deepcopy(s.subject_scheduled_days),
+            'teacher_daily_load': copy.deepcopy(s.teacher_daily_load),
+            'conflict_heatmap': copy.deepcopy(s.conflict_heatmap),
+            'compatible_rooms': copy.deepcopy(s.compatible_rooms),
+            'constraints': copy.deepcopy(s.constraints),
+            'stats': copy.deepcopy(s.stats),
+        }
+
+    def _restore_scheduler_state(s: EnhancedQuantumScheduler, state: Dict[str, Any]) -> None:
+        s.schedule = state['schedule']
+        s.section_assignments = state['section_assignments']
+        s.assignment_durations = state['assignment_durations']
+        s.subject_scheduled_days = state['subject_scheduled_days']
+        s.teacher_daily_load = state['teacher_daily_load']
+        s.conflict_heatmap = state['conflict_heatmap']
+        s.compatible_rooms = state['compatible_rooms']
+        s.constraints = state['constraints']
+        s.stats = state['stats']
     
     # ── MULTI-PASS SCHEDULING STRATEGY ──────────────────────────────────────
     # Pass 1: Standard High-Quality Run
@@ -5346,6 +5441,12 @@ def run_enhanced_scheduler(
         initial_temperature=init_temp,
         cooling_rate=cool_rate
     )
+
+    # Detach stats from scheduler internals so adaptive retries can't mutate
+    # the object we use for the final response.
+    stats = copy.deepcopy(stats)
+
+    best_state = _snapshot_scheduler_state(scheduler)
     
     # Pass 2: Adaptive Retries (if items remain unscheduled)
     if stats.unscheduled_count > 0:
@@ -5357,6 +5458,17 @@ def run_enhanced_scheduler(
                 break
 
             before_unscheduled = stats.unscheduled_count
+
+            # When only a couple of items remain, a full optimize() retry is usually
+            # counterproductive (it rebuilds the whole schedule from scratch).
+            # Prefer emergency recovery / targeted relaxations instead.
+            if before_unscheduled <= 2:
+                print(
+                    f"ℹ️ PASS 2 skipped: only {before_unscheduled} unscheduled remain; "
+                    "proceeding to emergency recovery."
+                )
+                break
+
             unscheduled_ratio = before_unscheduled / total_sections
             adaptive_retry_iterations = max(
                 1200,
@@ -5371,14 +5483,22 @@ def run_enhanced_scheduler(
                 f"Retrying with adaptive intensity ({adaptive_retry_iterations} iterations)..."
             )
 
+            # IMPORTANT: optimize() mutates scheduler internal state even if we don't accept the result.
+            # Snapshot before the retry, and restore if it doesn't improve so we never regress.
+            retry_snapshot = _snapshot_scheduler_state(scheduler)
+
             allocations_retry, stats_retry = scheduler.optimize(
                 max_iterations=adaptive_retry_iterations,
                 initial_temperature=init_temp * 1.08,
                 cooling_rate=min(0.9985, cool_rate + 0.0004)
             )
 
+            # Detach retry stats for stable comparisons/response.
+            stats_retry = copy.deepcopy(stats_retry)
+
             if stats_retry.unscheduled_count < before_unscheduled:
                 allocations, stats = allocations_retry, stats_retry
+                best_state = _snapshot_scheduler_state(scheduler)
                 print(
                     f"✅ PASS 2.{retry_index + 1} improved unscheduled items: "
                     f"{before_unscheduled} -> {stats.unscheduled_count}"
@@ -5390,11 +5510,19 @@ def run_enhanced_scheduler(
                 and stats_retry.final_cost < stats.final_cost
             ):
                 allocations, stats = allocations_retry, stats_retry
+                best_state = _snapshot_scheduler_state(scheduler)
                 print(
                     f"✅ PASS 2.{retry_index + 1} improved cost with same unscheduled count: "
                     f"{stats.final_cost:.2f}"
                 )
                 continue
+
+            # Not accepted: revert scheduler back to the last best-known state.
+            _restore_scheduler_state(scheduler, retry_snapshot)
+
+            # Keep local result objects consistent with the restored state.
+            allocations = scheduler._build_result()
+            stats = copy.deepcopy(scheduler.stats)
 
             print(
                 f"⏭️ PASS 2.{retry_index + 1} produced no improvement "
@@ -5407,12 +5535,18 @@ def run_enhanced_scheduler(
         
     # Pass 3: Emergency Recovery (if items STILL remain unscheduled)
     if stats.unscheduled_count > 0:
+        emergency_snapshot = _snapshot_scheduler_state(scheduler)
+        emergency_unscheduled_before = int(stats.unscheduled_count)
         print(f"🚨 PASS 2 left {stats.unscheduled_count} items unscheduled. ENABLING EMERGENCY RECOVERY...")
         # Relax constraints: Allow slight capacity overflow, ignore college preference, relax lunch rules
         # Keep college-room matching enabled to prevent cross-college assignments.
         scheduler.constraints.college_room_matching_enabled = True
         scheduler.constraints.strict_lab_room_matching = False
         scheduler.constraints.auto_break_after_consecutive_hours += 2 # Give 2 more hours wiggle room
+        scheduler.constraints.max_subject_sessions_per_week = max(
+            int(getattr(scheduler.constraints, 'max_subject_sessions_per_week', MAX_SUBJECT_SESSIONS_PER_WEEK) or MAX_SUBJECT_SESSIONS_PER_WEEK),
+            MAX_SUBJECT_SESSIONS_PER_WEEK + 1
+        )
         
         # RE-COMPUTE ROOM COMPATIBILITY with relaxed rules
         print("🔄 RE-COMPUTING room compatibility for Emergency Pass...")
@@ -5435,9 +5569,157 @@ def run_enhanced_scheduler(
             else: none += 1
         stats.scheduled_count = fully + partially
         stats.unscheduled_count = none
+        # Keep scheduler.stats consistent as well (source of truth for end-of-run snapshot).
+        scheduler.stats.scheduled_count = stats.scheduled_count
+        scheduler.stats.unscheduled_count = stats.unscheduled_count
         print(f"🏁 EMERGENCY RECOVERY COMPLETE. Final Unscheduled: {none}")
+
+        # Guardrail: never keep a worse emergency result.
+        if int(stats.unscheduled_count) > emergency_unscheduled_before:
+            print(
+                f"⚠️ Emergency recovery regressed unscheduled count "
+                f"({emergency_unscheduled_before} -> {stats.unscheduled_count}); restoring best schedule."
+            )
+            _restore_scheduler_state(scheduler, emergency_snapshot)
+            allocations = scheduler._build_result()
+
+            stats = copy.deepcopy(scheduler.stats)
+
+    # Finalize: always build allocations and stats from the scheduler's final state.
+    allocations = scheduler._build_result()
+    stats = copy.deepcopy(scheduler.stats)
+    stats.time_elapsed_ms = int((time.perf_counter() - overall_start) * 1000)
     # ────────────────────────────────────────────────────────────────────────
     
+    def _diagnose_time_conflict(section: Section, slot_count: int, compatible_rooms: List[int]) -> List[str]:
+        """Return human-readable top reasons why no placement exists for this section."""
+
+        def is_college_compatible(room_id: int) -> bool:
+            if not scheduler.constraints.college_room_matching_enabled:
+                return True
+            room = scheduler.rooms.get(room_id)
+            if not room:
+                return False
+            r_col = str(room.college).strip().upper() if room.college else None
+            s_col = str(section.college).strip().upper() if section.college else None
+            if s_col and r_col and r_col != 'SHARED':
+                return r_col == s_col
+            return True
+
+        is_lab_class = bool(getattr(section, 'requires_lab', False) or (getattr(section, 'lab_hours', 0) or 0) > 0)
+        if is_lab_class:
+            rooms_to_try = [r for r in compatible_rooms if scheduler._is_lab_room(r) and is_college_compatible(r)]
+        else:
+            rooms_to_try = [r for r in compatible_rooms if (not scheduler._is_lab_room(r)) and is_college_compatible(r)]
+
+        total_checked = 0
+        valid_candidates = 0
+        reason_counts: Dict[str, int] = defaultdict(int)
+
+        # Fast-global blockers
+        max_sessions = int(getattr(scheduler.constraints, 'max_subject_sessions_per_week', MAX_SUBJECT_SESSIONS_PER_WEEK) or MAX_SUBJECT_SESSIONS_PER_WEEK)
+        subject_key = scheduler._get_subject_key(section)
+        existing_days = sorted(list(scheduler.subject_scheduled_days.get(subject_key, set())))
+        if len(existing_days) >= max_sessions:
+            return [
+                f"Blocked by max subject sessions/week ({len(existing_days)}/{max_sessions})",
+                f"Subject key: {subject_key}",
+                f"Already scheduled days: {', '.join(existing_days) if existing_days else 'None'}",
+            ]
+
+        for day in scheduler.active_days:
+            # Day-level hard rules
+            if scheduler._check_non_consecutive_day_violation(section, day):
+                # Counts as eliminating all times (and rooms for in-person days)
+                eliminated = len(scheduler.time_slots)
+                if not scheduler._is_online_day(day):
+                    eliminated *= max(1, len(rooms_to_try))
+                total_checked += eliminated
+                reason_counts['non_consecutive_day_rule'] += eliminated
+                continue
+
+            if is_lab_class and scheduler._is_online_day(day):
+                eliminated = len(scheduler.time_slots)
+                total_checked += eliminated
+                reason_counts['lab_on_online_day'] += eliminated
+                continue
+
+            if scheduler._is_online_day(day):
+                for slot in scheduler.time_slots:
+                    total_checked += 1
+                    if scheduler.constraints.lunch_mode == 'strict' and scheduler._is_during_lunch(slot.id, slot_count):
+                        reason_counts['strict_lunch_overlap'] += 1
+                        continue
+                    if section.teacher_id:
+                        is_avail, _ = scheduler._check_faculty_availability(section.teacher_id, day, slot.id, slot_count)
+                        if not is_avail:
+                            reason_counts['faculty_unavailable'] += 1
+                            continue
+                    if section.teacher_id and scheduler._check_teacher_conflict(section.teacher_id, day, slot.id, slot_count, section.id):
+                        reason_counts['teacher_conflict'] += 1
+                        continue
+                    if scheduler._check_student_group_conflict(section.id, section.section_code, day, slot.id, slot_count):
+                        reason_counts['student_group_conflict'] += 1
+                        continue
+                    if section.teacher_id:
+                        daily_slots = scheduler._get_teacher_daily_slots(section.teacher_id, day)
+                        max_daily = scheduler.constraints.max_teacher_hours_per_day * 2
+                        if daily_slots + slot_count > max_daily:
+                            reason_counts['teacher_daily_limit'] += 1
+                            continue
+                    valid_candidates += 1
+            else:
+                for room_id in rooms_to_try:
+                    for slot in scheduler.time_slots:
+                        total_checked += 1
+                        if scheduler.constraints.lunch_mode == 'strict' and scheduler._is_during_lunch(slot.id, slot_count):
+                            reason_counts['strict_lunch_overlap'] += 1
+                            continue
+                        if not scheduler._is_slot_range_available(room_id, day, slot.id, slot_count):
+                            reason_counts['room_occupied'] += 1
+                            continue
+                        if section.teacher_id:
+                            is_avail, _ = scheduler._check_faculty_availability(section.teacher_id, day, slot.id, slot_count)
+                            if not is_avail:
+                                reason_counts['faculty_unavailable'] += 1
+                                continue
+                        if section.teacher_id and scheduler._check_teacher_conflict(section.teacher_id, day, slot.id, slot_count, section.id):
+                            reason_counts['teacher_conflict'] += 1
+                            continue
+                        if scheduler._check_student_group_conflict(section.id, section.section_code, day, slot.id, slot_count):
+                            reason_counts['student_group_conflict'] += 1
+                            continue
+                        if section.teacher_id:
+                            daily_slots = scheduler._get_teacher_daily_slots(section.teacher_id, day)
+                            max_daily = scheduler.constraints.max_teacher_hours_per_day * 2
+                            if daily_slots + slot_count > max_daily:
+                                reason_counts['teacher_daily_limit'] += 1
+                                continue
+                        valid_candidates += 1
+
+        top = sorted(reason_counts.items(), key=lambda kv: kv[1], reverse=True)[:3]
+        top_str = ', '.join([f"{k}={v}" for k, v in top]) if top else 'None'
+
+        # Teacher availability day summary (nice to have for quick diagnosis)
+        teacher_days_line = None
+        if section.teacher_id and scheduler.faculty_profiles and section.teacher_id in scheduler.faculty_profiles:
+            profile = scheduler.faculty_profiles.get(section.teacher_id)
+            unavailable = {str(d).strip().lower() for d in (getattr(profile, 'unavailable_days', set()) or set()) if str(d).strip()}
+            active = {str(d).strip().lower() for d in (scheduler.active_days or []) if str(d).strip()}
+            available_days = sorted(list(active - unavailable))
+            teacher_days_line = f"Teacher available days: {len(available_days)}/{len(active)}"
+
+        details = [
+            f"Session length needed: {slot_count} slot(s)",
+            f"Checked {total_checked} candidate placements; valid={valid_candidates}",
+            f"Top blockers: {top_str}",
+        ]
+        if teacher_days_line:
+            details.append(teacher_days_line)
+        if not rooms_to_try and not scheduler._is_online_day(scheduler.active_days[0] if scheduler.active_days else ''):
+            details.append("No compatible rooms after lab/college filters")
+        return details
+
     # Build unscheduled list with detailed reasons
     unscheduled = []
     for section in sections:
@@ -5474,11 +5756,16 @@ def run_enhanced_scheduler(
                         elif profile.employment_type == 'PartTime' and len(scheduler.active_days) <= 1:
                             teacher_reason = f"Teacher {profile.name} (Part-Time) has limited availability"
                 
-                reason_details = [
-                    f"Tried {len(scheduler.time_slots) * len(scheduler.active_days)} possible combinations",
-                    teacher_reason if teacher_reason else "Possible teacher or student group overlap/consecutive hour violations",
-                    f"Compatible rooms found: {len(compatible_rooms)}"
-                ]
+                # Use a diagnostics pass to explain WHY no placement exists.
+                # This is especially useful when only 1–2 items remain unscheduled.
+                sessions = scheduler._calculate_sessions(section)
+                slot_count = sessions[0][0] if sessions else max(1, needed)
+                slot_count = max(1, min(int(slot_count), int(needed)))
+
+                reason_details = []
+                if teacher_reason:
+                    reason_details.append(teacher_reason)
+                reason_details.extend(_diagnose_time_conflict(section, slot_count, compatible_rooms))
             else:
                 reason = f"Partially scheduled ({assigned}/{needed} slots)"
                 reason_code = 'PARTIAL_SCHEDULE'
@@ -5514,6 +5801,20 @@ def run_enhanced_scheduler(
     
     print("=" * 60)
     print(f"✅ SCHEDULING COMPLETE: {success_rate:.1f}% success rate")
+    if unscheduled:
+        print(f"⚠️ Unscheduled items: {len(unscheduled)}")
+        for item in unscheduled[:10]:
+            code = item.get('section_code') or item.get('course_code') or f"ID {item.get('id')}"
+            subj = item.get('subject_code') or ''
+            teacher = item.get('teacher_name') or ''
+            reason_code = item.get('reason_code') or 'UNKNOWN'
+            reason = item.get('reason') or ''
+            print(f"   - {code} {subj} {teacher} | {reason_code}: {reason}")
+            details = item.get('reason_details')
+            if isinstance(details, list) and details:
+                for detail in details[:3]:
+                    if detail:
+                        print(f"     • {detail}")
     if normalized_online_days:
         print(f"🌐 Online classes: {online_class_count} | Physical classes: {physical_class_count}")
     if hybrid_courses_count > 0:
