@@ -86,6 +86,14 @@ const ROLE_ORDER: Record<string, number> = {
   'staff': 6
 }
 
+const PRESET_AVATARS: string[] = Array.from({ length: 29 }, (_, i) => `/avatars/avatar-${i + 1}.jpg`)
+
+function isPresetAvatarUrl(avatarUrl?: string | null) {
+  if (!avatarUrl) return false
+  const baseUrl = avatarUrl.split('?')[0]
+  return baseUrl.startsWith('/avatars/avatar-')
+}
+
 const NAME_PREFIX_OPTIONS = [
   '',
   'Mr.',
@@ -362,6 +370,7 @@ function FacultyCollegesContent() {
 
   // Image upload states for admin editing
   const [uploadingFacultyImage, setUploadingFacultyImage] = useState(false)
+  const [showFacultyAvatarPicker, setShowFacultyAvatarPicker] = useState(false)
   const facultyImageInputRef = useRef<HTMLInputElement>(null)
 
   const [saving, setSaving] = useState(false)
@@ -1130,6 +1139,90 @@ function FacultyCollegesContent() {
       if (facultyImageInputRef.current) {
         facultyImageInputRef.current.value = ''
       }
+    }
+  }
+
+  const handleSelectFacultyPresetAvatar = async (presetUrl: string) => {
+    if (!selectedFacultyProfile) return
+
+    setUploadingFacultyImage(true)
+    try {
+      // Update faculty_profiles table
+      const { error: updateError } = await (supabase
+        .from('faculty_profiles') as any)
+        .update({ profile_image: presetUrl })
+        .eq('id', selectedFacultyProfile.id)
+
+      if (updateError) throw updateError
+
+      // Sync users.avatar_url so faculty-side menu/profile updates.
+      // Prefer linking by user_id; if missing, attempt to link by email (safe only if that user isn't linked elsewhere).
+      const linkedUserIdRaw = String(selectedFacultyProfile.user_id || '').trim()
+      let linkedUserId = linkedUserIdRaw
+
+      const emailToMatch = String(facultyFormData.email || selectedFacultyProfile.email || '').trim().toLowerCase()
+      if (!linkedUserId && emailToMatch) {
+        const { data: existingUser, error: existingUserError } = await (supabase as any)
+          .from('users')
+          .select('id, email')
+          .ilike('email', emailToMatch)
+          .maybeSingle()
+
+        if (!existingUserError || existingUserError.code === 'PGRST116') {
+          const existingUserId = String(existingUser?.id || '').trim()
+          if (existingUserId) {
+            const { data: profileLinkedToUser, error: profileLinkedToUserError } = await (supabase as any)
+              .from('faculty_profiles')
+              .select('id')
+              .eq('user_id', existingUserId)
+              .neq('id', selectedFacultyProfile.id)
+              .maybeSingle()
+
+            if (!profileLinkedToUserError || profileLinkedToUserError.code === 'PGRST116') {
+              if (!profileLinkedToUser) {
+                const { error: linkError } = await (supabase as any)
+                  .from('faculty_profiles')
+                  .update({ user_id: existingUserId })
+                  .eq('id', selectedFacultyProfile.id)
+
+                if (!linkError) {
+                  linkedUserId = existingUserId
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (linkedUserId) {
+        const { error: avatarUpdateError } = await (supabase
+          .from('users') as any)
+          .update({ avatar_url: presetUrl })
+          .eq('id', linkedUserId)
+
+        if (avatarUpdateError) {
+          console.warn('Could not sync avatar to linked user account:', avatarUpdateError)
+        }
+      }
+
+      // Update local state
+      const imageUrlWithCacheBust = `${presetUrl}?t=${Date.now()}`
+      setFacultyFormData({ ...facultyFormData, profile_image: imageUrlWithCacheBust })
+      setSelectedFacultyProfile({ ...selectedFacultyProfile, profile_image: imageUrlWithCacheBust, user_id: linkedUserId || selectedFacultyProfile.user_id })
+      setFacultyProfiles(prev => prev.map(f =>
+        f.id === selectedFacultyProfile.id
+          ? { ...f, profile_image: imageUrlWithCacheBust }
+          : f
+      ))
+
+      setShowFacultyAvatarPicker(false)
+      setSuccessMessage('✅ Profile icon updated!')
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error: any) {
+      console.error('Error selecting preset avatar:', error)
+      alert(`Failed to update icon: ${error.message || error}`)
+    } finally {
+      setUploadingFacultyImage(false)
     }
   }
 
@@ -2502,7 +2595,11 @@ function FacultyCollegesContent() {
                     <img
                       src={facultyFormData.profile_image}
                       alt="Profile"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: isPresetAvatarUrl(facultyFormData.profile_image) ? 'contain' : 'cover'
+                      }}
                     />
                   ) : (
                     <span style={{ fontSize: '28px', fontWeight: 'bold', color: 'white' }}>
@@ -2539,6 +2636,27 @@ function FacultyCollegesContent() {
                   >
                     {uploadingFacultyImage ? 'Uploading...' : 'Upload Photo'}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowFacultyAvatarPicker(v => !v)}
+                    disabled={uploadingFacultyImage}
+                    style={{
+                      marginLeft: '10px',
+                      padding: '8px 16px',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                      borderRadius: '8px',
+                      cursor: uploadingFacultyImage ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      opacity: uploadingFacultyImage ? 0.7 : 1
+                    }}
+                  >
+                    Choose icon
+                  </button>
+
                   {facultyFormData.profile_image && (
                     <button
                       type="button"
@@ -2550,6 +2668,62 @@ function FacultyCollegesContent() {
                       Remove Photo
                     </button>
                   )}
+
+                  {showFacultyAvatarPicker && (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      background: 'rgba(16, 185, 129, 0.03)'
+                    }}>
+                      <div style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: 'var(--text-secondary)',
+                        marginBottom: '10px'
+                      }}>
+                        Choose an icon
+                      </div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, 70px)',
+                        gap: '10px',
+                        maxWidth: '380px',
+                        maxHeight: '320px',
+                        overflowY: 'auto',
+                        paddingRight: '4px'
+                      }}>
+                        {PRESET_AVATARS.map((url) => {
+                          const isSelected = (facultyFormData.profile_image || '').startsWith(url)
+                          return (
+                            <button
+                              key={url}
+                              type="button"
+                              onClick={() => handleSelectFacultyPresetAvatar(url)}
+                              disabled={uploadingFacultyImage}
+                              title="Select this icon"
+                              style={{
+                                width: '70px',
+                                height: '70px',
+                                borderRadius: '14px',
+                                border: isSelected ? '2px solid #10b981' : '1px solid rgba(16, 185, 129, 0.25)',
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: uploadingFacultyImage ? 'not-allowed' : 'pointer'
+                              }}
+                              aria-label="Select profile icon"
+                            >
+                              <img src={url} alt="Avatar icon" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                     JPG, PNG, GIF or WebP. Max 5MB.
                   </p>

@@ -69,6 +69,14 @@ interface AssignedScheduleInfo {
   total_classes: number
 }
 
+const PRESET_AVATARS: string[] = Array.from({ length: 29 }, (_, i) => `/avatars/avatar-${i + 1}.jpg`)
+
+const isPresetAvatarUrl = (avatarUrl?: string | null) => {
+  if (!avatarUrl) return false
+  const baseUrl = avatarUrl.split('?')[0]
+  return baseUrl.startsWith('/avatars/avatar-')
+}
+
 export default function FacultyProfilePage() {
   const router = useRouter()
   const { theme, collegeTheme, setTheme, setCollegeTheme, toggleTheme } = useTheme()
@@ -87,6 +95,8 @@ export default function FacultyProfilePage() {
   const [loadingSchedule, setLoadingSchedule] = useState(false)
   const [pendingNameRequest, setPendingNameRequest] = useState<{ requested_value: string } | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [selectingAvatar, setSelectingAvatar] = useState(false)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -233,6 +243,7 @@ export default function FacultyProfilePage() {
         office_location?: string;
         position?: string;
         specialization?: string;
+        profile_image?: string;
       } | null = null
 
       const byUserIdResult = await supabase
@@ -250,6 +261,7 @@ export default function FacultyProfilePage() {
             office_location?: string;
             position?: string;
             specialization?: string;
+            profile_image?: string;
           } | null; error: any
         }
 
@@ -271,6 +283,7 @@ export default function FacultyProfilePage() {
               office_location?: string;
               position?: string;
               specialization?: string;
+              profile_image?: string;
             } | null; error: any
           }
         facultyProfileData = byEmailResult.data
@@ -288,7 +301,8 @@ export default function FacultyProfilePage() {
         specialization: facultyProfileData?.specialization || profileData?.specialization || '',
         college: facultyProfileData?.college || '',
         department: facultyProfileData?.department || userData.department || '',
-        position: facultyProfileData?.position || ''
+        position: facultyProfileData?.position || '',
+        avatar_url: userData.avatar_url || facultyProfileData?.profile_image || undefined
       }
 
       setUser(fullProfile)
@@ -653,6 +667,53 @@ export default function FacultyProfilePage() {
     }
   }
 
+  const updateAvatarUrl = async (avatarUrl: string | null) => {
+    if (!user) return
+
+    setSelectingAvatar(true)
+    setMessage(null)
+
+    try {
+      const db = supabase as any
+      const { error: updateError } = await db
+        .from('users')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', user.id)
+
+      if (updateError) throw updateError
+
+      // Keep faculty_profiles in sync when available
+      const facultyUpdateByUserId = await db
+        .from('faculty_profiles')
+        .update({ profile_image: avatarUrl })
+        .eq('user_id', user.id)
+
+      if (facultyUpdateByUserId?.error && user.email) {
+        const facultyUpdateResult = await db
+          .from('faculty_profiles')
+          .update({ profile_image: avatarUrl })
+          .ilike('email', user.email)
+
+        if (facultyUpdateResult?.error) {
+          console.log('Note: faculty_profiles profile_image update not critical:', facultyUpdateResult.error)
+        }
+      }
+
+      const nextAvatar = avatarUrl ? `${avatarUrl}?t=${Date.now()}` : undefined
+      setUser({ ...user, avatar_url: nextAvatar })
+      if (editForm) setEditForm({ ...editForm, avatar_url: nextAvatar })
+
+      setShowAvatarPicker(false)
+      setMessage({ type: 'success', text: avatarUrl ? 'Profile icon updated successfully!' : 'Profile image removed.' })
+      router.refresh()
+    } catch (error: any) {
+      console.error('Error updating avatar:', error)
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile image' })
+    } finally {
+      setSelectingAvatar(false)
+    }
+  }
+
   // Handle password change
   const handlePasswordChange = async () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
@@ -850,7 +911,7 @@ export default function FacultyProfilePage() {
                   <img
                     src={user.avatar_url}
                     alt="Profile"
-                    className={styles.avatarImage}
+                    className={`${styles.avatarImage} ${isPresetAvatarUrl(user.avatar_url) ? styles.avatarImageContain : ''}`}
                   />
                 ) : (
                   <MdPerson size={60} />
@@ -866,7 +927,7 @@ export default function FacultyProfilePage() {
                 <button
                   className={styles.avatarEditBtn}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
+                  disabled={uploadingImage || selectingAvatar}
                   title="Upload profile image"
                 >
                   {uploadingImage ? (
@@ -881,6 +942,52 @@ export default function FacultyProfilePage() {
                   {formatDisplayName(user?.full_name, user?.name_prefix, user?.name_suffix) || user?.full_name || 'Faculty Member'}
                 </h1>
                 <p className={styles.email}>{user?.email}</p>
+
+                <div className={styles.avatarActions}>
+                  <button
+                    type="button"
+                    className={styles.avatarActionBtn}
+                    onClick={() => setShowAvatarPicker((v) => !v)}
+                    disabled={uploadingImage || selectingAvatar}
+                  >
+                    Choose icon
+                  </button>
+                  {user?.avatar_url && (
+                    <button
+                      type="button"
+                      className={styles.avatarActionBtn}
+                      onClick={() => updateAvatarUrl(null)}
+                      disabled={uploadingImage || selectingAvatar}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {showAvatarPicker && (
+                  <div className={styles.avatarPicker}>
+                    <div className={styles.avatarPickerTitle}>Choose an icon</div>
+                    <div className={styles.avatarGrid}>
+                      {PRESET_AVATARS.map((url) => {
+                        const isSelected = (user?.avatar_url || '').startsWith(url)
+                        return (
+                          <button
+                            key={url}
+                            type="button"
+                            className={`${styles.avatarGridBtn} ${isSelected ? styles.avatarGridBtnSelected : ''}`}
+                            onClick={() => updateAvatarUrl(url)}
+                            disabled={uploadingImage || selectingAvatar}
+                            aria-label="Select profile icon"
+                            title="Select this icon"
+                          >
+                            <img src={url} alt="Avatar icon" className={styles.avatarThumb} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
                   <span className={styles.roleBadge}>{user?.position || 'Faculty'}</span>
                   {user?.college && (

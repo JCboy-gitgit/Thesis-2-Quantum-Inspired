@@ -379,6 +379,10 @@
   border-radius: 50%;
 }
 
+.avatarImageContain {
+  object-fit: contain;
+}
+
 .avatarEditBtn {
   position: absolute;
   bottom: 5px;
@@ -423,6 +427,87 @@
   margin: 0 0 5px 0;
   color: var(--text-primary, #ffffff) !important;
   transition: color 0.3s ease;
+}
+
+.avatarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.avatarActionBtn {
+  border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.25));
+  background: transparent;
+  color: var(--text-secondary, #a0aec0);
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.avatarActionBtn:hover {
+  border-color: rgba(var(--college-primary-rgb), 0.5);
+  color: var(--text-primary, #ffffff);
+  background: rgba(var(--college-primary-rgb), 0.12);
+}
+
+.avatarActionBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.avatarPicker {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color, rgba(var(--college-primary-rgb), 0.2));
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.avatarPickerTitle {
+  font-size: 13px;
+  color: var(--text-secondary, #a0aec0);
+  margin-bottom: 10px;
+}
+
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 70px);
+  gap: 10px;
+  max-width: 380px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.avatarGridBtn {
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--college-primary-rgb), 0.2);
+  background: var(--college-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+
+.avatarGridBtn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--college-primary-rgb), 0.5);
+}
+
+.avatarGridBtnSelected {
+  border-color: var(--college-primary);
+}
+
+.avatarThumb {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 
 /* Direct class on the name h1 — bulletproof dark/light override */
