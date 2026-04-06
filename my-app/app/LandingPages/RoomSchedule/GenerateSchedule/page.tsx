@@ -3649,8 +3649,8 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.totalClasses}</span>
                     <span className={styles.statLabel}>
-                      Total Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      Total Classes
+                      <span title="Counts unique class sections included in this generation." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                 </div>
@@ -3659,8 +3659,8 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.scheduledClasses}</span>
                     <span className={styles.statLabel}>
-                      Scheduled Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      Scheduled
+                      <span title="Number of class sections successfully placed." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                 </div>
@@ -3669,8 +3669,8 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{scheduleResult.unscheduledClasses}</span>
                     <span className={styles.statLabel}>
-                      Unscheduled Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this generated scope; Scheduled = unique course-section pairs with at least one schedule; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      Unscheduled
+                      <span title="Number of class sections that could not be placed." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                 </div>
@@ -3678,7 +3678,7 @@ export default function GenerateSchedulePage() {
                   <div className={styles.statIcon}><FaClock /></div>
                   <div className={styles.statInfo}>
                     <span className={styles.statValue}>{(scheduleResult.optimizationStats.timeElapsedMs / 1000).toFixed(2)}s</span>
-                    <span className={styles.statLabel}>Processing Time</span>
+                    <span className={styles.statLabel}>Time to Generate</span>
                   </div>
                 </div>
               </div>
@@ -3686,11 +3686,11 @@ export default function GenerateSchedulePage() {
               {/* Optimization Stats */}
               <div className={styles.formCard}>
                 <h3 className={styles.formSectionTitle}>
-                  <FaAtom /> Quantum-Inspired Optimization Statistics
+                  <FaAtom /> Generation Details
                 </h3>
                 <div className={styles.optimizationStats}>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Iterations</span>
+                    <span className={styles.optimizationLabel}>Steps</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.iterations.toLocaleString()}</span>
                     {scheduleResult.iterationClamp && (
                       <span className={styles.optimizationMeta}>
@@ -3699,29 +3699,29 @@ export default function GenerateSchedulePage() {
                     )}
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Initial Cost</span>
+                    <span className={styles.optimizationLabel}>Starting Score</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.initialCost.toFixed(2)}</span>
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Final Cost</span>
+                    <span className={styles.optimizationLabel}>Final Score</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.finalCost.toFixed(2)}</span>
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Cost Reduction</span>
+                    <span className={styles.optimizationLabel}>Improvement</span>
                     <span className={styles.optimizationValue}>
                       {((1 - scheduleResult.optimizationStats.finalCost / Math.max(scheduleResult.optimizationStats.initialCost, 1)) * 100).toFixed(1)}%
                     </span>
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Improvements Found</span>
+                    <span className={styles.optimizationLabel}>Better Options Found</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.improvements.toLocaleString()}</span>
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Quantum Tunnels</span>
+                    <span className={styles.optimizationLabel}>Escape Moves</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.quantumTunnels.toLocaleString()}</span>
                   </div>
                   <div className={styles.optimizationStat}>
-                    <span className={styles.optimizationLabel}>Block Swaps</span>
+                    <span className={styles.optimizationLabel}>Swap Moves</span>
                     <span className={styles.optimizationValue}>{scheduleResult.optimizationStats.blockSwaps.toLocaleString()}</span>
                   </div>
                 </div>
@@ -5549,7 +5549,7 @@ export default function GenerateSchedulePage() {
                       <MdFlashOn size={20} />
                       <p>
                         Select days where ALL classes are conducted online/asynchronously. These days will NOT require room allocations,
-                        allowing the quantum algorithm to &quot;tunnel&quot; through problem spaces by shifting F2F demand to available days.
+                          which helps free up room capacity on the remaining in-person days.
                       </p>
                     </div>
 
@@ -5585,7 +5585,7 @@ export default function GenerateSchedulePage() {
                       <div className={styles.onlineDaysSummary}>
                         <strong>Online Days Selected:</strong> {config.onlineDays.join(', ')}
                         <p className={styles.onlineDaysNote}>
-                          ⚡ Classes on these days will NOT require room allocations. The algorithm will prioritize F2F classes on remaining days.
+                          ⚡ Classes on these days will NOT require rooms. In-person classes will be scheduled on the remaining days.
                         </p>
                       </div>
                     )}
@@ -5613,7 +5613,7 @@ export default function GenerateSchedulePage() {
                         <div className={styles.timeConfigInfo}>
                           <FaCog size={20} />
                           <p>
-                            Configure how the algorithm handles specific BulSU scheduling rules. These constraints directly influence the cost matrix of the quantum simulation.
+                            Configure how schedule generation follows BulSU scheduling rules. These constraints guide how classes are placed and prioritized.
                           </p>
                         </div>
 
@@ -5921,21 +5921,21 @@ export default function GenerateSchedulePage() {
                   {showAdvancedSettings && (
                     <div className={styles.formCard}>
                       <h3 className={styles.formSectionTitle}>
-                        <FaAtom /> Quantum-Inspired Algorithm Settings
+                        <FaAtom /> Generation Settings
                       </h3>
 
                       <div className={styles.algorithmInfo}>
                         <MdFlashOn size={20} />
                         <p>
-                          A smart optimization method that mimics quantum behavior to avoid getting stuck in “good but not best” solutions, helping it find the best possible way to assign rooms.
+                          Controls how thoroughly the system searches for a good room schedule. Higher values can improve results but may take longer.
                         </p>
                       </div>
 
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Number of Attempts
-                            <span className={styles.formHint}>Higher = better solution (default: max)</span>
+                            Search Steps
+                            <span className={styles.formHint}>More steps = more thorough (slower)</span>
                           </label>
                           <input
                             type="number"
@@ -5952,8 +5952,8 @@ export default function GenerateSchedulePage() {
                         </div>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Starting Shuffle
-                            <span className={styles.formHint}>Starting randomness level</span>
+                            Starting Randomness
+                            <span className={styles.formHint}>How varied the first tries are</span>
                           </label>
                           <input
                             type="number"
@@ -5973,8 +5973,8 @@ export default function GenerateSchedulePage() {
                       <div className={styles.formRow}>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Slowdown Rate
-                            <span className={styles.formHint}>Temperature decrease rate (0.99-0.9999)</span>
+                            Stabilization Rate
+                            <span className={styles.formHint}>How quickly it settles (0.99-0.9999)</span>
                           </label>
                           <input
                             type="number"
@@ -5991,8 +5991,8 @@ export default function GenerateSchedulePage() {
                         </div>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>
-                            Escape Chance
-                            <span className={styles.formHint}>Chance to escape local minima (0.05-0.30)</span>
+                            Explore New Options
+                            <span className={styles.formHint}>Try different options (0.05-0.30)</span>
                           </label>
                           <input
                             type="number"
@@ -6040,7 +6040,7 @@ export default function GenerateSchedulePage() {
                             quantumTunnelingProbability: 0.10
                           }))}
                         >
-                          Fast (2k iterations)
+                          Fast (2k steps)
                         </button>
                         <button
                           className={styles.presetButton}
@@ -6052,7 +6052,7 @@ export default function GenerateSchedulePage() {
                             quantumTunnelingProbability: 0.12
                           }))}
                         >
-                          Balanced (5k iterations)
+                          Balanced (5k steps)
                         </button>
                         <button
                           className={`${styles.presetButton} ${styles.activePreset}`}
@@ -6064,7 +6064,7 @@ export default function GenerateSchedulePage() {
                             quantumTunnelingProbability: 0.15
                           }))}
                         >
-                          Maximum (10k iterations)
+                          Thorough (10k steps)
                         </button>
                       </div>
                     </div>
@@ -6086,7 +6086,7 @@ export default function GenerateSchedulePage() {
                         onClick={() => setShowManualModal(true)}
                         disabled={isScheduling || isSubmittingGeneration || !canGenerate}
                       >
-                        <MdTableChart size={20} /> Manual Edit First
+                        <MdTableChart size={20} /> Manual Edit
                       </button>
                       <button
                         className={`${styles.generateButton} ${isScheduling ? styles.generating : ''}`}
@@ -6097,30 +6097,30 @@ export default function GenerateSchedulePage() {
                           <>
                             <FaSpinner className={styles.spinnerIcon} />
                             {generationPhase === 'queued'
-                              ? `Queued for Generation... ${(timer / 1000).toFixed(1)}s`
-                              : `Generating Schedule... ${(timer / 1000).toFixed(1)}s`}
+                              ? `Queued... ${(timer / 1000).toFixed(1)}s`
+                              : `Generating... ${(timer / 1000).toFixed(1)}s`}
                           </>
                         ) : isSubmittingGeneration ? (
                           <>
                             <FaSpinner className={styles.spinnerIcon} />
-                            Submitting Request...
+                            Starting...
                           </>
                         ) : (
                           <>
-                            <MdPlayArrow size={20} /> Generate Room Allocation Schedule
+                            <MdPlayArrow size={20} /> Generate Schedule
                           </>
                         )}
                       </button>
                     </div>
                     {!canGenerate && (
                       <p className={styles.generateHint}>
-                        Please enter a schedule name to generate
+                        Enter a schedule name to continue
                       </p>
                     )}
                     {canGenerate && !isScheduling && (
                       <p className={styles.generateInfo}>
                         <MdFlashOn size={16} />
-                        Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
+                        Will schedule {classes.length} classes across {rooms.length} rooms using {config.maxIterations.toLocaleString()} steps
                       </p>
                     )}
 

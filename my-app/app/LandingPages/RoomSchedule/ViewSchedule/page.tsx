@@ -2998,7 +2998,7 @@ export default function ViewSchedulePage() {
                       {schedule.optimization_stats && (
                         <div className={styles.optimizationInfo}>
                           <div className={styles.optStatItem}>
-                            <span className={styles.optStatLabel}>Processing Time</span>
+                            <span className={styles.optStatLabel}>Time to Generate</span>
                             <span className={styles.optStatValue}>
                               {schedule.optimization_stats.time_elapsed_ms
                                 ? `${(schedule.optimization_stats.time_elapsed_ms / 1000).toFixed(2)}s`
@@ -3006,7 +3006,7 @@ export default function ViewSchedulePage() {
                             </span>
                           </div>
                           <div className={styles.optStatItem}>
-                            <span className={styles.optStatLabel}>Cost Reduction</span>
+                            <span className={styles.optStatLabel}>Improvement</span>
                             <span className={styles.optStatValue}>
                               {schedule.optimization_stats.initial_cost && schedule.optimization_stats.final_cost
                                 ? `${((1 - schedule.optimization_stats.final_cost / Math.max(schedule.optimization_stats.initial_cost, 1)) * 100).toFixed(1)}%`

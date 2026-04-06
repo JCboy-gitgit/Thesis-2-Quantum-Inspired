@@ -7763,12 +7763,23 @@ input:checked+.toggleSlider:before {
   }
 }
 
-/* Manual Edit First Button */
+/* Manual Edit Button */
 .generateButtonGroup {
   display: flex;
   gap: 16px;
   width: 100%;
   margin-bottom: 12px;
+}
+
+.generateButtonGroup > button {
+  flex: 1;
+  min-width: 0;
+}
+
+.generateButtonGroup .manualEditButton,
+.generateButtonGroup .generateButton {
+  padding: 12px 14px;
+  font-size: 0.95rem;
 }
 
 .manualEditButton {

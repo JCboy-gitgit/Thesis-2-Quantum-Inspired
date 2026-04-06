@@ -717,7 +717,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                         pageSteps.push({
                             target: '#gen-step3-container',
                             placement: 'top',
-                            content: 'Step 3: Final Config. Set specific rules like Online Days, Operating Hours, and launch the Quantum-Inspired Algorithm!',
+                            content: 'Step 3: Final Setup. Set specific rules like Online Days and Operating Hours, then generate your schedule.',
                             disableBeacon: false,
                         });
                     }
@@ -735,7 +735,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                         pageSteps.push({
                             target: '#gen-online-config',
                             placement: 'top',
-                            content: 'The "Online Day" Rule: Force specific days to be strictly Online. This is a "Hard Constraint" that the algorithm will always respect.',
+                            content: 'Online Days: Force specific days to be strictly Online. This rule is always enforced when generating.',
                             disableBeacon: false,
                         });
                     }
@@ -744,7 +744,7 @@ export default function AdminTutorial({ run, setRun, onStepChange }: AdminTutori
                         pageSteps.push({
                             target: '#gen-generate-action',
                             placement: 'top',
-                            content: 'Ready to Go? Click Generate! You can also use "Manual Edit First" to pre-place some difficult classes before the AI runs.',
+                            content: 'Ready to go? Click Generate Schedule. You can also use Manual Edit to pre-place some difficult classes before generating.',
                             disableBeacon: false,
                         });
                     }
