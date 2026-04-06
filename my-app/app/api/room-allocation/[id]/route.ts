@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.PYTHON_BACKEND_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function GET(
   request: NextRequest,
@@ -58,8 +58,10 @@ export async function DELETE(
     const scheduleId = id;
     const response = await fetch(`${BACKEND_URL}/api/schedules/${scheduleId}`, {
       method: 'DELETE',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     });
     if (!response.ok) {

@@ -96,12 +96,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-    console.log('[API] POST /api/schedule-requests received')
+    if (process.env.NODE_ENV === 'development') {
+        console.log('[API] POST /api/schedule-requests received')
+    }
 
-    // Debug Env Vars
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    console.log(`[API] Env check: URL=${!!url}, KEY=${!!key ? 'PRESENT' : 'MISSING'}`)
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[API] Env check: URL=${!!url}, KEY=${!!key ? 'PRESENT' : 'MISSING'}`)
+    }
 
     try {
         if (!url || !key) {
@@ -112,7 +115,9 @@ export async function POST(request: NextRequest) {
         let body
         try {
             const text = await request.text()
-            console.log('[API] Raw body:', text)
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[API] Body length:', text?.length || 0)
+            }
             body = text ? JSON.parse(text) : {}
         } catch (e) {
             console.error('[API] Failed to parse body:', e)

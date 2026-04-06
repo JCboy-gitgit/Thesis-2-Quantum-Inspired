@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
 // Backend URLs - Use environment variable first, then Render, then localhost for development
-const ENV_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL
+const ENV_BACKEND_URL = process.env.PYTHON_BACKEND_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
 const LAPTOP_BACKEND_URL = process.env.LAPTOP_BACKEND_URL
 const RENDER_BACKEND_URL = 'https://thesis-2-quantum-inspired.onrender.com'
 const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000'
@@ -54,15 +54,27 @@ const buildPreferredBackendCandidates = (
   ])
 
   if (preference === 'local') {
-    return localCandidates
+    return dedupeBackendCandidates([
+      ...localCandidates,
+      ...laptopCandidates,
+      ...renderCandidates,
+    ])
   }
 
   if (preference === 'laptop') {
-    return laptopCandidates
+    return dedupeBackendCandidates([
+      ...laptopCandidates,
+      ...localCandidates,
+      ...renderCandidates,
+    ])
   }
 
   if (preference === 'render') {
-    return renderCandidates
+    return dedupeBackendCandidates([
+      ...renderCandidates,
+      ...localCandidates,
+      ...laptopCandidates,
+    ])
   }
 
   // Auto mode preserves existing behavior by runtime.
@@ -1378,7 +1390,7 @@ export async function POST(request: NextRequest) {
     for (const backend of orderedBackendUrls) {
       try {
         const backendRequestStartedAt = Date.now()
-        backendResponse = await fetch(`${backend.url}/api/schedules/generate`, {
+        const candidateResponse = await fetch(`${backend.url}/api/schedules/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1389,6 +1401,20 @@ export async function POST(request: NextRequest) {
         })
         backendResponseMs = Date.now() - backendRequestStartedAt
 
+        // If this backend is up but returned a server/gateway failure (e.g., ngrok
+        // offline tunnel), try the next candidate instead of failing immediately.
+        if (!candidateResponse.ok) {
+          const backendErrorPreview = await candidateResponse.clone().text()
+          const isNgrokTunnelOffline = /ERR_NGROK_/i.test(backendErrorPreview)
+
+          if (candidateResponse.status >= 500 || isNgrokTunnelOffline) {
+            console.warn(`⚠️ ${backend.type} backend responded ${candidateResponse.status}; trying next backend candidate...`)
+            lastError = new Error(`Backend ${backend.url} returned status ${candidateResponse.status}`)
+            continue
+          }
+        }
+
+        backendResponse = candidateResponse
         usedBackendUrl = backend.url
         break // Success, exit the loop
 
@@ -1397,7 +1423,7 @@ export async function POST(request: NextRequest) {
         console.warn(`⚠️ ${backend.type} backend failed:`, fetchError.message)
 
         // Continue to next backend
-        if (backend === uniqueBackendUrls[uniqueBackendUrls.length - 1]) {
+        if (backend === orderedBackendUrls[orderedBackendUrls.length - 1]) {
           // This was the last backend, throw error
           console.error('❌ All backends failed')
 

@@ -27,7 +27,7 @@ from models import (
 )
 from database import (
     get_supabase_client, get_all_rooms, get_sections_for_scheduling, get_all_sections,
-    get_all_teachers, get_time_slots, save_schedule_entries,
+    get_all_teachers, get_time_slots, save_schedule_entries, get_available_rooms,
     check_room_conflicts, check_teacher_conflicts, get_room_utilization,
     get_schedule_by_id, delete_schedule, get_all_schedules,
     create_generated_schedule, update_generated_schedule, save_room_allocations,
@@ -176,7 +176,7 @@ async def health_check():
     try:
         client = get_supabase_client()
         # Simple query to verify DB connection (sync client, no await needed)
-        result = client.table("rooms").select("id").limit(1).execute()
+        await asyncio.to_thread(client.table("rooms").select("id").limit(1).execute)
         db_status = "connected"
     except Exception as e:
         db_status = "error"
@@ -264,8 +264,20 @@ async def get_room(room_id: int):
 async def get_room_utilization_stats(room_id: int, schedule_id: Optional[int] = None):
     """Get room utilization statistics"""
     try:
-        stats = await get_room_utilization(room_id, schedule_id)
-        return stats
+        resolved_schedule_id = schedule_id
+        if resolved_schedule_id is None:
+            schedules = await get_all_schedules()
+            if schedules:
+                resolved_schedule_id = schedules[0].get("id")
+
+        if resolved_schedule_id is None:
+            raise HTTPException(status_code=404, detail="No schedules found")
+
+        utilization = await get_room_utilization(int(resolved_schedule_id))
+        room_stats = next((row for row in utilization if row.get("room_id") == room_id), None)
+        if room_stats is None:
+            raise HTTPException(status_code=404, detail="Room not found")
+        return {"schedule_id": int(resolved_schedule_id), **room_stats}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve room utilization")
 
@@ -437,6 +449,12 @@ class ScheduleGenerationRequest(BaseModel):
     
     # Use enhanced scheduler
     use_enhanced_scheduler: bool = True
+
+    # Resource tuning (optional). Keep quality-first defaults.
+    low_resource_mode: bool = False
+    auto_low_resource_mode: bool = False
+    cpu_yield_every_iterations: int = 0
+    cpu_yield_ms: float = 0.0
     
     # NEW: Fixed/Manual allocations to prioritize
     fixed_allocations: Optional[List[Dict[str, Any]]] = None
@@ -448,7 +466,7 @@ class ScheduleGenerationRequest(BaseModel):
     SOFT_LUNCH_OVERLAP: Optional[int] = 500
     SOFT_TEACHER_OVERLOAD: Optional[int] = 80
     SOFT_ACCESSIBILITY_BONUS: Optional[int] = -10
-    SOFT_MORNING_PREFERENCE: Optional[int] = 5
+    SOFT_MORNING_PREFERENCE: Optional[int] = 40
     SOFT_DAY_DISTRIBUTION: Optional[int] = 20
     SOFT_SIBLING_DIFFERENT_DAY: Optional[int] = 100
     SOFT_OVERLOADED_TEACHER: Optional[int] = 200
@@ -459,11 +477,22 @@ class ScheduleGenerationRequest(BaseModel):
     SOFT_FACULTY_LONG_GAP_3H: Optional[int] = 1200
     SOFT_FACULTY_LONG_GAP_4H: Optional[int] = 3000
     SOFT_LOAD_IMBALANCE: Optional[int] = 300
-    SOFT_LATE_CLASS: Optional[int] = 150
-    SOFT_ROOM_IDLE_GAP: Optional[int] = 100
+    SOFT_LATE_CLASS: Optional[int] = 250
+    SOFT_ROOM_IDLE_GAP: Optional[int] = 200
+    SOFT_ROOM_PROFILE_EXTRA_ROOMS: Optional[int] = 900
+    SOFT_ROOM_PROFILE_SPREAD: Optional[int] = 450
     SOFT_UNEVEN_SECTION_DIST: Optional[int] = 250
     SOFT_CONSECUTIVE_DAY_PENALTY: Optional[int] = 0
-    SOFT_SECTION_GAP: Optional[int] = 50
+    SOFT_SECTION_GAP: Optional[int] = 120
+    SOFT_EVENING_CLASS: Optional[int] = 350
+    SOFT_NIGHT_CLASS_EXTRA: Optional[int] = 600
+    SOFT_COHORT_FRAGMENTATION: Optional[int] = 250
+    SOFT_COHORT_DAILY_SPAN: Optional[int] = 180
+    SOFT_COHORT_EXTRA_DAYS: Optional[int] = 250
+    SOFT_COHORT_LIGHT_DAY: Optional[int] = 100
+    SOFT_FACULTY_EVENING_CLASS: Optional[int] = 250
+    SOFT_FACULTY_EXTRA_DAYS: Optional[int] = 200
+    SOFT_FACULTY_FRAGMENTATION: Optional[int] = 300
     SOFT_FACULTY_NIGHT_CLASS: Optional[int] = 200
     SOFT_FACULTY_DAILY_SPAN: Optional[int] = 500
     SOFT_VSL_SHIFT_MISMATCH: Optional[int] = 500
@@ -550,8 +579,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         # Use direct data from frontend if provided, otherwise fetch from database
         if request.sections_data and request.rooms_data:
             print("📦 Using data provided directly from frontend")
-            sections = [s.dict() for s in request.sections_data]
-            rooms = [r.dict() for r in request.rooms_data]
+            sections = [s.model_dump() for s in request.sections_data]
+            rooms = [r.model_dump() for r in request.rooms_data]
             
             # Generate time slots using frontend's slot duration (skip lunch gap)
             lunch_start_str = request.lunch_start if request.lunch_mode != 'none' else None
@@ -570,7 +599,7 @@ async def generate_schedule(request: ScheduleGenerationRequest):
                 ]
                 print(f"⏰ Generated {len(time_slots)} time slots of {request.slot_duration} minutes ({request.start_time} - {request.end_time}, lunch gap: {lunch_start_str}-{lunch_end_str})")
             elif request.time_slots:
-                time_slots = [t.dict() for t in request.time_slots]
+                time_slots = [t.model_dump() for t in request.time_slots]
                 print(f"⏰ Using {len(time_slots)} custom time slots from frontend")
             else:
                 time_slots = await get_time_slots()
@@ -648,6 +677,11 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "allow_g1_g2_split_sessions": request.allow_g1_g2_split_sessions,
             "enforce_g1_g2_equal_hours": request.enforce_g1_g2_equal_hours,
             "faculty_types": request.faculty_types,
+            # Runtime resource tuning
+            "low_resource_mode": request.low_resource_mode,
+            "auto_low_resource_mode": request.auto_low_resource_mode,
+            "cpu_yield_every_iterations": request.cpu_yield_every_iterations,
+            "cpu_yield_ms": request.cpu_yield_ms,
             # Soft Penalties
             "SOFT_ROOM_TYPE_MISMATCH": request.SOFT_ROOM_TYPE_MISMATCH,
             "SOFT_ROOM_TYPE_MAJOR_MISMATCH": request.SOFT_ROOM_TYPE_MAJOR_MISMATCH,
@@ -668,9 +702,20 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "SOFT_LOAD_IMBALANCE": request.SOFT_LOAD_IMBALANCE,
             "SOFT_LATE_CLASS": request.SOFT_LATE_CLASS,
             "SOFT_ROOM_IDLE_GAP": request.SOFT_ROOM_IDLE_GAP,
+            "SOFT_ROOM_PROFILE_EXTRA_ROOMS": request.SOFT_ROOM_PROFILE_EXTRA_ROOMS,
+            "SOFT_ROOM_PROFILE_SPREAD": request.SOFT_ROOM_PROFILE_SPREAD,
             "SOFT_UNEVEN_SECTION_DIST": request.SOFT_UNEVEN_SECTION_DIST,
             "SOFT_CONSECUTIVE_DAY_PENALTY": request.SOFT_CONSECUTIVE_DAY_PENALTY,
             "SOFT_SECTION_GAP": request.SOFT_SECTION_GAP,
+            "SOFT_EVENING_CLASS": request.SOFT_EVENING_CLASS,
+            "SOFT_NIGHT_CLASS_EXTRA": request.SOFT_NIGHT_CLASS_EXTRA,
+            "SOFT_COHORT_FRAGMENTATION": request.SOFT_COHORT_FRAGMENTATION,
+            "SOFT_COHORT_DAILY_SPAN": request.SOFT_COHORT_DAILY_SPAN,
+            "SOFT_COHORT_EXTRA_DAYS": request.SOFT_COHORT_EXTRA_DAYS,
+            "SOFT_COHORT_LIGHT_DAY": request.SOFT_COHORT_LIGHT_DAY,
+            "SOFT_FACULTY_EVENING_CLASS": request.SOFT_FACULTY_EVENING_CLASS,
+            "SOFT_FACULTY_EXTRA_DAYS": request.SOFT_FACULTY_EXTRA_DAYS,
+            "SOFT_FACULTY_FRAGMENTATION": request.SOFT_FACULTY_FRAGMENTATION,
             "SOFT_FACULTY_NIGHT_CLASS": request.SOFT_FACULTY_NIGHT_CLASS,
             "SOFT_FACULTY_DAILY_SPAN": request.SOFT_FACULTY_DAILY_SPAN,
             "SOFT_VSL_SHIFT_MISMATCH": request.SOFT_VSL_SHIFT_MISMATCH,

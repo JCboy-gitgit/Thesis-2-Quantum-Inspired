@@ -25,6 +25,7 @@ import random
 import time
 import math
 import re
+import os
 from collections import defaultdict
 from datetime import datetime
 
@@ -40,7 +41,7 @@ SOFT_CAPACITY_WASTE = 15
 SOFT_LUNCH_OVERLAP = 500  # Increased - lunch break is important
 SOFT_TEACHER_OVERLOAD = 80
 SOFT_ACCESSIBILITY_BONUS = -10  # Bonus (negative penalty)
-SOFT_MORNING_PREFERENCE = 5
+SOFT_MORNING_PREFERENCE = 40
 SOFT_DAY_DISTRIBUTION = 20
 SOFT_SIBLING_DIFFERENT_DAY = 100  # Penalty when LEC and LAB siblings are on different days
 SOFT_ROOM_TYPE_MAJOR_MISMATCH = 500  # Penalty for placing lecture in specialized lab (Drafting, Science Lab, etc.)
@@ -76,8 +77,8 @@ SOFT_FACULTY_LONG_GAP_2H = 400
 SOFT_FACULTY_LONG_GAP_3H = 1200
 SOFT_FACULTY_LONG_GAP_4H = 3000
 SOFT_LOAD_IMBALANCE = 300
-SOFT_LATE_CLASS = 150
-SOFT_ROOM_IDLE_GAP = 100
+SOFT_LATE_CLASS = 250
+SOFT_ROOM_IDLE_GAP = 200
 SOFT_UNEVEN_SECTION_DIST = 250
 
 # PERFORMANCE THRESHOLDS
@@ -484,7 +485,7 @@ class SchedulingConstraints:
     SOFT_LUNCH_OVERLAP: int = 500
     SOFT_TEACHER_OVERLOAD: int = 80
     SOFT_ACCESSIBILITY_BONUS: int = -10
-    SOFT_MORNING_PREFERENCE: int = 5
+    SOFT_MORNING_PREFERENCE: int = 40
     SOFT_DAY_DISTRIBUTION: int = 20
     SOFT_SIBLING_DIFFERENT_DAY: int = 100
     SOFT_OVERLOADED_TEACHER: int = 200
@@ -495,13 +496,28 @@ class SchedulingConstraints:
     SOFT_FACULTY_LONG_GAP_3H: int = 1200
     SOFT_FACULTY_LONG_GAP_4H: int = 3000
     SOFT_LOAD_IMBALANCE: int = 300
-    SOFT_LATE_CLASS: int = 150
-    SOFT_ROOM_IDLE_GAP: int = 100
+    SOFT_LATE_CLASS: int = 250
+    SOFT_ROOM_IDLE_GAP: int = 200
+    # Room packing (new): prefer using fewer rooms per day within the same room-equipment profile
+    SOFT_ROOM_PROFILE_EXTRA_ROOMS: int = 900
+    SOFT_ROOM_PROFILE_SPREAD: int = 450
     SOFT_UNEVEN_SECTION_DIST: int = 250
     SOFT_CONSECUTIVE_DAY_PENALTY: int = 0
     
     # Welfare and Miscellaneous Penalties
-    SOFT_SECTION_GAP: int = 50
+    SOFT_SECTION_GAP: int = 120
+    # Student/Cohort compactness penalties (new)
+    SOFT_EVENING_CLASS: int = 350  # 17:00-18:00 starts are discouraged
+    SOFT_NIGHT_CLASS_EXTRA: int = 600  # extra penalty on top of SOFT_LATE_CLASS for >=18:00 starts
+    SOFT_COHORT_FRAGMENTATION: int = 250  # multiple disjoint blocks in the same day
+    SOFT_COHORT_DAILY_SPAN: int = 180  # long day windows (first->last) beyond target span
+    SOFT_COHORT_EXTRA_DAYS: int = 250  # too many active days for a cohort
+    SOFT_COHORT_LIGHT_DAY: int = 100  # discourage days with only a tiny amount of classes
+
+    # Faculty compactness penalties (new)
+    SOFT_FACULTY_EVENING_CLASS: int = 250
+    SOFT_FACULTY_EXTRA_DAYS: int = 200
+    SOFT_FACULTY_FRAGMENTATION: int = 300  # multiple disjoint teaching blocks in one day
     SOFT_FACULTY_NIGHT_CLASS: int = 200
     SOFT_FACULTY_DAILY_SPAN: int = 500
     SOFT_G1_G2_IMBALANCE: int = 2000 # NEW: Penalty for scheduling G1 but not G2 (or vice versa)
@@ -694,6 +710,26 @@ class EnhancedQuantumScheduler:
         # Problem 3: Decompose BEFORE storing sections
         # We need self.rooms initialized first to check capacities
         self.rooms = {r.id: r for r in rooms}
+
+        # Pre-compute room "profile" groupings for room packing heuristics.
+        # Rooms with the same profile are interchangeable for packing purposes.
+        # Profile includes college (primary bucket to respect college filtering)
+        # + campus + building + floor (so packing happens locally),
+        # plus room_type, classification, and equipment tags.
+        self.room_profile_key_by_room_id: Dict[int, Tuple[str, str, str, int, str, str, Tuple[str, ...]]] = {}
+        self.rooms_by_profile_key: Dict[Tuple[str, str, str, int, str, str, Tuple[str, ...]], List[int]] = defaultdict(list)
+
+        for room_id, room in self.rooms.items():
+            college = (str(room.college).strip().upper() if room.college else '')
+            campus = (str(room.campus).strip().upper() if room.campus else '')
+            building = (str(room.building).strip().upper() if room.building else '')
+            floor = int(getattr(room, 'floor', 0) or 0)
+            room_type = (room.room_type or '').strip().lower()
+            classification = (room.specific_classification or '').strip().lower()
+            tags = tuple(sorted([str(t).strip().lower() for t in (room.feature_tags or set()) if str(t).strip()]))
+            key = (college, campus, building, floor, room_type, classification, tags)
+            self.room_profile_key_by_room_id[room_id] = key
+            self.rooms_by_profile_key[key].append(room_id)
         self.constraints = constraints or SchedulingConstraints()
         self.faculty_profiles = {f.id: f for f in (faculty_profiles or [])}  # Index by ID
         self.time_slots = time_slots
@@ -763,6 +799,11 @@ class EnhancedQuantumScheduler:
         
         # Optimization stats
         self.stats = OptimizationStats()
+
+        # Runtime tuning knobs (configured by runner). When enabled, the optimizer
+        # yields CPU periodically to reduce sustained resource pressure.
+        self.cpu_yield_every_iterations = 0
+        self.cpu_yield_seconds = 0.0
         
         # NEW: Apply fixed/manual allocations from frontend
         if fixed_allocations:
@@ -1779,6 +1820,190 @@ class EnhancedQuantumScheduler:
 
         return penalty
 
+    def _is_weekday(self, day: str) -> bool:
+        """Return True for Monday-Friday."""
+        return day.lower() in {"monday", "tuesday", "wednesday", "thursday", "friday"}
+
+    def _evening_penalty(self, start_minutes: int, day: str) -> float:
+        """Soft penalty for evening/night starts (>=17:00), stronger on weekdays."""
+        if start_minutes < 17 * 60:
+            return 0.0
+
+        day_factor = 1.35 if self._is_weekday(day) else 0.85
+        # 17:00-18:00 (evening shoulder)
+        if start_minutes < 18 * 60:
+            hours_into_evening = (start_minutes - 17 * 60) / 60.0
+            return self.constraints.SOFT_EVENING_CLASS * day_factor * (1.0 + hours_into_evening)
+
+        # >=18:00 (night)
+        hours_into_night = (start_minutes - 18 * 60) / 60.0
+        return (
+            self.constraints.SOFT_EVENING_CLASS * day_factor * 2.0
+            + self.constraints.SOFT_LATE_CLASS * day_factor * (1.0 + hours_into_night)
+            + self.constraints.SOFT_NIGHT_CLASS_EXTRA * day_factor * (1.0 + hours_into_night) ** 2
+        )
+
+    def _estimate_block_evening_penalty(self, day: str, start_slot_id: int, slot_count: int) -> float:
+        """Sum evening/night penalties for every slot in a contiguous block."""
+        if slot_count <= 0:
+            return 0.0
+
+        penalty = 0.0
+        for offset in range(slot_count):
+            slot_obj = self.time_slots_by_id.get(start_slot_id + offset)
+            if slot_obj:
+                penalty += self._evening_penalty(slot_obj.start_minutes, day)
+        return penalty
+
+    def _estimate_cohort_compactness_penalty(
+        self,
+        section: Section,
+        day: str,
+        start_slot_id: int,
+        slot_count: int
+    ) -> float:
+        """Estimate cohort-day compactness (fragmentation + long span) for greedy scoring."""
+        occupied_slots: Set[int] = set()
+
+        for other_id, assignments in self.section_assignments.items():
+            other_section = self.sections.get(other_id)
+            if not other_section:
+                continue
+            if not self._section_codes_overlap(section.section_code, other_section.section_code):
+                continue
+
+            for _, sched_day, sched_start, sched_count in assignments:
+                if sched_day != day:
+                    continue
+                for offset in range(sched_count):
+                    occupied_slots.add(sched_start + offset)
+
+        for offset in range(slot_count):
+            occupied_slots.add(start_slot_id + offset)
+
+        if len(occupied_slots) < 2:
+            return 0.0
+
+        sorted_slots = sorted(occupied_slots)
+
+        blocks = 1
+        for i in range(1, len(sorted_slots)):
+            if sorted_slots[i] > sorted_slots[i - 1] + 1:
+                blocks += 1
+
+        penalty = 0.0
+        if blocks > 1:
+            penalty += self.constraints.SOFT_COHORT_FRAGMENTATION * ((blocks - 1) ** 2)
+
+        span_slots = sorted_slots[-1] - sorted_slots[0] + 1
+        desired_span_slots = self._slots_for_minutes(360)  # target ~6 hours/day window
+        if span_slots > desired_span_slots:
+            penalty += self.constraints.SOFT_COHORT_DAILY_SPAN * ((span_slots - desired_span_slots) ** 2)
+
+        return penalty
+
+    def _estimate_room_compactness_penalty(
+        self,
+        room_id: Optional[int],
+        day: str,
+        start_slot_id: int,
+        slot_count: int
+    ) -> float:
+        """
+        Estimate room utilization compactness for a candidate placement.
+
+        Lower is better. Encourages contiguous room usage and discourages fragmented
+        room-day timelines with long idle windows.
+        """
+        if room_id is None:
+            return 0.0
+
+        occupied_slots: Set[int] = set()
+        for (rid, sched_day, slot_id), sched_slot in self.schedule.items():
+            if rid != room_id or sched_day != day:
+                continue
+            for offset in range(sched_slot.slot_count):
+                occupied_slots.add(slot_id + offset)
+
+        for offset in range(slot_count):
+            occupied_slots.add(start_slot_id + offset)
+
+        if not occupied_slots:
+            return 0.0
+
+        sorted_slots = sorted(occupied_slots)
+        span = sorted_slots[-1] - sorted_slots[0] + 1
+        internal_idle = span - len(sorted_slots)
+        gap_penalty = self.constraints.SOFT_ROOM_IDLE_GAP * max(0, internal_idle)
+
+        # Penalize fragmentation (many disjoint blocks in same room-day).
+        blocks = 1
+        for i in range(1, len(sorted_slots)):
+            if sorted_slots[i] > sorted_slots[i - 1] + 1:
+                blocks += 1
+        fragmentation_penalty = self.constraints.SOFT_ROOM_IDLE_GAP * max(0, blocks - 1) * 1.5
+
+        return gap_penalty + fragmentation_penalty
+
+    def _estimate_room_profile_packing_penalty(
+        self,
+        room_id: Optional[int],
+        day: str,
+        start_slot_id: int,
+        slot_count: int
+    ) -> float:
+        """Encourage filling already-used rooms before opening another similar room."""
+        if room_id is None:
+            return 0.0
+
+        profile_key = self.room_profile_key_by_room_id.get(room_id)
+        if not profile_key:
+            return 0.0
+
+        # Collect current usage counts for rooms in this profile on this day.
+        counts: Dict[int, int] = defaultdict(int)
+        for (rid, sched_day, slot_id), sched_slot in self.schedule.items():
+            if rid is None:
+                continue
+            if sched_day != day:
+                continue
+            if rid not in self.room_profile_key_by_room_id:
+                continue
+            if self.room_profile_key_by_room_id[rid] != profile_key:
+                continue
+            # NOTE: self.schedule is keyed per occupied slot (offset), so count 1 per key.
+            counts[rid] += 1
+
+        used_rooms = {rid for rid, c in counts.items() if c > 0}
+        room_was_used = room_id in used_rooms
+
+        # Add candidate placement.
+        counts[room_id] += max(0, slot_count)
+        used_rooms_after = {rid for rid, c in counts.items() if c > 0}
+
+        if len(used_rooms_after) <= 1:
+            return 0.0
+
+        penalty = 0.0
+
+        # Strongly discourage opening a new room when others in the same profile are already in use.
+        if (not room_was_used) and used_rooms:
+            penalty += self.constraints.SOFT_ROOM_PROFILE_EXTRA_ROOMS
+
+        # Spread penalty encourages concentrating usage into fewer rooms.
+        total = sum(counts.values())
+        if total > 0:
+            sum_sq = sum(c * c for c in counts.values())
+            spread = total - (sum_sq / total)
+            penalty += self.constraints.SOFT_ROOM_PROFILE_SPREAD * spread
+
+        # Also penalize the raw count of extra rooms used.
+        extra_rooms = len(used_rooms_after) - 1
+        if extra_rooms > 0:
+            penalty += self.constraints.SOFT_ROOM_PROFILE_EXTRA_ROOMS * (extra_rooms ** 2)
+
+        return penalty
+
     def _slots_for_minutes(self, minutes: int) -> int:
         """Convert minutes to slot units with ceil behavior."""
         return max(1, math.ceil(minutes / max(1, self.slot_duration_minutes)))
@@ -2004,6 +2229,7 @@ class EnhancedQuantumScheduler:
         section_slots: Dict[Tuple, set] = defaultdict(set)  # (section_id, day, slot) -> set of room_ids
         teacher_buildings: Dict[Tuple, str] = {}  # (teacher_id, day, slot_id) -> building
         section_day_slots: Dict[Tuple[str, str], List[int]] = defaultdict(list)  # (cohort_code, day) -> [slot_ids]
+        room_day_slots: Dict[Tuple[int, str], List[int]] = defaultdict(list)  # (room_id, day) -> [slot_ids]
         
         # Pre-cache room types to avoid repeated string operations
         room_is_lab_cache: Dict[int, bool] = {}
@@ -2083,7 +2309,12 @@ class EnhancedQuantumScheduler:
             
             # Track for student-gap detection by cohort (include online and in-person).
             cohort_code = self._get_cohort_code(section.section_code)
-            section_day_slots[(cohort_code, day)].append(slot_id)
+            for offset in range(slot.slot_count):
+                section_day_slots[(cohort_code, day)].append(slot_id + offset)
+
+            if room_id is not None and not slot.is_online:
+                for offset in range(slot.slot_count):
+                    room_day_slots[(room_id, day)].append(slot_id + offset)
         
         # HARD: Teacher teleportation check
         for (teacher_id, day, slot_id), building in teacher_buildings.items():
@@ -2313,21 +2544,134 @@ class EnhancedQuantumScheduler:
                 cost += HARD_CONSTRAINT_PENALTY
                 conflict_detected = True
         
-        # SOFT: Student idle-gap minimization (stronger than legacy swiss-cheese check)
-        for (_, _), slots in section_day_slots.items():
+        # SOFT: Student/cohort compactness (minimize gaps, fragmentation, long day spans, and evening/night starts)
+        cohort_days_used: Dict[str, Set[str]] = defaultdict(set)
+        cohort_total_slots: Dict[str, int] = defaultdict(int)
+        cohort_day_slot_counts: Dict[Tuple[str, str], int] = {}
+
+        for (cohort_code, day), slots in section_day_slots.items():
             unique_slots = sorted(set(slots))
-            if len(unique_slots) < 2:
+            if not unique_slots:
                 continue
 
-            for i in range(len(unique_slots) - 1):
-                gap_slots = unique_slots[i + 1] - unique_slots[i] - 1
-                if gap_slots >= 2:
-                    cost += self.constraints.SOFT_SECTION_GAP * ((gap_slots - 1) ** 2)
+            cohort_days_used[cohort_code].add(day)
+            cohort_total_slots[cohort_code] += len(unique_slots)
+            cohort_day_slot_counts[(cohort_code, day)] = len(unique_slots)
+
+            # Weekday-first policy: keep first class as early as possible (opens near 7AM).
+            if self._is_weekday(day) and self.constraints.prefer_morning_classes and len(unique_slots) >= 1:
+                first_slot_obj = self.time_slots_by_id.get(unique_slots[0])
+                if first_slot_obj:
+                    hours_after_open = max(0.0, (first_slot_obj.start_minutes - self.constraints.day_class_start) / 60.0)
+                    cost += self.constraints.SOFT_MORNING_PREFERENCE * (hours_after_open ** 2)
+
+            # Gap penalties inside the day.
+            if len(unique_slots) >= 2:
+                for i in range(len(unique_slots) - 1):
+                    gap_slots = unique_slots[i + 1] - unique_slots[i] - 1
+                    if gap_slots >= 2:
+                        cost += self.constraints.SOFT_SECTION_GAP * ((gap_slots - 1) ** 2)
+
+                span_slots = unique_slots[-1] - unique_slots[0] + 1
+                internal_idle = span_slots - len(unique_slots)
+                if internal_idle >= 2:
+                    cost += self.constraints.SOFT_SECTION_GAP * internal_idle
+
+                # Penalize multiple disjoint blocks per cohort-day (fragmentation).
+                blocks = 1
+                for i in range(1, len(unique_slots)):
+                    if unique_slots[i] > unique_slots[i - 1] + 1:
+                        blocks += 1
+                if blocks > 1:
+                    cost += self.constraints.SOFT_COHORT_FRAGMENTATION * ((blocks - 1) ** 2)
+
+                # Penalize very long day windows even if packed (reduce “whole-day” spread).
+                desired_span_slots = self._slots_for_minutes(360)  # target ~6h/day window
+                if span_slots > desired_span_slots:
+                    cost += self.constraints.SOFT_COHORT_DAILY_SPAN * ((span_slots - desired_span_slots) ** 2)
+
+            # Evening / night start penalties (>=17:00; very strong >=18:00).
+            for slot_id in unique_slots:
+                slot_obj = self.time_slots_by_id.get(slot_id)
+                if slot_obj:
+                    cost += self._evening_penalty(slot_obj.start_minutes, day)
+
+        # Weekly compactness: discourage “too many active days” and “light days” for a cohort.
+        ideal_slots_per_day = self._slots_for_minutes(360)  # ~6h of classes per day is considered compact
+        light_day_threshold = self._slots_for_minutes(120)  # <~2h in a day is a light day
+        for cohort_code, days in cohort_days_used.items():
+            days_used = len(days)
+            if days_used <= 1:
+                continue
+
+            total_slots = cohort_total_slots.get(cohort_code, 0)
+            if total_slots <= 0:
+                continue
+
+            min_days = max(1, math.ceil(total_slots / max(1, ideal_slots_per_day)))
+            extra_days = days_used - min_days
+            if extra_days > 0:
+                cost += self.constraints.SOFT_COHORT_EXTRA_DAYS * (extra_days ** 2)
+
+            for day in days:
+                day_slots = cohort_day_slot_counts.get((cohort_code, day), 0)
+                if 0 < day_slots < light_day_threshold:
+                    cost += self.constraints.SOFT_COHORT_LIGHT_DAY * (light_day_threshold - day_slots)
+
+        # SOFT: Room utilization compactness - reduce idle gaps and fragmented room timelines.
+        for (room_id, day), slots in room_day_slots.items():
+            unique_slots = sorted(set(slots))
+            if not unique_slots:
+                continue
 
             span_slots = unique_slots[-1] - unique_slots[0] + 1
-            internal_idle = span_slots - len(unique_slots)
-            if internal_idle >= 2:
-                cost += self.constraints.SOFT_SECTION_GAP * internal_idle
+            internal_idle = max(0, span_slots - len(unique_slots))
+            if internal_idle > 0:
+                cost += self.constraints.SOFT_ROOM_IDLE_GAP * internal_idle
+
+            # Encourage contiguous blocks in each room-day.
+            blocks = 1
+            for i in range(1, len(unique_slots)):
+                if unique_slots[i] > unique_slots[i - 1] + 1:
+                    blocks += 1
+            if blocks > 1:
+                cost += self.constraints.SOFT_ROOM_IDLE_GAP * (blocks - 1) * 2
+
+            # Encourage rooms to start earlier on weekdays when they are used.
+            if self._is_weekday(day):
+                first_slot_obj = self.time_slots_by_id.get(unique_slots[0])
+                if first_slot_obj:
+                    hours_after_open = max(0.0, (first_slot_obj.start_minutes - self.constraints.day_class_start) / 60.0)
+                    cost += self.constraints.SOFT_MORNING_PREFERENCE * hours_after_open
+
+        # SOFT: Room packing across interchangeable rooms (same profile) per day.
+        # Prefer filling one room timeline before opening another room with identical equipment/profile.
+        room_profile_day_counts: Dict[
+            Tuple[Tuple[str, str, str, int, str, str, Tuple[str, ...]], str],
+            Dict[int, int]
+        ] = defaultdict(dict)
+
+        for (room_id, day), slots in room_day_slots.items():
+            if room_id not in self.room_profile_key_by_room_id:
+                continue
+            profile_key = self.room_profile_key_by_room_id[room_id]
+            room_profile_day_counts[(profile_key, day)][room_id] = len(set(slots))
+
+        for (_, _), counts in room_profile_day_counts.items():
+            used = [c for c in counts.values() if c > 0]
+            if not used:
+                continue
+
+            extra_rooms = len(used) - 1
+            if extra_rooms > 0:
+                cost += self.constraints.SOFT_ROOM_PROFILE_EXTRA_ROOMS * (extra_rooms ** 2)
+
+            total = sum(used)
+            if total > 0:
+                sum_sq = sum(c * c for c in used)
+                # 0 when perfectly concentrated; increases as usage is spread evenly.
+                spread = total - (sum_sq / total)
+                cost += self.constraints.SOFT_ROOM_PROFILE_SPREAD * spread
         
         # Second pass: Soft constraint penalties
         for key, slot in self.schedule.items():
@@ -2416,6 +2760,66 @@ class EnhancedQuantumScheduler:
             internal_idle = span_slots - len(unique_slots)
             if internal_idle >= 2:
                 cost += self.constraints.SOFT_FACULTY_IDLE_TIME * internal_idle
+
+            # Penalize fragmented teaching days (multiple disjoint blocks).
+            blocks = 1
+            for i in range(1, len(unique_slots)):
+                if unique_slots[i] > unique_slots[i - 1] + 1:
+                    blocks += 1
+            if blocks > 1:
+                cost += self.constraints.SOFT_FACULTY_FRAGMENTATION * ((blocks - 1) ** 2)
+
+        # FACULTY COMPACTNESS: discourage evening/night teaching for those who don't prefer it.
+        teacher_days_used: Dict[Union[int, str], Set[str]] = defaultdict(set)
+        teacher_total_slots: Dict[Union[int, str], int] = defaultdict(int)
+
+        for (teacher_id, day), slot_ids in teacher_slot_times.items():
+            unique_slots = sorted(set(slot_ids))
+            if not unique_slots:
+                continue
+
+            teacher_days_used[teacher_id].add(day)
+            teacher_total_slots[teacher_id] += len(unique_slots)
+
+            latest_slot_obj = self.time_slots_by_id.get(unique_slots[-1])
+            if not latest_slot_obj:
+                continue
+
+            prefs = ''
+            profile = self.faculty_profiles.get(teacher_id) if self.faculty_profiles else None
+            if profile:
+                prefs = (profile.preferred_times or '').lower()
+
+            if 'night' in prefs or 'evening' in prefs:
+                continue
+
+            if latest_slot_obj.start_minutes >= 17 * 60:
+                day_factor = 1.25 if self._is_weekday(day) else 0.75
+                if latest_slot_obj.start_minutes < 18 * 60:
+                    hours_into_evening = (latest_slot_obj.start_minutes - 17 * 60) / 60.0
+                    cost += self.constraints.SOFT_FACULTY_EVENING_CLASS * day_factor * (1.0 + hours_into_evening)
+                else:
+                    hours_into_night = (latest_slot_obj.start_minutes - 18 * 60) / 60.0
+                    cost += (
+                        self.constraints.SOFT_FACULTY_EVENING_CLASS * day_factor * 2.0
+                        + self.constraints.SOFT_FACULTY_NIGHT_CLASS * day_factor * (1.0 + hours_into_night)
+                    )
+
+        # FACULTY COMPACTNESS: discourage teachers from working “too many days” when they could be packed.
+        ideal_teacher_slots_per_day = self._slots_for_minutes(240)  # target ~4h/day teaching blocks
+        for teacher_id, days in teacher_days_used.items():
+            days_used = len(days)
+            if days_used <= 1:
+                continue
+
+            total_slots = teacher_total_slots.get(teacher_id, 0)
+            if total_slots <= 0:
+                continue
+
+            min_days = max(1, math.ceil(total_slots / max(1, ideal_teacher_slots_per_day)))
+            extra_days = days_used - min_days
+            if extra_days > 0:
+                cost += self.constraints.SOFT_FACULTY_EXTRA_DAYS * (extra_days ** 2)
         
         # FACULTY WELFARE: Check consecutive teaching hours (max 4 hours without break)
         for (teacher_id, day), slot_ids in teacher_slot_times.items():
@@ -3091,9 +3495,16 @@ class EnhancedQuantumScheduler:
                                 local_cost += self._estimate_student_gap_penalty(
                                     section, day, slot.id, slots_for_session
                                 )
+                                local_cost += self._estimate_cohort_compactness_penalty(
+                                    section, day, slot.id, slots_for_session
+                                )
                                 local_cost += self._estimate_teacher_gap_penalty(
                                     section.teacher_id, day, slot.id, slots_for_session
                                 )
+                                if self._is_weekday(day) and self.constraints.prefer_morning_classes:
+                                    hours_after_open = max(0.0, (slot.start_minutes - self.constraints.day_class_start) / 60.0)
+                                    local_cost += self.constraints.SOFT_MORNING_PREFERENCE * hours_after_open
+                                local_cost += self._estimate_block_evening_penalty(day, slot.id, slots_for_session)
                                 if local_cost < best_cost:
                                     best_cost = local_cost
                                     best_assignment = (None, day, slot.id, slots_for_session, True)
@@ -3152,7 +3563,12 @@ class EnhancedQuantumScheduler:
                                 
                                 # Prefer morning slots
                                 if self.constraints.prefer_morning_classes:
-                                    local_cost += slot.start_minutes / 60
+                                    hours_after_open = max(0.0, (slot.start_minutes - self.constraints.day_class_start) / 60.0)
+                                    weekday_factor = 1.4 if self._is_weekday(day) else 0.7
+                                    local_cost += self.constraints.SOFT_MORNING_PREFERENCE * hours_after_open * weekday_factor
+
+                                # Penalize late slots explicitly.
+                                local_cost += self._estimate_block_evening_penalty(day, slot.id, slots_for_session)
                                 
                                 # Penalty for lunch overlap (flexible mode)
                                 if pass_num == 0 and self.constraints.lunch_mode == 'flexible' and self._is_during_lunch(slot.id, slots_for_session):
@@ -3163,9 +3579,24 @@ class EnhancedQuantumScheduler:
                                     section, day, slot.id, slots_for_session
                                 )
 
+                                # Penalize cohort fragmentation / long daily spans.
+                                local_cost += self._estimate_cohort_compactness_penalty(
+                                    section, day, slot.id, slots_for_session
+                                )
+
                                 # Penalize long idle windows for teacher schedules.
                                 local_cost += self._estimate_teacher_gap_penalty(
                                     section.teacher_id, day, slot.id, slots_for_session
+                                )
+
+                                # Encourage compact room-day usage to improve room utilization.
+                                local_cost += self._estimate_room_compactness_penalty(
+                                    room_id, day, slot.id, slots_for_session
+                                )
+
+                                # Encourage filling one interchangeable room before opening another.
+                                local_cost += self._estimate_room_profile_packing_penalty(
+                                    room_id, day, slot.id, slots_for_session
                                 )
                                 
                                 # Penalty for later passes
@@ -3407,8 +3838,19 @@ class EnhancedQuantumScheduler:
         if not assignments:
             return None
         
-        # Pick a random assignment to modify
-        assignment = random.choice(assignments)
+        # Pick an assignment to modify (weighted toward “bad” late/evening starts).
+        weights: List[float] = []
+        for a in assignments:
+            w = 1.0
+            slot_obj = self.time_slots_by_id.get(a['start_slot'])
+            if slot_obj:
+                if slot_obj.start_minutes >= 17 * 60:
+                    w += 4.0
+                if slot_obj.start_minutes >= 18 * 60:
+                    w += 8.0
+            weights.append(w)
+
+        assignment = random.choices(assignments, weights=weights, k=1)[0]
         section = self.sections.get(assignment['section_id'])
         if not section:
             return None  # Skip if section not found
@@ -3769,9 +4211,16 @@ class EnhancedQuantumScheduler:
                             if not self._check_teacher_conflict(section.teacher_id, new_day, new_slot.id, slot_count, section_id):
                                 # Calculate energy
                                 energy = new_slot.start_minutes / 100
+                                # Prefer compact, early schedules (deprioritize 5pm-8pm starts)
+                                energy += self._estimate_block_evening_penalty(new_day, new_slot.id, slot_count) / 500.0
+                                energy += self._estimate_student_gap_penalty(section, new_day, new_slot.id, slot_count) / 500.0
+                                energy += self._estimate_cohort_compactness_penalty(section, new_day, new_slot.id, slot_count) / 500.0
+                                energy += self._estimate_teacher_gap_penalty(section.teacher_id, new_day, new_slot.id, slot_count) / 500.0
                                 if not is_online and new_room:
                                     room = self.rooms[new_room]
                                     energy += abs(room.capacity - section.student_count) * 0.5
+                                    energy += self._estimate_room_compactness_penalty(new_room, new_day, new_slot.id, slot_count) / 500.0
+                                    energy += self._estimate_room_profile_packing_penalty(new_room, new_day, new_slot.id, slot_count) / 500.0
                                 candidates.append((energy, new_room, new_day, new_slot.id, is_online))
                 
                 if candidates:
@@ -3814,6 +4263,11 @@ class EnhancedQuantumScheduler:
         print(f"   Sections: {len(self.sections)}, Rooms: {len(self.rooms)}, Time Slots: {len(self.time_slots)}")
         print(f"   Active Days: {self.active_days}")
         print(f"   Online Days: {self.online_days}")
+        if self.cpu_yield_every_iterations > 0 and self.cpu_yield_seconds > 0:
+            print(
+                f"   🐢 Low-resource mode: yielding every {self.cpu_yield_every_iterations} iterations "
+                f"for {self.cpu_yield_seconds * 1000:.1f} ms"
+            )
         
         # Generate initial solution with greedy construction
         if not self._generate_initial_solution():
@@ -3838,8 +4292,7 @@ class EnhancedQuantumScheduler:
         # EARLY EXIT: If initial solution has no hard constraint violations, we're done!
         if best_cost < HARD_CONSTRAINT_PENALTY:
             print(f"✅ Initial solution is conflict-free! Cost: {best_cost:.2f}")
-            # Still do a few iterations for soft constraint optimization
-            max_iterations = min(max_iterations, 200)
+            # Keep optimizing: conflict-free is not necessarily optimal.
         
         temperature = initial_temperature
         stagnation_count = 0
@@ -3908,6 +4361,14 @@ class EnhancedQuantumScheduler:
             
             # Cool down with minimum temperature
             temperature = max(temperature * effective_cooling, MIN_TEMPERATURE)
+
+            # Cooperative CPU yielding lowers sustained CPU pressure on low-power hosts.
+            if (
+                self.cpu_yield_every_iterations > 0
+                and self.cpu_yield_seconds > 0
+                and (iteration + 1) % self.cpu_yield_every_iterations == 0
+            ):
+                time.sleep(self.cpu_yield_seconds)
                 
             self.stats.iterations = iteration + 1
             
@@ -3917,12 +4378,7 @@ class EnhancedQuantumScheduler:
                 print(f"✅ Perfect solution found at iteration {iteration}")
                 break
             
-            # 2. Good enough solution (no hard constraint violations, low soft cost)
-            if best_cost < OPTIMAL_COST_THRESHOLD and iteration > 100:
-                print(f"✅ Optimal solution found at iteration {iteration} (cost: {best_cost:.2f})")
-                break
-            
-            # 3. No improvement for too long after all reheats
+            # 2. No improvement for too long after all reheats
             if iteration - last_improvement > 500 and reheat_count >= max_reheats:
                 print(f"⚠️ Converged at iteration {iteration} (no improvement for 500 iterations)")
                 break
@@ -4309,6 +4765,51 @@ def run_enhanced_scheduler(
     
     if online_days:
         print(f"🌐 Online days: {', '.join(online_days)}")
+
+    # Runtime throttling: reduce sustained CPU load on large instances or low-power hosts.
+    # This intentionally trades speed for stability (fewer spikes, lower thermal pressure).
+    env_force_low_resource = os.getenv("SCHEDULER_LOW_RESOURCE_MODE", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    env_disable_auto_throttle = os.getenv("SCHEDULER_DISABLE_AUTO_THROTTLE", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    env_enable_auto_throttle = os.getenv("SCHEDULER_AUTO_THROTTLE", "0").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
+    problem_scale = max(1, len(sections_data)) * max(1, len(rooms_data)) * max(1, len(time_slots_data or []))
+    auto_throttle_scale = max(10000, int(config.get("auto_throttle_scale", 90000)))
+    auto_throttle_enabled = bool(config.get("auto_low_resource_mode", False) or env_enable_auto_throttle)
+    auto_low_resource = auto_throttle_enabled and (not env_disable_auto_throttle) and problem_scale >= auto_throttle_scale
+    low_resource_mode = bool(config.get("low_resource_mode", False) or env_force_low_resource or auto_low_resource)
+
+    cpu_yield_every_iterations = int(config.get("cpu_yield_every_iterations", 0) or 0)
+    cpu_yield_ms = float(config.get("cpu_yield_ms", 0) or 0)
+
+    if low_resource_mode:
+        if cpu_yield_every_iterations <= 0:
+            cpu_yield_every_iterations = max(
+                1, int(os.getenv("SCHEDULER_CPU_YIELD_EVERY_ITERATIONS", "30"))
+            )
+        if cpu_yield_ms <= 0:
+            cpu_yield_ms = max(
+                0.0, float(os.getenv("SCHEDULER_CPU_YIELD_MS", "2.5"))
+            )
+
+    cpu_yield_every_iterations = max(0, cpu_yield_every_iterations)
+    cpu_yield_seconds = max(0.0, cpu_yield_ms) / 1000.0
+
+    config["low_resource_mode"] = low_resource_mode
+    config["cpu_yield_every_iterations"] = cpu_yield_every_iterations
+    config["cpu_yield_seconds"] = cpu_yield_seconds
+
+    if low_resource_mode:
+        print(
+            f"🐢 Low-resource mode enabled (problem_scale={problem_scale:,}, threshold={auto_throttle_scale:,}) | "
+            f"yield={cpu_yield_ms:.1f}ms every {cpu_yield_every_iterations} iterations"
+        )
+    else:
+        print("🎯 Quality-first mode enabled (full optimization depth)")
     
     # Get slot duration from config (default 90 minutes = 1.5 hours)
     slot_duration = config.get('slot_duration', 90)
@@ -4717,7 +5218,7 @@ def run_enhanced_scheduler(
         SOFT_LUNCH_OVERLAP=config.get('SOFT_LUNCH_OVERLAP', 500),
         SOFT_TEACHER_OVERLOAD=config.get('SOFT_TEACHER_OVERLOAD', 80),
         SOFT_ACCESSIBILITY_BONUS=config.get('SOFT_ACCESSIBILITY_BONUS', -10),
-        SOFT_MORNING_PREFERENCE=config.get('SOFT_MORNING_PREFERENCE', 5),
+        SOFT_MORNING_PREFERENCE=config.get('SOFT_MORNING_PREFERENCE', 40),
         SOFT_DAY_DISTRIBUTION=config.get('SOFT_DAY_DISTRIBUTION', 20),
         SOFT_SIBLING_DIFFERENT_DAY=config.get('SOFT_SIBLING_DIFFERENT_DAY', 100),
         SOFT_OVERLOADED_TEACHER=config.get('SOFT_OVERLOADED_TEACHER', 200),
@@ -4728,11 +5229,22 @@ def run_enhanced_scheduler(
         SOFT_FACULTY_LONG_GAP_3H=config.get('SOFT_FACULTY_LONG_GAP_3H', 1200),
         SOFT_FACULTY_LONG_GAP_4H=config.get('SOFT_FACULTY_LONG_GAP_4H', 3000),
         SOFT_LOAD_IMBALANCE=config.get('SOFT_LOAD_IMBALANCE', 300),
-        SOFT_LATE_CLASS=config.get('SOFT_LATE_CLASS', 150),
-        SOFT_ROOM_IDLE_GAP=config.get('SOFT_ROOM_IDLE_GAP', 100),
+        SOFT_LATE_CLASS=config.get('SOFT_LATE_CLASS', 250),
+        SOFT_ROOM_IDLE_GAP=config.get('SOFT_ROOM_IDLE_GAP', 200),
+        SOFT_ROOM_PROFILE_EXTRA_ROOMS=config.get('SOFT_ROOM_PROFILE_EXTRA_ROOMS', 900),
+        SOFT_ROOM_PROFILE_SPREAD=config.get('SOFT_ROOM_PROFILE_SPREAD', 450),
         SOFT_UNEVEN_SECTION_DIST=config.get('SOFT_UNEVEN_SECTION_DIST', 250),
         SOFT_CONSECUTIVE_DAY_PENALTY=config.get('SOFT_CONSECUTIVE_DAY_PENALTY', 0),
-        SOFT_SECTION_GAP=config.get('SOFT_SECTION_GAP', 50),
+        SOFT_SECTION_GAP=config.get('SOFT_SECTION_GAP', 120),
+        SOFT_EVENING_CLASS=config.get('SOFT_EVENING_CLASS', 350),
+        SOFT_NIGHT_CLASS_EXTRA=config.get('SOFT_NIGHT_CLASS_EXTRA', 600),
+        SOFT_COHORT_FRAGMENTATION=config.get('SOFT_COHORT_FRAGMENTATION', 250),
+        SOFT_COHORT_DAILY_SPAN=config.get('SOFT_COHORT_DAILY_SPAN', 180),
+        SOFT_COHORT_EXTRA_DAYS=config.get('SOFT_COHORT_EXTRA_DAYS', 250),
+        SOFT_COHORT_LIGHT_DAY=config.get('SOFT_COHORT_LIGHT_DAY', 100),
+        SOFT_FACULTY_EVENING_CLASS=config.get('SOFT_FACULTY_EVENING_CLASS', 250),
+        SOFT_FACULTY_EXTRA_DAYS=config.get('SOFT_FACULTY_EXTRA_DAYS', 200),
+        SOFT_FACULTY_FRAGMENTATION=config.get('SOFT_FACULTY_FRAGMENTATION', 300),
         SOFT_FACULTY_NIGHT_CLASS=config.get('SOFT_FACULTY_NIGHT_CLASS', 200),
         SOFT_FACULTY_DAILY_SPAN=config.get('SOFT_FACULTY_DAILY_SPAN', 500),
         SOFT_VSL_SHIFT_MISMATCH=config.get('SOFT_VSL_SHIFT_MISMATCH', 500),
@@ -4819,13 +5331,15 @@ def run_enhanced_scheduler(
         faculty_profiles=faculty_profiles,  # Pass the profiles
         fixed_allocations=fixed_allocations # NEW: Manual edits
     )
+
+    scheduler.cpu_yield_every_iterations = config.get("cpu_yield_every_iterations", 0)
+    scheduler.cpu_yield_seconds = config.get("cpu_yield_seconds", 0.0)
     
     # ── MULTI-PASS SCHEDULING STRATEGY ──────────────────────────────────────
     # Pass 1: Standard High-Quality Run
     max_its = config.get('max_iterations', 5000)
     init_temp = config.get('initial_temperature', 150.0)
     cool_rate = config.get('cooling_rate', 0.997)
-    
     print(f"🚀 PASS 1: Standard Optimization ({max_its} iterations)...")
     allocations, stats = scheduler.optimize(
         max_iterations=max_its,
@@ -4871,11 +5385,25 @@ def run_enhanced_scheduler(
                 )
                 continue
 
+            if (
+                stats_retry.unscheduled_count == before_unscheduled
+                and stats_retry.final_cost < stats.final_cost
+            ):
+                allocations, stats = allocations_retry, stats_retry
+                print(
+                    f"✅ PASS 2.{retry_index + 1} improved cost with same unscheduled count: "
+                    f"{stats.final_cost:.2f}"
+                )
+                continue
+
             print(
                 f"⏭️ PASS 2.{retry_index + 1} produced no improvement "
-                f"({stats_retry.unscheduled_count} unscheduled). Stopping adaptive retries."
+                f"({stats_retry.unscheduled_count} unscheduled)."
             )
-            break
+            if retry_index + 1 >= max_adaptive_retries:
+                print("🛑 Adaptive retries exhausted.")
+                break
+            print("🔁 Trying another adaptive retry with a new neighborhood trajectory...")
         
     # Pass 3: Emergency Recovery (if items STILL remain unscheduled)
     if stats.unscheduled_count > 0:

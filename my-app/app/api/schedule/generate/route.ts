@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const BACKEND_URL = process.env.PYTHON_BACKEND_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -51,8 +51,10 @@ async function fetchScheduleBatches(scheduleSummaryId: number) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('[REQUEST] Forwarding to backend:', BACKEND_URL)
-    console.log('[REQUEST] Body:', JSON.stringify(body, null, 2))
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[REQUEST] Forwarding to backend:', BACKEND_URL)
+      console.log('[REQUEST] Body keys:', Object.keys(body || {}))
+    }
 
     // Validate request body
     if (!body.campusGroupId || !body.participantGroupId) {

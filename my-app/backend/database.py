@@ -3,6 +3,8 @@ Database connection and helper functions for Supabase
 """
 import os
 import sys
+import re
+import asyncio
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from typing import List, Dict, Any, Optional
@@ -37,6 +39,11 @@ def _db() -> Client:
     return get_supabase_client()
 
 
+async def _execute(query):
+    """Execute a Supabase query in a worker thread to avoid blocking the event loop."""
+    return await asyncio.to_thread(query.execute)
+
+
 # ==================== Room Operations ====================
 async def get_all_rooms(campus: Optional[str] = None, building: Optional[str] = None) -> List[Dict]:
     """Fetch all rooms, optionally filtered by campus/building"""
@@ -47,7 +54,7 @@ async def get_all_rooms(campus: Optional[str] = None, building: Optional[str] = 
     if building:
         query = query.eq("building", building)
     
-    response = query.execute()
+    response = await _execute(query)
     return response.data or []
 
 
@@ -66,19 +73,19 @@ async def get_available_rooms(
     if campus:
         query = query.eq("campus", campus)
     
-    response = query.execute()
+    response = await _execute(query)
     return response.data or []
 
 
 async def create_room(room_data: Dict) -> Dict:
     """Create a new room"""
-    response = _db().table("rooms").insert(room_data).execute()
+    response = await _execute(_db().table("rooms").insert(room_data))
     return response.data[0] if response.data else {}
 
 
 async def bulk_create_rooms(rooms: List[Dict]) -> List[Dict]:
     """Bulk create rooms"""
-    response = _db().table("rooms").insert(rooms).execute()
+    response = await _execute(_db().table("rooms").insert(rooms))
     return response.data or []
 
 
@@ -90,13 +97,13 @@ async def get_all_courses(department: Optional[str] = None) -> List[Dict]:
     if department:
         query = query.eq("department", department)
     
-    response = query.execute()
+    response = await _execute(query)
     return response.data or []
 
 
 async def create_course(course_data: Dict) -> Dict:
     """Create a new course"""
-    response = _db().table("courses").insert(course_data).execute()
+    response = await _execute(_db().table("courses").insert(course_data))
     return response.data[0] if response.data else {}
 
 
@@ -109,7 +116,7 @@ async def get_all_sections(department: Optional[str] = None) -> List[Dict]:
         query = query.eq("department", department)
     
     # Optimize for large datasets: limit result size, order by recent
-    response = query.limit(5000).order("created_at", desc=True).execute()
+    response = await _execute(query.limit(5000).order("created_at", desc=True))
     return response.data or []
 
 
@@ -126,7 +133,7 @@ async def get_sections_for_scheduling(
     if department:
         query = query.eq("department", department)
     
-    response = query.execute()
+    response = await _execute(query)
     sections = response.data or []
     
     if not sections:
@@ -145,7 +152,7 @@ async def get_sections_for_scheduling(
             "course_id, is_mandatory, notes, feature_tags(tag_name)"
         ).in_("course_id", course_ids)
         
-        req_response = req_query.execute()
+        req_response = await _execute(req_query)
         requirements = req_response.data or []
         
         # Process requirements
@@ -196,13 +203,13 @@ async def get_sections_for_scheduling(
 
 async def create_section(section_data: Dict) -> Dict:
     """Create a new section"""
-    response = _db().table("sections").insert(section_data).execute()
+    response = await _execute(_db().table("sections").insert(section_data))
     return response.data[0] if response.data else {}
 
 
 async def bulk_create_sections(sections: List[Dict]) -> List[Dict]:
     """Bulk create sections"""
-    response = _db().table("sections").insert(sections).execute()
+    response = await _execute(_db().table("sections").insert(sections))
     return response.data or []
 
 
@@ -215,7 +222,7 @@ async def get_all_teachers(department: Optional[str] = None) -> List[Dict]:
     if department:
         query = query.eq("department", department)
     
-    response = query.execute()
+    response = await _execute(query)
     data = response.data or []
     
     # Map 'full_name' to 'name' for compatibility
@@ -229,7 +236,7 @@ async def get_all_teachers(department: Optional[str] = None) -> List[Dict]:
 async def get_teacher_availability(teacher_id: Any) -> Dict:
     """Get teacher's availability and preferences"""
     # Accept str or int ID
-    response = _db().table("faculty_profiles").select("*").eq("id", teacher_id).single().execute()
+    response = await _execute(_db().table("faculty_profiles").select("*").eq("id", teacher_id).single())
     data = response.data or {}
     if data and 'full_name' in data:
         data['name'] = data['full_name']
@@ -238,20 +245,20 @@ async def get_teacher_availability(teacher_id: Any) -> Dict:
 
 async def create_teacher(teacher_data: Dict) -> Dict:
     """Create a new teacher in faculty_profiles"""
-    response = _db().table("faculty_profiles").insert(teacher_data).execute()
+    response = await _execute(_db().table("faculty_profiles").insert(teacher_data))
     return response.data[0] if response.data else {}
 
 
 async def bulk_create_teachers(teachers: List[Dict]) -> List[Dict]:
     """Bulk create teachers in faculty_profiles"""
-    response = _db().table("faculty_profiles").insert(teachers).execute()
+    response = await _execute(_db().table("faculty_profiles").insert(teachers))
     return response.data or []
 
 
 # ==================== Time Slot Operations ====================
 async def get_time_slots() -> List[Dict]:
     """Get all time slots"""
-    response = _db().table("time_slots").select("*").order("start_time").execute()
+    response = await _execute(_db().table("time_slots").select("*").order("start_time"))
     return response.data or []
 
 
@@ -271,14 +278,15 @@ async def create_default_time_slots() -> List[Dict]:
         {"slot_name": "Period 7", "start_time": "17:30", "end_time": "19:00", "duration_minutes": 90},
     ]
     
-    response = _db().table("time_slots").insert(default_slots).execute()
+    response = await _execute(_db().table("time_slots").insert(default_slots))
     return response.data or []
+
 
 
 # ==================== Schedule Operations (Legacy - Now uses generated_schedules) ====================
 async def save_schedule_summary(summary_data: Dict) -> Dict:
     """Save schedule summary - DEPRECATED: Use create_generated_schedule instead"""
-    response = _db().table("generated_schedules").insert(summary_data).execute()
+    response = await _execute(_db().table("generated_schedules").insert(summary_data))
     return response.data[0] if response.data else {}
 
 
@@ -286,37 +294,37 @@ async def save_schedule_entries(entries: List[Dict]) -> List[Dict]:
     """Save schedule entries/batches - DEPRECATED: Use save_room_allocations instead"""
     if not entries:
         return []
-    response = _db().table("room_allocations").insert(entries).execute()
+    response = await _execute(_db().table("room_allocations").insert(entries))
     return response.data or []
 
 
 async def get_schedule_entries(schedule_id: int) -> List[Dict]:
     """Get all entries for a schedule"""
-    response = _db().table("room_allocations").select("*").eq(
-        "schedule_id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("room_allocations").select("*").eq("schedule_id", schedule_id)
+    )
     return response.data or []
 
 
 async def get_all_schedules() -> List[Dict]:
     """Get all schedules - Now uses generated_schedules table"""
-    response = _db().table("generated_schedules").select("*").order(
-        "created_at", desc=True
-    ).execute()
+    response = await _execute(
+        _db().table("generated_schedules").select("*").order("created_at", desc=True)
+    )
     return response.data or []
 
 
 async def get_schedule_by_id(schedule_id: int) -> Optional[Dict]:
     """Get a specific schedule by ID - Now uses generated_schedules table"""
-    response = _db().table("generated_schedules").select("*").eq(
-        "id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("generated_schedules").select("*").eq("id", schedule_id)
+    )
     return response.data[0] if response.data else None
 
 
 async def create_schedule_record(schedule_data: Dict) -> Dict:
     """Create a new schedule record - Now uses generated_schedules table"""
-    response = _db().table("generated_schedules").insert(schedule_data).execute()
+    response = await _execute(_db().table("generated_schedules").insert(schedule_data))
     return response.data[0] if response.data else {}
 
 
@@ -325,18 +333,18 @@ async def update_schedule_status(schedule_id: int, status: str, message: str = "
     update_data = {"status": status}
     if message:
         update_data["notes"] = message
-    response = _db().table("generated_schedules").update(update_data).eq(
-        "id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("generated_schedules").update(update_data).eq("id", schedule_id)
+    )
     return response.data[0] if response.data else {}
 
 
 async def delete_schedule(schedule_id: int) -> bool:
     """Delete a schedule and its entries - Now uses generated_schedules and room_allocations"""
     # Delete allocations first (foreign key)
-    _db().table("room_allocations").delete().eq("schedule_id", schedule_id).execute()
+    await _execute(_db().table("room_allocations").delete().eq("schedule_id", schedule_id))
     # Delete schedule
-    _db().table("generated_schedules").delete().eq("id", schedule_id).execute()
+    await _execute(_db().table("generated_schedules").delete().eq("id", schedule_id))
     return True
 
 
@@ -348,11 +356,13 @@ async def check_room_conflicts(
     schedule_id: int
 ) -> List[Dict]:
     """Check if room is already booked at this time - Now uses room_allocations"""
-    response = _db().table("room_allocations").select("*").eq(
-        "room_id", room_id
-    ).eq("schedule_day", day_of_week).eq(
-        "schedule_id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("room_allocations")
+        .select("*")
+        .eq("room_id", room_id)
+        .eq("schedule_day", day_of_week)
+        .eq("schedule_id", schedule_id)
+    )
     return response.data or []
 
 
@@ -365,11 +375,13 @@ async def check_teacher_conflicts(
     """Check if teacher is already scheduled at this time - Now uses room_allocations"""
     if not teacher_id:
         return []  # No teacher assigned
-    response = _db().table("room_allocations").select("*").eq(
-        "schedule_id", schedule_id
-    ).eq("schedule_day", day_of_week).eq(
-        "teacher_id", teacher_id
-    ).execute()
+    response = await _execute(
+        _db().table("room_allocations")
+        .select("*")
+        .eq("schedule_id", schedule_id)
+        .eq("schedule_day", day_of_week)
+        .eq("teacher_id", teacher_id)
+    )
     return response.data or []
 
 
@@ -406,14 +418,22 @@ async def get_teacher_workload(schedule_id: int) -> List[Dict]:
     
     workload = []
     for teacher in teachers:
-        teacher_entries = [e for e in entries if e["teacher_id"] == teacher["id"]]
-        days_working = list(set([e["day_of_week"] for e in teacher_entries]))
+        teacher_entries = [e for e in entries if e.get("teacher_id") == teacher.get("id")]
+        days_working = list(
+            set(
+                [
+                    (e.get("day_of_week") or e.get("schedule_day"))
+                    for e in teacher_entries
+                    if (e.get("day_of_week") or e.get("schedule_day"))
+                ]
+            )
+        )
         
         workload.append({
-            "teacher_id": teacher["id"],
-            "teacher_name": teacher["name"],
+            "teacher_id": teacher.get("id"),
+            "teacher_name": teacher.get("name") or teacher.get("full_name") or "",
             "total_hours": len(teacher_entries) * 1.5,  # Assuming 90 min per slot
-            "sections_count": len(set([e["section_id"] for e in teacher_entries])),
+            "sections_count": len(set([e.get("section_id") for e in teacher_entries if e.get("section_id") is not None])),
             "days_working": days_working
         })
     
@@ -424,15 +444,15 @@ async def get_teacher_workload(schedule_id: int) -> List[Dict]:
 
 async def create_generated_schedule(schedule_data: Dict) -> Dict:
     """Create a new generated schedule record"""
-    response = _db().table("generated_schedules").insert(schedule_data).execute()
+    response = await _execute(_db().table("generated_schedules").insert(schedule_data))
     return response.data[0] if response.data else {}
 
 
 async def update_generated_schedule(schedule_id: int, update_data: Dict) -> Dict:
     """Update a generated schedule record"""
-    response = _db().table("generated_schedules").update(update_data).eq(
-        "id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("generated_schedules").update(update_data).eq("id", schedule_id)
+    )
     return response.data[0] if response.data else {}
 
 
@@ -440,23 +460,50 @@ async def save_room_allocations(allocations: List[Dict]) -> List[Dict]:
     """Save room allocation entries for a schedule"""
     if not allocations:
         return []
-    response = _db().table("room_allocations").insert(allocations).execute()
-    return response.data or []
+
+    # Handle schema drift gracefully (e.g., environments that have not yet added
+    # optional analytics columns like day_of_week/section_id/teacher_id).
+    payload = [dict(item) for item in allocations]
+    removed_columns: List[str] = []
+
+    for _ in range(12):
+        try:
+            response = await _execute(_db().table("room_allocations").insert(payload))
+            if removed_columns:
+                print(f"⚠️ room_allocations insert fallback removed unknown columns: {', '.join(removed_columns)}")
+            return response.data or []
+        except Exception as exc:
+            message = str(exc)
+            match = re.search(r"Could not find the '([^']+)' column", message)
+            if not match:
+                raise
+
+            missing_column = match.group(1)
+            if not missing_column or missing_column in removed_columns:
+                raise
+
+            removed_columns.append(missing_column)
+            payload = [{k: v for k, v in item.items() if k != missing_column} for item in payload]
+
+            if payload and not payload[0]:
+                raise ValueError("room_allocations payload became empty after removing unknown columns")
+
+    raise ValueError("room_allocations insert failed after removing unsupported columns")
 
 
 async def get_generated_schedules() -> List[Dict]:
     """Get all generated schedules"""
-    response = _db().table("generated_schedules").select("*").order(
-        "created_at", desc=True
-    ).execute()
+    response = await _execute(
+        _db().table("generated_schedules").select("*").order("created_at", desc=True)
+    )
     return response.data or []
 
 
 async def get_generated_schedule_by_id(schedule_id: int) -> Optional[Dict]:
     """Get a specific generated schedule by ID with its allocations"""
-    schedule_response = _db().table("generated_schedules").select("*").eq(
-        "id", schedule_id
-    ).execute()
+    schedule_response = await _execute(
+        _db().table("generated_schedules").select("*").eq("id", schedule_id)
+    )
     
     if not schedule_response.data:
         return None
@@ -464,9 +511,9 @@ async def get_generated_schedule_by_id(schedule_id: int) -> Optional[Dict]:
     schedule = schedule_response.data[0]
     
     # Get room allocations for this schedule
-    allocations_response = _db().table("room_allocations").select("*").eq(
-        "schedule_id", schedule_id
-    ).execute()
+    allocations_response = await _execute(
+        _db().table("room_allocations").select("*").eq("schedule_id", schedule_id)
+    )
     
     schedule["allocations"] = allocations_response.data or []
     return schedule
@@ -474,13 +521,13 @@ async def get_generated_schedule_by_id(schedule_id: int) -> Optional[Dict]:
 
 async def delete_generated_schedule(schedule_id: int) -> bool:
     """Delete a generated schedule and its allocations (cascade delete handles allocations)"""
-    _db().table("generated_schedules").delete().eq("id", schedule_id).execute()
+    await _execute(_db().table("generated_schedules").delete().eq("id", schedule_id))
     return True
 
 
 async def get_room_allocations_by_schedule(schedule_id: int) -> List[Dict]:
     """Get all room allocations for a schedule"""
-    response = _db().table("room_allocations").select("*").eq(
-        "schedule_id", schedule_id
-    ).execute()
+    response = await _execute(
+        _db().table("room_allocations").select("*").eq("schedule_id", schedule_id)
+    )
     return response.data or []

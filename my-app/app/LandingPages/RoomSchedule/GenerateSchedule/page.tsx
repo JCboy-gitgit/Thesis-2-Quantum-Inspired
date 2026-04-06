@@ -304,6 +304,14 @@ interface QueueStatusState {
   message: string
 }
 
+interface QueueStatusSnapshot {
+  available: boolean
+  active: boolean
+  waitingCount: number
+  maxWaitSeconds?: number
+  message: string
+}
+
 interface BackendProbeState {
   checking: boolean
   reachable: boolean | null
@@ -581,6 +589,31 @@ function countUniqueCourseSections(rows: Array<{ course_code?: string; section?:
   ).size
 }
 
+function formatAcademicYear(startYear: number): string {
+  return `${startYear}-${startYear + 1}`
+}
+
+function getDefaultAcademicYear(): string {
+  const now = new Date()
+  return formatAcademicYear(now.getFullYear())
+}
+
+function getAcademicYearStart(value: string): number | null {
+  const normalized = String(value || '').trim()
+  const match = normalized.match(/^(\d{4})\s*-\s*(\d{4})$/)
+  if (!match) {
+    return null
+  }
+
+  const start = Number(match[1])
+  const end = Number(match[2])
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end !== start + 1) {
+    return null
+  }
+
+  return start
+}
+
 export default function GenerateSchedulePage() {
   const router = useRouter()
   const pathname = usePathname()
@@ -615,7 +648,7 @@ export default function GenerateSchedulePage() {
   const [config, setConfig] = useState<ScheduleConfig>({
     scheduleName: '',
     semester: 'First Semester',
-    academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+    academicYear: getDefaultAcademicYear(),
     maxIterations: 10000, // Default to maximum
     initialTemperature: 200,
     coolingRate: 0.999,
@@ -641,7 +674,7 @@ export default function GenerateSchedulePage() {
     softLunchOverlap: 500,
     softTeacherOverload: 80,
     softAccessibilityBonus: -10,
-    softMorningPreference: 5,
+    softMorningPreference: 40,
     softDayDistribution: 20,
     softSiblingDifferentDay: 100,
     softOverloadedTeacher: 200,
@@ -652,8 +685,8 @@ export default function GenerateSchedulePage() {
     softFacultyLongGap3h: 1200,
     softFacultyLongGap4h: 3000,
     softLoadImbalance: 300,
-    softLateClass: 150,
-    softRoomIdleGap: 100,
+    softLateClass: 250,
+    softRoomIdleGap: 200,
     softUnevenSectionDist: 250,
     softConsecutiveDayPenalty: 0,
     softSectionGap: 50,
@@ -742,6 +775,50 @@ export default function GenerateSchedulePage() {
   })
   const [backendPreference, setBackendPreference] = useState<BackendPreference>('auto')
   const [highlightQueueHeader, setHighlightQueueHeader] = useState(false)
+  const [generationPhase, setGenerationPhase] = useState<'idle' | 'queued' | 'generating'>('idle')
+  const [estimatedQueuePosition, setEstimatedQueuePosition] = useState<number | null>(null)
+  const [isSubmittingGeneration, setIsSubmittingGeneration] = useState(false)
+
+  const academicYearOptions = useMemo(() => {
+    const options = new Set<string>()
+    const currentYear = new Date().getFullYear()
+
+    // Rolling window keeps the dropdown future-proof without hardcoding specific years.
+    for (let year = currentYear - 2; year <= currentYear + 8; year += 1) {
+      options.add(formatAcademicYear(year))
+    }
+
+    yearBatches.forEach((batch) => {
+      const batchAcademicYear = String(batch.academic_year || '').trim()
+      if (batchAcademicYear) {
+        options.add(batchAcademicYear)
+      }
+    })
+
+    const selectedAcademicYear = String(config.academicYear || '').trim()
+    if (selectedAcademicYear) {
+      options.add(selectedAcademicYear)
+    }
+
+    return Array.from(options).sort((a, b) => {
+      const aStart = getAcademicYearStart(a)
+      const bStart = getAcademicYearStart(b)
+
+      if (aStart !== null && bStart !== null) {
+        return bStart - aStart
+      }
+
+      if (aStart !== null) {
+        return -1
+      }
+
+      if (bStart !== null) {
+        return 1
+      }
+
+      return b.localeCompare(a)
+    })
+  }, [config.academicYear, yearBatches])
 
   const probeBackendConnection = async () => {
     const selectedBackendLabel = BACKEND_PREFERENCE_LABELS[backendPreference]
@@ -788,7 +865,7 @@ export default function GenerateSchedulePage() {
     }
   }
 
-  const pollQueueStatus = async (silent = false) => {
+  const pollQueueStatus = async (silent = false): Promise<QueueStatusSnapshot> => {
     if (!silent) {
       setQueueStatus(prev => ({ ...prev, loading: true }))
     }
@@ -802,40 +879,79 @@ export default function GenerateSchedulePage() {
 
       if (response.ok && payload?.queue_status) {
         const queue = payload.queue_status
-        setQueueStatus({
-          loading: false,
+        const snapshot: QueueStatusSnapshot = {
           available: true,
           active: Boolean(queue.active),
           waitingCount: Number(queue.waiting_count || 0) || 0,
-          activeJobId: queue.active_job_id || null,
           maxWaitSeconds: Number(queue.max_wait_seconds || 0) || undefined,
           message: queue.active
             ? `Queue active: ${Number(queue.waiting_count || 0)} request(s) waiting.`
             : 'Queue is idle. Your request can start immediately.',
-        })
-      } else {
+        }
         setQueueStatus({
           loading: false,
+          available: snapshot.available,
+          active: snapshot.active,
+          waitingCount: snapshot.waitingCount,
+          activeJobId: queue.active_job_id || null,
+          maxWaitSeconds: snapshot.maxWaitSeconds,
+          message: snapshot.message,
+        })
+        return snapshot
+      } else {
+        const snapshot: QueueStatusSnapshot = {
           available: false,
           active: false,
           waitingCount: 0,
-          activeJobId: null,
           maxWaitSeconds: undefined,
           message: payload?.error || 'Queue status is temporarily unavailable.',
+        }
+        setQueueStatus({
+          loading: false,
+          available: snapshot.available,
+          active: snapshot.active,
+          waitingCount: snapshot.waitingCount,
+          activeJobId: null,
+          maxWaitSeconds: snapshot.maxWaitSeconds,
+          message: snapshot.message,
         })
+        return snapshot
       }
     } catch (error: any) {
-      setQueueStatus({
-        loading: false,
+      const snapshot: QueueStatusSnapshot = {
         available: false,
         active: false,
         waitingCount: 0,
-        activeJobId: null,
         maxWaitSeconds: undefined,
         message: error?.message || 'Queue status check failed.',
+      }
+      setQueueStatus({
+        loading: false,
+        available: snapshot.available,
+        active: snapshot.active,
+        waitingCount: snapshot.waitingCount,
+        activeJobId: null,
+        maxWaitSeconds: snapshot.maxWaitSeconds,
+        message: snapshot.message,
       })
+      return snapshot
     }
   }
+
+  useEffect(() => {
+    if (!isScheduling) {
+      setGenerationPhase('idle')
+      setEstimatedQueuePosition(null)
+      return
+    }
+
+    // When queue drains, transition the UI message from queued -> generating.
+    if (generationPhase === 'queued' && queueStatus.available) {
+      if (!queueStatus.active || queueStatus.waitingCount === 0) {
+        setGenerationPhase('generating')
+      }
+    }
+  }, [isScheduling, generationPhase, queueStatus.available, queueStatus.active, queueStatus.waitingCount])
 
   useEffect(() => {
     let disposed = false
@@ -845,7 +961,7 @@ export default function GenerateSchedulePage() {
       await pollQueueStatus(true)
       if (disposed) return
 
-      const intervalMs = isScheduling ? 3000 : 10000
+      const intervalMs = isScheduling ? 5000 : 20000
       timeoutId = window.setTimeout(tick, intervalMs)
     }
 
@@ -2413,6 +2529,10 @@ export default function GenerateSchedulePage() {
 
   // Generate schedule
   const handleGenerateSchedule = async () => {
+    if (isScheduling || isSubmittingGeneration) {
+      return
+    }
+
     if (!canGenerate) {
       toast.warning('Incomplete Selection', {
         description: 'Please complete all required selections before generating.',
@@ -2430,6 +2550,10 @@ export default function GenerateSchedulePage() {
   }
 
   const openGenerateReviewModal = () => {
+    if (isScheduling || isSubmittingGeneration) {
+      return
+    }
+
     if (!canGenerate) {
       toast.warning('Incomplete Selection', {
         description: 'Please complete all required selections before generating.',
@@ -2447,6 +2571,11 @@ export default function GenerateSchedulePage() {
 
   // Proceed with schedule generation after bypass confirmation
   const executeScheduleGeneration = async () => {
+    if (isScheduling || isSubmittingGeneration) {
+      return
+    }
+
+    setIsSubmittingGeneration(true)
     setShowUnassignedWarning(false)
     setShowResults(false)
 
@@ -2545,7 +2674,16 @@ export default function GenerateSchedulePage() {
         onlineDays: config.onlineDays
       }, null, 2))
 
-      void pollQueueStatus(true)
+      const queueSnapshot = await pollQueueStatus(true)
+
+      const likelyQueued = Boolean(queueSnapshot.available && queueSnapshot.active)
+      if (likelyQueued) {
+        setGenerationPhase('queued')
+        setEstimatedQueuePosition(Math.max(1, queueSnapshot.waitingCount + 1))
+      } else {
+        setGenerationPhase('generating')
+        setEstimatedQueuePosition(null)
+      }
 
       startScheduling(scheduleData)
 
@@ -2702,6 +2840,8 @@ export default function GenerateSchedulePage() {
         queuePendingAfterStart: Number(result.queue_pending_after_start || 0) || 0,
         queueMaxWaitSeconds: Number(result.queue_max_wait_seconds || 0) || 0,
       })
+      setGenerationPhase('idle')
+      setEstimatedQueuePosition(null)
       setShowResults(true)
       setShowTimetable(true)
 
@@ -2787,8 +2927,11 @@ export default function GenerateSchedulePage() {
         severity: 'error',
         category: 'schedule_error'
       })
+      setGenerationPhase('idle')
+      setEstimatedQueuePosition(null)
       resetScheduling()
     } finally {
+      setIsSubmittingGeneration(false)
       // isScheduling is handled by setScheduleResult on success
       // If we reach here after an error, we should probably reset or at least stop the spinner
       if (!isScheduling) return // Already handled
@@ -2814,7 +2957,7 @@ export default function GenerateSchedulePage() {
       softLunchOverlap: 500,
       softTeacherOverload: 80,
       softAccessibilityBonus: -10,
-      softMorningPreference: 5,
+      softMorningPreference: 40,
       softDayDistribution: 20,
       softSiblingDifferentDay: 100,
       softOverloadedTeacher: 200,
@@ -2822,8 +2965,8 @@ export default function GenerateSchedulePage() {
       softConsecutiveHoursExceeded: 500,
       softFacultyIdleTime: 200,
       softLoadImbalance: 300,
-      softLateClass: 150,
-      softRoomIdleGap: 100,
+      softLateClass: 250,
+      softRoomIdleGap: 200,
       softUnevenSectionDist: 250,
       softConsecutiveDayPenalty: 0,
       softSectionGap: 50,
@@ -3365,7 +3508,7 @@ export default function GenerateSchedulePage() {
               </div>
               <div className={styles.headerText}>
                 <h1 className={styles.scheduleTitle}>
-                  Quantum-Inspired Room Allocation
+                  Generate Schedule
                 </h1>
                 <p className={styles.scheduleSubtitle} id="gen-steps-indicator">
                   Advanced Algorithm for Optimal Class-Room-Teacher Scheduling
@@ -5172,13 +5315,17 @@ export default function GenerateSchedulePage() {
                       </div>
                       <div className={styles.formGroup}>
                         <label className={styles.formLabel}>Academic Year</label>
-                        <input
-                          type="text"
-                          className={styles.formInput}
-                          placeholder="2025-2026"
+                        <select
+                          className={styles.formSelect}
                           value={config.academicYear}
                           onChange={(e) => setConfig(prev => ({ ...prev, academicYear: e.target.value }))}
-                        />
+                        >
+                          {academicYearOptions.map((academicYear) => (
+                            <option key={academicYear} value={academicYear}>
+                              {academicYear}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -5937,19 +6084,26 @@ export default function GenerateSchedulePage() {
                       <button
                         className={`${styles.manualEditButton}`}
                         onClick={() => setShowManualModal(true)}
-                        disabled={isScheduling || !canGenerate}
+                        disabled={isScheduling || isSubmittingGeneration || !canGenerate}
                       >
                         <MdTableChart size={20} /> Manual Edit First
                       </button>
                       <button
                         className={`${styles.generateButton} ${isScheduling ? styles.generating : ''}`}
                         onClick={openGenerateReviewModal}
-                        disabled={isScheduling || !canGenerate}
+                        disabled={isScheduling || isSubmittingGeneration || !canGenerate}
                       >
                         {isScheduling ? (
                           <>
                             <FaSpinner className={styles.spinnerIcon} />
-                            Generating Schedule... {(timer / 1000).toFixed(1)}s
+                            {generationPhase === 'queued'
+                              ? `Queued for Generation... ${(timer / 1000).toFixed(1)}s`
+                              : `Generating Schedule... ${(timer / 1000).toFixed(1)}s`}
+                          </>
+                        ) : isSubmittingGeneration ? (
+                          <>
+                            <FaSpinner className={styles.spinnerIcon} />
+                            Submitting Request...
                           </>
                         ) : (
                           <>
@@ -5974,10 +6128,16 @@ export default function GenerateSchedulePage() {
                       <div className={styles.queueStatusCard}>
                         <div className={styles.queueStatusHeader}>
                           <FaClock />
-                          <span>Generation Queue</span>
+                          <span>{generationPhase === 'queued' ? 'Queued Request' : 'Generation Queue'}</span>
                           {queueStatus.loading && <FaSpinner className={styles.queueSpinner} />}
                         </div>
-                        <p className={styles.queueStatusMessage}>{queueStatus.message}</p>
+                        <p className={styles.queueStatusMessage}>
+                          {generationPhase === 'queued'
+                            ? `Your request is in queue${estimatedQueuePosition ? ` (estimated position #${estimatedQueuePosition})` : ''}. Waiting for an active generation slot.`
+                            : generationPhase === 'generating'
+                              ? 'Your request is now actively generating a schedule.'
+                              : queueStatus.message}
+                        </p>
                         {queueStatus.available && (
                           <div className={styles.queueStatusGrid}>
                             <div className={styles.queueStatusItem}>
@@ -6182,7 +6342,7 @@ export default function GenerateSchedulePage() {
                         })
                       }
                     }}
-                    disabled={!bypassTeacherCheck}
+                    disabled={!bypassTeacherCheck || isScheduling || isSubmittingGeneration}
                     className={styles.proceedBtn}
                   >
                     <FaPlay /> Proceed with Scheduling
@@ -6278,7 +6438,11 @@ export default function GenerateSchedulePage() {
                   <button onClick={() => setShowGenerateReview(false)} className={styles.cancelBtn}>
                     Cancel
                   </button>
-                  <button onClick={confirmAndGenerateSchedule} className={styles.proceedBtn}>
+                  <button
+                    onClick={confirmAndGenerateSchedule}
+                    disabled={isScheduling || isSubmittingGeneration}
+                    className={styles.proceedBtn}
+                  >
                     <FaPlay /> Yes, Generate Schedule
                   </button>
                 </div>
