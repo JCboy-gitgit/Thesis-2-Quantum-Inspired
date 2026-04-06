@@ -83,13 +83,3 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ---
 
 ## Thesis Group 6 Members
-
-### Member Watashiii - Lead Developer / Algorithm Specialist
-
-### Member Nicko Dalugdugan - Frontend Engineer / UI Design
-
-### Member John Clarence Nicolas(Representative) - Database Administrator / QA
-
-### Member Fiona Ventura - Technical Writer / Documentation
-
-### Member Ray Franz - Researcher / Information
