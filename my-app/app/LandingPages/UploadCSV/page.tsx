@@ -829,22 +829,22 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                 Example: CS-101, Room 101, Science Building, 1, CS, Lecture Room, Standard Classroom, 40, true, true, false
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--info-blue)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Rooms upload populates RoomsManagement (Rooms & Buildings).</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Room Types:</strong> <span style={{ color: 'var(--text-dark)' }}>Lecture Room, Laboratory, Computer Lab, Conference Room, Auditorium, etc.</span>
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--info-blue)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Room Types:</strong> <span style={{ color: 'var(--text-dark)' }}>Lecture Room, Laboratory, Computer Lab, Conference Room, Auditorium, etc.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
-                <strong style={{ color: '#065f46' }}>College Field:</strong>{' '}
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--success)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>College Field:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college code from Admin Settings (e.g., CS, CICT). Use Shared for multi-college rooms.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--warning-bg, #fef3c7)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdError size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#d97706' }} />
-                <strong style={{ color: '#92400e' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
+                <MdError size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--warning-orange)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Note:</strong> <span style={{ color: 'var(--text-dark)' }}>Room_ID, Floor, and Is_Airconditioned can be empty. Empty values will show as "None".</span>
               </div>
               <button
                 type="button"
@@ -944,23 +944,23 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                 <MdInfo size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
-              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
+              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: 'var(--text-medium)' }}>Degree Program, Year Level, Semester, Grade, Course Code, Descriptive Title, Lab Units, Lab Hours, Lec Hours, Pre-requisite</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
                 <MdDescription size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Example: BS Biology, 1, 1st Semester, 1.0, BIO 101, General Biology, 1, 3, 2, None
               </small>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Degree Programs:</strong> <span style={{ color: 'var(--text-dark)' }}>BS Biology, BS Mathematics, BS Computer Science, BS Chemistry, BS Physics, etc.</span>
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--info-blue)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Degree Programs:</strong> <span style={{ color: 'var(--text-dark)' }}>BS Biology, BS Mathematics, BS Computer Science, BS Chemistry, BS Physics, etc.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--info-blue)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Course uploads appear in CoursesManagement and are grouped by college.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
-                <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--success)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the CoursesManagement folder.</span>
               </div>
               <button
@@ -1046,12 +1046,12 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                 <MdInfo size={16} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }} />
                 Expected CSV Format:
               </h3>
-              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: '#10b981' }}>Name | Position | Department | Type</p>
+              <p style={{ fontSize: '12px', wordBreak: 'break-word', fontWeight: '600', color: 'var(--text-medium)' }}>Name | Position | Department | Type</p>
               <small style={{ color: 'var(--text-light)', marginTop: '8px', display: 'block' }}>
                 <MdDescription size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px' }} />
                 Examples:
               </small>
-              <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace' }}>
+              <div style={{ marginTop: '8px', padding: '10px', background: 'var(--info-bg, #dbeafe)', borderRadius: '6px', fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-dark)' }}>
                 "Thelma V. Pagtalunan" | "Dean" | "Administration" | "Official"<br />
                 "Benedict M. Estrella" | "Associate Dean" | "Administration" | "Official"<br />
                 "Harris R. Dela Cruz" | "Faculty" | "Mathematics" | "Faculty"<br />
@@ -1060,17 +1060,17 @@ BS Computer Science,2,1st Semester,1.5,CS 201,Data Structures,0,0,3,CS 101`
                 "Karl Kenneth R. Santos" | "Guest Lecturer" | "Science" | "Guest Lecturer"
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
-                <strong style={{ color: '#065f46' }}>Types Supported:</strong> <span style={{ color: 'var(--text-dark)' }}>Official, Staff, Faculty, Faculty (Part-Time), Faculty (Adjunct), Guest Lecturer</span>
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--success)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Types Supported:</strong> <span style={{ color: 'var(--text-dark)' }}>Official, Staff, Faculty, Faculty (Part-Time), Faculty (Adjunct), Guest Lecturer</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--info-bg, #dbeafe)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#2563eb' }} />
-                <strong style={{ color: '#1e40af' }}>Where this goes:</strong>{' '}
+                <MdInfo size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--info-blue)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>Where this goes:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Faculty uploads appear in FacultyColleges and Faculty Management.</span>
               </div>
               <div style={{ marginTop: '8px', padding: '8px', background: 'var(--success-bg, #d1fae5)', borderRadius: '4px', fontSize: '12px' }}>
-                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: '#059669' }} />
-                <strong style={{ color: '#065f46' }}>College Name:</strong>{' '}
+                <MdCheckCircle size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', color: 'var(--success)' }} />
+                <strong style={{ color: 'var(--text-dark)' }}>College Name:</strong>{' '}
                 <span style={{ color: 'var(--text-dark)' }}>Use a college from Admin Settings (e.g., College of Science). This value controls the FacultyColleges folder.</span>
               </div>
               <button

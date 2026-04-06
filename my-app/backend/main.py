@@ -63,6 +63,15 @@ schedule_generation_queue: Deque[str] = deque()
 schedule_generation_active_job: Optional[str] = None
 schedule_generation_condition = asyncio.Condition()
 SCHEDULE_QUEUE_MAX_WAIT_SECONDS = max(30, int(os.getenv("SCHEDULE_QUEUE_MAX_WAIT_SECONDS", "600")))
+SCHEDULE_QUEUE_MAX_LENGTH = max(0, int(os.getenv("SCHEDULE_QUEUE_MAX_LENGTH", "0") or 0))
+
+
+def _is_free_tier_resource_profile_enabled() -> bool:
+    profile = (os.getenv("SCHEDULER_RESOURCE_PROFILE") or "").strip().lower()
+    if profile:
+        return profile in {"render-free", "free", "low"}
+    # Render sets service env vars; use as a safe heuristic when profile isn't explicitly set.
+    return bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"))
 
 
 async def _acquire_schedule_generation_slot(job_id: str) -> Dict[str, Any]:
@@ -71,6 +80,13 @@ async def _acquire_schedule_generation_slot(job_id: str) -> Dict[str, Any]:
 
     queued_at = time.monotonic()
     async with schedule_generation_condition:
+        if SCHEDULE_QUEUE_MAX_LENGTH > 0:
+            total_in_system = len(schedule_generation_queue) + (1 if schedule_generation_active_job else 0)
+            if total_in_system >= SCHEDULE_QUEUE_MAX_LENGTH:
+                raise ScheduleQueueTimeoutError(
+                    f"Queue is full (max_length={SCHEDULE_QUEUE_MAX_LENGTH}). Try again shortly."
+                )
+
         initial_position = len(schedule_generation_queue) + (1 if schedule_generation_active_job else 0) + 1
         schedule_generation_queue.append(job_id)
         deadline = queued_at + SCHEDULE_QUEUE_MAX_WAIT_SECONDS
@@ -721,6 +737,26 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "SOFT_VSL_SHIFT_MISMATCH": request.SOFT_VSL_SHIFT_MISMATCH,
             "SOFT_PART_TIME_SATURDAY": request.SOFT_PART_TIME_SATURDAY
         }
+
+        # Render/free-tier guardrails: keep the instance responsive and avoid CPU/memory runaway.
+        # This does NOT change results correctness; it only limits how deep optimization goes.
+        if _is_free_tier_resource_profile_enabled():
+            problem_scale = max(1, len(sections)) * max(1, len(rooms)) * max(1, len(time_slots))
+
+            # Enable yielding (stability) even for smaller inputs.
+            config["low_resource_mode"] = True
+            config["auto_low_resource_mode"] = True
+
+            # Cap iterations; large problems get a lower cap.
+            base_cap = int(os.getenv("SCHEDULER_MAX_ITERATIONS_CAP", "2500"))
+            large_problem_scale = int(os.getenv("SCHEDULER_LARGE_PROBLEM_SCALE", "200000"))
+            large_cap = int(os.getenv("SCHEDULER_MAX_ITERATIONS_CAP_LARGE", "1600"))
+            cap = large_cap if problem_scale >= large_problem_scale else base_cap
+            config["max_iterations"] = max(500, min(int(config.get("max_iterations") or 0), cap))
+
+            # Reduce expensive full re-optimizations on free tier.
+            adaptive_passes = int(os.getenv("SCHEDULER_ADAPTIVE_RETRY_PASSES", "1"))
+            config["adaptive_retry_passes"] = max(0, adaptive_passes)
         
         print("🎯 Running Enhanced Quantum-Inspired Annealing Algorithm...")
         print(f"   Max Iterations: {config['max_iterations']}")

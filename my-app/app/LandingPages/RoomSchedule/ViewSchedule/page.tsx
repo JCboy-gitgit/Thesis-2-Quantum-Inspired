@@ -75,6 +75,8 @@ interface OptimizationStats {
   time_elapsed_ms?: number
   scheduled_classes?: number
   unscheduled_classes?: number
+  source_classes?: any[]
+  source_class_group_id?: number | null
 }
 
 interface Schedule {
@@ -1325,7 +1327,7 @@ export default function ViewSchedulePage() {
           .eq('upload_group_id', schedule.campus_group_id),
         db
           .from('teaching_loads')
-          .select('course_id, section, faculty_user_id, faculty_profiles!inner(full_name)')
+          .select('course_id, section, faculty_user_id, faculty_profiles!inner(full_name), class_schedules:course_id(course_code)')
       ])
 
       const courseCodeById = new Map<number, string>()
@@ -1355,7 +1357,7 @@ export default function ViewSchedulePage() {
       }
 
       ;(teachingLoadsData || []).forEach((tl: any) => {
-        const code = String(courseCodeById.get(Number(tl.course_id)) || '').toLowerCase()
+        const code = String(courseCodeById.get(Number(tl.course_id)) || tl?.class_schedules?.course_code || '').toLowerCase()
         const section = (tl.section || '').toLowerCase()
         if (!code) return
 
@@ -1400,7 +1402,7 @@ export default function ViewSchedulePage() {
           year_level: cls.year_level || 1,
           department: cls.department || '',
           college: cls.college || undefined,
-          teacher_name: teacher?.teacher_name || '',
+          teacher_name: teacher?.teacher_name || String(cls.teacher_name || '').trim(),
           teacher_id: teacher?.teacher_id,
           teacher_options: Array.from(optionsSet).sort((a, b) => a.localeCompare(b)),
           lec_hours: cls.lec_hours ?? cls.lec_hr ?? 0,
@@ -1410,6 +1412,16 @@ export default function ViewSchedulePage() {
       }
 
       let classes: ManualClassItem[] = (classData || []).map(mapClassRow)
+
+      // Preferred source for year-batch schedules: store the original generation input on the schedule.
+      // This keeps manual editing consistent even when class_id values are not tied to class_schedules.id.
+      const sourceClasses = Array.isArray((schedule.optimization_stats as any)?.source_classes)
+        ? ((schedule.optimization_stats as any).source_classes as any[])
+        : []
+
+      if (classes.length === 0 && sourceClasses.length > 0) {
+        classes = sourceClasses.map(mapClassRow)
+      }
 
       // Fallback: when class_group_id is a year_batch_id instead of upload_group_id,
       // discover the correct upload_group_id from allocation class_ids so we get ALL
@@ -1494,6 +1506,125 @@ export default function ViewSchedulePage() {
 
       let resolvedClasses = classes.length > 0 ? classes : Array.from(fallbackClassesMap.values())
       const resolvedRooms = rooms.length > 0 ? rooms : Array.from(fallbackRoomsMap.values())
+
+      // Year-batch fallback: when we only have scheduled allocations, rebuild the FULL class list
+      // (scheduled + unscheduled) from sections + section_course_assignments.
+      if (classes.length === 0) {
+        const yearBatchId = Number(schedule.class_group_id || 0)
+        if (Number.isFinite(yearBatchId) && yearBatchId > 0) {
+          const scheduleCollege = String(schedule.college || '').trim()
+          const shouldFilterCollege = Boolean(scheduleCollege && scheduleCollege !== 'All Colleges' && !scheduleCollege.includes(','))
+
+          const { data: sectionRows } = await db
+            .from('sections')
+            .select('id, section_name, year_level, student_count, department, college')
+            .eq('year_batch_id', yearBatchId)
+
+          let batchSections: any[] = Array.isArray(sectionRows) ? sectionRows : []
+          if (shouldFilterCollege) {
+            batchSections = batchSections.filter((row: any) => areCollegesCompatible(row?.college, scheduleCollege))
+          }
+
+          const sectionIds = batchSections.map((row: any) => Number(row?.id)).filter((id: number) => Number.isFinite(id) && id > 0)
+          if (sectionIds.length > 0) {
+            const { data: assignmentRows } = await db
+              .from('section_course_assignments')
+              .select('section_id, course_id')
+              .in('section_id', sectionIds)
+
+            const courseIds = Array.from(new Set(
+              (assignmentRows || [])
+                .map((row: any) => Number(row?.course_id))
+                .filter((id: number) => Number.isFinite(id) && id > 0)
+            ))
+
+            if (courseIds.length > 0) {
+              const { data: courseRows } = await db
+                .from('class_schedules')
+                .select('id, course_code, course_name, department, semester, academic_year, college, lec_hr, lab_hr, lec_hours, lab_hours')
+                .in('id', courseIds)
+
+              const sectionById = new Map<number, any>()
+              batchSections.forEach((row: any) => {
+                const id = Number(row?.id)
+                if (Number.isFinite(id) && id > 0) sectionById.set(id, row)
+              })
+
+              const courseById = new Map<number, any>()
+              ;(courseRows || []).forEach((row: any) => {
+                const id = Number(row?.id)
+                if (Number.isFinite(id) && id > 0) courseById.set(id, row)
+              })
+
+              const byKey = new Map<string, ManualClassItem>()
+              const unionTeacherOptions = (a?: string[], b?: string[]) => {
+                const set = new Set<string>([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])
+                return Array.from(set).sort((x, y) => x.localeCompare(y))
+              }
+
+              let nextId = Math.max(
+                0,
+                ...resolvedClasses.map((c: any) => Number(c?.id) || 0).filter((id: number) => Number.isFinite(id))
+              ) + 1
+
+              // Seed with allocation-derived classes to preserve existing class_id references.
+              resolvedClasses.forEach((cls: any) => {
+                const key = buildManualClassKey(cls.course_code, cls.section)
+                if (key !== '|') byKey.set(key, cls)
+              })
+
+              ;(assignmentRows || []).forEach((assignment: any) => {
+                const sectionId = Number(assignment?.section_id)
+                const courseId = Number(assignment?.course_id)
+                const sectionRow = sectionById.get(sectionId)
+                const courseRow = courseById.get(courseId)
+                if (!sectionRow || !courseRow) return
+
+                const syntheticRow = {
+                  id: nextId,
+                  course_code: courseRow.course_code,
+                  course_name: courseRow.course_name,
+                  section: sectionRow.section_name,
+                  year_level: sectionRow.year_level,
+                  department: courseRow.department || sectionRow.department || '',
+                  college: sectionRow.college || courseRow.college || undefined,
+                  lec_hours: courseRow.lec_hours ?? courseRow.lec_hr ?? 0,
+                  lab_hours: courseRow.lab_hours ?? courseRow.lab_hr ?? 0,
+                  student_count: sectionRow.student_count ?? 0,
+                }
+
+                const key = buildManualClassKey(String(syntheticRow.course_code || ''), String(syntheticRow.section || ''))
+                if (key === '|') return
+
+                const mapped = mapClassRow(syntheticRow)
+
+                const existing = byKey.get(key)
+                if (existing) {
+                  byKey.set(key, {
+                    ...mapped,
+                    id: existing.id,
+                    teacher_name: isMeaningfulTeacherName(existing.teacher_name) ? existing.teacher_name : (mapped.teacher_name || ''),
+                    teacher_id: existing.teacher_id || mapped.teacher_id,
+                    teacher_options: unionTeacherOptions(existing.teacher_options, mapped.teacher_options),
+                    lec_hours: Number(existing.lec_hours || 0) > 0 ? existing.lec_hours : mapped.lec_hours,
+                    lab_hours: Number(existing.lab_hours || 0) > 0 ? existing.lab_hours : mapped.lab_hours,
+                    student_count: Number(existing.student_count || 0) > 0 ? existing.student_count : mapped.student_count,
+                    year_level: Number(existing.year_level || 0) > 0 ? existing.year_level : mapped.year_level,
+                    department: String(existing.department || '').trim() ? existing.department : mapped.department,
+                    college: isCollegeUnset(existing.college) ? mapped.college : existing.college,
+                  })
+                  return
+                }
+
+                byKey.set(key, mapped)
+                nextId += 1
+              })
+
+              resolvedClasses = Array.from(byKey.values())
+            }
+          }
+        }
+      }
 
       // Source-truth unscheduled list: class_schedules entries not present in current room_allocations.
       const allocatedClassKeys = new Set(

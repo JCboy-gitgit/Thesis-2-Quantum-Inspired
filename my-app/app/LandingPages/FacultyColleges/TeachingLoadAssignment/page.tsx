@@ -7,6 +7,7 @@ import styles from '../../CoursesManagement/ClassSchedules.module.css'
 import stylesLocal from './styles.module.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useColleges } from '@/app/context/CollegesContext'
+import { useTheme } from '@/app/context/ThemeContext'
 import { MdMenuBook as BookOpen, MdKeyboardArrowDown as ChevronDown, MdKeyboardArrowRight as ChevronRight, MdAdd as Plus, MdClose as X, MdSave as Save, MdCalendarToday as Calendar, MdSchool as GraduationCap, MdPeople as Users, MdSearch as Search, MdDelete as Trash2, MdPersonAdd as UserPlus, MdDescription as FileText, MdCheckCircle as CheckCircle, MdError as AlertCircle, MdDownload as Download, MdUpload as Upload, MdBookmark as BookMarked, MdLayers as Layers, MdInfo as Info } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 
@@ -91,6 +92,7 @@ interface SectionCourseAssignment {
 function TeachingLoadAssignmentContent() {
   const router = useRouter()
   const { activeColleges: bulsuColleges } = useColleges()
+  const { theme } = useTheme()
 
   // Options
   const semesters = ['First Semester', 'Second Semester', 'Summer']
@@ -870,6 +872,8 @@ function TeachingLoadAssignmentContent() {
     }
   }
 
+  const isAdminLightMode = theme === 'light'
+
   const filteredFaculties = getFilteredFaculties()
   const loadingSkeletonCount = Math.max(filteredFaculties.length, 1)
 
@@ -960,7 +964,7 @@ function TeachingLoadAssignmentContent() {
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(380px, 100%), 1fr))', gap: '16px' }}>
               {filteredFaculties.map(faculty => {
                 const isExpanded = expandedFaculties.has(faculty.id)
                 const facultyLoads = getTeachingLoadsForFaculty(faculty.id)
@@ -970,14 +974,28 @@ function TeachingLoadAssignmentContent() {
                   <div key={faculty.id} style={{ background: 'var(--bg-white)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
-                        <div style={{ width: 48, height: 48, borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', background: getEmploymentColor(faculty.employment_type), flexShrink: 0, fontWeight: 700 }}>
+                        <div
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: '50%',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: isAdminLightMode ? 'var(--primary-gradient)' : getEmploymentColor(faculty.employment_type),
+                            boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined,
+                            flexShrink: 0,
+                            fontWeight: 700
+                          }}
+                        >
                           {getInitials(faculty.full_name)}
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>
                             {faculty.full_name} <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 600, padding: '2px 8px', background: 'var(--primary-gradient)', color: 'white', borderRadius: 6 }}>ID: {faculty.faculty_id}</span>
                           </div>
-                          <div style={{ fontSize: 13, color: 'var(--text-medium)' }}>{faculty.department} • {faculty.position}</div>
+                          <div style={{ fontSize: 13, color: 'var(--text-medium)' }}>{faculty.department ? `${faculty.department} • ${faculty.position}` : faculty.position}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{faculty.email}</div>
                         </div>
                       </div>
@@ -1088,7 +1106,7 @@ function TeachingLoadAssignmentContent() {
                                   <span style={{ fontSize: 12, color: 'var(--text-medium)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 6, fontWeight: 600, border: '1px solid var(--border-color)' }}>{((load.course?.lec_hours || 0) + (load.course?.lab_hours || 0)) * (load.num_sections || 1)} hrs</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                  <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>{load.num_sections || 1} Section(s)</span>
+                                  <span style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600 }}>{load.num_sections || 1} Section(s)</span>
                                   <button onClick={() => updateLoadSections(load.id, (load.num_sections || 1) + 1)} className={stylesLocal.actionIconButton}>+ Add</button>
                                   <button onClick={() => updateLoadSections(load.id, Math.max(1, (load.num_sections || 1) - 1))} className={stylesLocal.actionIconButton}>- Remove</button>
                                 </div>
@@ -1240,7 +1258,7 @@ function TeachingLoadAssignmentContent() {
                                       style={{
                                         display: 'flex', gap: 10, padding: '10px 14px', cursor: 'pointer',
                                         borderBottom: '1px solid var(--border-color)',
-                                        background: isSelected ? 'rgba(46,175,125,0.08)' : 'transparent',
+                                        background: isSelected ? 'var(--primary-alpha)' : 'transparent',
                                         transition: 'background 0.15s',
                                         alignItems: 'flex-start'
                                       }}

@@ -811,7 +811,9 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
           improvements: 0,
           quantum_tunnels: 0,
           time_elapsed_ms: elapsed,
-          scheduler_type: 'fallback'
+          scheduler_type: 'fallback',
+          source_classes: body.classes,
+          source_class_group_id: resolvedClassGroupId,
         },
         status: scheduledCount === sortedSections.length ? 'completed' : 'partial'
       })
@@ -1628,6 +1630,20 @@ export async function POST(request: NextRequest) {
     const scheduleId = Number(reconciledResultWithExecution.schedule_id)
     if (Number.isFinite(scheduleId) && scheduleId > 0) {
       const status = reconciledResultWithExecution.unscheduled_classes === 0 ? 'completed' : 'partial'
+
+      const { data: existingSchedule } = await (supabase as any)
+        .from('generated_schedules')
+        .select('optimization_stats')
+        .eq('id', scheduleId)
+        .maybeSingle()
+
+      const mergedOptimizationStats = {
+        ...(existingSchedule?.optimization_stats || {}),
+        ...(reconciledResultWithExecution.optimization_stats || {}),
+        source_classes: body.classes,
+        source_class_group_id: body.class_group_id || body.year_batch_id || null,
+      }
+
       const { error: syncError } = await (supabase as any)
         .from('generated_schedules')
         .update({
@@ -1635,6 +1651,7 @@ export async function POST(request: NextRequest) {
           scheduled_classes: reconciledResultWithExecution.scheduled_classes,
           unscheduled_classes: reconciledResultWithExecution.unscheduled_classes,
           status,
+          optimization_stats: mergedOptimizationStats,
         })
         .eq('id', scheduleId)
 

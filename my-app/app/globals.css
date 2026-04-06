@@ -131,6 +131,7 @@ body[data-theme="dark"] {
   /* Accent Colors */
   --secondary: #ffd700;
   --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.16);
   --error: #ef4444;
   --warning-orange: #ed8936;
   --warning-bg: #3d2800;

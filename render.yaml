@@ -9,7 +9,7 @@ services:
     plan: free  # Use 'starter' for production
     rootDir: my-app/backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 5 --limit-concurrency 25
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
@@ -19,5 +19,22 @@ services:
         sync: false  # Manual input required
       - key: FRONTEND_URL
         value: https://qia-room-allocation.vercel.app
+      # Free-tier stability knobs
+      - key: SCHEDULER_RESOURCE_PROFILE
+        value: render-free
+      - key: SCHEDULER_CPU_YIELD_EVERY_ITERATIONS
+        value: "25"
+      - key: SCHEDULER_CPU_YIELD_MS
+        value: "3.0"
+      - key: SCHEDULER_MAX_ITERATIONS_CAP
+        value: "2500"
+      - key: SCHEDULER_MAX_ITERATIONS_CAP_LARGE
+        value: "1600"
+      - key: SCHEDULER_ADAPTIVE_RETRY_PASSES
+        value: "1"
+      - key: SCHEDULE_QUEUE_MAX_WAIT_SECONDS
+        value: "120"
+      - key: SCHEDULE_QUEUE_MAX_LENGTH
+        value: "3"
     healthCheckPath: /health
     autoDeploy: true

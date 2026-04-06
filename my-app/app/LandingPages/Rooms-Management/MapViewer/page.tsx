@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import LoadingFallback from '@/app/components/LoadingFallback'
+import DraggableTimetable, { type TimetableAllocation } from '@/app/components/DraggableTimetable/DraggableTimetable'
 import { useTheme } from '@/app/context/ThemeContext'
 
 import styles from './styles.module.css'
@@ -579,6 +580,8 @@ export default function MapViewerPage() {
   const exportCanvasRef = useRef<HTMLCanvasElement>(null)
   const exportSnapshotRef = useRef<HTMLCanvasElement | null>(null)
   const exportSnapshotPromiseRef = useRef<Promise<HTMLCanvasElement | null> | null>(null)
+  const exportSnapshotStaleRef = useRef(false)
+  const exportPreviewCanvasSizeRef = useRef<{ width: number; height: number; dpr: number } | null>(null)
   const [exportSettings, setExportSettings] = useState({
     title: '',
     subtitle: '',
@@ -3061,11 +3064,23 @@ export default function MapViewerPage() {
     const includeFrame = options?.includeFrame !== false
 
     const dpr = options?.canvas ? 1 : Math.min(window.devicePixelRatio || 1, 2)
-    canvas.width = Math.floor(previewW * dpr)
-    canvas.height = Math.floor(previewH * dpr)
-    if (!options?.canvas) {
-      canvas.style.width = `${previewW}px`
-      canvas.style.height = `${previewH}px`
+    const nextCanvasWidth = Math.floor(previewW * dpr)
+    const nextCanvasHeight = Math.floor(previewH * dpr)
+    const prevSize = exportPreviewCanvasSizeRef.current
+    const shouldResize =
+      !prevSize ||
+      prevSize.width !== nextCanvasWidth ||
+      prevSize.height !== nextCanvasHeight ||
+      prevSize.dpr !== dpr
+
+    if (shouldResize) {
+      canvas.width = nextCanvasWidth
+      canvas.height = nextCanvasHeight
+      exportPreviewCanvasSizeRef.current = { width: nextCanvasWidth, height: nextCanvasHeight, dpr }
+      if (!options?.canvas) {
+        canvas.style.width = `${previewW}px`
+        canvas.style.height = `${previewH}px`
+      }
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.imageSmoothingEnabled = true
@@ -3078,11 +3093,30 @@ export default function MapViewerPage() {
     const widthMm = paper.width * (25.4 / 96)
     const heightMm = paper.height * (25.4 / 96)
 
+    // Auto-orientation should choose the best fit for the floor plan aspect ratio
+    const visibleForBounds = canvasElements.filter((el) => isLayerVisible(el.id))
+    const bounds = getExportBounds(visibleForBounds)
+    const mapW = Math.max(1, bounds.maxX - bounds.minX)
+    const mapH = Math.max(1, bounds.maxY - bounds.minY)
+    const mapAspect = mapW / mapH
+
+    const landscapeW = Math.max(widthMm, heightMm)
+    const landscapeH = Math.min(widthMm, heightMm)
+    const portraitW = Math.min(widthMm, heightMm)
+    const portraitH = Math.max(widthMm, heightMm)
+
+    const autoLandscape = (() => {
+      if (!Number.isFinite(mapAspect) || mapAspect <= 0) return widthMm >= heightMm
+      const scaleLandscape = Math.min(landscapeW / mapAspect, landscapeH)
+      const scalePortrait = Math.min(portraitW / mapAspect, portraitH)
+      return scaleLandscape >= scalePortrait
+    })()
+
     const isLandscape = exportSettings.orientation === 'auto'
-      ? widthMm > heightMm
+      ? autoLandscape
       : exportSettings.orientation === 'landscape'
-    const pageW = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
-    const pageH = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
+    const pageW = isLandscape ? landscapeW : portraitW
+    const pageH = isLandscape ? landscapeH : portraitH
 
     // Scale factor to fit page in preview / export canvas
     const sf = Math.min(previewW / pageW, previewH / pageH) * (includeFrame ? 0.92 : 1)
@@ -3310,14 +3344,20 @@ export default function MapViewerPage() {
     ctx.strokeRect(canvasX, canvasY, canvasW, canvasH)
 
     if (sourceCanvasEl) {
-      const needsFreshSnapshot = options?.forceSnapshot || !exportSnapshotRef.current
+      const shouldAwaitSnapshot = !!options?.canvas
+      const needsFreshSnapshot =
+        !!options?.forceSnapshot ||
+        !exportSnapshotRef.current ||
+        exportSnapshotStaleRef.current
 
       if (needsFreshSnapshot) {
+        exportSnapshotStaleRef.current = false
+
         if (!exportSnapshotPromiseRef.current) {
           exportSnapshotPromiseRef.current = (async () => {
             try {
               const html2canvas = (await import('html2canvas')).default
-              const snapshotScale = options?.canvas ? 4 : 2
+              const snapshotScale = options?.canvas ? 2 : 1.25
               const snapshot = await html2canvas(sourceCanvasEl, {
                 backgroundColor: exportSettings.useWhiteBackground
                   ? '#ffffff'
@@ -3358,9 +3398,21 @@ export default function MapViewerPage() {
               exportSnapshotPromiseRef.current = null
             }
           })()
+
+          // For preview: don't block the UI; redraw once snapshot is ready.
+          if (!shouldAwaitSnapshot) {
+            exportSnapshotPromiseRef.current.then(() => {
+              if (!exportCanvasRef.current) return
+              requestAnimationFrame(() => {
+                void renderExportPreview()
+              })
+            })
+          }
         }
 
-        await exportSnapshotPromiseRef.current
+        if (shouldAwaitSnapshot) {
+          await exportSnapshotPromiseRef.current
+        }
       }
 
       if (exportSnapshotRef.current) {
@@ -3534,13 +3586,14 @@ export default function MapViewerPage() {
 
   useEffect(() => {
     if (!showExportPreview) return
-    exportSnapshotRef.current = null
-    exportSnapshotPromiseRef.current = null
+    // Mark snapshot as stale so preview updates, but keep the last snapshot
+    // to avoid blocking the UI while regenerating.
+    exportSnapshotStaleRef.current = true
     const frame = requestAnimationFrame(() => {
-      void renderExportPreview({ forceSnapshot: true })
+      void renderExportPreview()
     })
     return () => cancelAnimationFrame(frame)
-  }, [showExportPreview, canvasElements, layerVisibility, canvasSize, canvasBackground, showGrid, showScheduleOverlay, selectedElement?.id, editForm.label, editForm.fontSize, editForm.textColor, editForm.color, renderExportPreview])
+  }, [showExportPreview, canvasElements, layerVisibility, canvasSize, canvasBackground, showGrid, showScheduleOverlay, renderExportPreview])
 
   useEffect(() => {
     if (!canvasContextMenu.visible) return
@@ -3631,24 +3684,46 @@ export default function MapViewerPage() {
       const widthMm = paper.width * (25.4 / 96)
       const heightMm = paper.height * (25.4 / 96)
 
+      // Auto-orientation: choose portrait/landscape based on visible map aspect ratio
+      const visibleForBounds = canvasElements.filter((el) => isLayerVisible(el.id))
+      const bounds = getExportBounds(visibleForBounds)
+      const mapW = Math.max(1, bounds.maxX - bounds.minX)
+      const mapH = Math.max(1, bounds.maxY - bounds.minY)
+      const mapAspect = mapW / mapH
+
+      const landscapeW = Math.max(widthMm, heightMm)
+      const landscapeH = Math.min(widthMm, heightMm)
+      const portraitW = Math.min(widthMm, heightMm)
+      const portraitH = Math.max(widthMm, heightMm)
+
+      const autoLandscape = (() => {
+        if (!Number.isFinite(mapAspect) || mapAspect <= 0) return widthMm >= heightMm
+        const scaleLandscape = Math.min(landscapeW / mapAspect, landscapeH)
+        const scalePortrait = Math.min(portraitW / mapAspect, portraitH)
+        return scaleLandscape >= scalePortrait
+      })()
+
       const isLandscape = exportSettings.orientation === 'auto'
-        ? widthMm > heightMm
+        ? autoLandscape
         : exportSettings.orientation === 'landscape'
 
-      const pageWidthMm = isLandscape ? Math.max(widthMm, heightMm) : Math.min(widthMm, heightMm)
-      const pageHeightMm = isLandscape ? Math.min(widthMm, heightMm) : Math.max(widthMm, heightMm)
+      const pageWidthMm = isLandscape ? landscapeW : portraitW
+      const pageHeightMm = isLandscape ? landscapeH : portraitH
 
-      const pageWidthPx = isLandscape ? Math.max(paper.width, paper.height) : Math.min(paper.width, paper.height)
-      const pageHeightPx = isLandscape ? Math.min(paper.width, paper.height) : Math.max(paper.width, paper.height)
-      const exportScale = 3
+      // Render at a stable target DPI for sharper PDFs (clamped for memory safety)
+      const TARGET_DPI = 300
+      const maxDimPx = 5200
+      const minDimPx = 1400
+      const pageWidthPx = Math.round((pageWidthMm / 25.4) * TARGET_DPI)
+      const pageHeightPx = Math.round((pageHeightMm / 25.4) * TARGET_DPI)
       const offscreenCanvas = document.createElement('canvas')
 
       await renderExportPreview({
         canvas: offscreenCanvas,
-        width: Math.max(1200, Math.round(pageWidthPx * exportScale)),
-        height: Math.max(1200, Math.round(pageHeightPx * exportScale)),
+        width: Math.min(maxDimPx, Math.max(minDimPx, pageWidthPx)),
+        height: Math.min(maxDimPx, Math.max(minDimPx, pageHeightPx)),
         includeFrame: false,
-        forceSnapshot: true,
+        forceSnapshot: false,
       })
 
       const imageData = offscreenCanvas.toDataURL('image/png')
@@ -3664,7 +3739,17 @@ export default function MapViewerPage() {
 
       const bleedMm = 0.15
       pdf.addImage(imageData, 'PNG', -bleedMm, -bleedMm, pageWidthMm + bleedMm * 2, pageHeightMm + bleedMm * 2, undefined, 'MEDIUM')
-      const fileName = `FloorPlan_${selectedBuilding.replace(/\s+/g, '_')}_F${selectedFloor}_${new Date().toISOString().split('T')[0]}.pdf`
+      const safeTitle = String(exportSettings.title || floorPlanName || 'FloorPlan')
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 60)
+      const safeBuilding = String(selectedBuilding || '')
+        .trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 40)
+      const fileName = `${safeTitle}${safeBuilding ? `_${safeBuilding}` : ''}_F${selectedFloor}_${new Date().toISOString().split('T')[0]}.pdf`
       pdf.save(fileName)
       setShowExportPreview(false)
       showNotification('success', 'PDF exported successfully (high quality)!')
@@ -6765,6 +6850,7 @@ function AdminLiveRoomModal({
   }
 
   const [activeTab, setActiveTab] = useState<'details' | 'schedule' | 'images'>('details')
+  const [scheduleView, setScheduleView] = useState<'list' | 'timetable'>('list')
   const [selectedScheduleDay, setSelectedScheduleDay] = useState<number | 'all'>('all')
   const [roomImages, setRoomImages] = useState<any[]>([])
   const [selectedImageIdx, setSelectedImageIdx] = useState(0)
@@ -6838,7 +6924,33 @@ function AdminLiveRoomModal({
     fetchRoomImages()
   }, [room.id])
 
+  useEffect(() => {
+    setActiveTab('details')
+    setScheduleView('list')
+    setSelectedScheduleDay('all')
+  }, [room.id])
+
   const roomSchedules = roomAllocations.filter((allocation) => matchesAllocationRoom(allocation.room, allocation.room_id, allocation.building))
+
+  const timetableAllocations = useMemo<TimetableAllocation[]>(() => {
+    return roomSchedules.map((allocation) => ({
+      id: allocation.id,
+      schedule_id: allocation.schedule_id,
+      room_id: allocation.room_id ?? room.id,
+      course_code: allocation.course_code,
+      course_name: allocation.course_code || '',
+      section: allocation.section,
+      schedule_day: allocation.schedule_day,
+      schedule_time: allocation.schedule_time,
+      building: allocation.building,
+      room: allocation.room,
+      capacity: room.capacity,
+      campus: room.campus,
+      college: room.college,
+      room_college: room.college,
+      teacher_name: allocation.teacher_name || allocation.faculty_name || '',
+    }))
+  }, [room.campus, room.capacity, room.college, room.id, roomSchedules])
 
   const datedSchedules = useMemo<ModalScheduleEntry[]>(() => {
     return roomSchedules
@@ -6963,54 +7075,87 @@ function AdminLiveRoomModal({
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                  <button
-                    className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === 'all' ? styles.liveRoomTabActive : ''}`}
-                    onClick={() => setSelectedScheduleDay('all')}
-                  >
-                    All Days
-                  </button>
-                  {dayButtonIndexes.map((dayIdx) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {scheduleView === 'list' && (
+                      <>
+                        <button
+                          className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === 'all' ? styles.liveRoomTabActive : ''}`}
+                          onClick={() => setSelectedScheduleDay('all')}
+                        >
+                          All Days
+                        </button>
+                        {dayButtonIndexes.map((dayIdx) => (
+                          <button
+                            key={`live-room-day-${dayIdx}`}
+                            className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === dayIdx ? styles.liveRoomTabActive : ''}`}
+                            onClick={() => setSelectedScheduleDay(dayIdx)}
+                          >
+                            {DAY_NAMES[dayIdx]}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8 }}>
                     <button
-                      key={`live-room-day-${dayIdx}`}
-                      className={`${styles.liveRoomTabBtn} ${selectedScheduleDay === dayIdx ? styles.liveRoomTabActive : ''}`}
-                      onClick={() => setSelectedScheduleDay(dayIdx)}
+                      className={`${styles.liveRoomTabBtn} ${scheduleView === 'list' ? styles.liveRoomTabActive : ''}`}
+                      onClick={() => setScheduleView('list')}
+                      aria-pressed={scheduleView === 'list'}
                     >
-                      {DAY_NAMES[dayIdx]}
+                      <LayoutList size={15} /> List
                     </button>
-                  ))}
+                    <button
+                      className={`${styles.liveRoomTabBtn} ${scheduleView === 'timetable' ? styles.liveRoomTabActive : ''}`}
+                      onClick={() => setScheduleView('timetable')}
+                      aria-pressed={scheduleView === 'timetable'}
+                    >
+                      <LayoutGrid size={15} /> Timetable
+                    </button>
+                  </div>
                 </div>
 
-                <div className={styles.liveRoomScheduleList}>
-                  {[
-                    { title: 'Done', items: scheduleBuckets.done },
-                    { title: 'Ongoing', items: scheduleBuckets.ongoing },
-                    { title: 'Upcoming', items: scheduleBuckets.upcoming }
-                  ].map((bucket) => (
-                    <div key={`bucket-${bucket.title}`}>
-                      <h4 style={{ margin: '4px 0 8px 2px', fontSize: 12, opacity: 0.85 }}>{bucket.title}</h4>
-                      {bucket.items.length === 0 ? (
-                        <div className={styles.liveRoomScheduleItem}>
-                          <div className={styles.liveRoomScheduleDetails}>No {bucket.title.toLowerCase()} schedules.</div>
-                        </div>
-                      ) : bucket.items.map((entry, index) => (
-                        <div key={`${bucket.title}-${entry.allocation.id ?? index}-${entry.dayIdx}-${entry.startMinutes}`} className={styles.liveRoomScheduleItem}>
-                          <div className={styles.liveRoomScheduleTime}>
-                            <Clock size={13} /> {entry.allocation.schedule_time}
+                {scheduleView === 'list' ? (
+                  <div className={styles.liveRoomScheduleList}>
+                    {[
+                      { title: 'Done', items: scheduleBuckets.done },
+                      { title: 'Ongoing', items: scheduleBuckets.ongoing },
+                      { title: 'Upcoming', items: scheduleBuckets.upcoming }
+                    ].map((bucket) => (
+                      <div key={`bucket-${bucket.title}`}>
+                        <h4 style={{ margin: '4px 0 8px 2px', fontSize: 12, opacity: 0.85 }}>{bucket.title}</h4>
+                        {bucket.items.length === 0 ? (
+                          <div className={styles.liveRoomScheduleItem}>
+                            <div className={styles.liveRoomScheduleDetails}>No {bucket.title.toLowerCase()} schedules.</div>
                           </div>
-                          <div className={styles.liveRoomScheduleDetails}>
-                            <div className={styles.liveRoomScheduleCourse}>{entry.allocation.course_code}</div>
-                            <div>{entry.allocation.section}</div>
-                            <div>{DAY_NAMES[entry.dayIdx]}</div>
-                            {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
-                              <div>{entry.allocation.teacher_name || entry.allocation.faculty_name}</div>
-                            )}
+                        ) : bucket.items.map((entry, index) => (
+                          <div key={`${bucket.title}-${entry.allocation.id ?? index}-${entry.dayIdx}-${entry.startMinutes}`} className={styles.liveRoomScheduleItem}>
+                            <div className={styles.liveRoomScheduleTime}>
+                              <Clock size={13} /> {entry.allocation.schedule_time}
+                            </div>
+                            <div className={styles.liveRoomScheduleDetails}>
+                              <div className={styles.liveRoomScheduleCourse}>{entry.allocation.course_code}</div>
+                              <div>{entry.allocation.section}</div>
+                              <div>{DAY_NAMES[entry.dayIdx]}</div>
+                              {(entry.allocation.teacher_name || entry.allocation.faculty_name) && (
+                                <div>{entry.allocation.teacher_name || entry.allocation.faculty_name}</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ overflow: 'auto', maxHeight: '55vh', borderRadius: 12 }}>
+                    <DraggableTimetable
+                      allocations={timetableAllocations}
+                      allAllocations={timetableAllocations}
+                      mode="view-only"
+                    />
+                  </div>
+                )}
               </>
             )
           )}

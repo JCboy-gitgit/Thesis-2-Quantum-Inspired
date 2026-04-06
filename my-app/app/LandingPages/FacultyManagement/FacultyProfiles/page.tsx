@@ -7,6 +7,7 @@ import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
 import styles from './styles.module.css'
 import { useColleges } from '@/app/context/CollegesContext'
+import { useTheme } from '@/app/context/ThemeContext'
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -233,6 +234,8 @@ function FacultyProfilesContent() {
   const searchParams = useSearchParams()
   const collegeFilter = searchParams.get('college')
   const { activeColleges: bulsuColleges } = useColleges()
+  const { theme } = useTheme()
+  const isAdminLightMode = theme === 'light'
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -651,7 +654,7 @@ function FacultyProfilesContent() {
                                 onClick={() => handleSelectProfile(profile)}
                               >
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden', boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                     {profile.profile_image ? (
                                       <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -696,7 +699,7 @@ function FacultyProfilesContent() {
                                 onClick={() => handleSelectProfile(profile)}
                               >
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden', boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                     {profile.profile_image ? (
                                       <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -741,7 +744,7 @@ function FacultyProfilesContent() {
                                 onClick={() => handleSelectProfile(profile)}
                               >
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden', boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                     {profile.profile_image ? (
                                       <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -786,7 +789,7 @@ function FacultyProfilesContent() {
                                 onClick={() => handleSelectProfile(profile)}
                               >
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden', boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                     {profile.profile_image ? (
                                       <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -831,7 +834,7 @@ function FacultyProfilesContent() {
                                 onClick={() => handleSelectProfile(profile)}
                               >
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden' }}>
+                                  <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, overflow: 'hidden', boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                     {profile.profile_image ? (
                                       <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -878,7 +881,7 @@ function FacultyProfilesContent() {
                               className={`${styles.pyramidCard} ${styles.staffCard} ${selectedProfile?.id === profile.id ? styles.selected : ''}`}
                               onClick={() => handleSelectProfile(profile)}
                             >
-                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color }}>
+                              <div className={styles.pyramidAvatar} style={{ backgroundColor: getRoleInfo(profile.role).bgColor, borderColor: getRoleInfo(profile.role).color, boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                 {getInitials(profile.full_name)}
                               </div>
                               <div className={styles.pyramidName}>{profile.full_name}</div>
@@ -920,7 +923,7 @@ function FacultyProfilesContent() {
                               <div className={styles.employmentBadge} style={{ backgroundColor: getEmploymentBadge(selectedProfile.employment_type).color }}>
                                 {getEmploymentBadge(selectedProfile.employment_type).label}
                               </div>
-                              <div className={styles.profileAvatar} style={{ borderColor: getRoleInfo(selectedProfile.role).color }}>
+                              <div className={styles.profileAvatar} style={{ borderColor: getRoleInfo(selectedProfile.role).color, boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                 {getInitials(selectedProfile.full_name)}
                               </div>
                               <h2 className={styles.profileName}>{selectedProfile.full_name}</h2>
@@ -1033,7 +1036,7 @@ function FacultyProfilesContent() {
                             style={{ borderLeftColor: roleInfo.color }}
                           >
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                              <div style={{ position: 'relative', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', backgroundColor: roleInfo.bgColor, border: `2px solid ${roleInfo.color}` }}>
+                              <div style={{ position: 'relative', width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', backgroundColor: roleInfo.bgColor, border: `2px solid ${roleInfo.color}`, boxShadow: isAdminLightMode ? '0 0 0 2px rgba(var(--primary-rgb, 0, 166, 81), 0.22)' : undefined }}>
                                 {profile.profile_image ? (
                                   <img src={profile.profile_image} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
