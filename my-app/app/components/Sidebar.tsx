@@ -35,6 +35,12 @@ interface SidebarProps {
   menuBarHidden?: boolean
 }
 
+interface SidebarQueueState {
+  available: boolean
+  active: boolean
+  waitingCount: number
+}
+
 export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -42,6 +48,11 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
   // Track open state for each submenu by index
   const [openSubmenus, setOpenSubmenus] = useState<{ [key: number]: boolean }>({})
   const [isArchiveOpen, setIsArchiveOpen] = useState(false)
+  const [queueState, setQueueState] = useState<SidebarQueueState>({
+    available: false,
+    active: false,
+    waitingCount: 0,
+  })
 
   // Auto-expand schedule menu if on a schedule-related page
   useEffect(() => {
@@ -87,6 +98,58 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
     window.addEventListener('menubar-visibility-change', handleMenuBarVisibilityChange)
     return () => {
       window.removeEventListener('menubar-visibility-change', handleMenuBarVisibilityChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    let disposed = false
+    let timeoutId: number | null = null
+
+    const pollQueueStatus = async () => {
+      try {
+        const response = await fetch('/api/schedule/qia-backend?action=queue-status&backendPreference=auto', {
+          method: 'GET',
+          cache: 'no-store',
+        })
+        const payload = await response.json()
+
+        if (disposed) return
+
+        if (response.ok && payload?.queue_status) {
+          setQueueState({
+            available: true,
+            active: Boolean(payload.queue_status.active),
+            waitingCount: Number(payload.queue_status.waiting_count || 0) || 0,
+          })
+        } else {
+          setQueueState({
+            available: false,
+            active: false,
+            waitingCount: 0,
+          })
+        }
+      } catch {
+        if (!disposed) {
+          setQueueState({
+            available: false,
+            active: false,
+            waitingCount: 0,
+          })
+        }
+      }
+
+      if (!disposed) {
+        timeoutId = window.setTimeout(pollQueueStatus, 12000)
+      }
+    }
+
+    pollQueueStatus()
+
+    return () => {
+      disposed = true
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+      }
     }
   }, [])
 
@@ -185,6 +248,12 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
     router.push(path)
   }
 
+  const handleQueueBadgeNavigation = (event: React.MouseEvent | React.KeyboardEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    handleNavigation('/LandingPages/RoomSchedule/GenerateSchedule?focusQueue=1')
+  }
+
   // Toggle submenu by index
   const toggleSubmenu = (idx: number) => {
     setOpenSubmenus(prev => ({
@@ -220,6 +289,23 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
                   >
                     <item.icon className="sidebar-icon" size={20} />
                     <span className="sidebar-label">{item.label}</span>
+                    {item.label === 'Room Schedule' && queueState.available && (
+                      <span
+                        className={`queue-pressure-badge clickable ${queueState.active ? 'busy' : 'idle'}`}
+                        title={queueState.active ? `Queue busy: ${queueState.waitingCount} waiting` : 'Queue idle'}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Open schedule queue panel"
+                        onClick={handleQueueBadgeNavigation}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            handleQueueBadgeNavigation(event)
+                          }
+                        }}
+                      >
+                        {queueState.active ? `${queueState.waitingCount}` : 'OK'}
+                      </span>
+                    )}
                     {openSubmenus[index] ? (
                       <MdKeyboardArrowDown className="submenu-icon" size={16} />
                     ) : (
@@ -237,6 +323,23 @@ export default function Sidebar({ isOpen, onClose, menuBarHidden }: SidebarProps
                         >
                           {subItem.icon && <subItem.icon className="submenu-item-icon" size={16} />}
                           <span>{subItem.label}</span>
+                          {subItem.label === 'Generate Schedule' && queueState.available && queueState.active && (
+                            <span
+                              className="queue-submenu-chip clickable"
+                              title={`Queue busy: ${queueState.waitingCount} waiting`}
+                              role="button"
+                              tabIndex={0}
+                              aria-label="Open generate schedule queue panel"
+                              onClick={handleQueueBadgeNavigation}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  handleQueueBadgeNavigation(event)
+                                }
+                              }}
+                            >
+                              {queueState.waitingCount} in queue
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>

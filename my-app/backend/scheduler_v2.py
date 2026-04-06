@@ -71,7 +71,10 @@ HARD_FACULTY_OVERLOAD_DAILY = 500000
 HARD_ROOM_CAPACITY_VIOLATION = 700000
 HARD_UNQUALIFIED_FACULTY = 900000
 
-SOFT_FACULTY_IDLE_TIME = 200
+SOFT_FACULTY_IDLE_TIME = 600
+SOFT_FACULTY_LONG_GAP_2H = 400
+SOFT_FACULTY_LONG_GAP_3H = 1200
+SOFT_FACULTY_LONG_GAP_4H = 3000
 SOFT_LOAD_IMBALANCE = 300
 SOFT_LATE_CLASS = 150
 SOFT_ROOM_IDLE_GAP = 100
@@ -487,7 +490,10 @@ class SchedulingConstraints:
     SOFT_OVERLOADED_TEACHER: int = 200
     SOFT_TEACHER_NO_BREAK: int = 1000
     SOFT_CONSECUTIVE_HOURS_EXCEEDED: int = 500
-    SOFT_FACULTY_IDLE_TIME: int = 200
+    SOFT_FACULTY_IDLE_TIME: int = 600
+    SOFT_FACULTY_LONG_GAP_2H: int = 400
+    SOFT_FACULTY_LONG_GAP_3H: int = 1200
+    SOFT_FACULTY_LONG_GAP_4H: int = 3000
     SOFT_LOAD_IMBALANCE: int = 300
     SOFT_LATE_CLASS: int = 150
     SOFT_ROOM_IDLE_GAP: int = 100
@@ -1668,6 +1674,163 @@ class EnhancedQuantumScheduler:
         if self.constraints.lunch_mode != 'strict':
             return False
         return self._is_during_lunch(start_slot_id, slot_count)
+
+    def _estimate_student_gap_penalty(
+        self,
+        section: Section,
+        day: str,
+        start_slot_id: int,
+        slot_count: int
+    ) -> float:
+        """
+        Estimate student idle-gap penalty for a candidate placement.
+
+        This is a local heuristic used during greedy construction so we avoid
+        creating large idle windows (e.g., long morning-to-evening vacancies).
+        """
+        occupied_slots: Set[int] = set()
+
+        # Build current occupied slots for the same student cohort on this day.
+        for other_id, assignments in self.section_assignments.items():
+            other_section = self.sections.get(other_id)
+            if not other_section:
+                continue
+
+            if not self._section_codes_overlap(section.section_code, other_section.section_code):
+                continue
+
+            for _, sched_day, sched_start, sched_count in assignments:
+                if sched_day != day:
+                    continue
+                for offset in range(sched_count):
+                    occupied_slots.add(sched_start + offset)
+
+        # Add the candidate placement.
+        for offset in range(slot_count):
+            occupied_slots.add(start_slot_id + offset)
+
+        if len(occupied_slots) < 2:
+            return 0.0
+
+        sorted_slots = sorted(occupied_slots)
+        penalty = 0.0
+
+        # Penalize large internal gaps quadratically.
+        for i in range(len(sorted_slots) - 1):
+            gap_slots = sorted_slots[i + 1] - sorted_slots[i] - 1
+            if gap_slots >= 2:
+                penalty += self.constraints.SOFT_SECTION_GAP * ((gap_slots - 1) ** 2)
+
+        # Additional span penalty to discourage very stretched day windows.
+        span_slots = sorted_slots[-1] - sorted_slots[0] + 1
+        internal_idle = span_slots - len(sorted_slots)
+        if internal_idle >= 2:
+            penalty += self.constraints.SOFT_SECTION_GAP * internal_idle
+
+        return penalty
+
+    def _estimate_teacher_gap_penalty(
+        self,
+        teacher_id: Optional[Union[int, str]],
+        day: str,
+        start_slot_id: int,
+        slot_count: int
+    ) -> float:
+        """
+        Estimate teacher idle-gap penalty for a candidate placement.
+
+        This helps produce compact teaching days and avoids large vacant windows
+        between a teacher's classes.
+        """
+        if not teacher_id:
+            return 0.0
+
+        occupied_slots: Set[int] = set()
+
+        for other_id, assignments in self.section_assignments.items():
+            other_section = self.sections.get(other_id)
+            if not other_section or other_section.teacher_id != teacher_id:
+                continue
+
+            for _, sched_day, sched_start, sched_count in assignments:
+                if sched_day != day:
+                    continue
+                for offset in range(sched_count):
+                    occupied_slots.add(sched_start + offset)
+
+        for offset in range(slot_count):
+            occupied_slots.add(start_slot_id + offset)
+
+        if len(occupied_slots) < 2:
+            return 0.0
+
+        sorted_slots = sorted(occupied_slots)
+        penalty = 0.0
+
+        for i in range(len(sorted_slots) - 1):
+            gap_slots = sorted_slots[i + 1] - sorted_slots[i] - 1
+            if gap_slots >= 2:
+                penalty += self._faculty_gap_penalty(gap_slots)
+
+        span_slots = sorted_slots[-1] - sorted_slots[0] + 1
+        internal_idle = span_slots - len(sorted_slots)
+        if internal_idle >= 2:
+            penalty += self.constraints.SOFT_FACULTY_IDLE_TIME * internal_idle
+
+        return penalty
+
+    def _slots_for_minutes(self, minutes: int) -> int:
+        """Convert minutes to slot units with ceil behavior."""
+        return max(1, math.ceil(minutes / max(1, self.slot_duration_minutes)))
+
+    def _faculty_gap_penalty(self, gap_slots: int) -> float:
+        """
+        Piecewise escalating faculty idle-gap penalty.
+
+        This keeps a baseline quadratic idle penalty and adds separate long-gap
+        surcharges for >=2h, >=3h, and >=4h vacancies.
+        """
+        if gap_slots <= 0:
+            return 0.0
+
+        penalty = self.constraints.SOFT_FACULTY_IDLE_TIME * (gap_slots ** 2)
+
+        two_hour_slots = self._slots_for_minutes(120)
+        three_hour_slots = self._slots_for_minutes(180)
+        four_hour_slots = self._slots_for_minutes(240)
+
+        if gap_slots >= two_hour_slots:
+            penalty += self.constraints.SOFT_FACULTY_LONG_GAP_2H * ((gap_slots - two_hour_slots + 1) ** 2)
+        if gap_slots >= three_hour_slots:
+            penalty += self.constraints.SOFT_FACULTY_LONG_GAP_3H * ((gap_slots - three_hour_slots + 1) ** 2)
+        if gap_slots >= four_hour_slots:
+            penalty += self.constraints.SOFT_FACULTY_LONG_GAP_4H * ((gap_slots - four_hour_slots + 1) ** 2)
+
+        return penalty
+
+    def _count_severe_faculty_gaps(self) -> int:
+        """
+        Count severe faculty gaps used to modulate quantum tunneling probability.
+        """
+        teacher_slot_times: Dict[Tuple[Union[int, str], str], List[int]] = defaultdict(list)
+
+        for (_, day, _), slot in self.schedule.items():
+            if not slot.teacher_id:
+                continue
+            for offset in range(slot.slot_count):
+                teacher_slot_times[(slot.teacher_id, day)].append(slot.start_slot_id + offset)
+
+        severe_count = 0
+        severe_threshold = self._slots_for_minutes(180)  # 3h+
+
+        for slot_ids in teacher_slot_times.values():
+            unique_slots = sorted(set(slot_ids))
+            for i in range(len(unique_slots) - 1):
+                gap_slots = unique_slots[i + 1] - unique_slots[i] - 1
+                if gap_slots >= severe_threshold:
+                    severe_count += 1
+
+        return severe_count
     
     # ==================== Hour-Accurate Slot Calculation ====================
     
@@ -1840,7 +2003,7 @@ class EnhancedQuantumScheduler:
         teacher_slots: Dict[Tuple, set] = defaultdict(set)  # (teacher_id, day, slot) -> set of section_ids  
         section_slots: Dict[Tuple, set] = defaultdict(set)  # (section_id, day, slot) -> set of room_ids
         teacher_buildings: Dict[Tuple, str] = {}  # (teacher_id, day, slot_id) -> building
-        section_day_slots: Dict[Tuple[str, str], List[int]] = defaultdict(list)  # (section_code, day) -> [slot_ids]
+        section_day_slots: Dict[Tuple[str, str], List[int]] = defaultdict(list)  # (cohort_code, day) -> [slot_ids]
         
         # Pre-cache room types to avoid repeated string operations
         room_is_lab_cache: Dict[int, bool] = {}
@@ -1918,9 +2081,9 @@ class EnhancedQuantumScheduler:
                     if room:
                         teacher_buildings[(slot.teacher_id, day, current_slot)] = room.building
             
-            # Track for gap detection
-            if room:
-                section_day_slots[(section.section_code, day)].append(slot_id)
+            # Track for student-gap detection by cohort (include online and in-person).
+            cohort_code = self._get_cohort_code(section.section_code)
+            section_day_slots[(cohort_code, day)].append(slot_id)
         
         # HARD: Teacher teleportation check
         for (teacher_id, day, slot_id), building in teacher_buildings.items():
@@ -2150,14 +2313,21 @@ class EnhancedQuantumScheduler:
                 cost += HARD_CONSTRAINT_PENALTY
                 conflict_detected = True
         
-        # SOFT: Swiss Cheese Gap Detection (simplified)
-        for (section_code, day), slots in section_day_slots.items():
-            if len(slots) > 1:
-                slots_sorted = sorted(slots)
-                for i in range(len(slots_sorted) - 1):
-                    gap = slots_sorted[i + 1] - slots_sorted[i]
-                    if gap >= 6:  # 3+ hour gap
-                        cost += self.constraints.SOFT_SECTION_GAP
+        # SOFT: Student idle-gap minimization (stronger than legacy swiss-cheese check)
+        for (_, _), slots in section_day_slots.items():
+            unique_slots = sorted(set(slots))
+            if len(unique_slots) < 2:
+                continue
+
+            for i in range(len(unique_slots) - 1):
+                gap_slots = unique_slots[i + 1] - unique_slots[i] - 1
+                if gap_slots >= 2:
+                    cost += self.constraints.SOFT_SECTION_GAP * ((gap_slots - 1) ** 2)
+
+            span_slots = unique_slots[-1] - unique_slots[0] + 1
+            internal_idle = span_slots - len(unique_slots)
+            if internal_idle >= 2:
+                cost += self.constraints.SOFT_SECTION_GAP * internal_idle
         
         # Second pass: Soft constraint penalties
         for key, slot in self.schedule.items():
@@ -2230,6 +2400,22 @@ class EnhancedQuantumScheduler:
             for day, slots in daily_slots.items():
                 if slots > max_daily_slots:
                     cost += self.constraints.SOFT_TEACHER_OVERLOAD * (slots - max_daily_slots)
+
+        # FACULTY WELFARE: Penalize long idle gaps inside a teacher day.
+        for (_, _), slot_ids in teacher_slot_times.items():
+            unique_slots = sorted(set(slot_ids))
+            if len(unique_slots) < 2:
+                continue
+
+            for i in range(len(unique_slots) - 1):
+                gap_slots = unique_slots[i + 1] - unique_slots[i] - 1
+                if gap_slots >= 2:
+                    cost += self._faculty_gap_penalty(gap_slots)
+
+            span_slots = unique_slots[-1] - unique_slots[0] + 1
+            internal_idle = span_slots - len(unique_slots)
+            if internal_idle >= 2:
+                cost += self.constraints.SOFT_FACULTY_IDLE_TIME * internal_idle
         
         # FACULTY WELFARE: Check consecutive teaching hours (max 4 hours without break)
         for (teacher_id, day), slot_ids in teacher_slot_times.items():
@@ -2902,6 +3088,12 @@ class EnhancedQuantumScheduler:
                                     continue
                                 
                                 local_cost = slot.start_minutes / 60
+                                local_cost += self._estimate_student_gap_penalty(
+                                    section, day, slot.id, slots_for_session
+                                )
+                                local_cost += self._estimate_teacher_gap_penalty(
+                                    section.teacher_id, day, slot.id, slots_for_session
+                                )
                                 if local_cost < best_cost:
                                     best_cost = local_cost
                                     best_assignment = (None, day, slot.id, slots_for_session, True)
@@ -2965,6 +3157,16 @@ class EnhancedQuantumScheduler:
                                 # Penalty for lunch overlap (flexible mode)
                                 if pass_num == 0 and self.constraints.lunch_mode == 'flexible' and self._is_during_lunch(slot.id, slots_for_session):
                                     local_cost += 200  # High penalty but not impossible
+
+                                # Penalize long idle windows for the same student cohort.
+                                local_cost += self._estimate_student_gap_penalty(
+                                    section, day, slot.id, slots_for_session
+                                )
+
+                                # Penalize long idle windows for teacher schedules.
+                                local_cost += self._estimate_teacher_gap_penalty(
+                                    section.teacher_id, day, slot.id, slots_for_session
+                                )
                                 
                                 # Penalty for later passes
                                 local_cost += pass_num * 50
@@ -3644,8 +3846,13 @@ class EnhancedQuantumScheduler:
         last_improvement = 0
         reheat_count = 0
         max_reheats = 3  # Maximum number of reheats allowed
+        dynamic_tunnel_prob = 0.10
         
         for iteration in range(max_iterations):
+            if iteration % 25 == 0:
+                severe_gap_count = self._count_severe_faculty_gaps()
+                dynamic_tunnel_prob = min(0.35, 0.10 + (0.02 * severe_gap_count))
+
             # ADAPTIVE REHEATING: When stuck, increase temperature to escape local minima
             if stagnation_count > REHEAT_STAGNATION_THRESHOLD and reheat_count < max_reheats:
                 temperature = initial_temperature * 0.5  # Reheat to 50% of initial
@@ -3658,7 +3865,7 @@ class EnhancedQuantumScheduler:
                 for _ in range(3):  # Multiple tunnel attempts when stagnated
                     self._quantum_tunnel(temperature)
                 stagnation_count = 0
-            elif random.random() < 0.1:  # 10% chance normally
+            elif random.random() < dynamic_tunnel_prob:
                 self._quantum_tunnel(temperature)
             
             # Get neighbor move
@@ -4516,7 +4723,10 @@ def run_enhanced_scheduler(
         SOFT_OVERLOADED_TEACHER=config.get('SOFT_OVERLOADED_TEACHER', 200),
         SOFT_TEACHER_NO_BREAK=config.get('SOFT_TEACHER_NO_BREAK', 1000),
         SOFT_CONSECUTIVE_HOURS_EXCEEDED=config.get('SOFT_CONSECUTIVE_HOURS_EXCEEDED', 500),
-        SOFT_FACULTY_IDLE_TIME=config.get('SOFT_FACULTY_IDLE_TIME', 200),
+        SOFT_FACULTY_IDLE_TIME=config.get('SOFT_FACULTY_IDLE_TIME', 600),
+        SOFT_FACULTY_LONG_GAP_2H=config.get('SOFT_FACULTY_LONG_GAP_2H', 400),
+        SOFT_FACULTY_LONG_GAP_3H=config.get('SOFT_FACULTY_LONG_GAP_3H', 1200),
+        SOFT_FACULTY_LONG_GAP_4H=config.get('SOFT_FACULTY_LONG_GAP_4H', 3000),
         SOFT_LOAD_IMBALANCE=config.get('SOFT_LOAD_IMBALANCE', 300),
         SOFT_LATE_CLASS=config.get('SOFT_LATE_CLASS', 150),
         SOFT_ROOM_IDLE_GAP=config.get('SOFT_ROOM_IDLE_GAP', 100),

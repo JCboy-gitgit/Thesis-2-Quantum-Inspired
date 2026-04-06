@@ -96,6 +96,58 @@
   transition: transform 0.2s ease;
 }
 
+.queue-pressure-badge {
+  margin-left: auto;
+  margin-right: 6px;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.queue-pressure-badge.clickable,
+.queue-submenu-chip.clickable {
+  cursor: pointer;
+}
+
+.queue-pressure-badge.clickable:hover,
+.queue-pressure-badge.clickable:focus-visible,
+.queue-submenu-chip.clickable:hover,
+.queue-submenu-chip.clickable:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb, 16, 185, 129), 0.2);
+  outline: none;
+}
+
+.queue-pressure-badge.idle {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success-green, #10b981);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.queue-pressure-badge.busy {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning-orange, #f59e0b);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.queue-submenu-chip {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--warning-orange, #f59e0b);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 999px;
+  padding: 2px 6px;
+}
+
 .submenu {
   background: var(--submenu-bg, rgba(0, 0, 0, 0.15));
   padding: 0.5rem 0;

@@ -10,8 +10,12 @@ This API provides endpoints for:
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Any, Union
+from typing import List, Dict, Optional, Any, Union, Deque
 from datetime import datetime
+from collections import deque
+import asyncio
+import time
+import uuid
 import uvicorn
 import os
 from dotenv import load_dotenv
@@ -45,6 +49,80 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+
+# ========================
+# Schedule Queue (FIFO)
+# ========================
+
+class ScheduleQueueTimeoutError(Exception):
+    """Raised when a request waits too long in the schedule generation queue."""
+
+
+schedule_generation_queue: Deque[str] = deque()
+schedule_generation_active_job: Optional[str] = None
+schedule_generation_condition = asyncio.Condition()
+SCHEDULE_QUEUE_MAX_WAIT_SECONDS = max(30, int(os.getenv("SCHEDULE_QUEUE_MAX_WAIT_SECONDS", "600")))
+
+
+async def _acquire_schedule_generation_slot(job_id: str) -> Dict[str, Any]:
+    """Queue schedule generation requests and grant one active slot at a time."""
+    global schedule_generation_active_job
+
+    queued_at = time.monotonic()
+    async with schedule_generation_condition:
+        initial_position = len(schedule_generation_queue) + (1 if schedule_generation_active_job else 0) + 1
+        schedule_generation_queue.append(job_id)
+        deadline = queued_at + SCHEDULE_QUEUE_MAX_WAIT_SECONDS
+
+        try:
+            while schedule_generation_queue[0] != job_id or schedule_generation_active_job is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    try:
+                        schedule_generation_queue.remove(job_id)
+                    except ValueError:
+                        pass
+                    schedule_generation_condition.notify_all()
+                    raise ScheduleQueueTimeoutError(
+                        f"Queue wait exceeded {SCHEDULE_QUEUE_MAX_WAIT_SECONDS} seconds"
+                    )
+                await asyncio.wait_for(schedule_generation_condition.wait(), timeout=remaining)
+        except asyncio.CancelledError:
+            # If client disconnects while waiting, remove stale queue entry.
+            try:
+                schedule_generation_queue.remove(job_id)
+            except ValueError:
+                pass
+            schedule_generation_condition.notify_all()
+            raise
+
+        schedule_generation_queue.popleft()
+        schedule_generation_active_job = job_id
+
+        return {
+            "job_id": job_id,
+            "initial_position": initial_position,
+            "wait_seconds": round(time.monotonic() - queued_at, 3),
+            "pending_after_start": len(schedule_generation_queue),
+            "max_wait_seconds": SCHEDULE_QUEUE_MAX_WAIT_SECONDS,
+        }
+
+
+async def _release_schedule_generation_slot(job_id: str):
+    """Release the active slot and wake the next queued request."""
+    global schedule_generation_active_job
+
+    async with schedule_generation_condition:
+        if schedule_generation_active_job == job_id:
+            schedule_generation_active_job = None
+        else:
+            # Safety fallback in case the job failed before becoming active.
+            try:
+                schedule_generation_queue.remove(job_id)
+            except ValueError:
+                pass
+        schedule_generation_condition.notify_all()
 
 # Build allowed origins list for CORS
 def get_allowed_origins():
@@ -109,6 +187,20 @@ async def health_check():
         "configured": bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+@app.get("/api/schedules/generate/queue-status")
+async def get_schedule_generation_queue_status():
+    """Get current FIFO queue status for schedule generation requests."""
+    async with schedule_generation_condition:
+        return {
+            "active": schedule_generation_active_job is not None,
+            "waiting_count": len(schedule_generation_queue),
+            "active_job_id": schedule_generation_active_job,
+            "queued_job_ids": list(schedule_generation_queue),
+            "max_wait_seconds": SCHEDULE_QUEUE_MAX_WAIT_SECONDS,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
 
 # ========================
@@ -362,7 +454,10 @@ class ScheduleGenerationRequest(BaseModel):
     SOFT_OVERLOADED_TEACHER: Optional[int] = 200
     SOFT_TEACHER_NO_BREAK: Optional[int] = 1000
     SOFT_CONSECUTIVE_HOURS_EXCEEDED: Optional[int] = 500
-    SOFT_FACULTY_IDLE_TIME: Optional[int] = 200
+    SOFT_FACULTY_IDLE_TIME: Optional[int] = 600
+    SOFT_FACULTY_LONG_GAP_2H: Optional[int] = 400
+    SOFT_FACULTY_LONG_GAP_3H: Optional[int] = 1200
+    SOFT_FACULTY_LONG_GAP_4H: Optional[int] = 3000
     SOFT_LOAD_IMBALANCE: Optional[int] = 300
     SOFT_LATE_CLASS: Optional[int] = 150
     SOFT_ROOM_IDLE_GAP: Optional[int] = 100
@@ -392,6 +487,12 @@ class ScheduleGenerationResponse(BaseModel):
     physical_class_count: Optional[int] = 0  # BulSU QSA: Count of physical classes
     # Split session stats
     split_session_stats: Optional[Dict[str, Any]] = None  # Info about split sessions
+    # Queue metadata
+    queue_job_id: Optional[str] = None
+    queue_initial_position: Optional[int] = None
+    queue_wait_seconds: Optional[float] = 0
+    queue_pending_after_start: Optional[int] = 0
+    queue_max_wait_seconds: Optional[int] = 0
 
 
 @app.post("/api/schedules/generate", response_model=ScheduleGenerationResponse)
@@ -403,6 +504,16 @@ async def generate_schedule(request: ScheduleGenerationRequest):
     Supports 30-minute time slot intervals for flexible scheduling.
     """
     try:
+        queue_job_id: Optional[str] = None
+        queue_info: Dict[str, Any] = {
+            "job_id": None,
+            "initial_position": None,
+            "wait_seconds": 0,
+            "pending_after_start": 0,
+            "max_wait_seconds": SCHEDULE_QUEUE_MAX_WAIT_SECONDS,
+        }
+        queue_slot_acquired = False
+
         # Input validation
         if not request.schedule_name or not request.schedule_name.strip():
             raise HTTPException(status_code=400, detail="schedule_name is required")
@@ -416,6 +527,17 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             raise HTTPException(status_code=400, detail="cooling_rate must be between 0 and 1")
         if request.initial_temperature <= 0:
             raise HTTPException(status_code=400, detail="initial_temperature must be positive")
+
+        # Queue all schedule generation calls (user/admin) in FIFO order.
+        queue_job_id = uuid.uuid4().hex
+        queue_info = await _acquire_schedule_generation_slot(queue_job_id)
+        queue_slot_acquired = True
+        print(
+            f"🧾 Queue slot acquired | job={queue_info['job_id']} | "
+            f"initial_position={queue_info['initial_position']} | "
+            f"wait={queue_info['wait_seconds']}s | "
+            f"pending_after_start={queue_info['pending_after_start']}"
+        )
         
         print("=" * 60)
         print("🚀 SCHEDULE GENERATION STARTED (Enhanced v2)")
@@ -540,6 +662,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             "SOFT_TEACHER_NO_BREAK": request.SOFT_TEACHER_NO_BREAK,
             "SOFT_CONSECUTIVE_HOURS_EXCEEDED": request.SOFT_CONSECUTIVE_HOURS_EXCEEDED,
             "SOFT_FACULTY_IDLE_TIME": request.SOFT_FACULTY_IDLE_TIME,
+            "SOFT_FACULTY_LONG_GAP_2H": request.SOFT_FACULTY_LONG_GAP_2H,
+            "SOFT_FACULTY_LONG_GAP_3H": request.SOFT_FACULTY_LONG_GAP_3H,
+            "SOFT_FACULTY_LONG_GAP_4H": request.SOFT_FACULTY_LONG_GAP_4H,
             "SOFT_LOAD_IMBALANCE": request.SOFT_LOAD_IMBALANCE,
             "SOFT_LATE_CLASS": request.SOFT_LATE_CLASS,
             "SOFT_ROOM_IDLE_GAP": request.SOFT_ROOM_IDLE_GAP,
@@ -569,7 +694,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         
         # Run the enhanced scheduler with 30-minute slots and BulSU QSA
         if request.use_enhanced_scheduler:
-            result = run_enhanced_scheduler(
+            result = await asyncio.to_thread(
+                run_enhanced_scheduler,
                 sections_data=sections,
                 rooms_data=rooms,
                 time_slots_data=time_slots,
@@ -589,7 +715,8 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             result["conflicts"] = []  # Enhanced scheduler handles conflicts internally
         else:
             # Fallback to original scheduler
-            result = run_scheduler(
+            result = await asyncio.to_thread(
+                run_scheduler,
                 sections_data=sections,
                 rooms_data=rooms,
                 time_slots_data=time_slots,
@@ -686,10 +813,23 @@ async def generate_schedule(request: ScheduleGenerationRequest):
             online_days=result.get("online_days", []),  # BulSU QSA
             online_class_count=result.get("online_class_count", 0),  # BulSU QSA
             physical_class_count=result.get("physical_class_count", 0),  # BulSU QSA
-            split_session_stats=result.get("split_session_stats")  # Split session info
+            split_session_stats=result.get("split_session_stats"),  # Split session info
+            queue_job_id=queue_info.get("job_id"),
+            queue_initial_position=queue_info.get("initial_position"),
+            queue_wait_seconds=queue_info.get("wait_seconds", 0),
+            queue_pending_after_start=queue_info.get("pending_after_start", 0),
+            queue_max_wait_seconds=queue_info.get("max_wait_seconds", SCHEDULE_QUEUE_MAX_WAIT_SECONDS),
         )
 
-        
+    except ScheduleQueueTimeoutError as e:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "message": "Schedule generation queue is busy. Please retry shortly.",
+                "reason": str(e),
+                "max_wait_seconds": SCHEDULE_QUEUE_MAX_WAIT_SECONDS,
+            },
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -703,6 +843,9 @@ async def generate_schedule(request: ScheduleGenerationRequest):
         traceback.print_exc()
         print("=" * 60)
         raise HTTPException(status_code=500, detail=f"Schedule generation failed: {error_type}: {error_msg}")
+    finally:
+        if queue_slot_acquired and queue_job_id:
+            await _release_schedule_generation_slot(queue_job_id)
 
 
 @app.get("/api/schedules")

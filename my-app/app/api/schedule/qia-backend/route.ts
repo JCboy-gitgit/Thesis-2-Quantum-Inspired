@@ -896,6 +896,11 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
     online_days: backendResult.online_days || [],
     online_class_count: backendResult.online_class_count || 0,
     physical_class_count: backendResult.physical_class_count || 0,
+    queue_job_id: backendResult.queue_job_id || null,
+    queue_initial_position: Number(backendResult.queue_initial_position || 0) || 0,
+    queue_wait_seconds: Number(backendResult.queue_wait_seconds || 0) || 0,
+    queue_pending_after_start: Number(backendResult.queue_pending_after_start || 0) || 0,
+    queue_max_wait_seconds: Number(backendResult.queue_max_wait_seconds || 0) || 0,
     optimization_stats: {
       initial_cost: backendResult.optimization_stats?.initial_cost || 0,
       final_cost: backendResult.optimization_stats?.final_cost || 0,
@@ -978,6 +983,7 @@ function reconcileScheduleMetrics(result: any): any {
 }
 
 export async function GET(request: NextRequest) {
+  const action = String(request.nextUrl.searchParams.get('action') || '').trim().toLowerCase()
   const backendPreference = normalizeBackendPreference(request.nextUrl.searchParams.get('backendPreference'))
   const uniqueBackendUrls = buildPreferredBackendCandidates(backendPreference, 8000, 12000)
 
@@ -995,6 +1001,70 @@ export async function GET(request: NextRequest) {
 
   const checkedAt = new Date().toISOString()
   const probeErrors: Array<{ url: string; type: string; error: string; probe_latency_ms?: number }> = []
+
+  if (action === 'queue-status') {
+    for (const backend of uniqueBackendUrls) {
+      try {
+        const startedAt = Date.now()
+        const queueResponse = await fetch(`${backend.url}/api/schedules/generate/queue-status`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(backend.timeout),
+        })
+        const latencyMs = Date.now() - startedAt
+
+        if (!queueResponse.ok) {
+          probeErrors.push({
+            url: backend.url,
+            type: backend.type,
+            error: `HTTP ${queueResponse.status} on /api/schedules/generate/queue-status`,
+            probe_latency_ms: latencyMs,
+          })
+          continue
+        }
+
+        const queueData = await queueResponse.json()
+        return NextResponse.json({
+          success: true,
+          backend_reachable: true,
+          backend_url: backend.url,
+          backend_type: backend.type,
+          backend_status: queueResponse.status,
+          backend_preference: backendPreference,
+          probe_latency_ms: latencyMs,
+          checked_at: checkedAt,
+          queue_status: {
+            active: Boolean(queueData?.active),
+            waiting_count: Number(queueData?.waiting_count || 0) || 0,
+            active_job_id: queueData?.active_job_id || null,
+            queued_job_ids: Array.isArray(queueData?.queued_job_ids) ? queueData.queued_job_ids : [],
+            max_wait_seconds: Number(queueData?.max_wait_seconds || 0) || 0,
+            timestamp: queueData?.timestamp || checkedAt,
+          },
+        })
+      } catch (error: any) {
+        probeErrors.push({
+          url: backend.url,
+          type: backend.type,
+          error: error?.message || 'Connection failed',
+        })
+      }
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        backend_reachable: false,
+        error: 'Queue status is unavailable because Python backend is not reachable.',
+        backend_preference: backendPreference,
+        checked_at: checkedAt,
+        attempts: probeErrors,
+      },
+      { status: 503 }
+    )
+  }
+
   const probePaths = ['/', '/health']
 
   for (const backend of uniqueBackendUrls) {

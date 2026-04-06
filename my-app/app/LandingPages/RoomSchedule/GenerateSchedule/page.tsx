@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import styles from './GenerateSchedule.module.css'
 import MenuBar from '@/app/components/MenuBar'
 import Sidebar from '@/app/components/Sidebar'
@@ -165,6 +165,9 @@ interface ScheduleConfig {
   softTeacherNoBreak: number
   softConsecutiveHoursExceeded: number
   softFacultyIdleTime: number
+  softFacultyLongGap2h: number
+  softFacultyLongGap3h: number
+  softFacultyLongGap4h: number
   softLoadImbalance: number
   softLateClass: number
   softRoomIdleGap: number
@@ -284,6 +287,21 @@ interface ScheduleResult {
     cap: number
     wasClamped: boolean
   }
+  queueJobId?: string | null
+  queueInitialPosition?: number
+  queueWaitSeconds?: number
+  queuePendingAfterStart?: number
+  queueMaxWaitSeconds?: number
+}
+
+interface QueueStatusState {
+  loading: boolean
+  available: boolean
+  active: boolean
+  waitingCount: number
+  activeJobId?: string | null
+  maxWaitSeconds?: number
+  message: string
 }
 
 interface BackendProbeState {
@@ -565,6 +583,8 @@ function countUniqueCourseSections(rows: Array<{ course_code?: string; section?:
 
 export default function GenerateSchedulePage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { activeColleges: bulsuColleges } = useColleges()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -627,7 +647,10 @@ export default function GenerateSchedulePage() {
     softOverloadedTeacher: 200,
     softTeacherNoBreak: 1000,
     softConsecutiveHoursExceeded: 500,
-    softFacultyIdleTime: 200,
+    softFacultyIdleTime: 600,
+    softFacultyLongGap2h: 400,
+    softFacultyLongGap3h: 1200,
+    softFacultyLongGap4h: 3000,
     softLoadImbalance: 300,
     softLateClass: 150,
     softRoomIdleGap: 100,
@@ -708,7 +731,17 @@ export default function GenerateSchedulePage() {
     reachable: null,
     message: 'Backend status not checked yet.'
   })
+  const [queueStatus, setQueueStatus] = useState<QueueStatusState>({
+    loading: false,
+    available: false,
+    active: false,
+    waitingCount: 0,
+    activeJobId: null,
+    maxWaitSeconds: undefined,
+    message: 'Queue status unavailable until generation starts.',
+  })
   const [backendPreference, setBackendPreference] = useState<BackendPreference>('auto')
+  const [highlightQueueHeader, setHighlightQueueHeader] = useState(false)
 
   const probeBackendConnection = async () => {
     const selectedBackendLabel = BACKEND_PREFERENCE_LABELS[backendPreference]
@@ -754,6 +787,98 @@ export default function GenerateSchedulePage() {
       })
     }
   }
+
+  const pollQueueStatus = async (silent = false) => {
+    if (!silent) {
+      setQueueStatus(prev => ({ ...prev, loading: true }))
+    }
+
+    try {
+      const response = await fetch(
+        `/api/schedule/qia-backend?action=queue-status&backendPreference=${encodeURIComponent(backendPreference)}`,
+        { method: 'GET', cache: 'no-store' }
+      )
+      const payload = await response.json()
+
+      if (response.ok && payload?.queue_status) {
+        const queue = payload.queue_status
+        setQueueStatus({
+          loading: false,
+          available: true,
+          active: Boolean(queue.active),
+          waitingCount: Number(queue.waiting_count || 0) || 0,
+          activeJobId: queue.active_job_id || null,
+          maxWaitSeconds: Number(queue.max_wait_seconds || 0) || undefined,
+          message: queue.active
+            ? `Queue active: ${Number(queue.waiting_count || 0)} request(s) waiting.`
+            : 'Queue is idle. Your request can start immediately.',
+        })
+      } else {
+        setQueueStatus({
+          loading: false,
+          available: false,
+          active: false,
+          waitingCount: 0,
+          activeJobId: null,
+          maxWaitSeconds: undefined,
+          message: payload?.error || 'Queue status is temporarily unavailable.',
+        })
+      }
+    } catch (error: any) {
+      setQueueStatus({
+        loading: false,
+        available: false,
+        active: false,
+        waitingCount: 0,
+        activeJobId: null,
+        maxWaitSeconds: undefined,
+        message: error?.message || 'Queue status check failed.',
+      })
+    }
+  }
+
+  useEffect(() => {
+    let disposed = false
+    let timeoutId: number | null = null
+
+    const tick = async () => {
+      await pollQueueStatus(true)
+      if (disposed) return
+
+      const intervalMs = isScheduling ? 3000 : 10000
+      timeoutId = window.setTimeout(tick, intervalMs)
+    }
+
+    tick()
+
+    return () => {
+      disposed = true
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [isScheduling, backendPreference])
+
+  useEffect(() => {
+    const shouldFocusQueue = searchParams.get('focusQueue') === '1'
+    if (!shouldFocusQueue) return
+
+    pollQueueStatus(true)
+
+    const target = document.getElementById('queue-pressure-badge')
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setHighlightQueueHeader(true)
+      window.setTimeout(() => setHighlightQueueHeader(false), 2000)
+    }
+
+    // Keep URL clean after handling one-time focus behavior.
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('focusQueue')
+    const cleanedQuery = params.toString()
+    const cleanedUrl = cleanedQuery ? `${pathname}?${cleanedQuery}` : pathname
+    router.replace(cleanedUrl, { scroll: false })
+  }, [searchParams])
 
   const unscheduledReasonLabels: Record<string, { label: string; icon: string; color: string }> = {
     INSUFFICIENT_ROOM_CAPACITY: { label: 'Room Capacity', icon: '🏢', color: '#ef4444' },
@@ -2393,6 +2518,9 @@ export default function GenerateSchedulePage() {
           SOFT_TEACHER_NO_BREAK: config.softTeacherNoBreak,
           SOFT_CONSECUTIVE_HOURS_EXCEEDED: config.softConsecutiveHoursExceeded,
           SOFT_FACULTY_IDLE_TIME: config.softFacultyIdleTime,
+          SOFT_FACULTY_LONG_GAP_2H: config.softFacultyLongGap2h,
+          SOFT_FACULTY_LONG_GAP_3H: config.softFacultyLongGap3h,
+          SOFT_FACULTY_LONG_GAP_4H: config.softFacultyLongGap4h,
           SOFT_LOAD_IMBALANCE: config.softLoadImbalance,
           SOFT_LATE_CLASS: config.softLateClass,
           SOFT_ROOM_IDLE_GAP: config.softRoomIdleGap,
@@ -2416,6 +2544,8 @@ export default function GenerateSchedulePage() {
         activeDays,
         onlineDays: config.onlineDays
       }, null, 2))
+
+      void pollQueueStatus(true)
 
       startScheduling(scheduleData)
 
@@ -2566,6 +2696,11 @@ export default function GenerateSchedulePage() {
               wasClamped: Boolean(result.iteration_clamp.was_clamped),
             }
           : undefined,
+        queueJobId: result.queue_job_id || null,
+        queueInitialPosition: Number(result.queue_initial_position || 0) || 0,
+        queueWaitSeconds: Number(result.queue_wait_seconds || 0) || 0,
+        queuePendingAfterStart: Number(result.queue_pending_after_start || 0) || 0,
+        queueMaxWaitSeconds: Number(result.queue_max_wait_seconds || 0) || 0,
       })
       setShowResults(true)
       setShowTimetable(true)
@@ -3256,6 +3391,34 @@ export default function GenerateSchedulePage() {
                     )}
                     <span>{backendProbe.message}</span>
                   </div>
+                  <div
+                    id="queue-pressure-badge"
+                    className={`${styles.queueHeaderBadge} ${
+                      highlightQueueHeader ? styles.queueHeaderPulse : ''
+                    } ${
+                      queueStatus.loading
+                        ? styles.queueHeaderChecking
+                        : queueStatus.available
+                          ? queueStatus.active
+                            ? styles.queueHeaderBusy
+                            : styles.queueHeaderIdle
+                          : styles.queueHeaderOffline
+                    }`}
+                    title={queueStatus.message}
+                  >
+                    {queueStatus.loading ? (
+                      <FaSpinner className={styles.queueHeaderSpinner} />
+                    ) : (
+                      <FaLayerGroup />
+                    )}
+                    <span>
+                      {queueStatus.available
+                        ? queueStatus.active
+                          ? `Queue: ${queueStatus.waitingCount} waiting`
+                          : 'Queue: Idle'
+                        : 'Queue: Unavailable'}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     className={styles.backendCheckButton}
@@ -3285,6 +3448,11 @@ export default function GenerateSchedulePage() {
                     Active backend: {backendProbe.backendUrl} ({BACKEND_PREFERENCE_LABELS[backendPreference]})
                     {backendProbe.probeLatencyMs ? (
                       <span className={styles.backendLatencyMeta}> | Latency: {backendProbe.probeLatencyMs} ms</span>
+                    ) : null}
+                    {queueStatus.available && queueStatus.maxWaitSeconds ? (
+                      <span className={styles.backendLatencyMeta}>
+                        {' '}| Queue max wait: {Math.max(1, Math.round(queueStatus.maxWaitSeconds / 60))} min
+                      </span>
                     ) : null}
                   </p>
                 )}
@@ -5800,6 +5968,43 @@ export default function GenerateSchedulePage() {
                         <MdFlashOn size={16} />
                         Will process {classes.length} courses across {rooms.length} rooms using {config.maxIterations.toLocaleString()} QIA iterations
                       </p>
+                    )}
+
+                    {isScheduling && (
+                      <div className={styles.queueStatusCard}>
+                        <div className={styles.queueStatusHeader}>
+                          <FaClock />
+                          <span>Generation Queue</span>
+                          {queueStatus.loading && <FaSpinner className={styles.queueSpinner} />}
+                        </div>
+                        <p className={styles.queueStatusMessage}>{queueStatus.message}</p>
+                        {queueStatus.available && (
+                          <div className={styles.queueStatusGrid}>
+                            <div className={styles.queueStatusItem}>
+                              <span className={styles.queueStatusLabel}>Active</span>
+                              <strong>{queueStatus.active ? 'Yes' : 'No'}</strong>
+                            </div>
+                            <div className={styles.queueStatusItem}>
+                              <span className={styles.queueStatusLabel}>Waiting</span>
+                              <strong>{queueStatus.waitingCount}</strong>
+                            </div>
+                            {queueStatus.maxWaitSeconds ? (
+                              <div className={styles.queueStatusItem}>
+                                <span className={styles.queueStatusLabel}>Max Wait</span>
+                                <strong>{Math.round(queueStatus.maxWaitSeconds / 60)} min</strong>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!isScheduling && scheduleResult?.queueJobId && (
+                      <div className={styles.queueSummaryPill}>
+                        <FaClock />
+                        Queue wait: {(scheduleResult.queueWaitSeconds || 0).toFixed(1)}s
+                        {scheduleResult.queueInitialPosition ? ` (started at position #${scheduleResult.queueInitialPosition})` : ''}
+                      </div>
                     )}
                   </div>
                 </div>

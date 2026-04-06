@@ -733,6 +733,63 @@
   animation: spin 1s linear infinite;
 }
 
+.queueHeaderBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-gray-50);
+  color: var(--content-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.queueHeaderIdle {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--success-green);
+}
+
+.queueHeaderBusy {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--warning-orange);
+}
+
+.queueHeaderOffline {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger-red);
+}
+
+.queueHeaderChecking {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--primary);
+}
+
+.queueHeaderSpinner {
+  animation: spin 1s linear infinite;
+}
+
+.queueHeaderPulse {
+  animation: queuePulse 1.2s ease-in-out 2;
+}
+
+@keyframes queuePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb, 16, 185, 129), 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--primary-rgb, 16, 185, 129), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb, 16, 185, 129), 0);
+  }
+}
+
 .backendCheckButton {
   border: 1px solid var(--card-border);
   background: var(--card-bg);
@@ -1510,6 +1567,75 @@
 
 .generateInfo svg {
   color: var(--primary);
+}
+
+.queueStatusCard {
+  margin: 14px auto 0;
+  max-width: 760px;
+  text-align: left;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.queueStatusHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--content-text-primary);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.queueSpinner {
+  margin-left: auto;
+  animation: spin 1s linear infinite;
+  color: var(--primary);
+}
+
+.queueStatusMessage {
+  margin: 8px 0 0;
+  color: var(--content-text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.queueStatusGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.queueStatusItem {
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--bg-white);
+}
+
+.queueStatusLabel {
+  display: block;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.queueSummaryPill {
+  margin: 12px auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--content-text-secondary);
+  padding: 8px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--card-bg);
 }
 
 /* ==================== Step Progress ==================== */
