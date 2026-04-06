@@ -13,6 +13,50 @@ const parseTimeoutMs = (raw: string | undefined, fallback: number) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
+// Day normalization utilities (handles casing, whitespace, and common abbreviations)
+const normalizeDayToken = (raw: unknown): string | null => {
+  const token = String(raw ?? '').trim().toLowerCase()
+  if (!token) return null
+
+  const aliases: Record<string, string> = {
+    mon: 'monday', monday: 'monday',
+    tue: 'tuesday', tues: 'tuesday', tuesday: 'tuesday',
+    wed: 'wednesday', weds: 'wednesday', wednesday: 'wednesday',
+    thu: 'thursday', thur: 'thursday', thurs: 'thursday', thursday: 'thursday',
+    fri: 'friday', friday: 'friday',
+    sat: 'saturday', saturday: 'saturday',
+    sun: 'sunday', sunday: 'sunday',
+  }
+
+  // Accept compact patterns sometimes used in datasets.
+  if (token === 'tth') return null // expanded elsewhere when used as schedule_day
+  if (token === 'mwf') return null
+  if (token === 'mw') return null
+
+  return aliases[token] || token
+}
+
+const toDisplayDay = (raw: unknown): string => {
+  const normalized = normalizeDayToken(raw)
+  if (!normalized) return String(raw ?? '')
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+const normalizeDayList = (raw: unknown): string[] => {
+  const list = Array.isArray(raw) ? raw : []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const item of list) {
+    const normalized = normalizeDayToken(item)
+    if (!normalized) continue
+    const display = toDisplayDay(normalized)
+    if (seen.has(display)) continue
+    seen.add(display)
+    out.push(display)
+  }
+  return out
+}
+
 // Schedule generation can legitimately take several minutes (queue + compute).
 // Defaults are tuned for local dev; override via env vars if needed.
 const PYTHON_BACKEND_GENERATE_LOCAL_TIMEOUT_MS = parseTimeoutMs(
@@ -354,8 +398,11 @@ function convertRoomsToBackend(rooms: RoomData[], roomFeatures: Map<number, stri
 async function generateFallbackSchedule(body: RequestBody, sections: any[], rooms: any[], timeSlots: any[]): Promise<any> {
   const startTime = Date.now()
   const allocations: any[] = []
-  const activeDays = body.active_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  const onlineDays = body.online_days || []
+  const activeDays = normalizeDayList(body.active_days)
+  const onlineDays = normalizeDayList(body.online_days ?? body.config?.online_days)
+  const resolvedActiveDays = activeDays.length > 0
+    ? activeDays
+    : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
   // Track room-day-time occupancy
   const occupancy = new Map<string, boolean>()
@@ -506,7 +553,7 @@ async function generateFallbackSchedule(body: RequestBody, sections: any[], room
     const courseKey = `${group}:${courseCode}`
 
     // Try each day
-    for (const day of activeDays) {
+    for (const day of resolvedActiveDays) {
       if (slotsAssigned >= requiredSlots) break
 
       const isOnline = onlineDays.includes(day)
@@ -889,7 +936,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
       course_name: entry.course_name || classData?.course_name || 'N/A',
       section: entry.section_code || classData?.section || 'N/A',
       year_level: entry.year_level || classData?.year_level || parseInt(classData?.section?.charAt(0) || '1') || 1,
-      schedule_day: entry.day_of_week,
+      schedule_day: toDisplayDay(entry.day_of_week),
       schedule_time: `${entry.start_time || ''} - ${entry.end_time || ''}`,
       campus: entry.campus || roomData?.campus || 'N/A',
       building: entry.building || roomData?.building || 'N/A',
@@ -921,7 +968,7 @@ function convertBackendResultToFrontend(backendResult: any, originalClasses: Cla
     conflicts: backendResult.conflicts || [],
     success_rate: successRate,
     // BulSU QSA: Online class stats
-    online_days: backendResult.online_days || [],
+    online_days: normalizeDayList(backendResult.online_days || []),
     online_class_count: backendResult.online_class_count || 0,
     physical_class_count: backendResult.physical_class_count || 0,
     queue_job_id: backendResult.queue_job_id || null,
@@ -1281,7 +1328,7 @@ export async function POST(request: NextRequest) {
         const roomId = rawRoomId === null || rawRoomId === undefined || rawRoomId === ''
           ? null
           : Number(rawRoomId)
-        const scheduleDay = String(alloc?.schedule_day || '').trim()
+        const scheduleDay = toDisplayDay(String(alloc?.schedule_day || '').trim())
         const scheduleTime = String(alloc?.schedule_time || '').trim()
         const sectionHint = String(alloc?.section || '').trim()
         const componentHint = String(alloc?.component || alloc?.section_type || '').trim()
@@ -1314,6 +1361,12 @@ export async function POST(request: NextRequest) {
 
     const lunchStartHour = parseLunchHour(body.config.lunch_start_hour, 13) // Default 1:00 PM
     const lunchEndHour = parseLunchHour(body.config.lunch_end_hour, 14) // Default 2:00 PM
+
+    const normalizedActiveDays = normalizeDayList(body.active_days)
+    const resolvedActiveDays = normalizedActiveDays.length > 0
+      ? normalizedActiveDays
+      : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    const normalizedOnlineDays = normalizeDayList(body.online_days ?? body.config?.online_days)
 
     // Resolve the correct group IDs for Python backend
     const campusGroupId = body.campus_group_id || (body.campus_group_ids?.[0]) || 1
@@ -1352,8 +1405,8 @@ export async function POST(request: NextRequest) {
       start_time: body.time_settings?.startTime || '07:00',
       end_time: body.time_settings?.endTime || '20:00',
       slot_duration: body.time_settings?.slotDuration || 90,
-      active_days: body.active_days,
-      online_days: body.online_days || [], // NEW: Pass online days to backend
+      active_days: resolvedActiveDays,
+      online_days: normalizedOnlineDays, // NEW: Pass online days to backend
       sections_data: sections,
       rooms_data: rooms,
       max_iterations: maxIterations,

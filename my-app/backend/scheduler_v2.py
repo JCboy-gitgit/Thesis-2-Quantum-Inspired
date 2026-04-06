@@ -102,6 +102,49 @@ MAX_SUBJECT_SESSIONS_PER_WEEK = 2  # Max 2 sessions (LEC+LAB) per subject per st
 DAY_INDEX = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6}
 
 
+def normalize_day_name(raw: Any) -> str:
+    """Normalize day tokens to canonical lowercase full names.
+
+    Handles casing/whitespace and common abbreviations (e.g., 'Thurs' -> 'thursday').
+    Returns '' if the input is empty/None.
+    """
+    token = str(raw or '').strip().lower()
+    if not token:
+        return ''
+
+    aliases = {
+        'mon': 'monday', 'monday': 'monday',
+        'tue': 'tuesday', 'tues': 'tuesday', 'tuesday': 'tuesday',
+        'wed': 'wednesday', 'weds': 'wednesday', 'wednesday': 'wednesday',
+        'thu': 'thursday', 'thur': 'thursday', 'thurs': 'thursday', 'thursday': 'thursday',
+        'fri': 'friday', 'friday': 'friday',
+        'sat': 'saturday', 'saturday': 'saturday',
+        'sun': 'sunday', 'sunday': 'sunday',
+    }
+    return aliases.get(token, token)
+
+
+def normalize_day_list(days: Optional[List[Any]], *, fallback: Optional[List[str]] = None) -> List[str]:
+    """Normalize a list of day tokens, filtering unknown values and de-duplicating."""
+    raw = list(days or [])
+    if not raw and fallback is not None:
+        raw = list(fallback)
+
+    seen: Set[str] = set()
+    out: List[str] = []
+    for d in raw:
+        nd = normalize_day_name(d)
+        if not nd:
+            continue
+        if nd not in DAY_INDEX:
+            continue
+        if nd in seen:
+            continue
+        seen.add(nd)
+        out.append(nd)
+    return out
+
+
 # ==================== Data Validation ====================
 
 class ValidationError:
@@ -736,8 +779,8 @@ class EnhancedQuantumScheduler:
         self.faculty_profiles = {f.id: f for f in (faculty_profiles or [])}  # Index by ID
         self.time_slots = time_slots
         self.time_slots_by_id = {t.id: t for t in time_slots}
-        self.active_days = [d.lower() for d in (active_days or self.DAYS[:6])]
-        self.online_days = [d.lower() for d in (online_days or [])]  # NEW: Online days
+        self.active_days = normalize_day_list(active_days, fallback=self.DAYS[:6])
+        self.online_days = normalize_day_list(online_days)  # NEW: Online days
         
         # Decompose sections (Uses self.rooms and self.constraints)
         decomposed_sections = self._decompose_oversized_sections(sections)
@@ -839,7 +882,7 @@ class EnhancedQuantumScheduler:
         for alloc in fixed_allocations:
             section_id_raw = alloc.get('class_id')
             room_id = alloc.get('room_id')
-            day = (alloc.get('schedule_day', '') or '').lower()
+            day = normalize_day_name(alloc.get('schedule_day', '') or '')
             time_range = alloc.get('schedule_time', '')
             section_code_hint = str(alloc.get('section', '') or '').strip().upper()
 
@@ -859,6 +902,15 @@ class EnhancedQuantumScheduler:
             
             if not day or not time_range or (section_id is None and not section_code_hint):
                 continue
+
+            if day not in DAY_INDEX:
+                print(f"   ⚠️ Skipping manual allocation with unknown day '{day}' (class_id={section_id_raw})")
+                continue
+
+            # Enforce Online Day Rule for manual reservations: online days are roomless.
+            if self._is_online_day(day) and room_id not in (None, 0):
+                print(f"   ⚠️ Coercing manual allocation on online day '{day}' to online (dropping room_id={room_id})")
+                room_id = None
 
             if room_id not in (None, 0) and room_id not in self.rooms:
                 print(f"   ⚠️ Skipping manual allocation with unknown room_id={room_id} for section {section_id}")
@@ -918,7 +970,7 @@ class EnhancedQuantumScheduler:
                 elif '_LEC' in normalized_hint or ' LEC' in section_code_hint:
                     component_hint = 'lecture'
 
-            is_online = (room_id == 0 or room_id is None)
+            is_online = (room_id == 0 or room_id is None) or self._is_online_day(day)
             is_lab_room = self._is_lab_room(room_id) if (room_id and room_id != 0) else False
             
             section = target_sections[0]
@@ -1332,7 +1384,7 @@ class EnhancedQuantumScheduler:
     
     def _is_online_day(self, day: str) -> bool:
         """Check if a day is designated as an online day"""
-        return day.lower() in self.online_days
+        return normalize_day_name(day) in self.online_days
     
     def _is_lab_room(self, room_id: int) -> bool:
         """Check if a room is a lab room"""

@@ -323,6 +323,156 @@ const countScheduledClassKeys = (allocations: Array<Partial<RoomAllocation>>): n
       .filter((key) => key !== '|')
   ).size
 }
+const countDistinctScheduledClassRefs = (allocations: Array<any>): number => {
+  const refs = new Set<string>()
+
+  ;(allocations || []).forEach((allocation: any) => {
+    const rawId = allocation?.section_id ?? allocation?.class_id
+    const id = Number(rawId)
+    if (Number.isFinite(id) && id > 0) {
+      refs.add(`id:${id}`)
+      return
+    }
+
+    const key = buildManualClassKey(allocation?.course_code, allocation?.section)
+    if (key !== '|') refs.add(`key:${key}`)
+  })
+
+  return refs.size
+}
+
+type SplitRoomMeta = {
+  room_type?: string
+  capacity?: number
+  college?: string
+  feature_tags?: string[]
+}
+
+type SplitClassMeta = {
+  lec_hours?: number
+  lab_hours?: number
+  student_count?: number
+  college?: string
+  required_features?: string[]
+  lec_required_features?: string[]
+  lab_required_features?: string[]
+}
+
+const normalizeCollegeKeyForSplit = (value: unknown): string => {
+  const raw = String(value || '').trim().toUpperCase()
+  if (!raw) return ''
+  const match = raw.match(/\(([^)]+)\)\s*$/)
+  return String(match?.[1] || raw).trim().toUpperCase()
+}
+
+const computeSplitSectionCount = (classes: SplitClassMeta[], rooms: SplitRoomMeta[]): number => {
+  const lectureAllowlist = new Set([
+    'TV_Display',
+    'Projector',
+    'Whiteboard',
+    'Sound_System',
+    'Air_Conditioning',
+    'Accessibility',
+    'Podium',
+    'Smart_TV',
+  ])
+
+  const getMaxCompatibleCap = (
+    roomTypeReqLower: string,
+    requiredFeatures: Set<string>,
+    classCollege: unknown
+  ): number => {
+    const sCol = normalizeCollegeKeyForSplit(classCollege)
+    const compatibleCaps: number[] = []
+
+    for (const room of rooms) {
+      const rType = String(room?.room_type || '').toLowerCase()
+
+      if (roomTypeReqLower && rType) {
+        const typeMismatch = !rType.includes(roomTypeReqLower) && !roomTypeReqLower.includes(rType)
+        if (typeMismatch) {
+          const isReqLab = roomTypeReqLower.includes('lab') || roomTypeReqLower.includes('computer')
+          const isRoomLab = rType.includes('lab') || rType.includes('computer')
+          if (!(isReqLab && isRoomLab)) continue
+        }
+      }
+
+      const rCol = normalizeCollegeKeyForSplit(room?.college)
+      if (sCol && rCol && rCol !== 'SHARED' && rCol !== sCol) continue
+
+      const rFeatures = new Set(
+        (room?.feature_tags || [])
+          .map((f) => String(f || '').trim())
+          .filter(Boolean)
+      )
+
+      let ok = true
+      for (const req of requiredFeatures) {
+        if (!rFeatures.has(req)) {
+          ok = false
+          break
+        }
+      }
+      if (!ok) continue
+
+      const cap = Number(room?.capacity || 0)
+      if (Number.isFinite(cap) && cap > 0) compatibleCaps.push(cap)
+    }
+
+    if (compatibleCaps.length === 0) {
+      return roomTypeReqLower.includes('lab') ? 30 : 50
+    }
+
+    return Math.max(...compatibleCaps)
+  }
+
+  const shouldSplitLab = (studentCount: number, labHours: number, college: unknown, labReqs: Set<string>): boolean => {
+    if (!(labHours > 0)) return false
+    const maxCap = getMaxCompatibleCap('computer', labReqs, college)
+    return studentCount > maxCap
+  }
+
+  const shouldSplitLec = (studentCount: number, lecHours: number, college: unknown, lecReqs: Set<string>): boolean => {
+    if (!(lecHours > 0)) return false
+    const maxCap = getMaxCompatibleCap('lecture', lecReqs, college)
+    return studentCount > maxCap * 1.1
+  }
+
+  let total = 0
+  for (const cls of classes) {
+    const lecHours = Number(cls?.lec_hours || 0) || 0
+    const labHours = Number(cls?.lab_hours || 0) || 0
+    const studentCount = Number(cls?.student_count || 30) || 30
+    const college = cls?.college
+
+    const genericReqsRaw = (cls?.required_features || []).map(f => String(f || '').trim()).filter(Boolean)
+    const lecReqsRaw = (cls?.lec_required_features || []).map(f => String(f || '').trim()).filter(Boolean)
+    const labReqsRaw = (cls?.lab_required_features || []).map(f => String(f || '').trim()).filter(Boolean)
+
+    let lecReqs = new Set(lecReqsRaw)
+    let labReqs = new Set(labReqsRaw)
+    const genericReqs = new Set(genericReqsRaw)
+
+    if (lecReqs.size === 0 && labReqs.size === 0 && genericReqs.size > 0) {
+      lecReqs = new Set(Array.from(genericReqs).filter(f => lectureAllowlist.has(f)))
+      labReqs = new Set(genericReqs)
+    }
+
+    if (lecHours > 0 && labHours > 0) {
+      const lecCount = shouldSplitLec(studentCount, lecHours, college, lecReqs) ? 2 : 1
+      const labCount = shouldSplitLab(studentCount, labHours, college, labReqs) ? 2 : 1
+      total += lecCount + labCount
+    } else if (lecHours > 0) {
+      total += shouldSplitLec(studentCount, lecHours, college, lecReqs) ? 2 : 1
+    } else if (labHours > 0) {
+      total += shouldSplitLab(studentCount, labHours, college, labReqs) ? 2 : 1
+    } else {
+      total += 1
+    }
+  }
+
+  return total
+}
 
 const buildManualClassLookup = (classes: ManualClassItem[]) => {
   const byId = new Map<number, ManualClassItem>()
@@ -385,6 +535,7 @@ export default function ViewSchedulePage() {
 
   // Timetable ref for export
   const timetableRef = useRef<HTMLDivElement>(null)
+  const repairedScheduleSummaryIdsRef = useRef<Set<number>>(new Set())
   const [showExportMenu, setShowExportMenu] = useState(false)
 
   // Filters
@@ -1400,60 +1551,64 @@ export default function ViewSchedulePage() {
         }
       }
 
-      // Keep summary counts aligned with Course Management classes for this schedule.
-      const sourceTotalClasses = new Set(
-        resolvedClasses
-          .map((cls: ManualClassItem) => buildManualClassKey(cls.course_code, cls.section))
-          .filter((key: string) => key !== '|')
-      ).size
-
-      const derivedTotalClasses = sourceTotalClasses > 0
-        ? sourceTotalClasses
-        : Number(schedule.total_classes || 0)
-      const derivedScheduledClasses = countScheduledClassKeys(scheduleAllocations || [])
-      const derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
-
+      // NOTE: Do NOT auto-override backend-provided totals (these may include split sections).
+      // Only backfill missing summary counts for legacy schedules where totals are unset.
       const currentTotal = Number(schedule.total_classes || 0)
       const currentScheduled = Number(schedule.scheduled_classes || 0)
       const currentUnscheduled = Number(schedule.unscheduled_classes || 0)
-      const hasSummaryMismatch =
-        currentTotal !== derivedTotalClasses ||
-        currentScheduled !== derivedScheduledClasses ||
-        currentUnscheduled !== derivedUnscheduledClasses
 
-      if (hasSummaryMismatch) {
-        setSchedules(prev => prev.map(item =>
-          item.id === schedule.id
-            ? {
-                ...item,
-                total_classes: derivedTotalClasses,
-                scheduled_classes: derivedScheduledClasses,
-                unscheduled_classes: derivedUnscheduledClasses,
-              }
-            : item
-        ))
+      const hasBackendTotals = currentTotal > 0
+      if (!hasBackendTotals) {
+        const sourceTotalClasses = new Set(
+          resolvedClasses
+            .map((cls: ManualClassItem) => buildManualClassKey(cls.course_code, cls.section))
+            .filter((key: string) => key !== '|')
+        ).size
 
-        setSelectedSchedule(prev => {
-          if (!prev || prev.id !== schedule.id) return prev
-          return {
-            ...prev,
-            total_classes: derivedTotalClasses,
-            scheduled_classes: derivedScheduledClasses,
-            unscheduled_classes: derivedUnscheduledClasses,
-          }
-        })
+        const derivedScheduledClasses = countDistinctScheduledClassRefs(scheduleAllocations || [])
+        const derivedTotalClasses = Math.max(sourceTotalClasses, derivedScheduledClasses)
+        const derivedUnscheduledClasses = Math.max(0, derivedTotalClasses - derivedScheduledClasses)
 
-        const { error: summarySyncError } = await db
-          .from('generated_schedules')
-          .update({
-            total_classes: derivedTotalClasses,
-            scheduled_classes: derivedScheduledClasses,
-            unscheduled_classes: derivedUnscheduledClasses,
+        const shouldBackfill = derivedTotalClasses > 0 && (
+          currentTotal !== derivedTotalClasses ||
+          currentScheduled !== derivedScheduledClasses ||
+          currentUnscheduled !== derivedUnscheduledClasses
+        )
+
+        if (shouldBackfill) {
+          setSchedules(prev => prev.map(item =>
+            item.id === schedule.id
+              ? {
+                  ...item,
+                  total_classes: derivedTotalClasses,
+                  scheduled_classes: derivedScheduledClasses,
+                  unscheduled_classes: derivedUnscheduledClasses,
+                }
+              : item
+          ))
+
+          setSelectedSchedule(prev => {
+            if (!prev || prev.id !== schedule.id) return prev
+            return {
+              ...prev,
+              total_classes: derivedTotalClasses,
+              scheduled_classes: derivedScheduledClasses,
+              unscheduled_classes: derivedUnscheduledClasses,
+            }
           })
-          .eq('id', schedule.id)
 
-        if (summarySyncError) {
-          console.warn('Failed to sync generated_schedules summary counts:', summarySyncError)
+          const { error: summarySyncError } = await db
+            .from('generated_schedules')
+            .update({
+              total_classes: derivedTotalClasses,
+              scheduled_classes: derivedScheduledClasses,
+              unscheduled_classes: derivedUnscheduledClasses,
+            })
+            .eq('id', schedule.id)
+
+          if (summarySyncError) {
+            console.warn('Failed to backfill generated_schedules summary counts:', summarySyncError)
+          }
         }
       }
 
@@ -1564,10 +1719,11 @@ export default function ViewSchedulePage() {
         }
       }
 
-      const scheduledClasses = countScheduledClassKeys(rowsToInsert)
-      const totalClasses = classLookup.byKey.size > 0
-        ? classLookup.byKey.size
-        : Number(selectedSchedule.total_classes || 0)
+      const scheduledClasses = countDistinctScheduledClassRefs(rowsToInsert)
+      const backendTotalClasses = Number(selectedSchedule.total_classes || 0)
+      const totalClasses = backendTotalClasses > 0
+        ? backendTotalClasses
+        : classLookup.byKey.size
       const unscheduledClasses = Math.max(0, totalClasses - scheduledClasses)
 
       const { error: summaryUpdateError } = await db
@@ -1608,6 +1764,211 @@ export default function ViewSchedulePage() {
     }
   }
 
+  const computeExpectedTotalClassesForSchedule = async (schedule: Schedule): Promise<number | null> => {
+    const yearBatchId = Number(schedule?.class_group_id)
+    const campusGroupId = Number(schedule?.campus_group_id)
+    if (!Number.isFinite(yearBatchId) || yearBatchId <= 0) return null
+    if (!Number.isFinite(campusGroupId) || campusGroupId <= 0) return null
+
+    // Fetch base scope: year-batch sections and their assigned courses.
+    const { data: sectionRows, error: sectionError } = await db
+      .from('sections')
+      .select('id, student_count, department, college')
+      .eq('year_batch_id', yearBatchId)
+
+    if (sectionError || !sectionRows || sectionRows.length === 0) return null
+
+    const sectionIds = sectionRows
+      .map((s: any) => Number(s?.id))
+      .filter((id: number) => Number.isFinite(id) && id > 0)
+
+    if (sectionIds.length === 0) return null
+
+    const { data: assignmentRows, error: assignmentError } = await db
+      .from('section_course_assignments')
+      .select('section_id, course_id')
+      .in('section_id', sectionIds)
+
+    if (assignmentError || !assignmentRows || assignmentRows.length === 0) return null
+
+    const courseIds = Array.from(new Set(
+      assignmentRows
+        .map((a: any) => Number(a?.course_id))
+        .filter((id: number) => Number.isFinite(id) && id > 0)
+    ))
+
+    if (courseIds.length === 0) return null
+
+    const [{ data: courseRows }, { data: reqRows }] = await Promise.all([
+      db
+        .from('class_schedules')
+        .select('id, lec_hours, lab_hours, department, college')
+        .in('id', courseIds),
+      db
+        .from('subject_room_requirements')
+        .select('course_id, notes, feature_tags(tag_name)')
+        .in('course_id', courseIds)
+    ])
+
+    const courseById = new Map<number, any>()
+    ;(courseRows || []).forEach((row: any) => {
+      const id = Number(row?.id)
+      if (Number.isFinite(id) && id > 0) courseById.set(id, row)
+    })
+
+    const reqMap = new Map<number, { all: string[], lec: string[], lab: string[] }>()
+    ;(reqRows || []).forEach((r: any) => {
+      const cid = Number(r?.course_id)
+      if (!Number.isFinite(cid) || cid <= 0) return
+
+      if (!reqMap.has(cid)) reqMap.set(cid, { all: [], lec: [], lab: [] })
+
+      const tag = String(r?.feature_tags?.tag_name || '').trim()
+      if (!tag) return
+
+      const note = String(r?.notes || '').trim().toUpperCase()
+      const entry = reqMap.get(cid)!
+      entry.all.push(tag)
+      if (note === 'LEC') entry.lec.push(tag)
+      else if (note === 'LAB') entry.lab.push(tag)
+    })
+
+    // Rooms (with features) for capacity-based splitting decisions.
+    const { data: campusRoomsRaw } = await db
+      .from('campuses')
+      .select('id, room_type, capacity, college, status')
+      .eq('upload_group_id', campusGroupId)
+
+    const usableRooms = (campusRoomsRaw || []).filter((r: any) => {
+      const status = String(r?.status || '').toLowerCase()
+      return status !== 'not_usable' && status !== 'unavailable' && status !== 'inactive'
+    })
+
+    const roomIds = usableRooms
+      .map((r: any) => Number(r?.id))
+      .filter((id: number) => Number.isFinite(id) && id > 0)
+
+    const { data: featureRows } = roomIds.length
+      ? await db
+          .from('room_features')
+          .select('room_id, feature_tags(tag_name)')
+          .in('room_id', roomIds)
+      : { data: [] }
+
+    const tagsByRoomId = new Map<number, string[]>()
+    ;(featureRows || []).forEach((row: any) => {
+      const rid = Number(row?.room_id)
+      if (!Number.isFinite(rid) || rid <= 0) return
+      const tag = String(row?.feature_tags?.tag_name || '').trim()
+      if (!tag) return
+      if (!tagsByRoomId.has(rid)) tagsByRoomId.set(rid, [])
+      tagsByRoomId.get(rid)!.push(tag)
+    })
+
+    const roomsForSplit: SplitRoomMeta[] = usableRooms.map((r: any) => ({
+      room_type: r?.room_type,
+      capacity: r?.capacity,
+      college: r?.college,
+      feature_tags: tagsByRoomId.get(Number(r?.id)) || [],
+    }))
+
+    const sectionById = new Map<number, any>()
+    sectionRows.forEach((s: any) => {
+      const sid = Number(s?.id)
+      if (Number.isFinite(sid) && sid > 0) sectionById.set(sid, s)
+    })
+
+    const classesForSplit: SplitClassMeta[] = []
+    ;(assignmentRows || []).forEach((a: any) => {
+      const section = sectionById.get(Number(a?.section_id))
+      const course = courseById.get(Number(a?.course_id))
+      if (!section || !course) return
+
+      const req = reqMap.get(Number(a?.course_id))
+      classesForSplit.push({
+        lec_hours: course?.lec_hours ?? 0,
+        lab_hours: course?.lab_hours ?? 0,
+        student_count: section?.student_count ?? 30,
+        college: (section?.college && section.college !== 'Unassigned College')
+          ? section.college
+          : ((course?.college && course.college !== 'Unassigned College') ? course.college : ''),
+        required_features: req?.all || [],
+        lec_required_features: req?.lec || [],
+        lab_required_features: req?.lab || [],
+      })
+    })
+
+    if (classesForSplit.length === 0) return null
+
+    return computeSplitSectionCount(classesForSplit, roomsForSplit)
+  }
+
+  const maybeRepairScheduleSummary = async (schedule: Schedule, latestAllocations: RoomAllocation[]) => {
+    const scheduleId = Number(schedule?.id)
+    if (!Number.isFinite(scheduleId) || scheduleId <= 0) return
+    if (repairedScheduleSummaryIdsRef.current.has(scheduleId)) return
+
+    // Mark as attempted to avoid repeated heavy queries.
+    repairedScheduleSummaryIdsRef.current.add(scheduleId)
+
+    const distinctScheduled = countDistinctScheduledClassRefs(latestAllocations)
+    if (distinctScheduled <= 0) return
+
+    const currentTotal = Number(schedule.total_classes || 0)
+    const currentScheduled = Number(schedule.scheduled_classes || 0)
+    const currentUnscheduled = Number(schedule.unscheduled_classes || 0)
+
+    const totalsImpossible = currentTotal > 0 && distinctScheduled > currentTotal
+    const scheduledLooksCollapsed = distinctScheduled > currentScheduled && (currentScheduled === 0 || distinctScheduled / Math.max(currentScheduled, 1) >= 1.2)
+
+    if (!totalsImpossible && !scheduledLooksCollapsed) return
+
+    const expectedTotal = await computeExpectedTotalClassesForSchedule(schedule)
+    if (!expectedTotal || expectedTotal <= 0) return
+
+    const candidateTotal = Math.max(expectedTotal, distinctScheduled)
+    const maxReasonable = Math.max(distinctScheduled + 25, Math.ceil(distinctScheduled * 1.5))
+    if (candidateTotal > maxReasonable) {
+      // If our reconstruction scope seems way larger than what was actually scheduled,
+      // skip updating totals to avoid writing misleading counts.
+      return
+    }
+
+    const newTotal = (currentTotal <= 0 || totalsImpossible)
+      ? candidateTotal
+      : currentTotal
+    const newScheduled = distinctScheduled
+    const newUnscheduled = Math.max(0, newTotal - newScheduled)
+
+    const needsUpdate = newTotal !== currentTotal || newScheduled !== currentScheduled || newUnscheduled !== currentUnscheduled
+    if (!needsUpdate) return
+
+    const { error: repairError } = await db
+      .from('generated_schedules')
+      .update({
+        total_classes: newTotal,
+        scheduled_classes: newScheduled,
+        unscheduled_classes: newUnscheduled,
+      })
+      .eq('id', scheduleId)
+
+    if (repairError) {
+      console.warn('Failed to auto-repair schedule summary counts:', repairError)
+      return
+    }
+
+    setSchedules(prev => prev.map(item =>
+      item.id === scheduleId
+        ? { ...item, total_classes: newTotal, scheduled_classes: newScheduled, unscheduled_classes: newUnscheduled }
+        : item
+    ))
+
+    setSelectedSchedule(prev => {
+      if (!prev || prev.id !== scheduleId) return prev
+      return { ...prev, total_classes: newTotal, scheduled_classes: newScheduled, unscheduled_classes: newUnscheduled }
+    })
+  }
+
   useEffect(() => {
     if (!selectedSchedule) return
 
@@ -1616,6 +1977,9 @@ export default function ViewSchedulePage() {
     const loadScheduleData = async () => {
       const latestAllocations = await fetchUnifiedSchedule()
       if (!isActive) return
+
+      // Fire-and-forget repair (does not block the manual editor resources fetch).
+      void maybeRepairScheduleSummary(selectedSchedule, latestAllocations)
       await fetchManualEditResources(selectedSchedule, latestAllocations)
     }
 
@@ -3094,7 +3458,7 @@ export default function ViewSchedulePage() {
                     </span>
                     <span className={styles.statText}>
                       Total Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      <span title="Counts come from the saved schedule summary (generation results)." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                   <div className={styles.statItem}>
@@ -3103,7 +3467,7 @@ export default function ViewSchedulePage() {
                     </span>
                     <span className={styles.statText}>
                       Scheduled Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      <span title="Counts come from the saved schedule summary (generation results)." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                   <div className={styles.statItem}>
@@ -3112,7 +3476,7 @@ export default function ViewSchedulePage() {
                     </span>
                     <span className={styles.statText}>
                       Unscheduled Allocations
-                      <span title="Count formula: Total = unique course-section pairs from Course Management for this schedule scope; Scheduled = unique course-section pairs with at least one saved allocation; Unscheduled = Total - Scheduled." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
+                      <span title="Counts come from the saved schedule summary (generation results)." style={{ marginLeft: 6, cursor: 'help', opacity: 0.8 }}>(?)</span>
                     </span>
                   </div>
                   <button
