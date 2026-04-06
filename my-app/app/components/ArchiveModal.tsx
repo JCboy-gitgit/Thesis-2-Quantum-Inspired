@@ -21,7 +21,7 @@ import './ArchiveModal.css'
 
 interface ArchivedItem {
   id: string
-  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification'
+  item_type: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification'
   item_name: string
   item_data: any
   deleted_at: string
@@ -35,8 +35,8 @@ interface ArchiveModalProps {
   onClose: () => void
   onRestore?: (item: ArchivedItem) => void
   onPermanentDelete?: (item: ArchivedItem) => void
-  forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room' | 'notification'
-  excludeType?: 'notification' | 'csv_file' | 'department' | 'faculty' | 'schedule' | 'room'
+  forcedType?: 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room' | 'notification'
+  excludeType?: 'notification' | 'csv_file' | 'department' | 'faculty' | 'schedule' | 'schedule_snapshot' | 'room'
 }
 
 export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDelete, forcedType, excludeType }: ArchiveModalProps) {
@@ -203,6 +203,117 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
         }
       }
 
+      // NOTE: schedule_snapshot restores in-place (replaces allocations for an existing schedule).
+      if (item.item_type === 'schedule_snapshot') {
+        const data = item.item_data || {}
+        const schedule = data.schedule
+        const scheduleId = Number(schedule?.id ?? data.schedule_id ?? item.original_id)
+        if (!Number.isFinite(scheduleId) || scheduleId <= 0) {
+          throw new Error('Invalid schedule id in backup')
+        }
+
+        // Replace allocations for this schedule.
+        const { error: deleteAllocError } = await (supabase as any)
+          .from('room_allocations')
+          .delete()
+          .eq('schedule_id', scheduleId)
+
+        if (deleteAllocError) {
+          console.warn('Warning deleting allocations for snapshot restore:', deleteAllocError)
+        }
+
+        const allocations = Array.isArray(data.allocations) ? data.allocations : []
+
+        if (allocations.length > 0) {
+          // Try insert with richer columns, then fall back if schema differs.
+          const buildAlloc = (a: any) => ({
+            id: a.id,
+            schedule_id: scheduleId,
+            class_id: a.class_id,
+            section_id: a.section_id,
+            room_id: a.room_id,
+            course_code: a.course_code,
+            course_name: a.course_name,
+            section: a.section,
+            section_code: a.section_code,
+            year_level: a.year_level,
+            schedule_day: a.schedule_day,
+            day_of_week: a.day_of_week,
+            schedule_time: a.schedule_time,
+            campus: a.campus,
+            building: a.building,
+            room: a.room,
+            room_code: a.room_code,
+            capacity: a.capacity,
+            teacher_id: a.teacher_id,
+            teacher_name: a.teacher_name,
+            department: a.department,
+            lec_hours: a.lec_hours,
+            lab_hours: a.lab_hours,
+            college: a.college,
+            component: a.component,
+            status: a.status,
+          })
+
+          const fullRows = allocations.map(buildAlloc)
+          const { error: insertError } = await (supabase as any)
+            .from('room_allocations')
+            .insert(fullRows)
+
+          if (insertError) {
+            const message = String((insertError as any)?.message || '')
+            const missingColumn = /column\s+"?.+"?\s+of relation\s+"?room_allocations"?/i.test(message)
+            if (!missingColumn) throw insertError
+
+            // Fall back to a conservative column set.
+            const fallbackRows = allocations.map((a: any) => ({
+              schedule_id: scheduleId,
+              class_id: a.class_id,
+              room_id: a.room_id,
+              course_code: a.course_code,
+              course_name: a.course_name,
+              section: a.section,
+              year_level: a.year_level,
+              schedule_day: a.schedule_day,
+              schedule_time: a.schedule_time,
+              campus: a.campus,
+              building: a.building,
+              room: a.room,
+              capacity: a.capacity,
+              teacher_name: a.teacher_name,
+              department: a.department,
+              lec_hours: a.lec_hours,
+              lab_hours: a.lab_hours,
+              status: a.status,
+            }))
+
+            const { error: fallbackError } = await (supabase as any)
+              .from('room_allocations')
+              .insert(fallbackRows)
+
+            if (fallbackError) throw fallbackError
+          }
+        }
+
+        // Restore schedule summary counts (safe subset).
+        if (schedule) {
+          const { school_name, college, ...cleanSchedule } = schedule
+          const { error: scheduleUpdateError } = await (supabase as any)
+            .from('generated_schedules')
+            .update({
+              total_classes: cleanSchedule.total_classes,
+              scheduled_classes: cleanSchedule.scheduled_classes,
+              unscheduled_classes: cleanSchedule.unscheduled_classes,
+              optimization_stats: cleanSchedule.optimization_stats,
+            })
+            .eq('id', scheduleId)
+
+          if (scheduleUpdateError) {
+            console.warn('Warning updating schedule summary during snapshot restore:', scheduleUpdateError)
+          }
+        }
+      }
+
       // Remove from archive AFTER successful restore
       const { error: deleteError } = await supabase
         .from('archived_items')
@@ -281,6 +392,92 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
           } else if (item.item_type === 'faculty') {
             // Teacher schedules table removed; skip restore for legacy teacher payloads
             console.info('Teacher schedules are deprecated; skipping restore for item', item.id)
+          } else if (item.item_type === 'schedule_snapshot') {
+            const data = item.item_data || {}
+            const schedule = data.schedule
+            const scheduleId = Number(schedule?.id ?? data.schedule_id ?? item.original_id)
+            if (!Number.isFinite(scheduleId) || scheduleId <= 0) {
+              throw new Error('Invalid schedule id in backup')
+            }
+
+            await (supabase as any).from('room_allocations').delete().eq('schedule_id', scheduleId)
+
+            const allocations = Array.isArray(data.allocations) ? data.allocations : []
+            if (allocations.length > 0) {
+              const fullRows = allocations.map((a: any) => ({
+                id: a.id,
+                schedule_id: scheduleId,
+                class_id: a.class_id,
+                section_id: a.section_id,
+                room_id: a.room_id,
+                course_code: a.course_code,
+                course_name: a.course_name,
+                section: a.section,
+                section_code: a.section_code,
+                year_level: a.year_level,
+                schedule_day: a.schedule_day,
+                day_of_week: a.day_of_week,
+                schedule_time: a.schedule_time,
+                campus: a.campus,
+                building: a.building,
+                room: a.room,
+                room_code: a.room_code,
+                capacity: a.capacity,
+                teacher_id: a.teacher_id,
+                teacher_name: a.teacher_name,
+                department: a.department,
+                lec_hours: a.lec_hours,
+                lab_hours: a.lab_hours,
+                college: a.college,
+                component: a.component,
+                status: a.status,
+              }))
+
+              const { error: insertError } = await (supabase as any).from('room_allocations').insert(fullRows)
+              if (insertError) {
+                const message = String((insertError as any)?.message || '')
+                const missingColumn = /column\s+"?.+"?\s+of relation\s+"?room_allocations"?/i.test(message)
+                if (!missingColumn) throw insertError
+
+                const fallbackRows = allocations.map((a: any) => ({
+                  schedule_id: scheduleId,
+                  class_id: a.class_id,
+                  room_id: a.room_id,
+                  course_code: a.course_code,
+                  course_name: a.course_name,
+                  section: a.section,
+                  year_level: a.year_level,
+                  schedule_day: a.schedule_day,
+                  schedule_time: a.schedule_time,
+                  campus: a.campus,
+                  building: a.building,
+                  room: a.room,
+                  capacity: a.capacity,
+                  teacher_name: a.teacher_name,
+                  department: a.department,
+                  lec_hours: a.lec_hours,
+                  lab_hours: a.lab_hours,
+                  status: a.status,
+                }))
+
+                const { error: fallbackError } = await (supabase as any).from('room_allocations').insert(fallbackRows)
+                if (fallbackError) throw fallbackError
+              }
+            }
+
+            if (schedule) {
+              const { school_name, college, ...cleanSchedule } = schedule
+              await (supabase as any)
+                .from('generated_schedules')
+                .update({
+                  total_classes: cleanSchedule.total_classes,
+                  scheduled_classes: cleanSchedule.scheduled_classes,
+                  unscheduled_classes: cleanSchedule.unscheduled_classes,
+                  optimization_stats: cleanSchedule.optimization_stats,
+                })
+                .eq('id', scheduleId)
+            }
+
           } else if (item.item_type === 'schedule') {
             const data = item.item_data
             if (data.schedule) {
@@ -384,6 +581,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'csv_file': return <MdInsertDriveFile size={20} />
       case 'department': return <MdBusiness size={20} />
       case 'faculty': return <MdPeople size={20} />
+      case 'schedule_snapshot': return <MdAccessTime size={20} />
       case 'notification': return <MdNotifications size={20} />
       default: return <MdArchive size={20} />
     }
@@ -395,6 +593,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
       case 'department': return 'Department'
       case 'faculty': return 'Faculty'
       case 'schedule': return 'Schedule'
+      case 'schedule_snapshot': return 'Schedule Backup'
       case 'room': return 'Room'
       case 'notification': return 'Notification'
       default: return type
@@ -430,7 +629,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
             <MdArchive size={28} />
             <div>
               <h2>Archive</h2>
-              <p>Manage deleted items - restore or permanently remove</p>
+              <p>Restore deleted items and schedule backups</p>
             </div>
           </div>
           <button className="archive-close-btn" onClick={onClose}>
@@ -466,6 +665,7 @@ export default function ArchiveModal({ isOpen, onClose, onRestore, onPermanentDe
               {excludeType !== 'department' && <option value="department">Departments</option>}
               {excludeType !== 'faculty' && <option value="faculty">Faculty</option>}
               {excludeType !== 'schedule' && <option value="schedule">Schedules</option>}
+              {excludeType !== 'schedule_snapshot' && <option value="schedule_snapshot">Schedule Backups</option>}
               {excludeType !== 'room' && <option value="room">Rooms</option>}
               {excludeType !== 'notification' && <option value="notification">Notifications</option>}
             </select>

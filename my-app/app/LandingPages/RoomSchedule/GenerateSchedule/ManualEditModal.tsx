@@ -27,6 +27,7 @@ interface ManualEditModalProps {
     collegeRoomMatchingEnabled?: boolean
     allowG1G2SplitSessions?: boolean
     unscheduledSourceClasses?: any[]
+    summaryTotalsOverride?: { total: number, scheduled: number, unscheduled: number }
 }
 
 type ViewMode = 'room' | 'faculty' | 'section'
@@ -90,6 +91,7 @@ export default function ManualEditModal({
     collegeRoomMatchingEnabled = true,
     allowG1G2SplitSessions = true,
     unscheduledSourceClasses,
+    summaryTotalsOverride,
 }: ManualEditModalProps) {
     // 1. Core State
     const [allocations, setAllocations] = useState<any[]>(initialAllocations)
@@ -896,6 +898,23 @@ export default function ManualEditModal({
     }, [classesWithStats])
 
     const summaryTotals = useMemo(() => {
+        if (summaryTotalsOverride) {
+            const total = Math.max(0, Number(summaryTotalsOverride.total || 0))
+            const scheduled = Math.max(0, Number(summaryTotalsOverride.scheduled || 0))
+            const unscheduled = Math.max(0, Number(summaryTotalsOverride.unscheduled || 0))
+
+            // Basic sanity: ensure non-negative and coherent.
+            const coercedTotal = Math.max(total, scheduled)
+            const coercedUnscheduled = Math.max(0, coercedTotal - scheduled)
+
+            return {
+                total: coercedTotal,
+                scheduled,
+                unscheduled: coercedUnscheduled,
+                canShow: coercedTotal > 0 || coercedUnscheduled > 0,
+            }
+        }
+
         const total = Math.max(0, classesWithStats.length)
         const unscheduled = Math.max(0, remainingClassCount)
         const scheduled = Math.max(0, total - unscheduled)
@@ -906,7 +925,7 @@ export default function ManualEditModal({
             unscheduled,
             canShow: total > 0 || unscheduled > 0,
         }
-    }, [classesWithStats.length, remainingClassCount])
+    }, [classesWithStats.length, remainingClassCount, summaryTotalsOverride])
 
     // 6. Conflict Detection
     const checkConflicts = useCallback((newAlloc: any, ignoreSelfId?: any) => {

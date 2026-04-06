@@ -303,11 +303,25 @@ const detectAllocationComponent = (allocation: RoomAllocation, roomType?: string
   const code = (allocation.course_code || '').toUpperCase()
   const room = (roomType || '').toUpperCase()
 
-  if (sec.includes('G1')) return 'LAB G1'
-  if (sec.includes('G2')) return 'LAB G2'
+  const hasG1 = /(?:\b|_)(G1)(?:\b|_)/i.test(sec)
+  const hasG2 = /(?:\b|_)(G2)(?:\b|_)/i.test(sec)
 
-  const looksLab = sec.includes('LAB') || course.includes('LAB') || course.includes('LABORATORY') || code.includes('LAB') || room.includes('LAB')
-  return looksLab ? 'LAB' : 'LEC'
+  const looksLab =
+    sec.includes('LAB') ||
+    course.includes('LAB') ||
+    course.includes('LABORATORY') ||
+    code.includes('LAB') ||
+    room.includes('LAB') ||
+    room.includes('COMPUTER')
+
+  if (looksLab) {
+    if (hasG1) return 'LAB G1'
+    if (hasG2) return 'LAB G2'
+    return 'LAB'
+  }
+
+  // IMPORTANT: G1/G2 markers can appear on lecture splits too.
+  return 'LEC'
 }
 
 const buildManualClassKey = (courseCode?: string, section?: string): string => {
@@ -1643,6 +1657,50 @@ export default function ViewSchedulePage() {
     if (!selectedSchedule) return
 
     try {
+      // Safety net: before overwriting allocations, store a backup snapshot in Archive.
+      // This lets admins recover even after an accidental Clear All + Save.
+      try {
+        const scheduleId = Number(selectedSchedule.id)
+        if (Number.isFinite(scheduleId) && scheduleId > 0) {
+          const { data: existingAllocations, error: backupFetchError } = await db
+            .from('room_allocations')
+            .select('*')
+            .eq('schedule_id', scheduleId)
+
+          if (backupFetchError) {
+            console.warn('Failed to fetch existing allocations for backup:', backupFetchError)
+          } else {
+            const backupName = `${selectedSchedule.schedule_name || 'Schedule'} (Backup before manual save)`
+            const backupPayload = {
+              item_type: 'schedule_snapshot',
+              item_name: backupName,
+              item_data: {
+                schedule: selectedSchedule,
+                allocations: existingAllocations || [],
+                reason: 'manual_save_backup',
+              },
+              original_table: 'generated_schedules',
+              original_id: scheduleId,
+              deleted_at: new Date().toISOString(),
+              deleted_by: null,
+            }
+
+            const { error: backupInsertError } = await db
+              .from('archived_items')
+              .insert(backupPayload)
+
+            if (backupInsertError) {
+              console.warn('Failed to write backup snapshot to archive:', backupInsertError)
+              toast.warning('Backup not saved', {
+                description: 'Manual save will continue, but restore may not be available in Archive.'
+              })
+            }
+          }
+        }
+      } catch (backupError) {
+        console.warn('Backup snapshot attempt failed:', backupError)
+      }
+
       const isCollegeUnset = (value: unknown) => {
         const normalized = String(value || '').trim().toUpperCase()
         return (
@@ -1665,19 +1723,31 @@ export default function ViewSchedulePage() {
           const classMeta = classLookup.resolve(alloc)
           const roomMeta = roomById.get(alloc.room_id) || manualEditRooms.find((r: any) => r.room === alloc.room && r.building === alloc.building)
 
+          // IMPORTANT:
+          // - Backend stores split-aware IDs in `section_id` (and mirrors it in `class_id`).
+          // - Manual editor may remap `class_id` to a base class for UI convenience.
+          // When saving, always preserve `section_id` if present to avoid collapsing G1/G2 splits.
+          const rawSectionId = alloc?.section_id ?? alloc?.class_id
+          const sectionId = Number(rawSectionId)
+          const savedSectionId = Number.isFinite(sectionId) && sectionId > 0 ? sectionId : null
+
           return {
             schedule_id: selectedSchedule.id,
-            class_id: classMeta?.id || alloc.class_id || null,
+            section_id: savedSectionId,
+            class_id: savedSectionId ?? (classMeta?.id || alloc.class_id || null),
             room_id: roomMeta?.id || alloc.room_id || null,
             course_code: alloc.course_code || classMeta?.course_code || '',
             course_name: alloc.course_name || classMeta?.course_name || '',
             section: alloc.section || classMeta?.section || '',
+            section_code: alloc.section || classMeta?.section || '',
             year_level: classMeta?.year_level || alloc.year_level || null,
             schedule_day: alloc.schedule_day,
+            day_of_week: alloc.schedule_day,
             schedule_time: alloc.schedule_time,
             campus: roomMeta?.campus || alloc.campus || '',
             building: roomMeta?.building || alloc.building || '',
             room: roomMeta?.room || alloc.room || '',
+            room_code: roomMeta?.room || alloc.room || '',
             capacity: roomMeta?.capacity || alloc.capacity || 0,
             teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
             department: classMeta?.department || alloc.department || '',
@@ -2272,7 +2342,7 @@ export default function ViewSchedulePage() {
         ...alloc,
         class_id: classMeta?.id || alloc.class_id,
         room_id: roomMeta?.id || alloc.room_id,
-        component: detectAllocationComponent(alloc, roomMeta?.room_type),
+        component: alloc.component || detectAllocationComponent(alloc, roomMeta?.room_type),
         teacher_name: alloc.teacher_name || classMeta?.teacher_name || '',
         lec_hours: classMeta?.lec_hours ?? alloc.lec_hours ?? 0,
         lab_hours: classMeta?.lab_hours ?? alloc.lab_hours ?? 0,
@@ -4090,6 +4160,11 @@ export default function ViewSchedulePage() {
             collegeRoomMatchingEnabled
             allowG1G2SplitSessions
             unscheduledSourceClasses={manualEditSourceUnscheduledClasses}
+            summaryTotalsOverride={{
+              total: Number(selectedSchedule.total_classes || 0),
+              scheduled: Number(selectedSchedule.scheduled_classes || 0),
+              unscheduled: Number(selectedSchedule.unscheduled_classes || 0),
+            }}
           />
         )}
 
