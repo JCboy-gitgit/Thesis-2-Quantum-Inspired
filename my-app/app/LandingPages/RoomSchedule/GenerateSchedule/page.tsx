@@ -336,6 +336,7 @@ const CAMPUS_CLOSING_MINUTES = 20 * 60
 
 // Days for timetable
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 interface TeachingLoadCandidate {
   faculty_name: string
@@ -701,7 +702,7 @@ export default function GenerateSchedulePage() {
     startTime: '07:00',
     endTime: '20:00',
     slotDuration: 30, // 30 minutes for better granularity and alignment with manual editor
-    includeSaturday: true,
+    includeSaturday: false,
     includeSunday: false,
     // Lunch break settings - AUTO MODE (1hr break after 6hrs consecutive)
     lunchBreakEnabled: true,     // Always enabled in auto mode
@@ -778,6 +779,25 @@ export default function GenerateSchedulePage() {
   const [generationPhase, setGenerationPhase] = useState<'idle' | 'queued' | 'generating'>('idle')
   const [estimatedQueuePosition, setEstimatedQueuePosition] = useState<number | null>(null)
   const [isSubmittingGeneration, setIsSubmittingGeneration] = useState(false)
+
+  // Days of week selection
+  // Default: Monday–Friday selected, weekends are controlled by includeSaturday/includeSunday.
+  const [selectedWeekdays, setSelectedWeekdays] = useState<string[]>(WEEKDAYS)
+
+  const activeDays = useMemo(() => {
+    const days = [...selectedWeekdays]
+    if (timeSettings.includeSaturday) days.push('Saturday')
+    if (timeSettings.includeSunday) days.push('Sunday')
+    return days
+  }, [selectedWeekdays, timeSettings.includeSaturday, timeSettings.includeSunday])
+
+  useEffect(() => {
+    // Keep online-days consistent with days actually being scheduled.
+    setConfig(prev => ({
+      ...prev,
+      onlineDays: prev.onlineDays.filter(day => activeDays.includes(day))
+    }))
+  }, [activeDays])
 
   const academicYearOptions = useMemo(() => {
     const options = new Set<string>()
@@ -2521,9 +2541,7 @@ export default function GenerateSchedulePage() {
     ? scheduledColleges.join(', ')
     : (selectedCollege === 'all' ? 'All Colleges (No explicit college tags in class data)' : selectedCollege)
   const assignedTeacherCount = new Set(classes.map(c => c.teacher_name).filter(Boolean)).size
-  const activeDaysPreview = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  if (timeSettings.includeSaturday) activeDaysPreview.push('Saturday')
-  if (timeSettings.includeSunday) activeDaysPreview.push('Sunday')
+  const activeDaysPreview = activeDays
   const uniqueDays = [...new Set(classes.map(c => c.schedule_day).filter(Boolean))]
   const uniqueTimeSlots = [...new Set(classes.map(c => c.schedule_time).filter(Boolean))]
 
@@ -2593,9 +2611,15 @@ export default function GenerateSchedulePage() {
 
       // Generate time slots from settings
       const timeSlots = generateTimeSlots(timeSettings)
-      const activeDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-      if (timeSettings.includeSaturday) activeDays.push('Saturday')
-      if (timeSettings.includeSunday) activeDays.push('Sunday')
+      const generationActiveDays = activeDays
+
+      if (generationActiveDays.length === 0) {
+        toast.error('No Days Selected', {
+          description: 'Select at least one day to schedule classes.'
+        })
+        resetScheduling()
+        return
+      }
 
       // Prepare data for QIA algorithm - will be sent to Python backend
       const scheduleData = {
@@ -2611,7 +2635,7 @@ export default function GenerateSchedulePage() {
         classes: classes,
         teachers: [],
         time_slots: timeSlots,
-        active_days: activeDays,
+        active_days: generationActiveDays,
         online_days: config.onlineDays, // NEW: Days where all classes are online
         time_settings: timeSettings,
         config: {
@@ -2670,7 +2694,7 @@ export default function GenerateSchedulePage() {
         classes: classes.length,
         teachers: [],
         timeSlots: timeSlots.length,
-        activeDays,
+        activeDays: generationActiveDays,
         onlineDays: config.onlineDays
       }, null, 2))
 
@@ -5474,17 +5498,31 @@ export default function GenerateSchedulePage() {
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Days of Week</label>
                       <div className={styles.checkboxGroup}>
-                        <label className={styles.checkboxLabel}>
-                          <input type="checkbox" checked disabled />
-                          <span>Monday - Friday (Required)</span>
-                        </label>
+                        {WEEKDAYS.map(day => (
+                          <label key={day} className={styles.checkboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={selectedWeekdays.includes(day)}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setSelectedWeekdays(prev => {
+                                  const next = new Set(prev)
+                                  if (checked) next.add(day)
+                                  else next.delete(day)
+                                  return WEEKDAYS.filter(d => next.has(d))
+                                })
+                              }}
+                            />
+                            <span>{day}</span>
+                          </label>
+                        ))}
                         <label className={styles.checkboxLabel}>
                           <input
                             type="checkbox"
                             checked={timeSettings.includeSaturday}
                             onChange={(e) => setTimeSettings(prev => ({ ...prev, includeSaturday: e.target.checked }))}
                           />
-                          <span>Include Saturday</span>
+                          <span>Saturday</span>
                         </label>
                         <label className={styles.checkboxLabel}>
                           <input
@@ -5492,7 +5530,7 @@ export default function GenerateSchedulePage() {
                             checked={timeSettings.includeSunday}
                             onChange={(e) => setTimeSettings(prev => ({ ...prev, includeSunday: e.target.checked }))}
                           />
-                          <span>Include Sunday</span>
+                          <span>Sunday</span>
                         </label>
                       </div>
                     </div>
@@ -5563,7 +5601,7 @@ export default function GenerateSchedulePage() {
                     <div className={styles.formGroup}>
                       <label className={styles.formLabel}>Select Online Days (All-Day Asynchronous)</label>
                       <div className={styles.checkboxGroup}>
-                        {DAYS.map(day => (
+                        {activeDays.map(day => (
                           <label key={day} className={styles.checkboxLabel}>
                             <input
                               type="checkbox"
