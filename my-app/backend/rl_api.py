@@ -12,6 +12,7 @@ from rl_scheduler import (
     create_teacher_lunch_break_rule,
     create_room_clustering_rule
 )
+from rl_persistence import RLStatePersistence
 
 
 # ==================== Pydantic Models ====================
@@ -62,11 +63,19 @@ rl_router = APIRouter(prefix="/api/rl", tags=["RL Scheduling"])
 
 # Global RL Engine (in production, use database or cache)
 rl_engine = RLSchedulingEngine()
+rl_persistence = RLStatePersistence(supabase_client=None)  # Set by initialize_persistence()
 
 # Register built-in rules
 rl_engine.add_custom_rule(create_no_friday_afternoon_rule())
 rl_engine.add_custom_rule(create_teacher_lunch_break_rule())
 rl_engine.add_custom_rule(create_room_clustering_rule())
+
+
+def initialize_persistence(supabase_client):
+    """Initialize persistence with Supabase client."""
+    global rl_persistence
+    rl_persistence.supabase = supabase_client
+
 
 
 # ==================== Endpoints ====================
@@ -132,6 +141,8 @@ async def train_rl_agent(request: TrainRLRequest):
             time_slots=request.time_slots,
             iterations=request.iterations
         )
+        # Save agent state to Supabase after training
+        await rl_persistence.save_agent_state(rl_engine)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -215,6 +226,8 @@ async def reset_agent():
         rl_engine.add_custom_rule(create_no_friday_afternoon_rule())
         rl_engine.add_custom_rule(create_teacher_lunch_break_rule())
         rl_engine.add_custom_rule(create_room_clustering_rule())
+        # Also delete from database
+        await rl_persistence.reset_agent_state()
         return {"status": "success", "message": "RL agent reset"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
